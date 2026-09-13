@@ -1,5 +1,14 @@
 # freepasserp.com v1 — AI/Developer Rules
 
+## 0. Mandatory Work handoff
+모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
+1. `AGENTS.md`
+2. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
+3. `docs/MASTER-v1.md` — 장기 제품 기준
+4. 해당 작업의 PR / Issue / AI Core Gate
+
+`docs/WORK-INBOX.md`가 ChatGPT 채팅과 Work 사이의 공용 최신 인수인계판이다. Work는 채팅 내용을 자동으로 안다고 가정하지 말고, 이 파일의 최신 결정을 개발에 반영한다. 서로 충돌하는 내용이 있으면 사용자의 최신 명시 결정과 AI Core Gate를 확인하고 임의 해석하지 않는다.
+
 ## 1. Source of truth
 이 저장소가 freepasserp.com v1 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
 
@@ -38,3 +47,4 @@ WHITE LABEL과 B2C를 별도 네 번째 제품으로 만들지 않는다. White 
 - UI가 보인다는 이유만으로 데이터/권한/검색 검증 없이 완료 처리하지 않는다.
 - 변경은 작고 검증 가능한 단위로 커밋한다.
 - 미확정 사항은 `DECISION REQUIRED`로 남긴다.
+- 완료 상태는 `DESIGNED / CODED / STATIC CHECKED / TESTED / PERSISTENCE VERIFIED / DEPLOYMENT VERIFIED / USER APPROVED`를 구분한다.

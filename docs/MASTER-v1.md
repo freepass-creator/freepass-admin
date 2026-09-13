@@ -10,11 +10,16 @@ v1의 화면 제품은 정확히 세 개다.
 2. SALES — 제휴 영업자
 3. WHITE LABEL — 최종 고객용 B2C 엔진. 회사별 BI/CI는 설정으로 바꾼다.
 
+역할별 현재 확정 범위:
+- ADMIN: 상품 검색/상세, 계약 접수, 접수 관리, 실적, 정산, 청구, 수금, 지급
+- SALES: 상품 검색과 상품 상세 확인만. 계약 접수 및 접수 이후 업무 접근 금지
+- WHITE LABEL: 기존 시스템을 활용해 별도로 수정. 신규 ADMIN 업무 권한과 연결 금지
+
 v1의 첫 제작 범위는 ADMIN의 핵심 수직 흐름이다.
 
 > Canonical 상품 → 검색/필터 → 상품상세 → 접수 → 접수목록 → 접수상세 → 계약서/서류/인도/취소
 
-정산과 SALES/WHITE LABEL은 이 기반이 실제 데이터로 검증된 뒤 연결한다.
+2026-09-13 사용자 변경에 따라 UI 추가 개선보다 ADMIN 기능 검증을 우선하며, 위 흐름에 `인도 → 실적 → 영업채널/공급사 확인 기록 → 정산 확정 → 청구 → 수금 → 지급`을 이어서 구현한다. SALES/WHITE LABEL의 신규 운영화는 이 기반이 실제 데이터로 검증된 뒤 진행한다.
 
 ---
 
@@ -296,26 +301,28 @@ Connector
 6. Application Snapshot
 7. Application List
 8. Application Detail + 계약서/서류/인도/취소
+9. 인도 → Performance 결정적 1회 생성
+10. 영업채널/공급사 확인 사실 기록과 정산 확정 Gate
+11. Billing / Collection / Payout 분리 및 잔액 계산
 
 ### Phase B — SSOT 실제화
-9. Vehicle Master schema + sample master
-10. Policy Definition schema
-11. Canonical Product repository
-12. Search contract + facet counts
-13. Adapter Candidate/Review model
-14. Firebase 독립 프로젝트 연결 및 Rules/Auth 설계
+12. Vehicle Master schema + sample master
+13. Policy Definition schema
+14. Canonical Product repository
+15. Search contract + facet counts
+16. Adapter Candidate/Review model
+17. Firebase 독립 프로젝트 연결 및 Rules/Auth 설계
 
 ### Phase C — 실제 원천 1곳 수직검증
-15. 승인된 공급사 샘플 Source Contract
-16. Read-only Adapter
-17. RAW → Candidate → Review → Canonical
-18. ADMIN 검색 → 상세 → 접수까지 실제 데이터 검증
-19. 실패/재수집/변경/부분매칭 테스트
+18. 승인된 공급사 샘플 Source Contract
+19. Read-only Adapter
+20. RAW → Candidate → Review → Canonical
+21. ADMIN 검색 → 상세 → 접수까지 실제 데이터 검증
+22. 실패/재수집/변경/부분매칭 테스트
 
 ### Phase D
-20. SALES surface
-21. WHITE LABEL surface + Brand Config
-22. 정산/청구/수금/지급
+23. SALES 실제 상품조회 Surface + Auth
+24. WHITE LABEL 기존 Surface 수정 + Brand Config
 
 ---
 
@@ -342,7 +349,7 @@ Connector
 - Firebase 프로젝트 ID, 리전, Auth 방식, 운영 권한
 - 실제 공급사 Source Contract
 - 실제 차종마스터의 v1 이관 여부/방법
-- ADMIN/SALES/WHITE LABEL별 필수 노출 필드
+- SALES에 노출할 공급사명/내부 상품 메타의 세부 범위
 - 보험/세금/정책의 세부 계산
 - 서류완료와 계약완료의 업무상 강제관계
 - 자동 Canonical 승인 범위

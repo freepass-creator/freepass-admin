@@ -132,6 +132,9 @@ button {
   background: #d8dee6;
   min-width: 0;
 }
+.sales-workspace {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .panel {
   min-width: 0;
   background: #fff;

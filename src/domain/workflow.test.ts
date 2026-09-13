@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApplication } from './application/create-application';
-import { createApplicationIdempotently, type ApplicationCreateStore } from './application/idempotency';
+import { createAdminApplicationIdempotently, type ApplicationCreateStore } from './application/idempotency';
 import { createPerformanceFromDelivery, confirmBySalesperson, confirmBySupplier, disputeBySalesperson, registerSupplierIssue, resolveOpenIssue, setSettlementAmounts } from './performance/performance';
 import type { CanonicalProduct } from './product/types';
 import { matchProduct } from './search/match-product';
@@ -112,13 +112,29 @@ test('idempotent application create replays the same request and rejects key reu
   };
   const input = {
     id: 'application-idempotent', applicationNumber: 'A-IDEMPOTENT', submissionId: 'submission-idempotent',
-    customerName: '홍길동', salesChannelId: 'online', assigneeId: 'user-1', source: 'ADMIN' as const,
+    customerName: '홍길동', salesChannelId: 'online', assigneeId: 'user-1',
     product, productVersion: product.version, offerId: 'offer-36', now,
   };
-  assert.equal((await createApplicationIdempotently(input, store)).outcome, 'CREATED');
-  assert.equal((await createApplicationIdempotently(input, store)).outcome, 'REPLAYED');
-  await assert.rejects(() => createApplicationIdempotently({ ...input, customerName: '다른 고객' }, store), /IDEMPOTENCY_KEY_REUSE/);
+  assert.equal((await createAdminApplicationIdempotently('ADMIN', input, store)).outcome, 'CREATED');
+  assert.equal((await createAdminApplicationIdempotently('ADMIN', input, store)).outcome, 'REPLAYED');
+  await assert.rejects(() => createAdminApplicationIdempotently('ADMIN', { ...input, customerName: '다른 고객' }, store), /IDEMPOTENCY_KEY_REUSE/);
   assert.equal(receipts.size, 1);
+});
+
+test('SALES cannot enter the idempotent ADMIN application path', async () => {
+  let calls = 0;
+  const store: ApplicationCreateStore = {
+    async createOrReplay(_submissionId, _fingerprint, create) {
+      calls += 1;
+      return { outcome: 'CREATED', application: create() };
+    },
+  };
+  await assert.rejects(() => createAdminApplicationIdempotently('SALES', {
+    id: 'application-blocked', applicationNumber: 'A-BLOCKED', submissionId: 'submission-blocked',
+    customerName: '차단 고객', salesChannelId: 'online', assigneeId: 'user-1',
+    product, productVersion: product.version, offerId: 'offer-36', now,
+  }, store), /FORBIDDEN:APPLICATION_MANAGE/);
+  assert.equal(calls, 0);
 });
 
 test('delivery becomes a reviewed settlement with independent partial ledgers', () => {
@@ -126,8 +142,14 @@ test('delivery becomes a reviewed settlement with independent partial ledgers', 
   performance = setSettlementAmounts(performance, {
     supplierReceivable: 1500000, channelPayable: 1100000, vatMode: 'EXCLUDED',
   }, now);
-  performance = confirmBySalesperson(performance, 'sales-1', now);
-  performance = confirmBySupplier(performance, 'supplier-admin-1', now);
+  performance = confirmBySalesperson(performance, 'channel-1', 'admin-1', now);
+  performance = confirmBySupplier(performance, 'supplier-admin-1', 'admin-1', now);
+  assert.deepEqual(performance.salespersonReview, {
+    status: 'CONFIRMED', partyId: 'channel-1', recordedByAdminId: 'admin-1', decidedAt: now,
+  });
+  assert.deepEqual(performance.supplierReview, {
+    status: 'CONFIRMED', partyId: 'supplier-admin-1', recordedByAdminId: 'admin-1', decidedAt: now,
+  });
 
   const finalized = createSettlementFromPerformance(performance, 'settlement:performance:application-1', now);
   assert.equal(finalized.settlement.margin, 400000);
@@ -151,14 +173,23 @@ test('settlement cannot be finalized before salesperson and supplier confirmatio
     supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED',
   }, now);
   assert.throws(() => createSettlementFromPerformance(performance, 'settlement:performance:application-1', now), /not complete/);
-  performance = confirmBySalesperson(performance, 'sales-1', now);
+  performance = confirmBySalesperson(performance, 'sales-1', 'admin-1', now);
   assert.throws(() => createSettlementFromPerformance(performance, 'settlement:performance:application-1', now), /not complete/);
+});
+
+test('recorded reviews require both the confirming party and recording ADMIN', () => {
+  let performance = createPerformanceFromDelivery(deliveredApplication(), 'performance:application-1', now);
+  performance = setSettlementAmounts(performance, {
+    supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED',
+  }, now);
+  assert.throws(() => confirmBySalesperson(performance, '', 'admin-1', now), /party id/);
+  assert.throws(() => confirmBySalesperson(performance, 'channel-1', '', now), /admin id/);
 });
 
 test('same ledger id with a different payload is rejected', () => {
   let performance = createPerformanceFromDelivery(deliveredApplication(), 'performance:application-1', now);
   performance = setSettlementAmounts(performance, { supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED' }, now);
-  performance = confirmBySupplier(confirmBySalesperson(performance, 'sales-1', now), 'supplier-1', now);
+  performance = confirmBySupplier(confirmBySalesperson(performance, 'sales-1', 'admin-1', now), 'supplier-1', 'admin-1', now);
   const { settlement } = createSettlementFromPerformance(performance, 'settlement:performance:application-1', now);
   const billing = createBilling(settlement, `billing:${settlement.id}`, now);
   const first = registerCollection(settlement, billing, [], { id: 'collection-same', settlementId: settlement.id, account: 'SUPPLIER_COLLECTION', kind: 'CASH', amount: 400000, actorId: 'admin-1', occurredAt: now });
@@ -168,7 +199,7 @@ test('same ledger id with a different payload is rejected', () => {
 test('payout is blocked before billing and collection', () => {
   let performance = createPerformanceFromDelivery(deliveredApplication(), 'performance:application-1', now);
   performance = setSettlementAmounts(performance, { supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED' }, now);
-  performance = confirmBySupplier(confirmBySalesperson(performance, 'sales-1', now), 'supplier-1', now);
+  performance = confirmBySupplier(confirmBySalesperson(performance, 'sales-1', 'admin-1', now), 'supplier-1', 'admin-1', now);
   const { settlement } = createSettlementFromPerformance(performance, 'settlement:performance:application-1', now);
   assert.throws(() => registerPayout(settlement, undefined, [], { id: 'payout-before-billing', settlementId: settlement.id, account: 'CHANNEL_PAYOUT', kind: 'CASH', amount: 700000, actorId: 'admin-1', occurredAt: now }, 'AFTER_FULL_COLLECTION'), /blocked/);
 });
@@ -176,8 +207,8 @@ test('payout is blocked before billing and collection', () => {
 test('unresolved salesperson or supplier disputes cannot be finalized', () => {
   let performance = createPerformanceFromDelivery(deliveredApplication(), 'performance:application-1', now);
   performance = setSettlementAmounts(performance, { supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED' }, now);
-  performance = disputeBySalesperson(performance, 'sales-1', '금액 다름', now);
-  performance = confirmBySupplier(performance, 'supplier-1', now);
+  performance = disputeBySalesperson(performance, 'sales-1', 'admin-1', '금액 다름', now);
+  performance = confirmBySupplier(performance, 'supplier-1', 'admin-1', now);
   assert.equal(performance.status, 'SUPPLIER_ISSUE');
   assert.throws(() => createSettlementFromPerformance(performance, 'settlement:performance:application-1', now), /not complete/);
   performance = resolveOpenIssue(performance, 'admin-1', '양측 증빙 확인 후 기존 금액 합의', now);
@@ -187,8 +218,8 @@ test('unresolved salesperson or supplier disputes cannot be finalized', () => {
 test('supplier proposed amounts are preserved and payable changes require reconfirmation', () => {
   let performance = createPerformanceFromDelivery(deliveredApplication(), 'performance:application-1', now);
   performance = setSettlementAmounts(performance, { supplierReceivable: 1000000, channelPayable: 700000, vatMode: 'INCLUDED' }, now);
-  performance = confirmBySalesperson(performance, 'sales-1', now);
-  performance = registerSupplierIssue(performance, 'supplier-1', '정산표 금액 다름', { supplierReceivable: 900000, channelPayable: 650000, vatMode: 'INCLUDED' }, now);
+  performance = confirmBySalesperson(performance, 'sales-1', 'admin-1', now);
+  performance = registerSupplierIssue(performance, 'supplier-1', 'admin-1', '정산표 금액 다름', { supplierReceivable: 900000, channelPayable: 650000, vatMode: 'INCLUDED' }, now);
   assert.equal(performance.amounts.supplierReceivable, 900000);
   assert.equal(performance.status, 'AWAITING_SALESPERSON_RECONFIRMATION');
 });

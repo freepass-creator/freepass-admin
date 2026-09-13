@@ -361,3 +361,32 @@ AI Core Gate:
 - visual implementation: `HOLD_UNTIL_USER_IMAGE_APPROVAL`
 - domain/search/application contract work: 기존 승인 범위에서 계속 가능
 - production deploy: `NOT_AUTHORIZED`
+
+---
+
+## 14. 역할 분리 확정 — 2026-09-13 사용자 변경
+
+사용자 최신 결정:
+- SALES 영업자는 상품 검색과 상품 상세 확인까지만 사용한다.
+- 계약 접수와 접수 이후 접수관리·실적·정산·청구·수금·지급은 ADMIN만 처리한다.
+- WHITE LABEL은 기존 시스템을 최대한 활용해 별도로 수정한다.
+
+구현 반영:
+- STAFF 역할은 `ADMIN | SALES`, 제품 Surface는 `ADMIN | SALES | WHITE_LABEL`로 분리한다.
+- SALES는 상품 읽기만 허용하고 모든 ADMIN 업무 권한은 deny-by-default로 거부한다.
+- SALES 상품 화면은 별도 `/sales` 경로에서 상품목록·상품상세만 렌더링한다.
+- SALES 응답 Projection에서 공급사 ID, 공급사 상품키, 원문 Snapshot ID를 제외한다.
+- ADMIN localStorage의 고객/접수/금액 상태를 SALES 화면에서 읽지 않는다.
+- ADMIN이 영업채널/공급사의 확인 사실을 기록할 때 채널·공급사 ID와 `recordedByAdminId`를 분리한다. 실제 개인 확인자와 증빙 방식은 `DECISION REQUIRED`다.
+
+현재 완료 수준:
+- 역할 계약/SALES 화면: `CODED / STATIC CHECKED / TESTED`
+- Firebase Auth와 서버 강제 권한: `NOT IMPLEMENTED`
+- 화면에서 역할을 구분한 것만으로 운영 보안 완료로 보고하지 않는다.
+
+운영화 P0:
+1. 신규 Firebase Auth에서 ADMIN/SALES 역할을 서버가 검증
+2. SALES의 ADMIN URL/API 직접 접근을 403으로 차단
+3. Firestore 클라이언트 직접 쓰기 deny-all
+4. ADMIN mutation transaction/idempotency 검증
+5. 역할 변경·로그아웃 시 고객/금액 상태 제거 및 재조회

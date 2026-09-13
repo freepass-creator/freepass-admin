@@ -7,6 +7,9 @@
 ## 현재 경계
 
 - UI는 기존 1:1:1 업무 골격을 유지한다.
+- ADMIN만 접수·접수관리·실적·정산을 처리한다.
+- SALES는 상품 검색·상품 상세만 사용하며 고객·접수·실적·정산 데이터를 받지 않는다.
+- WHITE LABEL은 기존 시스템 활용·별도 수정 범위이며 신규 ADMIN 업무 권한과 분리한다.
 - 최초 접수 필수값은 차량/Offer, 영업채널, 담당자, 고객명 네 개다.
 - 접수는 product version, Offer, Policy를 Snapshot으로 보존한다.
 - 인도완료는 되돌리는 토글이 아니라 별도 delivery event fact다.
@@ -28,3 +31,11 @@
 3. Firestore 클라이언트 직접 쓰기는 deny-all Rules로 막는다.
 4. Application, Delivery→Performance, Settlement, Collection, Payout은 transaction과 idempotency key를 사용한다.
 5. 수금/지급 원장은 수정·삭제하지 않고 reversal/adjustment를 추가한다.
+
+## 역할 경계
+
+- `/`의 ADMIN 기능 시뮬레이션은 접수 이후 전체 업무를 검증한다.
+- `/sales`는 상품 조회 전용 화면이며 localStorage의 ADMIN 고객·금액 데이터를 읽지 않는다.
+- 역할 허용표는 deny-by-default 순수 계약과 회귀테스트로 고정한다.
+- 현재 화면 분리는 운영 인증이 아니다. 운영화 시 Firebase Auth 토큰에서 서버가 역할을 취득하고 모든 mutation을 ADMIN으로 다시 검증한다.
+- 영업채널/공급사 확인은 해당 채널·공급사 ID와 `recordedByAdminId`를 분리해 관리자가 외부 확인 사실을 기록했음을 보존한다. 실제 개인 확인자와 증빙 방식은 `DECISION REQUIRED`다.

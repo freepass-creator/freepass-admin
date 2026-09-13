@@ -26,8 +26,8 @@
 - WHITE LABEL (B2C)
 WHITE LABEL과 B2C를 별도 네 번째 제품으로 만들지 않는다. White Label 엔진은 하나이며 회사별 BI/CI는 설정으로 분리한다.
 
-## 4. Current priority — ADMIN vertical slice
-현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
+## 4. Current priority — ADMIN functional vertical slice
+현재는 UI 추가 개선보다 기능을 먼저 검증한다. 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → 계약서/서류/인도/취소 → Performance → 영업채널/공급사 확인 기록 → 정산 확정 → 청구/수금/지급`이다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. SALES는 상품 검색/상세만 허용하고, 계약 접수 이후 업무는 ADMIN만 수행한다. WHITE LABEL은 기존 시스템을 활용해 별도로 수정한다.
 
 ## 5. Search first
 검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다.

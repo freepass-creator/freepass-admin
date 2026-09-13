@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createApplication } from '@/domain/application/create-application';
+import { createAdminApplication } from '@/domain/application/create-admin-application';
 import { cancelApplication, updateApplicationProgress } from '@/domain/application/update-progress';
 import type { Application } from '@/domain/application/types';
 import {
@@ -11,7 +11,6 @@ import {
   setSettlementAmounts,
 } from '@/domain/performance/performance';
 import type { Performance, VatMode } from '@/domain/performance/types';
-import type { CanonicalProduct, Offer } from '@/domain/product/types';
 import { matchProduct } from '@/domain/search/match-product';
 import {
   createBilling,
@@ -21,16 +20,11 @@ import {
   registerPayout,
 } from '@/domain/settlement/settlement';
 import type { BillingRecord, LedgerEntry, SettlementItem } from '@/domain/settlement/types';
+import { assertCan, type StaffRole } from '@/domain/access/access-control';
+import { PRODUCTS, type ProductView } from '@/demo/catalog';
+import { money, offerSummary, TERM_OPTIONS } from '@/domain/product/display';
 
 type Screen = 'products' | 'applications' | 'performances' | 'settlements';
-type ProductView = {
-  product: CanonicalProduct;
-  name: string;
-  sub: string;
-  supplierName: string;
-  category: '신차렌트' | '재렌트';
-  status: '판매중' | '판매종료';
-};
 type PersistedState = {
   applications: Application[];
   performances: Performance[];
@@ -40,61 +34,21 @@ type PersistedState = {
 };
 
 const STORAGE_KEY = 'freepasserp-v1-functional-mvp-v2';
+const CURRENT_ROLE: StaffRole = 'ADMIN';
+const CURRENT_ADMIN_ID = 'park';
 const CHANNELS = [{ id: 'online', name: '온라인' }, { id: 'partner-a', name: '파트너 A' }];
 const ASSIGNEES = [{ id: 'park', name: '박지훈' }, { id: 'kim', name: '김서연' }];
-const money = (value: number) => `${value.toLocaleString('ko-KR')}원`;
 const nowIso = () => new Date().toISOString();
 const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
-const PRODUCTS: ProductView[] = [
-  {
-    name: '기아 카니발 9인승 시그니처', sub: '카니발 KA4 · 2026년형', supplierName: 'A 렌터카',
-    category: '재렌트', status: '판매중',
-    product: {
-      id: 'carnival-001', version: '2026-09-13-v1', displayName: '기아 카니발 9인승 시그니처', supplierId: 'supplier-a', supplierProductKey: 'A-CV-001',
-      vehicle: { nodeId: 'trim-carnival-signature', originId: 'kr', manufacturerId: 'kia', modelId: 'carnival', subModelId: 'ka4', trimId: 'signature-9', matchLevel: 'TRIM' },
-      specs: { modelYear: 2026, fuel: '디젤', displacementCc: 2151, seats: 9 },
-      registration: { vehicleNumber: '189하 1234' },
-      offers: [
-        { id: 'cv-1', termMonths: 1, monthlyRent: 1290000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-        { id: 'cv-6', termMonths: 6, monthlyRent: 1090000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-        { id: 'cv-12', termMonths: 12, monthlyRent: 949000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-        { id: 'cv-24', termMonths: 24, monthlyRent: 829000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-        { id: 'cv-36', termMonths: 36, monthlyRent: 729000, deposit: 0, annualMileageKm: 20000, policyValues: [{ policyId: 'payment', type: 'MULTI_SELECT', value: ['CARD', 'TRANSFER'] }] },
-        { id: 'cv-60', termMonths: 60, monthlyRent: 689000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-      ],
-      productPolicies: [{ policyId: 'age', type: 'NUMBER', value: 21 }], sourceSnapshotId: 'sample-carnival', updatedAt: '2026-09-13T00:00:00.000Z',
-    },
-  },
-  {
-    name: '현대 싼타페 MX5 캘리그래피', sub: '싼타페 MX5 · 2026년형', supplierName: 'B 렌터카',
-    category: '신차렌트', status: '판매중',
-    product: {
-      id: 'santafe-001', version: '2026-09-13-v1', displayName: '현대 싼타페 MX5 캘리그래피', supplierId: 'supplier-b', supplierProductKey: 'B-SF-001',
-      vehicle: { nodeId: 'trim-santafe-calligraphy', originId: 'kr', manufacturerId: 'hyundai', modelId: 'santafe', subModelId: 'mx5', trimId: 'calligraphy', matchLevel: 'TRIM' },
-      specs: { modelYear: 2026, fuel: '가솔린', displacementCc: 2497, seats: 7 },
-      registration: {},
-      offers: [
-        { id: 'sf-24', termMonths: 24, monthlyRent: 990000, deposit: 1000000, annualMileageKm: 20000, policyValues: [] },
-        { id: 'sf-36', termMonths: 36, monthlyRent: 920000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
-      ],
-      productPolicies: [], sourceSnapshotId: 'sample-santafe', updatedAt: '2026-09-13T00:00:00.000Z',
-    },
-  },
-];
-
 function createSeedState(): PersistedState {
   const view = PRODUCTS[0];
-  const application = createApplication({
+  const application = createAdminApplication(CURRENT_ROLE, {
     id: 'application-sample', applicationNumber: 'A-260913-001', submissionId: 'submission-sample',
-    customerName: '김민수', salesChannelId: 'online', assigneeId: 'park', source: 'ADMIN',
+    customerName: '김민수', salesChannelId: 'online', assigneeId: 'park',
     product: view.product, productVersion: view.product.version, offerId: 'cv-36', now: '2026-09-13T09:00:00.000Z',
   });
   return { applications: [application], performances: [], settlements: [], billings: [], ledgerEntries: [] };
-}
-
-function offerSummary(offer: Offer) {
-  return `${offer.termMonths}개월 · 월 ${money(offer.monthlyRent)} · 보증금 ${offer.deposit === undefined ? '미확인' : money(offer.deposit)} · 연 ${offer.annualMileageKm?.toLocaleString('ko-KR') ?? '미확인'}km`;
 }
 
 function channelName(id: string) { return CHANNELS.find((item) => item.id === id)?.name ?? id; }
@@ -152,7 +106,7 @@ export default function AdminHome() {
   const selectedProduct = PRODUCTS.find((item) => item.product.id === selectedProductId) ?? PRODUCTS[0];
   const selectedOfferMatch = selectedProduct.product.offers.find((item) => item.id === selectedOfferId);
   if (!selectedOfferMatch) throw new Error('Selected offer is no longer available.');
-  const selectedOffer: Offer = selectedOfferMatch;
+  const selectedOffer = selectedOfferMatch;
   const draftProduct = draftSelection ? PRODUCTS.find((item) => item.product.id === draftSelection.productId) : undefined;
   const draftOffer = draftSelection ? draftProduct?.product.offers.find((item) => item.id === draftSelection.offerId) : undefined;
   const activeApplication = state.applications.find((item) => item.id === activeApplicationId) ?? null;
@@ -177,10 +131,12 @@ export default function AdminHome() {
     if (firstMatch?.match) chooseProduct(firstMatch.item, firstMatch.match.matchedOffers[0].id);
   }
   function openNewApplication() {
+    assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     setDraftSelection({ productId: selectedProduct.product.id, productVersion: selectedProduct.product.version, offerId: selectedOffer.id, submissionId: newId('submission') });
     setCustomerName(''); setSalesChannelId('online'); setAssigneeId('park'); setNotice(''); setWork('new');
   }
   function submitApplication() {
+    assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     if (!draftSelection) return;
     if (submissionLock.current.has(draftSelection.submissionId)) return;
     const view = PRODUCTS.find((item) => item.product.id === draftSelection.productId);
@@ -189,16 +145,17 @@ export default function AdminHome() {
     if (!view.product.offers.some((item) => item.id === draftSelection.offerId)) return setNotice('선택한 기간 조건이 종료됐습니다. 다시 선택하세요.');
     submissionLock.current.add(draftSelection.submissionId);
     try {
-      const created = createApplication({
+      const created = createAdminApplication(CURRENT_ROLE, {
         id: newId('application'), applicationNumber: `A-${Date.now().toString().slice(-9)}`,
         submissionId: draftSelection.submissionId, customerName, salesChannelId, assigneeId,
-        source: 'ADMIN', product: view.product, productVersion: draftSelection.productVersion, offerId: draftSelection.offerId, now: nowIso(),
+        product: view.product, productVersion: draftSelection.productVersion, offerId: draftSelection.offerId, now: nowIso(),
       });
       setState((current) => ({ ...current, applications: [created, ...current.applications] }));
       setActiveApplicationId(created.id); setWork('detail'); setNotice('접수를 저장했습니다.');
     } catch (error) { submissionLock.current.delete(draftSelection.submissionId); fail(error); }
   }
   function patchProgress(key: 'contractCompleted' | 'documentsCompleted' | 'deliveryCompleted') {
+    assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     if (!activeApplication) return;
     try {
       const completed = key === 'deliveryCompleted' ? true : !activeApplication.progress[key];
@@ -218,6 +175,7 @@ export default function AdminHome() {
     } catch (error) { fail(error); }
   }
   function cancelActiveApplication() {
+    assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     if (!activeApplication) return;
     const reason = window.prompt('취소 사유를 입력하세요.');
     if (reason === null) return;
@@ -228,6 +186,7 @@ export default function AdminHome() {
     } catch (error) { fail(error); }
   }
   function saveAmounts() {
+    assertCan(CURRENT_ROLE, 'PERFORMANCE_MANAGE');
     if (!activePerformance) return;
     if (!receivable.trim() || !payable.trim()) return setNotice('받을액과 줄액을 모두 입력하세요. 0원은 0으로 명시해야 합니다.');
     try {
@@ -239,6 +198,7 @@ export default function AdminHome() {
     } catch (error) { fail(error); }
   }
   function updatePerformance(action: 'sales' | 'supplier' | 'finalize') {
+    assertCan(CURRENT_ROLE, action === 'finalize' ? 'SETTLEMENT_MANAGE' : 'PERFORMANCE_MANAGE');
     if (!activePerformance) return;
     try {
       const at = nowIso();
@@ -253,13 +213,14 @@ export default function AdminHome() {
         setActiveSettlementId(result.settlement.id); setNotice('정산을 확정했습니다.'); return;
       }
       const updated = action === 'sales'
-        ? confirmBySalesperson(activePerformance, activePerformance.snapshot.assigneeId, at)
-        : confirmBySupplier(activePerformance, 'supplier-admin', at);
+        ? confirmBySalesperson(activePerformance, activePerformance.snapshot.salesChannelId, CURRENT_ADMIN_ID, at)
+        : confirmBySupplier(activePerformance, activePerformance.snapshot.supplierId, CURRENT_ADMIN_ID, at);
       setState({ ...state, performances: state.performances.map((item) => item.id === updated.id ? updated : item) });
       setNotice(action === 'sales' ? '영업자 확인을 저장했습니다.' : '공급사 확인을 저장했습니다.');
     } catch (error) { fail(error); }
   }
   function updateSettlement(action: 'billing' | 'collection' | 'payout') {
+    assertCan(CURRENT_ROLE, 'SETTLEMENT_MANAGE');
     if (!activeSettlement) return;
     const lockKey = `${action}:${activeSettlement.id}`;
     if (financialLock.current.has(lockKey)) return;
@@ -273,12 +234,12 @@ export default function AdminHome() {
       }
       if (action === 'collection') {
         if (!collectionAmount.trim()) throw new Error('수금액을 입력하세요.');
-        ledgerEntries = registerCollection(activeSettlement, activeBilling, ledgerEntries, { id: newId('collection'), settlementId: activeSettlement.id, account: 'SUPPLIER_COLLECTION', kind: 'CASH', amount: Number(collectionAmount), actorId: 'park', occurredAt: at });
+        ledgerEntries = registerCollection(activeSettlement, activeBilling, ledgerEntries, { id: newId('collection'), settlementId: activeSettlement.id, account: 'SUPPLIER_COLLECTION', kind: 'CASH', amount: Number(collectionAmount), actorId: CURRENT_ADMIN_ID, occurredAt: at });
         setCollectionAmount('');
       }
       if (action === 'payout') {
         if (!payoutAmount.trim()) throw new Error('지급액을 입력하세요.');
-        ledgerEntries = registerPayout(activeSettlement, activeBilling, ledgerEntries, { id: newId('payout'), settlementId: activeSettlement.id, account: 'CHANNEL_PAYOUT', kind: 'CASH', amount: Number(payoutAmount), actorId: 'park', occurredAt: at }, 'AFTER_FULL_COLLECTION');
+        ledgerEntries = registerPayout(activeSettlement, activeBilling, ledgerEntries, { id: newId('payout'), settlementId: activeSettlement.id, account: 'CHANNEL_PAYOUT', kind: 'CASH', amount: Number(payoutAmount), actorId: CURRENT_ADMIN_ID, occurredAt: at }, 'AFTER_FULL_COLLECTION');
         setPayoutAmount('');
       }
       setState({ ...state, billings, ledgerEntries });
@@ -294,14 +255,14 @@ export default function AdminHome() {
         {([['products', '상품'], ['applications', '접수'], ['performances', '실적'], ['settlements', '정산']] as const).map(([id, label]) =>
           <button key={id} className={screen === id ? 'active' : ''} onClick={() => { setScreen(id); setNotice(''); }}>{label}</button>)}
       </nav>
-      <div className="nav-user"><b>박지훈</b><span>ADMIN</span><small>기능 시뮬레이션 · 운영 저장 아님</small></div>
+      <div className="nav-user"><b>박지훈</b><span>{CURRENT_ROLE}</span><small>기능 시뮬레이션 · 운영 저장 아님</small></div>
     </aside>
 
     {screen === 'products' && <section className="workspace">
       <section className="panel">
         <div className="panel-head"><h1>상품 목록</h1><span className="count">{filteredProducts.length}건</span></div>
         <label className="searchbox"><span>검색</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="차량명, 차량번호, 상품구분" /></label>
-        <label className="compact-filter">계약기간<select value={termMonths} onChange={(event) => changeTerm(Number(event.target.value))}><option value={24}>24개월</option><option value={36}>36개월</option><option value={60}>60개월</option></select></label>
+        <label className="compact-filter">계약기간<select value={termMonths} onChange={(event) => changeTerm(Number(event.target.value))}>{TERM_OPTIONS.map((term) => <option key={term} value={term}>{term}개월</option>)}</select></label>
         <div className="list">{filteredProducts.map(({ item, offer }) => {
           return <button className={`data-row product-row ${item.product.id === selectedProduct.product.id ? 'selected' : ''}`} key={item.product.id} onClick={() => chooseProduct(item, offer.id)}>
             <span className="status-line"><i />{item.status} · {item.category}</span>
@@ -344,7 +305,7 @@ export default function AdminHome() {
       {activePerformance ? <><div className="panel-head"><h1>실적 상세</h1><span>{activePerformance.status}</span></div><KeyValues rows={[["고객", activePerformance.snapshot.customerName], ["공급사", activePerformance.snapshot.supplierId], ["영업채널", channelName(activePerformance.snapshot.salesChannelId)], ["담당자", assigneeName(activePerformance.snapshot.assigneeId)], ["접수번호", activePerformance.snapshot.applicationNumber], ["상품 버전", activePerformance.snapshot.productVersion]]} /></> : <Empty text="실적을 선택하세요." />}
       {activePerformance ? <><div className="panel-head"><h1>대조·확정</h1><span>순서대로 처리</span></div>
         <div className="form-stack"><label>공급사 받을액<input className="numeric" inputMode="numeric" value={receivable} onChange={(event) => setReceivable(event.target.value.replace(/\D/g, ''))} /></label><label>영업채널 줄액<input className="numeric" inputMode="numeric" value={payable} onChange={(event) => setPayable(event.target.value.replace(/\D/g, ''))} /></label><label>VAT 기준<select value={vatMode} onChange={(event) => setVatMode(event.target.value as VatMode)}><option value="UNDECIDED">선택 필요</option><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></label></div>
-        <div className="action-stack"><button onClick={saveAmounts}>금액 저장</button><button onClick={() => updatePerformance('sales')}>영업자 확인</button><button onClick={() => updatePerformance('supplier')}>공급사 확인</button><button className="primary" onClick={() => updatePerformance('finalize')}>정산 확정</button></div>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 실적이 없습니다." />}
+        <div className="action-stack"><button onClick={saveAmounts}>금액 저장</button><button onClick={() => updatePerformance('sales')}>영업채널 확인 기록</button><button onClick={() => updatePerformance('supplier')}>공급사 확인 기록</button><button className="primary" onClick={() => updatePerformance('finalize')}>정산 확정</button></div>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 실적이 없습니다." />}
     </ThreePanel>}
 
     {screen === 'settlements' && <ThreePanel title="정산">

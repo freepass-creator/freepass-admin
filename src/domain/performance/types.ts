@@ -35,7 +35,8 @@ export interface PerformanceSnapshot {
 
 export interface ReviewDecision {
   status: 'PENDING' | 'CONFIRMED' | 'DISPUTED';
-  actorId?: string;
+  partyId?: string;
+  recordedByAdminId?: string;
   decidedAt?: string;
   reason?: string;
 }
@@ -46,7 +47,8 @@ export interface SupplierReview extends ReviewDecision {
 
 export interface Reconfirmation {
   status: 'NOT_REQUIRED' | 'PENDING' | 'ACCEPTED' | 'DISPUTED';
-  actorId?: string;
+  partyId?: string;
+  recordedByAdminId?: string;
   decidedAt?: string;
   reason?: string;
 }
@@ -61,7 +63,7 @@ export interface Performance {
   salespersonReview: ReviewDecision;
   supplierReview: SupplierReview;
   reconfirmation: Reconfirmation;
-  resolution?: { actorId: string; reason: string; resolvedAt: string };
+  resolution?: { recordedByAdminId: string; reason: string; resolvedAt: string };
   createdAt: string;
   updatedAt: string;
   finalizedAt?: string;

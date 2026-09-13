@@ -13,9 +13,9 @@ Mapping + Validation
 Canonical Product SSOT
     ↓
 Common Search
-    ├── ADMIN
-    ├── SALES
-    └── WHITE LABEL (B2C)
+    ├── SALES ──────→ Product search/detail only
+    ├── WHITE LABEL → Existing surface, separately revised
+    └── ADMIN
             ↓
         Application
             ↓
@@ -23,6 +23,8 @@ Common Search
             ↓
         Settlement
 ```
+
+`Application` 이후의 신규 업무 흐름은 ADMIN만 수행한다. SALES는 상품 검색과 상품 상세 확인까지만 허용한다. WHITE LABEL은 기존 시스템을 활용해 별도로 수정하며 신규 ADMIN mutation 권한을 공유하지 않는다.
 
 ## Vehicle
 모델 계층은 `origin → manufacturer → model → subModel → trim`이다. 상품은 공급사 원문에서 확인된 가장 깊은 유효 노드에 연결할 수 있다. 모델까지만 확인된 상품도 정상 저장할 수 있으며 세부모델/트림을 추측하지 않는다.

@@ -66,6 +66,11 @@ function assertMoney(value: number | null, label: string) {
   }
 }
 
+function assertRecordedDecision(partyId: string, recordedByAdminId: string) {
+  if (!partyId.trim()) throw new Error('Decision party id is required.');
+  if (!recordedByAdminId.trim()) throw new Error('Recording admin id is required.');
+}
+
 export function setSettlementAmounts(
   performance: Performance,
   amounts: SettlementAmounts,
@@ -92,15 +97,17 @@ export function setSettlementAmounts(
 
 export function confirmBySalesperson(
   performance: Performance,
-  actorId: string,
+  confirmedPartyId: string,
+  recordedByAdminId: string,
   now: string,
 ): Performance {
+  assertRecordedDecision(confirmedPartyId, recordedByAdminId);
   if (performance.status !== 'AWAITING_SALESPERSON_CONFIRMATION') {
     throw new Error('Salesperson confirmation is not available in the current state.');
   }
   return {
     ...performance,
-    salespersonReview: { status: 'CONFIRMED', actorId, decidedAt: now },
+    salespersonReview: { status: 'CONFIRMED', partyId: confirmedPartyId, recordedByAdminId, decidedAt: now },
     status: 'AWAITING_SUPPLIER_REVIEW',
     updatedAt: now,
   };
@@ -108,17 +115,19 @@ export function confirmBySalesperson(
 
 export function disputeBySalesperson(
   performance: Performance,
-  actorId: string,
+  confirmedPartyId: string,
+  recordedByAdminId: string,
   reason: string,
   now: string,
 ): Performance {
+  assertRecordedDecision(confirmedPartyId, recordedByAdminId);
   if (performance.status !== 'AWAITING_SALESPERSON_CONFIRMATION') {
     throw new Error('Salesperson dispute is not available in the current state.');
   }
   if (!reason.trim()) throw new Error('Dispute reason is required.');
   return {
     ...performance,
-    salespersonReview: { status: 'DISPUTED', actorId, decidedAt: now, reason: reason.trim() },
+    salespersonReview: { status: 'DISPUTED', partyId: confirmedPartyId, recordedByAdminId, decidedAt: now, reason: reason.trim() },
     status: 'AWAITING_SUPPLIER_REVIEW',
     updatedAt: now,
   };
@@ -126,15 +135,17 @@ export function disputeBySalesperson(
 
 export function confirmBySupplier(
   performance: Performance,
-  actorId: string,
+  supplierId: string,
+  recordedByAdminId: string,
   now: string,
 ): Performance {
+  assertRecordedDecision(supplierId, recordedByAdminId);
   if (performance.status !== 'AWAITING_SUPPLIER_REVIEW') {
     throw new Error('Supplier review must follow salesperson confirmation.');
   }
   return {
     ...performance,
-    supplierReview: { status: 'CONFIRMED', actorId, decidedAt: now },
+    supplierReview: { status: 'CONFIRMED', partyId: supplierId, recordedByAdminId, decidedAt: now },
     reconfirmation: { status: 'NOT_REQUIRED' },
     status: performance.salespersonReview.status === 'DISPUTED' ? 'SUPPLIER_ISSUE' : 'READY_TO_FINALIZE',
     updatedAt: now,
@@ -143,11 +154,13 @@ export function confirmBySupplier(
 
 export function registerSupplierIssue(
   performance: Performance,
-  actorId: string,
+  supplierId: string,
+  recordedByAdminId: string,
   reason: string,
   proposedAmounts: SettlementAmounts,
   now: string,
 ): Performance {
+  assertRecordedDecision(supplierId, recordedByAdminId);
   if (performance.status !== 'AWAITING_SUPPLIER_REVIEW') {
     throw new Error('Supplier issue must follow salesperson confirmation.');
   }
@@ -161,7 +174,8 @@ export function registerSupplierIssue(
     amounts: { ...proposedAmounts },
     supplierReview: {
       status: 'DISPUTED',
-      actorId,
+      partyId: supplierId,
+      recordedByAdminId,
       decidedAt: now,
       reason: reason.trim(),
       affectsChannelPayable,
@@ -174,15 +188,16 @@ export function registerSupplierIssue(
 
 export function resolveOpenIssue(
   performance: Performance,
-  actorId: string,
+  recordedByAdminId: string,
   reason: string,
   now: string,
 ): Performance {
+  if (!recordedByAdminId.trim()) throw new Error('Recording admin id is required.');
   if (performance.status !== 'SUPPLIER_ISSUE') throw new Error('There is no open issue to resolve.');
   if (!reason.trim()) throw new Error('Resolution reason is required.');
   return {
     ...performance,
-    resolution: { actorId, reason: reason.trim(), resolvedAt: now },
+    resolution: { recordedByAdminId, reason: reason.trim(), resolvedAt: now },
     status: 'READY_TO_FINALIZE',
     updatedAt: now,
   };
@@ -190,15 +205,17 @@ export function resolveOpenIssue(
 
 export function acceptSupplierIssue(
   performance: Performance,
-  actorId: string,
+  confirmedPartyId: string,
+  recordedByAdminId: string,
   now: string,
 ): Performance {
+  assertRecordedDecision(confirmedPartyId, recordedByAdminId);
   if (performance.status !== 'AWAITING_SALESPERSON_RECONFIRMATION') {
     throw new Error('There is no supplier issue awaiting salesperson reconfirmation.');
   }
   return {
     ...performance,
-    reconfirmation: { status: 'ACCEPTED', actorId, decidedAt: now },
+    reconfirmation: { status: 'ACCEPTED', partyId: confirmedPartyId, recordedByAdminId, decidedAt: now },
     status: 'READY_TO_FINALIZE',
     updatedAt: now,
   };

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { createApplication, type CreateApplicationInput } from './create-application';
+import { assertCan, type StaffRole } from '@/domain/access/access-control';
+import { createAdminApplication, type CreateAdminApplicationInput } from './create-admin-application';
 import type { Application } from './types';
 
 export type ApplicationCreateOutcome =
@@ -14,14 +15,14 @@ export interface ApplicationCreateStore {
   ): Promise<ApplicationCreateOutcome>;
 }
 
-export function fingerprintApplicationInput(input: CreateApplicationInput): string {
+export function fingerprintApplicationInput(input: CreateAdminApplicationInput): string {
   const normalized = JSON.stringify({
     submissionId: input.submissionId.trim(),
     customerName: input.customerName.trim(),
     customerPhone: input.customerPhone?.trim() || null,
     salesChannelId: input.salesChannelId.trim(),
     assigneeId: input.assigneeId.trim(),
-    source: input.source,
+    source: 'ADMIN',
     productId: input.product.id,
     productVersion: input.productVersion,
     offerId: input.offerId,
@@ -29,13 +30,15 @@ export function fingerprintApplicationInput(input: CreateApplicationInput): stri
   return createHash('sha256').update(normalized).digest('hex');
 }
 
-export async function createApplicationIdempotently(
-  input: CreateApplicationInput,
+export async function createAdminApplicationIdempotently(
+  role: StaffRole,
+  input: CreateAdminApplicationInput,
   store: ApplicationCreateStore,
 ): Promise<ApplicationCreateOutcome> {
+  assertCan(role, 'APPLICATION_MANAGE');
   return store.createOrReplay(
     input.submissionId,
     fingerprintApplicationInput(input),
-    () => createApplication(input),
+    () => createAdminApplication(role, input),
   );
 }

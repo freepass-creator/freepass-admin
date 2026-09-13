@@ -312,7 +312,8 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - Domain: `CODED / STATIC CHECKED / TESTED`
 - UI 연결: `CODED / STATIC CHECKED`
 - 브라우저 저장: 개발 시뮬레이션용이며 `PERSISTENCE VERIFIED`가 아님
-- Firebase/Auth/Rules/Transaction: 아직 미연결
+- Firebase Auth 세션 경계/서버 역할 강제/Rules: `CODED / STATIC CHECKED / TESTED`
+- 실제 신규 Firebase 프로젝트/Firestore 영속성/Transaction: 아직 미연결
 - Deployment: `NOT AUTHORIZED`
 
 Firebase 연결 전 결정 필요:
@@ -381,12 +382,23 @@ AI Core Gate:
 
 현재 완료 수준:
 - 역할 계약/SALES 화면: `CODED / STATIC CHECKED / TESTED`
-- Firebase Auth와 서버 강제 권한: `NOT IMPLEMENTED`
-- 화면에서 역할을 구분한 것만으로 운영 보안 완료로 보고하지 않는다.
+- Firebase 세션 쿠키 검증 Adapter와 서버 capability 강제: `CODED / STATIC CHECKED / TESTED`
+- Firestore 클라이언트 catch-all deny Rules: `CODED / FIRESTORE EMULATOR TESTED`
+- 실제 신규 Firebase 프로젝트 연결·계정 발급·로그인 UI·영속성: `NOT IMPLEMENTED`
+- 실제 프로젝트가 연결되기 전 `/`와 `/sales`는 fail-closed하며 미인증 401/권한부족 403 접근 안내를 표시한다. 로컬 기능 시뮬레이션은 개발 환경의 `/dev-preview`에서만 열리며 운영 빌드에서는 404다.
+- 인증된 운영 경로는 고객·금액 localStorage를 읽거나 쓰지 않는다. localStorage 시뮬레이션은 `/dev-preview`에만 제한한다.
+- Firebase Admin은 명시적인 `FREEPASS_FIREBASE_*` 세 값 없이는 초기화하지 않고, 로컬 Google 자격증명이나 기존 ERP 환경변수로 fallback하지 않는다.
 
 운영화 P0:
-1. 신규 Firebase Auth에서 ADMIN/SALES 역할을 서버가 검증
-2. SALES의 ADMIN URL/API 직접 접근을 403으로 차단
-3. Firestore 클라이언트 직접 쓰기 deny-all
-4. ADMIN mutation transaction/idempotency 검증
-5. 역할 변경·로그아웃 시 고객/금액 상태 제거 및 재조회
+1. 신규 Firebase 프로젝트 ID / 리전 / Auth provider 확정
+2. `staffAccounts/{uid}`에 ACTIVE ADMIN/SALES를 승인 절차로 발급하고 권한강등·토큰폐기 절차 확정
+3. 현재 클라이언트 시뮬레이션 mutation을 서버 Command + Firestore transaction으로 이전
+4. 역할 변경·로그아웃 시 고객/금액 localStorage를 제거하고 서버에서 재조회
+5. 신규 Firebase Auth Emulator/실 프로젝트에서 세션 생성·폐기·비활성 사용자 E2E 검증
+
+서버 권한 원칙:
+- 세션 쿠키는 Firebase Admin `verifySessionCookie(..., true)`로 취소 여부까지 확인한다.
+- 실제 권한은 요청 body/header의 role이 아니라 서버가 읽은 `staffAccounts/{verified uid}`의 ACTIVE 역할로 결정한다.
+- ADMIN·SALES 모두 브라우저 Firestore 직접 접근을 금지한다. 서버 Admin SDK는 Rules를 우회하므로 모든 서버 명령에서 capability를 다시 검사한다.
+- 세션 교환은 same-origin, double-submit CSRF, 최근 5분 로그인 조건을 확인하며 쿠키는 HttpOnly/Secure/SameSite=Strict로 발급한다.
+- SALES는 상품 Projection만 받고 접수·실적·정산·청구·수금·지급 경로는 403으로 거부한다.

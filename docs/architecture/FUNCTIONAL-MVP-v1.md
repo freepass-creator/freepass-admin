@@ -24,7 +24,7 @@
 
 현재 localStorage는 새로고침을 포함한 기능 시뮬레이션 전용이다. 고객명과 금액을 운영 데이터로 저장하는 수단이 아니다.
 
-운영 영속성은 독립 Firebase 프로젝트 확정 후 다음 경계를 사용한다.
+운영 영속성은 독립 Firebase 프로젝트 확정 후 다음 경계를 사용한다. 아래 인증/Rules 경계는 코드와 로컬 에뮬레이터 테스트까지 완료됐지만 실제 프로젝트에는 아직 배포하지 않았다.
 
 1. 브라우저는 Firebase Auth만 사용한다.
 2. 모든 mutation은 Next.js 서버에서 Firebase Admin으로 수행한다.
@@ -34,8 +34,12 @@
 
 ## 역할 경계
 
-- `/`의 ADMIN 기능 시뮬레이션은 접수 이후 전체 업무를 검증한다.
-- `/sales`는 상품 조회 전용 화면이며 localStorage의 ADMIN 고객·금액 데이터를 읽지 않는다.
+- `/`는 서버에서 ACTIVE ADMIN 세션을 요구한다.
+- `/sales`는 서버에서 ACTIVE ADMIN 또는 SALES의 상품조회 권한을 요구하며 localStorage의 ADMIN 고객·금액 데이터를 읽지 않는다.
+- 실제 Firebase 연결 전 기능 시뮬레이션은 개발 환경의 `/dev-preview`에서만 제공하고 운영 빌드에서는 404로 닫는다.
+- 인증된 `/`는 고객·금액 상태를 localStorage에 저장하지 않는다. 전역 localStorage 시뮬레이션은 개발 전용 경로에만 한정한다.
 - 역할 허용표는 deny-by-default 순수 계약과 회귀테스트로 고정한다.
-- 현재 화면 분리는 운영 인증이 아니다. 운영화 시 Firebase Auth 토큰에서 서버가 역할을 취득하고 모든 mutation을 ADMIN으로 다시 검증한다.
+- Firebase 세션의 검증된 uid로 `staffAccounts`를 다시 읽어 ACTIVE 역할을 결정한다. client role/source/actorId는 권한 근거로 사용하지 않는다.
+- Firestore Rules는 모든 브라우저 read/write를 catch-all 거부한다. 서버 Admin SDK가 Rules를 우회하므로 모든 mutation은 서버 capability를 다시 검사한다.
+- 로그인 UI, 신규 Firebase 프로젝트 계정 발급, 실제 Firestore transaction 영속성은 아직 미구현이다.
 - 영업채널/공급사 확인은 해당 채널·공급사 ID와 `recordedByAdminId`를 분리해 관리자가 외부 확인 사실을 기록했음을 보존한다. 실제 개인 확인자와 증빙 방식은 `DECISION REQUIRED`다.

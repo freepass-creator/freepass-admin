@@ -313,6 +313,8 @@ Connector
 16. Adapter Candidate/Review model
 17. Firebase 독립 프로젝트 연결 및 Rules/Auth 설계
 
+현재 17번은 서버 Auth 경계와 deny-all Rules를 코드/에뮬레이터로 검증한 상태다. 실제 신규 Firebase 프로젝트 연결, Auth provider, 초기 ADMIN 발급, Firestore transaction 영속성은 `DECISION REQUIRED`이며 배포하지 않았다.
+
 ### Phase C — 실제 원천 1곳 수직검증
 18. 승인된 공급사 샘플 Source Contract
 19. Read-only Adapter

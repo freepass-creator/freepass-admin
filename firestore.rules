@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All browser access is denied. ADMIN and SALES use authenticated server
+    // commands; SALES receives only an explicit product projection.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

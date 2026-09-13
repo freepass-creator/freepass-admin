@@ -14,9 +14,17 @@ export function updateApplicationProgress(
   key: ProgressKey,
   completed: boolean,
   now: string,
+  deliveryEventId?: string,
 ): Application {
   if (application.status === 'CANCELLED') {
     throw new Error('Cancelled applications cannot change progress.');
+  }
+  if (key === 'deliveryCompleted' && application.progress.deliveryCompleted) {
+    if (completed && deliveryEventId === application.deliveryEventId) return application;
+    throw new Error('Delivered applications require an adjustment instead of changing delivery facts.');
+  }
+  if (key === 'deliveryCompleted' && completed && !deliveryEventId?.trim()) {
+    throw new Error('Delivery event id is required.');
   }
 
   const progress = { ...application.progress, [key]: completed };
@@ -25,6 +33,9 @@ export function updateApplicationProgress(
     ...application,
     progress,
     status: deriveStatus(application, progress),
+    ...(key === 'deliveryCompleted' && completed
+      ? { deliveryEventId, deliveredAt: now }
+      : {}),
     updatedAt: now,
   };
 }
@@ -34,6 +45,8 @@ export function cancelApplication(
   reason: string,
   now: string,
 ): Application {
+  if (application.status === 'CANCELLED') throw new Error('Application is already cancelled.');
+  if (application.status === 'DELIVERED') throw new Error('Delivered applications require a settlement adjustment instead of cancellation.');
   if (!reason.trim()) throw new Error('Cancellation reason is required.');
   return {
     ...application,

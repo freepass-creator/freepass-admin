@@ -1,87 +1,383 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createApplication } from '@/domain/application/create-application';
+import { cancelApplication, updateApplicationProgress } from '@/domain/application/update-progress';
+import type { Application } from '@/domain/application/types';
+import {
+  confirmBySalesperson,
+  confirmBySupplier,
+  createPerformanceFromDelivery,
+  setSettlementAmounts,
+} from '@/domain/performance/performance';
+import type { Performance, VatMode } from '@/domain/performance/types';
+import type { CanonicalProduct, Offer } from '@/domain/product/types';
+import { matchProduct } from '@/domain/search/match-product';
+import {
+  createBilling,
+  createSettlementFromPerformance,
+  getSettlementBalance,
+  registerCollection,
+  registerPayout,
+} from '@/domain/settlement/settlement';
+import type { BillingRecord, LedgerEntry, SettlementItem } from '@/domain/settlement/types';
 
-type Product = {
-  id: string; name: string; sub: string; supplier: string; match: string;
-  offers: { id: string; term: number; rent: number; deposit: number; mileage: number; policies: string[] }[];
+type Screen = 'products' | 'applications' | 'performances' | 'settlements';
+type ProductView = {
+  product: CanonicalProduct;
+  name: string;
+  sub: string;
+  supplierName: string;
+  category: '신차렌트' | '재렌트';
+  status: '판매중' | '판매종료';
 };
-type AppItem = {
-  id: string; no: string; customer: string; phone: string; productId: string; vehicle: string;
-  offer: Product['offers'][number]; contract: boolean; docs: boolean; delivery: boolean; cancelled: boolean;
+type PersistedState = {
+  applications: Application[];
+  performances: Performance[];
+  settlements: SettlementItem[];
+  billings: BillingRecord[];
+  ledgerEntries: LedgerEntry[];
 };
 
-const PRODUCTS: Product[] = [
-  { id:'p1', name:'쏘나타', sub:'세부모델 미확인', supplier:'A 렌터카', match:'모델', offers:[{id:'p1-36',term:36,rent:690000,deposit:0,mileage:20000,policies:['만 21세 가능','후불']}] },
-  { id:'p2', name:'싼타페 MX5', sub:'캘리그래피', supplier:'B 렌터카', match:'세부트림', offers:[{id:'p2-24',term:24,rent:990000,deposit:1000000,mileage:20000,policies:['카드결제']},{id:'p2-36',term:36,rent:920000,deposit:0,mileage:20000,policies:['만 21세 가능','카드결제','보증금 분납']}] },
-  { id:'p3', name:'K5', sub:'더 뉴 K5 DL3 · 노블레스', supplier:'C 렌터카', match:'세부트림', offers:[{id:'p3-24',term:24,rent:780000,deposit:0,mileage:30000,policies:['후불','카드결제']}] },
-  { id:'p4', name:'GV80', sub:'세부트림 미확인', supplier:'D 렌터카', match:'세부모델', offers:[{id:'p4-48',term:48,rent:1090000,deposit:2000000,mileage:20000,policies:['보증금 분납']}] },
+const STORAGE_KEY = 'freepasserp-v1-functional-mvp-v2';
+const CHANNELS = [{ id: 'online', name: '온라인' }, { id: 'partner-a', name: '파트너 A' }];
+const ASSIGNEES = [{ id: 'park', name: '박지훈' }, { id: 'kim', name: '김서연' }];
+const money = (value: number) => `${value.toLocaleString('ko-KR')}원`;
+const nowIso = () => new Date().toISOString();
+const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+
+const PRODUCTS: ProductView[] = [
+  {
+    name: '기아 카니발 9인승 시그니처', sub: '카니발 KA4 · 2026년형', supplierName: 'A 렌터카',
+    category: '재렌트', status: '판매중',
+    product: {
+      id: 'carnival-001', version: '2026-09-13-v1', displayName: '기아 카니발 9인승 시그니처', supplierId: 'supplier-a', supplierProductKey: 'A-CV-001',
+      vehicle: { nodeId: 'trim-carnival-signature', originId: 'kr', manufacturerId: 'kia', modelId: 'carnival', subModelId: 'ka4', trimId: 'signature-9', matchLevel: 'TRIM' },
+      specs: { modelYear: 2026, fuel: '디젤', displacementCc: 2151, seats: 9 },
+      registration: { vehicleNumber: '189하 1234' },
+      offers: [
+        { id: 'cv-1', termMonths: 1, monthlyRent: 1290000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+        { id: 'cv-6', termMonths: 6, monthlyRent: 1090000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+        { id: 'cv-12', termMonths: 12, monthlyRent: 949000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+        { id: 'cv-24', termMonths: 24, monthlyRent: 829000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+        { id: 'cv-36', termMonths: 36, monthlyRent: 729000, deposit: 0, annualMileageKm: 20000, policyValues: [{ policyId: 'payment', type: 'MULTI_SELECT', value: ['CARD', 'TRANSFER'] }] },
+        { id: 'cv-60', termMonths: 60, monthlyRent: 689000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+      ],
+      productPolicies: [{ policyId: 'age', type: 'NUMBER', value: 21 }], sourceSnapshotId: 'sample-carnival', updatedAt: '2026-09-13T00:00:00.000Z',
+    },
+  },
+  {
+    name: '현대 싼타페 MX5 캘리그래피', sub: '싼타페 MX5 · 2026년형', supplierName: 'B 렌터카',
+    category: '신차렌트', status: '판매중',
+    product: {
+      id: 'santafe-001', version: '2026-09-13-v1', displayName: '현대 싼타페 MX5 캘리그래피', supplierId: 'supplier-b', supplierProductKey: 'B-SF-001',
+      vehicle: { nodeId: 'trim-santafe-calligraphy', originId: 'kr', manufacturerId: 'hyundai', modelId: 'santafe', subModelId: 'mx5', trimId: 'calligraphy', matchLevel: 'TRIM' },
+      specs: { modelYear: 2026, fuel: '가솔린', displacementCc: 2497, seats: 7 },
+      registration: {},
+      offers: [
+        { id: 'sf-24', termMonths: 24, monthlyRent: 990000, deposit: 1000000, annualMileageKm: 20000, policyValues: [] },
+        { id: 'sf-36', termMonths: 36, monthlyRent: 920000, deposit: 0, annualMileageKm: 20000, policyValues: [] },
+      ],
+      productPolicies: [], sourceSnapshotId: 'sample-santafe', updatedAt: '2026-09-13T00:00:00.000Z',
+    },
+  },
 ];
 
-const INITIAL_APPS: AppItem[] = [
-  {id:'a1',no:'A-260913-014',customer:'김OO',phone:'010-0000-0014',productId:'p2',vehicle:'싼타페 MX5',offer:PRODUCTS[1].offers[1],contract:true,docs:true,delivery:false,cancelled:false},
-  {id:'a2',no:'A-260913-013',customer:'이OO',phone:'010-0000-0013',productId:'p3',vehicle:'K5',offer:PRODUCTS[2].offers[0],contract:true,docs:false,delivery:false,cancelled:false},
-  {id:'a3',no:'A-260912-041',customer:'박OO',phone:'010-0000-0041',productId:'p4',vehicle:'GV80',offer:PRODUCTS[3].offers[0],contract:true,docs:true,delivery:true,cancelled:false},
-];
-
-const money=(n:number)=>`${n.toLocaleString('ko-KR')}원`;
-
-export default function AdminHome(){
-  const [query,setQuery]=useState('');
-  const [selectedId,setSelectedId]=useState('p2');
-  const [offerId,setOfferId]=useState('p2-36');
-  const [work,setWork]=useState<'list'|'new'|'detail'>('list');
-  const [apps,setApps]=useState<AppItem[]>(INITIAL_APPS);
-  const [activeAppId,setActiveAppId]=useState<string|null>(null);
-  const [customer,setCustomer]=useState('');
-  const [phone,setPhone]=useState('');
-
-  const filtered=useMemo(()=>PRODUCTS.filter(p=>`${p.name} ${p.sub} ${p.supplier} ${p.offers.flatMap(o=>o.policies).join(' ')}`.toLowerCase().includes(query.toLowerCase())),[query]);
-  const selected=PRODUCTS.find(p=>p.id===selectedId)??PRODUCTS[0];
-  const selectedOffer=selected.offers.find(o=>o.id===offerId)??selected.offers[0];
-  const activeApp=apps.find(a=>a.id===activeAppId)??null;
-
-  function selectProduct(p:Product){setSelectedId(p.id);setOfferId(p.offers[0].id)}
-  function openNew(){setCustomer('');setPhone('');setWork('new')}
-  function submitApplication(){
-    if(!customer.trim()||!phone.trim()) return;
-    const stamp=String(apps.length+15).padStart(3,'0');
-    const app:AppItem={id:`a-${Date.now()}`,no:`A-260913-${stamp}`,customer:customer.trim(),phone:phone.trim(),productId:selected.id,vehicle:selected.name,offer:{...selectedOffer,policies:[...selectedOffer.policies]},contract:false,docs:false,delivery:false,cancelled:false};
-    setApps(v=>[app,...v]); setActiveAppId(app.id); setWork('detail');
-  }
-  function openApp(app:AppItem){setActiveAppId(app.id);setWork('detail')}
-  function patchApp(key:'contract'|'docs'|'delivery'){if(!activeApp||activeApp.cancelled)return;setApps(v=>v.map(a=>a.id===activeApp.id?{...a,[key]:!a[key]}:a))}
-  function cancelApp(){if(!activeApp)return;setApps(v=>v.map(a=>a.id===activeApp.id?{...a,cancelled:true}:a))}
-
-  return <main className="admin-shell">
-    <header className="topbar"><div><strong>freepasserp.com</strong><span>admin · v1</span></div><nav><button className="active">상품·접수</button><button>정산</button><button>설정</button></nav><div className="admin-user">관리자</div></header>
-    <section className="workspace">
-      <section className="panel product-panel">
-        <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div><span className="count">{filtered.length}건</span></div>
-        <label className="searchbox">⌕<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="모델, 조건, 정책 검색"/></label>
-        <div className="quick-filters"><button onClick={()=>setQuery('')}>전체</button><button onClick={()=>setQuery('21세')}>21세</button><button onClick={()=>setQuery('후불')}>후불</button><button onClick={()=>setQuery('카드')}>카드</button><button>상세필터</button></div>
-        <div className="list">{filtered.map(p=>{const o=p.offers[0];return <article key={p.id} onClick={()=>selectProduct(p)} className={`product-row ${p.id===selected.id?'selected':''}`}><div className="thumb">CAR</div><div className="grow"><div className="row-title"><strong>{p.name}</strong><span>{p.match}</span></div><p>{p.sub}</p><div className="price"><b>월 {money(o.rent)}</b><small>{o.term}개월</small></div></div></article>})}</div>
-      </section>
-
-      <section className="panel detail-panel">
-        <div className="panel-head"><div><p className="eyebrow">DETAIL</p><h1>상품 상세</h1></div><button className="icon-btn">공유</button></div>
-        <div className="tabs"><button className="active">요약</button><button>상세정보</button></div>
-        <div className="hero-car"><span>차량 이미지</span><small>SSOT</small></div>
-        <div className="vehicle-title"><div><h2>{selected.name}</h2><p>{selected.sub}</p></div><span className="status-dot">판매중</span></div>
-        <dl className="summary-grid"><div><dt>공급사</dt><dd>{selected.supplier}</dd></div><div><dt>차종 매칭</dt><dd>{selected.match}</dd></div><div><dt>보증금</dt><dd>{money(selectedOffer.deposit)}</dd></div><div><dt>약정주행</dt><dd>연 {selectedOffer.mileage.toLocaleString()}km</dd></div></dl>
-        <div className="offer-picker">{selected.offers.map(o=><button key={o.id} onClick={()=>setOfferId(o.id)} className={o.id===selectedOffer.id?'active':''}>{o.term}개월</button>)}</div>
-        <div className="offer-block"><div><span>선택 Offer</span><b>{selectedOffer.term}개월</b></div><strong>월 {money(selectedOffer.rent)}</strong><p>보증금 {money(selectedOffer.deposit)} · 연 {selectedOffer.mileage.toLocaleString()}km</p></div>
-        <div className="chips">{selectedOffer.policies.map(p=><span key={p}>{p}</span>)}</div>
-        <button className="primary" onClick={openNew}>이 상품 접수하기</button>
-      </section>
-
-      <section className="panel work-panel">
-        {work==='list'&&<><div className="panel-head"><div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div><button className="new-app" onClick={openNew}>+ 신규접수</button></div><div className="work-tabs"><button className="active">전체 {apps.length}</button><button>진행중 {apps.filter(a=>!a.delivery&&!a.cancelled).length}</button><button>인도완료 {apps.filter(a=>a.delivery).length}</button><button>취소 {apps.filter(a=>a.cancelled).length}</button></div><div className="application-list">{apps.map(app=><article className="application-card" key={app.id} onDoubleClick={()=>openApp(app)}><div className="app-top"><div><b>{app.customer}</b><span>{app.no}</span></div><strong>{app.vehicle}</strong></div><div className="checks"><span className={app.contract?'done':''}>계약서</span><span className={app.docs?'done':''}>서류</span><span className={app.delivery?'done':''}>인도</span></div><p>{app.cancelled?'취소':app.delivery?'인도 완료':app.contract?'진행중 · 다음 확인 필요':'신규 접수 · 계약 확인 전'}</p></article>)}</div><div className="work-hint"><b>접수 상세</b><span>접수 건을 더블 클릭하면 진행상태를 확인합니다.</span></div></>}
-
-        {work==='new'&&<><div className="panel-head"><div><p className="eyebrow">NEW APPLICATION</p><h1>신규 접수</h1></div><button className="icon-btn" onClick={()=>setWork('list')}>목록</button></div><div className="selected-offer-card"><span>접수 상품</span><h2>{selected.name}</h2><p>{selected.sub}</p><b>{selectedOffer.term}개월 · 월 {money(selectedOffer.rent)}</b><small>이 조건은 접수 저장 시 Snapshot으로 보존됩니다.</small></div><div className="form-stack"><label>고객명<input value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="고객명"/></label><label>연락처<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="010-0000-0000"/></label></div><button className="primary" onClick={submitApplication}>접수 저장</button></>}
-
-        {work==='detail'&&activeApp&&<><div className="panel-head"><div><p className="eyebrow">APPLICATION</p><h1>접수 상세</h1></div><button className="icon-btn" onClick={()=>setWork('list')}>목록</button></div><div className="application-detail-head"><span>{activeApp.no}</span><h2>{activeApp.customer} · {activeApp.vehicle}</h2><p>{activeApp.phone}</p></div><div className="snapshot-box"><span>접수 당시 조건</span><b>{activeApp.offer.term}개월 · 월 {money(activeApp.offer.rent)}</b><p>보증금 {money(activeApp.offer.deposit)} · 연 {activeApp.offer.mileage.toLocaleString()}km</p></div><div className="progress-actions"><button className={activeApp.contract?'done':''} onClick={()=>patchApp('contract')}>계약서 {activeApp.contract?'✓':'-'}</button><button className={activeApp.docs?'done':''} onClick={()=>patchApp('docs')}>필수서류 {activeApp.docs?'✓':'-'}</button><button className={activeApp.delivery?'done':''} onClick={()=>patchApp('delivery')}>인도완료 {activeApp.delivery?'✓':'-'}</button></div><div className={`application-status ${activeApp.cancelled?'cancelled':''}`}>{activeApp.cancelled?'취소':activeApp.delivery?'인도완료':activeApp.contract?'계약완료 · 진행중':'접수완료'}</div>{!activeApp.cancelled&&<button className="danger-link" onClick={cancelApp}>접수 취소</button>}</>}
-      </section>
-    </section>
-  </main>
+function createSeedState(): PersistedState {
+  const view = PRODUCTS[0];
+  const application = createApplication({
+    id: 'application-sample', applicationNumber: 'A-260913-001', submissionId: 'submission-sample',
+    customerName: '김민수', salesChannelId: 'online', assigneeId: 'park', source: 'ADMIN',
+    product: view.product, productVersion: view.product.version, offerId: 'cv-36', now: '2026-09-13T09:00:00.000Z',
+  });
+  return { applications: [application], performances: [], settlements: [], billings: [], ledgerEntries: [] };
 }
+
+function offerSummary(offer: Offer) {
+  return `${offer.termMonths}개월 · 월 ${money(offer.monthlyRent)} · 보증금 ${offer.deposit === undefined ? '미확인' : money(offer.deposit)} · 연 ${offer.annualMileageKm?.toLocaleString('ko-KR') ?? '미확인'}km`;
+}
+
+function channelName(id: string) { return CHANNELS.find((item) => item.id === id)?.name ?? id; }
+function assigneeName(id: string) { return ASSIGNEES.find((item) => item.id === id)?.name ?? id; }
+
+export default function AdminHome() {
+  const [screen, setScreen] = useState<Screen>('products');
+  const [query, setQuery] = useState('');
+  const [termMonths, setTermMonths] = useState(36);
+  const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0].product.id);
+  const [selectedOfferId, setSelectedOfferId] = useState('cv-36');
+  const [draftSelection, setDraftSelection] = useState<{ productId: string; productVersion: string; offerId: string; submissionId: string } | null>(null);
+  const [work, setWork] = useState<'list' | 'new' | 'detail'>('list');
+  const [state, setState] = useState<PersistedState>(() => createSeedState());
+  const [activeApplicationId, setActiveApplicationId] = useState<string | null>('application-sample');
+  const [activePerformanceId, setActivePerformanceId] = useState<string | null>(null);
+  const [activeSettlementId, setActiveSettlementId] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState('');
+  const [salesChannelId, setSalesChannelId] = useState('online');
+  const [assigneeId, setAssigneeId] = useState('park');
+  const [receivable, setReceivable] = useState('');
+  const [payable, setPayable] = useState('');
+  const [vatMode, setVatMode] = useState<VatMode>('UNDECIDED');
+  const [collectionAmount, setCollectionAmount] = useState('');
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [notice, setNotice] = useState('');
+  const [hydrated, setHydrated] = useState(false);
+  const submissionLock = useRef(new Set<string>());
+  const financialLock = useRef(new Set<string>());
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Partial<PersistedState>;
+        setState({
+          applications: parsed.applications ?? [], performances: parsed.performances ?? [],
+          settlements: parsed.settlements ?? [], billings: parsed.billings ?? [], ledgerEntries: parsed.ledgerEntries ?? [],
+        });
+      } catch { localStorage.removeItem(STORAGE_KEY); }
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [hydrated, state]);
+
+  const filteredProducts = useMemo(() => PRODUCTS.flatMap((item) => {
+    const text = `${item.name} ${item.sub} ${item.supplierName} ${item.category} ${item.product.registration?.vehicleNumber ?? ''}`;
+    if (!text.toLowerCase().includes(query.trim().toLowerCase())) return [];
+    const match = matchProduct(item.product, { termMonths });
+    return match ? [{ item, offer: match.matchedOffers[0] }] : [];
+  }), [query, termMonths]);
+  const selectedProduct = PRODUCTS.find((item) => item.product.id === selectedProductId) ?? PRODUCTS[0];
+  const selectedOfferMatch = selectedProduct.product.offers.find((item) => item.id === selectedOfferId);
+  if (!selectedOfferMatch) throw new Error('Selected offer is no longer available.');
+  const selectedOffer: Offer = selectedOfferMatch;
+  const draftProduct = draftSelection ? PRODUCTS.find((item) => item.product.id === draftSelection.productId) : undefined;
+  const draftOffer = draftSelection ? draftProduct?.product.offers.find((item) => item.id === draftSelection.offerId) : undefined;
+  const activeApplication = state.applications.find((item) => item.id === activeApplicationId) ?? null;
+  const activePerformance = state.performances.find((item) => item.id === activePerformanceId) ?? null;
+  const activeSettlement = state.settlements.find((item) => item.id === activeSettlementId) ?? null;
+  const activeBilling = activeSettlement ? state.billings.find((item) => item.settlementId === activeSettlement.id) : undefined;
+
+  function fail(error: unknown) { setNotice(error instanceof Error ? error.message : '처리하지 못했습니다.'); }
+  function chooseProduct(item: ProductView, offerId: string) {
+    setSelectedProductId(item.product.id);
+    setSelectedOfferId(offerId);
+  }
+  function changeTerm(nextTerm: number) {
+    setTermMonths(nextTerm);
+    const currentMatch = matchProduct(selectedProduct.product, { termMonths: nextTerm });
+    if (currentMatch) {
+      setSelectedOfferId(currentMatch.matchedOffers[0].id);
+      return;
+    }
+    const firstMatch = PRODUCTS.map((item) => ({ item, match: matchProduct(item.product, { termMonths: nextTerm }) }))
+      .find((candidate) => candidate.match);
+    if (firstMatch?.match) chooseProduct(firstMatch.item, firstMatch.match.matchedOffers[0].id);
+  }
+  function openNewApplication() {
+    setDraftSelection({ productId: selectedProduct.product.id, productVersion: selectedProduct.product.version, offerId: selectedOffer.id, submissionId: newId('submission') });
+    setCustomerName(''); setSalesChannelId('online'); setAssigneeId('park'); setNotice(''); setWork('new');
+  }
+  function submitApplication() {
+    if (!draftSelection) return;
+    if (submissionLock.current.has(draftSelection.submissionId)) return;
+    const view = PRODUCTS.find((item) => item.product.id === draftSelection.productId);
+    if (!view) return setNotice('선택한 차량을 찾을 수 없습니다.');
+    if (view.product.version !== draftSelection.productVersion) return setNotice('상품 조건이 변경됐습니다. 최신 조건을 다시 선택하세요.');
+    if (!view.product.offers.some((item) => item.id === draftSelection.offerId)) return setNotice('선택한 기간 조건이 종료됐습니다. 다시 선택하세요.');
+    submissionLock.current.add(draftSelection.submissionId);
+    try {
+      const created = createApplication({
+        id: newId('application'), applicationNumber: `A-${Date.now().toString().slice(-9)}`,
+        submissionId: draftSelection.submissionId, customerName, salesChannelId, assigneeId,
+        source: 'ADMIN', product: view.product, productVersion: draftSelection.productVersion, offerId: draftSelection.offerId, now: nowIso(),
+      });
+      setState((current) => ({ ...current, applications: [created, ...current.applications] }));
+      setActiveApplicationId(created.id); setWork('detail'); setNotice('접수를 저장했습니다.');
+    } catch (error) { submissionLock.current.delete(draftSelection.submissionId); fail(error); }
+  }
+  function patchProgress(key: 'contractCompleted' | 'documentsCompleted' | 'deliveryCompleted') {
+    if (!activeApplication) return;
+    try {
+      const completed = key === 'deliveryCompleted' ? true : !activeApplication.progress[key];
+      const at = nowIso();
+      const updated = updateApplicationProgress(
+        activeApplication, key, completed, at,
+        key === 'deliveryCompleted' ? `delivery:${activeApplication.id}` : undefined,
+      );
+      let performances = state.performances;
+      if (key === 'deliveryCompleted' && !performances.some((item) => item.applicationId === updated.id)) {
+        const performance = createPerformanceFromDelivery(updated, `performance:${updated.id}`);
+        performances = [performance, ...performances];
+        setActivePerformanceId(performance.id);
+      }
+      setState({ ...state, applications: state.applications.map((item) => item.id === updated.id ? updated : item), performances });
+      setNotice(key === 'deliveryCompleted' ? '인도완료와 실적 1건을 생성했습니다.' : '진행 상태를 저장했습니다.');
+    } catch (error) { fail(error); }
+  }
+  function cancelActiveApplication() {
+    if (!activeApplication) return;
+    const reason = window.prompt('취소 사유를 입력하세요.');
+    if (reason === null) return;
+    try {
+      const updated = cancelApplication(activeApplication, reason, nowIso());
+      setState({ ...state, applications: state.applications.map((item) => item.id === updated.id ? updated : item) });
+      setNotice('접수를 취소했습니다. 원접수는 삭제하지 않았습니다.');
+    } catch (error) { fail(error); }
+  }
+  function saveAmounts() {
+    if (!activePerformance) return;
+    if (!receivable.trim() || !payable.trim()) return setNotice('받을액과 줄액을 모두 입력하세요. 0원은 0으로 명시해야 합니다.');
+    try {
+      const updated = setSettlementAmounts(activePerformance, {
+        supplierReceivable: Number(receivable), channelPayable: Number(payable), vatMode,
+      }, nowIso());
+      setState({ ...state, performances: state.performances.map((item) => item.id === updated.id ? updated : item) });
+      setNotice('정산 예정 금액을 저장했습니다.');
+    } catch (error) { fail(error); }
+  }
+  function updatePerformance(action: 'sales' | 'supplier' | 'finalize') {
+    if (!activePerformance) return;
+    try {
+      const at = nowIso();
+      if (action === 'finalize') {
+        if (state.settlements.some((item) => item.performanceId === activePerformance.id)) throw new Error('이미 정산 확정된 실적입니다.');
+        const result = createSettlementFromPerformance(activePerformance, `settlement:${activePerformance.id}`, at);
+        setState({
+          ...state,
+          performances: state.performances.map((item) => item.id === result.performance.id ? result.performance : item),
+          settlements: [result.settlement, ...state.settlements],
+        });
+        setActiveSettlementId(result.settlement.id); setNotice('정산을 확정했습니다.'); return;
+      }
+      const updated = action === 'sales'
+        ? confirmBySalesperson(activePerformance, activePerformance.snapshot.assigneeId, at)
+        : confirmBySupplier(activePerformance, 'supplier-admin', at);
+      setState({ ...state, performances: state.performances.map((item) => item.id === updated.id ? updated : item) });
+      setNotice(action === 'sales' ? '영업자 확인을 저장했습니다.' : '공급사 확인을 저장했습니다.');
+    } catch (error) { fail(error); }
+  }
+  function updateSettlement(action: 'billing' | 'collection' | 'payout') {
+    if (!activeSettlement) return;
+    const lockKey = `${action}:${activeSettlement.id}`;
+    if (financialLock.current.has(lockKey)) return;
+    financialLock.current.add(lockKey);
+    try {
+      const at = nowIso();
+      let billings = state.billings;
+      let ledgerEntries = state.ledgerEntries;
+      if (action === 'billing') {
+        if (!activeBilling) billings = [createBilling(activeSettlement, `billing:${activeSettlement.id}`, at), ...billings];
+      }
+      if (action === 'collection') {
+        if (!collectionAmount.trim()) throw new Error('수금액을 입력하세요.');
+        ledgerEntries = registerCollection(activeSettlement, activeBilling, ledgerEntries, { id: newId('collection'), settlementId: activeSettlement.id, account: 'SUPPLIER_COLLECTION', kind: 'CASH', amount: Number(collectionAmount), actorId: 'park', occurredAt: at });
+        setCollectionAmount('');
+      }
+      if (action === 'payout') {
+        if (!payoutAmount.trim()) throw new Error('지급액을 입력하세요.');
+        ledgerEntries = registerPayout(activeSettlement, activeBilling, ledgerEntries, { id: newId('payout'), settlementId: activeSettlement.id, account: 'CHANNEL_PAYOUT', kind: 'CASH', amount: Number(payoutAmount), actorId: 'park', occurredAt: at }, 'AFTER_FULL_COLLECTION');
+        setPayoutAmount('');
+      }
+      setState({ ...state, billings, ledgerEntries });
+      setNotice(action === 'billing' ? '청구서를 생성했습니다.' : action === 'collection' ? '수금 내역을 추가했습니다.' : '지급 내역을 추가했습니다.');
+    } catch (error) { fail(error); }
+    finally { window.setTimeout(() => financialLock.current.delete(lockKey), 500); }
+  }
+
+  return <main className="erp-shell">
+    <aside className="global-nav">
+      <div className="brand"><strong>FP</strong><span>freepasserp.com</span></div>
+      <nav>
+        {([['products', '상품'], ['applications', '접수'], ['performances', '실적'], ['settlements', '정산']] as const).map(([id, label]) =>
+          <button key={id} className={screen === id ? 'active' : ''} onClick={() => { setScreen(id); setNotice(''); }}>{label}</button>)}
+      </nav>
+      <div className="nav-user"><b>박지훈</b><span>ADMIN</span><small>기능 시뮬레이션 · 운영 저장 아님</small></div>
+    </aside>
+
+    {screen === 'products' && <section className="workspace">
+      <section className="panel">
+        <div className="panel-head"><h1>상품 목록</h1><span className="count">{filteredProducts.length}건</span></div>
+        <label className="searchbox"><span>검색</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="차량명, 차량번호, 상품구분" /></label>
+        <label className="compact-filter">계약기간<select value={termMonths} onChange={(event) => changeTerm(Number(event.target.value))}><option value={24}>24개월</option><option value={36}>36개월</option><option value={60}>60개월</option></select></label>
+        <div className="list">{filteredProducts.map(({ item, offer }) => {
+          return <button className={`data-row product-row ${item.product.id === selectedProduct.product.id ? 'selected' : ''}`} key={item.product.id} onClick={() => chooseProduct(item, offer.id)}>
+            <span className="status-line"><i />{item.status} · {item.category}</span>
+            <strong>{item.product.registration?.vehicleNumber ?? '차량번호 미배정'} · {item.name}</strong>
+            <span>{item.sub}</span><b className="numeric">{offer.termMonths}개월 · 월 {money(offer.monthlyRent)}</b>
+          </button>;
+        })}</div>
+      </section>
+      <section className="panel">
+        <div className="panel-head"><h1>상품 상세</h1><span>{selectedProduct.supplierName}</span></div>
+        <div className="vehicle-heading"><span>{selectedProduct.category} · {selectedProduct.status}</span><h2>{selectedProduct.name}</h2><p>{selectedProduct.product.registration?.vehicleNumber ?? '차량번호 미배정'} · {selectedProduct.sub}</p></div>
+        <h3>기간별 대여료 및 보증금</h3>
+        <div className="offer-list">{selectedProduct.product.offers.map((offer) => <button key={offer.id} className={offer.id === selectedOffer.id ? 'selected' : ''} onClick={() => setSelectedOfferId(offer.id)}>
+          <b>{offer.termMonths}개월</b><span className="numeric">월 {money(offer.monthlyRent)}</span><span className="numeric">보증금 {offer.deposit === undefined ? '미확인' : money(offer.deposit)}</span><span className="numeric">연 {offer.annualMileageKm?.toLocaleString('ko-KR') ?? '미확인'}km</span>
+        </button>)}</div>
+        <div className="detail-lines"><p><b>색상 및 옵션</b><span>접수 후 확인</span></p><p><b>이용 정책</b><span>만 21세 가능 · 카드/계좌이체</span></p><p><b>차량 상세</b><span>{selectedProduct.product.specs.fuel} · {selectedProduct.product.specs.seats}인승</span></p></div>
+        <button className="primary" onClick={openNewApplication}>이 상품으로 접수하기</button>
+      </section>
+      <section className="panel">
+        {work === 'list' && <><div className="panel-head"><h1>접수 목록</h1><button className="secondary" onClick={openNewApplication}>+ 신규접수</button></div><ApplicationList applications={state.applications} onOpen={(id) => { setActiveApplicationId(id); setWork('detail'); }} /></>}
+        {work === 'new' && <><div className="panel-head"><h1>신규 접수</h1><button className="icon-close" aria-label="접수 닫기" onClick={() => setWork('list')}>×</button></div>
+          <div className="form-stack"><label>차량 선택<input readOnly value={draftProduct && draftOffer ? `${draftProduct.name} · ${offerSummary(draftOffer)}` : '선택 조건이 변경되었습니다.'} /></label>
+            <label>영업채널<select value={salesChannelId} onChange={(event) => setSalesChannelId(event.target.value)}>{CHANNELS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label>담당자<select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>{ASSIGNEES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label>고객명<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="고객명 입력" /></label></div>
+          <div className="button-row"><button className="secondary" onClick={() => setWork('list')}>취소</button><button className="primary" onClick={submitApplication}>접수 저장</button></div></>}
+        {work === 'detail' && activeApplication && <ApplicationDetail application={activeApplication} onList={() => setWork('list')} onProgress={patchProgress} onCancel={cancelActiveApplication} />}
+        {notice && <p className="notice">{notice}</p>}
+      </section>
+    </section>}
+
+    {screen === 'applications' && <ThreePanel title="접수">
+      <><div className="panel-head"><h1>접수 목록</h1><span className="count">{state.applications.length}건</span></div><ApplicationList applications={state.applications} onOpen={setActiveApplicationId} /></>
+      {activeApplication ? <ApplicationSnapshot application={activeApplication} /> : <Empty text="접수를 선택하세요." />}
+      {activeApplication ? <ApplicationDetail application={activeApplication} onProgress={patchProgress} onCancel={cancelActiveApplication} /> : <Empty text="진행할 접수가 없습니다." />}
+    </ThreePanel>}
+
+    {screen === 'performances' && <ThreePanel title="실적">
+      <><div className="panel-head"><h1>실적 목록</h1><span className="count">{state.performances.length}건</span></div><div className="list">{state.performances.map((item) => <button className={`data-row ${item.id === activePerformanceId ? 'selected' : ''}`} key={item.id} onClick={() => { setActivePerformanceId(item.id); setReceivable(item.amounts.supplierReceivable?.toString() ?? ''); setPayable(item.amounts.channelPayable?.toString() ?? ''); setVatMode(item.amounts.vatMode); }}><span>{item.snapshot.deliveredAt.slice(0, 10)}</span><strong>{item.snapshot.customerName} · {item.snapshot.applicationNumber}</strong><span>{item.status}</span></button>)}</div></>
+      {activePerformance ? <><div className="panel-head"><h1>실적 상세</h1><span>{activePerformance.status}</span></div><KeyValues rows={[["고객", activePerformance.snapshot.customerName], ["공급사", activePerformance.snapshot.supplierId], ["영업채널", channelName(activePerformance.snapshot.salesChannelId)], ["담당자", assigneeName(activePerformance.snapshot.assigneeId)], ["접수번호", activePerformance.snapshot.applicationNumber], ["상품 버전", activePerformance.snapshot.productVersion]]} /></> : <Empty text="실적을 선택하세요." />}
+      {activePerformance ? <><div className="panel-head"><h1>대조·확정</h1><span>순서대로 처리</span></div>
+        <div className="form-stack"><label>공급사 받을액<input className="numeric" inputMode="numeric" value={receivable} onChange={(event) => setReceivable(event.target.value.replace(/\D/g, ''))} /></label><label>영업채널 줄액<input className="numeric" inputMode="numeric" value={payable} onChange={(event) => setPayable(event.target.value.replace(/\D/g, ''))} /></label><label>VAT 기준<select value={vatMode} onChange={(event) => setVatMode(event.target.value as VatMode)}><option value="UNDECIDED">선택 필요</option><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></label></div>
+        <div className="action-stack"><button onClick={saveAmounts}>금액 저장</button><button onClick={() => updatePerformance('sales')}>영업자 확인</button><button onClick={() => updatePerformance('supplier')}>공급사 확인</button><button className="primary" onClick={() => updatePerformance('finalize')}>정산 확정</button></div>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 실적이 없습니다." />}
+    </ThreePanel>}
+
+    {screen === 'settlements' && <ThreePanel title="정산">
+      <><div className="panel-head"><h1>정산 목록</h1><span className="count">{state.settlements.length}건</span></div><div className="list">{state.settlements.map((item) => { const billing = state.billings.find((candidate) => candidate.settlementId === item.id); const balance = getSettlementBalance(item, billing, state.ledgerEntries); return <button className={`data-row ${item.id === activeSettlementId ? 'selected' : ''}`} key={item.id} onClick={() => setActiveSettlementId(item.id)}><span>{item.applicationNumber}</span><strong>{item.customerName}</strong><span className="numeric">청구 {money(balance.billed)} · 지급 {money(balance.payable)}</span></button>; })}</div></>
+      {activeSettlement ? <><div className="panel-head"><h1>정산 상세</h1><span>{activeBilling?.status ?? '청구 전'}</span></div><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /></> : <Empty text="정산 건을 선택하세요." />}
+      {activeSettlement ? <><div className="panel-head"><h1>청구 / 지급</h1><span>별도 원장</span></div><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /><div className="action-stack"><button onClick={() => updateSettlement('billing')}>청구서 생성</button><label>수금액<input className="numeric" inputMode="numeric" value={collectionAmount} onChange={(event) => setCollectionAmount(event.target.value.replace(/\D/g, ''))} /></label><button onClick={() => updateSettlement('collection')}>수금 등록</button><label>지급액<input className="numeric" inputMode="numeric" value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value.replace(/\D/g, ''))} /></label><button onClick={() => updateSettlement('payout')}>지급 등록</button></div><p className="policy-note">현재 안전정책: 공급사 수금 완료 후 지급 가능</p>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 정산 건이 없습니다." />}
+    </ThreePanel>}
+  </main>;
+}
+
+function ThreePanel({ children }: { title: string; children: [React.ReactNode, React.ReactNode, React.ReactNode] }) {
+  return <section className="workspace">{children.map((child, index) => <section className="panel" key={index}>{child}</section>)}</section>;
+}
+
+function ApplicationList({ applications, onOpen }: { applications: Application[]; onOpen: (id: string) => void }) {
+  return <div className="list">{applications.map((application) => <button className="data-row" key={application.id} onClick={() => onOpen(application.id)}><span>{application.status} · {application.applicationNumber}</span><strong>{application.customerName} · {application.snapshot.vehicleLabel}</strong><span>{application.snapshot.registration?.vehicleNumber ?? '차량번호 미배정'} · {application.snapshot.offer.termMonths}개월 · 월 {money(application.snapshot.offer.monthlyRent)}</span></button>)}</div>;
+}
+
+function ApplicationSnapshot({ application }: { application: Application }) {
+  return <><div className="panel-head"><h1>접수 상세</h1><span>접수 당시 Snapshot</span></div><KeyValues rows={[["접수번호", application.applicationNumber], ["고객명", application.customerName], ["차량", application.snapshot.vehicleLabel], ["차량번호", application.snapshot.registration?.vehicleNumber ?? '미배정'], ["영업채널", channelName(application.salesChannelId)], ["담당자", assigneeName(application.assigneeId)], ["상품 버전", application.snapshot.productVersion], ["선택 조건", offerSummary(application.snapshot.offer)]]} /></>;
+}
+
+function ApplicationDetail({ application, onList, onProgress, onCancel }: { application: Application; onList?: () => void; onProgress: (key: 'contractCompleted' | 'documentsCompleted' | 'deliveryCompleted') => void; onCancel: () => void }) {
+  return <><div className="panel-head"><h1>접수 진행</h1>{onList && <button className="secondary" onClick={onList}>이전</button>}</div><ApplicationSnapshot application={application} /><div className="action-stack"><button className={application.progress.contractCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('contractCompleted')}>계약서 {application.progress.contractCompleted ? '완료' : '확인'}</button><button className={application.progress.documentsCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('documentsCompleted')}>필수서류 {application.progress.documentsCompleted ? '완료' : '확인'}</button><button className={application.progress.deliveryCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.progress.deliveryCompleted} onClick={() => onProgress('deliveryCompleted')}>인도 {application.progress.deliveryCompleted ? '완료' : '완료 처리'}</button><button className="danger" disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={onCancel}>접수 취소</button></div></>;
+}
+
+function KeyValues({ rows }: { rows: Array<[string, string]> }) {
+  return <dl className="key-values">{rows.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>;
+}
+
+function SettlementSummary({ settlement, billing, entries }: { settlement: SettlementItem; billing?: BillingRecord; entries: LedgerEntry[] }) {
+  const balance = getSettlementBalance(settlement, billing, entries);
+  return <KeyValues rows={[["확정 받을액", money(balance.confirmedReceivable)], ["실제 청구액", money(balance.billed)], ["실제 수금액", money(balance.collected)], ["미수액", money(balance.collectionOutstanding)], ["지급 확정액", money(balance.payable)], ["실제 지급액", money(balance.paid)], ["미지급액", money(balance.payoutOutstanding)], ["FreePass 마진", money(balance.margin)], ["VAT", settlement.vatMode === 'INCLUDED' ? '포함' : '별도']]} />;
+}
+
+function Empty({ text }: { text: string }) { return <div className="empty">{text}</div>; }

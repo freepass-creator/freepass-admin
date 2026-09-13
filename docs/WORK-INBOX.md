@@ -277,7 +277,55 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 
 ---
 
-## 12. ADMIN 웹 UI·UX R&D 업데이트 — 2026-09-13
+## 12. 기능 우선 수직 흐름 — 2026-09-13 사용자 변경
+
+사용자는 UI 추가 개선을 뒤로 미루고, 먼저 실제로 정산 가능한 기능 흐름을 만들도록 우선순위를 변경했다.
+
+첫 기능 슬라이스:
+
+```text
+상품/Offer 선택
+ → 4개 필수값 접수
+ → 버전/Offer/Policy Snapshot
+ → 계약서/필수서류/인도
+ → 인도에서 Performance 1회 생성
+ → 영업자 확인
+ → 공급사 확인
+ → 정산 확정
+ → 청구서 생성
+ → 부분수금
+ → 부분지급
+ → 미수/미지급/마진 확인
+```
+
+현재 구현 상태:
+- Application의 `productVersion`, `salesChannelId`, `assigneeId`, `customerName`, `submissionId` 계약 반영
+- 전화번호를 최초 접수 필수값에서 제외
+- MULTI_SELECT Policy를 포함한 Snapshot 참조 분리
+- 인도 사실에 `deliveryEventId`, `deliveredAt` 추가
+- Performance 검토 순서와 Settlement 확정 Gate 구현
+- 청구/수금과 지급을 별도 누적 원장으로 구현
+- 브라우저 새로고침 후 기능 확인을 위한 localStorage 개발 저장 추가
+- 단위테스트/TypeScript/Next build 통과
+
+현재 완료 수준:
+- Domain: `CODED / STATIC CHECKED / TESTED`
+- UI 연결: `CODED / STATIC CHECKED`
+- 브라우저 저장: 개발 시뮬레이션용이며 `PERSISTENCE VERIFIED`가 아님
+- Firebase/Auth/Rules/Transaction: 아직 미연결
+- Deployment: `NOT AUTHORIZED`
+
+Firebase 연결 전 결정 필요:
+- 신규 Firebase 프로젝트 ID / 리전 / ADMIN Auth 방식
+- VAT 운영 기준
+- 공급사 수금 전 영업채널 지급 허용 정책
+- 부분수금 비례지급 정책
+
+개발 시뮬레이션에서는 VAT를 명시적으로 선택해야 정산 확정할 수 있고, 지급은 보수적으로 공급사 전액 수금 후에만 허용한다. 이는 운영 확정값이 아니라 안전한 임시 Gate다.
+
+---
+
+## 13. ADMIN 웹 UI·UX R&D 업데이트 — 2026-09-13
 
 상태: **CANDIDATE / USER DIRECTION CONFIRMED / EXACT IMAGE APPROVAL PENDING / IMPLEMENTATION HOLD**
 
@@ -313,4 +361,3 @@ AI Core Gate:
 - visual implementation: `HOLD_UNTIL_USER_IMAGE_APPROVAL`
 - domain/search/application contract work: 기존 승인 범위에서 계속 가능
 - production deploy: `NOT_AUTHORIZED`
-

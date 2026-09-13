@@ -1,4 +1,4 @@
-import type { CanonicalProduct, Offer } from '../product/types';
+import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
 import type { Application } from './types';
 
 export interface CreateApplicationInput {
@@ -13,13 +13,21 @@ export interface CreateApplicationInput {
   now: string;
 }
 
+/** 정책 객체뿐 아니라 복수선택 값도 복사하여 원본과 스냅샷을 분리한다. */
+function clonePolicyValue(policy: PolicyValue): PolicyValue {
+  if (policy.type === 'MULTI_SELECT') {
+    return { ...policy, value: [...policy.value] };
+  }
+  return { ...policy };
+}
+
 export function createApplication(input: CreateApplicationInput): Application {
   const offer = input.product.offers.find((candidate) => candidate.id === input.offerId);
   if (!offer) throw new Error('Selected offer does not belong to the product.');
 
   const snapshotOffer: Offer = {
     ...offer,
-    policyValues: offer.policyValues.map((policy) => ({ ...policy })),
+    policyValues: offer.policyValues.map(clonePolicyValue),
   };
 
   return {
@@ -41,7 +49,7 @@ export function createApplication(input: CreateApplicationInput): Application {
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
       offer: snapshotOffer,
-      productPolicies: input.product.productPolicies.map((policy) => ({ ...policy })),
+      productPolicies: input.product.productPolicies.map(clonePolicyValue),
       capturedAt: input.now,
     },
     createdAt: input.now,

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "types": ["node"],
+    "rootDir": "..",
+    "outDir": "./.snapshot-build"
+  },
+  "include": ["domain/application-snapshot.test.ts"],
+  "exclude": [".snapshot-build", "../node_modules"]
+}

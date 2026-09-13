@@ -1,0 +1,50 @@
+{
+  "gate_id": "AI-CORE-GATE-01",
+  "project": "freepasserp.com",
+  "version": "v1",
+  "base_commit": "7dc793f4fc6f1d5b53a119f1bc4c1e410794ae4c",
+  "status": "HOLD",
+  "execution_policy": {
+    "visual_changes": "HOLD_UNTIL_USER_IMAGE_APPROVAL",
+    "domain_search_test_work": "ALLOWED",
+    "persistence_integration": "ALLOWED_AFTER_INDEPENDENT_FIREBASE_DECISION",
+    "production_deploy": "NOT_AUTHORIZED"
+  },
+  "p0_flow": [
+    "RAW",
+    "ADAPTER_MAPPING",
+    "CANONICAL_PRODUCT",
+    "SEARCH_FILTER",
+    "PRODUCT_DETAIL",
+    "MATCHED_OFFER",
+    "APPLICATION_DRAFT",
+    "APPLICATION_SNAPSHOT",
+    "APPLICATION_LIST",
+    "APPLICATION_DETAIL",
+    "CONTRACT_DOCUMENTS_DELIVERY_CANCEL"
+  ],
+  "evidence": {
+    "snapshot_fix_pr": 2,
+    "ui_profile_pr": 3,
+    "atom_functional_contract_pr": 4
+  },
+  "gaps": [
+    {"id":"CORE-01","priority":"P0","area":"UI","status":"HOLD","summary":"main admin UI is prototype; final image approval and review evidence pending"},
+    {"id":"CORE-02","priority":"P0","area":"APPLICATION","status":"GAP","summary":"required intake fields differ between prototype and current design contract"},
+    {"id":"CORE-03","priority":"P0","area":"SNAPSHOT","status":"GAP","summary":"explicit canonical product version is not preserved in Application Snapshot"},
+    {"id":"CORE-04","priority":"P0","area":"SEARCH","status":"GAP","summary":"prototype text search does not implement same-Offer search contract"},
+    {"id":"CORE-05","priority":"P0","area":"PERSISTENCE","status":"GAP","summary":"server-side idempotent application create contract is missing"},
+    {"id":"CORE-06","priority":"P0","area":"SNAPSHOT","status":"READY_FOR_TEST","summary":"PR #2 isolates MULTI_SELECT policy arrays"},
+    {"id":"CORE-07","priority":"P1","area":"UI_GOVERNANCE","status":"COMPOSE","summary":"PR #3 visual profile and PR #4 atom projection are complementary"},
+    {"id":"CORE-08","priority":"P1","area":"AI_REVIEW","status":"EVIDENCE_MISSING","summary":"named 4-AI review evidence required by PR #3 is not recorded in GitHub reviews"}
+  ],
+  "next_actions": [
+    {"order":1,"owner":"Work","task":"execute PR #2 compile and 8 regression tests; record evidence"},
+    {"order":2,"owner":"ChatGPT_or_Work","task":"implement and execute P0 Search Contract regression tests"},
+    {"order":3,"owner":"ChatGPT_or_Work","task":"design/implement Application Contract fields: productVersion, salesChannelId, assigneeId, idempotency/submission id"},
+    {"order":4,"owner":"User+Work","task":"approve exact ADMIN image revision before visual implementation proceeds"},
+    {"order":5,"owner":"Named AI reviewers","task":"review same UI evidence bundle and record reviewer/version/hash/findings/verdict"}
+  ],
+  "completion_states": ["DESIGNED","CODED","STATIC_CHECKED","TESTED","PERSISTENCE_VERIFIED","DEPLOYMENT_VERIFIED","USER_APPROVED"],
+  "updated_at": "2026-09-13"
+}

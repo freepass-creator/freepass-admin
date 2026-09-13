@@ -12,8 +12,8 @@ Approve the fastest practical ADMIN product-to-application workflow before imple
 - Mobile: `LIST → DETAIL → WORK`
 - Application list row: one click/tap opens application detail
 - Back: restore search, filters, sort, scroll, and selected row
-- Employee manual input: exactly `customer name` and `phone`
-- Product, matched Offer, Policy, product version, IDs, status, timestamps, and source/channel: system-generated or read-only Snapshot
+- Required intake items: exactly `vehicle selection`, `sales channel`, `assignee`, and `customer name`
+- Vehicle and matched Offer are prefilled from product detail; sales channel and assignee are selected; product version, Policy, IDs, status, and timestamps are system-generated or read-only Snapshot
 
 ## Fixed source revisions
 
@@ -32,14 +32,14 @@ Existing ERP assets are `REFERENCE_ONLY`. Automatic code, DB, Firebase, API, she
 
 | Review target | Repository path | SHA-256 |
 |---|---|---|
-| Desktop minimal application | `docs/ui/review-p2/admin-application-desktop.webp` | `dc52dceb2be548c7a7e6c0458e22b57f02937b4b3ed7291585cd53b6309852d9` |
-| Mobile product → application | `docs/ui/review-p2/mobile-product-application.webp` | `7c27c321d63795a13a6870e2ba7d54ab74035caf1b9e4161b0bc7f3dbeb08c5a` |
+| Desktop minimal application | `docs/ui/review-p2/admin-application-desktop.webp` | `b81ca8cc638792d7284f979d640dabcc742be164c8ea135ac11c36cccf883788` |
+| Mobile product → application | `docs/ui/review-p2/mobile-product-application.webp` | `86c90350b4d9ee87aaa93b5dc9e67ef48282675793822d6b74ec0b844f797cb4` |
 | Mobile application list → detail | `docs/ui/review-p2/mobile-application-list-detail.webp` | `11949f87bb447eb25cefdb99263ce60fc04bc0119610ee34053c7dd067402e07` |
 
 ## Performance intent
 
 1. After selecting a product, no repeated product/condition entry.
-2. Keyboard order: customer name → phone → save.
+2. Intake order: vehicle selection → sales channel → assignee → customer name → save. Product-flow entry prefills the vehicle.
 3. Save is idempotent; repeated taps cannot create duplicate applications.
 4. Successful save opens the created application detail immediately.
 5. Application detail shows `접수 당시 조건 / Snapshot`, not mutable current-product values.
@@ -54,6 +54,7 @@ Existing ERP assets are `REFERENCE_ONLY`. Automatic code, DB, Firebase, API, she
 - Current Application Snapshot lacks required `productVersionId`; nested Policy arrays are not fully cloned.
 - The repository currently has only `dev`, `build`, `start`, and `typecheck` scripts. Do not claim lint/test/e2e/performance evidence before those checks exist.
 - The rejected `ERP5` name must not appear in new task IDs or UI copy.
+- The user's latest instruction supersedes the previous two-field assumption: the four required items are vehicle selection, sales channel, assignee, and customer name. Phone is not a required intake field.
 
 ## Named independent reviews
 
@@ -84,8 +85,8 @@ AI Core resolves pointers, revisions, conflicts, and gates. It does not approve,
 
 ## Provisional acceptance targets
 
-- Manual fields: exactly 2
-- Product selection → save: no extra selection after product/Offer choice
+- Required intake items: exactly 4 — vehicle selection, sales channel, assignee, customer name
+- Product-detail entry → save: vehicle prefilled; select sales channel and assignee, enter customer name; no repeated product/Offer condition entry
 - Median application completion time: ≤ 30 seconds in employee pilot
 - Back-state restoration: 100%
 - Duplicate save under repeated tap/retry: 0 duplicates

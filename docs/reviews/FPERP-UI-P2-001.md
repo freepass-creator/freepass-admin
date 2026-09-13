@@ -6,14 +6,32 @@ This packet fixes one shared review input for Claude Code, Codex, Cursor Agent, 
 
 ## Goal
 
-Approve the fastest practical ADMIN product-to-application workflow before implementation.
+Approve the fastest practical ADMIN workflow before implementation.
 
 - Desktop: `Product List 1/3 | Product Detail 1/3 | Work Panel 1/3`
-- Mobile: `LIST → DETAIL → WORK`
-- Application list row: one click/tap opens application detail
-- Back: restore search, filters, sort, scroll, and selected row
+- Mobile: independent full-screen list/detail pairs, not a compressed desktop layout
+- A list row opens its detail with one tap
+- Back restores search, filters, sort, scroll, selected row, and the current finance tab
 - Required intake items: exactly `vehicle selection`, `sales channel`, `assignee`, and `customer name`
 - Vehicle and matched Offer are prefilled from product detail; sales channel and assignee are selected; product version, Policy, IDs, status, and timestamps are system-generated or read-only Snapshot
+
+## Mobile screen map
+
+1. `상품 목록 → 상품 상세 → 신규 접수`
+2. `접수 목록 → 접수 상세`
+3. `실적 목록 → 실적 상세`
+4. `청구·지급 목록 → 건별 상세`
+
+Mobile navigation invariants:
+
+- Product-detail entry prefills the vehicle; direct new-application entry requires vehicle selection.
+- Initial application intake contains only four required items: vehicle, sales channel, assignee, customer name.
+- Sales channel and assignee may be prefilled from the signed-in user or recent value, but remain visible and editable.
+- Save is idempotent; repeated taps cannot create duplicate applications.
+- Performance is a read-oriented record derived from the application, not a second manual-entry document.
+- Billing and payment share one menu but use separate `청구 | 지급` tabs; their rows and statuses are never mixed.
+- Performance and finance details inherit the same application ID plus customer/vehicle Snapshot; employees do not re-enter them.
+- Every list and detail must define loading, empty, error, and unauthorized states.
 
 ## Fixed source revisions
 
@@ -35,6 +53,10 @@ Existing ERP assets are `REFERENCE_ONLY`. Automatic code, DB, Firebase, API, she
 | Desktop minimal application | `docs/ui/review-p2/admin-application-desktop.webp` | `b81ca8cc638792d7284f979d640dabcc742be164c8ea135ac11c36cccf883788` |
 | Mobile product → application | `docs/ui/review-p2/mobile-product-application.webp` | `86c90350b4d9ee87aaa93b5dc9e67ef48282675793822d6b74ec0b844f797cb4` |
 | Mobile application list → detail | `docs/ui/review-p2/mobile-application-list-detail.webp` | `11949f87bb447eb25cefdb99263ce60fc04bc0119610ee34053c7dd067402e07` |
+| Mobile performance list → detail | `docs/ui/review-p2/mobile-performance-list-detail.webp` | `51774ffabd04d9062ca94ef07bc7179d49204ec20828519fc5f1f3dafcabd2c2` |
+| Mobile billing/payment list → detail | `docs/ui/review-p2/mobile-billing-payment-list-detail.webp` | `f44c540656c18b762cb0d5e0c698ef3cc31ff0090978e180f5ddf8f540bab65e` |
+
+The performance and billing/payment images validate information architecture only. Performance recognition rules, amount formulas, taxes, fees, settlement cycles, approval levels, and edit permissions remain undecided and must not be inferred from sample values.
 
 ## Performance intent
 
@@ -54,11 +76,12 @@ Existing ERP assets are `REFERENCE_ONLY`. Automatic code, DB, Firebase, API, she
 - Current Application Snapshot lacks required `productVersionId`; nested Policy arrays are not fully cloned.
 - The repository currently has only `dev`, `build`, `start`, and `typecheck` scripts. Do not claim lint/test/e2e/performance evidence before those checks exist.
 - The rejected `ERP5` name must not appear in new task IDs or UI copy.
-- The user's latest instruction supersedes the previous two-field assumption: the four required items are vehicle selection, sales channel, assignee, and customer name. Phone is not a required intake field.
+- The four required intake items are vehicle selection, sales channel, assignee, and customer name. Phone is not a required intake field.
+- `청구·지급 목록 → 건별 상세` is the current interpretation of the user's latest message; finance policy and action controls remain unapproved.
 
 ## Named independent reviews
 
-Each reviewer must inspect this same branch commit and the three image SHA-256 values before responding. First reviews are independent.
+Each reviewer must inspect this same branch commit and all five image SHA-256 values before responding. First reviews are independent.
 
 | Role | Required output | Status |
 |---|---|---|
@@ -71,7 +94,7 @@ Required response fields:
 
 `reviewer_product / reviewer_version / reviewed_commit / reviewed_image_hashes / scope / findings / counterexample / verdict(APPROVE|CHANGES_REQUIRED|HOLD)`
 
-A Codex sub-agent is not evidence for Claude Code, Cursor Agent, or Gemini CLI.
+Internal advisory agents are not evidence for Claude Code, Cursor Agent, or Gemini CLI.
 
 ## AI Core
 
@@ -88,7 +111,7 @@ AI Core resolves pointers, revisions, conflicts, and gates. It does not approve,
 - Required intake items: exactly 4 — vehicle selection, sales channel, assignee, customer name
 - Product-detail entry → save: vehicle prefilled; select sales channel and assignee, enter customer name; no repeated product/Offer condition entry
 - Median application completion time: ≤ 30 seconds in employee pilot
-- Back-state restoration: 100%
+- Back-state restoration: 100% across product, application, performance, and billing/payment
 - Duplicate save under repeated tap/retry: 0 duplicates
 - Matched Offer continuity: 100% across list/detail/application
 - Snapshot invariance after product change: 100%

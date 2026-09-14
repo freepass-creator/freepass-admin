@@ -1,6 +1,6 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-13
+최종 갱신: 2026-09-14
 프로젝트: freepasserp.com v1
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
@@ -198,13 +198,19 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - PR #6 — AI Core Gate 01
 - Issue #5 — P0 통합 순서와 HOLD 기준
 
+현재 구현됨:
+- same-Offer 검색과 Offer → 접수 연속성
+- 네 가지 접수 필수값, explicit productVersion Snapshot, submission idempotency 계약
+- 인도 → 실적 → 양측 확인/이견 → 정산 → 청구 → 부분수금 → 지급 Domain 흐름
+- Performance 상태별 UI action matrix와 회귀테스트
+- 공통 UI token/Button/Field/PanelHeader/StatusBadge/EmptyState
+- ACTIVE staff account 기반 서버 권한과 브라우저 Firestore deny-all Rules
+
 현재 중요한 Gap:
-- main ADMIN UI는 Prototype
-- 실제 same-Offer Search Contract 미구현
-- Application explicit productVersion 필요
-- salesChannelId / assigneeId 계약 필요
-- idempotent create 필요
-- 독립 Firebase persistence 미검증
+- 독립 Firebase 운영 프로젝트와 실제 transaction repository 미연결
+- 로그인 UI와 staff account 발급 운영절차 미구현
+- 계산서/증빙 완료, 지급 보류, 원장 reversal의 ADMIN UI 미구현
+- 브라우저 기본 prompt/confirm을 접근 가능한 공통 Dialog로 교체 필요
 - 첫 실제 공급사 Adapter 미연결
 
 병렬 작업:

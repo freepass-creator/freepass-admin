@@ -1,0 +1,16 @@
+:root {
+  --ui-color-brand: #2563eb;
+  --ui-color-brand-soft: #eff6ff;
+  --ui-color-text: #151922;
+  --ui-color-muted: #667085;
+  --ui-color-border: #e3e7ed;
+  --ui-color-danger: #b42318;
+  --ui-radius-control: 7px;
+  --ui-control-height: 44px;
+  --ui-focus-ring: 0 0 0 3px #bfdbfe;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+}

@@ -5,12 +5,17 @@ import { createAdminApplication } from '@/domain/application/create-admin-applic
 import { cancelApplication, updateApplicationProgress } from '@/domain/application/update-progress';
 import type { Application } from '@/domain/application/types';
 import {
+  acceptSupplierIssue,
   confirmBySalesperson,
   confirmBySupplier,
   createPerformanceFromDelivery,
+  disputeBySalesperson,
+  registerSupplierIssue,
+  resolveOpenIssue,
   setSettlementAmounts,
 } from '@/domain/performance/performance';
 import type { Performance, VatMode } from '@/domain/performance/types';
+import { getPerformanceActionAvailability } from '@/domain/performance/action-availability';
 import { matchProduct } from '@/domain/search/match-product';
 import {
   createBilling,
@@ -23,6 +28,11 @@ import type { BillingRecord, LedgerEntry, SettlementItem } from '@/domain/settle
 import { assertCan, type StaffRole } from '@/domain/access/access-control';
 import { PRODUCTS, type ProductView } from '@/demo/catalog';
 import { money, offerSummary, TERM_OPTIONS } from '@/domain/product/display';
+import { Button } from '@/ui/button';
+import { EmptyState } from '@/ui/empty-state';
+import { Field } from '@/ui/field';
+import { PanelHeader } from '@/ui/panel-header';
+import { StatusBadge } from '@/ui/status-badge';
 
 type Screen = 'products' | 'applications' | 'performances' | 'settlements';
 type PersistedState = {
@@ -124,6 +134,7 @@ export default function AdminDashboard({
   const activePerformance = state.performances.find((item) => item.id === activePerformanceId) ?? null;
   const activeSettlement = state.settlements.find((item) => item.id === activeSettlementId) ?? null;
   const activeBilling = activeSettlement ? state.billings.find((item) => item.settlementId === activeSettlement.id) : undefined;
+  const performanceActions = activePerformance ? getPerformanceActionAvailability(activePerformance.status) : null;
 
   function fail(error: unknown) { setNotice(error instanceof Error ? error.message : '처리하지 못했습니다.'); }
   function chooseProduct(item: ProductView, offerId: string) {
@@ -145,6 +156,11 @@ export default function AdminDashboard({
     assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     setDraftSelection({ productId: selectedProduct.product.id, productVersion: selectedProduct.product.version, offerId: selectedOffer.id, submissionId: newId('submission') });
     setCustomerName(''); setSalesChannelId('online'); setAssigneeId('park'); setNotice(''); setWork('new');
+  }
+  function closeApplicationDraft() {
+    const dirty = customerName.trim() !== '' || salesChannelId !== 'online' || assigneeId !== 'park';
+    if (dirty && !window.confirm('입력한 접수 내용이 저장되지 않습니다. 접수 창을 닫을까요?')) return;
+    setDraftSelection(null); setWork('list'); setNotice('');
   }
   function submitApplication() {
     assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
@@ -168,6 +184,7 @@ export default function AdminDashboard({
   function patchProgress(key: 'contractCompleted' | 'documentsCompleted' | 'deliveryCompleted') {
     assertCan(CURRENT_ROLE, 'APPLICATION_MANAGE');
     if (!activeApplication) return;
+    if (key === 'deliveryCompleted' && !window.confirm('인도완료 처리하면 실적이 생성되며 되돌릴 수 없습니다. 계속할까요?')) return;
     try {
       const completed = key === 'deliveryCompleted' ? true : !activeApplication.progress[key];
       const at = nowIso();
@@ -208,12 +225,13 @@ export default function AdminDashboard({
       setNotice('정산 예정 금액을 저장했습니다.');
     } catch (error) { fail(error); }
   }
-  function updatePerformance(action: 'sales' | 'supplier' | 'finalize') {
+  function updatePerformance(action: 'sales' | 'salesDispute' | 'supplier' | 'supplierIssue' | 'acceptIssue' | 'resolveIssue' | 'finalize') {
     assertCan(CURRENT_ROLE, action === 'finalize' ? 'SETTLEMENT_MANAGE' : 'PERFORMANCE_MANAGE');
     if (!activePerformance) return;
     try {
       const at = nowIso();
       if (action === 'finalize') {
+        if (!window.confirm('확정 후에는 실적 금액을 변경할 수 없습니다. 정산을 확정할까요?')) return;
         if (state.settlements.some((item) => item.performanceId === activePerformance.id)) throw new Error('이미 정산 확정된 실적입니다.');
         const result = createSettlementFromPerformance(activePerformance, `settlement:${activePerformance.id}`, at);
         setState({
@@ -223,11 +241,33 @@ export default function AdminDashboard({
         });
         setActiveSettlementId(result.settlement.id); setNotice('정산을 확정했습니다.'); return;
       }
-      const updated = action === 'sales'
-        ? confirmBySalesperson(activePerformance, activePerformance.snapshot.salesChannelId, adminId, at)
-        : confirmBySupplier(activePerformance, activePerformance.snapshot.supplierId, adminId, at);
+      let updated: Performance;
+      if (action === 'sales') updated = confirmBySalesperson(activePerformance, activePerformance.snapshot.salesChannelId, adminId, at);
+      else if (action === 'supplier') updated = confirmBySupplier(activePerformance, activePerformance.snapshot.supplierId, adminId, at);
+      else if (action === 'acceptIssue') updated = acceptSupplierIssue(activePerformance, activePerformance.snapshot.salesChannelId, adminId, at);
+      else if (action === 'salesDispute') {
+        const reason = window.prompt('영업채널 이견 사유를 입력하세요.');
+        if (reason === null) return;
+        updated = disputeBySalesperson(activePerformance, activePerformance.snapshot.salesChannelId, adminId, reason, at);
+      } else if (action === 'supplierIssue') {
+        const reason = window.prompt('공급사 이슈 사유를 입력하세요. 현재 입력된 금액을 공급사 제안 금액으로 기록합니다.');
+        if (reason === null) return;
+        if (!receivable.trim() || !payable.trim()) throw new Error('공급사 제안 받을액과 줄액을 모두 입력하세요.');
+        updated = registerSupplierIssue(activePerformance, activePerformance.snapshot.supplierId, adminId, reason, {
+          supplierReceivable: Number(receivable), channelPayable: Number(payable), vatMode,
+        }, at);
+      } else {
+        const reason = window.prompt('이슈 해결 근거를 입력하세요.');
+        if (reason === null) return;
+        updated = resolveOpenIssue(activePerformance, adminId, reason, at);
+      }
       setState({ ...state, performances: state.performances.map((item) => item.id === updated.id ? updated : item) });
-      setNotice(action === 'sales' ? '영업자 확인을 저장했습니다.' : '공급사 확인을 저장했습니다.');
+      const messages = {
+        sales: '영업채널 확인을 저장했습니다.', salesDispute: '영업채널 이견을 기록했습니다.',
+        supplier: '공급사 확인을 저장했습니다.', supplierIssue: '공급사 이슈와 제안 금액을 기록했습니다.',
+        acceptIssue: '변경 금액 수용을 기록했습니다.', resolveIssue: '이슈 해결 근거를 기록했습니다.',
+      } as const;
+      setNotice(messages[action]);
     } catch (error) { fail(error); }
   }
   function updateSettlement(action: 'billing' | 'collection' | 'payout') {
@@ -245,11 +285,13 @@ export default function AdminDashboard({
       }
       if (action === 'collection') {
         if (!collectionAmount.trim()) throw new Error('수금액을 입력하세요.');
+        if (!window.confirm(`${Number(collectionAmount).toLocaleString('ko-KR')}원을 수금 등록할까요?`)) return;
         ledgerEntries = registerCollection(activeSettlement, activeBilling, ledgerEntries, { id: newId('collection'), settlementId: activeSettlement.id, account: 'SUPPLIER_COLLECTION', kind: 'CASH', amount: Number(collectionAmount), actorId: adminId, occurredAt: at });
         setCollectionAmount('');
       }
       if (action === 'payout') {
         if (!payoutAmount.trim()) throw new Error('지급액을 입력하세요.');
+        if (!window.confirm(`${Number(payoutAmount).toLocaleString('ko-KR')}원을 지급 등록할까요?`)) return;
         ledgerEntries = registerPayout(activeSettlement, activeBilling, ledgerEntries, { id: newId('payout'), settlementId: activeSettlement.id, account: 'CHANNEL_PAYOUT', kind: 'CASH', amount: Number(payoutAmount), actorId: adminId, occurredAt: at }, 'AFTER_FULL_COLLECTION');
         setPayoutAmount('');
       }
@@ -271,7 +313,7 @@ export default function AdminDashboard({
 
     {screen === 'products' && <section className="workspace">
       <section className="panel">
-        <div className="panel-head"><h1>상품 목록</h1><span className="count">{filteredProducts.length}건</span></div>
+        <PanelHeader title="상품 목록" meta={<span className="count">{filteredProducts.length}건</span>} />
         <label className="searchbox"><span>검색</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="차량명, 차량번호, 상품구분" /></label>
         <label className="compact-filter">계약기간<select value={termMonths} onChange={(event) => changeTerm(Number(event.target.value))}>{TERM_OPTIONS.map((term) => <option key={term} value={term}>{term}개월</option>)}</select></label>
         <div className="list">{filteredProducts.map(({ item, offer }) => {
@@ -283,46 +325,53 @@ export default function AdminDashboard({
         })}</div>
       </section>
       <section className="panel">
-        <div className="panel-head"><h1>상품 상세</h1><span>{selectedProduct.supplierName}</span></div>
+        <PanelHeader title="상품 상세" meta={selectedProduct.supplierName} />
         <div className="vehicle-heading"><span>{selectedProduct.category} · {selectedProduct.status}</span><h2>{selectedProduct.name}</h2><p>{selectedProduct.product.registration?.vehicleNumber ?? '차량번호 미배정'} · {selectedProduct.sub}</p></div>
         <h3>기간별 대여료 및 보증금</h3>
         <div className="offer-list">{selectedProduct.product.offers.map((offer) => <button key={offer.id} className={offer.id === selectedOffer.id ? 'selected' : ''} onClick={() => setSelectedOfferId(offer.id)}>
           <b>{offer.termMonths}개월</b><span className="numeric">월 {money(offer.monthlyRent)}</span><span className="numeric">보증금 {offer.deposit === undefined ? '미확인' : money(offer.deposit)}</span><span className="numeric">연 {offer.annualMileageKm?.toLocaleString('ko-KR') ?? '미확인'}km</span>
         </button>)}</div>
         <div className="detail-lines"><p><b>색상 및 옵션</b><span>접수 후 확인</span></p><p><b>이용 정책</b><span>만 21세 가능 · 카드/계좌이체</span></p><p><b>차량 상세</b><span>{selectedProduct.product.specs.fuel} · {selectedProduct.product.specs.seats}인승</span></p></div>
-        <button className="primary" onClick={openNewApplication}>이 상품으로 접수하기</button>
+        <Button variant="primary" className="full-width" onClick={openNewApplication}>이 상품으로 접수하기</Button>
       </section>
       <section className="panel">
-        {work === 'list' && <><div className="panel-head"><h1>접수 목록</h1><button className="secondary" onClick={openNewApplication}>+ 신규접수</button></div><ApplicationList applications={state.applications} onOpen={(id) => { setActiveApplicationId(id); setWork('detail'); }} /></>}
-        {work === 'new' && <><div className="panel-head"><h1>신규 접수</h1><button className="icon-close" aria-label="접수 닫기" onClick={() => setWork('list')}>×</button></div>
-          <div className="form-stack"><label>차량 선택<input readOnly value={draftProduct && draftOffer ? `${draftProduct.name} · ${offerSummary(draftOffer)}` : '선택 조건이 변경되었습니다.'} /></label>
-            <label>영업채널<select value={salesChannelId} onChange={(event) => setSalesChannelId(event.target.value)}>{CHANNELS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>담당자<select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>{ASSIGNEES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>고객명<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="고객명 입력" /></label></div>
-          <div className="button-row"><button className="secondary" onClick={() => setWork('list')}>취소</button><button className="primary" onClick={submitApplication}>접수 저장</button></div></>}
+        {work === 'list' && <><PanelHeader title="접수 목록" action={<Button onClick={openNewApplication}>+ 신규접수</Button>} /><ApplicationList applications={state.applications} onOpen={(id) => { setActiveApplicationId(id); setWork('detail'); }} /></>}
+        {work === 'new' && <form onSubmit={(event) => { event.preventDefault(); submitApplication(); }}><PanelHeader title="신규 접수" action={<Button variant="quiet" className="icon-close" aria-label="접수 닫기" onClick={closeApplicationDraft}>×</Button>} />
+          <div className="form-stack"><Field label="차량 선택" required><input readOnly value={draftProduct && draftOffer ? `${draftProduct.name} · ${offerSummary(draftOffer)}` : '선택 조건이 변경되었습니다.'} /></Field>
+            <Field label="영업채널" required><select required value={salesChannelId} onChange={(event) => setSalesChannelId(event.target.value)}>{CHANNELS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+            <Field label="담당자" required><select required value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>{ASSIGNEES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+            <Field label="고객명" required><input required value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="고객명 입력" /></Field></div>
+          <div className="button-row"><Button onClick={closeApplicationDraft}>취소</Button><Button type="submit" variant="primary">접수 저장</Button></div></form>}
         {work === 'detail' && activeApplication && <ApplicationDetail application={activeApplication} onList={() => setWork('list')} onProgress={patchProgress} onCancel={cancelActiveApplication} />}
-        {notice && <p className="notice">{notice}</p>}
+        {notice && <p className="notice" role="status" aria-live="polite">{notice}</p>}
       </section>
     </section>}
 
     {screen === 'applications' && <ThreePanel title="접수">
       <><div className="panel-head"><h1>접수 목록</h1><span className="count">{state.applications.length}건</span></div><ApplicationList applications={state.applications} onOpen={setActiveApplicationId} /></>
-      {activeApplication ? <ApplicationSnapshot application={activeApplication} /> : <Empty text="접수를 선택하세요." />}
-      {activeApplication ? <ApplicationDetail application={activeApplication} onProgress={patchProgress} onCancel={cancelActiveApplication} /> : <Empty text="진행할 접수가 없습니다." />}
+      {activeApplication ? <ApplicationSnapshot application={activeApplication} /> : <EmptyState>접수를 선택하세요.</EmptyState>}
+      {activeApplication ? <ApplicationDetail application={activeApplication} onProgress={patchProgress} onCancel={cancelActiveApplication} /> : <EmptyState>진행할 접수가 없습니다.</EmptyState>}
     </ThreePanel>}
 
     {screen === 'performances' && <ThreePanel title="실적">
       <><div className="panel-head"><h1>실적 목록</h1><span className="count">{state.performances.length}건</span></div><div className="list">{state.performances.map((item) => <button className={`data-row ${item.id === activePerformanceId ? 'selected' : ''}`} key={item.id} onClick={() => { setActivePerformanceId(item.id); setReceivable(item.amounts.supplierReceivable?.toString() ?? ''); setPayable(item.amounts.channelPayable?.toString() ?? ''); setVatMode(item.amounts.vatMode); }}><span>{item.snapshot.deliveredAt.slice(0, 10)}</span><strong>{item.snapshot.customerName} · {item.snapshot.applicationNumber}</strong><span>{item.status}</span></button>)}</div></>
-      {activePerformance ? <><div className="panel-head"><h1>실적 상세</h1><span>{activePerformance.status}</span></div><KeyValues rows={[["고객", activePerformance.snapshot.customerName], ["공급사", activePerformance.snapshot.supplierId], ["영업채널", channelName(activePerformance.snapshot.salesChannelId)], ["담당자", assigneeName(activePerformance.snapshot.assigneeId)], ["접수번호", activePerformance.snapshot.applicationNumber], ["상품 버전", activePerformance.snapshot.productVersion]]} /></> : <Empty text="실적을 선택하세요." />}
-      {activePerformance ? <><div className="panel-head"><h1>대조·확정</h1><span>순서대로 처리</span></div>
-        <div className="form-stack"><label>공급사 받을액<input className="numeric" inputMode="numeric" value={receivable} onChange={(event) => setReceivable(event.target.value.replace(/\D/g, ''))} /></label><label>영업채널 줄액<input className="numeric" inputMode="numeric" value={payable} onChange={(event) => setPayable(event.target.value.replace(/\D/g, ''))} /></label><label>VAT 기준<select value={vatMode} onChange={(event) => setVatMode(event.target.value as VatMode)}><option value="UNDECIDED">선택 필요</option><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></label></div>
-        <div className="action-stack"><button onClick={saveAmounts}>금액 저장</button><button onClick={() => updatePerformance('sales')}>영업채널 확인 기록</button><button onClick={() => updatePerformance('supplier')}>공급사 확인 기록</button><button className="primary" onClick={() => updatePerformance('finalize')}>정산 확정</button></div>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 실적이 없습니다." />}
+      {activePerformance ? <><PanelHeader title="실적 상세" meta={<StatusBadge>{activePerformance.status}</StatusBadge>} /><KeyValues rows={[["고객", activePerformance.snapshot.customerName], ["공급사", activePerformance.snapshot.supplierId], ["영업채널", channelName(activePerformance.snapshot.salesChannelId)], ["담당자", assigneeName(activePerformance.snapshot.assigneeId)], ["접수번호", activePerformance.snapshot.applicationNumber], ["상품 버전", activePerformance.snapshot.productVersion]]} /></> : <EmptyState>실적을 선택하세요.</EmptyState>}
+      {activePerformance && performanceActions ? <><PanelHeader title="대조·확정" meta="현재 단계의 작업만 활성화" />
+        <div className="form-stack"><Field label="공급사 받을액"><input disabled={!performanceActions.editAmounts && !performanceActions.supplierReview} className="numeric" inputMode="numeric" value={receivable} onChange={(event) => setReceivable(event.target.value.replace(/\D/g, ''))} /></Field><Field label="영업채널 줄액"><input disabled={!performanceActions.editAmounts && !performanceActions.supplierReview} className="numeric" inputMode="numeric" value={payable} onChange={(event) => setPayable(event.target.value.replace(/\D/g, ''))} /></Field><Field label="VAT 기준"><select disabled={!performanceActions.editAmounts && !performanceActions.supplierReview} value={vatMode} onChange={(event) => setVatMode(event.target.value as VatMode)}><option value="UNDECIDED">선택 필요</option><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></Field></div>
+        <div className="action-stack">
+          <Button disabled={!performanceActions.editAmounts} onClick={saveAmounts}>금액 저장</Button>
+          <div className="split-actions"><Button disabled={!performanceActions.salesReview} onClick={() => updatePerformance('sales')}>영업채널 확인</Button><Button variant="danger" disabled={!performanceActions.salesReview} onClick={() => updatePerformance('salesDispute')}>이견 있음</Button></div>
+          <div className="split-actions"><Button disabled={!performanceActions.supplierReview} onClick={() => updatePerformance('supplier')}>공급사 확인</Button><Button variant="danger" disabled={!performanceActions.supplierReview} onClick={() => updatePerformance('supplierIssue')}>공급사 이슈</Button></div>
+          <Button disabled={!performanceActions.salesReconfirmation} onClick={() => updatePerformance('acceptIssue')}>변경 금액 수용</Button>
+          <Button disabled={!performanceActions.resolveIssue} onClick={() => updatePerformance('resolveIssue')}>이슈 해결 기록</Button>
+          <Button variant="primary" disabled={!performanceActions.finalize} onClick={() => updatePerformance('finalize')}>정산 확정</Button>
+        </div>{notice && <p className="notice" role="status" aria-live="polite">{notice}</p>}</> : <EmptyState>처리할 실적이 없습니다.</EmptyState>}
     </ThreePanel>}
 
     {screen === 'settlements' && <ThreePanel title="정산">
       <><div className="panel-head"><h1>정산 목록</h1><span className="count">{state.settlements.length}건</span></div><div className="list">{state.settlements.map((item) => { const billing = state.billings.find((candidate) => candidate.settlementId === item.id); const balance = getSettlementBalance(item, billing, state.ledgerEntries); return <button className={`data-row ${item.id === activeSettlementId ? 'selected' : ''}`} key={item.id} onClick={() => setActiveSettlementId(item.id)}><span>{item.applicationNumber}</span><strong>{item.customerName}</strong><span className="numeric">청구 {money(balance.billed)} · 지급 {money(balance.payable)}</span></button>; })}</div></>
-      {activeSettlement ? <><div className="panel-head"><h1>정산 상세</h1><span>{activeBilling?.status ?? '청구 전'}</span></div><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /></> : <Empty text="정산 건을 선택하세요." />}
-      {activeSettlement ? <><div className="panel-head"><h1>청구 / 지급</h1><span>별도 원장</span></div><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /><div className="action-stack"><button onClick={() => updateSettlement('billing')}>청구서 생성</button><label>수금액<input className="numeric" inputMode="numeric" value={collectionAmount} onChange={(event) => setCollectionAmount(event.target.value.replace(/\D/g, ''))} /></label><button onClick={() => updateSettlement('collection')}>수금 등록</button><label>지급액<input className="numeric" inputMode="numeric" value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value.replace(/\D/g, ''))} /></label><button onClick={() => updateSettlement('payout')}>지급 등록</button></div><p className="policy-note">현재 안전정책: 공급사 수금 완료 후 지급 가능</p>{notice && <p className="notice">{notice}</p>}</> : <Empty text="처리할 정산 건이 없습니다." />}
+      {activeSettlement ? <><PanelHeader title="정산 상세" meta={<StatusBadge>{activeBilling?.status ?? '청구 전'}</StatusBadge>} /><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /></> : <EmptyState>정산 건을 선택하세요.</EmptyState>}
+      {activeSettlement ? <><PanelHeader title="청구 / 지급" meta="별도 원장" /><SettlementSummary settlement={activeSettlement} billing={activeBilling} entries={state.ledgerEntries} /><div className="action-stack"><Button disabled={Boolean(activeBilling)} onClick={() => updateSettlement('billing')}>{activeBilling ? '청구서 생성 완료' : '청구서 생성'}</Button><Field label="수금액"><input className="numeric" inputMode="numeric" value={collectionAmount} onChange={(event) => setCollectionAmount(event.target.value.replace(/\D/g, ''))} /></Field><Button disabled={!activeBilling} onClick={() => updateSettlement('collection')}>수금 등록</Button><Field label="지급액"><input className="numeric" inputMode="numeric" value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value.replace(/\D/g, ''))} /></Field><Button disabled={!activeBilling} onClick={() => updateSettlement('payout')}>지급 등록</Button></div><p className="policy-note">현재 안전정책: 공급사 수금 완료 후 지급 가능</p>{notice && <p className="notice" role="status" aria-live="polite">{notice}</p>}</> : <EmptyState>처리할 정산 건이 없습니다.</EmptyState>}
     </ThreePanel>}
   </main>;
 }
@@ -335,12 +384,12 @@ function ApplicationList({ applications, onOpen }: { applications: Application[]
   return <div className="list">{applications.map((application) => <button className="data-row" key={application.id} onClick={() => onOpen(application.id)}><span>{application.status} · {application.applicationNumber}</span><strong>{application.customerName} · {application.snapshot.vehicleLabel}</strong><span>{application.snapshot.registration?.vehicleNumber ?? '차량번호 미배정'} · {application.snapshot.offer.termMonths}개월 · 월 {money(application.snapshot.offer.monthlyRent)}</span></button>)}</div>;
 }
 
-function ApplicationSnapshot({ application }: { application: Application }) {
-  return <><div className="panel-head"><h1>접수 상세</h1><span>접수 당시 Snapshot</span></div><KeyValues rows={[["접수번호", application.applicationNumber], ["고객명", application.customerName], ["차량", application.snapshot.vehicleLabel], ["차량번호", application.snapshot.registration?.vehicleNumber ?? '미배정'], ["영업채널", channelName(application.salesChannelId)], ["담당자", assigneeName(application.assigneeId)], ["상품 버전", application.snapshot.productVersion], ["선택 조건", offerSummary(application.snapshot.offer)]]} /></>;
+function ApplicationSnapshot({ application, showHeader = true }: { application: Application; showHeader?: boolean }) {
+  return <>{showHeader && <PanelHeader title="접수 상세" meta="접수 당시 Snapshot" />}<KeyValues rows={[["접수번호", application.applicationNumber], ["고객명", application.customerName], ["차량", application.snapshot.vehicleLabel], ["차량번호", application.snapshot.registration?.vehicleNumber ?? '미배정'], ["영업채널", channelName(application.salesChannelId)], ["담당자", assigneeName(application.assigneeId)], ["상품 버전", application.snapshot.productVersion], ["선택 조건", offerSummary(application.snapshot.offer)]]} /></>;
 }
 
 function ApplicationDetail({ application, onList, onProgress, onCancel }: { application: Application; onList?: () => void; onProgress: (key: 'contractCompleted' | 'documentsCompleted' | 'deliveryCompleted') => void; onCancel: () => void }) {
-  return <><div className="panel-head"><h1>접수 진행</h1>{onList && <button className="secondary" onClick={onList}>이전</button>}</div><ApplicationSnapshot application={application} /><div className="action-stack"><button className={application.progress.contractCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('contractCompleted')}>계약서 {application.progress.contractCompleted ? '완료' : '확인'}</button><button className={application.progress.documentsCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('documentsCompleted')}>필수서류 {application.progress.documentsCompleted ? '완료' : '확인'}</button><button className={application.progress.deliveryCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.progress.deliveryCompleted} onClick={() => onProgress('deliveryCompleted')}>인도 {application.progress.deliveryCompleted ? '완료' : '완료 처리'}</button><button className="danger" disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={onCancel}>접수 취소</button></div></>;
+  return <><PanelHeader title="접수 진행" action={onList ? <Button onClick={onList}>이전</Button> : undefined} /><ApplicationSnapshot application={application} showHeader={false} /><div className="action-stack"><Button className={application.progress.contractCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('contractCompleted')}>계약서 {application.progress.contractCompleted ? '완료' : '확인'}</Button><Button className={application.progress.documentsCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={() => onProgress('documentsCompleted')}>필수서류 {application.progress.documentsCompleted ? '완료' : '확인'}</Button><Button className={application.progress.deliveryCompleted ? 'done' : ''} disabled={application.status === 'CANCELLED' || application.progress.deliveryCompleted} onClick={() => onProgress('deliveryCompleted')}>인도 {application.progress.deliveryCompleted ? '완료' : '완료 처리'}</Button><Button variant="danger" disabled={application.status === 'CANCELLED' || application.status === 'DELIVERED'} onClick={onCancel}>접수 취소</Button></div></>;
 }
 
 function KeyValues({ rows }: { rows: Array<[string, string]> }) {
@@ -351,5 +400,3 @@ function SettlementSummary({ settlement, billing, entries }: { settlement: Settl
   const balance = getSettlementBalance(settlement, billing, entries);
   return <KeyValues rows={[["확정 받을액", money(balance.confirmedReceivable)], ["실제 청구액", money(balance.billed)], ["실제 수금액", money(balance.collected)], ["미수액", money(balance.collectionOutstanding)], ["지급 확정액", money(balance.payable)], ["실제 지급액", money(balance.paid)], ["미지급액", money(balance.payoutOutstanding)], ["FreePass 마진", money(balance.margin)], ["VAT", settlement.vatMode === 'INCLUDED' ? '포함' : '별도']]} />;
 }
-
-function Empty({ text }: { text: string }) { return <div className="empty">{text}</div>; }

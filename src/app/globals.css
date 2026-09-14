@@ -10,6 +10,58 @@
   --danger: #b42318;
 }
 
+.ui-button {
+  min-height: var(--ui-control-height);
+  border: 1px solid #d0d5dd;
+  border-radius: var(--ui-radius-control);
+  background: #fff;
+  color: #344054;
+  padding: 0 14px;
+  font-weight: 700;
+}
+.ui-button--primary {
+  border-color: var(--ui-color-brand);
+  background: var(--ui-color-brand);
+  color: #fff;
+}
+.ui-button--danger {
+  border-color: #fecdca;
+  background: #fff;
+  color: var(--ui-color-danger);
+}
+.ui-button--quiet {
+  min-height: 40px;
+  border-color: transparent;
+  background: transparent;
+}
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.ui-button:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ui-color-brand);
+  outline-offset: 2px;
+}
+.full-width { width: 100%; }
+.ui-field em { color: var(--ui-color-danger); font-style: normal; }
+.status-badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #475467;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.status-badge--success { background: #ecfdf3; color: #067647; }
+.status-badge--warning { background: #fffaeb; color: #b54708; }
+.status-badge--danger { background: #fef3f2; color: #b42318; }
+
 .auth-gate { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f4f6f8; }
 .auth-gate section { width: min(520px, 100%); padding: 40px; border: 1px solid #dce1e7; border-radius: 16px; background: #fff; box-shadow: 0 16px 50px rgba(24, 35, 52, .08); }
 .auth-gate .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 10px; background: #15375f; color: #fff; font-weight: 800; }
@@ -190,6 +242,11 @@ button {
   width: 100%;
   height: 100%;
 }
+.searchbox:focus-within {
+  border-color: var(--ui-color-brand);
+  box-shadow: var(--ui-focus-ring);
+}
+.searchbox input:focus-visible { outline: 0; }
 .compact-filter {
   height: 40px;
   display: flex;
@@ -413,6 +470,20 @@ button {
   border-color: var(--blue);
   background: var(--blue);
   color: #fff;
+}
+.action-stack .ui-button--primary {
+  border-color: var(--ui-color-brand);
+  background: var(--ui-color-brand);
+  color: #fff;
+}
+.action-stack .ui-button--danger {
+  color: var(--ui-color-danger);
+  border-color: #fecdca;
+}
+.split-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 .action-stack button.done {
   background: #ecfdf3;

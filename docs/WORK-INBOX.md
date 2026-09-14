@@ -203,6 +203,12 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - 독립 Firebase persistence 미검증
 - 첫 실제 공급사 Adapter 미연결
 
+참고로 확인됨 (연결 아님):
+- ERP4는 Firebase 프로젝트 `freepasserp3`의 `products`가 운영 상품원자다.
+- ERP5는 별도 프로젝트가 아니라 같은 Firebase의 `productMasterVersions/*`로 공개 원자만 단방향 복사한다.
+- 2026-09-13 1회 게시: 1538대 검증본 저장, `--activate` 없음, 어댑터 부착 298 / blocker 320.
+- 상세: `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`. v1은 이 프로젝트/시크릿을 쓰지 않는다.
+
 병렬 작업:
 - PR #2: Snapshot `MULTI_SELECT.value` 참조분리 — 이 브랜치 Application 계약이 같은 분리를 포함하므로 중복 merge를 피한다.
 - PR #3: UI Profile / review packet — 사용자 exact image 승인 및 evidence gate
@@ -332,4 +338,19 @@ AI Core Gate:
 - `기능 우선 / UI 보류` = 현재 P0 검색·접수 계약을 테스트로 고정
 - `기능 우선` ≠ 정산 MVP, ≠ SALES 화면, ≠ Auth 경계를 지금 구현
 - PR #7 문서는 main WORK-INBOX보다 우선하지 않음
+
+---
+
+## 14. ERP4 상품원자 당김 경로 확인 — 2026-09-14
+
+상태: **VERIFIED / NOT CONNECTED**
+
+사용자 지시로 `freepasserp4`의 “ERP5 Firebase + ERP4 상품원자 게시”를 읽었다.
+
+확인:
+- 같은 Firebase(`freepasserp3`). 별도 ERP5 프로젝트 전제는 CI가 차단한다.
+- 운영 화면은 `products` onSnapshot. ERP5 발행기는 allowlist 복사 + 시트 Adapter 가격축 부착.
+- `/erp5` UI는 2026-08-28 보류. SSOT 발행 경로와 혼동하지 않는다.
+- v1 Canonical은 이 원자 의미를 참고하되 DB/Auth/시트를 연결하지 않는다.
+- 빈 트림 `기본형` 채움은 ERP5 차종 투영 규칙이며 v1에서는 금지.
 

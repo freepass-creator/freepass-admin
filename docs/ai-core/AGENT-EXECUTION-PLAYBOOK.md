@@ -72,6 +72,8 @@ PR #7은 **새 baseline이 아니다.** `scope-lock.json`의 salvage만 재사�
 - 기존 ERP/Firebase/ADC fallback
 - 미머지 작업으로 WORK-INBOX 구현 목록을 덮어쓰기
 
+상품 원자의 실체는 `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`에 확인돼 있다. 데모 카탈로그를 Canonical로 승격하지 말고, ERP4 `products`를 v1 운영 DB로 연결하지도 않는다.
+
 ---
 
 ## 4. PR 크기

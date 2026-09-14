@@ -45,7 +45,7 @@
 
 - `/`는 서버에서 ACTIVE ADMIN 세션을 요구한다.
 - `/sales`는 서버에서 ACTIVE ADMIN 또는 SALES의 상품조회 권한을 요구하며 localStorage의 ADMIN 고객·금액 데이터를 읽지 않는다.
-- 실제 Firebase 연결 전 기능 시뮬레이션은 개발 환경의 `/dev-preview`에서만 제공하고 운영 빌드에서는 404로 닫는다.
+- 실제 Firebase 연결 전 기능 시뮬레이션은 로컬 개발 환경과 Vercel Preview의 `/dev-preview`에서만 제공하고 Vercel Production에서는 404로 닫는다.
 - 인증된 `/`는 고객·금액 상태를 localStorage에 저장하지 않는다. 전역 localStorage 시뮬레이션은 개발 전용 경로에만 한정한다.
 - 역할 허용표는 deny-by-default 순수 계약과 회귀테스트로 고정한다.
 - Firebase 세션의 검증된 uid로 `staffAccounts`를 다시 읽어 ACTIVE 역할을 결정한다. client role/source/actorId는 권한 근거로 사용하지 않는다.

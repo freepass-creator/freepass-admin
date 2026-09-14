@@ -7,7 +7,8 @@
 3. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
 4. `docs/MASTER-v1.md` — 장기 제품 기준
 5. `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md` 와 `docs/ai-core/scope-lock.json` — 현재 허용 범위와 해맴 방지
-6. 해당 작업의 PR / Issue / AI Core Gate
+6. `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md` — 상품원자 SSOT가 v1 제품 핵심
+7. 해당 작업의 PR / Issue / AI Core Gate
 
 메일 원문 출처 추적이 필요하면 `docs/memory/EMAIL-RND-INDEX.md`에서 Gmail message id와 제목을 확인한다.
 
@@ -27,11 +28,13 @@
 - WHITE LABEL (B2C)
 WHITE LABEL과 B2C를 별도 네 번째 제품으로 만들지 않는다. White Label 엔진은 하나이며 회사별 BI/CI는 설정으로 분리한다.
 
-## 4. Current priority — ADMIN vertical slice
-현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
+## 4. Current priority — Product atom SSOT then ADMIN vertical slice
+freepasserp.com의 제품 핵심은 상품원자 SSOT다. 2026-09-14 사용자 결정: ERP4에서 검증한 원자(공통/변동/정책/메타)와 Adapter 가격축, 버전 컬렉션·활성 포인터 계약이 v1 Canonical의 중심이다. 기존 `freepasserp3` Firebase/시크릿은 연결하지 않는다.
+
+그 원자 Canonical 위에서 우선 개발은 `Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다. 데모 카탈로그를 Canonical로 승격하지 않는다.
 
 ## 5. Search first
-검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다.
+검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다. 검색은 원자 Canonical의 `matched Offer`를 사용한다.
 
 ## 6. Vehicle master
 모델 정보는 원산지 → 제조사 → 모델 → 세부모델 → 세부트림까지만 관리한다. 연료/배기량 등은 모델 계층에 추가하지 않는다. 공급사 정보가 부족하면 확인된 가장 깊은 노드까지만 매칭하고 하위를 추측하지 않는다. MODEL/SUB_MODEL/TRIM/UNMATCHED를 구분한다.
@@ -64,6 +67,7 @@ P0는 `AGENTS.md` 4절과 `docs/ai-core/scope-lock.json`에 잠겨 있다. 사�
 - localStorage/메모리 시뮬레이션을 `PERSISTENCE VERIFIED`로 부르기
 
 허용(지금):
+- 상품원자 SSOT 계약(역할표, 공개 allowlist, Offer/Adapter 가격축, 버전 포인터)을 v1 Domain으로 고정. ERP4 DB 연결 없음
 - same-Offer / EXACT-PARTIAL / 공란≠0 Search Contract와 회귀테스트
 - Application `productVersion` + `salesChannelId` + `assigneeId` + `customerName` + `submissionId` + Snapshot 참조분리 + idempotency
 - 위 계약의 단위테스트 실행 증거

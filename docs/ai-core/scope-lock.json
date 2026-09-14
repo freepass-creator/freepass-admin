@@ -1,9 +1,11 @@
 {
   "id": "freepasserp-v1-scope-lock",
   "updated": "2026-09-14",
-  "p0": "ADMIN_VERTICAL_SLICE",
+  "p0": "PRODUCT_ATOM_SSOT_THEN_ADMIN_VERTICAL_SLICE",
+  "productCore": "product-atom-ssot",
   "p0Flow": [
-    "Canonical Product",
+    "Product atom SSOT",
+    "Canonical Product Version",
     "Search/Filter",
     "Product Detail",
     "matched Offer",
@@ -19,7 +21,7 @@
     "billing",
     "collection",
     "payout",
-    "Firebase production project",
+    "connecting freepasserp3 / ERP4 credentials",
     "login UI"
   ],
   "doNotRewriteWithoutExplicitUserChangeAndDocsOnlyPr": [
@@ -28,6 +30,7 @@
     "docs/WORK-INBOX.md P0 and first-work list"
   ],
   "allowedNow": [
+    "product-atom-ssot-contract-without-erp4-connection",
     "search-contract-same-offer-exact-partial-unknown-not-zero",
     "application-contract-productVersion-salesChannelId-assigneeId-customerName-submissionId",
     "snapshot-multi-select-isolation",
@@ -35,8 +38,14 @@
   ],
   "hold": [
     "visual UI implementation until user exact image approval",
-    "production deploy"
+    "production deploy",
+    "ERP4 Firebase operational link"
   ],
+  "userDirection": {
+    "at": "2026-09-14",
+    "statement": "ERP4 product-atom publish into same-Firebase versioned SSOT is the core of freepasserp.com",
+    "connectExistingFirebase": false
+  },
   "pr7": {
     "branch": "codex/functional-settlement-mvp-20260913",
     "status": "MIXED_SCOPE_CANDIDATE",
@@ -52,12 +61,13 @@
       "settlement / billing / collection / payout domain as P0",
       "SALES /sales surface",
       "Firebase Auth session cookie",
-      "SSOT rewrites of AGENTS/MASTER/WORK-INBOX P0",
       "admin-dashboard god file",
-      "localStorage as persistence"
+      "localStorage as persistence",
+      "demo catalog as Canonical"
     ]
   },
   "onePrOneSlice": [
+    "product-atoms",
     "search",
     "application",
     "persistence",

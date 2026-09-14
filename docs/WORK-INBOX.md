@@ -41,10 +41,11 @@ freepasserp.com은 단순 상품목록 ERP가 아니다.
 
 ## 2. 현재 첫 개발 P0
 
-전체 사업 중 첫 번째 실제 완성 목표는 ADMIN 수직 흐름이다.
+제품 핵심은 상품원자 SSOT다. 그 위에서 첫 완성 목표는 ADMIN 수직 흐름이다.
 
 ```text
-Canonical Product
+상품원자 SSOT (공통/변동/정책/메타 + Offer 축 + 버전)
+ → Canonical Product Version
  → Search / Filter
  → Product Detail
  → matched Offer
@@ -55,7 +56,7 @@ Canonical Product
  → 계약서 / 필수서류 / 인도 / 취소
 ```
 
-SALES / WHITE LABEL / 정산 전체 구현을 이 흐름보다 먼저 벌리지 않는다.
+SALES / WHITE LABEL / 정산 전체 구현을 이 흐름보다 먼저 벌리지 않는다. 데모 카탈로그와 기존 ERP Firebase 연결은 이 핵심을 대체하지 않는다.
 
 ---
 
@@ -204,6 +205,7 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - 첫 실제 공급사 Adapter 미연결
 
 참고로 확인됨 (연결 아님):
+- 2026-09-14 사용자 결정: 이 원자 SSOT가 freepasserp.com의 제품 핵심이다.
 - ERP4는 Firebase 프로젝트 `freepasserp3`의 `products`가 운영 상품원자다.
 - ERP5는 별도 프로젝트가 아니라 같은 Firebase의 `productMasterVersions/*`로 공개 원자만 단방향 복사한다.
 - 2026-09-13 1회 게시: 1538대 검증본 저장, `--activate` 없음, 어댑터 부착 298 / blocker 320.
@@ -266,13 +268,14 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 
 ## 11. 지금 Work가 먼저 할 일
 
-1. Codex/Work는 `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`와 `docs/ai-core/scope-lock.json`을 읽고 P0를 넓히지 않는다.
-2. same-Offer / EXACT-PARTIAL / unknown!=0 / matched Offer continuity Search 회귀테스트를 main에 고정
-3. Application Contract에 productVersion + salesChannelId + assigneeId + customerName + submissionId + Snapshot 참조분리 + idempotency 반영
-4. PR #2는 위 3과 겹치면 중복 merge하지 말고 테스트 증거만 맞춘다
-5. 사용자 승인 ADMIN 이미지 기준으로 UI 구현 — 이미지 승인 전 HOLD
-6. 독립 Firebase 연결 후 실제 저장/재조회/중복방지 검증
-7. 승인 공급사 1곳 RAW→Canonical→검색→접수 수직연결
+1. 상품원자 SSOT를 v1 Canonical 핵심으로 고정한다. 계약은 `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`. ERP4 Firebase는 연결하지 않는다.
+2. Codex/Work는 `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`와 `docs/ai-core/scope-lock.json`을 읽고 정산/SALES로 P0를 넓히지 않는다.
+3. same-Offer / EXACT-PARTIAL / unknown!=0 / matched Offer continuity Search를 원자 Offer 축 위에서 회귀테스트
+4. Application Contract에 productVersion + salesChannelId + assigneeId + customerName + submissionId + Snapshot 참조분리 + idempotency 반영
+5. PR #2는 위 4와 겹치면 중복 merge하지 말고 테스트 증거만 맞춘다
+6. 사용자 승인 ADMIN 이미지 기준으로 UI 구현 — 이미지 승인 전 HOLD. 화면은 원자를 재해석하지 않는다.
+7. 독립 Firebase에 원자 버전 컬렉션을 만든 뒤 저장/재조회/중복방지 검증
+8. 승인 공급사 1곳 RAW→원자 Canonical→검색→접수 수직연결
 
 PR #7의 정산·SALES·Auth는 이 목록보다 먼저 벌리지 않는다.
 
@@ -280,7 +283,7 @@ PR #7의 정산·SALES·Auth는 이 목록보다 먼저 벌리지 않는다.
 
 ## 한 문장
 
-> Work는 기능을 임의로 늘리지 말고, 공급사 원문이 판매 가능한 Canonical 상품이 되어 영업되고, 접수·인도·실적·청구·수금·지급까지 이어지는 사업 흐름 안에서 현재 P0를 구현한다. Chat의 최신 R&D는 이 WORK-INBOX를 통해 전달받는다.
+> Work는 기능을 임의로 늘리지 말고, 상품원자가 버전 Canonical이 되어 검색·접수까지 이어지는 흐름을 freepasserp.com의 핵심으로 구현한다. 정산은 그 다음이다. Chat의 최신 R&D는 이 WORK-INBOX를 통해 전달받는다.
 
 ---
 
@@ -343,14 +346,22 @@ AI Core Gate:
 
 ## 14. ERP4 상품원자 당김 경로 확인 — 2026-09-14
 
-상태: **VERIFIED / NOT CONNECTED**
+상태: **USER DIRECTION — freepasserp.com 제품 핵심 / 원천 Firebase NOT CONNECTED**
 
-사용자 지시로 `freepasserp4`의 “ERP5 Firebase + ERP4 상품원자 게시”를 읽었다.
+사용자 최신 결정: “이게 이제 erp.com의 핵심이 될 것.” 여기서 이것 = ERP4 상품원자를 같은 Firebase 버전 컬렉션으로 공개 복사하는 계약.
 
-확인:
-- 같은 Firebase(`freepasserp3`). 별도 ERP5 프로젝트 전제는 CI가 차단한다.
-- 운영 화면은 `products` onSnapshot. ERP5 발행기는 allowlist 복사 + 시트 Adapter 가격축 부착.
-- `/erp5` UI는 2026-08-28 보류. SSOT 발행 경로와 혼동하지 않는다.
-- v1 Canonical은 이 원자 의미를 참고하되 DB/Auth/시트를 연결하지 않는다.
-- 빈 트림 `기본형` 채움은 ERP5 차종 투영 규칙이며 v1에서는 금지.
+핵심으로 승격하는 것:
+- 원자 역할표 (공통/변동/정책/메타, 비공통은 계산)
+- 공개 allowlist + 개인정보/수수료 차단
+- Adapter 가격축 (`rentVariants`, depositPolicy) → v1 Offer
+- `productMasterVersions` + `ssotState` 활성 포인터
+- 해소는 한곳, 화면은 포맷만
+
+핵심이 아닌 것:
+- `freepasserp3` 프로젝트/시크릿을 v1 운영 DB로 쓰기
+- `/erp5` 보류 UI
+- 빈 트림 `기본형` 채움
+- 정산/SALES를 원자보다 먼저 구현
+
+확인 수치(2026-09-13 apply-draft): 1538대 복사, adapter 298, blocker 320, 활성 포인터 미교체.
 

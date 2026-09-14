@@ -10,9 +10,11 @@ v1의 화면 제품은 정확히 세 개다.
 2. SALES — 제휴 영업자
 3. WHITE LABEL — 최종 고객용 B2C 엔진. 회사별 BI/CI는 설정으로 바꾼다.
 
-v1의 첫 제작 범위는 ADMIN의 핵심 수직 흐름이다.
+v1의 제품 핵심은 상품원자 SSOT다. 2026-09-14 사용자 변경: ERP4에서 확인한 공개 원자 복사·Adapter 가격축·버전 컬렉션 계약이 freepasserp.com Canonical의 중심이다. 이유: 화면/접수는 원자를 다시 만들지 않고 이 SSOT를 소비해야 한다. 영향: 데모 상품 목록은 Prototype일 뿐 Canonical이 아니다. 기존 ERP Firebase 프로젝트는 운영 의존성으로 연결하지 않는다.
 
-> Canonical 상품 → 검색/필터 → 상품상세 → 접수 → 접수목록 → 접수상세 → 계약서/서류/인도/취소
+v1의 첫 제작 범위는 그 원자 Canonical 위 ADMIN 수직 흐름이다.
+
+> 상품원자 SSOT → Canonical 버전 → 검색/필터 → 상품상세 → 접수 → 접수목록 → 접수상세 → 계약서/서류/인도/취소
 
 정산과 SALES/WHITE LABEL은 이 기반이 실제 데이터로 검증된 뒤 연결한다.
 
@@ -121,6 +123,8 @@ Approved Supplier RAW
 RAW는 근거/재처리용으로 보존한다. 승인된 매핑은 반복 재사용한다. 같은 표현을 매번 AI가 다시 해석하지 않는다. 새 표현, 모순, 양식변경만 검수한다.
 
 Canonical Product는 안정된 `version` 식별자를 가진다. 접수 Snapshot은 그 값을 `productVersion`으로 명시 저장하며, `updatedAt`만으로 버전 계약을 대체하지 않는다.
+
+원자 계약의 실체는 `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`다. 화면은 `resolve`된 원자를 포맷만 한다. `price` blob을 월대여료 한 칸으로 납작하게 만들지 않고, Adapter `rentVariants`/기간축을 Offer 반복 객체로 둔다. 역할표에 없는 키는 비공통/검수이며 Canonical로 자동 승격하지 않는다.
 
 ---
 
@@ -291,41 +295,42 @@ Connector
 
 ## 12. ADMIN first build sequence
 ### Phase A — 지금
-1. 1:1:1 Admin Shell
-2. Product List/Search/Filter state
-3. Product Detail Summary/Detail
-4. Right Work Panel state machine
-5. Product → Application form
-6. Application Snapshot
-7. Application List
-8. Application Detail + 계약서/서류/인도/취소
+1. 상품원자 SSOT 계약 (공통/변동/정책/메타, 공개 allowlist, Offer 축, 버전 포인터)
+2. 1:1:1 Admin Shell
+3. Product List/Search/Filter state
+4. Product Detail Summary/Detail
+5. Right Work Panel state machine
+6. Product → Application form
+7. Application Snapshot
+8. Application List
+9. Application Detail + 계약서/서류/인도/취소
 
 ### Phase B — SSOT 실제화
-9. Vehicle Master schema + sample master
-10. Policy Definition schema
-11. Canonical Product repository
-12. Search contract + facet counts
-13. Adapter Candidate/Review model
-14. Firebase 독립 프로젝트 연결 및 Rules/Auth 설계
+10. Vehicle Master schema + sample master
+11. Policy Definition schema
+12. Canonical Product repository (원자 버전 컬렉션의 독립 저장소)
+13. Search contract + facet counts
+14. Adapter Candidate/Review model
+15. Firebase 독립 프로젝트 연결 및 Rules/Auth 설계
 
 ### Phase C — 실제 원천 1곳 수직검증
-15. 승인된 공급사 샘플 Source Contract
-16. Read-only Adapter
-17. RAW → Candidate → Review → Canonical
-18. ADMIN 검색 → 상세 → 접수까지 실제 데이터 검증
-19. 실패/재수집/변경/부분매칭 테스트
+16. 승인된 공급사 샘플 Source Contract
+17. Read-only Adapter
+18. RAW → Candidate → Review → Canonical
+19. ADMIN 검색 → 상세 → 접수까지 실제 데이터 검증
+20. 실패/재수집/변경/부분매칭 테스트
 
 ### Phase D
-20. SALES surface
-21. WHITE LABEL surface + Brand Config
-22. 정산/청구/수금/지급
+21. SALES surface
+22. WHITE LABEL surface + Brand Config
+23. 정산/청구/수금/지급
 
 ---
 
 ## 13. Acceptance — ADMIN first vertical slice
 첫 관리자 수직 흐름을 완료라고 부르려면 다음이 실제로 이어져야 한다.
 
-1. Canonical 상품을 검색한다.
+1. 원자 Canonical 버전 상품을 검색한다. 데모 문자열이 아니라 공통/변동/정책 원자와 같은 Offer 축이다.
 2. 필터의 실제 Offer 조건이 결과 카드에 표시된다.
 3. 상품을 누르면 같은 Offer로 상세가 열린다.
 4. `접수하기`를 누르면 오른쪽 패널만 접수폼으로 바뀐다.

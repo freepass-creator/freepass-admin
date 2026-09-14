@@ -1,28 +1,33 @@
 # v1 Core Architecture
 
 ## Goal
-공급사별 제각각인 원문을 한 번 freepasserp.com Canonical 언어로 확정하고, 같은 상품/검색 엔진을 ADMIN·SALES·WHITE LABEL이 사용한다.
+공급사별 제각각인 원문을 상품원자로 한 번 확정하고, 버전 Canonical SSOT를 ADMIN·SALES·WHITE LABEL이 같이 쓴다. 2026-09-14부터 이 원자 SSOT가 freepasserp.com의 제품 핵심이다.
 
 ```text
 Supplier RAW
     ↓
-Supplier Adapter
+Supplier Adapter (가격축 보존)
     ↓
-Mapping + Validation
+Product atoms
+  공통 / 변동 / 정책 / 메타
+  비공통 = 계산(검수)
     ↓
-Canonical Product SSOT
+Versioned Canonical Product SSOT
+  (active pointer, not live overwrite)
     ↓
-Common Search
+Common Search (same-Offer)
     ├── ADMIN
     ├── SALES
     └── WHITE LABEL (B2C)
             ↓
-        Application
+        Application Snapshot
             ↓
  contract / documents / delivery / cancel
             ↓
         Settlement
 ```
+
+화면은 원자를 다시 해석하지 않고 해소된 값을 포맷만 한다. 기존 ERP Firebase는 이 그림의 운영 노드가 아니다.
 
 ## Vehicle
 모델 계층은 `origin → manufacturer → model → subModel → trim`이다. 상품은 공급사 원문에서 확인된 가장 깊은 유효 노드에 연결할 수 있다. 모델까지만 확인된 상품도 정상 저장할 수 있으며 세부모델/트림을 추측하지 않는다.

@@ -1,10 +1,10 @@
-# ERP4 상품원자 → 같은 Firebase ERP5 버전 경로 (참고 전용)
+# ERP4 상품원자 → 같은 Firebase 버전 SSOT
 
 작성일: 2026-09-14
-상태: **VERIFIED BY READING / NOT CONNECTED TO v1**
-출처: `freepass-creator/freepasserp4` (운영 레포). v1은 이 Firebase/컬렉션/시크릿을 연결하지 않는다.
+상태: **v1 제품 핵심 계약 / 원천 Firebase NOT CONNECTED**
+출처: `freepass-creator/freepasserp4` (운영 레포, 의미 참고). v1은 이 Firebase/컬렉션/시크릿을 연결하지 않는다.
 
-> 사용자가 2026-09-14에 “ERP5 Firebase를 쓰면서 ERP4 상품원자를 당겨오는 것”을 확인하라고 지시했다. 이 문서는 그 경로의 실체다. 운영 fallback, 환경변수 복사, 기존 프로젝트 연결은 금지다.
+> 2026-09-14 사용자 결정: 이 경로가 freepasserp.com의 핵심이 된다. 핵심은 원자·공개 경계·Offer 축·버전 포인터 계약이다. 기존 프로젝트에 v1을 붙이는 것이 아니다.
 
 ---
 
@@ -104,10 +104,12 @@ v1 MASTER/정제칸 규칙과 충돌한다. **v1은 빈 트림을 `기본형`으
 - 공개 allowlist 밖 필드(수수료, 고객, VIN)를 검색 카드에 노출
 - 이 경로를 “v1 독립 Firebase 연결 완료”로 보고
 
-해도 되는 것(승인된 다음 슬라이스):
+해도 되는 것(지금 Domain 슬라이스):
 
-- 위 원자 역할을 Search/Detail Projection 계약의 근거로 쓰기 (PR #4와 동일 철학)
+- 위 원자 역할을 v1 Canonical / Search / Detail Projection의 핵심 계약으로 쓰기
 - Adapter 가격축(`rentVariants`)을 v1 Offer 반복 객체로 설계
-- 실제 연결은 **신규 Firebase**와 승인된 Source Contract 이후. 그때도 ERP4를 fallback으로 두지 않음
+- 버전 컬렉션 + 활성 포인터를 v1 독립 저장소 설계에 반영 (연결 전 계약만)
 
-확인 상태: `DESIGNED`(참고 문서) / 연결 `NOT AUTHORIZED`.
+실제 운영 저장은 **신규 Firebase**(또는 승인된 v1 저장소)와 승인된 Source Contract 이후다. 그때도 ERP4를 fallback으로 두지 않는다.
+
+확인 상태: 계약 `DESIGNED` / 연결 `NOT AUTHORIZED`.

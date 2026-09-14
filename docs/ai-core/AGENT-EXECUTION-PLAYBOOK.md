@@ -22,14 +22,17 @@
 사용자 지시 `기능 우선 / UI 보류`의 올바른 해석:
 
 ```text
+상품원자 SSOT를 v1 Canonical 핵심으로 두고,
 지금 P0(검색 → 상세 → 접수 Snapshot → 계약서/서류/인도/취소)를
 추측 UI 없이 Domain 계약과 테스트로 고정한다.
+데모 카탈로그는 Canonical이 아니다.
 ```
 
 잘못된 해석:
 
 ```text
 정산·SALES·Auth까지 한 번에 만들고 MASTER P0를 넓힌다.
+ERP4 Firebase를 v1에 붙여 핵심을 대체한다.
 ```
 
 PR #7은 **새 baseline이 아니다.** `scope-lock.json`의 salvage만 재사용하고 park 항목은 가져오지 않는다.
@@ -53,6 +56,7 @@ PR #7은 **새 baseline이 아니다.** `scope-lock.json`의 salvage만 재사�
 
 ### 해도 됨 — Gate A
 
+- 상품원자 SSOT 계약: 공통/변동/정책/메타, 공개 allowlist, Adapter Offer 축, 버전 포인터. ERP4 프로젝트는 읽기 참고만
 - same-Offer 검색: 기간·월대여료·보증금·약정주행·Offer-scope Policy가 **같은 Offer 하나**에서 동시에 맞을 때만 통과
 - 같은 축 복수값 OR, 다른 축 AND
 - 모델/세부모델/트림 EXACT vs PARTIAL. 다른 세부모델로 확정된 상품은 PARTIAL에 넣지 않음
@@ -72,7 +76,7 @@ PR #7은 **새 baseline이 아니다.** `scope-lock.json`의 salvage만 재사�
 - 기존 ERP/Firebase/ADC fallback
 - 미머지 작업으로 WORK-INBOX 구현 목록을 덮어쓰기
 
-상품 원자의 실체는 `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`에 확인돼 있다. 데모 카탈로그를 Canonical로 승격하지 말고, ERP4 `products`를 v1 운영 DB로 연결하지도 않는다.
+상품 원자의 실체는 `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`에 확인돼 있다. 2026-09-14부터 이것이 freepasserp.com의 제품 핵심이다. 데모 카탈로그를 Canonical로 승격하지 말고, ERP4 `products`를 v1 운영 DB로 연결하지도 않는다.
 
 ---
 

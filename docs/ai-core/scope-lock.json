@@ -1,0 +1,69 @@
+{
+  "id": "freepasserp-v1-scope-lock",
+  "updated": "2026-09-14",
+  "p0": "ADMIN_VERTICAL_SLICE",
+  "p0Flow": [
+    "Canonical Product",
+    "Search/Filter",
+    "Product Detail",
+    "matched Offer",
+    "Application",
+    "Application List",
+    "Application Detail",
+    "contract / documents / delivery / cancel"
+  ],
+  "notP0UntilPhaseAVerified": [
+    "SALES surface",
+    "WHITE LABEL surface",
+    "settlement finalize",
+    "billing",
+    "collection",
+    "payout",
+    "Firebase production project",
+    "login UI"
+  ],
+  "doNotRewriteWithoutExplicitUserChangeAndDocsOnlyPr": [
+    "AGENTS.md sections 3-4",
+    "docs/MASTER-v1.md Phase A-D",
+    "docs/WORK-INBOX.md P0 and first-work list"
+  ],
+  "allowedNow": [
+    "search-contract-same-offer-exact-partial-unknown-not-zero",
+    "application-contract-productVersion-salesChannelId-assigneeId-customerName-submissionId",
+    "snapshot-multi-select-isolation",
+    "application-create-idempotency"
+  ],
+  "hold": [
+    "visual UI implementation until user exact image approval",
+    "production deploy"
+  ],
+  "pr7": {
+    "branch": "codex/functional-settlement-mvp-20260913",
+    "status": "MIXED_SCOPE_CANDIDATE",
+    "notNewBaseline": true,
+    "salvage": [
+      "same-offer search",
+      "EXACT-PARTIAL other-submodel exclusion",
+      "application required fields and productVersion",
+      "MULTI_SELECT snapshot isolation",
+      "submission idempotency"
+    ],
+    "park": [
+      "settlement / billing / collection / payout domain as P0",
+      "SALES /sales surface",
+      "Firebase Auth session cookie",
+      "SSOT rewrites of AGENTS/MASTER/WORK-INBOX P0",
+      "admin-dashboard god file",
+      "localStorage as persistence"
+    ]
+  },
+  "onePrOneSlice": [
+    "search",
+    "application",
+    "persistence",
+    "visual-ui",
+    "auth",
+    "settlement",
+    "sales-surface"
+  ]
+}

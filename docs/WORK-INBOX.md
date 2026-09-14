@@ -1,6 +1,6 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-13
+최종 갱신: 2026-09-14
 프로젝트: freepasserp.com v1
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
@@ -199,19 +199,16 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - Issue #5 — P0 통합 순서와 HOLD 기준
 
 현재 중요한 Gap:
-- main ADMIN UI는 Prototype
-- 실제 same-Offer Search Contract 미구현
-- Application explicit productVersion 필요
-- salesChannelId / assigneeId 계약 필요
-- idempotent create 필요
+- main ADMIN UI는 Prototype. 검색/접수 Domain 계약은 이 브랜치에서 테스트로 고정 중이며, Prototype UI에 아직 연결하지 않음 (시각 HOLD)
 - 독립 Firebase persistence 미검증
 - 첫 실제 공급사 Adapter 미연결
 
 병렬 작업:
-- PR #2: Snapshot `MULTI_SELECT.value` 참조분리 — 코드/테스트 작성, 실행 검증 대기
+- PR #2: Snapshot `MULTI_SELECT.value` 참조분리 — 이 브랜치 Application 계약이 같은 분리를 포함하므로 중복 merge를 피한다.
 - PR #3: UI Profile / review packet — 사용자 exact image 승인 및 evidence gate
 - PR #4: Atom Projection + 기능 시뮬레이션
 - PR #6: AI Core 통합 통제판
+- PR #7: Codex 기능 수직 PR. **새 baseline 아님.** 검색·접수 계약만 salvage, 정산/SALES/Auth/SSOT 재작성은 park. 상세는 `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`.
 
 ---
 
@@ -223,9 +220,10 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 2. `AGENTS.md`
 3. `docs/WORK-INBOX.md`
 4. `docs/MASTER-v1.md`
-5. 해당 작업과 관련된 PR / Issue / AI Core Gate 확인
-6. 같은 파일을 다른 AI가 수정 중인지 확인
-7. 구현 후 완료 상태를 구분해서 보고
+5. `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md` / `docs/ai-core/scope-lock.json`
+6. 해당 작업과 관련된 PR / Issue / AI Core Gate 확인
+7. 같은 파일을 다른 AI가 수정 중인지 확인
+8. 구현 후 완료 상태를 구분해서 보고
 
 완료 상태 표준:
 - DESIGNED
@@ -262,12 +260,15 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 
 ## 11. 지금 Work가 먼저 할 일
 
-1. PR #2 테스트 실제 실행 후 merge 판단
-2. same-Offer / EXACT-PARTIAL / unknown!=0 / matched Offer continuity Search 회귀테스트
-3. Application Contract에 productVersion + salesChannelId + assigneeId + idempotency 반영
-4. 사용자 승인 ADMIN 이미지 기준으로 UI 구현
-5. 독립 Firebase 연결 후 실제 저장/재조회/중복방지 검증
-6. 승인 공급사 1곳 RAW→Canonical→검색→접수 수직연결
+1. Codex/Work는 `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`와 `docs/ai-core/scope-lock.json`을 읽고 P0를 넓히지 않는다.
+2. same-Offer / EXACT-PARTIAL / unknown!=0 / matched Offer continuity Search 회귀테스트를 main에 고정
+3. Application Contract에 productVersion + salesChannelId + assigneeId + customerName + submissionId + Snapshot 참조분리 + idempotency 반영
+4. PR #2는 위 3과 겹치면 중복 merge하지 말고 테스트 증거만 맞춘다
+5. 사용자 승인 ADMIN 이미지 기준으로 UI 구현 — 이미지 승인 전 HOLD
+6. 독립 Firebase 연결 후 실제 저장/재조회/중복방지 검증
+7. 승인 공급사 1곳 RAW→Canonical→검색→접수 수직연결
+
+PR #7의 정산·SALES·Auth는 이 목록보다 먼저 벌리지 않는다.
 
 ---
 
@@ -313,4 +314,22 @@ AI Core Gate:
 - visual implementation: `HOLD_UNTIL_USER_IMAGE_APPROVAL`
 - domain/search/application contract work: 기존 승인 범위에서 계속 가능
 - production deploy: `NOT_AUTHORIZED`
+
+---
+
+## 13. Codex 해맴 잠금 — 2026-09-14
+
+상태: **USER DIRECTION — 성능 고도화 / 해맴 방지**
+
+원인: Codex PR #7이 `기능 우선`을 Phase D 정산·SALES·Firebase까지 한 PR로 해석하고, 미머지 브랜치에서 P0 SSOT를 다시 썼다.
+
+잠금:
+- `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`
+- `docs/ai-core/scope-lock.json`
+- `AGENTS.md` 11절 Scope lock
+
+해석 고정:
+- `기능 우선 / UI 보류` = 현재 P0 검색·접수 계약을 테스트로 고정
+- `기능 우선` ≠ 정산 MVP, ≠ SALES 화면, ≠ Auth 경계를 지금 구현
+- PR #7 문서는 main WORK-INBOX보다 우선하지 않음
 

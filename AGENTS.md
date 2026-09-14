@@ -6,7 +6,8 @@
 2. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
 3. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
 4. `docs/MASTER-v1.md` — 장기 제품 기준
-5. 해당 작업의 PR / Issue / AI Core Gate
+5. `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md` 와 `docs/ai-core/scope-lock.json` — 현재 허용 범위와 해맴 방지
+6. 해당 작업의 PR / Issue / AI Core Gate
 
 메일 원문 출처 추적이 필요하면 `docs/memory/EMAIL-RND-INDEX.md`에서 Gmail message id와 제목을 확인한다.
 
@@ -51,3 +52,20 @@ WHITE LABEL과 B2C를 별도 네 번째 제품으로 만들지 않는다. White 
 - 변경은 작고 검증 가능한 단위로 커밋한다.
 - 미확정 사항은 `DECISION REQUIRED`로 남긴다.
 - 완료 상태는 `DESIGNED / CODED / STATIC CHECKED / TESTED / PERSISTENCE VERIFIED / DEPLOYMENT VERIFIED / USER APPROVED`를 구분한다.
+
+## 11. Scope lock — 해맴 금지
+P0는 `AGENTS.md` 4절과 `docs/ai-core/scope-lock.json`에 잠겨 있다. 사용자 한 줄 지시로 MASTER Phase나 P0 한 줄을 넓히지 않는다.
+
+금지:
+- 미머지 브랜치에서 `AGENTS.md` 3–4절, `MASTER-v1.md` Phase A–D, `WORK-INBOX` P0를 새 기준으로 다시 쓰기
+- 검색·접수 Domain, 정산/청구/수금/지급, SALES 화면, Firebase Auth, 시각 UI를 한 PR에 섞기
+- `DECISION REQUIRED`를 임시 Gate로 구현하고 완료처럼 보고하기
+- 머지 전 작업을 `WORK-INBOX`에 `현재 구현됨`으로 올려 main 기준으로 만들기
+- localStorage/메모리 시뮬레이션을 `PERSISTENCE VERIFIED`로 부르기
+
+허용(지금):
+- same-Offer / EXACT-PARTIAL / 공란≠0 Search Contract와 회귀테스트
+- Application `productVersion` + `salesChannelId` + `assigneeId` + `customerName` + `submissionId` + Snapshot 참조분리 + idempotency
+- 위 계약의 단위테스트 실행 증거
+
+`기능 우선 / UI 보류`는 Phase A 검색·접수를 테스트로 고정하라는 뜻이다. Phase D 정산·SALES를 앞당기라는 뜻이 아니다. 자세한 절차는 `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md`를 따른다.

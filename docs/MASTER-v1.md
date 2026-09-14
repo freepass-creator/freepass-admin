@@ -70,6 +70,7 @@ PC의 핵심 업무 화면은 같은 폭의 세 패널을 유지한다.
 ### 저장 시 Snapshot
 접수 저장 시 다음을 현재 상품과 분리해 보존한다.
 - product id / supplier
+- explicit product version
 - vehicle master ref 및 확인 깊이
 - 필요한 제원
 - 선택 Offer의 기간/대여료/보증금/약정주행거리 등
@@ -118,6 +119,8 @@ Approved Supplier RAW
 ```
 
 RAW는 근거/재처리용으로 보존한다. 승인된 매핑은 반복 재사용한다. 같은 표현을 매번 AI가 다시 해석하지 않는다. 새 표현, 모순, 양식변경만 검수한다.
+
+Canonical Product는 안정된 `version` 식별자를 가진다. 접수 Snapshot은 그 값을 `productVersion`으로 명시 저장하며, `updatedAt`만으로 버전 계약을 대체하지 않는다.
 
 ---
 

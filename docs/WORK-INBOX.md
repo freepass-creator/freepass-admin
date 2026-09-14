@@ -229,9 +229,10 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 3. `docs/WORK-INBOX.md`
 4. `docs/MASTER-v1.md`
 5. `docs/ai-core/AGENT-EXECUTION-PLAYBOOK.md` / `docs/ai-core/scope-lock.json`
-6. 해당 작업과 관련된 PR / Issue / AI Core Gate 확인
-7. 같은 파일을 다른 AI가 수정 중인지 확인
-8. 구현 후 완료 상태를 구분해서 보고
+6. `docs/reference/ERP4-ERP5-PRODUCT-ATOM-SSOT.md`
+7. 해당 작업과 관련된 PR / Issue / AI Core Gate 확인
+8. 같은 파일을 다른 AI가 수정 중인지 확인
+9. 구현 후 완료 상태를 구분해서 보고
 
 완료 상태 표준:
 - DESIGNED

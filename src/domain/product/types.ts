@@ -48,6 +48,7 @@ export type PolicyValue =
 
 export interface CanonicalProduct {
   id: string;
+  version: string;
   supplierId: string;
   supplierProductKey: string;
   vehicle: VehicleMasterRef;

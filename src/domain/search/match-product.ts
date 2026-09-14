@@ -1,14 +1,20 @@
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
 
+export type PolicySearchScope = 'PRODUCT' | 'OFFER';
+
 export interface ProductSearchQuery {
   modelId?: string;
+  modelIds?: string[];
   subModelId?: string;
+  subModelIds?: string[];
   trimId?: string;
+  trimIds?: string[];
   termMonths?: number;
+  termMonthsAny?: number[];
   maxMonthlyRent?: number;
   maxDeposit?: number;
   minAnnualMileageKm?: number;
-  policies?: Array<{ policyId: string; value: PolicyValue['value'] }>;
+  policies?: Array<{ policyId: string; value: PolicyValue['value']; scope?: PolicySearchScope }>;
 }
 
 export interface ProductSearchMatch {
@@ -25,46 +31,83 @@ function sameValue(left: PolicyValue['value'], right: PolicyValue['value']) {
   return left === right;
 }
 
-function matchesPolicies(values: PolicyValue[], query: ProductSearchQuery['policies']) {
-  if (!query?.length) return true;
-  return query.every((required) =>
-    values.some(
-      (actual) => actual.policyId === required.policyId && sameValue(actual.value, required.value),
-    ),
-  );
+function hasPolicy(values: PolicyValue[], policyId: string, value: PolicyValue['value']) {
+  return values.some((actual) => actual.policyId === policyId && sameValue(actual.value, value));
 }
 
-function matchesOffer(offer: Offer, query: ProductSearchQuery) {
+function matchesPolicies(
+  productValues: PolicyValue[],
+  offerValues: PolicyValue[],
+  query: ProductSearchQuery['policies'],
+) {
+  if (!query?.length) return true;
+  return query.every((required) => {
+    if (required.scope === 'PRODUCT') return hasPolicy(productValues, required.policyId, required.value);
+    if (required.scope === 'OFFER') return hasPolicy(offerValues, required.policyId, required.value);
+    return (
+      hasPolicy(productValues, required.policyId, required.value) ||
+      hasPolicy(offerValues, required.policyId, required.value)
+    );
+  });
+}
+
+function matchesOffer(product: CanonicalProduct, offer: Offer, query: ProductSearchQuery) {
   if (query.termMonths !== undefined && offer.termMonths !== query.termMonths) return false;
+  if (query.termMonthsAny?.length && !query.termMonthsAny.includes(offer.termMonths)) return false;
   if (query.maxMonthlyRent !== undefined && offer.monthlyRent > query.maxMonthlyRent) return false;
-  if (query.maxDeposit !== undefined && (offer.deposit === undefined || offer.deposit > query.maxDeposit)) return false;
+  if (query.maxDeposit !== undefined && (offer.deposit === undefined || offer.deposit > query.maxDeposit)) {
+    return false;
+  }
   if (
     query.minAnnualMileageKm !== undefined &&
     (offer.annualMileageKm === undefined || offer.annualMileageKm < query.minAnnualMileageKm)
-  ) return false;
-  return matchesPolicies(offer.policyValues, query.policies);
+  ) {
+    return false;
+  }
+  return matchesPolicies(product.productPolicies, offer.policyValues, query.policies);
+}
+
+function matchesAny(value: string, single?: string, multiple?: string[]) {
+  if (single && value !== single) return false;
+  if (multiple?.length && !multiple.includes(value)) return false;
+  return true;
 }
 
 export function matchProduct(
   product: CanonicalProduct,
   query: ProductSearchQuery,
 ): ProductSearchMatch | null {
-  if (query.modelId && product.vehicle.modelId !== query.modelId) return null;
+  if (!matchesAny(product.vehicle.modelId, query.modelId, query.modelIds)) return null;
 
   let vehicleMatch: ProductSearchMatch['vehicleMatch'] = 'EXACT';
+  const subModelQuery = query.subModelId ?? (query.subModelIds?.length === 1 ? query.subModelIds[0] : undefined);
 
-  if (query.subModelId) {
-    if (product.vehicle.subModelId && product.vehicle.subModelId !== query.subModelId) return null;
+  if (query.subModelId || query.subModelIds?.length) {
+    if (product.vehicle.subModelId && !matchesAny(product.vehicle.subModelId, query.subModelId, query.subModelIds)) {
+      return null;
+    }
     if (!product.vehicle.subModelId) vehicleMatch = 'PARTIAL';
   }
 
-  if (query.trimId) {
-    if (product.vehicle.trimId && product.vehicle.trimId !== query.trimId) return null;
-    if (!product.vehicle.trimId) vehicleMatch = 'PARTIAL';
+  if (query.trimId || query.trimIds?.length) {
+    if (product.vehicle.trimId && !matchesAny(product.vehicle.trimId, query.trimId, query.trimIds)) return null;
+    if (!product.vehicle.trimId) {
+      if (product.vehicle.subModelId && !subModelQuery) return null;
+      vehicleMatch = 'PARTIAL';
+    }
   }
 
-  const matchedOffers = product.offers.filter((offer) => matchesOffer(offer, query));
+  const matchedOffers = product.offers.filter((offer) => matchesOffer(product, offer, query));
   if (!matchedOffers.length) return null;
 
   return { product, matchedOffers, vehicleMatch };
+}
+
+export function pickMatchedOffer(match: ProductSearchMatch, selectedOfferId?: string): Offer {
+  const selected = selectedOfferId
+    ? match.matchedOffers.find((offer) => offer.id === selectedOfferId)
+    : undefined;
+  const offer = selected ?? match.matchedOffers[0];
+  if (!offer) throw new Error('Search match has no offer to continue.');
+  return offer;
 }

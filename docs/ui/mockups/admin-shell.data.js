@@ -25,13 +25,83 @@ function carSvg(body) {
 }
 
 /** 전자계약 — 보냈나 · 봤나 · 서명했나. 셋은 서로 다른 사실이다. */
+/**
+ * ★전자계약 표본 — freepasserp4 @595abae 의 실제 모델을 따른다.
+ *   stage  관리자 축 다섯 중 하나 (draft·ready·filling·review·done)
+ *   steps  손님 축 여덟 중 몇까지 갔나 — 관리자 축과 «다른 축» 이다
+ *   checks 보내기 전 검사. BLOCK 이 하나라도 있으면 링크를 못 만든다
+ *   expired·revoked·rejects  플래그. 단계가 아니다
+ */
 const ESIGNS = [
-  { no: 'E-2609-041', app: 'A-260916-015', cust: '김서연', veh: '싼타페 MX5', st: '서명 대기',
-    sent: '09-16 14:40', seen: '09-16 14:52', signed: null, to: '010-2841-0093', doc: '장기렌터카 이용계약서 v3' },
-  { no: 'E-2609-040', app: 'A-260915-031', cust: '이서진', veh: '싼타페 TM', st: '열람 전',
-    sent: '09-15 16:20', seen: null, signed: null, to: '', doc: '장기렌터카 이용계약서 v3' },
-  { no: 'E-2609-038', app: 'A-260915-022', cust: '최윤호', veh: '싼타페 MX5', st: '완료',
-    sent: '09-15 11:30', seen: '09-15 11:44', signed: '09-15 11:51', to: '010-3312-8890', doc: '장기렌터카 이용계약서 v3' },
+  { no:'E-2609-041', app:'A-260916-015', cust:'김서연', veh:'싼타페 MX5', plate:'서울 12가 3456',
+    sup:'대영렌터카', kind:'렌트·보험포함', stage:'review', steps:8, at:'09-16 15:10',
+    to:'010-2841-0093', linkAt:'09-16 14:40', seenAt:'09-16 14:52', expiresAt:'09-23 14:40',
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-16 15:02', sha:'9f2a41c8…' },
+          { t:'운전면허증', at:'09-16 15:03', sha:'c07be913…' },
+          { t:'재직증명서', at:'09-16 15:08', sha:'41d0aa57…' }],
+    rev:1, sha256:'e3b0c44298fc1c149afbf4c8996fb924', seal:'7d5a2f91c6b0e4a8',
+    verifyUrl:'https://verify.chakhandeal.com/7d5a2f91',
+    hist:[{ at:'09-16 15:10', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-16 14:52', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-16 14:40', t:'링크 만들기', who:'박지훈' },
+          { at:'09-16 14:31', t:'계약서 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-040', app:'A-260915-031', cust:'이서진', veh:'싼타페 TM', plate:'경기 78나 1204',
+    sup:'새턴렌탈', kind:'구독·보험포함', stage:'ready', steps:0, at:'09-15 16:20',
+    to:'', linkAt:null, seenAt:null, expiresAt:'09-22 16:20',
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    /* ★막는 조건은 «하나가 아니다». 연락처만 보면 나머지를 못 본다 */
+    checks:[{ level:'BLOCK', t:'받는 곳(연락처)이 없다', fix:'접수에서 입력' },
+            { level:'BLOCK', t:'공급사 「새턴렌탈」 사업자 정보가 비어 있다', fix:'파트너사관리 열기' },
+            { level:'WARNING', t:'운전연령 만 21세 — 정책 하한과 같다' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-15 16:20', t:'계약서 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-039', app:'A-260914-008', cust:'정하늘', veh:'그랜저 GN7', plate:'서울 34다 7781',
+    sup:'한빛모빌리티', kind:'구독·보험별도', stage:'filling', steps:5, at:'09-16 09:12',
+    to:'010-5520-7741', linkAt:'09-14 10:05', seenAt:'09-16 09:12', expiresAt:'09-21 10:05',
+    signedAt:null, expired:false, revoked:null,
+    rejects:[{ at:'09-15 17:40', items:['재직증명서'], why:'발급일이 3개월을 넘었다' }],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-15 11:20', sha:'2b81ff40…' }],
+    rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-16 09:12', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-15 17:40', t:'보완 요청 — 재직증명서', who:'박지훈' },
+          { at:'09-15 16:02', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-14 10:05', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-038', app:'A-260915-022', cust:'최윤호', veh:'싼타페 MX5', plate:'인천 05라 9920',
+    sup:'대영렌터카', kind:'렌트·보험포함', stage:'done', steps:8, at:'09-15 11:51',
+    to:'010-3312-8890', linkAt:'09-15 11:30', seenAt:'09-15 11:44', expiresAt:'09-22 11:30',
+    signedAt:'09-15 11:51', expired:false, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-15 11:46', sha:'55ac0e21…' },
+          { t:'운전면허증', at:'09-15 11:47', sha:'ba9f7730…' }],
+    rev:1, sha256:'a1f9d3e77b204c8e91355ccf0a2d64b8', seal:'3c8e07b1f4d29a56',
+    verifyUrl:'https://verify.chakhandeal.com/3c8e07b1',
+    hist:[{ at:'09-15 11:51', t:'승인 — 완료', who:'박지훈' },
+          { at:'09-15 11:49', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-15 11:44', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-15 11:30', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-036', app:'A-260910-004', cust:'박도윤', veh:'카니발 KA4', plate:'서울 61마 3308',
+    sup:'새턴렌탈', kind:'렌트·보험포함', stage:'filling', steps:2, at:'09-10 09:40',
+    to:'010-7719-2245', linkAt:'09-08 09:40', seenAt:'09-10 09:40', expiresAt:'09-15 09:40',
+    signedAt:null, expired:true, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-10 09:40', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-08 09:40', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-035', app:null, cust:'윤지호', veh:'셀토스 SP2', plate:null,
+    sup:'한빛모빌리티', kind:'구독·보험포함', stage:'draft', steps:0, at:'09-16 11:02',
+    to:'010-4402-1188', linkAt:null, seenAt:null, expiresAt:null,
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    checks:[{ level:'BLOCK', t:'기간별 대여료를 아직 고르지 않았다', fix:'대여료 고르기' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-16 11:02', t:'새 계약 만들기', who:'박지훈' }] },
 ];
 
 const PRODUCTS = [

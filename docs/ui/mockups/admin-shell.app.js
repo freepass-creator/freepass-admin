@@ -15,6 +15,7 @@ const S = {
   focus: 'app',
   mini: false, draft: null, saving: false, seq: 16,
   pick: null, pickQ: '',
+  ecChip: 'all', ecQ: '',
 };
 
 const NAV = [
@@ -55,7 +56,6 @@ const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${m
 const VAT = '<span class="mut" style="font-size:10.5px">VAT 포함</span>';
 /** 환수는 부호가 반대다 — 숫자 앞에 «−» 를 붙여 눈으로도 갈리게 한다 */
 const won2 = n => (n < 0 ? '−' + won(-n) : won(n));
-const esignSt = e => e.st === '완료' ? { t: '완료', c: 'ok' } : e.st === '서명 대기' ? { t: '서명 대기', c: 'wait' } : { t: '열람 전', c: 'bad' };
 
 /** 사진 자리 — 한 톤의 «윤곽»만. 색을 넣으면 그림이 되고, 그림이 되면 장난감으로 읽힌다. */
 function glyph() {
@@ -71,7 +71,7 @@ const shotBox = (has, cls) => has
 const stepper = (names, at) => `<div class="steps">${names.map((n, i) => {
   const k = i + 1 === at ? 'on' : i + 1 < at ? 'dn' : '';
   return `<span class="stp ${k}"><span class="n2">${i + 1}</span>${esc(n)}</span>`
-    + (i < names.length - 1 ? '<span class="ar">&#10095;</span>' : '');
+    + (i < names.length - 1 ? '<span class="ar" aria-hidden="true">&#10095;</span>' : '');
 }).join('')}</div>`;
 
 /**
@@ -695,57 +695,6 @@ function detailPay(el) {
   if ($('#unhold')) $('#unhold').onclick = () => { p.hold = false; p.hist.push({ t: '09-16', w: '보류 해제', a: null }); render(); };
 }
 
-/* ══ 전자계약 ══════════════════════════════════ */
-function paneEsign(el) {
-  el.innerHTML = `<div class="ph"><h2>계약 목록</h2><span class="c">${ESIGNS.length}건</span></div>
-    <div class="pb"><table class="g">
-      <thead><tr><th>고객</th><th>차량</th><th>받는 곳</th><th>발송</th><th>열람</th><th>서명</th><th>상태</th></tr></thead>
-      <tbody>${ESIGNS.map(e => { const s = esignSt(e);
-        return `<tr data-no="${e.no}" class="${e.no === S.esignNo && S.focus === 'esign' ? 'on' : ''}">
-          <td class="nm">${esc(e.cust)}</td><td class="mut">${esc(e.veh)}</td>
-          <td class="mut n">${e.to ? esc(e.to) : '<span class="unk">없음</span>'}</td>
-          <td class="mut n">${esc(e.sent)}</td><td class="mut n">${e.seen ? esc(e.seen) : '—'}</td>
-          <td class="mut n">${e.signed ? esc(e.signed) : '—'}</td>
-          <td><span class="st ${s.c}">${s.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf">${tl('서명 완료', ESIGNS.filter(e => e.signed).length, 'ok')}${tl('고객 작성 중', ESIGNS.filter(e => e.seen && !e.signed).length, 'warn')}${tl('발송 전', ESIGNS.filter(e => !e.seen).length)}${tl('확인 필요', ESIGNS.filter(e => !e.to).length, 'bad')}</div>`;
-  el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.esignNo = r.dataset.no; S.focus = 'esign'; render(); });
-}
-
-function detailEsign(el) {
-  const e = ESIGNS.find(x => x.no === S.esignNo) || ESIGNS[0];
-  const blocked = !e.to, at = e.signed ? 3 : e.seen ? 2 : 1;
-  el.innerHTML = `<div class="ph"><h2>계약 상세</h2><span class="c n">${esc(e.no)}</span>
-      ${stepper(['발송', '열람', '서명'], at)}</div>
-    <div class="pb"><div class="dwrap">
-      <div class="dtop"><div>${shotBox(true, 'shot')}</div>
-        <div><div class="dchips"><span class="tag n">접수 ${esc(e.app)}</span><span class="st ${esignSt(e).c}">${esignSt(e).t}</span></div>
-          <h3 class="dttl">${esc(e.cust)}</h3><p class="dsub">${esc(e.veh)} · ${esc(e.doc)}</p>
-          <dl class="kv">
-            <dt>받는 곳</dt><dd>${e.to ? esc(e.to) : '<span class="unk">연락처 없음</span>'}</dd>
-            <dt>발송</dt><dd class="n">${esc(e.sent)}</dd>
-            <dt>열람</dt><dd>${e.seen ? `<span class="n">${esc(e.seen)}</span>` : '<span class="unk">아직 안 봤습니다</span>'}</dd>
-            <dt>서명</dt><dd>${e.signed ? `<span class="n">${esc(e.signed)}</span>` : '<span class="unk">아직</span>'}</dd>
-            <dt>신분 확인</dt><dd>${e.signed
-              ? '<span class="st ok">수집됨</span> <span class="mut" style="font-size:11px">주민번호·면허 — 관리자는 열람하지 않습니다</span>'
-              : '<span class="mut">서명 시 수집</span>'}</dd>
-          </dl></div></div>
-      ${blocked ? `<div class="note e"><span class="i">!</span><div><b>보낼 곳이 없습니다</b>
-          <p>접수에서 전화번호를 강제하지 않았기 때문입니다. 가짜 번호를 미리 받는 것보다 <b>여기서 받아</b> 보내는 편이 낫습니다.</p></div></div>`
-        : e.signed ? `<div class="note"><span class="i">&#10003;</span><div><b>서명 완료</b><p>서명된 계약서의 판까지 남겼습니다 — 나중에 다툴 때 댈 근거가 됩니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>보냈나 · 봤나 · 서명했나는 서로 다른 사실입니다</b><p>하나의 「진행 중」으로 뭉치면 어디서 멈췄는지 못 봅니다.</p></div></div>`}
-    </div></div>
-    <div class="dact"><div class="grow">${blocked
-        ? `<input id="eph" placeholder="받는 연락처 010-0000-0000" style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)">`
-        : `<textarea placeholder="함께 보낼 말 (선택)"></textarea>`}</div>
-      <button class="btn">미리보기</button>
-      ${e.signed ? '<button class="btn" disabled>완료됨</button>' : `<button class="btn go" id="send"${blocked ? ' disabled' : ''}>${e.seen ? '재발송' : '계약서 발송'}</button>`}</div>`;
-  const ph = $('#eph'); if (ph) ph.oninput = () => { $('#send').disabled = ph.value.trim().length < 9; };
-  if ($('#send')) $('#send').onclick = () => {
-    if (blocked) e.to = $('#eph').value.trim();
-    e.sent = '09-16 15:40'; e.st = e.seen ? '서명 대기' : '열람 전'; render();
-  };
-}
-
 /* ══ 세부필터 시트 ═════════════════════════════ */
 function renderSheet() {
   if (!S.sheet) { $('#sheetroot').innerHTML = ''; return; }
@@ -792,7 +741,7 @@ const HEAD = {
   product: ['상품 찾기', '조건에 맞는 상품을 찾고, 그 조건 그대로 접수로 넘깁니다.'],
   intake: ['계약 접수', '접수 건을 고르고 계약서 · 필수서류 · 인도를 처리합니다.'],
   settle: ['정산 관리', '실적을 대조해 확정하고, 청구 · 수금 · 지급을 따로 관리합니다.'],
-  esign: ['전자계약', '계약서를 보내고 열람 · 서명을 확인합니다.'],
+  esign: ['전자계약', '단계마다 할 일이 하나입니다 — 링크를 만들고, 제출을 검토하고, 완료를 봉인합니다.'],
 };
 
 function renderNav() {
@@ -818,17 +767,25 @@ function render() {
     product: () => [['판매 가능', PRODUCTS.length + '건'], ['부분 매칭', PRODUCTS.filter(x => x.match !== 'TRIM').length + '건', 'hot'], ['조건 결과', evaluate().hits.length + '건']],
     intake: () => [['칠 것', APPS.filter(a => !a.cxl && !a.deliv).length + '건', 'hot'], ['진행 중', APPS.filter(a => a.contract && !a.deliv && !a.cxl).length + '건'], ['인도완료', APPS.filter(a => a.deliv && !a.cxl).length + '건', 'ok']],
     settle: () => [['대조 중', PERFS.filter(x => x.stage < 4).length + '건', 'hot'], ['미수', man(BILLS.reduce((n, b) => n + b.fixed - b.got, 0)) + '원'], ['미지급', man(PAYS.reduce((n, x) => n + x.fixed - x.paid, 0)) + '원']],
-    esign: () => [['서명 대기', ESIGNS.filter(x => x.st === '서명 대기').length + '건', 'hot'], ['열람 전', ESIGNS.filter(x => x.st === '열람 전').length + '건'], ['완료', ESIGNS.filter(x => x.st === '완료').length + '건', 'ok']],
+    esign: () => [['검토 대기', ESIGNS.filter(x => x.stage === 'review').length + '건', 'hot'],
+      ['고객 작성 중', ESIGNS.filter(x => x.stage === 'filling').length + '건'],
+      ['완료', ESIGNS.filter(x => x.stage === 'done').length + '건', 'ok']],
   }[S.screen]();
   $('#phead').innerHTML = `<h1>${esc(t)}</h1><span class="sub">${esc(p)}</span>${kpis(K)}`;
 
   /* 목록 둘은 왼쪽에 위아래로, 상세는 «하나» 가 오른쪽에 세로로 선다.
      상세는 마지막에 고른 줄을 그린다 — 목록을 오가도 자리는 그대로다. */
-  const P1 = $('#p1'), P2 = $('#p2'), D = $('#d1');
-  if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
-  else if (S.screen === 'esign') { paneEsign(P1); paneApps(P2); }
-  else { paneProducts(P1); paneApps(P2); }
-  paneDetail(D);
+  const P1 = $('#p1'), P2 = $('#p2'), P3 = $('#p3'), D = $('#d1');
+  /* ★전자계약만 «4칸» 이다 — 계약서·링크가 따로 서는 까닭은
+     A4 확인과 링크 조작이 «상세를 읽는 일» 과 다른 일이라서다 (사장님 2026-08-19 확정). */
+  const four = S.screen === 'esign';
+  document.querySelector('.work').classList.toggle('four', four);
+  if (four) { paneEsignList(P1); paneEsignWork(D); paneEsignDoc(P3); }
+  else {
+    if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
+    else { paneProducts(P1); paneApps(P2); }
+    paneDetail(D);
+  }
   mountSplit();
   renderPick();
 }
@@ -844,6 +801,7 @@ function mountSplit() {
   const work = document.querySelector('.work');
   const vs = work.querySelector('.vs'), hs = work.querySelector('.hs');
   const apply = () => {
+    if (work.classList.contains('four')) { work.style.gridTemplateColumns = ''; work.style.gridTemplateRows = ''; return; }
     work.style.gridTemplateColumns = S.lw ? `${S.lw}px 7px minmax(360px,1fr)` : '';
     work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr` : '';
   };
@@ -957,7 +915,6 @@ function paneDetail(el) {
   if (S.focus === 'perf') return detailPerf(el);
   if (S.focus === 'bill') return detailBill(el);
   if (S.focus === 'pay') return detailPay(el);
-  if (S.focus === 'esign') return detailEsign(el);
   return detailApp(el);
 }
 

@@ -1,0 +1,53 @@
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
+
+        <main className="cl-main">
+          <div className="cl-tabs">
+            {창들.map((w) => (
+              <div key={w.코드} className={`cl-tab ${고른창 === w.코드 ? 'on' : ''}`} onClick={() => 고른창쓰기(w.코드)}>
+                {w.이름}<span className="cl-tabcode">{w.코드}</span>
+                {창들.length > 1 && <button className="cl-tabx" onClick={(e) => { e.stopPropagation(); 창닫기(w.코드); }}>✕</button>}
+              </div>
+            ))}
+                {화면.단추.map((b, i) => (
+                  <button key={b} className={`cl-btn ${i === 0 ? 'cl-btn-p' : ''}`}>{b}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ★설정 창에는 거름줄이 없다 — 설정에 「기간·법인·담당자」 를 물을 까닭이 없다 */}
+          {!설정창인가 && !등록창인가 && (
+          <div className="cl-filter">
+            <div className="cl-frow">
+              <label>기간</label>
+              <input type="date" value={부터} onChange={(e) => 고침({ 부터: e.target.value })} />
+              <span className="cl-tilde">~</span>
+              <input type="date" value={까지} onChange={(e) => 고침({ 까지: e.target.value })} />
+              <label>법인</label>
+          </div>
+
+          {/* ★쪽 넘김 대신 «어디까지 보고 있나» 한 줄. 굴리면 저절로 붙는다 */}
+          <div className="cl-count">
+            <span>{걸러진.length}건 중 <b className="num">{보임.length}</b>건 보는 중</span>
+            {남은수 > 0 && <button className="cl-btn" onClick={더본다}>더 보기 ({남은수}건 남음)</button>}
+            <span className="cl-sp" />
+            <span className="cl-cnote">{남은수 > 0 ? '표를 아래로 굴리면 이어서 붙습니다' : '— 이상 전부 —'}</span>
+          </div>
+          </>)}
+
+          {/* ★찾기 전에는 «고른 것이 없다» — 상세를 띄우면 「이 차를 보고 있다」 는 거짓말이 된다 */}
+          {!설정창인가 && !등록창인가 && !찾기전 && (<>
+          <div className="cl-detail">
+            <div className="cl-dtitle">
+              상세 정보
+              <span className="cl-dcode">{현재 ? String(현재[화면.기둥[1].키] ?? '') : '—'}</span>
+            </div>
+            <table className="cl-form">
+              <tbody>
+                {Array.from({ length: Math.ceil(화면.상세.length / 4) }, (_, r) => (

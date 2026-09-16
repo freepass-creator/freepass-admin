@@ -15,7 +15,7 @@ const S = {
   focus: 'app',
   mini: false, draft: null, saving: false, seq: 16,
   pick: null, pickQ: '',
-  ecChip: 'all', ecQ: '',
+  ecTab: 'todo', ecQ: '',
 };
 
 const NAV = [
@@ -68,11 +68,16 @@ const shotBox = (has, cls) => has
   ? `<div class="${cls}">${glyph()}</div>`
   : `<div class="${cls}"><span class="none">사진 준비 중</span></div>`;
 
-const stepper = (names, at) => `<div class="steps">${names.map((n, i) => {
+/**
+ * 차례 표시 — ★`ol`/`li` 로 «차례» 라는 뜻을 준다. 지금 칸은 aria-current="step".
+ * 사이의 ❯ 는 뜻을 안 나르므로 보조기술에서 숨긴다. (AI Core 화면규격 §Navigation)
+ */
+const stepper = (names, at) => `<ol class="steps" aria-label="단계">${names.map((n, i) => {
   const k = i + 1 === at ? 'on' : i + 1 < at ? 'dn' : '';
-  return `<span class="stp ${k}"><span class="n2">${i + 1}</span>${esc(n)}</span>`
-    + (i < names.length - 1 ? '<span class="ar" aria-hidden="true">&#10095;</span>' : '');
-}).join('')}</div>`;
+  return `<li class="stp ${k}"${i + 1 === at ? ' aria-current="step"' : ''}>`
+    + `<span class="n2">${i + 1}</span>${esc(n)}`
+    + (i < names.length - 1 ? '<span class="ar" aria-hidden="true">&#10095;</span>' : '') + '</li>';
+}).join('')}</ol>`;
 
 /**
  * 실행 띠 — 어느 상세든 «같은 꼴» 이다.
@@ -305,9 +310,9 @@ function detailProduct(el) {
   const fact = (k, v) => `<dt>${k}</dt><dd>${v == null ? '<span class="unk">미확인</span>' : v}</dd>`;
 
   el.innerHTML = `
-    <div class="ph"><h2>상품 상세</h2><span class="c n">${esc(p.id)} · v${p.v}</span>
-      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 2)}</div>
+    <div class="ph"><h2>상품 상세</h2><span class="c n">${esc(p.id)} · v${p.v}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 2)}
       <div class="dtop">
         <div>${shotBox(!!p.body, 'shot')}
           <div class="strip">${[0, 1, 2, 3].map(i => `<span data-s="${i}" aria-current="${i === S.shot}">${p.body ? glyph() : ''}</span>`).join('')}<span class="more">+2</span></div></div>
@@ -364,9 +369,9 @@ function detailApp(el) {
   const at = a.cxl ? 3 : !a.contract ? 1 : !a.docs ? 2 : 3;
 
   el.innerHTML = `
-    <div class="ph"><h2>접수 상세</h2><span class="c n">${esc(a.no)}</span>
-      ${stepper(['접수 확인', '서류 확인', '인도 처리'], at)}</div>
+    <div class="ph"><h2>접수 상세</h2><span class="c n">${esc(a.no)}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['접수 확인', '서류 확인', '인도 처리'], at)}
       <div class="dtop">
         <div>${shotBox(!!(p && p.body), 'shot')}
           <div class="strip">${[0, 1, 2, 3].map(() => `<span>${p && p.body ? glyph() : ''}</span>`).join('')}<span class="more">+2</span></div></div>
@@ -587,9 +592,9 @@ function paneLedger(el) {
 function detailPerf(el) {
   const pf = PERFS.find(x => x.no === S.perfNo) || PERFS[0];
   const a = APPS.find(x => x.no === pf.app);
-  el.innerHTML = `<div class="ph"><h2>실적 상세</h2><span class="c n">${esc(pf.no)}</span>
-      ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}</div>
+  el.innerHTML = `<div class="ph"><h2>실적 상세</h2><span class="c n">${esc(pf.no)}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}
       <div class="dchips"><span class="st ${isClaw(pf) ? 'bad' : 'mut'}">${isClaw(pf) ? '환수 실적' : '정상 실적'}</span>
         <span class="tag n">${esc(a.plate || '차량번호 미배정')}</span><span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
       <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${a.term}개월</p>
@@ -636,9 +641,9 @@ function detailPerf(el) {
 
 function detailBill(el) {
   const b = BILLS.find(x => x.sup === S.billSup) || BILLS[0], due = b.fixed - b.got;
-  el.innerHTML = `<div class="ph"><h2>청구 상세</h2><span class="c">${esc(b.sup)} · ${b.month}</span>
-      ${stepper(['청구서', '계산서', '수금'], b.got >= b.fixed ? 3 : b.tax === '발행' ? 3 : 2)}</div>
+  el.innerHTML = `<div class="ph"><h2>청구 상세</h2><span class="c">${esc(b.sup)} · ${b.month}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['청구서', '계산서', '수금'], b.got >= b.fixed ? 3 : b.tax === '발행' ? 3 : 2)}
       <div class="dchips"><span class="tag">확정 실적 ${b.cnt}건</span><span class="st ${b.tax === '발행' ? 'ok' : 'wait'}">계산서 ${b.tax}</span></div>
       <h3 class="dttl">${esc(b.sup)}</h3><p class="dsub">${b.month} 청구</p>
       <div class="sec"><h3>돈 — 셋을 한 칸에 합치지 않는다</h3>
@@ -667,9 +672,9 @@ function detailBill(el) {
 
 function detailPay(el) {
   const p = PAYS.find(x => x.ch === S.payCh) || PAYS[0], left = p.fixed - p.paid;
-  el.innerHTML = `<div class="ph"><h2>지급 상세</h2><span class="c">${esc(p.ch)} · ${p.month}</span>
-      ${stepper(['지급 확정', '지급 실행', '완료'], p.paid >= p.fixed ? 3 : p.paid ? 2 : 1)}</div>
+  el.innerHTML = `<div class="ph"><h2>지급 상세</h2><span class="c">${esc(p.ch)} · ${p.month}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['지급 확정', '지급 실행', '완료'], p.paid >= p.fixed ? 3 : p.paid ? 2 : 1)}
       <div class="dchips"><span class="tag">확정 실적 ${p.cnt}건</span>${p.hold ? '<span class="st bad">지급 보류</span>' : ''}</div>
       <h3 class="dttl">${esc(p.ch)}</h3><p class="dsub">${p.month} 지급</p>
       <div class="sec"><h3>돈</h3><table class="g"><tbody>
@@ -775,17 +780,14 @@ function render() {
 
   /* 목록 둘은 왼쪽에 위아래로, 상세는 «하나» 가 오른쪽에 세로로 선다.
      상세는 마지막에 고른 줄을 그린다 — 목록을 오가도 자리는 그대로다. */
-  const P1 = $('#p1'), P2 = $('#p2'), P3 = $('#p3'), D = $('#d1');
-  /* ★전자계약만 «4칸» 이다 — 계약서·링크가 따로 서는 까닭은
-     A4 확인과 링크 조작이 «상세를 읽는 일» 과 다른 일이라서다 (사장님 2026-08-19 확정). */
-  const four = S.screen === 'esign';
-  document.querySelector('.work').classList.toggle('four', four);
-  if (four) { paneEsignList(P1); paneEsignWork(D); paneEsignDoc(P3); }
-  else {
-    if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
-    else { paneProducts(P1); paneApps(P2); }
-    paneDetail(D);
-  }
+  const P1 = $('#p1'), P2 = $('#p2'), D = $('#d1');
+  /* ★판 넷이 «같은 꼴» 이다 — 전자계약도 예외가 아니다 (대표 2026-09-16).
+     fp4 의 4칸은 «기능» 이 아니라 «화면» 이라 안 가져온다.
+     「계약 진행」과 「계약서·링크」는 상세 한 판의 구역 둘로 산다. */
+  if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
+  else if (S.screen === 'esign') { paneEsign(P1); paneApps(P2); }
+  else { paneProducts(P1); paneApps(P2); }
+  paneDetail(D);
   mountSplit();
   renderPick();
 }
@@ -801,7 +803,6 @@ function mountSplit() {
   const work = document.querySelector('.work');
   const vs = work.querySelector('.vs'), hs = work.querySelector('.hs');
   const apply = () => {
-    if (work.classList.contains('four')) { work.style.gridTemplateColumns = ''; work.style.gridTemplateRows = ''; return; }
     work.style.gridTemplateColumns = S.lw ? `${S.lw}px 7px minmax(360px,1fr)` : '';
     work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr` : '';
   };
@@ -847,9 +848,9 @@ function detailNew(el) {
   if (!d) { S.focus = 'product'; return detailProduct(el); }
   const ok = !!d.name.trim();
 
-  el.innerHTML = `<div class="ph"><h2>신규접수</h2><span class="c">필수 4</span>
-      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 3)}</div>
-    <div class="pb"><div class="dwrap"><div class="form">
+  el.innerHTML = `<div class="ph"><h2>신규접수</h2><span class="c">필수 4</span></div>
+    <div class="pb"><div class="dwrap">
+      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 3)}<div class="form">
       <div class="lock"><div class="k">접수 대상 — 고른 그대로</div>
         <div class="v">${esc(d.p.name)} · ${esc(d.p.sub)}</div>
         <div class="v2">${d.o.term}개월 · ${won(d.o.rent)}/월 · 보증금 ${dep(d.o.dep)} · ${yr(d.o.mile) || '약정 미확인'}</div>
@@ -915,6 +916,7 @@ function paneDetail(el) {
   if (S.focus === 'perf') return detailPerf(el);
   if (S.focus === 'bill') return detailBill(el);
   if (S.focus === 'pay') return detailPay(el);
+  if (S.focus === 'esign') return detailEsign(el);
   return detailApp(el);
 }
 

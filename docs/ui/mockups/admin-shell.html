@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=31">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=32">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -186,15 +186,6 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .vs::after,.hs::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   background:var(--line-2);border-radius:2px;opacity:.9}
 .vs::after{width:3px;height:36px} .hs::after{width:36px;height:3px}
-#p3{display:none}
-/* ── ★전자계약만 «4칸» ─ 목록 360 · 진행 넓게 · 계약서·링크 360 ──
-   (freepasserp4 ESIGN_SEND_CENTER_REDESIGN_2026-08-19 §2-4, 사장님 확정) */
-.work.four{grid-template-columns:360px var(--sp) minmax(0,1fr) var(--sp) 360px;grid-template-rows:1fr}
-.work.four #p1{grid-column:1;grid-row:1}
-.work.four #d1{grid-column:3;grid-row:1}
-.work.four #p3{grid-column:5;grid-row:1;display:flex}
-.work.four #p2,.work.four .hs,.work.four .vs{display:none}
-@media (max-width:1400px){.work.four{grid-template-columns:320px var(--sp) minmax(0,1fr) var(--sp) 320px}}
 .vs:hover::after{background:var(--key);height:56px}
 .hs:hover::after{background:var(--key);width:56px}
 .pane{background:var(--card);border:1px solid var(--line);border-radius:var(--r-pane);box-shadow:var(--s1);display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -320,7 +311,11 @@ table.g .mut{color:var(--ink-2)}
 .note b{display:block;font-size:12px;font-weight:650;color:var(--key)}
 .note.w b{color:var(--warn)} .note.e b{color:var(--bad)}
 .note p{margin:2px 0 0;font-size:11.5px;color:var(--ink-2)}
-.steps{margin-left:auto;display:flex;align-items:center;gap:var(--sp)}
+/* ── ★차례 띠 ─ 상세 몸통 «맨 위» 에 한 줄로 선다 ──────────────
+   .ph 가 아니라 여기 사는 까닭: .ph 규격은 「제목 · 딸린 수 · 행동」 셋뿐이고
+   차례는 그 셋이 아니다. 여기 두면 다섯 칸짜리도 안 눌린다. */
+.steps{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp);list-style:none;
+  margin:0 0 var(--sp2);padding:0 0 var(--sp2);border-bottom:1px solid var(--line)}
 .stp{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3)}
 .stp .n2{width:17px;height:17px;border-radius:9px;background:var(--tint2);color:var(--ink-3);display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;font-weight:700}
 .stp.on{color:var(--ink);font-weight:650} .stp.on .n2{background:var(--key);color:#fff}
@@ -336,54 +331,22 @@ table.g .mut{color:var(--ink-2)}
 .sb.flagchip{border-style:dashed}
 .sb.flagchip[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
 
-/* 관리자 축 스테퍼 — 번호는 «여기에만» 쓴다 */
-ol.ecstep{list-style:none;display:flex;flex-wrap:wrap;gap:var(--sp);margin:0 0 var(--sp2);padding:0}
-/* ★안 지난 단계도 «읽히는» 값이어야 한다 — ink-3 는 11.5px 에서 4.35:1 로 떨어졌다 */
-ol.ecstep li{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2);
-  height:var(--h-chip);padding:0 9px 0 5px;border:1px solid var(--line);border-radius:var(--r-chip);background:var(--card)}
-ol.ecstep .n2{width:16px;height:16px;border-radius:8px;background:var(--tint2);color:var(--ink-2);
-  display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;font-weight:700}
-ol.ecstep li.dn{color:var(--ink-2);border-color:var(--line-2)}
-ol.ecstep li.dn .n2{background:var(--ok);color:#fff}
-ol.ecstep li.on{color:#fff;background:var(--key);border-color:var(--key);font-weight:650}
-ol.ecstep li.on .n2{background:#fff;color:var(--key)}
-
-.card{border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--card);
-  padding:var(--sp2);margin-bottom:var(--sp2)}
-.card h4{margin:0 0 6px;font-size:12px;font-weight:650;color:var(--ink)}
-.card.bad{border-color:var(--bad);background:var(--bad-soft)} .card.bad h4{color:var(--bad)}
-.card.warn{border-color:#d8c191;background:var(--warn-soft)} .card.warn h4{color:var(--warn)}
-.card.ok{border-color:var(--key-line);background:var(--key-soft)}
-.card .hint{margin:6px 0 0;font-size:11.5px;color:var(--ink-2);line-height:1.55}
-.card table.g{margin-top:6px}
-
-ul.ecchk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
-ul.ecchk li{display:flex;align-items:center;gap:var(--sp);font-size:11.5px;color:var(--ink)}
-ul.ecchk li::before{content:"";width:5px;height:5px;border-radius:3px;background:currentColor;flex:none}
-ul.ecchk b{font-weight:500}
-.ecrej{display:flex;gap:var(--sp2);padding:5px 0;border-top:1px solid var(--line)}
-.ecrej:first-of-type{border-top:0}
-.ecrej b{font-size:11.5px}
-
-.ecact{display:flex;align-items:center;gap:var(--sp);margin-top:var(--sp2);flex-wrap:wrap}
-.ecact.col{flex-direction:column;align-items:stretch}
-.ecact .why{font-size:11px;color:var(--ink-2)}
-.ecact .btn:disabled+.why{color:var(--bad)}
-
-/* 손님 축 — 관리자 축과 «생김새가 달라야» 한 축으로 안 읽힌다 */
+/* 손님 축 — 관리자 축과 «생김새가 달라야» 한 축으로 안 읽힌다.
+   저쪽은 번호 붙은 차례(.steps), 이쪽은 번호 없는 알약이다. */
 .ecjour{display:flex;flex-wrap:wrap;gap:4px}
-/* ★안 간 단계도 읽혀야 한다 — 회색이라고 «없는 것» 이 아니다 */
 .ecjour span{font-size:10.5px;padding:2px 7px;border-radius:9px;background:var(--tint);color:var(--ink-2)}
 .ecjour span.dn{background:var(--ok-soft);color:var(--ok);font-weight:600}
 .ecjour span.now{background:var(--warn-soft);color:var(--warn);font-weight:700;box-shadow:inset 0 0 0 1px #d8c191}
 
-.a4{background:#fff;border:1px solid var(--line-2);box-shadow:var(--s2);padding:14px;aspect-ratio:1/1.414;
-  display:flex;flex-direction:column;gap:7px;overflow:hidden}
+/* ★계약서는 «사진 자리» 와 같은 부피(132)를 쓴다 — 판 넷의 가락이 안 흔들린다.
+   여기는 읽는 자리가 아니라 «무슨 서식인지» 알아보는 자리다. */
+.a4{background:#fff;border:1px solid var(--line-2);border-radius:var(--r-ctl);box-shadow:var(--s1);
+  height:132px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
 .a4h{font-size:11px;font-weight:700;color:#2a3138;border-bottom:1px solid #d7dce1;padding-bottom:6px}
 .a4l{height:5px;background:#eef1f4;border-radius:2px} .a4l.s{width:62%}
 .a4kv{display:flex;gap:8px;font-size:10.5px}
 .a4kv span{color:#5c666f;width:44px;flex:none} .a4kv b{color:#2a3138;font-weight:600}
-.a4sign{margin-top:auto;border:1px dashed #b6bfc7;border-radius:3px;height:34px;
+.a4sign{margin-top:auto;border:1px dashed #b6bfc7;border-radius:3px;height:24px;
   display:grid;place-items:center;font-size:10.5px;color:#5c666f}
 .eclink{display:block;font-family:var(--mono);font-size:11px;background:var(--tint);color:var(--ink);
   border:1px solid var(--line);border-radius:var(--r-chip);padding:6px 8px;word-break:break-all}
@@ -415,6 +378,8 @@ ul.ecchk b{font-weight:500}
 .menu .sep{height:1px;background:var(--line);margin:4px 2px}
 .menu button.danger{color:var(--bad)}
 .dact .grow{flex:1;min-width:0}
+/* ★비활성 단추는 «까닭을 곁에» 둔다 (AI Core 화면규격 §Button) */
+.whyoff{margin:0 0 var(--sp);font-size:11px;color:var(--ink-2)}
 
 .dact textarea:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
 /* ★단추 높이는 셋뿐 — act(38) 실행 · ctl(30) 도구 · chip(22) 줄 안 */
@@ -625,7 +590,6 @@ ul.ecchk b{font-weight:500}
         <section class="pane" id="p1"></section>
         <section class="pane" id="p2"></section>
         <section class="pane" id="d1"></section>
-        <section class="pane" id="p3"></section>
         <div class="vs" title="끌어서 목록과 상세의 폭을 바꿉니다 · 두 번 누르면 기본"></div>
         <div class="hs" title="끌어서 위아래 부피를 바꿉니다 · 두 번 누르면 기본"></div>
       </div>
@@ -637,6 +601,6 @@ ul.ecchk b{font-weight:500}
 <div id="sheetroot"></div>
 
 <script src="./admin-shell.data.js?v=30"></script>
-<script src="./admin-shell.app.js?v=30"></script>
-<script src="./admin-shell.esign.js?v=30"></script>
+<script src="./admin-shell.app.js?v=32"></script>
+<script src="./admin-shell.esign.js?v=32"></script>
 <script src="./admin-shell.mobile.js?v=30"></script>

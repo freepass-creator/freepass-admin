@@ -155,14 +155,5 @@
 :root.rt .pf .t b.z{color:#79838c;font-weight:400}
 
 /* ── 전자계약 — 같은 markup, 이 한 장만 갈린다 ────────────────── */
-:root.rt ol.ecstep li{border-radius:0;border:1px solid var(--line-2);box-shadow:var(--bev);
-  background:linear-gradient(#fbfcfd,#e9edf2);height:var(--h-s)}
-:root.rt ol.ecstep li.on{background:linear-gradient(#41639a,#5a80b8);border-color:#3a5a8e;box-shadow:var(--bev-in)}
-:root.rt ol.ecstep .n2{border-radius:0}
-:root.rt .card{border-radius:0;border:1px solid var(--line-2);box-shadow:var(--bev-hd);background:var(--card)}
-:root.rt .card h4{background:linear-gradient(#f6f8fa,#e3e8ee);border-bottom:1px solid var(--line-2);
-  margin:calc(var(--sp2) * -1) calc(var(--sp2) * -1) var(--sp2);padding:0 8px;height:var(--h-s);
-  display:flex;align-items:center;font-weight:700}
 :root.rt .flag,:root.rt .ecjour span,:root.rt .eclink{border-radius:0}
 :root.rt .a4{border-radius:0;box-shadow:var(--bev-in)}
-:root.rt .sb.flagchip[aria-pressed="true"]{background:linear-gradient(#a2433a,#bb5449);border-color:#8b3a32}

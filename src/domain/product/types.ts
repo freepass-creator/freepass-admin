@@ -48,6 +48,11 @@ export type PolicyValue =
 
 export interface CanonicalProduct {
   id: string;
+  /**
+   * 상품이 바뀔 때마다 오르는 번호. 접수 Snapshot 이 «어느 판을 보고 받았는지» 를 적어 둔다.
+   * 이것이 없으면 「지금 상품과 다르다」는 것만 알고 «언제부터 달라졌는지» 를 모른다.
+   */
+  version: number;
   supplierId: string;
   supplierProductKey: string;
   vehicle: VehicleMasterRef;

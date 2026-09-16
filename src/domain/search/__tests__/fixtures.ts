@@ -31,6 +31,7 @@ export function offer(partial: Partial<Offer> = {}): Offer {
 export function product(partial: Partial<CanonicalProduct> = {}): CanonicalProduct {
   return {
     id: 'product-1',
+    version: 1,
     supplierId: 'supplier-a',
     supplierProductKey: 'A-0001',
     vehicle: vehicle(),

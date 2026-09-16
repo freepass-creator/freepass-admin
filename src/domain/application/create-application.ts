@@ -4,31 +4,58 @@ import type { Application } from './types';
 export interface CreateApplicationInput {
   id: string;
   applicationNumber: string;
+
+  /** 최초 접수 필수 넷 중 셋 (나머지 하나는 product+offerId). */
   applicantName: string;
-  applicantPhone: string;
+  salesChannelId: string;
+  assigneeId: string;
+
+  /** 선택 — 아직 안 받았을 수 있다. */
+  applicantPhone?: string;
+
   source: Application['source'];
-  channelId?: string;
   product: CanonicalProduct;
   offerId: string;
+  submissionId: string;
   now: string;
 }
 
+function required(value: string | undefined, field: string): string {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) throw new Error(`${field} is required.`);
+  return trimmed;
+}
+
+/**
+ * 접수 한 건을 «만든다». 저장은 안 한다 — 저장은 repository 가 한다.
+ *
+ * ★여기서 Snapshot 을 깊게 베낀다. 얕게 두면 나중에 상품 객체를 손대는 순간
+ *   «이미 받은 접수의 계약조건» 이 조용히 따라 바뀐다. 그건 사고지 갱신이 아니다.
+ */
 export function createApplication(input: CreateApplicationInput): Application {
   const offer = input.product.offers.find((candidate) => candidate.id === input.offerId);
   if (!offer) throw new Error('Selected offer does not belong to the product.');
+
+  const applicantName = required(input.applicantName, 'applicantName');
+  const salesChannelId = required(input.salesChannelId, 'salesChannelId');
+  const assigneeId = required(input.assigneeId, 'assigneeId');
+  const submissionId = required(input.submissionId, 'submissionId');
 
   const snapshotOffer: Offer = {
     ...offer,
     policyValues: offer.policyValues.map((policy) => ({ ...policy })),
   };
 
+  const applicantPhone = input.applicantPhone?.trim();
+
   return {
     id: input.id,
     applicationNumber: input.applicationNumber,
-    applicantName: input.applicantName,
-    applicantPhone: input.applicantPhone,
+    applicantName,
+    salesChannelId,
+    assigneeId,
+    ...(applicantPhone ? { applicantPhone } : {}),
     source: input.source,
-    channelId: input.channelId,
     status: 'RECEIVED',
     progress: {
       contractCompleted: false,
@@ -37,6 +64,7 @@ export function createApplication(input: CreateApplicationInput): Application {
     },
     snapshot: {
       productId: input.product.id,
+      productVersion: input.product.version,
       supplierId: input.product.supplierId,
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
@@ -44,6 +72,7 @@ export function createApplication(input: CreateApplicationInput): Application {
       productPolicies: input.product.productPolicies.map((policy) => ({ ...policy })),
       capturedAt: input.now,
     },
+    submissionId,
     createdAt: input.now,
     updatedAt: input.now,
   };

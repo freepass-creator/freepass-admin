@@ -12,3 +12,6 @@ next-env.d.ts
 .vercel/
 .DS_Store
 npm-debug.log*
+
+# 개발용 파일 저장소 — 운영은 Firestore
+.data/

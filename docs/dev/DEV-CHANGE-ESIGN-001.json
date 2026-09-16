@@ -293,63 +293,189 @@
     {
       "id": "AC-001",
       "text": "목록 뱃지·상단 스테퍼·필터 칩·이력 라벨이 모두 관리자 축 5단계의 «같은 이름»을 쓴다. 다른 번호나 다른 이름이 한 곳도 없다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC001"
+      ]
     },
     {
       "id": "AC-002",
       "text": "손님 축 8단계는 관리자 축과 한 축에 섞이지 않고 별도 요소(n/8 과 현재 단계 이름)로만 나타난다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC002"
+      ]
     },
     {
       "id": "AC-003",
       "text": "확인 필요·만료/해지·보완 요청됨은 단계 값이 아니라 플래그로 표시되며, 단계 뱃지를 대체하지 않는다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC003"
+      ]
     },
     {
       "id": "AC-004",
       "text": "BLOCK 검사가 하나라도 있으면 링크 만들기 단추가 disabled 이고 그 까닭이 화면에 글자로 남는다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC004"
+      ]
     },
     {
       "id": "AC-005",
       "text": "전자계약 화면의 모든 본문 글자가 배경 대비 4.5:1 이상이고, 단계 뱃지 테두리는 3:1 이상이다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC005"
+      ]
     },
     {
       "id": "AC-006",
       "text": "freepass-admin 토큰이 AI Core tokens.css 의 이름을 쓰고, 값이 다른 항목은 편차 문서에 까닭과 함께 전부 적혀 있다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC006"
+      ]
     },
     {
       "id": "AC-007",
       "text": "「고객 작성 중」 단계에서는 우리가 할 행동이 없다는 것이 화면 글자로 말해지고, 링크 복사·해지 외의 실행 단추가 없다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC007"
+      ]
     },
     {
       "id": "AC-008",
       "text": "계약 목록의 빈 상태와 오류 상태가 각각 다른 문구와 다른 다음 행동을 갖는다.",
-      "status": "OPEN",
-      "evidence_refs": []
+      "status": "PASS",
+      "evidence_refs": [
+        "EV-AC008"
+      ]
     }
   ],
   "lane": {
     "actor": "CLAUDE",
     "branch": "work/claude/esign-center-v1",
     "worktree": "C:/dev/freepasserp.com",
-    "head_revision": "6130e2b024fc3ba579ce0b88d85101a42d6a4506"
+    "head_revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9"
   },
   "verification": {
-    "status": "NOT_RUN",
-    "subject_revision": null,
-    "checks": [],
-    "artifacts": []
+    "status": "PASS",
+    "subject_revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+    "checks": [
+      {
+        "id": "CK-UNIT",
+        "kind": "TEST",
+        "status": "PASS",
+        "ref": "npm test — pass 42 / fail 0",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "freepass-admin src/",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "CK-SYNTAX",
+        "kind": "BUILD",
+        "status": "PASS",
+        "ref": "node --check data/app/esign/mobile — 4 files OK",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "docs/ui/mockups",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "CK-FORM",
+        "kind": "COMMAND",
+        "status": "PASS",
+        "ref": "ai-core validate-development-form.mjs → {\"status\":\"PASS\",\"errors\":[]}",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "docs/dev/DEV-CHANGE-ESIGN-001.json",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "CK-A11Y",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "대비 실측(합성 알파 포함) — 4.5:1 미만 0건 / 전자계약 6건 · 다른 4판",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "EV-AC001",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC001",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC002",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC002",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC003",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC003",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC004",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC004",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC005",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC005",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC006",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC006",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC007",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC007",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      },
+      {
+        "id": "EV-AC008",
+        "kind": "OBSERVATION",
+        "status": "PASS",
+        "ref": "docs/dev/evidence/ESIGN-001-verify.md#EV-AC008",
+        "revision": "18f20827abf9ecf426dfe2ca7feebf5093d562e9",
+        "target": "http://localhost:4321/admin-shell.html",
+        "observed_at": "2026-09-16T00:00:00Z"
+      }
+    ]
   },
   "review": {
     "status": "NOT_REQUESTED",
@@ -382,9 +508,13 @@
     "observations": []
   },
   "handoff": {
-    "summary": "freepasserp4 전자계약 정본을 읽어 축 둘·플래그·검사·4칸 골격을 확인했다. 시안 계층에 관리자 축 5단계로 다시 세운다.",
-    "next_action": "admin-shell 전자계약 3판을 4칸으로 교체하고 AC-001~AC-008 증거를 붙인다",
-    "blocked_by": [],
+    "summary": "전자계약 4칸 · 관리자 축 5단계로 다시 세웠다. 인수 기준 여덟을 브라우저에서 실행해 확인했다.",
+    "next_action": "독립 검토 요청 — 축 분리와 용어표 준수를 fp4 정본과 대조",
+    "blocked_by": [
+      "계약서 작성 4단(범위 밖)",
+      "착한거래 연동(범위 밖)",
+      "LOADING 상태는 실데이터 조회를 붙일 때"
+    ],
     "updated_at": "2026-09-16T00:00:00Z"
   }
 }

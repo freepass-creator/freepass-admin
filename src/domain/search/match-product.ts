@@ -1,70 +1,91 @@
+import { resolveOfferPolicies } from '../product/resolve-policies';
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import type {
+  NumericRange,
+  PolicyRequirement,
+  ProductSearchMatch,
+  ProductSearchQuery,
+} from './types';
+import { matchVehicle } from './vehicle-match';
 
-export interface ProductSearchQuery {
-  modelId?: string;
-  subModelId?: string;
-  trimId?: string;
-  termMonths?: number;
-  maxMonthlyRent?: number;
-  maxDeposit?: number;
-  minAnnualMileageKm?: number;
-  policies?: Array<{ policyId: string; value: PolicyValue['value'] }>;
+/**
+ * S-08 — 미확인 ≠ 0 / 불가 / 무제한.
+ * 범위 조건이 걸렸는데 값이 비어 있으면 **만족하지 않는다.**
+ * 보증금 공란이 「보증금 0원」 검색에 딸려 들어오는 것을 여기서 막는다.
+ */
+function inRange(value: number | undefined, range: NumericRange | undefined): boolean {
+  if (!range || (range.min === undefined && range.max === undefined)) return true;
+  if (typeof value !== 'number' || Number.isNaN(value)) return false;
+  if (range.min !== undefined && value < range.min) return false;
+  if (range.max !== undefined && value > range.max) return false;
+  return true;
 }
 
-export interface ProductSearchMatch {
-  product: CanonicalProduct;
-  matchedOffers: Offer[];
-  vehicleMatch: 'EXACT' | 'PARTIAL';
+function multiSelectMatches(actual: readonly string[], requested: PolicyValue['value']): boolean {
+  const wanted = Array.isArray(requested) ? requested : [requested];
+  return wanted.some((value) => typeof value === 'string' && actual.includes(value));
 }
 
-function sameValue(left: PolicyValue['value'], right: PolicyValue['value']) {
-  if (Array.isArray(left) || Array.isArray(right)) {
-    if (!Array.isArray(left) || !Array.isArray(right)) return false;
-    return right.every((value) => left.includes(value));
+function policyValueMatches(actual: PolicyValue, requested: PolicyValue['value']): boolean {
+  if (actual.type === 'MULTI_SELECT') return multiSelectMatches(actual.value, requested);
+  if (Array.isArray(requested)) return false;
+  return actual.value === requested;
+}
+
+/**
+ * S-09 — 정책값이 없으면 `true` 요구에도 `false` 요구에도 걸리지 않는다.
+ * S-11 — `anyOf` 안은 OR.
+ */
+function satisfiesPolicy(resolved: PolicyValue[], requirement: PolicyRequirement): boolean {
+  if (requirement.anyOf.length === 0) return true;
+  const actual = resolved.find((policy) => policy.policyId === requirement.policyId);
+  if (!actual) return false;
+  return requirement.anyOf.some((requested) => policyValueMatches(actual, requested));
+}
+
+/**
+ * S-02 — Offer 축 조건은 **이 Offer 하나**가 전부 만족해야 한다.
+ * 다른 Offer 의 값을 끌어와 없는 조건을 만들지 않는다.
+ */
+export function matchOffer(
+  product: Pick<CanonicalProduct, 'productPolicies'>,
+  offer: Offer,
+  query: ProductSearchQuery,
+): boolean {
+  if (query.termMonths?.length && !query.termMonths.includes(offer.termMonths)) return false;
+  if (!inRange(offer.monthlyRent, query.monthlyRent)) return false;
+  if (!inRange(offer.deposit, query.deposit)) return false;
+  if (!inRange(offer.annualMileageKm, query.annualMileageKm)) return false;
+
+  if (query.policies?.length) {
+    const resolved = resolveOfferPolicies(product, offer);
+    if (!query.policies.every((requirement) => satisfiesPolicy(resolved, requirement))) return false;
   }
-  return left === right;
+
+  return true;
 }
 
-function matchesPolicies(values: PolicyValue[], query: ProductSearchQuery['policies']) {
-  if (!query?.length) return true;
-  return query.every((required) =>
-    values.some(
-      (actual) => actual.policyId === required.policyId && sameValue(actual.value, required.value),
-    ),
-  );
-}
-
-function matchesOffer(offer: Offer, query: ProductSearchQuery) {
-  if (query.termMonths !== undefined && offer.termMonths !== query.termMonths) return false;
-  if (query.maxMonthlyRent !== undefined && offer.monthlyRent > query.maxMonthlyRent) return false;
-  if (query.maxDeposit !== undefined && (offer.deposit === undefined || offer.deposit > query.maxDeposit)) return false;
-  if (
-    query.minAnnualMileageKm !== undefined &&
-    (offer.annualMileageKm === undefined || offer.annualMileageKm < query.minAnnualMileageKm)
-  ) return false;
-  return matchesPolicies(offer.policyValues, query.policies);
-}
-
+/**
+ * 상품 하나를 판정한다. 조건에 맞지 않으면 `null`.
+ * 맞으면 **조건을 만족한 Offer 만** 싣는다 (S-03 — 이 id 가 상세·접수까지 간다).
+ */
 export function matchProduct(
   product: CanonicalProduct,
   query: ProductSearchQuery,
 ): ProductSearchMatch | null {
-  if (query.modelId && product.vehicle.modelId !== query.modelId) return null;
+  if (query.supplierIds?.length && !query.supplierIds.includes(product.supplierId)) return null;
 
-  let vehicleMatch: ProductSearchMatch['vehicleMatch'] = 'EXACT';
+  const vehicleMatch = matchVehicle(product.vehicle, query);
+  if (!vehicleMatch) return null;
 
-  if (query.subModelId) {
-    if (product.vehicle.subModelId && product.vehicle.subModelId !== query.subModelId) return null;
-    if (!product.vehicle.subModelId) vehicleMatch = 'PARTIAL';
-  }
+  // S-13 — 접수로 이어질 계약조건이 없는 상품은 「찾았다」고 하지 않는다.
+  const matchedOffers = product.offers.filter((offer) => matchOffer(product, offer, query));
+  if (matchedOffers.length === 0) return null;
 
-  if (query.trimId) {
-    if (product.vehicle.trimId && product.vehicle.trimId !== query.trimId) return null;
-    if (!product.vehicle.trimId) vehicleMatch = 'PARTIAL';
-  }
-
-  const matchedOffers = product.offers.filter((offer) => matchesOffer(offer, query));
-  if (!matchedOffers.length) return null;
-
-  return { product, matchedOffers, vehicleMatch };
+  return {
+    product,
+    matchedOffers,
+    matchedOfferIds: matchedOffers.map((offer) => offer.id),
+    vehicleMatch,
+  };
 }

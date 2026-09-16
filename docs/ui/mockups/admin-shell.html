@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=20">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=22">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -326,6 +326,17 @@ table.g .mut{color:var(--ink-3)}
 .why .w em{font-style:normal;color:var(--warn);font-weight:650}
 .why .w code{font-family:var(--mono);background:var(--card);border:1px solid var(--line);border-radius:3px;padding:0 4px}
 
+/* 고르는 시트 — 가운데로 뜬다. 오른쪽 서랍(세부필터)과 다른 일이라 자리도 다르다 */
+.pick{position:fixed;inset:0;z-index:55;background:rgba(12,17,22,.5);display:grid;place-items:center;padding:var(--sp3)}
+.pickbox{width:min(760px,96vw);max-height:80vh;background:var(--card);border-radius:var(--r-pane);
+  box-shadow:var(--s3);display:flex;flex-direction:column;overflow:hidden}
+.pickbox .ph{border-bottom:1px solid var(--line)}
+.pickbox .bar{border-bottom:1px solid var(--line)}
+.pickbox .body2{flex:1;min-height:0;overflow:auto}
+.pickbox .pf{border-top:1px solid var(--line)}
+.pickbox table.g td{cursor:pointer}
+.pickbox tbody tr.off td{opacity:.42;cursor:not-allowed}
+
 /* 시트 */
 .sheet{position:fixed;inset:0;z-index:50;background:rgba(12,17,22,.5);display:flex;justify-content:flex-end}
 .sbox{width:min(540px,94vw);background:var(--card);height:100%;display:flex;flex-direction:column;box-shadow:var(--s3)}
@@ -476,8 +487,9 @@ table.g .mut{color:var(--ink-3)}
   </main>
 </div>
 <div id="mapp"></div>
+<div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=20"></script>
-<script src="./admin-shell.app.js?v=20"></script>
-<script src="./admin-shell.mobile.js?v=20"></script>
+<script src="./admin-shell.data.js?v=22"></script>
+<script src="./admin-shell.app.js?v=22"></script>
+<script src="./admin-shell.mobile.js?v=22"></script>

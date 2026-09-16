@@ -14,6 +14,7 @@ const S = {
   /** ★상세는 하나다 — 마지막에 고른 것이 무엇인지 기억해 둔다 */
   focus: 'app',
   mini: false, draft: null, saving: false, seq: 16,
+  pick: null, pickQ: '',
 };
 
 const NAV = [
@@ -264,12 +265,13 @@ function paneApps(el) {
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
   $('#pbB').innerHTML = list.length ? `<table class="g">
-    <thead><tr><th style="width:52px"></th><th>고객</th><th>차량</th><th>영업채널</th><th class="r">월 대여료</th><th>상태</th><th>접수일시</th></tr></thead>
+    <thead><tr><th style="width:52px"></th><th>고객</th><th>차량번호</th><th>차량</th><th>영업채널</th><th class="r">월 대여료</th><th>상태</th><th>접수일시</th></tr></thead>
     <tbody>${list.map(a => {
       const s = appStatus(a), p = PRODUCTS.find(x => x.id === a.pid);
       return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
         <td><span class="thumb">${p && p.body ? glyph() : ''}</span></td>
         <td><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
+        <td class="n">${esc(a.plate || '—')}</td>
         <td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
         <td class="r n" style="font-weight:650">${won(a.rent)}</td>
         <td><span class="st ${s.c}">${s.t}</span></td>
@@ -360,6 +362,7 @@ function detailApp(el) {
           <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월 ${VAT}</div><div class="v">${won(a.rent)}</div></div>
             <span class="u">보증금 ${a.dep ? man(a.dep) + '원' : '무보증'} · ${yr(a.mile) || '약정 미확인'}</span></div>
           <dl class="kv">
+            <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : '<span class="unk">미배정</span>'}</dd>
             <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : '<span class="unk">미입력</span>'}</dd>
             <dt>담당자</dt><dd>${esc(a.staff)}</dd>
             <dt>선택 Offer</dt><dd class="n">${esc(a.oid)}</dd>
@@ -414,7 +417,7 @@ function detailApp(el) {
                           { t: '접수 내용 고치기', go: () => {} }, '-',
                           /* ★환수는 접수의 «체크» 가 아니라 «실적 한 줄» 이다.
                              인도가 찍힌 뒤에만 뜬다 — 나가지도 않은 것을 되돌릴 수는 없다 */
-                          ...(a.deliv ? [{ t: '환수 실적 만들기', danger: true, go: () => makeClawback(a) }] : []),
+                          { t: '환수 실적 만들기…', danger: true, go: openClawPick },
                           { t: '접수 취소', danger: true, go: () => { a.cxl = true; a.cxlReason = '관리자 취소 — 사유 입력 화면이 뜬다'; render(); } }],
       subs: a.cxl ? [] : (next ? [] : [{ t: '전자계약으로', go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } }]),
       main: a.cxl ? { t: '취소된 건', off: true }
@@ -426,7 +429,7 @@ function detailApp(el) {
   bindAct(el, {
     more: a.cxl ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
                         { go: () => {} }, '-',
-                        ...(a.deliv ? [{ go: () => makeClawback(a) }] : []),
+                        { go: openClawPick },
                         { go: () => { a.cxl = true; a.cxlReason = '관리자 취소 — 사유 입력 화면이 뜬다'; render(); } }],
     subs: a.cxl || next ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } }],
     main: a.cxl ? {} : next ? { go: () => { a[next[0]] = true; render(); } }
@@ -435,18 +438,78 @@ function detailApp(el) {
 }
 
 /**
+ * ★환수는 «아무 차나» 못 만든다 (대표 2026-09-16).
+ *   「계약접수 환수 드롭다운 누르고 들어가면 차량번호가 이미 실적에 있는 것 중에 고르는 거지」
+ *
+ * 그래서 고르는 자리를 따로 연다 — 목록은 «정상 실적» 만이고, 열쇠는 «차량번호» 다.
+ *   ★인도가 찍혀 실적이 선 건만 나온다. 나가지도 않은 것을 되돌릴 수 없다.
+ *   ★이미 환수가 붙은 건은 «잠근다». 두 번 되돌리면 두 배로 빠진다.
+ *   ★F04 원장의 열쇠가 차량번호라 여기서도 차량번호가 첫 칸이다.
+ */
+function openClawPick() { S.pick = 'claw'; S.pickQ = ''; renderPick(); }
+
+function clawTargets() {
+  const q = S.pickQ.trim().toLowerCase();
+  return PERFS.filter(p => p.kind === 'NEW').map(p => {
+    const app = APPS.find(x => x.no === p.app) || {};
+    const done = PERFS.find(x => x.origin === p.no) || null;
+    return { p, app, done };
+  }).filter(({ p, app }) => !q
+    || (app.plate + ' ' + app.cust + ' ' + app.veh + ' ' + app.sup + ' ' + app.ch + ' ' + p.no).toLowerCase().includes(q));
+}
+
+function renderPick() {
+  const root = $('#pickroot');
+  if (S.pick !== 'claw') { root.innerHTML = ''; return; }
+  const rows = clawTargets();
+  const open = rows.filter(r => !r.done).length;
+
+  root.innerHTML = `<div class="pick" id="pw"><div class="pickbox">
+    <div class="ph"><h2>환수 대상 고르기</h2><span class="c">되돌릴 수 있는 것 ${open}건</span>
+      <span class="sp"></span><button class="btn sm" id="pkx">닫기</button></div>
+    <div class="bar"><div class="fd"><span class="mg">&#9906;</span>
+      <input type="search" id="pkq" value="${esc(S.pickQ)}" placeholder="차량번호 · 고객 · 공급사"></div>
+      <span class="mut" style="font-size:11px">★인도가 찍혀 «실적이 선» 건만 나옵니다</span></div>
+    <div class="body2">${rows.length ? `<table class="g">
+      <thead><tr><th>차량번호</th><th>고객</th><th>차량</th><th>공급사</th><th>영업채널</th>
+        <th class="r">되돌릴 금액</th><th>실적</th></tr></thead>
+      <tbody>${rows.map(({ p, app, done }) => `<tr data-no="${p.no}" class="${done ? 'off' : ''}">
+        <td class="nm n">${esc(app.plate || '—')}</td>
+        <td>${esc(app.cust)}</td><td class="mut">${esc(app.veh)}</td>
+        <td class="mut">${esc(app.sup)}</td><td class="mut">${esc(app.ch)}</td>
+        <td class="r n" style="font-weight:650">${won(p.bill - p.pay)}</td>
+        <td>${done ? `<span class="st bad">환수됨 ${esc(done.no)}</span>` : `<span class="st mut">${esc(p.no)}</span>`}</td>
+      </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>되돌릴 실적이 없다</b>
+          <p>인도가 찍혀 실적이 선 건만 환수할 수 있다.</p></div>`}</div>
+    <div class="pf"><span>★이미 환수가 붙은 줄은 잠겨 있다 — 두 번 되돌리면 두 배로 빠진다</span></div>
+  </div></div>`;
+
+  $('#pw').onclick = ev => { if (ev.target.id === 'pw') { S.pick = null; renderPick(); } };
+  $('#pkx').onclick = () => { S.pick = null; renderPick(); };
+  const q = $('#pkq');
+  q.oninput = () => { S.pickQ = q.value; renderPick(); const e = $('#pkq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  root.querySelectorAll('tbody tr').forEach(r => r.onclick = () => {
+    const t = rows.find(x => x.p.no === r.dataset.no);
+    if (!t || t.done) return;          /* 잠긴 줄은 안 열린다 */
+    S.pick = null; renderPick();
+    makeClawbackFrom(t.p);
+  });
+  q.focus();
+}
+
+/**
  * 환수 실적 한 줄을 세운다.
  * ★원 실적을 «고치지 않는다». 부호만 뒤집은 줄을 더하고 origin 으로 묶는다.
  *   고쳐 버리면 합계는 맞아도 「왜 줄었는지」 를 나중에 못 댄다.
  * ★이미 붙은 환수가 있으면 또 세우지 않는다 — 두 번 되돌리면 두 배로 빠진다.
  */
-function makeClawback(a) {
-  const src = PERFS.find(p => p.app === a.no && p.kind === 'NEW');
-  if (!src) return;
-  if (PERFS.some(p => p.origin === src.no)) { S.perfNo = PERFS.find(p => p.origin === src.no).no; }
+function makeClawbackFrom(src) {
+  const had = PERFS.find(p => p.origin === src.no);
+  if (had) { S.perfNo = had.no; }
   else {
     const no = 'S-2609-' + String(14 - PERFS.filter(isClaw).length).padStart(3, '0');
-    PERFS.unshift({ no, kind: 'CLAWBACK', app: a.no, origin: src.no, stage: 1, issue: false,
+    PERFS.unshift({ no, kind: 'CLAWBACK', app: src.app, origin: src.no, stage: 1, issue: false,
       bill: -src.bill, pay: -src.pay, at: '09-16',
       reason: '환수 사유 입력 화면이 뜬다', note: `원 실적 ${src.no} 을 되돌린다.` });
     S.perfNo = no;
@@ -458,20 +521,22 @@ function makeClawback(a) {
 function panePerf(el) {
   const sum = PERFS.reduce((n, p) => n + (p.bill - p.pay), 0);
   el.innerHTML = `<div class="ph"><h2>실적 목록</h2><span class="c">${PERFS.length}건</span><span class="sp"></span>
-      <span class="c">마진 합계 <b class="n">${won2(sum)}</b></span></div>
+      <span class="c">마진 합계 <b class="n">${won2(sum)}</b></span>
+      <button class="btn sm" id="newclaw" style="margin-left:var(--sp)">+ 환수</button></div>
     <div class="pb"><table class="g">
-      <thead><tr><th style="width:56px">갈래</th><th>고객</th><th>차량</th><th>채널</th>
+      <thead><tr><th style="width:56px">갈래</th><th>차량번호</th><th>고객</th><th>차량</th><th>채널</th>
         <th class="r">청구</th><th class="r">지급</th><th class="r">마진</th><th>단계</th></tr></thead>
       <tbody>${PERFS.map(p => { const a = APPS.find(x => x.no === p.app);
         const st = p.issue ? { t: '이슈', c: 'bad' } : p.stage >= 4 ? { t: '확정', c: 'ok' } : { t: STAGES[p.stage - 1], c: 'wait' };
         return `<tr data-k="${p.no}" class="${p.no === S.perfNo && S.focus === 'perf' ? 'on' : ''}">
           <td><span class="st ${isClaw(p) ? 'bad' : 'mut'}">${isClaw(p) ? '환수' : '정상'}</span></td>
-          <td class="nm">${esc(a.cust)}</td><td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
+          <td class="n">${esc(a.plate || '—')}</td><td class="nm">${esc(a.cust)}</td><td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
           <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${won2(p.bill)}</td>
           <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${p.pay ? won2(p.pay) : '—'}</td>
           <td class="r n" style="font-weight:650${isClaw(p) ? ';color:var(--bad)' : ''}">${won2(p.bill - p.pay)}</td>
           <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
     <div class="pf"><span>★환수는 «되돌리는 줄» 이다 — 원 실적을 고치지 않고 반대 부호로 한 줄 더 선다</span></div>`;
+  $('#newclaw').onclick = openClawPick;
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.perfNo = r.dataset.k; S.focus = 'perf'; render(); });
 }
 
@@ -508,7 +573,7 @@ function detailPerf(el) {
       ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}</div>
     <div class="pb"><div class="dwrap">
       <div class="dchips"><span class="st ${isClaw(pf) ? 'bad' : 'mut'}">${isClaw(pf) ? '환수 실적' : '정상 실적'}</span>
-        <span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
+        <span class="tag n">${esc(a.plate || '차량번호 미배정')}</span><span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
       <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${a.term}개월</p>
       ${isClaw(pf) ? `<div class="note e"><span class="i">↩</span><div><b>환수 — 되돌리는 줄입니다</b>
         <p>${esc(pf.reason || '')}<br>원 실적 <b class="n">${esc(pf.origin)}</b> 은 <b>그대로 둡니다</b>.
@@ -747,6 +812,7 @@ function render() {
   else { paneProducts(P1); paneApps(P2); }
   paneDetail(D);
   mountSplit();
+  renderPick();
 }
 
 /* 좌측 두 판의 부피 — 가운데 선을 끌어서 바꾼다 */
@@ -927,7 +993,12 @@ $('#railtoggle').onclick = () => {
 document.addEventListener('keydown', ev => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(ev.target.tagName);
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); $('#gq').focus(); return; }
-  if (ev.key === 'Escape') { if (S.sheet) { S.sheet = false; renderSheet(); } else if (typing) ev.target.blur(); return; }
+  if (ev.key === 'Escape') {
+    if (S.pick) { S.pick = null; renderPick(); }
+    else if (S.sheet) { S.sheet = false; renderSheet(); }
+    else if (typing) ev.target.blur();
+    return;
+  }
   if (typing) return;
   if (ev.key === '/' && $('#q')) { ev.preventDefault(); $('#q').focus(); }
   if (ev.key === '[') { $('#railtoggle').click(); }

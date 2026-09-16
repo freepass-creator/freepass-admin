@@ -1,20 +1,23 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=22">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=30">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
-  --ground:#e5e8ea; --card:#fafbfc; --tint:#f1f3f5; --tint2:#e8ebee; --zebra:#f6f8f9;
-  --rail:#252b33; --rail-2:#333b45; --rail-tx:#909aa5; --rail-hi:#e3e7eb;
-  --line:#dfe3e7; --line-2:#c5ccd3;
-  /* 글자는 순검정에서 뗀다 — 흰 바탕에서 획이 번진다 */
-  --ink:#252b31; --ink-2:#5a646d; --ink-3:#8a939b;
+  --ground:#dee2e6; --card:#fcfdfe; --tint:#eef1f4; --tint2:#e4e8ec; --zebra:#f3f6f8;
+  --rail:#232931; --rail-2:#323a44; --rail-tx:#9aa4af; --rail-hi:#eaeef2;
+  --line:#d7dce1; --line-2:#b6bfc7;
+  /* ★글자는 순검정에서 떼되 «읽히는 선» 아래로 안 내린다 (흰 바탕 기준 대비)
+     ink 14:1 · ink-2 8:1 · ink-3 4.9:1 — ink-3 도 본문으로 쓸 수 있는 값이다.
+     예전 #8a939b 은 3.1:1 이라 표 절반이 회색으로 가라앉았다 */
+  --ink:#1b2127; --ink-2:#4b5560; --ink-3:#6f7984;
   /* 강조는 «가라앉힌» 슬레이트 블루. 채도가 높으면 초점이 계속 당겨진다 */
-  --key:#3d6b8e; --key-soft:#e9eef2; --key-line:#b6c8d5; --key-lift:#4a7ca3;
-  --ok:#45775d; --ok-soft:#eaf0ec;
-  --warn:#856b3a; --warn-soft:#f4f0e7;
-  --bad:#94534b; --bad-soft:#f3eae9;
+  --key:#2f6289; --key-soft:#e4ecf2; --key-line:#a9c1d3; --key-lift:#3b76a3;
+  --ok:#2f6b4f; --ok-soft:#e3ede7;
+  --warn:#7d5b1c; --warn-soft:#f4eee1;
+  --bad:#a2433a; --bad-soft:#f5e7e5;
   --ph:#e4e7ea; --ph2:#d5d9dd; --glyph:#b7bec5;
   --s1:0 1px 1px rgba(37,43,49,.04);
   --s2:0 1px 2px rgba(37,43,49,.06),0 1px 8px -4px rgba(37,43,49,.08);
@@ -31,21 +34,21 @@
   --h-chip:22px; --h-ctl:30px; --h-row:34px; --h-act:38px; --h-top:46px;
   /* ── 사이 ─ 여섯이 기본, 구역이 갈릴 때만 열둘 ── */
   --sp:6px; --sp2:12px; --sp3:16px;
-  --w-find:250px; --w-rail:200px; --w-rail-mini:54px;
+  --w-find:318px; --w-rail:200px; --w-rail-mini:54px;
   /* ── 모서리 ─ 컨트롤 5 · 판 8 · 딱지 3 ── */
   --r-ctl:5px; --r-pane:8px; --r-chip:3px;
   /* ── 폰 ─ 손가락이 닿아야 하므로 한 단 크다 ── */
   --m-bar:52px; --m-ctl:38px; --m-row:64px; --m-act:44px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ground:#15191d; --card:#1d2227; --tint:#232930; --tint2:#2a3138; --zebra:#20262b;
-  --rail:#171b20; --rail-2:#272e35; --rail-tx:#868f99; --rail-hi:#dfe4e9;
-  --line:#2c333a; --line-2:#3b444d;
-  --ink:#dde3e8; --ink-2:#a2abb4; --ink-3:#7d868f;
-  --key:#6f9fc0; --key-soft:#22303a; --key-line:#3d5b70; --key-lift:#87b3d1;
-  --ok:#72ab8d; --ok-soft:#1c2a24;
-  --warn:#bfa273; --warn-soft:#2b271d;
-  --bad:#c08880; --bad-soft:#2c2220;
+  --ground:#11151a; --card:#1b2026; --tint:#232a31; --tint2:#2b333b; --zebra:#1f262c;
+  --rail:#151a1f; --rail-2:#262d35; --rail-tx:#8e98a3; --rail-hi:#e4e9ee;
+  --line:#313941; --line-2:#434d57;
+  --ink:#e7ecf1; --ink-2:#b0bac4; --ink-3:#8d97a1;
+  --key:#7db0d2; --key-soft:#1e2c37; --key-line:#3e5f76; --key-lift:#95c2de;
+  --ok:#7cb695; --ok-soft:#1a2822;
+  --warn:#c9aa76; --warn-soft:#2a261c;
+  --bad:#cc8f86; --bad-soft:#2b2120;
   --ph:#262c32; --ph2:#1c2126; --glyph:#454d55;
   --s1:0 1px 1px rgba(0,0,0,.3);
   --s2:0 1px 2px rgba(0,0,0,.35),0 1px 8px -4px rgba(0,0,0,.45);
@@ -53,14 +56,14 @@
   --ring:0 0 0 2px rgba(111,159,192,.35);
 }}
 :root[data-theme="dark"]{
-  --ground:#15191d; --card:#1d2227; --tint:#232930; --tint2:#2a3138; --zebra:#20262b;
-  --rail:#171b20; --rail-2:#272e35; --rail-tx:#868f99; --rail-hi:#dfe4e9;
-  --line:#2c333a; --line-2:#3b444d;
-  --ink:#dde3e8; --ink-2:#a2abb4; --ink-3:#7d868f;
-  --key:#6f9fc0; --key-soft:#22303a; --key-line:#3d5b70; --key-lift:#87b3d1;
-  --ok:#72ab8d; --ok-soft:#1c2a24;
-  --warn:#bfa273; --warn-soft:#2b271d;
-  --bad:#c08880; --bad-soft:#2c2220;
+  --ground:#11151a; --card:#1b2026; --tint:#232a31; --tint2:#2b333b; --zebra:#1f262c;
+  --rail:#151a1f; --rail-2:#262d35; --rail-tx:#8e98a3; --rail-hi:#e4e9ee;
+  --line:#313941; --line-2:#434d57;
+  --ink:#e7ecf1; --ink-2:#b0bac4; --ink-3:#8d97a1;
+  --key:#7db0d2; --key-soft:#1e2c37; --key-line:#3e5f76; --key-lift:#95c2de;
+  --ok:#7cb695; --ok-soft:#1a2822;
+  --warn:#c9aa76; --warn-soft:#2a261c;
+  --bad:#cc8f86; --bad-soft:#2b2120;
   --ph:#262c32; --ph2:#1c2126; --glyph:#454d55;
   --s1:0 1px 1px rgba(0,0,0,.3);
   --s2:0 1px 2px rgba(0,0,0,.35),0 1px 8px -4px rgba(0,0,0,.45);
@@ -119,7 +122,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .gs{flex:1;max-width:420px;position:relative}
 .gs input{width:100%;height:var(--h-ctl);border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--tint);padding:0 54px 0 28px;font-size:12px}
 .gs input:focus{outline:none;border-color:var(--key);box-shadow:var(--ring);background:var(--card)}
-.gs .mg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;font-size:11px}
+.gs .mg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;display:flex}
 .gs kbd{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none}
 .topbar .sp{margin-left:auto}
 .tb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:var(--sp)}
@@ -159,12 +162,24 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 /* ★띠 셋이 «같은 높이» 다 — 제목줄 · 도구줄 · 발치줄. 판을 여럿 세워도 줄이 맞는다 */
 .ph{flex:none;display:flex;align-items:center;gap:var(--sp);height:var(--h-act);padding:0 var(--sp2);border-bottom:1px solid var(--line);background:var(--tint)}
 .ph h2{margin:0;font-size:12.5px;font-weight:650;letter-spacing:-.02em;white-space:nowrap}
-.ph .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.ph .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
 .ph .sp{margin-left:auto}
 .pb{flex:1;min-height:0;overflow:auto}
 .pb::-webkit-scrollbar{width:9px;height:9px}
 .pb::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--card)}
-.pf{flex:none;min-height:var(--h-act);border-top:1px solid var(--line);background:var(--tint);padding:0 var(--sp2);font-size:10.5px;color:var(--ink-3);display:flex;gap:10px;align-items:center}
+/* ── ★판 바닥 (.pf) ─ «셈» 자리다 ───────────────────────────
+   넣는 것 : 지금 보이는 것을 센 값 — 라벨 + 숫자. 오른쪽(.sp 뒤) 은 판 전체에 거는 행동.
+   안 넣는 것 : 설명문 · 훈계 · 도움말. 매일 보는 사람에게 설명은 소음이다.
+   높이는 ctl 30 — «읽기만» 하는 띠라 act 38 을 쓰지 않는다 */
+.pf{flex:none;height:var(--h-ctl);border-top:1px solid var(--line);background:var(--tint);
+  padding:0 var(--sp2);display:flex;gap:var(--sp2);align-items:center;font-size:11px;color:var(--ink-2)}
+.pf .sp{margin-left:auto}
+.pf .t{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
+.pf .t i{font-style:normal;color:var(--ink-3)}
+.pf .t b{font-family:var(--mono);font-weight:650;font-size:11.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+.pf .t b.bad{color:var(--bad)} .pf .t b.warn{color:var(--warn)} .pf .t b.ok{color:var(--ok)}
+/* ★0 은 눌러 둔다 — «없는 것» 이 눈을 끌면 안 된다 */
+.pf .t b.z{color:var(--ink-3);font-weight:500}
 
 /* 가르는 선 — 끌어서 위아래 부피를 바꾼다 */
 
@@ -176,12 +191,25 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .bar{row-gap:var(--sp)}
 .bar .tok{margin-left:0}
 /* ★검색칸은 «치는 만큼» 이다. 남는 폭은 걸린 조건이 쓴다 */
-.fd{position:relative;flex:0 0 var(--w-find);max-width:var(--w-find)}
-@media (max-width:1400px){:root{--w-find:190px}}
-.fd input{width:100%;height:var(--h-ctl);border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);padding:0 26px;font-size:12px}
-.fd input:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
-.fd .mg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:11px;pointer-events:none}
-.fd .x{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--ink-3);cursor:pointer;padding:3px}
+/* ★찾는 일은 «한 칸» 안에서 끝난다 — 돋보기 · 친 말 · 지우기 · 세부필터.
+   ✕ 가 둘로 보이던 까닭은 type=search 라 브라우저가 «또» 그려서다. text 로 둔다. */
+.fd{position:relative;flex:0 0 var(--w-find);max-width:var(--w-find);display:flex;align-items:center;
+  height:var(--h-ctl);border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);overflow:hidden}
+.fd:focus-within{border-color:var(--key);box-shadow:var(--ring)}
+@media (max-width:1400px){:root{--w-find:268px}}
+.fd input{flex:1;min-width:0;height:100%;border:0;background:none;padding:0 2px 0 26px;font-size:12px;color:var(--ink)}
+.fd input:focus{outline:none}
+.fd input::-webkit-search-cancel-button,.fd input::-webkit-search-decoration{display:none;-webkit-appearance:none}
+.fd .mg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;display:flex}
+.fd .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 5px;font-size:11px;line-height:1}
+.fd .x:hover{color:var(--ink)}
+/* 세부필터는 칸 «안에» 산다 — 검색어로 못 자르는 것을 자르는, 같은 일이다 */
+.fd .fx{flex:none;height:100%;padding:0 9px;border:0;border-left:1px solid var(--line-2);background:var(--tint);
+  color:var(--ink-2);cursor:pointer;font-size:11.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.fd .fx:hover{background:var(--tint2);color:var(--ink)}
+.fd .fx.on{background:var(--key);color:#fff;font-weight:600;border-left-color:var(--key)}
+.fd .fx .b{font-family:var(--mono);font-size:10px;font-weight:700;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  background:rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center}
 .sb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:var(--sp)}
 .sb:hover{background:var(--tint)}
 .sb[aria-pressed="true"]{background:var(--key);border-color:var(--key);color:#fff;font-weight:600}
@@ -203,7 +231,7 @@ table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
 table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
 table.g .r{text-align:right}
 table.g .nm{font-weight:650}
-table.g .mut{color:var(--ink-3)}
+table.g .mut{color:var(--ink-2)}
 .thumb{width:40px;height:26px;border-radius:3px;background:linear-gradient(160deg,var(--ph),var(--ph2));display:inline-grid;place-items:center;vertical-align:middle;overflow:hidden}
 .thumb svg{width:100%;height:100%}
 
@@ -380,10 +408,19 @@ table.g .mut{color:var(--ink-3)}
 
 .mbody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
 .mbody.pad{padding:var(--sp2) var(--sp2) var(--sp3)}
-.msearch{position:relative;padding:var(--sp) var(--sp2)}
-.msearch input{width:100%;height:var(--m-ctl);border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);padding:0 12px 0 33px;font-size:13.5px}
-.msearch input:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
-.msearch .mg{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;font-size:12px}
+.msearch{padding:var(--sp) var(--sp2)}
+.msearch .fd{position:relative;flex:1 1 auto;max-width:none;height:var(--m-ctl);display:flex;align-items:center;
+  border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);overflow:hidden}
+.msearch .fd:focus-within{border-color:var(--key);box-shadow:var(--ring)}
+.msearch input{flex:1;min-width:0;height:100%;border:0;background:none;padding:0 2px 0 31px;font-size:13.5px;color:var(--ink)}
+.msearch input:focus{outline:none}
+.msearch .mg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;display:flex}
+.msearch .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 8px;font-size:12px}
+.msearch .fx{flex:none;height:100%;padding:0 12px;border:0;border-left:1px solid var(--line-2);background:var(--tint);
+  color:var(--ink-2);font-size:12.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.msearch .fx.on{background:var(--key);color:#fff;font-weight:600;border-left-color:var(--key)}
+.msearch .fx .b{font-family:var(--mono);font-size:10.5px;font-weight:700;min-width:16px;height:16px;padding:0 4px;
+  border-radius:8px;background:rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center}
 .mtoks{display:flex;gap:var(--sp);flex-wrap:wrap;padding:0 var(--sp2) var(--sp)}
 .mchips{display:flex;gap:var(--sp);padding:var(--sp) var(--sp2);overflow-x:auto}
 .mchips .sb{height:var(--m-ctl);flex:0 0 auto}
@@ -465,8 +502,8 @@ table.g .mut{color:var(--ink-3)}
 
   <main class="main">
     <div class="topbar">
-      <div class="gs"><span class="mg">&#9906;</span>
-        <input type="search" id="gq" placeholder="상품 · 고객 · 접수번호 · 계약번호" aria-label="통합 검색"><kbd>Ctrl K</kbd></div>
+      <div class="gs"><span class="mg"><svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"></circle><path d="M9 9l3.2 3.2"></path></svg></span>
+        <input type="text" id="gq" placeholder="상품 · 고객 · 접수번호 · 계약번호" aria-label="통합 검색"><kbd>Ctrl K</kbd></div>
       <span class="sp"></span>
       <button class="tb"><span class="dot"></span>알림 3</button>
       <button class="tb" id="theme">결: 트렌디</button>
@@ -490,6 +527,6 @@ table.g .mut{color:var(--ink-3)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=22"></script>
-<script src="./admin-shell.app.js?v=22"></script>
-<script src="./admin-shell.mobile.js?v=22"></script>
+<script src="./admin-shell.data.js?v=30"></script>
+<script src="./admin-shell.app.js?v=30"></script>
+<script src="./admin-shell.mobile.js?v=30"></script>

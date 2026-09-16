@@ -30,6 +30,23 @@ const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
   : { t: '계약서 대기', c: 'wait' };
 const STAGES = ['영업자 1차 확인', '공급사 Cross Check', '관리자 최종 확정', '정산 원장 편입'];
 const isClaw = p => p.kind === 'CLAWBACK';
+
+/* ── ★판 규격 — 네 칸이고, 칸마다 «맡은 일» 이 하나다 ─────────
+   .ph 38  무엇을 보는가  제목 · 딸린 수 · (오른쪽) 이 판 전체에 거는 행동
+   .bar 38 무엇을 고르는가 찾는 칸 하나 + 걸린 조건 딱지. 없으면 띠도 없다
+   .pb  1fr 내용
+   .pf  30  무엇이 남았나  «셈» 만 — 라벨+숫자. 설명문·훈계는 안 넣는다
+   ★찾기·고르기는 .bar 로, 세는 일은 .pf 로. .ph 에 섞지 않는다 */
+const MG = '<span class="mg"><svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"></circle><path d="M9 9l3.2 3.2"></path></svg></span>';
+/** 찾는 칸 하나 — 돋보기·친 말·지우기·(세부필터) 가 한 테두리 안에 산다.
+ *  ★type 은 text 다. search 로 두면 브라우저가 ✕ 를 «또» 그려 두 개가 된다. */
+const findbox = (id, ph, val, opt = {}) => `<div class="fd">${MG}
+  <input type="text" id="${id}" value="${esc(val || '')}" placeholder="${ph}" autocomplete="off" spellcheck="false">
+  ${val ? `<button class="x" id="${id}x" aria-label="지운다">&#10005;</button>` : ''}
+  ${opt.filter ? `<button class="fx${opt.n ? ' on' : ''}" id="${opt.filter}">세부필터${opt.n ? `<span class="b">${opt.n}</span>` : ''}</button>` : ''}
+</div>`;
+/** 판 바닥의 셈 한 칸. ★0 이면 눌러 둔다 — 없는 것이 눈을 끌면 안 된다 */
+const tl = (t, v, c) => `<span class="t"><i>${t}</i><b class="${v === 0 ? 'z' : (c || '')}">${v}</b></span>`;
 /** ★보증금은 «비율» 이 먼저다 — 차가 물고 들어오는 조건이라 금액은 그 결과다.
  *  비율을 모르면(미확인) 금액만 쓴다. 0 을 「없음」 으로 쓰지 않는다. */
 const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${man(o.dep)}원`
@@ -174,24 +191,20 @@ function paneProducts(el) {
   syncProd();
   const { hits, drops, sel } = evaluate();
   const n = selCount(sel);
+  /* ★「확인 필요」 는 세부트림이 안 잡힌 상품이다 — 0 이 아니라 «모른다» 다 */
+  const part = hits.filter(x => x.p.match !== 'TRIM').length;
   el.innerHTML = `
-    <div class="ph"><h2>상품 목록</h2><span class="c">${hits.length}건</span><span class="sp"></span>
-      <button class="sb" id="cond">세부필터${n ? `<span class="b">${n}</span>` : ''}</button></div>
+    <div class="ph"><h2>상품 목록</h2><span class="c">${hits.length}건</span></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span>
-        <input type="search" id="q" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월">
-        ${S.q ? '<button class="x" id="qx" aria-label="지우기">&#10005;</button>' : ''}</div>
+      ${findbox('q', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'cond', n })}
       ${tokens(sel)}
     </div>
     <div class="pb" id="pbA"></div>
-    <div class="pf"><span>검색창이 조건을 먹는다 — 점선은 검색어에서 읽은 것</span></div>`;
+    <div class="pf">${tl('조건 밖', drops.length)}${tl('확인 필요', part, 'warn')}</div>`;
 
   const q = $('#q');
   q.oninput = () => { S.q = q.value; paneProducts(el); const e = $('#q'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
-  if ($('#qx')) $('#qx').onclick = () => { S.q = ''; let _w = innerWidth;
-addEventListener('resize', () => { if ((innerWidth <= 1100) !== (_w <= 1100)) { _w = innerWidth; render(); } _w = innerWidth; });
-
-render(); };
+  if ($('#qx')) $('#qx').onclick = () => { S.q = ''; render(); };
   $('#cond').onclick = () => { S.sheet = true; renderSheet(); };
   el.querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
     const [a, k] = b.dataset.tok.split('|'); S.sel[a] = (S.sel[a] || []).filter(x => x !== k); render();
@@ -253,14 +266,15 @@ function paneApps(el) {
     <div class="ph"><h2>접수 목록</h2><span class="c">${list.length}건</span><span class="sp"></span>
       <button class="btn sm go" id="newapp">+ 신규접수</button></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span><input type="search" id="aq" value="${esc(S.appQ)}" placeholder="고객 · 접수번호 · 차량"></div>
+      ${findbox('aq', '고객 · 접수번호 · 차량', S.appQ)}
       ${AF.map(x => `<button class="sb" data-f="${x.k}" aria-pressed="${x.k === S.appFilter}">${x.t}<span class="b">${APPS.filter(x.f).length}</span></button>`).join('')}
     </div>
     <div class="pb" id="pbB"></div>
-    <div class="pf"><span>기본은 <b>칠 것</b> — 계약서·서류·인도 중 하나가 남은 건</span></div>`;
+    <div class="pf">${tl('칠 것', APPS.filter(AF[0].f).length, 'warn')}${tl('인도완료', APPS.filter(AF[2].f).length, 'ok')}${tl('취소', APPS.filter(AF[3].f).length)}</div>`;
 
   const aq = $('#aq');
   aq.oninput = () => { S.appQ = aq.value; paneApps(el); const e = $('#aq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  if ($('#aqx')) $('#aqx').onclick = () => { S.appQ = ''; render(); };
   el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.appFilter = b.dataset.f; render(); });
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
@@ -465,11 +479,9 @@ function renderPick() {
   const open = rows.filter(r => !r.done).length;
 
   root.innerHTML = `<div class="pick" id="pw"><div class="pickbox">
-    <div class="ph"><h2>환수 대상 고르기</h2><span class="c">되돌릴 수 있는 것 ${open}건</span>
+    <div class="ph"><h2>환수 대상 고르기</h2><span class="c">인도가 찍힌 건만</span>
       <span class="sp"></span><button class="btn sm" id="pkx">닫기</button></div>
-    <div class="bar"><div class="fd"><span class="mg">&#9906;</span>
-      <input type="search" id="pkq" value="${esc(S.pickQ)}" placeholder="차량번호 · 고객 · 공급사"></div>
-      <span class="mut" style="font-size:11px">★인도가 찍혀 «실적이 선» 건만 나옵니다</span></div>
+    <div class="bar">${findbox('pkq', '차량번호 · 고객 · 공급사', S.pickQ)}</div>
     <div class="body2">${rows.length ? `<table class="g">
       <thead><tr><th>차량번호</th><th>고객</th><th>차량</th><th>공급사</th><th>영업채널</th>
         <th class="r">되돌릴 금액</th><th>실적</th></tr></thead>
@@ -482,13 +494,14 @@ function renderPick() {
       </tr>`).join('')}</tbody></table>`
       : `<div class="empty"><b>되돌릴 실적이 없다</b>
           <p>인도가 찍혀 실적이 선 건만 환수할 수 있다.</p></div>`}</div>
-    <div class="pf"><span>★이미 환수가 붙은 줄은 잠겨 있다 — 두 번 되돌리면 두 배로 빠진다</span></div>
+    <div class="pf">${tl('되돌릴 수 있는 것', open)}${tl('이미 환수됨', rows.length - open, 'bad')}</div>
   </div></div>`;
 
   $('#pw').onclick = ev => { if (ev.target.id === 'pw') { S.pick = null; renderPick(); } };
   $('#pkx').onclick = () => { S.pick = null; renderPick(); };
   const q = $('#pkq');
   q.oninput = () => { S.pickQ = q.value; renderPick(); const e = $('#pkq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  if ($('#pkqx')) $('#pkqx').onclick = () => { S.pickQ = ''; renderPick(); };
   root.querySelectorAll('tbody tr').forEach(r => r.onclick = () => {
     const t = rows.find(x => x.p.no === r.dataset.no);
     if (!t || t.done) return;          /* 잠긴 줄은 안 열린다 */
@@ -520,9 +533,9 @@ function makeClawbackFrom(src) {
 /* ══ 정산 ══════════════════════════════════════ */
 function panePerf(el) {
   const sum = PERFS.reduce((n, p) => n + (p.bill - p.pay), 0);
+  const nClaw = PERFS.filter(isClaw).length;
   el.innerHTML = `<div class="ph"><h2>실적 목록</h2><span class="c">${PERFS.length}건</span><span class="sp"></span>
-      <span class="c">마진 합계 <b class="n">${won2(sum)}</b></span>
-      <button class="btn sm" id="newclaw" style="margin-left:var(--sp)">+ 환수</button></div>
+      <button class="btn sm" id="newclaw">+ 환수</button></div>
     <div class="pb"><table class="g">
       <thead><tr><th style="width:56px">갈래</th><th>차량번호</th><th>고객</th><th>차량</th><th>채널</th>
         <th class="r">청구</th><th class="r">지급</th><th class="r">마진</th><th>단계</th></tr></thead>
@@ -535,7 +548,8 @@ function panePerf(el) {
           <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${p.pay ? won2(p.pay) : '—'}</td>
           <td class="r n" style="font-weight:650${isClaw(p) ? ';color:var(--bad)' : ''}">${won2(p.bill - p.pay)}</td>
           <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>★환수는 «되돌리는 줄» 이다 — 원 실적을 고치지 않고 반대 부호로 한 줄 더 선다</span></div>`;
+    <div class="pf">${tl('정상', PERFS.length - nClaw)}${tl('환수', nClaw, 'bad')}${tl('이슈', PERFS.filter(p => p.issue).length, 'bad')}
+      <span class="sp"></span><span class="t"><i>마진 합계</i><b class="${sum < 0 ? 'bad' : ''}">${won2(sum)}</b></span></div>`;
   $('#newclaw').onclick = openClawPick;
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.perfNo = r.dataset.k; S.focus = 'perf'; render(); });
 }
@@ -559,7 +573,11 @@ function paneLedger(el) {
             <td class="nm">${esc(p.ch)}</td><td class="r n">${won(p.fixed)}</td><td class="r n">${won(p.paid)}</td>
             <td class="r n" style="${l ? 'color:var(--bad);font-weight:700' : ''}">${won(l)}</td>
             <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>청구 원장과 지급 원장은 <b>따로 선다</b> — 한 표에 합치지 않는다</span></div>`;
+    <div class="pf">${inv
+      ? tl('공급사', BILLS.length) + tl('미수', BILLS.filter(b => b.fixed - b.got > 0).length, 'bad')
+        + `<span class="sp"></span><span class="t"><i>미수 합계</i><b class="${BILLS.some(b => b.fixed > b.got) ? 'bad' : ''}">${won(BILLS.reduce((n, b) => n + (b.fixed - b.got), 0))}</b></span>`
+      : tl('영업채널', PAYS.length) + tl('미지급', PAYS.filter(p => p.fixed - p.paid > 0).length, 'warn') + tl('보류', PAYS.filter(p => p.hold).length, 'bad')
+        + `<span class="sp"></span><span class="t"><i>미지급 합계</i><b>${won(PAYS.reduce((n, p) => n + (p.fixed - p.paid), 0))}</b></span>`}</div>`;
   el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.tab = b.dataset.t; S.focus = b.dataset.t === 'payout' ? 'pay' : 'bill'; render(); });
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => {
     if (inv) { S.billSup = r.dataset.k; S.focus = 'bill'; } else { S.payCh = r.dataset.k; S.focus = 'pay'; } render();
@@ -689,7 +707,7 @@ function paneEsign(el) {
           <td class="mut n">${esc(e.sent)}</td><td class="mut n">${e.seen ? esc(e.seen) : '—'}</td>
           <td class="mut n">${e.signed ? esc(e.signed) : '—'}</td>
           <td><span class="st ${s.c}">${s.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>보냈나 · 봤나 · 서명했나는 <b>서로 다른 사실</b>이다</span></div>`;
+    <div class="pf">${tl('서명 완료', ESIGNS.filter(e => e.signed).length, 'ok')}${tl('고객 작성 중', ESIGNS.filter(e => e.seen && !e.signed).length, 'warn')}${tl('발송 전', ESIGNS.filter(e => !e.seen).length)}${tl('확인 필요', ESIGNS.filter(e => !e.to).length, 'bad')}</div>`;
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.esignNo = r.dataset.no; S.focus = 'esign'; render(); });
 }
 
@@ -989,6 +1007,13 @@ $('#railtoggle').onclick = () => {
   $('#railtoggle').innerHTML = S.mini ? '&#10095;' : '&#10094;';
   $('#railtoggle').title = S.mini ? '사이드바 펼치기' : '사이드바 접기';
 };
+
+/* 폰 ↔ 데스크가 갈리는 목만 다시 그린다 — 듣개는 «하나» 다 */
+let _w = innerWidth;
+addEventListener('resize', () => {
+  if ((innerWidth <= 1100) !== (_w <= 1100)) { _w = innerWidth; render(); }
+  _w = innerWidth;
+});
 
 document.addEventListener('keydown', ev => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(ev.target.tagName);

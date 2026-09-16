@@ -44,11 +44,8 @@ function mProducts() {
   syncProd();
   const { hits, drops, sel } = evaluate();
   const n = selCount(sel);
-  return mbar('상품 찾기', `${hits.length}건`, {
-    right: `<button class="mb-ic" id="mcond" aria-label="세부필터">&#9868;${n ? `<em>${n}</em>` : ''}</button>`,
-  }) + `<div class="mbody">
-    <div class="msearch"><span class="mg">&#9906;</span>
-      <input type="search" id="mq" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월"></div>
+  return mbar('상품 찾기', `${hits.length}건`) + `<div class="mbody">
+    <div class="msearch">${findbox('mq', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'mcond', n })}</div>
     ${n ? `<div class="mtoks">${tokens(sel)}</div>` : ''}
     <div class="mlist">${hits.length ? hits.map(({ p, ok }) => {
       const lead = ok[0], part = p.match !== 'TRIM';
@@ -234,6 +231,7 @@ function renderMobile() {
     const q = q1('#mq');
     q.oninput = () => { S.q = q.value; renderMobile(); const e = q1('#mq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
     q1('#mcond').onclick = () => { S.sheet = true; renderSheet(); };
+    if (q1('#mqx')) q1('#mqx').onclick = () => { S.q = ''; renderMobile(); };
     root.querySelectorAll('.mrow[data-id]').forEach(r => r.onclick = () => {
       S.pid = r.dataset.id; S.oid = null; S.shot = 0; syncProd(); mGo('detail');
     });

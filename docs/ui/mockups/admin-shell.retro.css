@@ -133,3 +133,23 @@
 :root.rt .smap button[aria-current="true"]{background:var(--card);box-shadow:inset 3px 0 0 var(--key)}
 :root.rt .opt{border-bottom:1px solid var(--line);padding:5px 2px}
 :root.rt .opt .bx{box-shadow:var(--bev-in);border:1px solid var(--line-2)}
+
+/* ── 찾는 칸 — 레트로에서도 «한 덩어리» 다 ────────────────────
+   트렌디는 테두리가 .fd 에 있고, 레트로는 «파인» 테두리가 .fd 에 있다.
+   markup 은 같다 — 테마가 갈리는 곳은 이 한 장뿐이다 */
+:root.rt .fd,:root.rt .msearch .fd{height:var(--h-s);border:1px solid var(--line-2);box-shadow:var(--bev-in);
+  background:#fff;border-radius:0}
+:root.rt .fd:focus-within,:root.rt .msearch .fd:focus-within{box-shadow:var(--bev-in),0 0 0 1px var(--key);border-color:var(--key)}
+:root.rt .fd input{height:100%;border:0;box-shadow:none;background:none}
+:root.rt .fd input:focus{box-shadow:none;border:0}
+:root.rt .fd .mg{color:#6b757f}
+:root.rt .fd .fx{height:calc(100% - 2px);margin:1px 1px 1px 0;border-left:1px solid var(--line-2);
+  background:linear-gradient(#fbfcfd,#e3e8ee);box-shadow:var(--bev);color:#3c444e;border-radius:0}
+:root.rt .fd .fx:hover{background:linear-gradient(#fff,#e9eef4)}
+:root.rt .fd .fx.on{background:linear-gradient(#41639a,#5a80b8);border-left-color:#3a5a8e;color:#fff;box-shadow:var(--bev-in)}
+:root.rt .fd .fx .b{background:rgba(255,255,255,.28);border-radius:0}
+
+/* ── 판 바닥 — 셈 자리. 높이 h-m(30) 은 트렌디의 ctl 과 같은 값이다 ── */
+:root.rt .pf .t i{color:#5c666f}
+:root.rt .pf .t b{font-family:GulimChe,굴림체,Consolas,monospace;font-weight:700;color:#232a31}
+:root.rt .pf .t b.z{color:#79838c;font-weight:400}

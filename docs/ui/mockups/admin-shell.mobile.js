@@ -76,13 +76,13 @@ function mProductDetail() {
       <div class="dchips" style="margin-top:12px"><span class="tag">${esc(p.maker)}</span><span class="tag">${esc(p.supplier)}</span>
         <span class="st ${p.match === 'TRIM' ? 'mut' : 'wait'}">${esc(p.matchLabel)}</span></div>
       <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월</div><div class="v">${won(o.rent)}</div></div>
-        <span class="u">보증금 ${dep(o.dep)}</span></div>
+        <span class="u">보증금 ${depText(o)} · VAT 포함</span></div>
       <div class="sec"><h3>대여 조건 — 고른 것 하나가 접수로 간다</h3>
         <div class="mopts" id="mopts">${p.offers.map(x => {
           const pass = offerOK(x, sel, null);
           return `<button class="mopt${x.id === S.oid ? ' on' : ''}" data-oid="${x.id}"${pass ? '' : ' disabled'}>
             <span class="o1"><b class="n">${x.term}개월</b><b class="n price">${won(x.rent)}</b></span>
-            <span class="o2">보증금 ${dep(x.dep)} · ${yr(x.mile) || '약정 미확인'}</span>
+            <span class="o2">보증금 ${depText(x)} · ${yr(x.mile) || '약정 미확인'}</span>
             <span class="o3">${x.pol.join(' · ') || '정책 없음'}</span></button>`;
         }).join('')}</div></div>
       <div class="sec"><h3>차량 정보</h3><dl class="kv">
@@ -116,13 +116,13 @@ function mAppDetail() {
   const a = APPS.find(x => x.no === S.appNo);
   if (!a) { M.view = 'list'; return mApps(); }
   const p = PRODUCTS.find(x => x.id === a.pid), drift = p && p.v !== a.pv, s = appStatus(a);
-  const steps = [['contract', '계약서'], ['docs', '필수서류'], ['deliv', '인도']];
+  const steps = STEPS;
   const next = a.cxl ? null : steps.find(([k]) => !a[k]);
   return mbar(a.cust, a.no, { right: `<button class="mb-ic" id="mmore" aria-label="더보기">&#8943;</button>` })
     + `<div class="mbody pad">
       <div class="dchips"><span class="tag">${esc(a.ch)}</span><span class="tag">${esc(a.sup)}</span><span class="st ${s.c}">${s.t}</span></div>
       <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월</div><div class="v">${won(a.rent)}</div></div>
-        <span class="u">보증금 ${dep(a.dep)}</span></div>
+        <span class="u">보증금 ${a.dep ? man(a.dep)+'원' : '무보증'} · VAT 포함</span></div>
       ${drift ? `<div class="note w"><span class="i">!</span><div><b>지금 상품은 v${p.v}, 이 접수는 v${a.pv}</b>
         <p>그 사이 상품이 바뀌었습니다. 접수 조건은 안 바뀝니다.</p></div></div>` : ''}
       ${a.cxl ? `<div class="note e"><span class="i">&#10005;</span><div><b>취소된 접수</b><p>${esc(a.cxlReason)}</p></div></div>` : ''}
@@ -153,7 +153,7 @@ function mNew() {
   return mbar('신규접수', '필수 4') + `<div class="mbody pad">
     <div class="lock"><div class="k">접수 대상</div>
       <div class="v">${esc(d.p.name)} · ${esc(d.p.sub)}</div>
-      <div class="v2">${d.o.term}개월 · ${won(d.o.rent)}/월 · 보증금 ${dep(d.o.dep)}</div></div>
+      <div class="v2">${d.o.term}개월 · ${won(d.o.rent)}/월 (VAT 포함) · 보증금 ${depText(d.o)}</div></div>
     <div class="form" style="margin-top:12px">
       <div class="fld"><label>영업채널 *</label><select id="f-ch">${CHANNELS.map(c => `<option${c === d.ch ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
       <div class="fld"><label>담당자 *</label><select id="f-st">${STAFF.map(s => `<option${s === d.staff ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></div>
@@ -172,8 +172,10 @@ function mPerfs() {
     const st = p.issue ? { t: '이슈', c: 'bad' } : p.stage >= 4 ? { t: '확정', c: 'ok' } : { t: STAGES[p.stage - 1], c: 'wait' };
     return `<button class="mrow" data-k="${p.no}">
       <span class="mtx"><span class="m1">${esc(a.cust)} <i>${esc(p.no)}</i></span>
-        <span class="m2">${esc(a.veh)} · ${esc(a.ch)} · <span class="st ${st.c}">${st.t}</span></span></span>
-      <span class="mr"><b class="n">${won(p.bill - p.pay)}</b></span><span class="mcv">&#10095;</span></button>`;
+        <span class="m2"><span class="st ${isClaw(p) ? 'bad' : 'mut'}">${isClaw(p) ? '환수' : '정상'}</span>
+          ${esc(a.veh)} · <span class="st ${st.c}">${st.t}</span></span></span>
+      <span class="mr"><b class="n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${won2(p.bill - p.pay)}</b></span>
+      <span class="mcv">&#10095;</span></button>`;
   }).join('')}</div></div>` + mtabs();
 }
 
@@ -182,10 +184,12 @@ function mPerfDetail() {
   const a = APPS.find(x => x.no === pf.app);
   return mbar(a.cust, pf.no) + `<div class="mbody pad">
     <div class="dchips"><span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span></div>
+    ${isClaw(pf) ? `<div class="note e"><span class="i">↩</span><div><b>환수 — 되돌리는 줄</b>
+      <p>${esc(pf.reason || '')}<br>원 실적 <b class="n">${esc(pf.origin)}</b> 은 그대로 둡니다.</p></div></div>` : ''}
     <div class="sec"><h3>돈 — 세 값은 서로 다르다</h3><dl class="kv">
-      <dt>공급사 청구액</dt><dd class="n">${won(pf.bill)}</dd>
-      <dt>채널 지급액</dt><dd class="n">${pf.pay ? won(pf.pay) : '없음'}</dd>
-      <dt>우리 마진</dt><dd class="n" style="color:var(--ok);font-weight:700">${won(pf.bill - pf.pay)}</dd></dl></div>
+      <dt>공급사 청구액</dt><dd class="n">${won2(pf.bill)}</dd>
+      <dt>채널 지급액</dt><dd class="n">${pf.pay ? won2(pf.pay) : '없음'}</dd>
+      <dt>우리 마진</dt><dd class="n" style="color:var(--${isClaw(pf) ? 'bad' : 'ok'});font-weight:700">${won2(pf.bill - pf.pay)}</dd></dl></div>
     <div class="sec"><h3>사슬</h3><ul class="tl">${STAGES.map((t, i) => `<li class="${i + 1 < pf.stage ? 'on' : i + 1 === pf.stage ? 'now' : ''}">
       <div class="t">${esc(t)}</div><div class="w">${i + 1 < pf.stage ? '완료' : i + 1 === pf.stage ? '지금 여기' : '대기'}</div></li>`).join('')}</ul></div>
     ${pf.issue ? `<div class="note e"><span class="i">!</span><div><b>공급사와 어긋납니다</b><p>${esc(pf.note)}</p></div></div>` : ''}
@@ -261,7 +265,7 @@ function renderMobile() {
   }
   if (M.tab === 'intake' && V === 'detail') {
     const a = APPS.find(x => x.no === S.appNo);
-    const steps = [['contract', '계약서'], ['docs', '필수서류'], ['deliv', '인도']];
+    const steps = STEPS;
     const next = a && !a.cxl && steps.find(([k]) => !a[k]);
     const nb = root.querySelector('#mnext'); if (nb && next) nb.onclick = () => { a[next[0]] = true; renderMobile(); };
     const cb = root.querySelector('#mcxl'); if (cb) cb.onclick = () => { a.cxl = true; a.cxlReason = '관리자 취소 — 사유 입력 화면이 뜬다'; renderMobile(); };

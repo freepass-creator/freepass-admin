@@ -28,6 +28,15 @@ const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
   : a.contract ? (a.docs ? { t: '인도 대기', c: 'key' } : { t: '서류 대기', c: 'wait' })
   : { t: '계약서 대기', c: 'wait' };
 const STAGES = ['영업자 1차 확인', '공급사 Cross Check', '관리자 최종 확정', '정산 원장 편입'];
+const isClaw = p => p.kind === 'CLAWBACK';
+/** ★보증금은 «비율» 이 먼저다 — 차가 물고 들어오는 조건이라 금액은 그 결과다.
+ *  비율을 모르면(미확인) 금액만 쓴다. 0 을 「없음」 으로 쓰지 않는다. */
+const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${man(o.dep)}원`
+  : (o.depRate === 0 ? '무보증 (0%)' : '<span class="unk">미확인</span>');
+/** ★대여료는 VAT «포함» 이다 (대표 2026-09-16). 안 적으면 영업이 별도로 읽는다. */
+const VAT = '<span class="mut" style="font-size:10.5px">VAT 포함</span>';
+/** 환수는 부호가 반대다 — 숫자 앞에 «−» 를 붙여 눈으로도 갈리게 한다 */
+const won2 = n => (n < 0 ? '−' + won(-n) : won(n));
 const esignSt = e => e.st === '완료' ? { t: '완료', c: 'ok' } : e.st === '서명 대기' ? { t: '서명 대기', c: 'wait' } : { t: '열람 전', c: 'bad' };
 
 /** 사진 자리 — 한 톤의 «윤곽»만. 색을 넣으면 그림이 되고, 그림이 되면 장난감으로 읽힌다. */
@@ -290,8 +299,8 @@ function detailProduct(el) {
           <div class="dchips"><span class="tag">${esc(p.maker)}</span><span class="tag">${esc(p.supplier)}</span>
             <span class="st ${p.match === 'TRIM' ? 'mut' : 'wait'}">${esc(p.matchLabel)}</span></div>
           <h3 class="dttl">${esc(p.name)}</h3><p class="dsub">${esc(p.sub)}</p>
-          <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월</div><div class="v">${won(o.rent)}</div></div>
-            <span class="u">보증금 ${dep(o.dep)} · ${yr(o.mile) || '약정 미확인'}</span></div>
+          <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월 ${VAT}</div><div class="v">${won(o.rent)}</div></div>
+            <span class="u">보증금 ${depText(o)} · ${yr(o.mile) || '약정 미확인'}</span></div>
           <dl class="kv">
             ${fact('연식', p.year ? p.year + '년형' : null)}${fact('주행거리', p.mileage != null ? km(p.mileage) : null)}
             ${fact('연료', p.fuel)}${fact('인승', p.seats ? p.seats + '인승' : null)}
@@ -307,7 +316,7 @@ function detailProduct(el) {
           const miss = AXES.filter(ax => ax.scope === 'offer' && (sel[ax.k] || []).length && !sel[ax.k].some(k => optOf(ax, k).test(x)));
           return `<tr data-oid="${x.id}" class="${x.id === S.oid ? 'on' : ''}" style="${pass ? '' : 'opacity:.48'}">
             <td class="r n">${x.term}개월</td><td class="r n" style="font-weight:650">${won(x.rent)}</td>
-            <td class="r n">${dep(x.dep)}</td><td class="r n">${yr(x.mile) || '<span class="unk">미확인</span>'}</td>
+            <td class="r n">${depText(x)}</td><td class="r n">${yr(x.mile) || '<span class="unk">미확인</span>'}</td>
             <td class="mut">${x.pol.join(' · ') || '—'}</td>
             <td>${pass && anyCond ? '<span class="st key">조건 충족</span>' : pass ? '' : `<span class="mut" style="font-size:11px">${miss.map(ax => esc(ax.t)).join(' · ')} 불일치</span>`}</td></tr>`;
         }).join('')}</tbody></table></div>
@@ -334,7 +343,7 @@ function detailApp(el) {
   const a = APPS.find(x => x.no === S.appNo);
   if (!a) { el.innerHTML = `<div class="ph"><h2>접수 상세</h2></div><div class="pb"><div class="empty"><b>고른 접수가 없다</b></div></div>`; return; }
   const p = PRODUCTS.find(x => x.id === a.pid), drift = p && p.v !== a.pv, s = appStatus(a);
-  const steps = [['contract', '계약서'], ['docs', '필수서류'], ['deliv', '인도']];
+  const steps = STEPS;
   const next = a.cxl ? null : steps.find(([k]) => !a[k]);
   const at = a.cxl ? 3 : !a.contract ? 1 : !a.docs ? 2 : 3;
 
@@ -348,8 +357,8 @@ function detailApp(el) {
         <div>
           <div class="dchips"><span class="tag">${esc(a.ch)}</span><span class="tag">${esc(a.sup)}</span><span class="st ${s.c}">${s.t}</span></div>
           <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${esc(a.trim)}</p>
-          <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월</div><div class="v">${won(a.rent)}</div></div>
-            <span class="u">보증금 ${dep(a.dep)} · ${yr(a.mile) || '약정 미확인'}</span></div>
+          <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월 ${VAT}</div><div class="v">${won(a.rent)}</div></div>
+            <span class="u">보증금 ${a.dep ? man(a.dep) + '원' : '무보증'} · ${yr(a.mile) || '약정 미확인'}</span></div>
           <dl class="kv">
             <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : '<span class="unk">미입력</span>'}</dd>
             <dt>담당자</dt><dd>${esc(a.staff)}</dd>
@@ -378,6 +387,13 @@ function detailApp(el) {
           <li class="${a.deliv && !a.cxl ? 'on' : ''}"><div class="t">실적 후보</div>
             <div class="w">${a.deliv && !a.cxl ? '넘어감 — 정산관리에서 대조' : '인도가 찍히면'}</div></li>
         </ul></div>
+      ${(a.memoAgent || a.memoProvider) ? `<div class="sec"><h3>남이 쓴 메모 — 읽기만 한다</h3>
+        <table class="g"><tbody>
+          ${a.memoAgent ? `<tr><td class="mut" style="width:72px">영업자</td><td>${esc(a.memoAgent)}</td></tr>` : ''}
+          ${a.memoProvider ? `<tr><td class="mut">공급사</td><td>${esc(a.memoProvider)}</td></tr>` : ''}
+        </tbody></table>
+        <p class="dsub" style="font-size:11px;margin-top:6px">★메모가 셋인 까닭 — 쓰는 사람과 보이는 사람이 다르다.
+        영업자가 고객에 대해 쓴 말이 공급사에 보이면 곤란하다. 관리자만 셋 다 본다.</p></div>` : ''}
       <div class="sec"><h3>이력 — 덮지 않고 쌓는다</h3>
         <table class="g"><tbody>
           <tr><td class="mut n" style="width:90px">${esc(a.at)}</td><td><b>접수</b> — ${esc(a.staff)}</td></tr>
@@ -393,9 +409,12 @@ function detailApp(el) {
             <p>계약서·서류·인도는 서로 독립입니다. 순서가 어긋나도 됩니다.</p></div></div>`}
     </div></div>
     ${actBar({
-      memo: '<textarea placeholder="진행 메모 (선택)"></textarea>',
+      memo: '<textarea placeholder="관리자 메모 — 영업자·공급사에게는 안 보입니다"></textarea>',
       more: a.cxl ? [] : [{ t: '전자계약 보기', go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
                           { t: '접수 내용 고치기', go: () => {} }, '-',
+                          /* ★환수는 접수의 «체크» 가 아니라 «실적 한 줄» 이다.
+                             인도가 찍힌 뒤에만 뜬다 — 나가지도 않은 것을 되돌릴 수는 없다 */
+                          ...(a.deliv ? [{ t: '환수 실적 만들기', danger: true, go: () => makeClawback(a) }] : []),
                           { t: '접수 취소', danger: true, go: () => { a.cxl = true; a.cxlReason = '관리자 취소 — 사유 입력 화면이 뜬다'; render(); } }],
       subs: a.cxl ? [] : (next ? [] : [{ t: '전자계약으로', go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } }]),
       main: a.cxl ? { t: '취소된 건', off: true }
@@ -407,6 +426,7 @@ function detailApp(el) {
   bindAct(el, {
     more: a.cxl ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
                         { go: () => {} }, '-',
+                        ...(a.deliv ? [{ go: () => makeClawback(a) }] : []),
                         { go: () => { a.cxl = true; a.cxlReason = '관리자 취소 — 사유 입력 화면이 뜬다'; render(); } }],
     subs: a.cxl || next ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } }],
     main: a.cxl ? {} : next ? { go: () => { a[next[0]] = true; render(); } }
@@ -414,20 +434,44 @@ function detailApp(el) {
   });
 }
 
+/**
+ * 환수 실적 한 줄을 세운다.
+ * ★원 실적을 «고치지 않는다». 부호만 뒤집은 줄을 더하고 origin 으로 묶는다.
+ *   고쳐 버리면 합계는 맞아도 「왜 줄었는지」 를 나중에 못 댄다.
+ * ★이미 붙은 환수가 있으면 또 세우지 않는다 — 두 번 되돌리면 두 배로 빠진다.
+ */
+function makeClawback(a) {
+  const src = PERFS.find(p => p.app === a.no && p.kind === 'NEW');
+  if (!src) return;
+  if (PERFS.some(p => p.origin === src.no)) { S.perfNo = PERFS.find(p => p.origin === src.no).no; }
+  else {
+    const no = 'S-2609-' + String(14 - PERFS.filter(isClaw).length).padStart(3, '0');
+    PERFS.unshift({ no, kind: 'CLAWBACK', app: a.no, origin: src.no, stage: 1, issue: false,
+      bill: -src.bill, pay: -src.pay, at: '09-16',
+      reason: '환수 사유 입력 화면이 뜬다', note: `원 실적 ${src.no} 을 되돌린다.` });
+    S.perfNo = no;
+  }
+  S.screen = 'settle'; S.tab = 'perf'; S.focus = 'perf'; render();
+}
+
 /* ══ 정산 ══════════════════════════════════════ */
 function panePerf(el) {
+  const sum = PERFS.reduce((n, p) => n + (p.bill - p.pay), 0);
   el.innerHTML = `<div class="ph"><h2>실적 목록</h2><span class="c">${PERFS.length}건</span><span class="sp"></span>
-      <span class="c">인도완료가 후보가 된다</span></div>
+      <span class="c">마진 합계 <b class="n">${won2(sum)}</b></span></div>
     <div class="pb"><table class="g">
-      <thead><tr><th>고객</th><th>차량</th><th>채널</th><th class="r">청구</th><th class="r">지급</th><th class="r">마진</th><th>단계</th></tr></thead>
+      <thead><tr><th style="width:56px">갈래</th><th>고객</th><th>차량</th><th>채널</th>
+        <th class="r">청구</th><th class="r">지급</th><th class="r">마진</th><th>단계</th></tr></thead>
       <tbody>${PERFS.map(p => { const a = APPS.find(x => x.no === p.app);
         const st = p.issue ? { t: '이슈', c: 'bad' } : p.stage >= 4 ? { t: '확정', c: 'ok' } : { t: STAGES[p.stage - 1], c: 'wait' };
         return `<tr data-k="${p.no}" class="${p.no === S.perfNo && S.focus === 'perf' ? 'on' : ''}">
+          <td><span class="st ${isClaw(p) ? 'bad' : 'mut'}">${isClaw(p) ? '환수' : '정상'}</span></td>
           <td class="nm">${esc(a.cust)}</td><td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
-          <td class="r n">${won(p.bill)}</td><td class="r n">${p.pay ? won(p.pay) : '—'}</td>
-          <td class="r n" style="font-weight:650">${won(p.bill - p.pay)}</td>
+          <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${won2(p.bill)}</td>
+          <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${p.pay ? won2(p.pay) : '—'}</td>
+          <td class="r n" style="font-weight:650${isClaw(p) ? ';color:var(--bad)' : ''}">${won2(p.bill - p.pay)}</td>
           <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>후보는 곧바로 돈이 아니다 — 사슬 넷을 건너뛰지 않는다</span></div>`;
+    <div class="pf"><span>★환수는 «되돌리는 줄» 이다 — 원 실적을 고치지 않고 반대 부호로 한 줄 더 선다</span></div>`;
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.perfNo = r.dataset.k; S.focus = 'perf'; render(); });
 }
 
@@ -463,14 +507,28 @@ function detailPerf(el) {
   el.innerHTML = `<div class="ph"><h2>실적 상세</h2><span class="c n">${esc(pf.no)}</span>
       ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}</div>
     <div class="pb"><div class="dwrap">
-      <div class="dchips"><span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
+      <div class="dchips"><span class="st ${isClaw(pf) ? 'bad' : 'mut'}">${isClaw(pf) ? '환수 실적' : '정상 실적'}</span>
+        <span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
       <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${a.term}개월</p>
+      ${isClaw(pf) ? `<div class="note e"><span class="i">↩</span><div><b>환수 — 되돌리는 줄입니다</b>
+        <p>${esc(pf.reason || '')}<br>원 실적 <b class="n">${esc(pf.origin)}</b> 은 <b>그대로 둡니다</b>.
+        고치지 않고 반대 부호로 한 줄을 더 세웁니다 — 나중에 «왜 줄었는지» 를 댈 수 있어야 하기 때문입니다.</p></div></div>` : ''}
       <div class="sec"><h3>돈 — 세 값은 서로 다르다</h3>
         <table class="g"><tbody>
-          <tr><td>공급사 청구액</td><td class="r n" style="font-weight:650">${won(pf.bill)}</td></tr>
-          <tr><td>채널 지급액</td><td class="r n">${pf.pay ? won(pf.pay) : '없음'}</td></tr>
-          <tr><td class="nm">우리 마진</td><td class="r n" style="font-weight:700;color:var(--ok)">${won(pf.bill - pf.pay)}</td></tr>
+          <tr><td>공급사 청구액</td><td class="r n" style="font-weight:650${isClaw(pf) ? ';color:var(--bad)' : ''}">${won2(pf.bill)}</td></tr>
+          <tr><td>채널 지급액</td><td class="r n"${isClaw(pf) ? ' style="color:var(--bad)"' : ''}>${pf.pay ? won2(pf.pay) : '없음'}</td></tr>
+          <tr><td class="nm">우리 마진</td><td class="r n" style="font-weight:700;color:var(--${isClaw(pf) ? 'bad' : 'ok'})">${won2(pf.bill - pf.pay)}</td></tr>
         </tbody></table></div>
+      ${isClaw(pf) ? `<div class="sec"><h3>되돌리는 대상</h3>
+        <table class="g"><tbody><tr data-goto="${esc(pf.origin)}" style="cursor:pointer">
+          <td class="nm">${esc(pf.origin)}</td><td class="mut">정상 실적</td>
+          <td class="r n">${won2((PERFS.find(x => x.no === pf.origin) || {}).bill || 0)}</td>
+          <td class="r"><span class="btn sm">보기</span></td></tr></tbody></table></div>`
+        : (PERFS.some(x => x.origin === pf.no) ? `<div class="sec"><h3>이 실적에 붙은 환수</h3>
+          <table class="g"><tbody>${PERFS.filter(x => x.origin === pf.no).map(x => `<tr data-goto="${esc(x.no)}" style="cursor:pointer">
+            <td class="nm">${esc(x.no)}</td><td class="mut">${esc(x.reason || '환수')}</td>
+            <td class="r n" style="color:var(--bad)">${won2(x.bill - x.pay)}</td>
+            <td class="r"><span class="btn sm">보기</span></td></tr>`).join('')}</tbody></table></div>` : '')}
       <div class="sec"><h3>사슬 — 네 자리를 건너뛰지 않는다</h3>
         <table class="g"><tbody>${STAGES.map((t, i) => `<tr><td style="width:34px" class="mut n">${i + 1}</td><td>${esc(t)}</td>
           <td class="r"><span class="st ${i + 1 < pf.stage ? 'ok' : i + 1 === pf.stage ? 'key' : 'mut'}">${i + 1 < pf.stage ? '완료' : i + 1 === pf.stage ? '지금 여기' : '—'}</span></td></tr>`).join('')}</tbody></table></div>
@@ -490,6 +548,7 @@ function detailPerf(el) {
   if ($('#rs')) $('#rs').onclick = () => { pf.issue = false; render(); };
   if ($('#re')) $('#re').onclick = () => { pf.issue = false; pf.stage = 1; render(); };
   if ($('#toInv')) $('#toInv').onclick = () => { S.tab = 'invoice'; S.billSup = a.sup; S.focus = 'bill'; render(); };
+  el.querySelectorAll('[data-goto]').forEach(r => r.onclick = () => { S.perfNo = r.dataset.goto; S.focus = 'perf'; render(); });
 }
 
 function detailBill(el) {
@@ -583,6 +642,9 @@ function detailEsign(el) {
             <dt>발송</dt><dd class="n">${esc(e.sent)}</dd>
             <dt>열람</dt><dd>${e.seen ? `<span class="n">${esc(e.seen)}</span>` : '<span class="unk">아직 안 봤습니다</span>'}</dd>
             <dt>서명</dt><dd>${e.signed ? `<span class="n">${esc(e.signed)}</span>` : '<span class="unk">아직</span>'}</dd>
+            <dt>신분 확인</dt><dd>${e.signed
+              ? '<span class="st ok">수집됨</span> <span class="mut" style="font-size:11px">주민번호·면허 — 관리자는 열람하지 않습니다</span>'
+              : '<span class="mut">서명 시 수집</span>'}</dd>
           </dl></div></div>
       ${blocked ? `<div class="note e"><span class="i">!</span><div><b>보낼 곳이 없습니다</b>
           <p>접수에서 전화번호를 강제하지 않았기 때문입니다. 가짜 번호를 미리 받는 것보다 <b>여기서 받아</b> 보내는 편이 낫습니다.</p></div></div>`

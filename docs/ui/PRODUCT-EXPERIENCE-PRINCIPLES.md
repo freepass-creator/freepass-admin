@@ -1,11 +1,11 @@
-# freepasserp.com v1 — Product Experience Principles
+# freepass-admin — Product Experience Principles
 
 작성일: 2026-09-13
 상태: USER DIRECTION CONFIRMED / Work·AI 공통 UI·UX 판단 기준
 
 ## 목적
 
-freepasserp.com의 화면은 단순히 보기 좋은 ERP가 아니라 아래 네 조건을 동시에 만족해야 한다.
+freepass-admin의 화면은 단순히 보기 좋은 ERP가 아니라 아래 네 조건을 동시에 만족해야 한다.
 
 1. **직원이 일하기 편해야 한다.**
 2. **외부에 보여줘도 정돈되고 신뢰감 있어야 한다.**
@@ -194,4 +194,4 @@ UI/UX는 아래 상태를 분리해서 보고한다.
 
 ## 한 문장
 
-> freepasserp.com의 좋은 UI는 화려한 화면이 아니라, 직원이 생각을 덜 하고 빠르게 일하며, 외부에 보여줘도 정돈돼 보이고, 같은 업무가 모바일에서도 자연스럽게 이어지는 화면이다.
+> freepass-admin의 좋은 UI는 화려한 화면이 아니라, 직원이 생각을 덜 하고 빠르게 일하며, 외부에 보여줘도 정돈돼 보이고, 같은 업무가 모바일에서도 자연스럽게 이어지는 화면이다.

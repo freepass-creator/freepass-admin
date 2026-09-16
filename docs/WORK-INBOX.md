@@ -1,7 +1,7 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
 최종 갱신: 2026-09-13
-프로젝트: freepasserp.com v1
+프로젝트: freepass-admin (구 freepasserp.com 저장소)
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
@@ -10,7 +10,7 @@
 
 ## 1. 사업 구조 — 가장 먼저 이해할 것
 
-freepasserp.com은 단순 상품목록 ERP가 아니다.
+freepass-admin은 단순 상품목록 ERP가 아니다.
 
 ```text
 공급사 상품 RAW

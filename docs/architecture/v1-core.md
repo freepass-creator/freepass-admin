@@ -1,7 +1,7 @@
 # v1 Core Architecture
 
 ## Goal
-공급사별 제각각인 원문을 한 번 freepasserp.com Canonical 언어로 확정하고, 같은 상품/검색 엔진을 ADMIN·SALES·WHITE LABEL이 사용한다.
+공급사별 제각각인 원문을 한 번 FreePass Canonical 언어로 확정하고, 같은 상품/검색 엔진을 ADMIN·SALES·WHITE LABEL이 사용한다.
 
 ```text
 Supplier RAW

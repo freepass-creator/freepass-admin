@@ -1,9 +1,9 @@
-# freepasserp.com v1 — FINAL MASTER DESIGN
+# freepass-admin — FINAL MASTER DESIGN
 
 Status: v1 development baseline
 
 ## 0. Product definition
-freepasserp.com v1은 기존 FreePass ERP와 운영·데이터·인증·배포 의존성이 없는 독립 신규 프로젝트다. 기존 구현은 명시적으로 필요한 UX/업무 아이디어를 읽어 참고할 수 있지만 기존 DB, Firebase, API, 시트, 환경변수, 인증, fallback을 연결하지 않는다.
+freepass-admin은 기존 FreePass ERP(`freepasserp4`)와 운영·데이터·인증·배포 의존성이 없는 독립 신규 프로젝트다. 기존 구현은 명시적으로 필요한 UX/업무 아이디어를 읽어 참고할 수 있지만 기존 DB, Firebase, API, 시트, 환경변수, 인증, fallback을 연결하지 않는다.
 
 v1의 화면 제품은 정확히 세 개다.
 1. ADMIN — FreePass 내부 관리자

@@ -1,4 +1,4 @@
-# freepasserp.com v1 — AI/Developer Rules
+# freepass-admin — AI/Developer Rules
 
 ## 0. Mandatory Work handoff
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
@@ -13,18 +13,28 @@
 `docs/WORK-INBOX.md`가 ChatGPT 채팅과 Work 사이의 공용 최신 인수인계판이다. `EMAIL-RND-CONSOLIDATED.md`는 과거 이메일의 의미를 잃지 않기 위한 장기 기억이며 최신 결정보다 우선하지 않는다. Work는 채팅 내용을 자동으로 안다고 가정하지 말고, 이 파일들의 최신 결정을 개발에 반영한다. 서로 충돌하는 내용이 있으면 사용자의 최신 명시 결정과 AI Core Gate를 확인하고 임의 해석하지 않는다.
 
 ## 1. Source of truth
-이 저장소가 freepasserp.com v1 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
+이 저장소가 freepass-admin(관리자 화면) 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
 
 ## 2. Absolute isolation
 - 기존 FreePass ERP 저장소의 코드/DB/API/Firebase/시트/환경변수/인증을 자동 연결·복사·fallback하지 않는다.
 - 기존 시스템은 사용자가 명시적으로 요청한 범위에서 읽고 설계/UX 참고만 할 수 있다.
 - 신규 외부 연결은 명시적 승인 전에는 추가하지 않는다.
 
-## 3. Exactly three surfaces
-- ADMIN
-- SALES
-- WHITE LABEL (B2C)
-WHITE LABEL과 B2C를 별도 네 번째 제품으로 만들지 않는다. White Label 엔진은 하나이며 회사별 BI/CI는 설정으로 분리한다.
+## 3. Repository scope — ADMIN only
+
+이 저장소(`freepass-admin`)는 **관리자 전용 한 판**이다. 관리자가 상품을 찾고, 접수하고, 계약하고, 정산하는 데까지가 범위다.
+
+저장소 이름 규격:
+
+| 저장소 | 화면 |
+|---|---|
+| `freepass-admin` | ADMIN — 내부 관리자 (이 저장소) |
+| `freepass-sales` | SALES — 제휴 영업자 |
+| (아직 없음) | WHITE LABEL — 영업회사 BI/CI B2C |
+
+SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이트라벨을 네 번째 제품으로 쪼개지도 않는다 — 엔진은 하나이고 회사별 BI/CI는 설정으로 가른다.
+
+`freepasserp.com` 도메인은 **운영 중인 `freepasserp4` 저장소가 갖고 있다**(`lib/brand.ts`의 `BRAND`). 이 저장소를 그 도메인 이름으로 부르지 않는다.
 
 ## 4. Current priority — ADMIN vertical slice
 현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.

@@ -15,7 +15,7 @@ const S = {
   focus: 'app',
   mini: false, draft: null, saving: false, seq: 16,
   pick: null, pickQ: '',
-  ecTab: 'todo', ecQ: '',
+  ecTab: 'mk', ecQ: '', ecOpen: true,
 };
 
 const NAV = [
@@ -27,10 +27,38 @@ const NAV = [
 
 const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
   : a.deliv ? { t: '인도완료', c: 'ok' }
-  : a.contract ? (a.docs ? { t: '인도 대기', c: 'key' } : { t: '서류 대기', c: 'wait' })
+  : stepDone(a, 'contract') ? (a.docs ? { t: '인도 대기', c: 'key' } : { t: '서류 대기', c: 'wait' })
   : { t: '계약서 대기', c: 'wait' };
 const STAGES = ['영업자 1차 확인', '공급사 Cross Check', '관리자 최종 확정', '정산 원장 편입'];
 const isClaw = p => p.kind === 'CLAWBACK';
+
+/**
+ * ★진행 한 칸이 끝났나 — «한 원장» 이라 계약서 칸은 파생값이다.
+ *
+ *   표본을 짜다가 바로 걸렸다. 이서진은 접수에 contract:true 인데 전자계약은
+ *   「발송 전」 이었다. 두 군데 적어 두면 «반드시» 어긋난다.
+ *   그래서 전자계약이 붙어 있으면 접수의 contract 를 «안 읽는다».
+ *   날리면 ecOf 가 null 이라 그냥 a.contract 를 읽는다 — 저장된 값이 그대로 산다.
+ */
+const stepDone = (a, k) => {
+  if (k === 'contract' && typeof ecOf === 'function') {
+    const e = ecOf(a);
+    if (e) return e.stage === 'done';
+  }
+  return !!a[k];
+};
+/**
+ * ★「할 일」 칸 — 상태가 아니라 «다음 손» 이다.
+ *   막힌 게 없으면 상태(인도완료·취소)를 그대로 말한다.
+ *   플래그(확인 필요·보완 n차)는 여기서도 «단계 옆» 에 붙지 단계를 대체하지 않는다.
+ */
+function todoCell(a) {
+  const b = blocked(a);
+  if (!b) { const s = appStatus(a); return `<span class="st ${s.c}">${s.t}</span>`; }
+  const f = b.e && typeof ecFlags === 'function' ? ecFlags(b.e) : null;
+  return `<span class="st ${b.k === 'contract' ? 'key' : 'wait'}">${esc(b.t)}</span>`
+    + (f ? ecFlagTags(f, b.e) : '');
+}
 
 /* ── ★판 규격 — 네 칸이고, 칸마다 «맡은 일» 이 하나다 ─────────
    .ph 38  무엇을 보는가  제목 · 딸린 수 · (오른쪽) 이 판 전체에 거는 행동
@@ -256,10 +284,37 @@ function tokens(sel) {
 }
 
 /* ══ 판 ② 접수목록 ═════════════════════════════ */
+
+/**
+ * ★한 줄 = 한 건 × «지금 막힌 칸».
+ *
+ *   묵은 갈래는 「칠 것 7」 처럼 «무엇이 있나» 만 말했다. 무엇을 해야 하는지는
+ *   줄을 열어봐야 알았다. 막힌 칸으로 가르면 «누르기 전에» 안다.
+ *
+ * ★계약서 칸은 «어떻게 받았는지» 를 모른다 — 전자계약이 붙어 있으면 그 단계를
+ *   빌려 보여줄 뿐이다. 전자계약을 날리면 이 함수는 그냥 「계약서」 라고 답한다.
+ *   접수가 전자계약을 아는 곳은 여기 «한 줄» 뿐이다.
+ */
+function blocked(a) {
+  if (a.cxl) return null;
+  const s = STEPS.find(([k]) => !stepDone(a, k));
+  if (!s) return null;
+  if (s[0] === 'contract' && typeof ecOf === 'function') {
+    const e = ecOf(a);
+    if (e) return { k: 'contract', t: ecStage(e).t, e };
+  }
+  return { k: s[0], t: s[1] };
+}
+const blockOf = a => blocked(a) || {};
+
+/* 「칠 것」 은 넷의 «합» 이다. 넷은 그 안을 가르는 것이지 따로 서는 바구니가 아니다 */
 const AF = [
-  { k: 'todo', t: '칠 것', f: a => !a.cxl && !a.deliv },
+  { k: 'todo', t: '칠 것', f: a => !!blocked(a) },
+  { k: 'contract', t: '계약', f: a => blockOf(a).k === 'contract' },
+  { k: 'docs', t: '서류', f: a => blockOf(a).k === 'docs' },
+  { k: 'balance', t: '잔금', f: a => blockOf(a).k === 'balance' },
+  { k: 'deliv', t: '인도', f: a => blockOf(a).k === 'deliv' },
   { k: 'all', t: '전체', f: () => true },
-  { k: 'done', t: '인도완료', f: a => a.deliv && !a.cxl },
   { k: 'cxl', t: '취소', f: a => a.cxl },
 ];
 function paneApps(el) {
@@ -275,7 +330,8 @@ function paneApps(el) {
       ${AF.map(x => `<button class="sb" data-f="${x.k}" aria-pressed="${x.k === S.appFilter}">${x.t}<span class="b">${APPS.filter(x.f).length}</span></button>`).join('')}
     </div>
     <div class="pb" id="pbB"></div>
-    <div class="pf">${tl('칠 것', APPS.filter(AF[0].f).length, 'warn')}${tl('인도완료', APPS.filter(AF[2].f).length, 'ok')}${tl('취소', APPS.filter(AF[3].f).length)}</div>`;
+    <div class="pf">${tl('칠 것', APPS.filter(x => blocked(x)).length, 'warn')}${tl('인도완료', APPS.filter(x => x.deliv && !x.cxl).length, 'ok')}${tl('취소', APPS.filter(x => x.cxl).length)}
+      <span class="sp"></span><span class="t"><i>가장 오래 걸린 것</i><b class="warn">3일</b></span></div>`;
 
   const aq = $('#aq');
   aq.oninput = () => { S.appQ = aq.value; paneApps(el); const e = $('#aq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
@@ -284,7 +340,8 @@ function paneApps(el) {
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
   $('#pbB').innerHTML = list.length ? `<table class="g">
-    <thead><tr><th style="width:52px"></th><th>고객</th><th>차량번호</th><th>차량</th><th>영업채널</th><th class="r">월 대여료</th><th>상태</th><th>접수일시</th></tr></thead>
+    <thead><tr><th scope="col" style="width:52px"></th><th scope="col">고객</th><th scope="col">차량번호</th><th scope="col">차량</th>
+      <th scope="col">영업채널</th><th scope="col" class="r">월 대여료</th><th scope="col">할 일</th><th scope="col">접수일시</th></tr></thead>
     <tbody>${list.map(a => {
       const s = appStatus(a), p = PRODUCTS.find(x => x.id === a.pid);
       return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
@@ -293,7 +350,7 @@ function paneApps(el) {
         <td class="n">${esc(a.plate || '—')}</td>
         <td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
         <td class="r n" style="font-weight:650">${won(a.rent)}</td>
-        <td><span class="st ${s.c}">${s.t}</span></td>
+        <td>${todoCell(a)}</td>
         <td class="mut n">${esc(a.at)}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
@@ -365,8 +422,11 @@ function detailApp(el) {
   if (!a) { el.innerHTML = `<div class="ph"><h2>접수 상세</h2></div><div class="pb"><div class="empty"><b>고른 접수가 없다</b></div></div>`; return; }
   const p = PRODUCTS.find(x => x.id === a.pid), drift = p && p.v !== a.pv, s = appStatus(a);
   const steps = STEPS;
+  /* ★막힌 칸이 계약서이고 전자계약이 붙어 있으면 실행 띠를 «그쪽» 이 든다.
+     전자계약을 날리면 ecOf 가 null 이라 이 줄이 통째로 안 돈다. */
+  const _b = blocked(a), ecAct = _b && _b.k === 'contract' && _b.e ? ecActions(a, _b.e) : null;
   const next = a.cxl ? null : steps.find(([k]) => !a[k]);
-  const at = a.cxl ? 3 : !a.contract ? 1 : !a.docs ? 2 : 3;
+  const at = a.cxl ? 3 : !stepDone(a, 'contract') ? 1 : !a.docs ? 2 : 3;
 
   el.innerHTML = `
     <div class="ph"><h2>접수 상세</h2><span class="c n">${esc(a.no)}</span></div>
@@ -391,18 +451,27 @@ function detailApp(el) {
           </dl>
         </div>
       </div>
-      <div class="sec"><h3>진행 — 셋은 서로 독립인 사실이다</h3>
-        <table class="g"><thead><tr><th>단계</th><th>상태</th><th>때</th><th></th></tr></thead><tbody>
-          ${steps.map(([k, t]) => `<tr><td class="nm">${t}</td>
-            <td><span class="st ${a[k] ? 'ok' : 'wait'}">${a[k] ? '완료' : '대기'}</span></td>
-            <td class="mut n">${a[k] ? '09-16' : '—'}</td>
-            <td class="r">${a.cxl ? '' : `<button class="btn sm" data-tg="${k}">${a[k] ? '되돌리기' : '완료 처리'}</button>`}</td></tr>`).join('')}
+      <div class="sec"><h3>진행 — 넷은 서로 독립인 사실이다</h3>
+        <table class="g"><caption class="sr">진행 — 단계, 상태, 때</caption>
+          <thead><tr><th scope="col">단계</th><th scope="col">상태</th><th scope="col">때</th><th scope="col"><span class="sr">행동</span></th></tr></thead><tbody>
+          ${steps.map(([k, t]) => {
+            /* ★계약서 칸만 «펼쳐진다» — 전자계약이 붙어 있을 때만.
+               없으면(종이·엑셀·직접입력) 다른 세 칸과 똑같은 체크 한 칸이다. */
+            const ec = k === 'contract' ? ecOf(a) : null;
+            return `<tr${ec ? ' class="exp"' : ''}><td class="nm">${t}${ec ? ' <span class="mut" style="font-size:10px">전자계약</span>' : ''}</td>
+            <td>${ec ? `<span class="st ${ecTone(ec)}">${esc(ecStage(ec).t)}</span>${ecFlagTags(ecFlags(ec), ec)}`
+                     : `<span class="st ${stepDone(a, k) ? 'ok' : 'wait'}">${stepDone(a, k) ? '완료' : '대기'}</span>`}</td>
+            <td class="mut n">${ec ? esc(ec.at) : stepDone(a, k) ? '09-16' : '—'}</td>
+            <td class="r">${ec ? `<button class="btn sm" id="ecopen" aria-expanded="${!!S.ecOpen}">${S.ecOpen ? '접기' : '펼치기'}</button>`
+                               : a.cxl ? '' : `<button class="btn sm" data-tg="${k}">${a[k] ? '되돌리기' : '완료 처리'}</button>`}</td></tr>`
+            + (ec && S.ecOpen ? `<tr class="expbody"><td colspan="4">${ecSection(ec)}</td></tr>` : '');
+          }).join('')}
         </tbody></table></div>
       <div class="sec"><h3>어디까지 왔나</h3>
         <ul class="tl">
           <li class="on"><div class="t">접수</div><div class="w">${esc(a.at)} · ${esc(a.staff)}</div></li>
           ${steps.map(([k, t], i) => {
-            const done = a[k], now = !a.cxl && !done && steps.slice(0, i).every(([j]) => a[j]);
+            const done = stepDone(a, k), now = !a.cxl && !done && steps.slice(0, i).every(([j]) => stepDone(a, j));
             return `<li class="${done ? 'on' : now ? 'now' : ''}"><div class="t">${t}</div>
               <div class="w">${done ? '완료' : now ? '지금 할 것' : '대기'}</div></li>`;
           }).join('')}
@@ -419,7 +488,7 @@ function detailApp(el) {
       <div class="sec"><h3>이력 — 덮지 않고 쌓는다</h3>
         <table class="g"><tbody>
           <tr><td class="mut n" style="width:90px">${esc(a.at)}</td><td><b>접수</b> — ${esc(a.staff)}</td></tr>
-          ${a.contract ? '<tr><td class="mut n">09-16 10:02</td><td><b>계약서</b> 완료</td></tr>' : ''}
+          ${stepDone(a, 'contract') ? '<tr><td class="mut n">09-16 10:02</td><td><b>계약서</b> 완료</td></tr>' : ''}
           ${a.docs ? '<tr><td class="mut n">09-16 11:20</td><td><b>필수서류</b> 완료</td></tr>' : ''}
           ${a.deliv ? '<tr><td class="mut n">09-16 15:40</td><td><b>인도</b> 완료 — 실적 후보로 넘어감</td></tr>' : ''}
           ${a.cxl ? `<tr><td class="mut n">09-12 17:11</td><td><b>취소</b> — ${esc(a.cxlReason)}</td></tr>` : ''}
@@ -443,8 +512,12 @@ function detailApp(el) {
         : next ? { t: next[1] + ' 완료 처리', go: () => { a[next[0]] = true; render(); } }
         : { t: '계약서 발송', go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
     })}`;
+  if (ecAct) el.querySelector('.dact').outerHTML = actBar(ecAct);
 
   el.querySelectorAll('[data-tg]').forEach(b => b.onclick = ev => { ev.stopPropagation(); a[b.dataset.tg] = !a[b.dataset.tg]; render(); });
+  if ($('#ecopen')) $('#ecopen').onclick = () => { S.ecOpen = !S.ecOpen; render(); };
+  el.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => alert(b.dataset.fix + ' — 이번 범위 밖'));
+  if (ecAct) { bindAct(el, ecAct); return; }
   bindAct(el, {
     more: a.cxl ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
                         { go: () => {} }, '-',
@@ -770,7 +843,7 @@ function render() {
   const [t, p] = HEAD[S.screen];
   const K = {
     product: () => [['판매 가능', PRODUCTS.length + '건'], ['부분 매칭', PRODUCTS.filter(x => x.match !== 'TRIM').length + '건', 'hot'], ['조건 결과', evaluate().hits.length + '건']],
-    intake: () => [['칠 것', APPS.filter(a => !a.cxl && !a.deliv).length + '건', 'hot'], ['진행 중', APPS.filter(a => a.contract && !a.deliv && !a.cxl).length + '건'], ['인도완료', APPS.filter(a => a.deliv && !a.cxl).length + '건', 'ok']],
+    intake: () => [['칠 것', APPS.filter(a => !a.cxl && !a.deliv).length + '건', 'hot'], ['진행 중', APPS.filter(a => stepDone(a, 'contract') && !a.deliv && !a.cxl).length + '건'], ['인도완료', APPS.filter(a => a.deliv && !a.cxl).length + '건', 'ok']],
     settle: () => [['대조 중', PERFS.filter(x => x.stage < 4).length + '건', 'hot'], ['미수', man(BILLS.reduce((n, b) => n + b.fixed - b.got, 0)) + '원'], ['미지급', man(PAYS.reduce((n, x) => n + x.fixed - x.paid, 0)) + '원']],
     esign: () => [['검토 대기', ESIGNS.filter(x => x.stage === 'review').length + '건', 'hot'],
       ['고객 작성 중', ESIGNS.filter(x => x.stage === 'filling').length + '건'],
@@ -784,6 +857,8 @@ function render() {
   /* ★판 넷이 «같은 꼴» 이다 — 전자계약도 예외가 아니다 (대표 2026-09-16).
      fp4 의 4칸은 «기능» 이 아니라 «화면» 이라 안 가져온다.
      「계약 진행」과 「계약서·링크」는 상세 한 판의 구역 둘로 산다. */
+  /* ★전자계약은 «원장을 갖지 않는다» — 좌상이 접수 원장을 거른 보기일 뿐이고,
+     상세는 접수 상세 «그대로» 다. 두 원장이 아니라 한 원장이라 어긋날 자리가 없다. */
   if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
   else if (S.screen === 'esign') { paneEsign(P1); paneApps(P2); }
   else { paneProducts(P1); paneApps(P2); }
@@ -916,7 +991,6 @@ function paneDetail(el) {
   if (S.focus === 'perf') return detailPerf(el);
   if (S.focus === 'bill') return detailBill(el);
   if (S.focus === 'pay') return detailPay(el);
-  if (S.focus === 'esign') return detailEsign(el);
   return detailApp(el);
 }
 

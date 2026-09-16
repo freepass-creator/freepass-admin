@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=32">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=33">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -331,6 +331,20 @@ table.g .mut{color:var(--ink-2)}
 .sb.flagchip{border-style:dashed}
 .sb.flagchip[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
 
+/* ── 펼쳐지는 계약서 줄 — «새 화면이 아니다» ────────────────────
+   표 한 줄 아래가 열린다. 이력·금액과 나란히 두고 보라고 이렇게 둔다. */
+table.g tr.exp td{background:var(--key-soft)}
+table.g tr.expbody td{padding:0;background:var(--tint);border-bottom:1px solid var(--line-2)}
+table.g tr.expbody:hover td{background:var(--tint)}
+.ecbox{padding:var(--sp2);white-space:normal}
+.ecbox .steps{margin-bottom:var(--sp2)}
+.ecbox h5{margin:var(--sp2) 0 var(--sp);font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-2)}
+.ecbox .note{margin-top:0;margin-bottom:var(--sp2)}
+.ecbox .ecnote{margin:6px 0 0;font-size:11px;color:var(--ink-2)}
+.ecgrid{display:grid;grid-template-columns:150px 1fr;gap:var(--sp2);align-items:start}
+@media (max-width:1100px){.ecgrid{grid-template-columns:1fr}}
+
 /* 손님 축 — 관리자 축과 «생김새가 달라야» 한 축으로 안 읽힌다.
    저쪽은 번호 붙은 차례(.steps), 이쪽은 번호 없는 알약이다. */
 .ecjour{display:flex;flex-wrap:wrap;gap:4px}
@@ -600,7 +614,7 @@ table.g .mut{color:var(--ink-2)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=30"></script>
-<script src="./admin-shell.app.js?v=32"></script>
-<script src="./admin-shell.esign.js?v=32"></script>
-<script src="./admin-shell.mobile.js?v=30"></script>
+<script src="./admin-shell.data.js?v=33"></script>
+<script src="./admin-shell.app.js?v=33"></script>
+<script src="./admin-shell.esign.js?v=33"></script>
+<script src="./admin-shell.mobile.js?v=33"></script>

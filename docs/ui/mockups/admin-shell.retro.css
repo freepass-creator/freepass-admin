@@ -8,7 +8,7 @@
   --ground:#dfe3e8; --card:#ffffff; --tint:#eef1f5; --tint2:#e3e8ee; --zebra:#f7f9fb;
   --line:#d3d8df; --line-2:#a8b0bb;
   --ink:#1f2530; --ink-2:#5b636d; --ink-3:#97a0ab;
-  --key:#4a6fa5; --key-soft:#e8f0fa; --key-line:#c5d5e8; --key-lift:#5a80b8;
+  --key:#0c7d73; --key-soft:#e6f6f3; --key-line:#a5ded6; --key-lift:#0f998c;
   --rail:#eef1f5; --rail-2:#dfe3e8; --rail-tx:#5b636d; --rail-hi:#1f2530;
   --ok:#1d6b45; --ok-soft:#e3f0e9;
   --warn:#7d5709; --warn-soft:#faf0dc;
@@ -30,7 +30,9 @@
   --rt-head-a:#f6f8fa;  --rt-soft-b:#e9edf2;    /* 머리·연한 면 */
   --rt-hover-b:#e9eef4; --rt-press:#dfe3e8;     /* 덮음·눌림 */
   --rt-head-ink:#3c444e;                        /* 머리 글자 */
-  --rt-sel-a:#5a80b8; --rt-sel-b:#41639a; --rt-sel-line:#3a5a8e;  /* 고른 것 */
+  /* ★고른 것은 «강조색을 따라간다». 전에는 파랑을 못박아 둬서 결을 바꿔도 안 따라왔고,
+     밝은 벌에서 그 위의 흰 글자가 2.21:1 이었다(실측). */
+  --rt-sel-a:var(--key-lift); --rt-sel-b:var(--key); --rt-sel-line:var(--key);
   --rt-drop:rgba(31,37,48,.25);
   --bev:inset 1px 1px 0 var(--rt-hi), inset -1px -1px 0 var(--rt-lo);
   --bev-in:inset 1px 1px 0 var(--rt-lo), inset -1px -1px 0 var(--rt-hi);
@@ -211,7 +213,7 @@
   --rt-head-a:#2a323a; --rt-soft-b:#232a31;
   --rt-hover-b:#333c45; --rt-press:#14191f;
   --rt-head-ink:#cfd6dd;
-  --rt-sel-a:#3e5f76; --rt-sel-b:#2b4457; --rt-sel-line:#1f3547;
+  --rt-sel-a:var(--key); --rt-sel-b:var(--key-lift); --rt-sel-line:var(--key-lift);
   --rt-drop:rgba(0,0,0,.5);
   --on-fill:#10151a;
   }
@@ -233,7 +235,7 @@
   --rt-head-a:#2a323a; --rt-soft-b:#232a31;
   --rt-hover-b:#333c45; --rt-press:#14191f;
   --rt-head-ink:#cfd6dd;
-  --rt-sel-a:#3e5f76; --rt-sel-b:#2b4457; --rt-sel-line:#1f3547;
+  --rt-sel-a:var(--key); --rt-sel-b:var(--key-lift); --rt-sel-line:var(--key-lift);
   --rt-drop:rgba(0,0,0,.5);
   --on-fill:#10151a;
 }

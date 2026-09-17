@@ -2,32 +2,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=49">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=52">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
-  --ground:#dee2e6; --card:#fcfdfe; --tint:#eef1f4; --tint2:#e4e8ec; --zebra:#f3f6f8;
-  --rail:#232931; --rail-2:#323a44; --rail-tx:#9aa4af; --rail-hi:#eaeef2;
-  --line:#d7dce1; --line-2:#b6bfc7;
+  /* ★산뜻함은 «채도» 가 아니라 «명도와 여백» 에서 온다 (대표 2026-09-17 「산뜻하게」).
+     색을 세게 하면 「b2c 말고 눈아픔 없이」 가 깨진다. 그래서 —
+       바탕을 밝히고 · 판을 순백으로 띄우고 · 선을 걷어 여백으로 가른다. */
+  --ground:#eef1f5; --card:#ffffff; --tint:#f7f9fb; --tint2:#eef1f5; --zebra:#fbfcfd;
+  --rail:#1b232c; --rail-2:#2a333e; --rail-tx:#aab5c1; --rail-hi:#f2f5f8;
+  /* ★선은 «걷는» 게 아니라 «얇고 옅게 있는» 것이다.
+     대표 2026-09-17 「적어도 명확하게 목록라인이나 이런건 있어야 하는데」 —
+     한 줄을 여덟 칸 가로질러 읽는 표에서 선이 없으면 눈이 줄을 놓친다.
+     Stripe 의 데이터 표도 격자선을 «muted 하되 둔다». 없애지 않는다. */
+  --line:#e3e8ee; --line-2:#ccd5dd;
+  --line-row:#dde4ea;        /* ★표의 «줄 선» — 본문 선보다 한 단 진하다 */
   /* ★글자는 순검정에서 떼되 «읽히는 선» 아래로 안 내린다 (흰 바탕 기준 대비)
      ink 15.9 · ink-2 7.5 · ink-3 4.7 — ★셋 다 «가장 밝은 바탕(--tint)» 기준이다.
      판(--card) 기준으로만 재면 띠 위에서 4.5 아래로 떨어진다.
      예전 #8a939b 은 3.1:1 이라 표 절반이 회색으로 가라앉았다 */
   --ink:#1b2127; --ink-2:#4b5560; --ink-3:#5f6871;
   /* 강조는 «가라앉힌» 슬레이트 블루. 채도가 높으면 초점이 계속 당겨진다 */
-  --key:#2f6289; --key-soft:#e4ecf2; --key-line:#a9c1d3; --key-lift:#3b76a3;
-  --ok:#2f6b4f; --ok-soft:#e3ede7;
-  --warn:#7d5b1c; --warn-soft:#f4eee1;
-  --bad:#a2433a; --bad-soft:#f5e7e5;
+  /* ★대표 2026-09-17 「우중충 하지 않게」 —
+     전에는 «회색을 섞어» 채도를 낮췄다. 그게 눈은 편한데 칙칙하다.
+     ⇒ 회색을 빼고 «맑은» 색으로 두되, 밝기를 낮춰 눈이 안 아프게 한다.
+       칙칙함(회색 섞기) 과 차분함(밝기 낮추기) 은 다른 일이다.
+     대비는 그대로 지킨다 — key 5.9 · ok 5.1 · warn 5.0 · bad 5.0 (흰 바탕) */
+  /* ★대표가 보여준 「뮤카 구독사업 운영 허브」 결 (2026-09-17 「이렇게도 디자인을 하는데」).
+     그 산뜻함의 정체는 셋이다 — 민트 강조 · 넉넉한 여백 · 연한 틴트 카드.
+     파랑은 회색기가 섞이면 바로 칙칙해지는데, 민트는 밝기를 낮춰도 맑게 남는다.
+     ★파랑으로 되돌리려면 이 네 줄만 갈면 된다 (#1766b3 계열). */
+  --key:#0c7d73; --key-soft:#e6f6f3; --key-line:#a5ded6; --key-lift:#0f998c;
+  --ok:#0f7a51; --ok-soft:#e4f6ec;
+  --warn:#8a6212; --warn-soft:#fdf3de;
+  --bad:#b5372c; --bad-soft:#fdeae7;
   --ph:#e4e7ea; --ph2:#d5d9dd; --glyph:#b7bec5;
   /* ★«채운 색 위에» 올 글자. 이 토큰이 없어서 어두운 테마가 깨졌다 —
      어두울 때 --key 는 «밝은» 파랑인데 그 위에 흰 글자를 얹고 있었다(2.33:1).
      밝은 벌은 흰 글자, 어두운 벌은 어두운 글자다. */
   --on-fill:#ffffff;
-  --s1:0 1px 1px rgba(37,43,49,.04);
-  --s2:0 1px 2px rgba(37,43,49,.06),0 1px 8px -4px rgba(37,43,49,.08);
-  --s3:0 14px 38px -12px rgba(37,43,49,.30);
-  --ring:0 0 0 2px rgba(61,107,142,.30);
+  /* ★판은 «선» 이 아니라 «그림자» 로 뜬다 — 그게 산뜻해 보이는 가장 큰 차이다 */
+  --s1:0 1px 2px rgba(23,35,48,.05), 0 0 0 1px rgba(23,35,48,.04);
+  --s2:0 2px 4px -1px rgba(23,35,48,.07), 0 4px 14px -6px rgba(23,35,48,.10);
+  --s3:0 18px 44px -14px rgba(23,35,48,.30), 0 2px 8px -2px rgba(23,35,48,.10);
+  --ring:0 0 0 3px rgba(12,125,115,.22);
   --mono:"Inter",ui-monospace,monospace;
   --sans:"Pretendard","Inter","Noto Sans KR",system-ui,sans-serif;
 
@@ -36,12 +54,14 @@
      ctl  30  입력칸·도구 단추   — 손이 «고르는» 것
      row  34  표 한 줄           — 눈이 «훑는» 것
      act  38  실행 단추·띠 높이  — 손이 «누르는» 것. 구역을 가르는 자리도 이 높이 */
-  --h-chip:22px; --h-ctl:30px; --h-row:34px; --h-act:38px; --h-top:46px;
+  /* ★한 단씩 키웠다 — 빽빽함이 「세련되지 못함」 으로 읽힌다.
+     줄이 36 이면 한 화면에 한 줄 덜 들어오지만, 훑는 속도는 오히려 빨라진다. */
+  --h-chip:22px; --h-ctl:32px; --h-row:36px; --h-act:40px; --h-top:48px;
   /* ── 사이 ─ 여섯이 기본, 구역이 갈릴 때만 열둘 ── */
   --sp:6px; --sp2:12px; --sp3:16px;
   --w-find:318px; --w-rail:200px; --w-rail-mini:54px;
   /* ── 모서리 ─ 컨트롤 5 · 판 8 · 딱지 3 ── */
-  --r-ctl:5px; --r-pane:8px; --r-chip:3px;
+  --r-ctl:7px; --r-pane:12px; --r-chip:4px;
   /* ── 폰 ─ 손가락이 닿아야 하므로 한 단 크다 ── */
   --m-bar:52px; --m-ctl:38px; --m-row:64px; --m-act:44px;
 
@@ -186,8 +206,8 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .kpi .v.hot{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
 
 .work{flex:1;min-height:0;display:grid;
-  grid-template-columns:minmax(0,7fr) var(--sp) minmax(360px,3fr);   /* 목록 : 상세 = 7 : 3 */
-  grid-template-rows:1fr var(--sp) 1fr;gap:0}
+  grid-template-columns:minmax(0,7fr) var(--sp2) minmax(360px,3fr);   /* 목록 : 상세 = 7 : 3 */
+  grid-template-rows:1fr var(--sp2) 1fr;gap:0}
 #p1{grid-column:1;grid-row:1}
 #p2{grid-column:1;grid-row:3}
 #d1{grid-column:3;grid-row:1/4}          /* ★상세는 하나 — 세로로 끝까지 선다 */
@@ -198,10 +218,14 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .vs::after{width:3px;height:36px} .hs::after{width:36px;height:3px}
 .vs:hover::after{background:var(--key);height:56px}
 .hs:hover::after{background:var(--key);width:56px}
-.pane{background:var(--card);border:1px solid var(--line);border-radius:var(--r-pane);box-shadow:var(--s1);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.pane{background:var(--card);border:0;border-radius:var(--r-pane);box-shadow:var(--s1);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden}
 /* ★띠 셋이 «같은 높이» 다 — 제목줄 · 도구줄 · 발치줄. 판을 여럿 세워도 줄이 맞는다 */
-.ph{flex:none;display:flex;align-items:center;gap:var(--sp);height:var(--h-act);padding:0 var(--sp2);border-bottom:1px solid var(--line);background:var(--tint)}
-.ph h2{margin:0;font-size:12.5px;font-weight:650;letter-spacing:-.02em;white-space:nowrap}
+/* ★머리띠에 회색을 깔지 않는다 — 판마다 띠가 하나씩 더 생겨 화면이 층층이 된다.
+   흰 바탕에 아래 선 하나면 「여기가 머리」 라는 것이 충분히 읽힌다. */
+.ph{flex:none;display:flex;align-items:center;gap:var(--sp);height:var(--h-act);
+  padding:0 var(--sp3);border-bottom:1px solid var(--line);background:var(--card)}
+.ph h2{margin:0;font-size:13.5px;font-weight:650;letter-spacing:-.025em;white-space:nowrap}
 .ph .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
 .ph .sp{margin-left:auto}
 .pb{flex:1;min-height:0;overflow:auto}
@@ -211,8 +235,8 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
    넣는 것 : 지금 보이는 것을 센 값 — 라벨 + 숫자. 오른쪽(.sp 뒤) 은 판 전체에 거는 행동.
    안 넣는 것 : 설명문 · 훈계 · 도움말. 매일 보는 사람에게 설명은 소음이다.
    높이는 ctl 30 — «읽기만» 하는 띠라 act 38 을 쓰지 않는다 */
-.pf{flex:none;height:var(--h-ctl);border-top:1px solid var(--line);background:var(--tint);
-  padding:0 var(--sp2);display:flex;gap:var(--sp2);align-items:center;font-size:11px;color:var(--ink-2)}
+.pf{flex:none;height:var(--h-act);border-top:1px solid var(--line);background:var(--card);
+  padding:0 var(--sp3);display:flex;gap:var(--sp3);align-items:center;font-size:11px;color:var(--ink-2)}
 .pf .sp{margin-left:auto}
 .pf .t{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
 .pf .t i{font-style:normal;color:var(--ink-3)}
@@ -226,7 +250,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 
 /* 도구줄 */
 .bar{flex:none;min-height:var(--h-act);display:flex;gap:var(--sp);align-items:center;align-content:center;
-  padding:0 var(--sp2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  padding:0 var(--sp3);border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--card)}
 /* 줄이 늘면 row-gap 만으로 갈린다 — padding 을 더하면 한 줄일 때 띠가 38 을 넘는다 */
 .bar{row-gap:var(--sp)}
 .bar .tok{margin-left:0}
@@ -266,14 +290,24 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 
 /* ── 표 (레트로의 밀도) ──────────────── */
 table.g{width:100%;border-collapse:collapse;font-size:12px}
-table.g th{position:sticky;top:0;z-index:1;background:var(--tint);text-align:left;font-weight:600;font-size:10.5px;color:var(--ink-2);
-  height:var(--h-ctl);padding:0 10px;border-bottom:1px solid var(--line-2);white-space:nowrap;letter-spacing:.01em}
-table.g td{padding:0 10px;height:var(--h-row);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ★머리줄도 흰 바탕이다. 회색 띠를 깔면 표가 «상자» 로 보이고, 흰 바탕이면 «줄» 로 읽힌다 */
+table.g th{position:sticky;top:0;z-index:1;background:var(--card);text-align:left;font-weight:600;
+  font-size:10.5px;color:var(--ink-2);height:var(--h-act);padding:0 var(--sp3);
+  /* ★머리줄과 본문 사이는 «두 단» 진하게 — 여기가 갈리는 자리다 */
+  border-bottom:1.5px solid var(--line-2);white-space:nowrap;letter-spacing:.02em}
+table.g td{padding:0 var(--sp3);height:var(--h-row);border-bottom:1px solid var(--line-row);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 마지막 줄 밑선은 판 바닥과 겹친다 — 뗀다 */
+table.g tbody tr:last-child td{border-bottom:0}
+/* ★돈은 오른쪽 정렬 + 고정폭. 자릿수가 맞아야 위아래로 «크기» 가 읽힌다 (Stripe 표의 규칙) */
+table.g td.r,table.g th.r{text-align:right}
+table.g td.n,table.g td.r{font-variant-numeric:tabular-nums}
 table.g tbody tr{cursor:pointer}
-table.g tbody tr:nth-child(even) td{background:var(--zebra)}
-table.g tbody tr:hover td{background:var(--tint2)}
+/* ★얼룩무늬를 걷었다 — 줄 높이를 키우면 줄이 저절로 갈린다.
+   얼룩이 있으면 「고른 줄」 과 「짝수 줄」 이 눈에서 싸운다. */
+table.g tbody tr:hover td{background:var(--tint)}
+table.g tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--line-2)}
 table.g tbody tr.on td{background:var(--key-soft)}
-table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
 table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
 table.g .r{text-align:right}
 table.g .nm{font-weight:650}
@@ -289,7 +323,7 @@ table.g .mut{color:var(--ink-2)}
 .st.mut{color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 
 /* ── 상세 ─────────────────────────────── */
-.dwrap{padding:var(--sp2)}
+.dwrap{padding:var(--sp3)}
 .dsub,.note p{max-width:72ch}
 .dtop{display:grid;grid-template-columns:1fr;gap:var(--sp2);align-items:start}
 /* 상세는 읽는 칸이다 — 좁으니 한 줄로 세우고, 표는 «제 안에서» 옆으로 구른다 */
@@ -315,8 +349,8 @@ table.g .mut{color:var(--ink-2)}
 .kv dd{margin:0;padding:var(--sp) var(--sp3) var(--sp) 0;border-bottom:1px solid var(--line);font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
 
 .unk{color:var(--warn);font-weight:500}
-.sec{margin-top:var(--sp3)}
-.sec h3{margin:0 0 var(--sp);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.sec{margin-top:24px}
+.sec h3{margin:0 0 var(--sp2);font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
 .note{display:flex;gap:var(--sp2);align-items:flex-start;border:1px solid var(--key-line);background:var(--key-soft);border-radius:var(--r-ctl);padding:var(--sp2);margin-top:var(--sp2)}
 .note.w{border-color:#e3cd9a;background:var(--warn-soft)}
 .note.e{border-color:#e6bbb6;background:var(--bad-soft)}
@@ -392,7 +426,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
 /* ★뜻을 나르지 않는 «사이 기호» 다 — aria-hidden 으로 숨기되 눈에는 보이는 값으로 둔다 */
 .steps .ar{color:var(--ink-3);font-size:9px}
 
-.dact{flex:none;border-top:1px solid var(--line);background:var(--tint);padding:var(--sp) var(--sp2) var(--sp2);
+.dact{flex:none;border-top:1px solid var(--line);background:var(--card);padding:var(--sp2) var(--sp3);
   display:flex;flex-direction:column;gap:var(--sp)}
 .dact .memo{width:100%}
 .dact .memo input,.dact .memo textarea{width:100%;height:var(--h-ctl);min-height:var(--h-ctl);resize:none;
@@ -434,10 +468,10 @@ table.g tr.expbody:hover td{background:var(--tint)}
 
 .dact textarea:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
 /* ★단추 높이는 셋뿐 — act(38) 실행 · ctl(30) 도구 · chip(22) 줄 안 */
-.btn{height:var(--h-act);padding:0 14px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);
+.btn{height:var(--h-act);padding:0 16px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);
   cursor:pointer;font-weight:600;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp);white-space:nowrap}
 .btn:hover{background:var(--tint2)}
-.btn.go{background:var(--key);border-color:var(--key);color:#fff}
+.btn.go{background:var(--key);border-color:var(--key);color:var(--on-fill);box-shadow:0 1px 2px rgba(23,35,48,.12)}
 .btn.go:hover{background:var(--key-lift)}
 .btn.red{color:var(--bad);border-color:#e6bbb6;background:var(--bad-soft)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -739,16 +773,16 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=49"></script>
+<script src="./admin-shell.data.js?v=52"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=49"></script>
-<script src="./erp5.bridge.js?v=49"></script>
-<script src="./admin-shell.app.js?v=49"></script>
-<script src="./admin-shell.esign.js?v=49"></script>
-<script src="./admin-shell.mobile.js?v=49"></script>
+<script src="./erp5.data.js?v=52"></script>
+<script src="./erp5.bridge.js?v=52"></script>
+<script src="./admin-shell.app.js?v=52"></script>
+<script src="./admin-shell.esign.js?v=52"></script>
+<script src="./admin-shell.mobile.js?v=52"></script>
 <!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
-<script src="./erp5.ledger.js?v=49"></script>
-<script src="./erp5.ledger.bridge.js?v=49"></script>
+<script src="./erp5.ledger.js?v=52"></script>
+<script src="./erp5.ledger.bridge.js?v=52"></script>
 <!-- ★F04 시트 SSOT — 23탭에서 읽은 정본. 어디에도 «안 썼다» -->
-<script src="./f04.ssot.js?v=49"></script>
-<script src="./f04.bridge.js?v=49"></script>
+<script src="./f04.ssot.js?v=52"></script>
+<script src="./f04.bridge.js?v=52"></script>

@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=44">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=46">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -104,7 +104,10 @@
 }
 
 *{box-sizing:border-box}
-html,body{height:100%}
+/* ★전체화면 데스크다 — 페이지 자체는 «구르지 않는다».
+   구르는 것은 판 안(.pb)뿐이다. 페이지가 구르면 머리띠·실행띠가 같이 밀려
+   「지금 뭘 누르는지」 를 잃는다. 폰은 아래 미디어쿼리에서 다시 연다. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:12.5px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.004em}
 button,input,select,textarea{font:inherit;color:inherit}
 /* ★포커스는 «보이고 가려지지 않는다» (WCAG 2.2 AA 2.4.11/2.4.13).
@@ -334,7 +337,15 @@ table.g .mut{color:var(--ink-2)}
 
 /* ── 전자계약 ────────────────────────────────────────────────
    ★색«만»으로 뜻을 말하지 않는다 — 단계는 늘 이름과 함께 선다 (WCAG 1.4.1) */
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* ★화면낭독기 전용 — «눈에는 안 보이되 문서를 늘리지 않는다».
+   ⚠ 전에는 position:absolute 만 줘서 자리 잡을 조상이 없었다. 그래서 표 안의
+     <caption> 이 문서 바닥까지 뻗어 «페이지가 508px 굴렀다»(실측 2026-09-17).
+     화면에는 아무것도 안 보이는데 스크롤만 생기니 까닭을 못 찾는 종류의 버그다.
+   ⇒ ① clip-path 로 완전히 접고 ② margin -1px 로 자리를 지우고
+     ③ 담는 표를 position:relative 로 만들어 «밖으로 못 나가게» 한다. */
+.sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+table.g{position:relative}
 .st.key{color:var(--key);box-shadow:inset 0 0 0 1px var(--key-line)}
 .flag{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;padding:1px 5px;border-radius:var(--r-chip);
   background:var(--bad);color:var(--on-fill);vertical-align:1px}
@@ -622,7 +633,11 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .mtabs .l{font-size:10.5px;font-weight:600}
 
 @media (max-width:1100px){
-  .app{grid-template-columns:1fr;height:auto;overflow:visible}
+  /* ★폰은 페이지가 굴러야 한다 — #mapp 이 그 자리를 쓴다 */
+  html,body{overflow:visible}
+  /* ⚠ 아래 .app 규칙들은 «폰 껍데기(#mapp)가 생기기 전» 의 잔재다.
+       지금 .app 은 폰에서 display:none 이라 안 그려진다. 지우지 않고 남기는 까닭은
+       ★height:auto 가 데스크로 새면 페이지가 통째로 구르기 때문 — 여기 묶여 있음을 적어 둔다. */
   .main{overflow:visible}
   .rail{flex-direction:row;align-items:center;overflow-x:auto}
   .brand{border-bottom:0;border-right:1px solid rgba(255,255,255,.07)}
@@ -681,16 +696,16 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=44"></script>
+<script src="./admin-shell.data.js?v=46"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=44"></script>
-<script src="./erp5.bridge.js?v=44"></script>
-<script src="./admin-shell.app.js?v=44"></script>
-<script src="./admin-shell.esign.js?v=44"></script>
-<script src="./admin-shell.mobile.js?v=44"></script>
+<script src="./erp5.data.js?v=46"></script>
+<script src="./erp5.bridge.js?v=46"></script>
+<script src="./admin-shell.app.js?v=46"></script>
+<script src="./admin-shell.esign.js?v=46"></script>
+<script src="./admin-shell.mobile.js?v=46"></script>
 <!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
-<script src="./erp5.ledger.js?v=44"></script>
-<script src="./erp5.ledger.bridge.js?v=44"></script>
+<script src="./erp5.ledger.js?v=46"></script>
+<script src="./erp5.ledger.bridge.js?v=46"></script>
 <!-- ★F04 시트 SSOT — 23탭에서 읽은 정본. 어디에도 «안 썼다» -->
-<script src="./f04.ssot.js?v=44"></script>
-<script src="./f04.bridge.js?v=44"></script>
+<script src="./f04.ssot.js?v=46"></script>
+<script src="./f04.bridge.js?v=46"></script>

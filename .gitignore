@@ -20,3 +20,4 @@ npm-debug.log*
 #   node scripts/erp5-snapshot.mts
 docs/ui/mockups/erp5.data.js
 docs/ui/mockups/erp5.ledger.js
+docs/ui/mockups/f04.ssot.js

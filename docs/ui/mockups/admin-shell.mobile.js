@@ -199,8 +199,10 @@ function mPerfDetail() {
 function mSettings() {
   return mbar('설정', '박지훈 매니저') + `<div class="mbody">
     <div class="mlist">
-      <button class="mrow"><span class="mtx"><span class="m1">결</span><span class="m2">레트로 · 트렌디 두 벌</span></span>
-        <span class="mr" id="mskin">${SKINS[skin].t}</span><span class="mcv">&#10095;</span></button>
+      <button class="mrow" id="m-skin"><span class="mtx"><span class="m1">결</span><span class="m2">${esc(SKINS[skin].d)}</span></span>
+        <span class="mr">${SKINS[skin].t}</span><span class="mcv">&#10095;</span></button>
+      <button class="mrow" id="m-light"><span class="mtx"><span class="m1">밝기</span><span class="m2">${esc(LIGHTS[light].d)}</span></span>
+        <span class="mr">${LIGHTS[light].t}</span><span class="mcv">&#10095;</span></button>
       <button class="mrow"><span class="mtx"><span class="m1">정산관리</span><span class="m2">청구 · 수금 · 지급</span></span><span class="mcv">&#10095;</span></button>
       <button class="mrow"><span class="mtx"><span class="m1">전자계약</span><span class="m2">발송 · 열람 · 서명</span></span>
         <span class="mr">${ESIGNS.filter(e => e.st !== '완료').length}</span><span class="mcv">&#10095;</span></button>
@@ -226,11 +228,13 @@ function renderMobile() {
     M.tab = b.dataset.k; M.view = 'list'; M.hist = []; renderMobile();
   });
   const back = root.querySelector('#mback'); if (back) back.onclick = mBack;
+  if (q1('#m-skin')) q1('#m-skin').onclick = () => { skin = (skin + 1) % SKINS.length; applyTheme(); renderMobile(); };
+  if (q1('#m-light')) q1('#m-light').onclick = () => { light = (light + 1) % LIGHTS.length; applyTheme(); renderMobile(); };
 
   if (M.tab === 'product' && V === 'list' && q1('#mq')) {
     const q = q1('#mq');
     q.oninput = () => { S.q = q.value; renderMobile(); const e = q1('#mq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
-    q1('#mcond').onclick = () => { S.sheet = true; renderSheet(); };
+    q1('#mcond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
     if (q1('#mqx')) q1('#mqx').onclick = () => { S.q = ''; renderMobile(); };
     root.querySelectorAll('.mrow[data-id]').forEach(r => r.onclick = () => {
       S.pid = r.dataset.id; S.oid = null; S.shot = 0; syncProd(); mGo('detail');

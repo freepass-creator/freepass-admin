@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=40">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=44">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -20,6 +20,10 @@
   --warn:#7d5b1c; --warn-soft:#f4eee1;
   --bad:#a2433a; --bad-soft:#f5e7e5;
   --ph:#e4e7ea; --ph2:#d5d9dd; --glyph:#b7bec5;
+  /* ★«채운 색 위에» 올 글자. 이 토큰이 없어서 어두운 테마가 깨졌다 —
+     어두울 때 --key 는 «밝은» 파랑인데 그 위에 흰 글자를 얹고 있었다(2.33:1).
+     밝은 벌은 흰 글자, 어두운 벌은 어두운 글자다. */
+  --on-fill:#ffffff;
   --s1:0 1px 1px rgba(37,43,49,.04);
   --s2:0 1px 2px rgba(37,43,49,.06),0 1px 8px -4px rgba(37,43,49,.08);
   --s3:0 14px 38px -12px rgba(37,43,49,.30);
@@ -76,6 +80,7 @@
   --warn:#c9aa76; --warn-soft:#2a261c;
   --bad:#cc8f86; --bad-soft:#2b2120;
   --ph:#262c32; --ph2:#1c2126; --glyph:#454d55;
+  --on-fill:#10151a;        /* ★어두운 벌의 강조색은 «밝다» — 글자를 어둡게 뒤집는다 */
   --s1:0 1px 1px rgba(0,0,0,.3);
   --s2:0 1px 2px rgba(0,0,0,.35),0 1px 8px -4px rgba(0,0,0,.45);
   --s3:0 16px 40px -12px rgba(0,0,0,.6);
@@ -91,6 +96,7 @@
   --warn:#c9aa76; --warn-soft:#2a261c;
   --bad:#cc8f86; --bad-soft:#2b2120;
   --ph:#262c32; --ph2:#1c2126; --glyph:#454d55;
+  --on-fill:#10151a;        /* ★어두운 벌의 강조색은 «밝다» — 글자를 어둡게 뒤집는다 */
   --s1:0 1px 1px rgba(0,0,0,.3);
   --s2:0 1px 2px rgba(0,0,0,.35),0 1px 8px -4px rgba(0,0,0,.45);
   --s3:0 16px 40px -12px rgba(0,0,0,.6);
@@ -130,9 +136,10 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 
 /* ── 레일 ─────────────────────────────── */
 .rail{background:var(--rail);display:flex;flex-direction:column;min-height:0}
-.brand{display:flex;align-items:center;gap:var(--sp);padding:var(--sp2) var(--sp) var(--sp2) var(--sp2);border-bottom:1px solid rgba(255,255,255,.06)}
+.brand{display:flex;align-items:center;gap:var(--sp);padding:var(--sp) var(--sp);border-bottom:1px solid rgba(255,255,255,.06)}
+.brand .sp{flex:1}
 .brand .tx{flex:1;min-width:0}
-.brand .sq{width:28px;height:28px;flex:none;border-radius:6px;background:var(--key);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.brand .sq{width:28px;height:28px;flex:none;border-radius:6px;background:var(--key);display:grid;place-items:center;color:var(--on-fill);font-weight:700;font-size:13px}
 .brand b{display:block;color:#fff;font-size:13.5px;font-weight:650;letter-spacing:-.02em;line-height:1.2}
 .brand span{display:block;font-size:9px;color:var(--rail-tx);letter-spacing:.08em;margin-top:1px}
 .rail nav{padding:var(--sp);display:flex;flex-direction:column;gap:1px}
@@ -237,18 +244,18 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .fd .fx{flex:none;height:100%;padding:0 9px;border:0;border-left:1px solid var(--line-2);background:var(--tint);
   color:var(--ink-2);cursor:pointer;font-size:11.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .fd .fx:hover{background:var(--tint2);color:var(--ink)}
-.fd .fx.on{background:var(--key);color:#fff;font-weight:600;border-left-color:var(--key)}
+.fd .fx.on{background:var(--key);color:var(--on-fill);font-weight:600;border-left-color:var(--key)}
 .fd .fx .b{font-family:var(--mono);font-size:10px;font-weight:700;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
   background:var(--tint2);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}
 /* ★반투명 흰 바탕 위의 흰 글씨는 3.95 다. 칩을 «채워서» 색을 뒤집는다 */
-.fd .fx.on .b{background:#fff;color:var(--key)}
+.fd .fx.on .b{background:var(--on-fill);color:var(--key)}
 .sb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:var(--sp)}
 .sb:hover{background:var(--tint)}
 /* 달 고르개 — 찾는 칸과 «같은 키» 로 선다 */
 .sel{height:var(--h-ctl);padding:0 8px;border:1px solid var(--line-2);border-radius:var(--r-ctl);
   background:var(--card);color:var(--ink);font-size:12px;cursor:pointer}
 .sel:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
-.sb[aria-pressed="true"]{background:var(--key);border-color:var(--key);color:#fff;font-weight:600}
+.sb[aria-pressed="true"]{background:var(--key);border-color:var(--key);color:var(--on-fill);font-weight:600}
 .sb .b{font-family:var(--mono);font-size:10px;opacity:.85}
 .tok{height:var(--h-chip);padding:0 5px 0 9px;border:1px solid var(--key-line);border-radius:var(--r-chip);background:var(--key-soft);color:var(--key);font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:default}
 .tok.q{border-style:dashed;background:transparent}
@@ -310,7 +317,7 @@ table.g .mut{color:var(--ink-2)}
 .note{display:flex;gap:var(--sp2);align-items:flex-start;border:1px solid var(--key-line);background:var(--key-soft);border-radius:var(--r-ctl);padding:var(--sp2);margin-top:var(--sp2)}
 .note.w{border-color:#e3cd9a;background:var(--warn-soft)}
 .note.e{border-color:#e6bbb6;background:var(--bad-soft)}
-.note .i{width:17px;height:17px;flex:none;border-radius:9px;background:var(--key);color:#fff;display:grid;place-items:center;font-size:10px}
+.note .i{width:17px;height:17px;flex:none;border-radius:9px;background:var(--key);color:var(--on-fill);display:grid;place-items:center;font-size:10px}
 .note.w .i{background:var(--warn)} .note.e .i{background:var(--bad)}
 .note b{display:block;font-size:12px;font-weight:650;color:var(--key)}
 .note.w b{color:var(--warn)} .note.e b{color:var(--bad)}
@@ -322,18 +329,18 @@ table.g .mut{color:var(--ink-2)}
   margin:0 0 var(--sp2);padding:0 0 var(--sp2);border-bottom:1px solid var(--line)}
 .stp{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3)}
 .stp .n2{width:17px;height:17px;border-radius:9px;background:var(--tint2);color:var(--ink-3);display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;font-weight:700}
-.stp.on{color:var(--ink);font-weight:650} .stp.on .n2{background:var(--key);color:#fff}
-.stp.dn .n2{background:var(--ok);color:#fff} .stp.dn{color:var(--ink-2)}
+.stp.on{color:var(--ink);font-weight:650} .stp.on .n2{background:var(--key);color:var(--on-fill)}
+.stp.dn .n2{background:var(--ok);color:var(--on-fill)} .stp.dn{color:var(--ink-2)}
 
 /* ── 전자계약 ────────────────────────────────────────────────
    ★색«만»으로 뜻을 말하지 않는다 — 단계는 늘 이름과 함께 선다 (WCAG 1.4.1) */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .st.key{color:var(--key);box-shadow:inset 0 0 0 1px var(--key-line)}
 .flag{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;padding:1px 5px;border-radius:var(--r-chip);
-  background:var(--bad);color:#fff;vertical-align:1px}
+  background:var(--bad);color:var(--on-fill);vertical-align:1px}
 .flag.w{background:var(--warn)}
 .sb.flagchip{border-style:dashed}
-.sb.flagchip[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.sb.flagchip[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--on-fill)}
 
 /* ── 펼쳐지는 계약서 줄 — «새 화면이 아니다» ────────────────────
    표 한 줄 아래가 열린다. 이력·금액과 나란히 두고 보라고 이렇게 둔다. */
@@ -471,26 +478,64 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .pickbox tbody tr.off td{opacity:.42;cursor:not-allowed}
 
 /* 시트 */
-.sheet{position:fixed;inset:0;z-index:50;background:rgba(12,17,22,.5);display:flex;justify-content:flex-end}
-.sbox{width:min(540px,94vw);background:var(--card);height:100%;display:flex;flex-direction:column;box-shadow:var(--s3)}
-.sbox .sh{display:flex;align-items:center;gap:var(--sp);height:var(--h-top);padding:0 var(--sp3);border-bottom:1px solid var(--line)}
-.sbox .sh b{font-size:14px;font-weight:700}
-.sbox .sh .sp{margin-left:auto}
-.sbox .sh button{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:12px}
-.sbd{display:flex;flex:1;min-height:0}
-.smap{width:136px;flex:none;overflow-y:auto;background:var(--tint);border-right:1px solid var(--line)}
-.smap button{display:flex;align-items:center;gap:var(--sp);width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;height:var(--h-act);padding:0 var(--sp2);cursor:pointer;color:var(--ink-2);font-size:12px}
-.smap button[aria-current="true"]{background:var(--card);color:var(--ink);font-weight:650;box-shadow:inset 3px 0 0 var(--key)}
-.smap .b{margin-left:auto;font-family:var(--mono);font-size:9.5px;background:var(--key);color:#fff;padding:0 5px;border-radius:8px}
-.svl{flex:1;overflow-y:auto;padding:var(--sp2) var(--sp3)}
-.svl h4{margin:0 0 2px;font-size:13.5px;font-weight:700}
-.svl .hint{font-size:11px;color:var(--ink-3);margin-bottom:8px}
-.opt{display:flex;align-items:center;gap:var(--sp2);width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;min-height:var(--h-act);padding:0 2px;cursor:pointer}
-.opt .bx{width:16px;height:16px;flex:none;border-radius:3px;box-shadow:inset 0 0 0 1.5px var(--line-2);display:grid;place-items:center;font-size:10px;color:transparent}
-.opt[aria-pressed="true"] .bx{background:var(--key);box-shadow:none;color:#fff}
-.opt .t{flex:1} .opt .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
-.opt:disabled{opacity:.55;cursor:default}
-.sft{padding:var(--sp2) var(--sp3);border-top:1px solid var(--line)}
+/* ── ★세부필터 — «검색창 바로 아래» · 좌 항목 / 우 값 ──────────
+   대표 2026-09-17 「누르면 그냥 바로 아래로」 ·
+                   「좌측에 필터항목이 있고 그거 누르면 우측에 쭉 필터값」
+   fp4 FinderDetailButton 과 같은 자리 — 오른쪽 끝 맞춤 · 바깥 누르면 닫힘.
+   ★markup 은 하나다. 레트로는 retro.css 한 장만 갈아 끼운다. */
+.fdrop{position:fixed;inset:0;z-index:50}
+.fpanel{position:fixed;background:var(--card);border:1px solid var(--line-2);
+  border-radius:var(--r-pane);box-shadow:var(--s3);display:flex;flex-direction:column;overflow:hidden}
+.fpanel header{flex:none;display:flex;align-items:center;gap:var(--sp);height:var(--h-act);
+  padding:0 var(--sp2);border-bottom:1px solid var(--line);background:var(--tint)}
+.fpanel header b{font-size:12.5px;font-weight:650}
+.fpanel header .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
+.fpanel header .sp{margin-left:auto}
+.fpanel header button{border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:11px;padding:2px 4px}
+.fpanel header button:hover{color:var(--ink)}
+
+/* ★두 칸 — 왼쪽은 «무엇으로 가를까», 오른쪽은 «어떤 값으로» */
+.fbody{flex:1;min-height:0;display:flex}
+.fmap{width:132px;flex:none;overflow-y:auto;background:var(--tint);border-right:1px solid var(--line)}
+.fmap button{display:flex;align-items:center;gap:var(--sp);width:100%;text-align:left;border:0;
+  border-bottom:1px solid var(--line);background:none;height:var(--h-act);padding:0 var(--sp2);
+  cursor:pointer;color:var(--ink-2);font-size:12px}
+.fmap button:hover{background:var(--tint2);color:var(--ink)}
+.fmap button[aria-selected="true"]{background:var(--card);color:var(--ink);font-weight:650;
+  box-shadow:inset 3px 0 0 var(--key)}
+.fmap .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmap .b{font-family:var(--mono);font-size:9.5px;background:var(--key);color:var(--on-fill);
+  padding:0 5px;border-radius:8px;flex:none}
+.fmap .n{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);flex:none}
+
+.fvals{flex:1;min-width:0;overflow-y:auto;padding:var(--sp2)}
+.fvals h4{margin:0 0 4px;font-size:11.5px;font-weight:650;color:var(--ink);display:flex;align-items:center;gap:var(--sp)}
+.fvals h4 i{font-style:normal;font-size:9.5px;color:var(--key);background:var(--key-soft);
+  border-radius:var(--r-chip);padding:1px 5px}
+.fvals h4 .fclr{margin-left:auto;border:0;background:none;color:var(--key);font-size:10.5px;cursor:pointer}
+.fhint{margin:0 0 var(--sp);font-size:10.5px;color:var(--ink-2);line-height:1.5}
+/* ★값 한 줄 — 왼쪽 체크 · 가운데 이름 · 오른쪽 «몇 건» */
+.fopt{display:flex;align-items:center;gap:var(--sp);width:100%;text-align:left;
+  height:var(--h-act);padding:0 var(--sp);border:0;border-bottom:1px solid var(--line);
+  background:none;cursor:pointer;color:var(--ink);font-size:12px}
+.fopt:hover{background:var(--tint)}
+.fopt .bx{width:16px;height:16px;flex:none;border:1px solid var(--line-2);border-radius:var(--r-chip);
+  display:grid;place-items:center;font-size:10px;color:transparent;background:var(--card)}
+.fopt[aria-pressed="true"] .bx{background:var(--key);border-color:var(--key);color:var(--on-fill)}
+.fopt[aria-pressed="true"]{font-weight:600}
+.fopt .t{flex:1;min-width:0;display:flex;align-items:center;gap:5px}
+.fopt .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-2);flex:none}
+.fopt .fq{font-size:9.5px;color:var(--key);background:var(--key-soft);border-radius:var(--r-chip);padding:1px 4px}
+.fopt:disabled{cursor:default;color:var(--ink-2)}
+.fopt:disabled .bx{border-style:dashed;background:transparent}
+
+/* 폰 — 아래에서 올라오는 시트. 손가락이 닿는 자리가 다르다 */
+.fdrop.phone{background:rgba(12,17,22,.5);display:flex;align-items:flex-end}
+.fdrop.phone .fpanel{position:relative;top:auto!important;left:auto!important;
+  width:100%!important;max-height:82vh!important;border-radius:var(--r-pane) var(--r-pane) 0 0;border-bottom:0}
+.fdrop.phone .fpanel header{height:var(--m-bar)}
+.fdrop.phone .fmap button,.fdrop.phone .fopt{height:var(--m-ctl);font-size:13px}
+.sft{flex:none;padding:var(--sp2);border-top:1px solid var(--line);background:var(--tint)}
 .sft .btn{width:100%}
 
 /* ══ 폰 — 페이지가 «바뀐다». 판을 쌓지 않는다 ══════════════ */
@@ -504,7 +549,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .mbar .mb-ic{position:relative;width:var(--m-ctl);height:var(--m-ctl);border:0;border-radius:var(--r-ctl);background:none;color:var(--ink-2);
   font-size:16px;cursor:pointer;display:grid;place-items:center}
 .mbar .mb-ic:active{background:var(--tint2)}
-.mbar .mb-ic em{position:absolute;top:4px;right:3px;font-style:normal;background:var(--key);color:#fff;
+.mbar .mb-ic em{position:absolute;top:4px;right:3px;font-style:normal;background:var(--key);color:var(--on-fill);
   font-family:var(--mono);font-size:9px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center}
 .mbar .mb-sp{width:var(--m-ctl);flex:none}
 .mbar .mb-t{flex:1;min-width:0;text-align:center}
@@ -523,10 +568,10 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .msearch .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 8px;font-size:12px}
 .msearch .fx{flex:none;height:100%;padding:0 12px;border:0;border-left:1px solid var(--line-2);background:var(--tint);
   color:var(--ink-2);font-size:12.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
-.msearch .fx.on{background:var(--key);color:#fff;font-weight:600;border-left-color:var(--key)}
+.msearch .fx.on{background:var(--key);color:var(--on-fill);font-weight:600;border-left-color:var(--key)}
 .msearch .fx .b{font-family:var(--mono);font-size:10.5px;font-weight:700;min-width:16px;height:16px;padding:0 4px;
   border-radius:8px;background:var(--tint2);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}
-.msearch .fx.on .b{background:#fff;color:var(--key)}
+.msearch .fx.on .b{background:var(--on-fill);color:var(--key)}
 .mtoks{display:flex;gap:var(--sp);flex-wrap:wrap;padding:0 var(--sp2) var(--sp)}
 .mchips{display:flex;gap:var(--sp);padding:var(--sp) var(--sp2);overflow-x:auto}
 .mchips .sb{height:var(--m-ctl);flex:0 0 auto}
@@ -572,7 +617,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
   flex-direction:column;align-items:center;gap:3px}
 .mtabs button[aria-current="true"]{color:var(--key)}
 .mtabs .i{position:relative;font-size:17px;line-height:1}
-.mtabs .i em{position:absolute;top:-5px;left:11px;font-style:normal;background:var(--bad);color:#fff;
+.mtabs .i em{position:absolute;top:-5px;left:11px;font-style:normal;background:var(--bad);color:var(--on-fill);
   font-family:var(--mono);font-size:9px;min-width:15px;height:15px;border-radius:8px;display:grid;place-items:center;padding:0 3px}
 .mtabs .l{font-size:10.5px;font-weight:600}
 
@@ -599,8 +644,10 @@ table.g tr.expbody:hover td{background:var(--tint)}
 
 <div class="app">
   <aside class="rail">
-    <div class="brand"><span class="sq">F</span>
-      <div class="tx"><b>FreePass</b><span>ADMIN</span></div>
+    <!-- ★로고 블록을 뺐다 (대표 2026-09-17 「이런거좀 빼주고」).
+         내부용이라 «누구 것인지» 를 매일 알려 줄 까닭이 없다 — 그 자리를 메뉴가 쓴다.
+         접기 단추는 «기능» 이라 남긴다. 없으면 사이드바를 못 접는다. -->
+    <div class="brand"><span class="sp"></span>
       <button class="railtoggle" id="railtoggle" aria-label="사이드바 접기" title="사이드바 접기">&#10094;</button></div>
     <nav id="nav"></nav>
     <div class="rfoot"><span class="tx"><b>박지훈</b>운영지원팀 · 매니저</span></div>
@@ -612,7 +659,8 @@ table.g tr.expbody:hover td{background:var(--tint)}
         <input type="text" id="gq" placeholder="상품 · 고객 · 접수번호 · 계약번호" aria-label="통합 검색"><kbd>Ctrl K</kbd></div>
       <span class="sp"></span>
       <button class="tb"><span class="dot"></span>알림 3</button>
-      <button class="tb" id="theme">결: 트렌디</button>
+      <button class="tb" id="theme" title="레트로 · 트렌디">결: 트렌디</button>
+      <button class="tb" id="light" title="밝기">기기 따라</button>
       <button class="tb">도움말</button>
       <div class="who"><span class="av">박</span><div><b>박지훈 매니저</b><span>운영지원팀</span></div></div>
     </div>
@@ -633,16 +681,16 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=40"></script>
+<script src="./admin-shell.data.js?v=44"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=40"></script>
-<script src="./erp5.bridge.js?v=40"></script>
-<script src="./admin-shell.app.js?v=40"></script>
-<script src="./admin-shell.esign.js?v=40"></script>
-<script src="./admin-shell.mobile.js?v=40"></script>
+<script src="./erp5.data.js?v=44"></script>
+<script src="./erp5.bridge.js?v=44"></script>
+<script src="./admin-shell.app.js?v=44"></script>
+<script src="./admin-shell.esign.js?v=44"></script>
+<script src="./admin-shell.mobile.js?v=44"></script>
 <!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
-<script src="./erp5.ledger.js?v=40"></script>
-<script src="./erp5.ledger.bridge.js?v=40"></script>
+<script src="./erp5.ledger.js?v=44"></script>
+<script src="./erp5.ledger.bridge.js?v=44"></script>
 <!-- ★F04 시트 SSOT — 23탭에서 읽은 정본. 어디에도 «안 썼다» -->
-<script src="./f04.ssot.js?v=40"></script>
-<script src="./f04.bridge.js?v=40"></script>
+<script src="./f04.ssot.js?v=44"></script>
+<script src="./f04.bridge.js?v=44"></script>

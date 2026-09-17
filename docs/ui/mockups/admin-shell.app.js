@@ -281,7 +281,7 @@ function paneProducts(el) {
   const q = $('#q');
   q.oninput = () => { S.q = q.value; paneProducts(el); const e = $('#q'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
   if ($('#qx')) $('#qx').onclick = () => { S.q = ''; render(); };
-  $('#cond').onclick = () => { S.sheet = true; renderSheet(); };
+  $('#cond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
   el.querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
     const [a, k] = b.dataset.tok.split('|'); S.sel[a] = (S.sel[a] || []).filter(x => x !== k); render();
   });
@@ -820,43 +820,123 @@ function detailPay(el) {
 }
 
 /* ══ 세부필터 시트 ═════════════════════════════ */
+/**
+ * 세부필터 — ★누르면 «검색창 바로 아래» 로 펼쳐진다.
+ *
+ * ★대표 2026-09-17
+ *   「세부필터는 누르면 그냥 바로 아래로 나오게끔 그게 레트로도 그렇게 되어있는데」
+ *   「기능은 통일하고 테마만 다르게 가는거니까」
+ *
+ * freepasserp4 `features/finder/FinderQuickFilters.tsx` 의 `FinderDetailButton` 이 그 꼴이다 —
+ *   검색창 «안» 우측 단추(사장님 2026-09-04 「세부필터는 검색창에 놨었다고」) ·
+ *   누르면 `rect.bottom + 6` 에 폭 380 패널 · 바깥을 누르면 닫힌다 ·
+ *   창이 움직이면 자리를 다시 잡는다.
+ *
+ * ★전에는 오른쪽에서 밀려 나오는 «전체화면 시트» 였다. 그건 폰 방식이다 —
+ *   fp4 도 폰에서만 BottomSheet 를 쓴다. 데스크에서 시트를 띄우면
+ *   목록이 통째로 가려져 「거르면서 줄이 줄어드는 것」 을 못 본다.
+ *
+ * ★markup 은 하나다. 레트로와 트렌디는 CSS 한 장만 갈린다 (테마-규격).
+ */
+/**
+ * 세부필터 — ★누르면 «검색창 바로 아래» 로 펼쳐지고,
+ *            안은 «좌측 항목 · 우측 값» 두 칸이다.
+ *
+ * ★대표 2026-09-17
+ *   「세부필터는 누르면 그냥 바로 아래로 나오게끔 그게 레트로도 그렇게 되어있는데」
+ *   「세부필터는 열면 필터창 좌측에 필터항목이 있고 그거 누르면 우측에 쭉 필터값이 나오는 형태인데」
+ *   「기능은 통일하고 테마만 다르게 가는거니까」
+ *
+ * 자리 : freepasserp4 `FinderDetailButton` 과 같다 — 검색창 «안» 우측 단추 아래
+ *        `rect.bottom + 6` · 오른쪽 끝 맞춤 · 바깥 누르면 닫힘 · 창 움직이면 다시 잡음
+ * 속   : 좌 항목 / 우 값. ★축이 여덟이라 한 줄로 늘어놓으면 스크롤만 길어진다.
+ *
+ * ★markup 은 하나다. 레트로와 트렌디는 CSS 한 장만 갈린다 (테마-규격).
+ * ★전에는 오른쪽에서 밀려 나오는 «전체화면 시트» 였다. 그건 폰 방식이고,
+ *   데스크에서 띄우면 목록이 통째로 가려져 «거르면서 줄이 주는 것» 을 못 본다.
+ */
 function renderSheet() {
-  if (!S.sheet) { $('#sheetroot').innerHTML = ''; return; }
+  const root = $('#sheetroot');
+  if (!S.sheet) { if (root._off) { root._off(); root._off = null; } root.innerHTML = ''; return; }
+
+  const phone = isMobile();
   const sel = effSel(), text = parseQ().text, read = parseQ().read;
-  const live = AXES.map(ax => ({ ax, opts: ax.opts.map(o => ({ o, c: countOpt(ax, o, sel, text) })).filter(x => x.c > 0) })).filter(x => x.opts.length);
+  /* ★0건짜리 값은 안 보인다 — 고를 수 없는 것을 늘어놓지 않는다 */
+  const live = AXES.map(ax => ({ ax, opts: ax.opts.map(o => ({ o, c: countOpt(ax, o, sel, text) })).filter(x => x.c > 0) }))
+                   .filter(x => x.opts.length);
   if (!live.some(x => x.ax.k === S.sheetAxis)) S.sheetAxis = live.length ? live[0].ax.k : null;
   const cur = live.find(x => x.ax.k === S.sheetAxis);
   const picked = Object.keys(S.sel).some(k => (S.sel[k] || []).length);
+  const n = evaluate().hits.length;
 
-  $('#sheetroot').innerHTML = `<div class="sheet" id="sw"><div class="sbox">
-    <div class="sh"><b>세부필터</b><span class="sp"></span>${picked ? '<button id="sclr">초기화</button>' : ''}
-      <button id="sx" aria-label="닫기">&#10005; 닫기</button></div>
-    <div class="sbd">
-      <nav class="smap">${live.map(({ ax }) => {
-        const n = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
-        return `<button data-a="${ax.k}" aria-current="${ax.k === S.sheetAxis}">${esc(ax.t)}${n ? `<span class="b">${n}</span>` : ''}</button>`;
-      }).join('')}</nav>
-      <div class="svl"><h4>${cur ? esc(cur.ax.t) : ''}</h4>
-        <div class="hint">${cur && cur.ax.scope === 'offer' ? '같은 Offer 안에서 잽니다 — 다른 Offer 의 값을 섞지 않습니다' : '차 자체에 대는 잣대입니다'}</div>
-        ${cur ? cur.opts.map(({ o, c }) => {
-          const on = (sel[cur.ax.k] || []).includes(o.k);
-          const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
-          return `<button class="opt" data-k="${o.k}" aria-pressed="${on}"${fq ? ' disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
-            <span class="bx">&#10003;</span><span class="t">${esc(o.label)}${fq ? ' <span style="color:var(--ink-3);font-size:11px">· 검색어</span>' : ''}</span>
-            <span class="c">${c}</span></button>`;
-        }).join('') : ''}</div></div>
-    <div class="sft"><button class="btn go" id="sdone">${evaluate().hits.length}건 보기</button></div>
-  </div></div>`;
+  root.innerHTML = `<div class="fdrop${phone ? ' phone' : ''}" id="fw">
+    <div class="fpanel" id="fp" role="dialog" aria-label="세부 조건">
+      <header><b>세부 조건</b><span class="c">${n}건</span><span class="sp"></span>
+        ${picked ? '<button id="sclr">전부 해제</button>' : ''}
+        <button id="sx" aria-label="닫기">&#10005;</button></header>
+      <div class="fbody">
+        <nav class="fmap" role="tablist" aria-label="필터 항목">${live.map(({ ax, opts }) => {
+          const k = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
+          return `<button role="tab" data-a="${ax.k}" aria-selected="${ax.k === S.sheetAxis}">
+            <span class="t">${esc(ax.t)}</span>${k ? `<span class="b">${k}</span>` : `<span class="n">${opts.length}</span>`}</button>`;
+        }).join('')}</nav>
+        <div class="fvals" role="tabpanel">${cur ? `
+          <h4>${esc(cur.ax.t)}
+            ${cur.ax.scope === 'offer' ? '<i title="같은 Offer 안에서 잽니다 — 다른 Offer 의 값을 섞지 않습니다">같은 Offer</i>' : ''}
+            ${(S.sel[cur.ax.k] || []).length ? `<button class="fclr" data-clr="${cur.ax.k}">해제</button>` : ''}</h4>
+          <p class="fhint">${cur.ax.scope === 'offer'
+            ? '★같은 Offer 하나가 다 만족해야 «찾았다» 입니다 — 다른 Offer 의 값을 섞지 않습니다.'
+            : '차 자체에 대는 잣대입니다.'}</p>
+          ${cur.opts.map(({ o, c }) => {
+            const on = (sel[cur.ax.k] || []).includes(o.k);
+            const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
+            return `<button class="fopt" data-a="${cur.ax.k}" data-k="${o.k}" aria-pressed="${on}"
+              ${fq ? 'disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
+              <span class="bx">&#10003;</span>
+              <span class="t">${esc(o.label)}${fq ? '<span class="fq">검색어</span>' : ''}</span>
+              <span class="c">${c}</span></button>`;
+          }).join('')}` : '<div class="empty"><b>고를 조건이 없다</b><p>지금 목록에 값이 하나뿐이면 가를 것이 없다.</p></div>'}</div>
+      </div>
+      ${phone ? `<div class="sft"><button class="btn go" id="sdone">${n}건 보기</button></div>` : ''}
+    </div></div>`;
 
-  $('#sw').onclick = ev => { if (ev.target.id === 'sw') { S.sheet = false; renderSheet(); } };
-  $('#sx').onclick = $('#sdone').onclick = () => { S.sheet = false; renderSheet(); };
-  if ($('#sclr')) $('#sclr').onclick = () => { S.sel = {}; render(); };
-  $('#sheetroot').querySelectorAll('.smap button').forEach(b => b.onclick = () => { S.sheetAxis = b.dataset.a; renderSheet(); });
-  $('#sheetroot').querySelectorAll('.opt').forEach(b => b.onclick = () => {
-    const k = b.dataset.k, a = S.sheetAxis;
-    S.sel[a] = S.sel[a] || [];
-    S.sel[a] = S.sel[a].includes(k) ? S.sel[a].filter(x => x !== k) : [...S.sel[a], k];
-    render(); renderSheet();   /* 적용 단추가 없다 — 고르는 즉시 바뀐다 */
+  /* ★단추 바로 아래에 붙인다. 오른쪽 끝을 맞춘다 — 검색창 «안» 우측에서 나오니까 */
+  if (!phone) {
+    const anchor = $('#cond') || $('.fd');
+    const panel = $('#fp');
+    const place = () => {
+      const r = anchor.getBoundingClientRect();
+      const w = Math.min(480, innerWidth - 24);
+      let left = Math.round(r.right - w);
+      if (left < 12) left = 12;
+      panel.style.top = Math.round(r.bottom + 6) + 'px';
+      panel.style.left = left + 'px';
+      panel.style.width = w + 'px';
+      panel.style.maxHeight = Math.max(220, innerHeight - r.bottom - 24) + 'px';
+    };
+    place();
+    const on = () => place();
+    addEventListener('resize', on); addEventListener('scroll', on, true);
+    root._off = () => { removeEventListener('resize', on); removeEventListener('scroll', on, true); };
+  }
+
+  const close = () => { S.sheet = false; renderSheet(); };
+  /* 바깥을 누르면 닫힌다. ★단추 자신은 빼야 «두 번 눌러야 닫히는» 일이 안 생긴다 */
+  $('#fw').onpointerdown = ev => {
+    if ($('#fp').contains(ev.target)) return;
+    if ($('#cond') && $('#cond').contains(ev.target)) return;
+    close();
+  };
+  $('#sx').onclick = close;
+  if ($('#sdone')) $('#sdone').onclick = close;
+  if ($('#sclr')) $('#sclr').onclick = () => { S.sel = {}; render(); renderSheet(); };
+  root.querySelectorAll('[data-clr]').forEach(b => b.onclick = () => { S.sel[b.dataset.clr] = []; render(); renderSheet(); });
+  root.querySelectorAll('.fmap button').forEach(b => b.onclick = () => { S.sheetAxis = b.dataset.a; renderSheet(); });
+  root.querySelectorAll('.fopt').forEach(b => b.onclick = () => {
+    const k = b.dataset.k, ax = b.dataset.a;
+    S.sel[ax] = S.sel[ax] || [];
+    S.sel[ax] = S.sel[ax].includes(k) ? S.sel[ax].filter(x => x !== k) : [...S.sel[ax], k];
+    render(); renderSheet();   /* ★적용 단추가 없다 — 고르는 즉시 목록이 주는 것을 본다 */
   });
 }
 
@@ -1118,13 +1198,45 @@ const SKINS = [
   { k: '', t: '트렌디', d: '굳은 선 · 그림자 · 둥근 모서리' },
   { k: 'rt', t: '레트로', d: '볼록한 단추 · 파인 창 · 촘촘한 격자' },
 ];
-let skin = 0;
-$('#theme').onclick = () => {
-  skin = (skin + 1) % SKINS.length;
-  document.documentElement.className = SKINS[skin].k;
-  $('#theme').textContent = '결: ' + SKINS[skin].t;
-  $('#theme').title = SKINS[skin].d;
-};
+/**
+ * ★결(레트로·트렌디)과 «밝기»(밝게·어둡게)는 «다른 축» 이다.
+ *
+ *   대표 2026-09-17 「설정에서 레트로랑 트렌디랑 테마 반전 할수 있어야하고」
+ *
+ *   결   = 자리와 차례는 그대로 두고 «생김새» 만 바꾼다 (CSS 한 장)
+ *   밝기 = 같은 결 안에서 «바탕과 글자» 를 뒤집는다 (토큰만 바꾼다)
+ *   ★둘을 한 단추에 섞으면 네 조합 중 둘만 갈 수 있게 된다.
+ *
+ *   밝기 셋 — 「기기 따라」 가 기본이다. 사람이 고르면 그것이 이긴다.
+ *   (:root 에 data-theme 이 «없을 때» 만 prefers-color-scheme 이 먹는다)
+ */
+const LIGHTS = [
+  { k: '', t: '기기 따라', d: '기기 설정을 따른다' },
+  { k: 'light', t: '밝게', d: '늘 밝게' },
+  { k: 'dark', t: '어둡게', d: '늘 어둡게' },
+];
+let skin = 0, light = 0;
+
+/** ★한 곳에서만 바른다 — 두 축이 서로를 지우지 않게 */
+function applyTheme() {
+  const el = document.documentElement;
+  el.className = SKINS[skin].k;                        /* 결 */
+  if (LIGHTS[light].k) el.dataset.theme = LIGHTS[light].k;
+  else delete el.dataset.theme;                        /* 기기 따라 — 표시를 «지운다» */
+  const t = $('#theme'); if (t) { t.textContent = '결: ' + SKINS[skin].t; t.title = SKINS[skin].d; }
+  const l = $('#light'); if (l) { l.textContent = LIGHTS[light].t; l.title = LIGHTS[light].d; }
+  try { localStorage.setItem('fp.skin', String(skin)); localStorage.setItem('fp.light', String(light)); } catch (e) { /* 사생활 창에서는 못 적는다 — 그래도 돈다 */ }
+  if (typeof renderSheet === 'function' && S.sheet) renderSheet();
+}
+try {
+  const s = Number(localStorage.getItem('fp.skin')), g = Number(localStorage.getItem('fp.light'));
+  if (SKINS[s]) skin = s;
+  if (LIGHTS[g]) light = g;
+} catch (e) { /* 못 읽어도 기본으로 돈다 */ }
+
+if ($('#theme')) $('#theme').onclick = () => { skin = (skin + 1) % SKINS.length; applyTheme(); };
+if ($('#light')) $('#light').onclick = () => { light = (light + 1) % LIGHTS.length; applyTheme(); };
+applyTheme();
 
 /* 사이드바 — 접으면 아이콘만 남는다. 자리는 그대로라 손이 안 헤맨다 */
 $('#railtoggle').onclick = () => {

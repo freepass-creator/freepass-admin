@@ -82,6 +82,10 @@ function erp5ToMock(p) {
     status: p.status || null,
     photo: p.photo || null,
     warn: (p.warnings || []).length ? p.warnings : null,
+    /* ★원자를 «그대로» 넘긴다 — 여기서 골라 버리면 상세에서 되살릴 길이 없다.
+       무엇을 어느 묶음에 세울지는 admin-shell.policy.js 가 정한다 */
+    pols: p.productPolicies || [],
+    region: (p.productPolicies || []).find(x => x.policyId === 'rental_region')?.value ?? null,
     offers: (p.offers || []).map((o) => ({
       id: o.id,
       term: o.termMonths,

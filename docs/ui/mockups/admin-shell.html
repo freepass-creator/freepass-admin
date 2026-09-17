@@ -2,14 +2,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=52">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=57">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
-  /* ★산뜻함은 «채도» 가 아니라 «명도와 여백» 에서 온다 (대표 2026-09-17 「산뜻하게」).
-     색을 세게 하면 「b2c 말고 눈아픔 없이」 가 깨진다. 그래서 —
-       바탕을 밝히고 · 판을 순백으로 띄우고 · 선을 걷어 여백으로 가른다. */
-  --ground:#eef1f5; --card:#ffffff; --tint:#f7f9fb; --tint2:#eef1f5; --zebra:#fbfcfd;
+  /* ★대표 2026-09-17 「사람이 제일 보기 편한 색깔 안정감 들고 피로하지 않은 색깔」
+     찾아본 것 —
+       ① 가시광 «중간 파장»(녹·황록)이 가장 덜 피로하다. 눈이 한 점에 초점을 맞춘다.
+       ② 파랑(400~460nm)은 눈 안에서 흩어져 «색수차» 가 생긴다 — 초점이 한 점에 안 맺혀
+          눈이 계속 조절한다. 그래서 약한 세기에도 먼저 피로해진다.
+       ③ ★흰색은 «청색광이 가장 많은» 색이다.
+     ⇒ 그래서 순백을 크게 깔지 않는다. 대표가 전에 하신 말이 그대로 맞다 —
+       「순백을 크게 깔면 오후에 눈이 시리다」. 산뜻하게 한다고 #ffffff 로 바꿨던 것을 되돌린다.
+     ⇒ 바탕은 «살짝 녹기» 를 띈 중립으로. 청회색은 차갑고 오래 보면 눈이 당긴다. */
+  --ground:#eceee9; --card:#fbfcfa; --tint:#f4f6f2; --tint2:#e8ebe5; --zebra:#f8f9f6;
   --rail:#1b232c; --rail-2:#2a333e; --rail-tx:#aab5c1; --rail-hi:#f2f5f8;
   /* ★선은 «걷는» 게 아니라 «얇고 옅게 있는» 것이다.
      대표 2026-09-17 「적어도 명확하게 목록라인이나 이런건 있어야 하는데」 —
@@ -54,14 +60,36 @@
      ctl  30  입력칸·도구 단추   — 손이 «고르는» 것
      row  34  표 한 줄           — 눈이 «훑는» 것
      act  38  실행 단추·띠 높이  — 손이 «누르는» 것. 구역을 가르는 자리도 이 높이 */
-  /* ★한 단씩 키웠다 — 빽빽함이 「세련되지 못함」 으로 읽힌다.
-     줄이 36 이면 한 화면에 한 줄 덜 들어오지만, 훑는 속도는 오히려 빨라진다. */
-  --h-chip:22px; --h-ctl:32px; --h-row:36px; --h-act:40px; --h-top:48px;
+  /* ★대표 2026-09-17 「목록은 휑하니…」 — 키웠던 것을 도로 당겼다.
+     여백이 «과하면» 화면이 비어 보이고, 하루 여덟 시간 훑는 사람에게는
+     한 화면에 덜 들어오는 만큼 스크롤이 는다. 산뜻함은 여백의 «양» 이 아니라 «리듬» 이다. */
+  /* ★★단추 높이는 «하나» 다 — 대표 2026-09-17
+       「누르는 단추의 규격은 다 위계 맞춰서 동일해야지
+         가로 사이즈는 차이가 날것이지만 «세로 사이즈는 동일»해야지」
+
+     ★그리고 이건 내가 정한 게 아니다. 규격이 이미 있었다 —
+       C:\devi-core\design-system	okens.css  `--control-height`  «하나»
+       C:\devi-core\docs\SCREEN_DESIGN_STANDARD.md §7
+         「Interactive targets use a 44px minimum control height for touch
+          usability. WCAG's minimum target-size requirement remains the
+          compliance floor.」
+       셋(38·30·22)으로 나눠 놨던 건 «규격을 안 보고» 한 것이다.
+
+     ⇒ 44 는 «손가락» 규격이다. 마우스로 하루 여덟 시간 훑는 목록 화면에
+       44 단추를 박으면 줄(34)보다 단추가 커진다.
+       그래서 두 값으로 나눈다 — «규격을 어기는 게 아니라 규격대로» 다:
+         마우스  28px  WCAG 2.2 AA 2.5.8 의 바닥(24×24)을 넘는다
+         터치    44px  AI Core 가 권하는 손가락 값 그대로
+       위계는 «가로 폭» 과 «면의 무게» 가 진다. 세로는 «절대» 안 진다. */
+  --h-btn:28px;
+  --h-chip:22px; --h-ctl:30px; --h-row:34px; --h-act:38px; --h-top:46px;
   /* ── 사이 ─ 여섯이 기본, 구역이 갈릴 때만 열둘 ── */
   --sp:6px; --sp2:12px; --sp3:16px;
   --w-find:318px; --w-rail:200px; --w-rail-mini:54px;
   /* ── 모서리 ─ 컨트롤 5 · 판 8 · 딱지 3 ── */
-  --r-ctl:7px; --r-pane:12px; --r-chip:4px;
+  /* ★대표 2026-09-17 「너무 둥글둥글한데」 — 한 단씩 줄였다.
+     업무 화면에서 큰 곡률은 «말랑해» 보이고, 표의 직각과도 안 맞는다. */
+  --r-ctl:5px; --r-pane:8px; --r-chip:3px;
   /* ── 폰 ─ 손가락이 닿아야 하므로 한 단 크다 ── */
   --m-bar:52px; --m-ctl:38px; --m-row:64px; --m-act:44px;
 
@@ -136,6 +164,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .pb:focus-visible,.pane:focus-visible{outline-offset:-2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{
   transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important}}
+/* ★손가락으로 쓰는 기계면 AI Core 규격값(44) 을 그대로 쓴다 */
+@media (pointer:coarse){:root{--h-btn:44px; --h-row:44px}}
 .n{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;padding:2px 5px;background:var(--tint2);color:var(--ink-3);line-height:1}
 
@@ -153,7 +183,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
   transform:translateY(-50%);background:var(--ink);color:#fff;font-size:11px;padding:4px 9px;border-radius:5px;
   white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:30}
 .app.mini nav button:hover::after{opacity:1}
-.railtoggle{width:var(--h-chip);height:var(--h-chip);border:0;border-radius:var(--r-chip);background:rgba(255,255,255,.08);color:#aab4c0;
+.railtoggle{width:var(--h-btn);height:var(--h-btn);border:0;border-radius:var(--r-chip);background:rgba(255,255,255,.08);color:#aab4c0;
   cursor:pointer;font-size:12px;display:grid;place-items:center;flex:none}
 .railtoggle:hover{background:rgba(255,255,255,.16);color:#fff}
 
@@ -167,7 +197,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .brand span{display:block;font-size:9px;color:var(--rail-tx);letter-spacing:.08em;margin-top:1px}
 .rail nav{padding:var(--sp);display:flex;flex-direction:column;gap:1px}
 .rail nav .gl{font-size:9.5px;letter-spacing:.11em;color:#5d6875;padding:var(--sp2) var(--sp) var(--sp);font-weight:600}
-.rail nav button{height:var(--h-row);border:0;border-radius:var(--r-ctl);background:none;color:#aab4c0;text-align:left;padding:0 9px;cursor:pointer;font-weight:500;font-size:12.5px;display:flex;align-items:center;gap:9px}
+.rail nav button{height:var(--h-btn);border:0;border-radius:var(--r-ctl);background:none;color:#aab4c0;text-align:left;padding:0 9px;cursor:pointer;font-weight:500;font-size:12.5px;display:flex;align-items:center;gap:9px}
 .rail nav button .gi{width:15px;text-align:center;font-size:12px;opacity:.85}
 .rail nav button:hover{color:var(--rail-hi);background:rgba(255,255,255,.05)}
 .rail nav button[aria-current="true"]{color:#fff;background:var(--rail-2);font-weight:600;box-shadow:inset 2px 0 0 var(--key-lift)}
@@ -183,10 +213,18 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .gs input{width:100%;height:var(--h-ctl);border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--tint);padding:0 54px 0 28px;font-size:12px}
 .gs input:focus{outline:none;border-color:var(--key);box-shadow:var(--ring);background:var(--card)}
 .gs .mg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;display:flex}
+/* ★아이콘은 «한 벌» 이다 — 16 격자 · stroke 1.6 · currentColor.
+   전에는 텍스트 글리프를 썼는데, 폰트가 그리는 것이라 굵기가 제각각이고
+   글자 기준선에 앉아 위아래로 어긋났다. 그게 「버튼도 가지각색」 으로 보인 까닭이다. */
+.ic{flex:none;display:block;vertical-align:middle}
+button .ic,a .ic{pointer-events:none}
 .gs kbd{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none}
 .topbar .sp{margin-left:auto}
-.tb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:var(--sp)}
-.tb:hover{background:var(--tint)}
+.tb{height:var(--h-btn);padding:0 10px;border:0;border-radius:var(--r-ctl);background:var(--tint2);
+  cursor:pointer;font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:var(--sp);
+  transition:background .12s ease, transform .06s ease}
+.tb:hover{background:var(--line);color:var(--ink)}
+.tb:active{transform:translateY(1px)}
 .tb .dot{width:6px;height:6px;border-radius:9px;background:var(--bad)}
 .who{display:flex;align-items:center;gap:var(--sp);font-size:12px;padding-left:var(--sp2);border-left:1px solid var(--line);margin-left:2px}
 .who .av{width:var(--h-ctl);height:var(--h-ctl);border-radius:var(--r-ctl);background:var(--rail-2);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:650}
@@ -206,8 +244,8 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .kpi .v.hot{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
 
 .work{flex:1;min-height:0;display:grid;
-  grid-template-columns:minmax(0,7fr) var(--sp2) minmax(360px,3fr);   /* 목록 : 상세 = 7 : 3 */
-  grid-template-rows:1fr var(--sp2) 1fr;gap:0}
+  grid-template-columns:minmax(0,7fr) var(--sp) minmax(360px,3fr);   /* 목록 : 상세 = 7 : 3 */
+  grid-template-rows:1fr var(--sp) 1fr;gap:0}
 #p1{grid-column:1;grid-row:1}
 #p2{grid-column:1;grid-row:3}
 #d1{grid-column:3;grid-row:1/4}          /* ★상세는 하나 — 세로로 끝까지 선다 */
@@ -224,7 +262,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 /* ★머리띠에 회색을 깔지 않는다 — 판마다 띠가 하나씩 더 생겨 화면이 층층이 된다.
    흰 바탕에 아래 선 하나면 「여기가 머리」 라는 것이 충분히 읽힌다. */
 .ph{flex:none;display:flex;align-items:center;gap:var(--sp);height:var(--h-act);
-  padding:0 var(--sp3);border-bottom:1px solid var(--line);background:var(--card)}
+  padding:0 var(--sp2);border-bottom:1px solid var(--line);background:var(--card)}
 .ph h2{margin:0;font-size:13.5px;font-weight:650;letter-spacing:-.025em;white-space:nowrap}
 .ph .c{font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
 .ph .sp{margin-left:auto}
@@ -235,8 +273,8 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
    넣는 것 : 지금 보이는 것을 센 값 — 라벨 + 숫자. 오른쪽(.sp 뒤) 은 판 전체에 거는 행동.
    안 넣는 것 : 설명문 · 훈계 · 도움말. 매일 보는 사람에게 설명은 소음이다.
    높이는 ctl 30 — «읽기만» 하는 띠라 act 38 을 쓰지 않는다 */
-.pf{flex:none;height:var(--h-act);border-top:1px solid var(--line);background:var(--card);
-  padding:0 var(--sp3);display:flex;gap:var(--sp3);align-items:center;font-size:11px;color:var(--ink-2)}
+.pf{flex:none;height:var(--h-ctl);border-top:1px solid var(--line);background:var(--card);
+  padding:0 var(--sp2);display:flex;gap:var(--sp2);align-items:center;font-size:11px;color:var(--ink-2)}
 .pf .sp{margin-left:auto}
 .pf .t{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
 .pf .t i{font-style:normal;color:var(--ink-3)}
@@ -250,7 +288,7 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 
 /* 도구줄 */
 .bar{flex:none;min-height:var(--h-act);display:flex;gap:var(--sp);align-items:center;align-content:center;
-  padding:0 var(--sp3);border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--card)}
+  padding:0 var(--sp2);border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--card)}
 /* 줄이 늘면 row-gap 만으로 갈린다 — padding 을 더하면 한 줄일 때 띠가 38 을 넘는다 */
 .bar{row-gap:var(--sp)}
 .bar .tok{margin-left:0}
@@ -265,37 +303,81 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .fd input:focus{outline:none}
 .fd input::-webkit-search-cancel-button,.fd input::-webkit-search-decoration{display:none;-webkit-appearance:none}
 .fd .mg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none;display:flex}
-.fd .x{flex:none;border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 5px;font-size:11px;line-height:1}
-.fd .x:hover{color:var(--ink)}
+/* 지우개 ✕ — 아이콘 하나라도 «누르는 것» 이면 같은 높이 · 같은 면이다.
+   WCAG 2.2 AA 2.5.8 의 24×24 바닥도 이걸로 넘는다 */
+.fd .x{flex:none;width:var(--h-btn);height:var(--h-btn);border:0;border-radius:var(--r-ctl);
+  background:none;color:var(--ink-3);cursor:pointer;padding:0;display:inline-flex;
+  align-items:center;justify-content:center;transition:background .12s ease, transform .06s ease}
+.fd .x:hover{background:var(--tint2);color:var(--ink)}
+.fd .x:active{transform:translateY(1px)}
 /* 세부필터는 칸 «안에» 산다 — 검색어로 못 자르는 것을 자르는, 같은 일이다 */
-.fd .fx{flex:none;height:100%;padding:0 9px;border:0;border-left:1px solid var(--line-2);background:var(--tint);
-  color:var(--ink-2);cursor:pointer;font-size:11.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
-.fd .fx:hover{background:var(--tint2);color:var(--ink)}
-.fd .fx.on{background:var(--key);color:var(--on-fill);font-weight:600;border-left-color:var(--key)}
+/* 세부필터 — 찾는 칸 «안» 에 앉은 단추. 칸의 선을 나누지 않고 면으로만 선다 */
+.fd .fx{flex:none;margin-right:2px;padding:0 10px;font-size:11.5px;background:var(--tint2);color:var(--ink-2)}
+.fd .fx:hover{background:var(--line);color:var(--ink)}
+.fd .fx.on{background:var(--key);color:var(--on-fill);font-weight:600}
+.fd .fx.on:hover{background:var(--key-lift)}
 .fd .fx .b{font-family:var(--mono);font-size:10px;font-weight:700;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
   background:var(--tint2);color:var(--ink);display:inline-flex;align-items:center;justify-content:center}
 /* ★반투명 흰 바탕 위의 흰 글씨는 3.95 다. 칩을 «채워서» 색을 뒤집는다 */
 .fd .fx.on .b{background:var(--on-fill);color:var(--key)}
-.sb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:var(--sp)}
-.sb:hover{background:var(--tint)}
+/* ══ ★단추 — «면과 터치감» 으로만 ═══════════════════════════
+   대표 2026-09-17 「표는 선과 버튼은 면으로만 이뤄지고」
+                  「버튼은 어떻게?? 면과 터치감으로」
+
+   그래서 단추에서 «선» 을 전부 뗐다. 테두리가 있으면 단추가 표의 칸처럼 보이고,
+   표에 면이 있으면 표가 단추처럼 보인다. 둘을 섞지 않으면 화면이 저절로 갈린다.
+
+     선을 쓰는 곳  표 · 판의 경계 · 입력칸 · 상태 딱지(.st)
+     면을 쓰는 곳  ★누를 수 있는 것 «전부»
+
+   터치감은 셋으로 낸다 —
+     ① 높이는 하나(--h-btn). 위계는 «가로 폭» 과 «면의 무게» 가 진다
+     ② hover 에 한 단 진해지고
+     ③ ★:active 에 1px 내려앉는다 — 이게 「눌렸다」 는 유일한 증거다
+   ══════════════════════════════════════════════════════════ */
+.btn,.sb,.fd .fx,.tok{
+  height:var(--h-btn);border:0;border-radius:var(--r-ctl);cursor:pointer;
+  font-size:12px;font-weight:500;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  transition:background .12s ease, transform .06s ease;
+  -webkit-tap-highlight-color:transparent}
+.btn:active,.sb:active,.fd .fx:active{transform:translateY(1px)}
+/* ★포커스 고리를 «키색» 으로 덮지 않는다 — 키색은 「골랐다」 가 이미 쓰고 있다.
+   전역 :focus-visible(주황 실선) 을 그대로 물려받는다. AI Core 가 --color-focus 를
+   기본색과 «따로» 둔 이유가 이것이다. */
+.btn[disabled],.sb[disabled],.btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+/* 일하는 중 — AI Core §28 이 단추에 요구하는 여섯 낯 중 마지막이다
+   (default · hover · focus-visible · active · disabled · busy) */
+.btn[aria-busy="true"],.sb[aria-busy="true"]{pointer-events:none;position:relative;color:transparent}
+.btn[aria-busy="true"]::after,.sb[aria-busy="true"]::after{content:"";position:absolute;width:13px;height:13px;
+  border-radius:50%;border:2px solid currentColor;border-top-color:transparent;color:var(--ink-2);
+  animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 도구 — 가장 옅은 면. 목록 위에 여럿이 서므로 조용해야 한다 */
+.sb{padding:0 11px;background:var(--tint2);color:var(--ink-2)}
+.sb:hover{background:var(--line);color:var(--ink)}
 /* 달 고르개 — 찾는 칸과 «같은 키» 로 선다 */
 .sel{height:var(--h-ctl);padding:0 8px;border:1px solid var(--line-2);border-radius:var(--r-ctl);
   background:var(--card);color:var(--ink);font-size:12px;cursor:pointer}
 .sel:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
-.sb[aria-pressed="true"]{background:var(--key);border-color:var(--key);color:var(--on-fill);font-weight:600}
+.sb[aria-pressed="true"]{background:var(--key);color:var(--on-fill);font-weight:600}
+.sb[aria-pressed="true"]:hover{background:var(--key-lift)}
 .sb .b{font-family:var(--mono);font-size:10px;opacity:.85}
-.tok{height:var(--h-chip);padding:0 5px 0 9px;border:1px solid var(--key-line);border-radius:var(--r-chip);background:var(--key-soft);color:var(--key);font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:default}
-.tok.q{border-style:dashed;background:transparent}
+/* 고른 갈래 딱지 — 누르는 것이 아니라 «떼는» 것이라 면은 옅게, 안의 ✕ 만 단추다 */
+.tok{padding:0 5px 0 9px;background:var(--key-soft);color:var(--key);font-size:11px;font-weight:600;
+  gap:4px;cursor:default}
+.tok.q{background:var(--tint2);color:var(--ink-2)}
 .tok button{border:0;background:none;color:inherit;cursor:pointer;padding:0 2px;font-size:12px;line-height:1}
 
 /* ── 표 (레트로의 밀도) ──────────────── */
 table.g{width:100%;border-collapse:collapse;font-size:12px}
 /* ★머리줄도 흰 바탕이다. 회색 띠를 깔면 표가 «상자» 로 보이고, 흰 바탕이면 «줄» 로 읽힌다 */
 table.g th{position:sticky;top:0;z-index:1;background:var(--card);text-align:left;font-weight:600;
-  font-size:10.5px;color:var(--ink-2);height:var(--h-act);padding:0 var(--sp3);
+  font-size:10.5px;color:var(--ink-2);height:var(--h-ctl);padding:0 var(--sp2);
   /* ★머리줄과 본문 사이는 «두 단» 진하게 — 여기가 갈리는 자리다 */
   border-bottom:1.5px solid var(--line-2);white-space:nowrap;letter-spacing:.02em}
-table.g td{padding:0 var(--sp3);height:var(--h-row);border-bottom:1px solid var(--line-row);
+table.g td{padding:0 var(--sp2);height:var(--h-row);border-bottom:1px solid var(--line-row);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 마지막 줄 밑선은 판 바닥과 겹친다 — 뗀다 */
 table.g tbody tr:last-child td{border-bottom:0}
@@ -303,15 +385,51 @@ table.g tbody tr:last-child td{border-bottom:0}
 table.g td.r,table.g th.r{text-align:right}
 table.g td.n,table.g td.r{font-variant-numeric:tabular-nums}
 table.g tbody tr{cursor:pointer}
-/* ★얼룩무늬를 걷었다 — 줄 높이를 키우면 줄이 저절로 갈린다.
-   얼룩이 있으면 「고른 줄」 과 「짝수 줄」 이 눈에서 싸운다. */
-table.g tbody tr:hover td{background:var(--tint)}
-table.g tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--line-2)}
-table.g tbody tr.on td{background:var(--key-soft)}
-table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
+/* ★표에는 «면» 을 안 깐다 (대표 2026-09-17 「표는 선과…」).
+   얼룩도, 머리 띠도, 고른 줄의 색칠도 전부 뺐다.
+   ⇒ 그럼 「어느 줄을 골랐나」 는 무엇이 말하나 — «선» 이 말한다.
+     hover  왼쪽에 2px 회색 선
+     고른 줄 왼쪽에 3px 키색 선 + 글자를 진하게 + 위아래 선을 키색으로
+   색칠 없이도 줄이 또렷하게 선다. 오히려 옆 줄의 글자가 안 죽는다. */
+table.g tbody tr:hover td{box-shadow:inset 0 -1px 0 var(--line-2)}
+table.g tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--line-2),inset 0 -1px 0 var(--line-2)}
+table.g tbody tr.on td{box-shadow:inset 0 -1px 0 var(--key-line),inset 0 1px 0 var(--key-line);color:var(--ink)}
+table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key),inset 0 -1px 0 var(--key-line),inset 0 1px 0 var(--key-line)}
+table.g tbody tr.on .nm{color:var(--key)}
 table.g .r{text-align:right}
 table.g .nm{font-weight:650}
 table.g .mut{color:var(--ink-2)}
+
+/* ★칸이 늘면 표를 «찌그러뜨리지» 않는다 — 옆으로 구르게 둔다.
+   ERP 목록에서 열 열두 개는 흔하다. 폭에 맞춰 글자를 줄이면
+   「연식」 이 「연」 이 되고, 그 순간 아무것도 못 읽는다.
+   ★대신 첫 칸(사진·접수일)은 붙여 둔다 — 옆으로 굴러도 «어느 줄» 인지는 잃지 않는다. */
+table.g.wide{min-width:1060px}
+/* ★옆으로 구를 때 «맨 오른쪽 칸» 도 붙여 둔다.
+   접수 목록이 열한 칸이라 화면보다 넓다. 그냥 두면 가장 중요한 「청구월」 이
+   제일 먼저 화면 밖으로 밀린다 — 그래서 왼쪽에 「접수일·할 일」, 오른쪽에 「청구월」 을
+   못박고 «가운데만» 구르게 한다. 굴러도 「언제 들어온 무엇을, 무엇을 해야 하고,
+   몇 월에 청구하나」 는 항상 보인다. */
+table.g .pin-r{position:sticky;right:0;z-index:2;background:var(--card);
+  box-shadow:inset 1px 0 0 var(--line)}
+table.g thead th.pin-r{z-index:3}
+/* 글자 칸은 «자라지 못하게» 묶는다 — 안 묶으면 차 이름 하나가 숫자 칸을 다 밀어낸다 */
+.wnm{max-width:150px}
+.wveh{max-width:200px}
+.wch{max-width:130px}
+table.g th:first-child,table.g td:first-child{position:sticky;left:0;z-index:2;background:var(--card)}
+table.g thead th:first-child{z-index:3}
+/* ★첫 칸의 바탕은 «면» 이 아니다 — 옆으로 구를 때 글자가 비쳐 보이지 않게 막는
+   가림막이라, 판 바탕색과 «같은» 색이다. 눈에는 아무 면도 안 보인다. */
+.thc{width:52px}
+
+/* 덧말 — 「싼타페 MX5 «캘리그래피 2.5 터보»」 처럼 앞말에 매달리는 작은 글자.
+   따로 칸을 내주기엔 아깝고, 없으면 무슨 차인지 모르는 것들이 여기 붙는다 */
+.sfx{margin-left:5px;font-size:10.5px;color:var(--ink-3);font-weight:400}
+
+/* 「원래 없는 칸」 — 「모르는 칸」(.unk) 과 색을 달리한다.
+   다이렉트 건의 영업자는 «없는» 것이지 «모르는» 것이 아니다 */
+.dim{color:var(--ink-3);opacity:.6}
 .thumb{width:40px;height:26px;border-radius:3px;background:linear-gradient(160deg,var(--ph),var(--ph2));display:inline-grid;place-items:center;vertical-align:middle;overflow:hidden}
 .thumb svg{width:100%;height:100%}
 
@@ -323,7 +441,7 @@ table.g .mut{color:var(--ink-2)}
 .st.mut{color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 
 /* ── 상세 ─────────────────────────────── */
-.dwrap{padding:var(--sp3)}
+.dwrap{padding:var(--sp2)}
 .dsub,.note p{max-width:72ch}
 .dtop{display:grid;grid-template-columns:1fr;gap:var(--sp2);align-items:start}
 /* 상세는 읽는 칸이다 — 좁으니 한 줄로 세우고, 표는 «제 안에서» 옆으로 구른다 */
@@ -349,7 +467,7 @@ table.g .mut{color:var(--ink-2)}
 .kv dd{margin:0;padding:var(--sp) var(--sp3) var(--sp) 0;border-bottom:1px solid var(--line);font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
 
 .unk{color:var(--warn);font-weight:500}
-.sec{margin-top:24px}
+.sec{margin-top:var(--sp3)}
 .sec h3{margin:0 0 var(--sp2);font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
 .note{display:flex;gap:var(--sp2);align-items:flex-start;border:1px solid var(--key-line);background:var(--key-soft);border-radius:var(--r-ctl);padding:var(--sp2);margin-top:var(--sp2)}
 .note.w{border-color:#e3cd9a;background:var(--warn-soft)}
@@ -389,9 +507,12 @@ table.g{position:relative}
 
 /* ── 펼쳐지는 계약서 줄 — «새 화면이 아니다» ────────────────────
    표 한 줄 아래가 열린다. 이력·금액과 나란히 두고 보라고 이렇게 둔다. */
-table.g tr.exp td{background:var(--key-soft)}
+/* ★펼쳐지는 줄도 «선» 으로 말한다 — 표 안에서는 색칠을 안 한다.
+   펼친 몸통만 판 바깥이라 옅은 면을 깐다 (표가 아니라 «서랍» 이라서). */
+table.g tr.exp td{box-shadow:inset 0 -1px 0 var(--key-line)}
+table.g tr.exp td:first-child{box-shadow:inset 2px 0 0 var(--key),inset 0 -1px 0 var(--key-line)}
 table.g tr.expbody td{padding:0;background:var(--tint);border-bottom:1px solid var(--line-2)}
-table.g tr.expbody:hover td{background:var(--tint)}
+table.g tr.expbody:hover td{background:var(--tint);box-shadow:none}
 .ecbox{padding:var(--sp2);white-space:normal}
 .ecbox .steps{margin-bottom:var(--sp2)}
 .ecbox h5{margin:var(--sp2) 0 var(--sp);font-size:10px;font-weight:600;letter-spacing:.1em;
@@ -420,6 +541,32 @@ table.g tr.expbody:hover td{background:var(--tint)}
   display:grid;place-items:center;font-size:10.5px;color:#5c666f}
 .eclink{display:block;font-family:var(--mono);font-size:11px;background:var(--tint);color:var(--ink);
   border:1px solid var(--line);border-radius:var(--r-chip);padding:6px 8px;word-break:break-all}
+/* 두 벌 나란히 — 상세가 좁으면 자동으로 한 벌로 접힌다.
+   정책이 스무 줄 넘는 묶음이 있어서, 한 벌로 세우면 스크롤이 끝없이 길어진다 */
+.kv.two{grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr)}
+.kv.two dt:nth-of-type(odd){padding-left:0}
+.kv.two dt:nth-of-type(even){padding-left:var(--sp3)}
+@media (max-width:1500px){.kv.two{grid-template-columns:auto minmax(0,1fr)}
+  .kv.two dt:nth-of-type(even){padding-left:0}}
+.kv dd .st{font-weight:600}
+/* 묶음 제목 옆 «몇 줄인지» — 없으면 「다 본 건가」 를 모른다 */
+.sec h3 .cnt{display:inline-block;margin-left:6px;padding:0 5px;border-radius:var(--r-chip);
+  background:var(--tint2);color:var(--ink-3);font-size:9.5px;font-weight:700;letter-spacing:0;vertical-align:1px}
+.sec .why{margin-top:var(--sp2);border:1px solid var(--line);border-radius:var(--r-ctl)}
+.sec .why .kv{margin:0 var(--sp2) var(--sp2)}
+
+/* 청구월 띠 — 접수와 정산을 잇는 고리 하나만 «따로» 세운다.
+   정해졌으면 조용히, 안 정해졌으면 눈에 걸리게 */
+.bill{display:flex;align-items:center;gap:var(--sp2);margin-top:var(--sp2);
+  padding:var(--sp) var(--sp2);border-radius:var(--r-ctl);border:1px solid var(--line);background:var(--tint)}
+.bill.open{border-color:var(--warn);background:var(--warn-soft)}
+.bill .bk{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-2);white-space:nowrap}
+.bill .bv{font-size:13px}
+.bill .bw{margin-left:auto;font-size:10.5px;color:var(--ink-3);text-align:right}
+.bill.open .bw{color:var(--warn)}
+.empty.sm{padding:var(--sp3);text-align:left}
+.empty.sm b{font-size:12px}
+
 .kv.sm{margin-top:6px}
 .kv.sm dt,.kv.sm dd{font-size:11px}
 .kv .brk{word-break:break-all;font-size:10px}
@@ -436,7 +583,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .dact .row .sp{flex:1}
 /* ★주 행동은 «하나» 다. 그것만 채운 색, 나머지는 테두리만 */
 .dact .btn.go{min-width:136px}
-.mbtn{width:var(--h-act);height:var(--h-act);flex:none;padding:0;justify-content:center}
+.mbtn{width:var(--h-btn);height:var(--h-btn);flex:none;padding:0;justify-content:center}
 .menuwrap{position:relative}
 .menu{position:absolute;bottom:calc(100% + var(--sp));left:0;z-index:40;min-width:196px;background:var(--card);
   border:1px solid var(--line-2);border-radius:var(--r-ctl);box-shadow:var(--s3);padding:4px;display:none}
@@ -468,14 +615,16 @@ table.g tr.expbody:hover td{background:var(--tint)}
 
 .dact textarea:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
 /* ★단추 높이는 셋뿐 — act(38) 실행 · ctl(30) 도구 · chip(22) 줄 안 */
-.btn{height:var(--h-act);padding:0 16px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);
+.btn{padding:0 14px;background:var(--tint2);color:var(--ink);
   cursor:pointer;font-weight:600;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp);white-space:nowrap}
 .btn:hover{background:var(--tint2)}
 .btn.go{background:var(--key);border-color:var(--key);color:var(--on-fill);box-shadow:0 1px 2px rgba(23,35,48,.12)}
 .btn.go:hover{background:var(--key-lift)}
 .btn.red{color:var(--bad);border-color:#e6bbb6;background:var(--bad-soft)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.sm{height:var(--h-chip);padding:0 9px;font-size:11px;font-weight:500;border-radius:var(--r-chip)}
+/* ★「작은 단추」 는 이제 없다 — «좁은 단추» 가 있을 뿐이다.
+   높이는 --h-btn 그대로 두고 가로와 글자만 줄인다 (대표 「세로 사이즈는 동일」). */
+.btn.sm{padding:0 9px;font-size:11px;font-weight:500}
 
 /* 신규접수 폼 — 상세 자리에서 «업무» 로 바뀐다 */
 .form{display:flex;flex-direction:column;gap:var(--sp2)}
@@ -662,7 +811,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
 .msearch .fx.on .b{background:var(--on-fill);color:var(--key)}
 .mtoks{display:flex;gap:var(--sp);flex-wrap:wrap;padding:0 var(--sp2) var(--sp)}
 .mchips{display:flex;gap:var(--sp);padding:var(--sp) var(--sp2);overflow-x:auto}
-.mchips .sb{height:var(--m-ctl);flex:0 0 auto}
+.mchips .sb{height:var(--h-btn);flex:0 0 auto}
 
 .mlist{display:flex;flex-direction:column;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .mrow{display:flex;align-items:center;gap:var(--sp2);width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
@@ -740,7 +889,7 @@ table.g tr.expbody:hover td{background:var(--tint)}
          내부용이라 «누구 것인지» 를 매일 알려 줄 까닭이 없다 — 그 자리를 메뉴가 쓴다.
          접기 단추는 «기능» 이라 남긴다. 없으면 사이드바를 못 접는다. -->
     <div class="brand"><span class="sp"></span>
-      <button class="railtoggle" id="railtoggle" aria-label="사이드바 접기" title="사이드바 접기">&#10094;</button></div>
+      <button class="railtoggle" id="railtoggle" aria-label="사이드바 접기" title="사이드바 접기"></button></div>
     <nav id="nav"></nav>
     <div class="rfoot"><span class="tx"><b>박지훈</b>운영지원팀 · 매니저</span></div>
   </aside>
@@ -773,16 +922,18 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=52"></script>
+<script src="./admin-shell.icons.js?v=57"></script>
+<script src="./admin-shell.data.js?v=57"></script>
+<script src="./admin-shell.policy.js?v=57"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=52"></script>
-<script src="./erp5.bridge.js?v=52"></script>
-<script src="./admin-shell.app.js?v=52"></script>
-<script src="./admin-shell.esign.js?v=52"></script>
-<script src="./admin-shell.mobile.js?v=52"></script>
+<script src="./erp5.data.js?v=57"></script>
+<script src="./erp5.bridge.js?v=57"></script>
+<script src="./admin-shell.app.js?v=57"></script>
+<script src="./admin-shell.esign.js?v=57"></script>
+<script src="./admin-shell.mobile.js?v=57"></script>
 <!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
-<script src="./erp5.ledger.js?v=52"></script>
-<script src="./erp5.ledger.bridge.js?v=52"></script>
+<script src="./erp5.ledger.js?v=57"></script>
+<script src="./erp5.ledger.bridge.js?v=57"></script>
 <!-- ★F04 시트 SSOT — 23탭에서 읽은 정본. 어디에도 «안 썼다» -->
-<script src="./f04.ssot.js?v=52"></script>
-<script src="./f04.bridge.js?v=52"></script>
+<script src="./f04.ssot.js?v=57"></script>
+<script src="./f04.bridge.js?v=57"></script>

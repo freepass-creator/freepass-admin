@@ -20,10 +20,10 @@ const S = {
 };
 
 const NAV = [
-  { k: 'product', t: '상품찾기', i: '▤' },
-  { k: 'intake', t: '계약접수', i: '≡', badge: () => APPS.filter(a => !a.cxl && !a.deliv).length },
-  { k: 'settle', t: '정산관리', i: '◑', badge: () => PERFS.filter(p => p.stage < 4).length + BILLS.filter(b => b.fixed > b.got).length + PAYS.filter(p => p.fixed > p.paid).length },
-  { k: 'esign', t: '전자계약', i: '✒', badge: () => ESIGNS.filter(e => e.st !== '완료').length },
+  { k: 'product', t: '상품찾기' },
+  { k: 'intake', t: '계약접수', badge: () => APPS.filter(a => !a.cxl && !a.deliv).length },
+  { k: 'settle', t: '정산관리', badge: () => PERFS.filter(p => p.stage < 4).length + BILLS.filter(b => b.fixed > b.got).length + PAYS.filter(p => p.fixed > p.paid).length },
+  { k: 'esign', t: '전자계약', badge: () => ESIGNS.filter(e => e.st !== '완료').length },
 ];
 
 const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
@@ -109,13 +109,13 @@ function todoCell(a) {
    .pb  1fr 내용
    .pf  30  무엇이 남았나  «셈» 만 — 라벨+숫자. 설명문·훈계는 안 넣는다
    ★찾기·고르기는 .bar 로, 세는 일은 .pf 로. .ph 에 섞지 않는다 */
-const MG = '<span class="mg"><svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"></circle><path d="M9 9l3.2 3.2"></path></svg></span>';
+const MG = '<span class="mg">' + ic('search', 14) + '</span>';
 /** 찾는 칸 하나 — 돋보기·친 말·지우기·(세부필터) 가 한 테두리 안에 산다.
  *  ★type 은 text 다. search 로 두면 브라우저가 ✕ 를 «또» 그려 두 개가 된다. */
 const findbox = (id, ph, val, opt = {}) => `<div class="fd">${MG}
   <input type="text" id="${id}" value="${esc(val || '')}" placeholder="${ph}" autocomplete="off" spellcheck="false">
-  ${val ? `<button class="x" id="${id}x" aria-label="지운다">&#10005;</button>` : ''}
-  ${opt.filter ? `<button class="fx${opt.n ? ' on' : ''}" id="${opt.filter}">세부필터${opt.n ? `<span class="b">${opt.n}</span>` : ''}</button>` : ''}
+  ${val ? `<button class="x" id="${id}x" aria-label="지운다">${ic('close')}</button>` : ''}
+  ${opt.filter ? `<button class="fx${opt.n ? ' on' : ''}" id="${opt.filter}">${ic('filter', 14)}세부필터${opt.n ? `<span class="b">${opt.n}</span>` : ''}</button>` : ''}
 </div>`;
 /** 판 바닥의 셈 한 칸. ★0 이면 눌러 둔다 — 없는 것이 눈을 끌면 안 된다 */
 const tl = (t, v, c) => `<span class="t"><i>${t}</i><b class="${v === 0 ? 'z' : (c || '')}">${v}</b></span>`;
@@ -123,6 +123,10 @@ const tl = (t, v, c) => `<span class="t"><i>${t}</i><b class="${v === 0 ? 'z' : 
  *  비율을 모르면(미확인) 금액만 쓴다. 0 을 「없음」 으로 쓰지 않는다. */
 const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${man(o.dep)}원`
   : (o.depRate === 0 ? '무보증 (0%)' : '<span class="unk">미확인</span>');
+/* 목록용 짧은 꼴 — 칸에 「무보증 (0%)」 를 쓰면 «(0%)» 가 열 하나를 더 먹는다.
+   비율은 상세에서 본다. 목록은 「얼마인가 / 없는가 / 모르는가」 셋만 답하면 된다. */
+const depShort = o => o.dep ? man(o.dep) + '만'
+  : (o.depRate === 0 || o.dep === 0 ? '<span class="mut">무보증</span>' : unk());
 /** ★대여료는 VAT «포함» 이다 (대표 2026-09-16). 안 적으면 영업이 별도로 읽는다. */
 const VAT = '<span class="mut" style="font-size:10.5px">VAT 포함</span>';
 /** 환수는 부호가 반대다 — 숫자 앞에 «−» 를 붙여 눈으로도 갈리게 한다 */
@@ -147,7 +151,7 @@ const stepper = (names, at) => `<ol class="steps" aria-label="단계">${names.ma
   const k = i + 1 === at ? 'on' : i + 1 < at ? 'dn' : '';
   return `<li class="stp ${k}"${i + 1 === at ? ' aria-current="step"' : ''}>`
     + `<span class="n2">${i + 1}</span>${esc(n)}`
-    + (i < names.length - 1 ? '<span class="ar" aria-hidden="true">&#10095;</span>' : '') + '</li>';
+    + (i < names.length - 1 ? `<span class="ar" aria-hidden="true">${ic('right')}</span>` : '') + '</li>';
 }).join('')}</ol>`;
 
 /**
@@ -161,7 +165,7 @@ function actBar({ memo, more = [], subs = [], main }) {
   return `<div class="dact">
     ${memo ? `<div class="memo">${memo}</div>` : ''}
     <div class="row">
-      ${more.length ? `<div class="menuwrap"><button class="btn mbtn" id="moreBtn" aria-label="더보기" title="더보기">&#8943;</button>
+      ${more.length ? `<div class="menuwrap"><button class="btn mbtn" id="moreBtn" aria-label="더보기" title="더보기">${ic('more')}</button>
         <div class="menu" id="moreMenu">${more.map((m, i) => m === '-' ? '<div class="sep"></div>'
           : `<button data-m="${i}"${m.danger ? ' class="danger"' : ''}>${esc(m.t)}</button>`).join('')}</div></div>` : ''}
       ${subs.map((s, i) => `<button class="btn" data-sub="${i}"${s.off ? ' disabled' : ''}>${esc(s.t)}</button>`).join('')}
@@ -259,6 +263,33 @@ function syncProd() {
   if (!cur) { cur = hits[0]; S.pid = cur.p.id; S.oid = null; }
   if (!S.oid || !cur.ok.some(o => o.id === S.oid)) S.oid = cur.ok[0].id;
 }
+/* ★「—」와 「미확인」은 다른 말이다.
+     dash  = 원래 없는 칸 (다이렉트 건의 영업자 같은 것)
+     unk   = 있어야 하는데 «모르는» 칸 — 누군가 채워야 한다
+   색을 달리해 둔 이유다. unk 만 노란색으로 눈에 걸린다. */
+const dash = () => '<span class="dim">—</span>';
+/* ★실측 746 중 486 (65%) 이 sub 가 model 로 시작한다 —
+   「싼타페」 + 「싼타페 MX5 프레스티지」 = 「싼타페 싼타페 MX5 프레스티지」.
+   목록에서 같은 말을 두 번 읽히지 않는다. 상세에서는 원문 그대로 둔다. */
+const subTrim = (name, sub) => {
+  const s = String(sub || '');
+  return s.startsWith(name) ? s.slice(name.length).trim() : s;
+};
+const unk  = (t = '미확인') => `<span class="unk">${t}</span>`;
+
+/** 상품 상태 — ERP5 `vehicle_status` 실측 네 값. ★색«만»으로 말하지 않는다 */
+function statusChip(s) {
+  if (!s) return dash();
+  if (/즉시/.test(s))  return '<span class="st ok">즉시출고</span>';
+  if (/불가/.test(s))  return '<span class="st bad">출고불가</span>';
+  if (/협의/.test(s))  return '<span class="st wait">협의</span>';
+  return `<span class="st mut">${esc(s)}</span>`;
+}
+/** 주행거리 — 목록에서는 «만 km» 로 접는다. 0 은 신차라서 0 이다 */
+const mileShort = m => m == null ? unk() : m === 0 ? '<span class="mut">신차</span>' : (m / 10000).toFixed(1) + '만';
+/** 청구월 — 강지수팀장이 넣던 칸. 비면 「아직 안 정해짐」 이지 「0」 이 아니다 */
+const billCell = b => b ? `<span class="n">${esc(b.replace('-', '.'))}</span>` : unk('미정');
+
 const prod = () => PRODUCTS.find(p => p.id === S.pid);
 const offer = () => { const p = prod(); return p && p.offers.find(o => o.id === S.oid); };
 
@@ -287,16 +318,25 @@ function paneProducts(el) {
   });
 
   $('#pbA').innerHTML = hits.length ? `<table class="g">
-    <thead><tr><th style="width:52px"></th><th>차량</th><th>공급사</th><th class="r">기간</th><th class="r">월 대여료</th><th>확정도</th></tr></thead>
+    <caption class="sr">상품 목록 — 차량, 차량번호, 연식, 주행, 공급사, 상태, 기간, 보증금, 월 대여료</caption>
+    <thead><tr><th scope="col" class="thc"></th><th scope="col">차량</th>
+      <th scope="col">차량번호</th><th scope="col" class="r">연식</th><th scope="col" class="r">주행</th>
+      <th scope="col">공급사</th><th scope="col">상태</th>
+      <th scope="col" class="r">기간</th><th scope="col" class="r">보증금</th>
+      <th scope="col" class="r">월 대여료</th></tr></thead>
     <tbody>${hits.map(({ p, ok }) => {
       const lead = ok[0], part = p.match !== 'TRIM';
       return `<tr data-id="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
-        <td><span class="thumb">${p.body ? glyph() : ''}</span></td>
-        <td><span class="nm">${esc(p.name)}</span> <span class="mut">${esc(p.sub)}</span></td>
+        <td class="thc"><span class="thumb">${p.body ? glyph() : ''}</span></td>
+        <td class="wveh"><span class="nm">${esc(p.name)}</span> <span class="mut">${esc(subTrim(p.name, p.sub))}</span>${p.fuel ? `<span class="sfx">${esc(p.fuel)}</span>` : ''}${p.match === 'UNMATCHED' || p.match === 'MODEL' ? '<span class="flag w" title="차종마스터에 아직 못 붙였다">차종</span>' : ''}</td>
+        <td class="n">${p.plate ? esc(p.plate) : unk('미배정')}</td>
+        <td class="r n">${p.year ? p.year : unk()}</td>
+        <td class="r n">${mileShort(p.mileage)}</td>
         <td class="mut">${esc(p.supplier)}</td>
+        <td>${statusChip(p.status)}</td>
         <td class="r n">${lead.term}개월</td>
-        <td class="r n" style="font-weight:650">${won(lead.rent)}</td>
-        <td><span class="st ${part ? 'wait' : 'mut'}">${part ? '확인 필요' : '트림'}</span></td></tr>`;
+        <td class="r n">${depShort(lead)}</td>
+        <td class="r n" style="font-weight:650">${won(lead.rent)}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
         <p>「없다」는 <b>이 조건에 없다</b>는 뜻이다. 상품이 사라진 것이 아니다.</p>
@@ -320,7 +360,7 @@ function tokens(sel) {
     for (const k of keys) {
       const o = optOf(ax, k), label = ax.tok ? ax.tok(o) : o.label;
       const fq = read.some(r => r.axis === a && r.key === k);
-      out.push(`<span class="tok${fq ? ' q' : ''}" title="${fq ? '검색어에서 읽음' : '세부필터에서 고름'}">${esc(label)}${fq ? '' : `<button data-tok="${a}|${k}" aria-label="떼기">&#10005;</button>`}</span>`);
+      out.push(`<span class="tok${fq ? ' q' : ''}" title="${fq ? '검색어에서 읽음' : '세부필터에서 고름'}">${esc(label)}${fq ? '' : `<button data-tok="${a}|${k}" aria-label="떼기">${ic('close')}</button>`}</span>`);
     }
   }
   return out.join('');
@@ -360,6 +400,15 @@ const AF = [
   { k: 'all', t: '전체', f: () => true },
   { k: 'cxl', t: '취소', f: a => a.cxl },
 ];
+/** ★시트의 「상품」 + 「렌트구분」 두 열을 한 칸에 접는다.
+    둘은 «따로 쓰이지 않는다» — 늘 「장기렌트 신차」 처럼 붙어서 읽힌다. */
+function kindCell(a) {
+  if (!a.product) return dash();
+  const tone = a.product === '구독' ? 'key' : 'mut';
+  return `<span class="st ${tone}">${esc(a.product)}</span>`
+    + (a.rentKind ? `<span class="sfx">${esc(a.rentKind)}</span>` : '');
+}
+
 function paneApps(el) {
   const f = AF.find(x => x.k === S.appFilter) || AF[0];
   const list = APPS.filter(f.f).filter(a => !S.appQ || (a.cust + a.no + a.veh + a.ch).toLowerCase().includes(S.appQ.toLowerCase()));
@@ -382,19 +431,27 @@ function paneApps(el) {
   el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.appFilter = b.dataset.f; render(); });
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
-  $('#pbB').innerHTML = list.length ? `<table class="g">
-    <thead><tr><th scope="col" style="width:52px"></th><th scope="col">고객</th><th scope="col">차량번호</th><th scope="col">차량</th>
-      <th scope="col">영업채널</th><th scope="col" class="r">월 대여료</th><th scope="col">할 일</th><th scope="col">접수일시</th></tr></thead>
+  $('#pbB').innerHTML = list.length ? `<table class="g wide">
+    <caption class="sr">접수 목록 — 접수일, 고객, 차량번호, 차량, 공급사, 상품, 채널, 담당, 조건, 월 대여료, 할 일, 청구월</caption>
+    <thead><tr><th scope="col">접수일</th><th scope="col">할 일</th><th scope="col">고객</th>
+      <th scope="col">차량번호</th><th scope="col">차량</th>
+      <th scope="col">공급사</th><th scope="col">상품</th><th scope="col">채널 · 담당</th>
+      <th scope="col" class="r">기간</th><th scope="col" class="r">월 대여료</th>
+      <th scope="col" class="pin-r">청구월</th></tr></thead>
     <tbody>${list.map(a => {
-      const s = appStatus(a), p = PRODUCTS.find(x => x.id === a.pid);
+      const direct = /다이렉트/.test(a.ch || '');
       return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
-        <td><span class="thumb">${p && p.body ? glyph() : ''}</span></td>
-        <td><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
-        <td class="n">${esc(a.plate || '—')}</td>
-        <td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
-        <td class="r n" style="font-weight:650">${won(a.rent)}</td>
-        <td>${todoCell(a)}${a.promo ? `<span class="flag w" title="${esc(promoLine(a.promo, a.promoShare).replace(/<[^>]+>/g, ''))}">프로모션</span>` : ''}</td>
-        <td class="mut n">${esc(a.at)}</td></tr>`;
+        <td class="mut n">${esc((a.at || '').slice(0, 5))}</td>
+        <td>${todoCell(a)}</td>
+        <td class="wnm"><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
+        <td class="n">${a.plate ? esc(a.plate) : unk('미배정')}</td>
+        <td class="mut wveh">${esc(a.veh)}<span class="sfx">${esc(subTrim(a.veh, a.trim))}</span></td>
+        <td class="mut">${esc(a.sup)}</td>
+        <td>${kindCell(a)}</td>
+        <td class="mut wch">${direct ? '다이렉트' : esc(a.ch)}<span class="sfx">${esc(a.staff)}</span></td>
+        <td class="r mut n">${a.term}개월</td>
+        <td class="r n" style="font-weight:650">${won(a.rent)}${a.promo ? `<span class="flag w" title="${esc(promoLine(a.promo, a.promoShare).replace(/<[^>]+>/g, ''))}">＋${man(a.promo)}</span>` : ''}</td>
+        <td class="pin-r">${a.cxl ? dash() : billCell(a.billMonth)}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
   $('#pbB').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.appNo = r.dataset.no; S.focus = 'app'; render(); });
@@ -423,10 +480,11 @@ function detailProduct(el) {
           <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월 ${VAT}</div><div class="v">${won(o.rent)}</div></div>
             <span class="u">보증금 ${depText(o)} · ${yr(o.mile) || '약정 미확인'}</span></div>
           <dl class="kv">
+            ${fact('상태', p.status ? statusChip(p.status) : null)}${fact('차량번호', p.plate)}
             ${fact('연식', p.year ? p.year + '년형' : null)}${fact('주행거리', p.mileage != null ? km(p.mileage) : null)}
             ${fact('연료', p.fuel)}${fact('인승', p.seats ? p.seats + '인승' : null)}
-            ${fact('색상', p.color)}${fact('차량번호', p.plate)}
-            ${fact('선택 Offer', `<span class="n">${esc(o.id)}</span>`)}${fact('적용 정책', o.pol.length ? o.pol.join(' · ') : '없음')}
+            ${fact('색상', p.color)}${fact('대여 지역', p.region)}
+            ${fact('선택 Offer', `<span class="n">${esc(o.id)}</span>`)}${fact('공급사', esc(p.supplier))}
           </dl>
         </div>
       </div>
@@ -441,7 +499,10 @@ function detailProduct(el) {
             <td class="mut">${x.pol.join(' · ') || '—'}</td>
             <td>${pass && anyCond ? '<span class="st key">조건 충족</span>' : pass ? '' : `<span class="mut" style="font-size:11px">${miss.map(ax => esc(ax.t)).join(' · ')} 불일치</span>`}</td></tr>`;
         }).join('')}</tbody></table></div>
-      <div class="note"><span class="i">&#10003;</span><div><b>접수 가능한 상품입니다</b>
+      ${polSections(p.pols) || `<div class="sec"><h3>조건</h3>
+        <div class="empty sm"><b>이 상품에 매인 정책 원자가 없다</b>
+        <p>「조건이 없다」가 아니라 <b>아직 안 옮겼다</b>는 뜻이다. 공급사 정책을 확인해야 한다.</p></div></div>`}
+      <div class="note"><span class="i">${ic('check')}</span><div><b>접수 가능한 상품입니다</b>
         <p>고른 Offer(<span class="n">${esc(o.id)}</span>)가 그대로 접수 Snapshot 에 굳습니다. 지금 상품이 바뀌어도 받은 접수는 안 바뀝니다.</p></div></div>
     </div></div>
     ${actBar({
@@ -486,15 +547,33 @@ function detailApp(el) {
           ${a.promo ? `<div class="promo"><span class="pk">프로모션</span>
             <span class="pv">${promoLine(a.promo, a.promoShare)}</span>
             ${a.promoWhy ? `<span class="pw">${esc(a.promoWhy)}</span>` : '<span class="pw unk">사유 없음</span>'}</div>` : ''}
-          <dl class="kv">
-            <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : '<span class="unk">미배정</span>'}</dd>
-            <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : '<span class="unk">미입력</span>'}</dd>
+          <dl class="kv two">
+            <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : unk('미배정')}</dd>
+            <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : unk('미입력')}</dd>
+            <dt>상품</dt><dd>${esc(a.product || '—')}${a.rentKind ? `<span class="sfx">${esc(a.rentKind)}</span>` : ''}</dd>
+            <dt>계약형태</dt><dd>${esc(a.contractType || '—')}</dd>
+            <dt>납입</dt><dd>${esc(a.payKind || '—')}</dd>
+            <dt>출고지역</dt><dd>${esc(a.region || '—')}</dd>
+            <dt>영업채널</dt><dd>${esc(a.ch)}${a.agentCode ? `<span class="sfx n">${esc(a.agentCode)}</span>` : ''}</dd>
             <dt>담당자</dt><dd>${esc(a.staff)}</dd>
+            <dt>인도희망</dt><dd class="n">${a.wantAt ? esc(a.wantAt) : dash()}</dd>
+            <dt>인도완료</dt><dd class="n">${a.deliv ? '09-16' : unk('미인도')}</dd>
+            <dt>공급사</dt><dd>${esc(a.sup)}</dd>
             <dt>선택 Offer</dt><dd class="n">${esc(a.oid)}</dd>
-            <dt>굳힌 때</dt><dd class="n">${esc(a.at)}</dd>
             <dt>상품 판</dt><dd class="n">${esc(a.pid)} v${a.pv}</dd>
-            <dt>영업채널</dt><dd>${esc(a.ch)}</dd>
+            <dt>굳힌 때</dt><dd class="n">${esc(a.at)}</dd>
           </dl>
+          <!-- ★청구월은 «접수와 정산을 잇는 유일한 고리» 라 따로 세운다.
+               kv 에 섞으면 열넷 중 하나가 되어 눈에 안 걸린다. -->
+          <div class="bill ${a.billMonth ? 'set' : 'open'}">
+            <span class="bk">${ic('coin')} 청구월</span>
+            <span class="bv">${a.cxl ? '<span class="st bad">취소 — 청구 없음</span>'
+              : a.billMonth ? `<b class="n">${esc(a.billMonth.replace('-', '년 '))}월</b>`
+              : unk('아직 안 정해짐')}</span>
+            <span class="bw">${a.cxl ? '취소 건은 원장에 서지 않는다'
+              : a.billMonth ? '이 달 정산원장에 선다'
+              : a.deliv ? '인도는 끝났다 — 청구월만 비었다' : '인도가 끝나야 정해진다'}</span>
+          </div>
         </div>
       </div>
       <div class="sec"><h3>진행 — 넷은 서로 독립인 사실이다</h3>
@@ -539,10 +618,10 @@ function detailApp(el) {
           ${a.deliv ? '<tr><td class="mut n">09-16 15:40</td><td><b>인도</b> 완료 — 실적 후보로 넘어감</td></tr>' : ''}
           ${a.cxl ? `<tr><td class="mut n">09-12 17:11</td><td><b>취소</b> — ${esc(a.cxlReason)}</td></tr>` : ''}
         </tbody></table></div>
-      ${a.cxl ? `<div class="note e"><span class="i">&#10005;</span><div><b>취소된 접수입니다</b><p>${esc(a.cxlReason)} — 지우지 않고 이유와 함께 남깁니다.</p></div></div>`
+      ${a.cxl ? `<div class="note e"><span class="i">${ic('close')}</span><div><b>취소된 접수입니다</b><p>${esc(a.cxlReason)} — 지우지 않고 이유와 함께 남깁니다.</p></div></div>`
         : drift ? `<div class="note w"><span class="i">!</span><div><b>지금 상품은 v${p.v}, 이 접수는 v${a.pv} 를 보고 받았습니다</b>
             <p>그 사이 상품이 바뀌었습니다. <b>접수 조건은 안 바뀝니다</b> — 위 값이 접수 당시 그대로입니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>진행할 수 있는 접수입니다</b>
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>진행할 수 있는 접수입니다</b>
             <p>계약서·서류·인도는 서로 독립입니다. 순서가 어긋나도 됩니다.</p></div></div>`}
     </div></div>
     ${actBar({
@@ -740,8 +819,8 @@ function detailPerf(el) {
         <table class="g"><tbody>${STAGES.map((t, i) => `<tr><td style="width:34px" class="mut n">${i + 1}</td><td>${esc(t)}</td>
           <td class="r"><span class="st ${i + 1 < pf.stage ? 'ok' : i + 1 === pf.stage ? 'key' : 'mut'}">${i + 1 < pf.stage ? '완료' : i + 1 === pf.stage ? '지금 여기' : '—'}</span></td></tr>`).join('')}</tbody></table></div>
       ${pf.issue ? `<div class="note e"><span class="i">!</span><div><b>공급사와 어긋납니다</b><p>${esc(pf.note)} — 영업자 지급액에 닿는 어긋남이라 재확인으로 돌려보냅니다. 어긋난 채로 확정하지 않습니다.</p></div></div>`
-        : pf.stage >= 4 ? `<div class="note"><span class="i">&#10003;</span><div><b>정산 확정</b><p>청구 원장과 지급 원장에 각각 들어갔습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>${esc(STAGES[pf.stage - 1])} 차례입니다</b><p>어긋난 채로 확정하지 않습니다.</p></div></div>`}
+        : pf.stage >= 4 ? `<div class="note"><span class="i">${ic('check')}</span><div><b>정산 확정</b><p>청구 원장과 지급 원장에 각각 들어갔습니다.</p></div></div>`
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>${esc(STAGES[pf.stage - 1])} 차례입니다</b><p>어긋난 채로 확정하지 않습니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><textarea placeholder="대조 메모"></textarea></div>
       ${pf.issue ? '<button class="btn" id="rs">이슈 해소</button><button class="btn go" id="re">재확인 요청</button>'
@@ -775,7 +854,7 @@ function detailBill(el) {
         <table class="g"><tbody>${b.hist.map(x => `<tr><td class="mut n" style="width:70px">${x.t}</td><td>${esc(x.w)}</td><td class="r n">${x.a != null ? won(x.a) : ''}</td></tr>`).join('')}</tbody></table></div>
       ${b.got > 0 && due > 0 ? `<div class="note w"><span class="i">!</span><div><b>부분수금은 정상입니다</b>
         <p>확정액 ${won(b.fixed)} 은 그대로 두고 들어온 ${won(b.got)} 을 이력으로 더했습니다. 원금액을 덮어쓰지 않습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>청구확정 · 계산서 · 수금은 서로 다른 상태입니다</b><p>계산서를 끊었다고 수금이 된 것이 아닙니다.</p></div></div>`}
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>청구확정 · 계산서 · 수금은 서로 다른 상태입니다</b><p>계산서를 끊었다고 수금이 된 것이 아닙니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><input id="am" class="n" value="${due}" ${due ? '' : 'disabled'}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
@@ -804,7 +883,7 @@ function detailPay(el) {
       <div class="sec"><h3>이력</h3><table class="g"><tbody>${p.hist.map(x => `<tr><td class="mut n" style="width:70px">${x.t}</td><td>${esc(x.w)}</td><td class="r n">${x.a != null ? won(x.a) : ''}</td></tr>`).join('')}</tbody></table></div>
       ${p.hold ? `<div class="note e"><span class="i">!</span><div><b>지급 보류 — 결정 필요</b>
           <p>${esc(p.holdWhy)}<br>「공급사 수금 전에 채널에 줘도 되나」는 <b>아직 정해지지 않은 정책</b>이라 화면이 임의로 밀지 않습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>청구 원장과 지급 원장은 따로 섭니다</b><p>받을 돈이 덜 들어왔다고 줄 돈이 저절로 줄지 않습니다.</p></div></div>`}
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>청구 원장과 지급 원장은 따로 섭니다</b><p>받을 돈이 덜 들어왔다고 줄 돈이 저절로 줄지 않습니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><input id="pa" class="n" value="${left}" ${p.hold || !left ? 'disabled' : ''}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
@@ -876,7 +955,7 @@ function renderSheet() {
         <span class="hs">${picked ? `조건 ${Object.values(S.sel).reduce((t, v) => t + (v || []).length, 0)}개` : '조건을 고르면 바로 줄어듭니다'}</span>
         <span class="sp"></span>
         ${picked ? '<button id="sclr" class="hclr">전부 해제</button>' : ''}
-        <button id="sx" class="hx" aria-label="닫기">&#10005;</button></header>
+        <button id="sx" class="hx" aria-label="닫기">${ic('close')}</button></header>
       <div class="fbody">
         <nav class="fmap" role="tablist" aria-label="필터 항목">${live.map(({ ax, opts }) => {
           const k = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
@@ -971,7 +1050,7 @@ function renderNav() {
   $('#nav').innerHTML = '<div class="gl">업무</div>' + NAV.map(n => {
     const b = n.badge ? n.badge() : 0;
     return `<button data-k="${n.k}" data-t="${esc(n.t)}" aria-current="${n.k === S.screen}" title="${esc(n.t)}">
-      <span class="gi">${n.i}</span><span class="lb">${n.t}</span>${b ? `<span class="bd">${b}</span>` : ''}</button>`;
+      <span class="gi">${ic(NAV_ICON[n.k])}</span><span class="lb">${n.t}</span>${b ? `<span class="bd">${b}</span>` : ''}</button>`;
   }).join('');
   $('#nav').querySelectorAll('button').forEach(b => b.onclick = () => {
     S.screen = b.dataset.k; S.sheet = false;
@@ -1100,7 +1179,7 @@ function detailNew(el) {
         <input id="f-pr" value="${esc(d.promoWhy || '')}" placeholder="예: 9월 전기차 프로모션" autocomplete="off">
         <div class="hint">★사유 없는 돈은 다음 달에 아무도 못 읽습니다.</div></div>
       <div id="promobox"></div>
-      <div class="note"><span class="i">&#10003;</span><div><b>저장하면 이 조건이 «굳습니다»</b>
+      <div class="note"><span class="i">${ic('check')}</span><div><b>저장하면 이 조건이 «굳습니다»</b>
         <p>상품이 나중에 바뀌어도 이 접수의 계약조건은 안 바뀝니다. 같은 건을 두 번 눌러도 한 건만 만들어집니다.</p></div></div>
     </div></div></div>
     ${actBar({
@@ -1117,7 +1196,7 @@ function detailNew(el) {
     const share = d.share === '' || d.share === null || d.share === undefined
       ? DEFAULT_AGENT_SHARE : parseSharePct(d.share);
     const s = splitPromo(amount, share);
-    box.innerHTML = `<div class="note ${s.pending ? 'w' : ''}"><span class="i">${s.pending ? '!' : '&#10003;'}</span><div>
+    box.innerHTML = `<div class="note ${s.pending ? 'w' : ''}"><span class="i">${s.pending ? '!' : ic('check')}</span><div>
       <b>${s.pending ? '영업자 지급 비율을 아직 안 정했습니다' : '이렇게 갈립니다'}</b>
       <p>${promoLine(amount, share)}</p>
       ${s.pending ? '<p>0~100 사이로 적어 주세요. 100 을 넘는 값은 안 받습니다.</p>'
@@ -1261,7 +1340,7 @@ applyTheme();
 $('#railtoggle').onclick = () => {
   S.mini = !S.mini;
   document.querySelector('.app').classList.toggle('mini', S.mini);
-  $('#railtoggle').innerHTML = S.mini ? '&#10095;' : '&#10094;';
+  $('#railtoggle').innerHTML = ic(S.mini ? 'right' : 'left');
   $('#railtoggle').title = S.mini ? '사이드바 펼치기' : '사이드바 접기';
 };
 

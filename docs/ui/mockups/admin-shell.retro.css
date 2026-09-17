@@ -59,7 +59,10 @@
 :root.rt .pf{height:var(--h-m);background:linear-gradient(var(--rt-head-a),var(--rt-soft-b));border-top:1px solid var(--line-2)}
 
 /* 볼록한 단추 · 파인 입력칸 — 그 시절의 «만질 수 있음» */
-:root.rt .btn,:root.rt .sb,:root.rt .tb{height:var(--h-s);background:linear-gradient(var(--rt-face-a),var(--rt-face-b));
+/* ★레트로도 단추 높이는 «하나» 다 — --h-btn 을 그대로 쓴다.
+   레트로가 다른 것은 «면의 결»(볼록한 베벨) 뿐이다.
+   베벨은 그 자체로 「면 + 터치감」 이라, 대표가 말한 문법과 원래 같은 것이다. */
+:root.rt .btn,:root.rt .sb,:root.rt .tb{height:var(--h-btn);background:linear-gradient(var(--rt-face-a),var(--rt-face-b));
   border:1px solid var(--line-2);box-shadow:var(--bev);font-weight:400;padding:0 10px}
 :root.rt .btn:hover,:root.rt .sb:hover,:root.rt .tb:hover{background:linear-gradient(#fff,var(--rt-hover-b))}
 :root.rt .btn:active,:root.rt .sb:active{box-shadow:var(--bev-in);background:var(--rt-press)}
@@ -68,12 +71,13 @@
 :root.rt .btn.go:hover{background:linear-gradient(#6a90c8,#4a6fa5)}
 :root.rt .btn.red{background:linear-gradient(var(--rt-face-a),var(--rt-face-b));color:var(--bad);border-color:var(--line-2);box-shadow:var(--bev)}
 :root.rt .sb[aria-pressed="true"]{background:linear-gradient(var(--rt-sel-b),var(--rt-sel-a));border-color:var(--rt-sel-line);color:var(--on-fill);box-shadow:var(--bev-in)}
-:root.rt .btn.sm{height:20px;padding:0 7px}
-:root.rt .dact .btn{height:var(--h-s)}
+/* ★높이를 «되돌리는» 규칙을 전부 뺐다. 레트로라도 세로는 하나다.
+   좁게 하고 싶으면 «가로» 를 줄인다 (대표 「가로 사이즈는 차이가 날것이지만」). */
+:root.rt .btn.sm{padding:0 7px}
 
 :root.rt .gs input,:root.rt .fd input,:root.rt .dact input,:root.rt .dact textarea{
-  height:var(--h-s);border:1px solid var(--line-2);box-shadow:var(--bev-in);background:#fff}
-:root.rt .dact textarea{height:var(--h-s);min-height:var(--h-s);padding:4px 6px}
+  height:var(--h-btn);border:1px solid var(--line-2);box-shadow:var(--bev-in);background:#fff}
+:root.rt .dact textarea{height:var(--h-btn);min-height:var(--h-btn);padding:4px 6px}
 :root.rt .gs input:focus,:root.rt .fd input:focus,:root.rt .dact input:focus,:root.rt .dact textarea:focus{
   box-shadow:var(--bev-in), 0 0 0 1px var(--key);border-color:var(--key)}
 
@@ -85,9 +89,12 @@
 :root.rt table.g td{height:var(--h-m);padding:0 6px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
 :root.rt table.g td:last-child{border-right:0}
 :root.rt table.g tbody tr:nth-child(even) td{background:transparent}
-:root.rt table.g tbody tr:hover td{background:#f2f6fb}
-:root.rt table.g tbody tr.on td{background:var(--key-soft);box-shadow:inset 1px 0 0 var(--key-line)}
-:root.rt table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key)}
+/* ★레트로도 같은 문법을 쓴다 — 기능은 통일, 테마만 다르다 (대표 2026-09-17).
+   표는 «선» 으로만. 레트로는 선이 한 단 진할 뿐이다. */
+:root.rt table.g tbody tr:hover td{background:transparent;box-shadow:inset 0 -1px 0 var(--line-2)}
+:root.rt table.g tbody tr.on td{background:transparent;
+  box-shadow:inset 0 -1px 0 var(--key),inset 0 1px 0 var(--key)}
+:root.rt table.g tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--key),inset 0 -1px 0 var(--key),inset 0 1px 0 var(--key)}
 
 /* 왼쪽 메뉴 — 어두운 판이 아니라 «밝은 판» 이다 */
 :root.rt .rail{background:var(--rail);border-right:1px solid var(--line-2)}
@@ -97,7 +104,7 @@
 :root.rt .brand span{color:var(--ink-3);letter-spacing:.06em}
 :root.rt .rail nav{padding:4px;gap:0}
 :root.rt .rail nav .gl{color:var(--ink-3);padding:6px 6px 3px;font-size:10px}
-:root.rt .rail nav button{height:var(--h-s);color:var(--ink-2);font-size:12px;padding:0 7px;border-radius:0}
+:root.rt .rail nav button{height:var(--h-btn);color:var(--ink-2);font-size:12px;padding:0 7px;border-radius:0}
 :root.rt .rail nav button:hover{background:#e3ebf5;color:var(--ink)}
 :root.rt .rail nav button[aria-current="true"]{background:var(--key);color:var(--on-fill);box-shadow:var(--bev-in)}
 :root.rt .rail nav .bd{background:#fff;color:var(--key);border:1px solid var(--key-line);border-radius:0;font-size:10px}
@@ -152,13 +159,13 @@
 /* ── 찾는 칸 — 레트로에서도 «한 덩어리» 다 ────────────────────
    트렌디는 테두리가 .fd 에 있고, 레트로는 «파인» 테두리가 .fd 에 있다.
    markup 은 같다 — 테마가 갈리는 곳은 이 한 장뿐이다 */
-:root.rt .fd,:root.rt .msearch .fd{height:var(--h-s);border:1px solid var(--line-2);box-shadow:var(--bev-in);
+:root.rt .fd,:root.rt .msearch .fd{height:calc(var(--h-btn) + 4px);border:1px solid var(--line-2);box-shadow:var(--bev-in);
   background:#fff;border-radius:0}
 :root.rt .fd:focus-within,:root.rt .msearch .fd:focus-within{box-shadow:var(--bev-in),0 0 0 1px var(--key);border-color:var(--key)}
 :root.rt .fd input{height:100%;border:0;box-shadow:none;background:none}
 :root.rt .fd input:focus{box-shadow:none;border:0}
 :root.rt .fd .mg{color:var(--ink-2)}
-:root.rt .fd .fx{height:calc(100% - 2px);margin:1px 1px 1px 0;border-left:1px solid var(--line-2);
+:root.rt .fd .fx{height:var(--h-btn);margin:1px 1px 1px 0;border-left:1px solid var(--line-2);
   background:linear-gradient(var(--rt-face-a),var(--rt-face-b));box-shadow:var(--bev);color:var(--rt-head-ink);border-radius:0}
 :root.rt .fd .fx:hover{background:linear-gradient(#fff,var(--rt-hover-b))}
 :root.rt .fd .fx.on{background:linear-gradient(var(--rt-sel-b),var(--rt-sel-a));border-left-color:var(--rt-sel-line);color:var(--on-fill);box-shadow:var(--bev-in)}

@@ -142,7 +142,7 @@ function ecSection(e) {
       <b>보완 요청됨 — ${e.rejects.length}차</b>
       <p>${e.rejects.map(r => `${esc(r.at)} · <b>${r.items.map(esc).join(' · ')}</b> — ${esc(r.why)}`).join('<br>')}</p></div></div>` : ''}
 
-    ${e.stage === 'filling' ? `<div class="note"><span class="i">&#10003;</span><div>
+    ${e.stage === 'filling' ? `<div class="note"><span class="i">${ic('check')}</span><div>
       <b>지금은 «기다리는» 단계다</b>
       <p>고객이 쓰는 중이라 우리가 할 일은 없다. 재촉하려면 링크를 다시 전달하고, 잘못 나갔으면 해지한다.</p></div></div>` : ''}
 

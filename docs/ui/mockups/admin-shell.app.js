@@ -19,6 +19,8 @@ const S = {
   stlTab: 'open', stlQ: '', stlMonth: '', feeQ: '',
   /** ★머리를 눌러 고르는 차례. 목록마다 따로 기억한다 */
   sort: { product: { k: null, d: 1 }, app: { k: 'at', d: -1 } },
+  /** ★상품은 «카드», 접수는 «표». 하는 일이 달라서다 — paneProducts 주석 참조 */
+  viewA: 'card',
 };
 
 const NAV = [
@@ -287,8 +289,15 @@ function statusChip(s) {
   if (/협의/.test(s))  return '<span class="st wait">협의</span>';
   return `<span class="st mut">${esc(s)}</span>`;
 }
-/** 주행거리 — 목록에서는 «만 km» 로 접는다. 0 은 신차라서 0 이다 */
-const mileShort = m => m == null ? unk() : m === 0 ? '<span class="mut">신차</span>' : (m / 10000).toFixed(1) + '만';
+/** 주행거리를 짧게. ★1만 아래를 「0.0만」 으로 쓰면 거짓말이 된다 —
+    출고 직전 10km 짜리가 「0.0만km」 로 보이면 아무 말도 안 한 것이다. */
+function mileText(m, unit) {
+  if (m == null) return null;
+  if (m === 0) return '신차';
+  if (m < 10000) return m.toLocaleString('ko-KR') + (unit ? 'km' : '');
+  return (m / 10000).toFixed(1) + '만' + (unit ? 'km' : '');
+}
+const mileShort = m => { const t = mileText(m, false); return t === null ? unk() : t === '신차' ? '<span class="mut">신차</span>' : t; };
 /** 청구월 — 강지수팀장이 넣던 칸. 비면 「아직 안 정해짐」 이지 「0」 이 아니다 */
 const billCell = b => b ? `<span class="n">${esc(b.replace('-', '.'))}</span>` : unk('미정');
 
@@ -402,10 +411,65 @@ function vReset(key, sig) {
 /** ★줄 손잡이는 «하나» 다 — 줄마다 달면 746개가 된다 */
 function bindPick(pb, pick) {
   pb.onclick = (e) => {
-    const tr = e.target.closest('tbody tr[data-k]');
+    const tr = e.target.closest('[data-k]');
     if (!tr || tr.classList.contains('vpad')) return;
     pick(tr.dataset.k);
   };
+}
+
+/* ══ ★카드 ══════════════════════════════════════════════════════
+   대표 2026-09-17 「목록 형태가 아니라 카드 형태로 만들면 좀 보기가 좋을거 같은데」
+
+   ★둘을 «가른다» — 같은 데이터라도 하는 일이 다르면 꼴이 달라야 한다.
+
+     상품 찾기  고객에게 «보여줄 차» 를 고른다 → 카드
+       · 사진이 34px 줄 안에서는 아무 일도 못 한다. 카드에서는 그게 첫 정보다
+       · 몇 대를 «나란히 견주는» 일이지, 700대를 숫자로 훑는 일이 아니다
+     접수 목록  «무엇이 막혔나 · 몇 월에 청구하나» → 표
+       · 청구월·할 일을 «열을 따라» 훑고, 합계를 내고, 차례로 세운다
+       · 464건을 카드로 깔면 훑는 속도가 반이 된다
+
+   ⇒ 그래서 상품에만 카드를 넣고, 표도 남겨 «고를 수 있게» 한다.
+     746대를 월 대여료로 세워 보고 싶을 때는 표라야 한다.
+
+   ★카드도 «보이는 만큼만» 그린다. 한 줄에 몇 장 서는지를 폭에서 재고,
+     안 그린 줄은 빈 칸 하나로 자리만 메운다 — 표와 같은 규칙이다.
+   ══════════════════════════════════════════════════════════════ */
+const CARD_MIN = 208;   /* 카드 최소 폭 */
+const CARD_GAP = 12;
+const CARD_H = 214;     /* 카드 한 장 높이(= 사진 112 + 속 90 + 테두리). 줄 높이를 세는 데 쓴다 */
+
+function cardCols(pb) {
+  const w = (pb && pb.clientWidth ? pb.clientWidth : 900) - CARD_GAP * 2;
+  return Math.max(1, Math.floor((w + CARD_GAP) / (CARD_MIN + CARD_GAP)));
+}
+/** 카드 «줄» 단위로 자른다 — 장 단위로 자르면 줄이 어긋난다 */
+function vSliceCards(pb, n, cols) {
+  const lines = Math.ceil(n / cols);
+  const lineH = CARD_H + CARD_GAP;
+  const st = pb ? pb.scrollTop : 0;
+  const h = pb && pb.clientHeight ? pb.clientHeight : 640;
+  const firstLine = Math.max(0, Math.floor(st / lineH) - 1);
+  const lastLine = Math.min(lines, firstLine + Math.ceil(h / lineH) + 2);
+  return { first: firstLine * cols, last: Math.min(n, lastLine * cols),
+           top: firstLine * lineH, bot: Math.max(0, (lines - lastLine) * lineH) };
+}
+
+/** 카드 한 장. ★누를 수 있는 것이라 «면 + 터치감» 이다 (표가 아니다) */
+function card(p, lead, on) {
+  const bits = [p.year ? p.year + '년' : null, mileText(p.mileage, true), p.fuel]
+    .filter(Boolean).join(' · ');
+  return `<button type="button" class="card${on ? ' on' : ''}" data-k="${p.id}">
+    <span class="cshot">${p.body ? glyph() : '<span class="none">사진 준비 중</span>'}
+      ${p.status ? `<span class="cst">${statusChip(p.status)}</span>` : ''}</span>
+    <span class="cbody">
+      <span class="cnm">${esc(p.name)}</span>
+      <span class="ctr">${esc(subTrim(p.name, p.sub)) || '<span class="unk">세부트림 미확인</span>'}</span>
+      <span class="camt"><b>${won(lead.rent)}</b><i>/월 ${lead.term}개월</i></span>
+      <span class="cmeta">${bits || '<span class="unk">제원 미확인</span>'}</span>
+      <span class="cfoot">${esc(p.supplier)}
+        <span class="cdep">${p.plate ? esc(p.plate) : '<span class="unk">미배정</span>'}</span></span>
+    </span></button>`;
 }
 
 function sumRow(cells) {
@@ -421,7 +485,11 @@ function paneProducts(el) {
   syncProd();
   const sel0 = effSel();
   el.innerHTML = `
-    <div class="ph"><h2>상품 목록</h2><span class="c" id="cntA"></span></div>
+    <div class="ph"><h2>상품 목록</h2><span class="c" id="cntA"></span><span class="sp"></span>
+      <span class="seg" role="group" aria-label="보는 꼴">
+        <button class="sb" data-v="card" aria-pressed="${S.viewA === 'card'}">카드</button>
+        <button class="sb" data-v="grid" aria-pressed="${S.viewA === 'grid'}">표</button>
+      </span></div>
     <div class="bar">
       ${findbox('q', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'cond', n: selCount(sel0) })}
       <span id="toksA">${tokens(sel0)}</span>
@@ -439,6 +507,7 @@ function paneProducts(el) {
   q.oninput = () => { S.q = q.value; softA(); };
   if ($('#qx')) $('#qx').onclick = () => { S.q = ''; render(); };
   $('#cond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
+  el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { S.viewA = b.dataset.v; render(); });
 
   const pbA = $('#pbA');
   const of = 'product';
@@ -446,8 +515,28 @@ function paneProducts(el) {
 
   /* ── ① 그리드만. «구를 때» 도는 것이 이것이다 (한 프레임에 한 번) ── */
   const fillA = () => {
+    if (!hits.length) {
+      pbA.innerHTML = `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
+        <p>「없다」는 <b>이 조건에 없다</b>는 뜻이다. 상품이 사라진 것이 아니다.</p>
+        <button class="btn sm" id="clrq">조건 지우고 다시 보기</button></div>`;
+      dropsBox();
+      if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
+      return;
+    }
+    if (S.viewA === 'card') {
+      const cols = cardCols(pbA);
+      const v = vSliceCards(pbA, rows.length, cols);
+      pbA.innerHTML = `<div class="cards" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
+        ${v.top ? `<div class="cpad" style="height:${v.top}px;grid-column:1/-1"></div>` : ''}
+        ${rows.slice(v.first, v.last).map(({ p, ok }) =>
+          card(p, ok[0], p.id === S.pid && S.focus === 'product')).join('')}
+        ${v.bot ? `<div class="cpad" style="height:${v.bot}px;grid-column:1/-1"></div>` : ''}
+      </div>`;
+      dropsBox();
+      return;
+    }
     const v = vSlice(pbA, rows.length);
-    pbA.innerHTML = hits.length ? `<table class="g">
+    pbA.innerHTML = `<table class="g">
     <caption class="sr">상품 목록 — 차량, 차량번호, 연식, 주행, 공급사, 상태, 기간, 보증금, 월 대여료</caption>
     <thead><tr>${th('', null, { c: 'thc' })}${th('차량', 'veh', { of })}
       ${th('차량번호', 'plate', { of })}${th('연식', 'year', { of, r: 1 })}${th('주행', 'mile', { of, r: 1 })}
@@ -470,22 +559,22 @@ function paneProducts(el) {
         <td class="r n">${lead.term}개월</td>
         <td class="r n">${depShort(lead)}</td>
         <td class="r n" style="font-weight:650">${won(lead.rent)}</td></tr>`;
-    }).join('')}${vpad(v.bot)}</tbody></table>`
-    : `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
-        <p>「없다」는 <b>이 조건에 없다</b>는 뜻이다. 상품이 사라진 것이 아니다.</p>
-        <button class="btn sm" id="clrq">조건 지우고 다시 보기</button></div>`;
+    }).join('')}${vpad(v.bot)}</tbody></table>`;
+    dropsBox();
+    bindSort(pbA);
+  };
 
-    /* ★왜 빠졌는지는 «접어» 둔다. 다만 869건을 다 그리면 그것만으로 다시 느려진다 —
-       까닭은 갈래가 몇 안 되므로 예순 줄이면 어느 갈래인지 다 보인다. */
-    if (drops.length) pbA.insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
+  /* ★왜 빠졌는지는 «접어» 둔다. 다만 869건을 다 그리면 그것만으로 다시 느려진다 —
+     까닭은 갈래가 몇 안 되므로 예순 줄이면 어느 갈래인지 다 보인다. */
+  const dropsBox = () => {
+    if (!drops.length) return;
+    pbA.insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
       <summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
       ${drops.slice(0, 60).map(({ p, why }) => `<div class="w"><b>${esc(p.name)} · ${esc(p.sub)}</b><br>${why.kind === 'p'
         ? why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')
         : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
       ${drops.length > 60 ? `<div class="w"><span class="mut">…그리고 ${drops.length - 60}건 더. 까닭은 위와 같은 갈래다.</span></div>` : ''}
       </details>`);
-    bindSort(pbA);
-    if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
   };
 
   /* ── ② 셈·칩·그리드. «글자를 칠 때» 도는 것이 이것이다 ── */
@@ -521,7 +610,7 @@ function paneProducts(el) {
       + '<span class="sp"></span>' + pos(hits.length, hits.findIndex(x => x.p.id === S.pid));
 
     /* ★조건이 바뀌면 다른 목록이다 — 굴린 자리를 물려받지 않는다 */
-    vReset('A', S.q + '|' + JSON.stringify(S.sel) + '|' + JSON.stringify(S.sort.product));
+    vReset('A', S.viewA + '|' + S.q + '|' + JSON.stringify(S.sel) + '|' + JSON.stringify(S.sort.product));
     fillA();
   };
 
@@ -1327,9 +1416,23 @@ function render() {
 function mountSplit() {
   const work = document.querySelector('.work');
   const vs = work.querySelector('.vs'), hs = work.querySelector('.hs');
+  /* ★대표 2026-09-17 「이걸 어떻게 보기좋게 만들어야하나……」
+     ⇒ 판 둘이 «반반» 씩 나눠 갖고 있던 것이 가장 큰 까닭이었다.
+       1500×900 화면에서 목록 한 판에 돌아오는 높이가 «280px» 이었다.
+       표로는 여섯 줄, 카드로는 한 줄이 겨우 선다. 그 높이로는 무엇을 해도 안 예쁘다.
+
+     ★지금 «보는 쪽» 이 높이를 갖는다. 다른 판은 머리띠만 남기고 접힌다.
+       접힌 머리를 누르면 그쪽으로 넘어간다 — 두 판이 한 화면에 있다는 뜻은 그대로다.
+     끌어서 바꾸면(S.rh) 그 뜻이 사람의 것이 되므로 손대지 않는다. */
+  const FOLD = 'var(--h-act)';
   const apply = () => {
     work.style.gridTemplateColumns = S.lw ? `${S.lw}px 7px minmax(360px,1fr)` : '';
-    work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr` : '';
+    work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr`
+      : S.screen === 'intake' ? `${FOLD} 7px 1fr` : `1fr 7px ${FOLD}`;
+    const p1 = document.getElementById('p1'), p2 = document.getElementById('p2');
+    const foldTop = !S.rh && S.screen === 'intake';
+    if (p1) p1.classList.toggle('folded', foldTop);
+    if (p2) p2.classList.toggle('folded', !S.rh && !foldTop);
   };
   if (!vs.dataset.on) {
     vs.dataset.on = '1';
@@ -1349,6 +1452,14 @@ function mountSplit() {
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
     });
     hs.addEventListener('dblclick', () => { S.rh = null; apply(); });
+    /* 접힌 머리를 누르면 그 판으로 넘어간다 */
+    work.addEventListener('click', ev => {
+      const p = ev.target.closest('.pane.folded');
+      if (!p) return;
+      S.screen = p.id === 'p1' ? 'product' : 'intake';
+      S.focus = p.id === 'p1' ? 'product' : 'app';
+      S.rh = null; render();
+    });
   }
   apply();
 }

@@ -348,6 +348,66 @@ function pos(n, i) {
   return `<span class="pos n">${i >= 0 ? `${i + 1} / ` : ''}${n.toLocaleString('ko-KR')}</span>`;
 }
 
+/* ══ ★보이는 만큼만 그린다 ══════════════════════════════════════
+   대표 2026-09-17 「검색하고 이런거 느려서 빠릿빠릿해야함」
+
+   실측 — 조건을 지우면 746줄이 통째로 서고, 그때 «DOM 조각이 15,358개» 였다.
+     · 줄마다 sticky 칸이 둘씩 들어가 «1,492개» 가 붙어 있었다
+       (왼쪽 고정 + 오른쪽 고정). sticky 는 구를 때마다 다시 재는 값이다
+     · 줄마다 클릭 손잡이가 하나씩 «746개»
+     · 글자 하나 지울 때마다 이걸 다 부수고 다시 지었다
+
+   ⇒ 화면에 «보이는 만큼만» 그린다. 위아래 빈자리는 «빈 줄 하나» 로 메운다.
+     줄 높이가 --h-row 로 고정이라 자리를 정확히 셀 수 있다.
+     746줄이든 16,000줄이든 DOM 에 서는 줄은 늘 서른 남짓이다.
+
+   ★목록의 «길이» 는 안 속인다 — 굴림대는 746줄만큼 길고,
+     바닥줄의 「몇 건 중 몇 번째」 도 전체 수로 센다. 눈에만 안 그릴 뿐이다.
+   ══════════════════════════════════════════════════════════════ */
+const ROW_H = 34;   /* = --h-row. 눈금이 바뀌면 여기도 바꾼다 */
+const VBUF = 6;     /* 위아래 여유 줄 — 굴릴 때 빈칸이 안 비치게 */
+
+/* ★굴린 자리를 «판 밖에» 적어 둔다.
+   판을 다시 그리면 #pbA 가 통째로 새로 나므로 scrollTop 이 0 이 된다.
+   그대로 두면 「목록을 한참 내려가 한 줄을 누르는」 순간 맨 위로 튄다 —
+   업무 화면에서 이건 그냥 못 쓰는 것이다. */
+const VPOS = {};
+function vSlice(pb, n) {
+  const st = pb ? pb.scrollTop : 0;
+  const h = pb && pb.clientHeight ? pb.clientHeight : 640;
+  const first = Math.max(0, Math.floor(st / ROW_H) - VBUF);
+  const last = Math.min(n, first + Math.ceil(h / ROW_H) + VBUF * 2);
+  return { first, last, top: first * ROW_H, bot: Math.max(0, (n - last) * ROW_H) };
+}
+/** 안 그린 줄의 «자리» — 굴림대 길이를 그대로 지킨다 */
+const vpad = px => px > 0
+  ? `<tr class="vpad" style="height:${px}px" aria-hidden="true"><td colspan="99"></td></tr>` : '';
+
+/** 구를 때마다 다시 그리되, 한 프레임에 «한 번만» 그린다 */
+function bindVScroll(pb, key, fill) {
+  /* 다시 그려졌으면 «적어 둔 자리» 로 되돌린 뒤, 그 자리에 맞는 줄을 채운다 */
+  const want = VPOS[key] || 0;
+  if (want && Math.abs(pb.scrollTop - want) > 1) { pb.scrollTop = want; fill(); }
+  pb.onscroll = () => {
+    VPOS[key] = pb.scrollTop;
+    if (pb._raf) return;
+    pb._raf = requestAnimationFrame(() => { pb._raf = null; fill(); });
+  };
+}
+/** 갈래·조건이 바뀌면 «맨 위» 로 — 다른 목록을 보는 것이니 자리를 물려받으면 안 된다 */
+function vReset(key, sig) {
+  if (VPOS[key + ':sig'] === sig) return;
+  VPOS[key + ':sig'] = sig; VPOS[key] = 0;
+}
+/** ★줄 손잡이는 «하나» 다 — 줄마다 달면 746개가 된다 */
+function bindPick(pb, pick) {
+  pb.onclick = (e) => {
+    const tr = e.target.closest('tbody tr[data-k]');
+    if (!tr || tr.classList.contains('vpad')) return;
+    pick(tr.dataset.k);
+  };
+}
+
 function sumRow(cells) {
   return `<tfoot><tr>${cells.map(c => c === null ? '<td></td>'
     : `<td class="${c.r ? 'r n' : ''}">${c.v}</td>`).join('')}</tr></tfoot>`;
@@ -359,48 +419,35 @@ const offer = () => { const p = prod(); return p && p.offers.find(o => o.id === 
 /* ══ 판 ① 상품목록 ═════════════════════════════ */
 function paneProducts(el) {
   syncProd();
-  const { hits, drops, sel } = evaluate();
-  const n = selCount(sel);
-  /* ★「확인 필요」 는 세부트림이 안 잡힌 상품이다 — 0 이 아니라 «모른다» 다 */
-  const part = hits.filter(x => x.p.match !== 'TRIM').length;
+  const sel0 = effSel();
   el.innerHTML = `
-    <div class="ph"><h2>상품 목록</h2><span class="c">${hits.length}건</span></div>
+    <div class="ph"><h2>상품 목록</h2><span class="c" id="cntA"></span></div>
     <div class="bar">
-      ${findbox('q', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'cond', n })}
-      ${tokens(sel)}
+      ${findbox('q', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'cond', n: selCount(sel0) })}
+      <span id="toksA">${tokens(sel0)}</span>
     </div>
     <div class="pb" id="pbA"></div>
-    <div class="pf">${tl('조건 밖', drops.length)}${tl('확인 필요', part, 'warn')}
-      <span class="sp"></span>${pos(hits.length, hits.findIndex(x => x.p.id === S.pid))}</div>`;
+    <div class="pf" id="pfA"></div>`;
 
   const q = $('#q');
-  q.oninput = () => { S.q = q.value; paneProducts(el); const e = $('#q'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  /* ★대표 2026-09-17 「검색하고 이런거 느려서 빠릿빠릿해야함」
+     전에는 글자 하나마다 판을 «통째로» 다시 짓고, 사라진 입력칸을 다시 찾아
+     focus + setSelectionRange 로 커서를 되돌려 놓았다. 느린 것보다 이게 더 나빴다 —
+     ★한글은 «조합 중» 인 글자가 입력칸 «안에» 살아 있다. 그 칸을 부수면 조합이 끊긴다.
+       「싼」 을 치는 도중에 ㅆ·ㅏ·ㄴ 이 따로 떨어진다.
+     ⇒ 글자를 칠 때는 «그리드와 셈만» 갈아 끼운다. 입력칸은 손도 안 댄다. */
+  q.oninput = () => { S.q = q.value; softA(); };
   if ($('#qx')) $('#qx').onclick = () => { S.q = ''; render(); };
   $('#cond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
-  el.querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
-    const [a, k] = b.dataset.tok.split('|'); S.sel[a] = (S.sel[a] || []).filter(x => x !== k); render();
-  });
 
-  /* ★고른 차례대로 세운다. 값 뽑는 법을 여기서 준다 — 「무엇으로 세우나」 를
-     한곳에 모아 둬야, 칸이 늘어도 정렬이 따라온다 */
+  const pbA = $('#pbA');
   const of = 'product';
-  const rows = sortBy(hits, of, {
-    veh:    x => x.p.maker + ' ' + x.p.name,
-    plate:  x => x.p.plate,
-    year:   x => x.p.year,
-    mile:   x => x.p.mileage,
-    sup:    x => x.p.supplier,
-    status: x => ({ 즉시출고: 0, 출고가능: 1, 협의: 2, 출고불가: 3 })[x.p.status] ?? 9,
-    term:   x => x.ok[0].term,
-    dep:    x => x.ok[0].dep,
-    rent:   x => x.ok[0].rent,
-  });
-  /* 합계줄 — 「이 조건에 몇 대가 있고, 값이 어디서 어디까지인가」 */
-  const rents = rows.map(x => x.ok[0].rent).filter(v => typeof v === 'number');
-  const lo = rents.length ? Math.min(...rents) : null, hi = rents.length ? Math.max(...rents) : null;
-  const avg = rents.length ? Math.round(rents.reduce((s, v) => s + v, 0) / rents.length) : null;
+  let rows = [], hits = [], drops = [], lo = null, hi = null, avg = null;
 
-  $('#pbA').innerHTML = hits.length ? `<table class="g">
+  /* ── ① 그리드만. «구를 때» 도는 것이 이것이다 (한 프레임에 한 번) ── */
+  const fillA = () => {
+    const v = vSlice(pbA, rows.length);
+    pbA.innerHTML = hits.length ? `<table class="g">
     <caption class="sr">상품 목록 — 차량, 차량번호, 연식, 주행, 공급사, 상태, 기간, 보증금, 월 대여료</caption>
     <thead><tr>${th('', null, { c: 'thc' })}${th('차량', 'veh', { of })}
       ${th('차량번호', 'plate', { of })}${th('연식', 'year', { of, r: 1 })}${th('주행', 'mile', { of, r: 1 })}
@@ -410,9 +457,9 @@ function paneProducts(el) {
     ${sumRow([null, { v: `<b>${rows.length}</b>대` }, null, null, null, null, null,
       { v: '평균', r: 1 }, { v: lo === null ? '' : `<span class="mut">${man(lo)} ~ ${man(hi)}</span>`, r: 1 },
       { v: avg === null ? '' : `<b>${won(avg)}</b>`, r: 1 }])}
-    <tbody>${rows.map(({ p, ok }) => {
-      const lead = ok[0], part = p.match !== 'TRIM';
-      return `<tr data-id="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
+    <tbody>${vpad(v.top)}${rows.slice(v.first, v.last).map(({ p, ok }) => {
+      const lead = ok[0];
+      return `<tr data-k="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
         <td class="thc"><span class="thumb">${p.body ? glyph() : ''}</span></td>
         <td class="wveh"><span class="nm">${esc(p.name)}</span> <span class="mut">${esc(subTrim(p.name, p.sub))}</span>${p.fuel ? `<span class="sfx">${esc(p.fuel)}</span>` : ''}${p.match === 'UNMATCHED' || p.match === 'MODEL' ? '<span class="flag w" title="차종마스터에 아직 못 붙였다">차종</span>' : ''}</td>
         <td class="n">${p.plate ? esc(p.plate) : unk('미배정')}</td>
@@ -423,22 +470,68 @@ function paneProducts(el) {
         <td class="r n">${lead.term}개월</td>
         <td class="r n">${depShort(lead)}</td>
         <td class="r n" style="font-weight:650">${won(lead.rent)}</td></tr>`;
-    }).join('')}</tbody></table>`
+    }).join('')}${vpad(v.bot)}</tbody></table>`
     : `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
         <p>「없다」는 <b>이 조건에 없다</b>는 뜻이다. 상품이 사라진 것이 아니다.</p>
         <button class="btn sm" id="clrq">조건 지우고 다시 보기</button></div>`;
 
-  if (drops.length) $('#pbA').insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
-    <summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
-    ${drops.map(({ p, why }) => `<div class="w"><b>${esc(p.name)} · ${esc(p.sub)}</b><br>${why.kind === 'p'
-      ? why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')
-      : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
-    </details>`);
+    /* ★왜 빠졌는지는 «접어» 둔다. 다만 869건을 다 그리면 그것만으로 다시 느려진다 —
+       까닭은 갈래가 몇 안 되므로 예순 줄이면 어느 갈래인지 다 보인다. */
+    if (drops.length) pbA.insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
+      <summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
+      ${drops.slice(0, 60).map(({ p, why }) => `<div class="w"><b>${esc(p.name)} · ${esc(p.sub)}</b><br>${why.kind === 'p'
+        ? why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')
+        : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
+      ${drops.length > 60 ? `<div class="w"><span class="mut">…그리고 ${drops.length - 60}건 더. 까닭은 위와 같은 갈래다.</span></div>` : ''}
+      </details>`);
+    bindSort(pbA);
+    if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
+  };
 
-  bindSort($('#pbA'));
-  $('#pbA').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.pid = r.dataset.id; S.oid = null; S.shot = 0; S.focus = 'product'; render(); });
-  if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
+  /* ── ② 셈·칩·그리드. «글자를 칠 때» 도는 것이 이것이다 ── */
+  softA = () => {
+    syncProd();
+    const ev = evaluate();
+    hits = ev.hits; drops = ev.drops;
+    rows = sortBy(hits, of, {
+      veh:    x => x.p.maker + ' ' + x.p.name,
+      plate:  x => x.p.plate,
+      year:   x => x.p.year,
+      mile:   x => x.p.mileage,
+      sup:    x => x.p.supplier,
+      status: x => ({ 즉시출고: 0, 출고가능: 1, 협의: 2, 출고불가: 3 })[x.p.status] ?? 9,
+      term:   x => x.ok[0].term,
+      dep:    x => x.ok[0].dep,
+      rent:   x => x.ok[0].rent,
+    });
+    const rents = rows.map(x => x.ok[0].rent).filter(v => typeof v === 'number');
+    lo = rents.length ? Math.min(...rents) : null;
+    hi = rents.length ? Math.max(...rents) : null;
+    avg = rents.length ? Math.round(rents.reduce((s, v) => s + v, 0) / rents.length) : null;
+
+    /* ★「확인 필요」 는 세부트림이 안 잡힌 상품이다 — 0 이 아니라 «모른다» 다 */
+    const part = hits.filter(x => x.p.match !== 'TRIM').length;
+    $('#cntA').textContent = `${hits.length.toLocaleString('ko-KR')}건`;
+    $('#toksA').innerHTML = tokens(ev.sel);
+    $('#toksA').querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
+      const [ax, k] = b.dataset.tok.split('|');
+      S.sel[ax] = (S.sel[ax] || []).filter(x => x !== k); render();
+    });
+    $('#pfA').innerHTML = tl('조건 밖', drops.length) + tl('확인 필요', part, 'warn')
+      + '<span class="sp"></span>' + pos(hits.length, hits.findIndex(x => x.p.id === S.pid));
+
+    /* ★조건이 바뀌면 다른 목록이다 — 굴린 자리를 물려받지 않는다 */
+    vReset('A', S.q + '|' + JSON.stringify(S.sel) + '|' + JSON.stringify(S.sort.product));
+    fillA();
+  };
+
+  softA();
+  bindVScroll(pbA, 'A', fillA);
+  /* ★손잡이는 «하나» 다. 줄마다 달면 746개가 된다 */
+  bindPick(pbA, id => { S.pid = id; S.oid = null; S.shot = 0; S.focus = 'product'; render(); });
 }
+/** 글자를 칠 때 도는 자리 — 판이 서 있을 때만 값이 든다 */
+let softA = () => {};
 
 function tokens(sel) {
   const read = parseQ().read, out = [];
@@ -496,41 +589,41 @@ function kindCell(a) {
     + (a.rentKind ? `<span class="sfx">${esc(a.rentKind)}</span>` : '');
 }
 
-function paneApps(el) {
+/** 지금 갈래·지금 검색어로 걸러 낸 접수 — 한곳에서만 거른다 */
+function appList() {
   const f = AF.find(x => x.k === S.appFilter) || AF[0];
-  const list = APPS.filter(f.f).filter(a => !S.appQ || (a.cust + a.no + a.veh + a.ch).toLowerCase().includes(S.appQ.toLowerCase()));
+  const needle = S.appQ.trim().toLowerCase();
+  return APPS.filter(f.f).filter(a => !needle
+    || (a.cust + a.no + a.veh + (a.plate || '') + a.ch + a.sup).toLowerCase().includes(needle));
+}
+
+function paneApps(el) {
+  let list = appList();
   if (!list.some(a => a.no === S.appNo) && list.length) S.appNo = list[0].no;
 
   el.innerHTML = `
-    <div class="ph"><h2>접수 목록</h2><span class="c">${list.length}건</span><span class="sp"></span>
+    <div class="ph"><h2>접수 목록</h2><span class="c" id="cntB"></span><span class="sp"></span>
       <button class="btn sm go" id="newapp">+ 신규접수</button></div>
     <div class="bar">
-      ${findbox('aq', '고객 · 접수번호 · 차량', S.appQ)}
+      ${findbox('aq', '고객 · 접수번호 · 차량번호 · 공급사', S.appQ)}
       ${AF.map(x => `<button class="sb" data-f="${x.k}" aria-pressed="${x.k === S.appFilter}">${x.t}<span class="b">${APPS.filter(x.f).length}</span></button>`).join('')}
     </div>
     <div class="pb" id="pbB"></div>
-    <div class="pf">${tl('칠 것', APPS.filter(x => blocked(x)).length, 'warn')}${tl('인도완료', APPS.filter(x => x.deliv && !x.cxl).length, 'ok')}${tl('취소', APPS.filter(x => x.cxl).length)}
-      <span class="sp"></span><span class="t"><i>월 대여료 합계</i><b class="n">${won(list.reduce((s, x) => s + (x.rent || 0), 0))}</b></span>
-      ${pos(list.length, list.findIndex(x => x.no === S.appNo))}</div>`;
+    <div class="pf" id="pfB"></div>`;
 
   const aq = $('#aq');
-  aq.oninput = () => { S.appQ = aq.value; paneApps(el); const e = $('#aq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  /* ★상품 목록과 «같은 규칙» — 글자를 칠 때 입력칸을 안 부순다 (한글 조합이 끊긴다) */
+  aq.oninput = () => { S.appQ = aq.value; softB(); };
   if ($('#aqx')) $('#aqx').onclick = () => { S.appQ = ''; render(); };
   el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.appFilter = b.dataset.f; render(); });
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
   const of = 'app';
-  const rows = sortBy(list, of, {
-    at: x => x.at, todo: x => blockOf(x).t || 'ㅎ',   /* ★끝난 건은 뒤로 */
-    cust: x => x.cust, plate: x => x.plate, veh: x => x.veh, sup: x => x.sup,
-    product: x => (x.product || '') + (x.rentKind || ''),
-    ch: x => x.ch, term: x => x.term, rent: x => x.rent,
-    bill: x => x.billMonth,
-  });
-  const tot = rows.reduce((s, x) => s + (x.rent || 0), 0);
-  const promo = rows.reduce((s, x) => s + (x.promo || 0), 0);
-
-  $('#pbB').innerHTML = list.length ? `<table class="g wide">
+  const pbB = $('#pbB');
+  let rows = [], tot = 0, promo = 0;
+  const fillB = () => {
+  const v = vSlice(pbB, rows.length);
+  pbB.innerHTML = list.length ? `<table class="g wide">
     <caption class="sr">접수 목록 — 접수일, 할 일, 고객, 차량번호, 차량, 공급사, 상품, 채널·담당, 기간, 월 대여료, 청구월</caption>
     <thead><tr>${th('접수일', 'at', { of })}${th('할 일', 'todo', { of })}${th('고객', 'cust', { of })}
       ${th('차량번호', 'plate', { of })}${th('차량', 'veh', { of })}
@@ -541,9 +634,9 @@ function paneApps(el) {
       { v: '합계', r: 1 }, null,
       { v: `<b>${won(tot)}</b>${promo ? `<span class="sfx">프로모 ${man(promo)}</span>` : ''}`, r: 1 },
       null])}
-    <tbody>${rows.map(a => {
+    <tbody>${vpad(v.top)}${rows.slice(v.first, v.last).map(a => {
       const direct = /다이렉트/.test(a.ch || '');
-      return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
+      return `<tr data-k="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
         <td class="mut n">${esc((a.at || '').slice(0, 5))}</td>
         <td>${todoCell(a)}</td>
         <td class="wnm"><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
@@ -555,11 +648,40 @@ function paneApps(el) {
         <td class="r mut n">${a.term}개월</td>
         <td class="r n" style="font-weight:650">${won(a.rent)}${a.promo ? `<span class="flag w" title="${esc(promoLine(a.promo, a.promoShare).replace(/<[^>]+>/g, ''))}">＋${man(a.promo)}</span>` : ''}</td>
         <td class="pin-r">${a.cxl ? dash() : billCell(a.billMonth)}</td></tr>`;
-    }).join('')}</tbody></table>`
+    }).join('')}${vpad(v.bot)}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
-  bindSort($('#pbB'));
-  $('#pbB').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.appNo = r.dataset.no; S.focus = 'app'; render(); });
+  bindSort(pbB);
+  };
+
+  softB = () => {
+    list = appList();
+    if (!list.some(a => a.no === S.appNo) && list.length) S.appNo = list[0].no;
+    rows = sortBy(list, of, {
+      at: x => x.at, todo: x => blockOf(x).t || 'ㅎ',   /* ★끝난 건은 뒤로 */
+      cust: x => x.cust, plate: x => x.plate, veh: x => x.veh, sup: x => x.sup,
+      product: x => (x.product || '') + (x.rentKind || ''),
+      ch: x => x.ch, term: x => x.term, rent: x => x.rent,
+      bill: x => x.billMonth,
+    });
+    tot = rows.reduce((s, x) => s + (x.rent || 0), 0);
+    promo = rows.reduce((s, x) => s + (x.promo || 0), 0);
+
+    $('#cntB').textContent = `${list.length.toLocaleString('ko-KR')}건`;
+    $('#pfB').innerHTML = tl('칠 것', APPS.filter(x => blocked(x)).length, 'warn')
+      + tl('인도완료', APPS.filter(x => x.deliv && !x.cxl).length, 'ok')
+      + tl('취소', APPS.filter(x => x.cxl).length)
+      + `<span class="sp"></span><span class="t"><i>월 대여료 합계</i><b class="n">${won(tot)}</b></span>`
+      + pos(list.length, list.findIndex(x => x.no === S.appNo));
+
+    vReset('B', S.appQ + '|' + S.appFilter + '|' + JSON.stringify(S.sort.app));
+    fillB();
+  };
+
+  softB();
+  bindVScroll(pbB, 'B', fillB);
+  bindPick(pbB, no => { S.appNo = no; S.focus = 'app'; render(); });
 }
+let softB = () => {};
 
 /* ══ 판 ③ 상세 ════════════════════════════════ */
 

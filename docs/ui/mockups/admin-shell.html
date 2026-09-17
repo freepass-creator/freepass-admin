@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=38">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=40">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -399,6 +399,21 @@ table.g tr.expbody:hover td{background:var(--tint)}
 /* ★비활성 단추는 «까닭을 곁에» 둔다 (AI Core 화면규격 §Button) */
 .whyoff{margin:0 0 var(--sp);font-size:11px;color:var(--ink-2)}
 
+/* ── 프로모션 — 접수에서 넣고 상세에서 읽는다 ─────────────── */
+.fld2{display:grid;grid-template-columns:1fr 130px;gap:var(--sp2);align-items:start}
+.pctwrap{position:relative}
+.pctwrap input{width:100%;padding-right:24px}
+.pctwrap .pct{position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  font-size:11px;color:var(--ink-2);pointer-events:none}
+.promo{margin-top:var(--sp);border:1px solid #d8c191;background:var(--warn-soft);
+  border-radius:var(--r-ctl);padding:var(--sp) var(--sp2);display:flex;flex-wrap:wrap;
+  align-items:baseline;gap:var(--sp)}
+.promo .pk{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--warn);
+  text-transform:uppercase;flex:none}
+.promo .pv{font-size:11.5px;color:var(--ink)}
+.promo .pv b{font-weight:650}
+.promo .pw{font-size:11px;color:var(--ink-2);flex-basis:100%}
+
 .dact textarea:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
 /* ★단추 높이는 셋뿐 — act(38) 실행 · ctl(30) 도구 · chip(22) 줄 안 */
 .btn{height:var(--h-act);padding:0 14px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);
@@ -618,16 +633,16 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=38"></script>
+<script src="./admin-shell.data.js?v=40"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=38"></script>
-<script src="./erp5.bridge.js?v=38"></script>
-<script src="./admin-shell.app.js?v=38"></script>
-<script src="./admin-shell.esign.js?v=38"></script>
-<script src="./admin-shell.mobile.js?v=38"></script>
+<script src="./erp5.data.js?v=40"></script>
+<script src="./erp5.bridge.js?v=40"></script>
+<script src="./admin-shell.app.js?v=40"></script>
+<script src="./admin-shell.esign.js?v=40"></script>
+<script src="./admin-shell.mobile.js?v=40"></script>
 <!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
-<script src="./erp5.ledger.js?v=38"></script>
-<script src="./erp5.ledger.bridge.js?v=38"></script>
+<script src="./erp5.ledger.js?v=40"></script>
+<script src="./erp5.ledger.bridge.js?v=40"></script>
 <!-- ★F04 시트 SSOT — 23탭에서 읽은 정본. 어디에도 «안 썼다» -->
-<script src="./f04.ssot.js?v=38"></script>
-<script src="./f04.bridge.js?v=39"></script>
+<script src="./f04.ssot.js?v=40"></script>
+<script src="./f04.bridge.js?v=40"></script>

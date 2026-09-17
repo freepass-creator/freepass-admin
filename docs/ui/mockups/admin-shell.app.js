@@ -33,6 +33,48 @@ const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
 const STAGES = ['영업자 1차 확인', '공급사 Cross Check', '관리자 최종 확정', '정산 원장 편입'];
 const isClaw = p => p.kind === 'CLAWBACK';
 
+/* ── ★프로모션 (대표 2026-09-17) ───────────────────────────────
+     「프로모션 반영금액이 있고 영업자 지급 비율을 넣을수 있게끔.
+       추가 50인데 50 다 줄거면 100% 로 해놓으면 되고, 기본 100%로 세팅」
+
+   사람이 넣는 것은 «둘» — 금액과 비율. 나머지는 파생이다.
+     공급사에게 받는다 = 기본 + 프로모션
+     영업자에게 준다   = 기본 + 프로모션 × 비율
+     우리에게 남는다   = 기본차 + 프로모션 × (1 − 비율)
+
+   ★비율 칸은 «퍼센트만» 받는다. 「1 이하면 비율」 로 두면 사람이 1% 를 뜻하고
+     적은 「1」 을 기계가 100% 로 읽어 프로모션이 통째로 남의 주머니로 간다.
+   규칙 정본과 시험은 src/domain/settlement/promotion.ts. */
+const DEFAULT_AGENT_SHARE = 1;
+const parseSharePct = raw => {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const s = String(raw).replace(/[%\s,]/g, '');
+  if (!s) return null;
+  const n = Number(s);
+  if (!Number.isFinite(n) || n < 0 || n > 100) return null;   /* ★120% 는 안 받는다 */
+  return n / 100;
+};
+const promoAmount = raw => {
+  const n = Number(String(raw ?? '').replace(/[,\s원]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+/** 갈라 놓는다. ★비율을 «안 정했으면» 가르지 않고 기다린다 */
+function splitPromo(amount, share) {
+  if (!amount) return { claim: 0, pay: 0, ours: 0, pending: false };
+  if (share === null || share === undefined) return { claim: amount, pay: 0, ours: 0, pending: true };
+  const pay = Math.round(amount * share);
+  return { claim: amount, pay, ours: amount - pay, pending: false };
+}
+/** 사람이 읽는 한 줄 */
+function promoLine(amount, share) {
+  if (!amount) return null;
+  const s = splitPromo(amount, share);
+  if (s.pending) return `프로모션 ${won(s.claim)} — <b class="unk">영업자 지급 비율을 아직 안 정했다</b>`;
+  const pct = Math.round(share * 100);
+  const tail = s.ours === 0 ? '전부 넘긴다' : s.pay === 0 ? '전부 우리가 갖는다' : `우리 몫 <b>${won(s.ours)}</b>`;
+  return `프로모션 ${won(s.claim)} · 영업자 ${pct}% (${won(s.pay)}) — ${tail}`;
+}
+
 /**
  * ★진행 한 칸이 끝났나 — «한 원장» 이라 계약서 칸은 파생값이다.
  *
@@ -351,7 +393,7 @@ function paneApps(el) {
         <td class="n">${esc(a.plate || '—')}</td>
         <td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
         <td class="r n" style="font-weight:650">${won(a.rent)}</td>
-        <td>${todoCell(a)}</td>
+        <td>${todoCell(a)}${a.promo ? `<span class="flag w" title="${esc(promoLine(a.promo, a.promoShare).replace(/<[^>]+>/g, ''))}">프로모션</span>` : ''}</td>
         <td class="mut n">${esc(a.at)}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
@@ -441,6 +483,9 @@ function detailApp(el) {
           <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${esc(a.trim)}</p>
           <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월 ${VAT}</div><div class="v">${won(a.rent)}</div></div>
             <span class="u">보증금 ${a.dep ? man(a.dep) + '원' : '무보증'} · ${yr(a.mile) || '약정 미확인'}</span></div>
+          ${a.promo ? `<div class="promo"><span class="pk">프로모션</span>
+            <span class="pv">${promoLine(a.promo, a.promoShare)}</span>
+            ${a.promoWhy ? `<span class="pw">${esc(a.promoWhy)}</span>` : '<span class="pw unk">사유 없음</span>'}</div>` : ''}
           <dl class="kv">
             <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : '<span class="unk">미배정</span>'}</dd>
             <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : '<span class="unk">미입력</span>'}</dd>
@@ -942,6 +987,20 @@ function detailNew(el) {
       <div class="fld"><label for="f-ph">연락처</label>
         <input id="f-ph" value="${esc(d.phone)}" placeholder="아직 몰라도 됩니다" autocomplete="off">
         <div class="hint">★필수가 아닙니다. 강제하면 010-0000-0000 이 원장에 쌓입니다.</div></div>
+
+      <div class="fld2">
+        <div class="fld"><label for="f-pm">프로모션 금액</label>
+          <input id="f-pm" class="n" inputmode="numeric" value="${d.promo ?? ''}" placeholder="예: 500000" autocomplete="off">
+          <div class="hint">공급사에서 «더 받는» 것. 없으면 비웁니다.</div></div>
+        <div class="fld"><label for="f-ps">영업자 지급 비율</label>
+          <div class="pctwrap"><input id="f-ps" class="n" inputmode="numeric"
+            value="${d.share ?? 100}" autocomplete="off"><span class="pct">%</span></div>
+          <div class="hint">★기본 100% — 다 넘깁니다.</div></div>
+      </div>
+      <div class="fld"><label for="f-pr">프로모션 사유</label>
+        <input id="f-pr" value="${esc(d.promoWhy || '')}" placeholder="예: 9월 전기차 프로모션" autocomplete="off">
+        <div class="hint">★사유 없는 돈은 다음 달에 아무도 못 읽습니다.</div></div>
+      <div id="promobox"></div>
       <div class="note"><span class="i">&#10003;</span><div><b>저장하면 이 조건이 «굳습니다»</b>
         <p>상품이 나중에 바뀌어도 이 접수의 계약조건은 안 바뀝니다. 같은 건을 두 번 눌러도 한 건만 만들어집니다.</p></div></div>
     </div></div></div>
@@ -950,6 +1009,27 @@ function detailNew(el) {
       subs: [{ t: '그만두기', go: () => { S.draft = null; S.focus = 'product'; render(); } }],
       main: { t: S.saving ? '저장 중…' : '접수 저장', off: !ok || S.saving, go: saveNew },
     })}`;
+
+  /* ★한 곳에서만 센다 — 화면이 자기대로 또 세면 저장값과 갈린다 */
+  const drawPromo = () => {
+    const box = el.querySelector('#promobox');
+    const amount = promoAmount(d.promo);
+    if (!amount) { box.innerHTML = ''; return; }
+    const share = d.share === '' || d.share === null || d.share === undefined
+      ? DEFAULT_AGENT_SHARE : parseSharePct(d.share);
+    const s = splitPromo(amount, share);
+    box.innerHTML = `<div class="note ${s.pending ? 'w' : ''}"><span class="i">${s.pending ? '!' : '&#10003;'}</span><div>
+      <b>${s.pending ? '영업자 지급 비율을 아직 안 정했습니다' : '이렇게 갈립니다'}</b>
+      <p>${promoLine(amount, share)}</p>
+      ${s.pending ? '<p>0~100 사이로 적어 주세요. 100 을 넘는 값은 안 받습니다.</p>'
+        : `<p>공급사 청구 ${won(d.o.rent)}건 수수료 <b>+ ${won(s.claim)}</b> ·
+             영업자 지급 <b>+ ${won(s.pay)}</b></p>`}
+    </div></div>`;
+  };
+  drawPromo();
+  el.querySelector('#f-pm').oninput = e => { d.promo = e.target.value; drawPromo(); };
+  el.querySelector('#f-ps').oninput = e => { d.share = e.target.value; drawPromo(); };
+  el.querySelector('#f-pr').oninput = e => { d.promoWhy = e.target.value; };
 
   const nm = el.querySelector('#f-nm');
   nm.oninput = () => {
@@ -980,6 +1060,14 @@ function saveNew() {
        F04 정산원장의 열쇠가 차량번호다(「한 계약의 키는 차량번호 + 접수일」).
        나중에 상품에서 다시 끌어오면 그 사이 상품이 바뀐 것을 물게 된다. */
     plate: d.p.plate || null,
+    /* ★프로모션을 «접수할 때» 굳힌다. 나중에 프로모션이 바뀌어도 이 건은 안 바뀐다.
+       파생(영업자 몫·우리 몫)은 «안 담는다» — 금액과 비율에서 언제든 다시 센다.
+       세 번째 수를 저장하면 둘과 어긋나고, 어긋나면 어느 것이 맞는지 아무도 모른다. */
+    promo: promoAmount(d.promo),
+    promoShare: promoAmount(d.promo)
+      ? (d.share === '' || d.share === null || d.share === undefined ? DEFAULT_AGENT_SHARE : parseSharePct(d.share))
+      : DEFAULT_AGENT_SHARE,
+    promoWhy: (d.promoWhy || '').trim() || null,
     pid: d.p.id, pv: d.p.v, sup: d.p.supplier, oid: d.o.id, term: d.o.term,
     rent: d.o.rent, dep: d.o.dep, mile: d.o.mile, ch: d.ch, staff: d.staff.split(' · ')[0],
     at: '09-16 ' + new Date().toTimeString().slice(0, 5),

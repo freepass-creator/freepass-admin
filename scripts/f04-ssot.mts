@@ -120,6 +120,11 @@ for (const tab of PERF_TABS) {
       price: p.num(r, '차량가액') || null,
       payKind: p.text(r, '분납여부'), rounds: p.num(r, '납입회차'),
       age: p.num(r, '연령'), region: p.text(r, '출고지역'),
+      /* ★프로모션 — 접수할 때 넣는다 (대표 2026-09-17).
+         「계약대여료」는 실제로 받는 값이고 「렌탈료」는 상품의 값이다.
+         둘이 다르면 그 차액이 프로모션이거나 업셀링이다. */
+      contractRent: p.num(r, '계약대여료'),
+      upsell: p.num(r, '업셀링금액'),
       /* 진행 */
       paper: p.check(r, '계약서'), delivered: p.check(r, '인도완료'), deliveredAt: p.date(r, '인도일'),
       cancelled: p.check(r, '취소'),

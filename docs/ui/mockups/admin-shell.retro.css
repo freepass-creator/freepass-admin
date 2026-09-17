@@ -41,7 +41,7 @@
 
 /* ★굴림이 진짜다 — 윈도우 95~XP 업무 프로그램의 그 글꼴.
    값은 굴림체(고정폭 짝)라 자릿수가 맞으면서 안 겉돈다. */
-:root.rt body{font-family:Gulim,굴림,Dotum,돋움,"Noto Sans KR",sans-serif;font-size:12px;letter-spacing:0}
+:root.rt body{font-family:Gulim,굴림,Dotum,돋움,"Noto Sans KR",sans-serif;font-size:var(--t-sm);letter-spacing:0}
 :root.rt .n,:root.rt table.g td.n,:root.rt kbd{font-family:GulimChe,굴림체,Consolas,monospace}
 
 /* 모서리를 «없앤다» — 둥근 것 하나만 남아도 그 시절 화면이 아니다 */
@@ -84,7 +84,7 @@
 /* 촘촘한 격자 — 칸선이 살아 있다 */
 :root.rt table.g{font-size:var(--표글씨,12px)}
 :root.rt table.g th{height:var(--h-s);padding:0 6px;background:linear-gradient(var(--rt-head-a),var(--rt-face-b));
-  border-right:1px solid var(--line);border-bottom:1px solid var(--line-2);box-shadow:var(--bev-hd);font-size:11px;font-weight:700;color:var(--rt-head-ink)}
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line-2);box-shadow:var(--bev-hd);font-size:var(--t-sm);font-weight:700;color:var(--rt-head-ink)}
 :root.rt table.g th:last-child{border-right:0}
 :root.rt table.g td{height:var(--h-m);padding:0 6px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
 :root.rt table.g td:last-child{border-right:0}
@@ -99,15 +99,15 @@
 /* 왼쪽 메뉴 — 어두운 판이 아니라 «밝은 판» 이다 */
 :root.rt .rail{background:var(--rail);border-right:1px solid var(--line-2)}
 :root.rt .brand{border-bottom:1px solid var(--line-2);background:linear-gradient(var(--rt-head-a),var(--rt-face-b));height:var(--h-l);padding:0 8px}
-:root.rt .brand .sq{width:20px;height:20px;background:var(--key);font-size:11px}
-:root.rt .brand b{color:var(--ink);font-size:12.5px;font-weight:700}
+:root.rt .brand .sq{width:20px;height:20px;background:var(--key);font-size:var(--t-sm)}
+:root.rt .brand b{color:var(--ink);font-size:var(--t-md);font-weight:700}
 :root.rt .brand span{color:var(--ink-3);letter-spacing:.06em}
 :root.rt .rail nav{padding:4px;gap:0}
-:root.rt .rail nav .gl{color:var(--ink-3);padding:6px 6px 3px;font-size:10px}
-:root.rt .rail nav button{height:var(--h-btn);color:var(--ink-2);font-size:12px;padding:0 7px;border-radius:0}
+:root.rt .rail nav .gl{color:var(--ink-3);padding:6px 6px 3px;font-size:var(--t-xs)}
+:root.rt .rail nav button{height:var(--h-btn);color:var(--ink-2);font-size:var(--t-sm);padding:0 7px;border-radius:0}
 :root.rt .rail nav button:hover{background:#e3ebf5;color:var(--ink)}
 :root.rt .rail nav button[aria-current="true"]{background:var(--key);color:var(--on-fill);box-shadow:var(--bev-in)}
-:root.rt .rail nav .bd{background:#fff;color:var(--key);border:1px solid var(--key-line);border-radius:0;font-size:10px}
+:root.rt .rail nav .bd{background:#fff;color:var(--key);border:1px solid var(--key-line);border-radius:0;font-size:var(--t-xs)}
 :root.rt .rail nav button[aria-current="true"] .bd{background:#dbe6f4;color:#2f4d78;border-color:#2f4d78}
 :root.rt .rail .rfoot{border-top:1px solid var(--line-2);background:var(--rail-2);color:var(--ink-3);padding:6px 8px}
 :root.rt .rail .rfoot b{color:var(--ink)}
@@ -115,14 +115,14 @@
 /* 위 띠 */
 :root.rt .topbar{height:var(--h-l);background:linear-gradient(var(--rt-head-a),var(--rt-face-b));border-bottom:1px solid var(--line-2)}
 :root.rt .who{border-left:1px solid var(--line-2)}
-:root.rt .who .av{width:20px;height:20px;background:var(--key);font-size:10px}
+:root.rt .who .av{width:20px;height:20px;background:var(--key);font-size:var(--t-xs)}
 
 /* 머리 · 숫자판 */
 :root.rt .body{padding:6px;gap:6px}
-:root.rt .phead h1{font-size:14px;font-weight:700}
+:root.rt .phead h1{font-size:var(--t-lg);font-weight:700}
 :root.rt .kpis{border:1px solid var(--line-2);box-shadow:var(--bev-hd);background:var(--card)}
 :root.rt .kpi{padding:3px 12px;border-right:1px solid var(--line)}
-:root.rt .kpi .v{font-size:14px}
+:root.rt .kpi .v{font-size:var(--t-lg)}
 :root.rt .work{gap:6px} :root.rt .lcol{gap:0}
 
 /* 알림 · 상태 — 알약이 아니라 «네모 딱지» */
@@ -130,18 +130,18 @@
 :root.rt .st.ok{border-color:#9dc4ae} :root.rt .st.wait{border-color:#ddc492}
 :root.rt .st.bad{border-color:#dfaba5} :root.rt .st.key{border-color:var(--key-line)}
 :root.rt .note{border:1px solid var(--line-2);box-shadow:var(--bev-hd)}
-:root.rt .note .i{border-radius:0;width:14px;height:14px;font-size:9px}
+:root.rt .note .i{border-radius:0;width:14px;height:14px;font-size:var(--t-xs)}
 
 /* 상세 */
 :root.rt .dwrap{padding:8px}
-:root.rt .dttl{font-size:15px;font-weight:700}
-:root.rt .amt .v{font-size:19px}
+:root.rt .dttl{font-size:var(--t-lg);font-weight:700}
+:root.rt .amt .v{font-size:var(--t-xl)}
 :root.rt .shot{height:118px;border:1px solid var(--line-2);box-shadow:var(--bev-in)}
 :root.rt .strip span{height:24px;border:1px solid var(--line-2)}
 :root.rt .kv dt,:root.rt .kv dd{padding-top:3px;padding-bottom:3px;border-bottom:1px solid var(--line)}
-:root.rt .sec h3{font-size:11px;letter-spacing:.02em;text-transform:none;color:var(--ink-2);font-weight:700}
+:root.rt .sec h3{font-size:var(--t-sm);letter-spacing:.02em;text-transform:none;color:var(--ink-2);font-weight:700}
 :root.rt .dact{height:var(--h-l);padding:0 8px;background:linear-gradient(var(--rt-head-a),var(--rt-soft-b));border-top:1px solid var(--line-2)}
-:root.rt .steps .stp .n2{border-radius:0;width:14px;height:14px;font-size:9px}
+:root.rt .steps .stp .n2{border-radius:0;width:14px;height:14px;font-size:var(--t-xs)}
 
 /* 가르는 선 */
 :root.rt .split{background:var(--ground)}
@@ -185,7 +185,7 @@
   box-shadow:var(--bev-hd),var(--s3);animation:none}
 :root.rt .fpanel header{height:var(--h-l);background:linear-gradient(var(--rt-head-a),var(--rt-face-b));
   border-bottom:1px solid var(--line-2);padding-left:8px}
-:root.rt .fpanel .hn b{font-size:16px}
+:root.rt .fpanel .hn b{font-size:var(--t-xl)}
 :root.rt .fpanel .hclr{border-radius:0;box-shadow:var(--bev);background:linear-gradient(var(--rt-face-a),var(--rt-face-b))}
 :root.rt .fmap{background:var(--tint);border-right:1px solid var(--line-2);padding:0}
 :root.rt .fmap button{height:var(--h-m);border-bottom:1px solid var(--line)}

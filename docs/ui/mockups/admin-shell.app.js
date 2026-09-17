@@ -17,6 +17,8 @@ const S = {
   pick: null, pickQ: '',
   ecTab: 'mk', ecQ: '', ecOpen: true,
   stlTab: 'open', stlQ: '', stlMonth: '', feeQ: '',
+  /** ★머리를 눌러 고르는 차례. 목록마다 따로 기억한다 */
+  sort: { product: { k: null, d: 1 }, app: { k: 'at', d: -1 } },
 };
 
 const NAV = [
@@ -125,7 +127,7 @@ const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${m
   : (o.depRate === 0 ? '무보증 (0%)' : '<span class="unk">미확인</span>');
 /* 목록용 짧은 꼴 — 칸에 「무보증 (0%)」 를 쓰면 «(0%)» 가 열 하나를 더 먹는다.
    비율은 상세에서 본다. 목록은 「얼마인가 / 없는가 / 모르는가」 셋만 답하면 된다. */
-const depShort = o => o.dep ? man(o.dep) + '만'
+const depShort = o => o.dep ? man(o.dep)
   : (o.depRate === 0 || o.dep === 0 ? '<span class="mut">무보증</span>' : unk());
 /** ★대여료는 VAT «포함» 이다 (대표 2026-09-16). 안 적으면 영업이 별도로 읽는다. */
 const VAT = '<span class="mut" style="font-size:10.5px">VAT 포함</span>';
@@ -290,6 +292,67 @@ const mileShort = m => m == null ? unk() : m === 0 ? '<span class="mut">신차</
 /** 청구월 — 강지수팀장이 넣던 칸. 비면 「아직 안 정해짐」 이지 「0」 이 아니다 */
 const billCell = b => b ? `<span class="n">${esc(b.replace('-', '.'))}</span>` : unk('미정');
 
+/* ══ ★ERP 그리드의 «일하는» 머리줄 ═══════════════════════════════
+   대표 2026-09-17 「아 진짜 뭔가 딱 안나오나 원래 부터 있는 erp처럼?」
+
+   지금까지 머리줄은 «글자» 였다. 누를 수 없고, 어느 차례로 선 것인지도 안 보였다.
+   업무용 목록에서 머리줄은 «일하는 자리» 다 — 누르면 그 칸으로 줄이 선다.
+   그게 없으면 사람은 목록을 「읽고」 만 있고, 정렬하러 시트를 다시 연다.
+
+   ★모르는 값(null)은 «어느 차례로 서든 맨 뒤» 다.
+     오름차순이라고 null 을 0 자리에 세우면 「미확인」이 「가장 싼 것」 이 된다. */
+const SORT_NULL_LAST = (x, y) => (x == null) - (y == null);
+
+/** 머리 칸 하나 — t 이름 · k 정렬 열쇠(없으면 못 누른다) · r 오른쪽정렬 */
+function th(t, k, opt = {}) {
+  const cur = S.sort[opt.of] || {};
+  const on = k && cur.k === k;
+  const cls = [opt.r ? 'r' : '', opt.c || '', k ? 'srt' : ''].filter(Boolean).join(' ');
+  if (!k) return `<th scope="col"${cls ? ` class="${cls}"` : ''}>${t}</th>`;
+  return `<th scope="col" class="${cls}"${on ? ` aria-sort="${cur.d > 0 ? 'ascending' : 'descending'}"` : ''}>
+    <button type="button" data-srt="${opt.of}|${k}" title="${esc(t)} 차례로">
+      <span>${t}</span><i class="ca${on ? (cur.d > 0 ? ' up' : ' dn') : ''}" aria-hidden="true"></i></button></th>`;
+}
+
+/** 목록을 고른 차례로 세운다. 값 뽑는 법은 부르는 쪽이 준다 */
+function sortBy(list, of, pick) {
+  const s = S.sort[of];
+  if (!s || !s.k || !pick[s.k]) return list;
+  const f = pick[s.k];
+  return [...list].sort((A, B) => {
+    const x = f(A), y = f(B);
+    const nl = SORT_NULL_LAST(x, y);
+    if (nl) return nl;                       /* ★모르는 것은 늘 뒤 */
+    if (x === y) return 0;
+    const c = typeof x === 'number' && typeof y === 'number'
+      ? x - y : String(x).localeCompare(String(y), 'ko');
+    return c * s.d;
+  });
+}
+
+/** 머리 누르기 — 같은 칸을 또 누르면 차례가 뒤집힌다 */
+function bindSort(el) {
+  el.querySelectorAll('[data-srt]').forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const [of, k] = b.dataset.srt.split('|');
+    const s = S.sort[of];
+    S.sort[of] = { k, d: s.k === k ? -s.d : 1 };
+    render();
+  });
+}
+
+/** 합계줄 — ★ERP 목록에 «반드시» 있는 줄이다. 없으면 사람이 계산기를 켠다 */
+/** 「몇 건 중 몇 번째」 — ERP 바닥줄의 붙박이. 없으면 목록에서 길을 잃는다 */
+function pos(n, i) {
+  if (!n) return '';
+  return `<span class="pos n">${i >= 0 ? `${i + 1} / ` : ''}${n.toLocaleString('ko-KR')}</span>`;
+}
+
+function sumRow(cells) {
+  return `<tfoot><tr>${cells.map(c => c === null ? '<td></td>'
+    : `<td class="${c.r ? 'r n' : ''}">${c.v}</td>`).join('')}</tr></tfoot>`;
+}
+
 const prod = () => PRODUCTS.find(p => p.id === S.pid);
 const offer = () => { const p = prod(); return p && p.offers.find(o => o.id === S.oid); };
 
@@ -307,7 +370,8 @@ function paneProducts(el) {
       ${tokens(sel)}
     </div>
     <div class="pb" id="pbA"></div>
-    <div class="pf">${tl('조건 밖', drops.length)}${tl('확인 필요', part, 'warn')}</div>`;
+    <div class="pf">${tl('조건 밖', drops.length)}${tl('확인 필요', part, 'warn')}
+      <span class="sp"></span>${pos(hits.length, hits.findIndex(x => x.p.id === S.pid))}</div>`;
 
   const q = $('#q');
   q.oninput = () => { S.q = q.value; paneProducts(el); const e = $('#q'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
@@ -317,14 +381,36 @@ function paneProducts(el) {
     const [a, k] = b.dataset.tok.split('|'); S.sel[a] = (S.sel[a] || []).filter(x => x !== k); render();
   });
 
+  /* ★고른 차례대로 세운다. 값 뽑는 법을 여기서 준다 — 「무엇으로 세우나」 를
+     한곳에 모아 둬야, 칸이 늘어도 정렬이 따라온다 */
+  const of = 'product';
+  const rows = sortBy(hits, of, {
+    veh:    x => x.p.maker + ' ' + x.p.name,
+    plate:  x => x.p.plate,
+    year:   x => x.p.year,
+    mile:   x => x.p.mileage,
+    sup:    x => x.p.supplier,
+    status: x => ({ 즉시출고: 0, 출고가능: 1, 협의: 2, 출고불가: 3 })[x.p.status] ?? 9,
+    term:   x => x.ok[0].term,
+    dep:    x => x.ok[0].dep,
+    rent:   x => x.ok[0].rent,
+  });
+  /* 합계줄 — 「이 조건에 몇 대가 있고, 값이 어디서 어디까지인가」 */
+  const rents = rows.map(x => x.ok[0].rent).filter(v => typeof v === 'number');
+  const lo = rents.length ? Math.min(...rents) : null, hi = rents.length ? Math.max(...rents) : null;
+  const avg = rents.length ? Math.round(rents.reduce((s, v) => s + v, 0) / rents.length) : null;
+
   $('#pbA').innerHTML = hits.length ? `<table class="g">
     <caption class="sr">상품 목록 — 차량, 차량번호, 연식, 주행, 공급사, 상태, 기간, 보증금, 월 대여료</caption>
-    <thead><tr><th scope="col" class="thc"></th><th scope="col">차량</th>
-      <th scope="col">차량번호</th><th scope="col" class="r">연식</th><th scope="col" class="r">주행</th>
-      <th scope="col">공급사</th><th scope="col">상태</th>
-      <th scope="col" class="r">기간</th><th scope="col" class="r">보증금</th>
-      <th scope="col" class="r">월 대여료</th></tr></thead>
-    <tbody>${hits.map(({ p, ok }) => {
+    <thead><tr>${th('', null, { c: 'thc' })}${th('차량', 'veh', { of })}
+      ${th('차량번호', 'plate', { of })}${th('연식', 'year', { of, r: 1 })}${th('주행', 'mile', { of, r: 1 })}
+      ${th('공급사', 'sup', { of })}${th('상태', 'status', { of })}
+      ${th('기간', 'term', { of, r: 1 })}${th('보증금', 'dep', { of, r: 1 })}
+      ${th('월 대여료', 'rent', { of, r: 1 })}</tr></thead>
+    ${sumRow([null, { v: `<b>${rows.length}</b>대` }, null, null, null, null, null,
+      { v: '평균', r: 1 }, { v: lo === null ? '' : `<span class="mut">${man(lo)} ~ ${man(hi)}</span>`, r: 1 },
+      { v: avg === null ? '' : `<b>${won(avg)}</b>`, r: 1 }])}
+    <tbody>${rows.map(({ p, ok }) => {
       const lead = ok[0], part = p.match !== 'TRIM';
       return `<tr data-id="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
         <td class="thc"><span class="thumb">${p.body ? glyph() : ''}</span></td>
@@ -349,6 +435,7 @@ function paneProducts(el) {
       : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
     </details>`);
 
+  bindSort($('#pbA'));
   $('#pbA').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.pid = r.dataset.id; S.oid = null; S.shot = 0; S.focus = 'product'; render(); });
   if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
 }
@@ -423,7 +510,8 @@ function paneApps(el) {
     </div>
     <div class="pb" id="pbB"></div>
     <div class="pf">${tl('칠 것', APPS.filter(x => blocked(x)).length, 'warn')}${tl('인도완료', APPS.filter(x => x.deliv && !x.cxl).length, 'ok')}${tl('취소', APPS.filter(x => x.cxl).length)}
-      <span class="sp"></span><span class="t"><i>가장 오래 걸린 것</i><b class="warn">3일</b></span></div>`;
+      <span class="sp"></span><span class="t"><i>월 대여료 합계</i><b class="n">${won(list.reduce((s, x) => s + (x.rent || 0), 0))}</b></span>
+      ${pos(list.length, list.findIndex(x => x.no === S.appNo))}</div>`;
 
   const aq = $('#aq');
   aq.oninput = () => { S.appQ = aq.value; paneApps(el); const e = $('#aq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
@@ -431,14 +519,29 @@ function paneApps(el) {
   el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.appFilter = b.dataset.f; render(); });
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
+  const of = 'app';
+  const rows = sortBy(list, of, {
+    at: x => x.at, todo: x => blockOf(x).t || 'ㅎ',   /* ★끝난 건은 뒤로 */
+    cust: x => x.cust, plate: x => x.plate, veh: x => x.veh, sup: x => x.sup,
+    product: x => (x.product || '') + (x.rentKind || ''),
+    ch: x => x.ch, term: x => x.term, rent: x => x.rent,
+    bill: x => x.billMonth,
+  });
+  const tot = rows.reduce((s, x) => s + (x.rent || 0), 0);
+  const promo = rows.reduce((s, x) => s + (x.promo || 0), 0);
+
   $('#pbB').innerHTML = list.length ? `<table class="g wide">
-    <caption class="sr">접수 목록 — 접수일, 고객, 차량번호, 차량, 공급사, 상품, 채널, 담당, 조건, 월 대여료, 할 일, 청구월</caption>
-    <thead><tr><th scope="col">접수일</th><th scope="col">할 일</th><th scope="col">고객</th>
-      <th scope="col">차량번호</th><th scope="col">차량</th>
-      <th scope="col">공급사</th><th scope="col">상품</th><th scope="col">채널 · 담당</th>
-      <th scope="col" class="r">기간</th><th scope="col" class="r">월 대여료</th>
-      <th scope="col" class="pin-r">청구월</th></tr></thead>
-    <tbody>${list.map(a => {
+    <caption class="sr">접수 목록 — 접수일, 할 일, 고객, 차량번호, 차량, 공급사, 상품, 채널·담당, 기간, 월 대여료, 청구월</caption>
+    <thead><tr>${th('접수일', 'at', { of })}${th('할 일', 'todo', { of })}${th('고객', 'cust', { of })}
+      ${th('차량번호', 'plate', { of })}${th('차량', 'veh', { of })}
+      ${th('공급사', 'sup', { of })}${th('상품', 'product', { of })}${th('채널 · 담당', 'ch', { of })}
+      ${th('기간', 'term', { of, r: 1 })}${th('월 대여료', 'rent', { of, r: 1 })}
+      ${th('청구월', 'bill', { of, c: 'pin-r' })}</tr></thead>
+    ${sumRow([{ v: `<b>${rows.length}</b>건` }, null, null, null, null, null, null,
+      { v: '합계', r: 1 }, null,
+      { v: `<b>${won(tot)}</b>${promo ? `<span class="sfx">프로모 ${man(promo)}</span>` : ''}`, r: 1 },
+      null])}
+    <tbody>${rows.map(a => {
       const direct = /다이렉트/.test(a.ch || '');
       return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
         <td class="mut n">${esc((a.at || '').slice(0, 5))}</td>
@@ -454,6 +557,7 @@ function paneApps(el) {
         <td class="pin-r">${a.cxl ? dash() : billCell(a.billMonth)}</td></tr>`;
     }).join('')}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
+  bindSort($('#pbB'));
   $('#pbB').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.appNo = r.dataset.no; S.focus = 'app'; render(); });
 }
 

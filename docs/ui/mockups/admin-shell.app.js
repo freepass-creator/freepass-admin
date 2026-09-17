@@ -975,10 +975,14 @@ function saveNew() {
   const no = 'A-260916-' + String(S.seq++).padStart(3, '0');
   APPS.unshift({
     no, cust: d.name.trim(), phone: d.phone.trim(), veh: d.p.name, trim: d.p.sub,
+    /* ★차량번호를 «접수할 때» 굳힌다.
+       F04 정산원장의 열쇠가 차량번호다(「한 계약의 키는 차량번호 + 접수일」).
+       나중에 상품에서 다시 끌어오면 그 사이 상품이 바뀐 것을 물게 된다. */
+    plate: d.p.plate || null,
     pid: d.p.id, pv: d.p.v, sup: d.p.supplier, oid: d.o.id, term: d.o.term,
     rent: d.o.rent, dep: d.o.dep, mile: d.o.mile, ch: d.ch, staff: d.staff.split(' · ')[0],
     at: '09-16 ' + new Date().toTimeString().slice(0, 5),
-    contract: false, docs: false, deliv: false, cxl: false,
+    contract: false, docs: false, balance: false, deliv: false, cxl: false,
   });
   S.draft = null; S.saving = false;
   S.screen = 'intake'; S.appFilter = 'todo'; S.appNo = no; S.focus = 'app';
@@ -1062,4 +1066,9 @@ document.addEventListener('keydown', ev => {
   if (ev.key === '[') { $('#railtoggle').click(); }
 });
 
-render();
+/* ★첫 그리기는 «맨 뒤» 다.
+   app.js 가 끝나자마자 그리면 뒤에 오는 esign.js 의 const 가 아직 TDZ 라
+   `typeof ecOf` 조차 ReferenceError 로 터진다(실측 — 상세 판이 통째로 비었다).
+   DOMContentLoaded 는 마지막 스크립트까지 파싱된 뒤에 온다. */
+if (document.readyState === 'loading') addEventListener('DOMContentLoaded', () => render());
+else render();

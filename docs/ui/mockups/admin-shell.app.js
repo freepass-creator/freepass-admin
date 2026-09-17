@@ -871,9 +871,12 @@ function renderSheet() {
 
   root.innerHTML = `<div class="fdrop${phone ? ' phone' : ''}" id="fw">
     <div class="fpanel" id="fp" role="dialog" aria-label="세부 조건">
-      <header><b>세부 조건</b><span class="c">${n}건</span><span class="sp"></span>
-        ${picked ? '<button id="sclr">전부 해제</button>' : ''}
-        <button id="sx" aria-label="닫기">&#10005;</button></header>
+      <header>
+        <span class="hn"><b>${n.toLocaleString()}</b>건</span>
+        <span class="hs">${picked ? `조건 ${Object.values(S.sel).reduce((t, v) => t + (v || []).length, 0)}개` : '조건을 고르면 바로 줄어듭니다'}</span>
+        <span class="sp"></span>
+        ${picked ? '<button id="sclr" class="hclr">전부 해제</button>' : ''}
+        <button id="sx" class="hx" aria-label="닫기">&#10005;</button></header>
       <div class="fbody">
         <nav class="fmap" role="tablist" aria-label="필터 항목">${live.map(({ ax, opts }) => {
           const k = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
@@ -883,36 +886,52 @@ function renderSheet() {
         <div class="fvals" role="tabpanel">${cur ? `
           <h4>${esc(cur.ax.t)}
             ${cur.ax.scope === 'offer' ? '<i title="같은 Offer 안에서 잽니다 — 다른 Offer 의 값을 섞지 않습니다">같은 Offer</i>' : ''}
-            ${(S.sel[cur.ax.k] || []).length ? `<button class="fclr" data-clr="${cur.ax.k}">해제</button>` : ''}</h4>
+            ${(S.sel[cur.ax.k] || []).length ? `<button class="fclr" data-clr="${cur.ax.k}">이 항목 해제</button>` : ''}</h4>
           <p class="fhint">${cur.ax.scope === 'offer'
             ? '★같은 Offer 하나가 다 만족해야 «찾았다» 입니다 — 다른 Offer 의 값을 섞지 않습니다.'
             : '차 자체에 대는 잣대입니다.'}</p>
-          ${cur.opts.map(({ o, c }) => {
-            const on = (sel[cur.ax.k] || []).includes(o.k);
-            const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
-            return `<button class="fopt" data-a="${cur.ax.k}" data-k="${o.k}" aria-pressed="${on}"
-              ${fq ? 'disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
-              <span class="bx">&#10003;</span>
-              <span class="t">${esc(o.label)}${fq ? '<span class="fq">검색어</span>' : ''}</span>
-              <span class="c">${c}</span></button>`;
-          }).join('')}` : '<div class="empty"><b>고를 조건이 없다</b><p>지금 목록에 값이 하나뿐이면 가를 것이 없다.</p></div>'}</div>
+          ${(() => {
+            /* ★고른 것을 맨 위로 올린다 — 스무 줄짜리 축에서 내가 뭘 골랐는지 찾아 헤매지 않게 */
+            const on = k => (sel[cur.ax.k] || []).includes(k);
+            const rows = [...cur.opts].sort((x, y) => (on(y.o.k) ? 1 : 0) - (on(x.o.k) ? 1 : 0));
+            const max = Math.max(...cur.opts.map(x => x.c), 1);
+            return rows.map(({ o, c }) => {
+              const sel1 = on(o.k);
+              const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
+              /* ★막대 — 「몇 건인가」 를 눈으로 먼저 읽는다. 숫자는 그 다음이다 */
+              const w = Math.round(c / max * 100);
+              return `<button class="fopt" data-a="${cur.ax.k}" data-k="${o.k}" aria-pressed="${sel1}"
+                ${fq ? 'disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
+                <span class="fmeter" style="width:${w}%" aria-hidden="true"></span>
+                <span class="t">${esc(o.label)}${fq ? '<span class="fq">검색어</span>' : ''}</span>
+                <span class="c">${c.toLocaleString()}</span></button>`;
+            }).join('');
+          })()}` : '<div class="empty"><b>고를 조건이 없다</b><p>지금 목록에 값이 하나뿐이면 가를 것이 없다.</p></div>'}</div>
       </div>
       ${phone ? `<div class="sft"><button class="btn go" id="sdone">${n}건 보기</button></div>` : ''}
     </div></div>`;
 
   /* ★단추 바로 아래에 붙인다. 오른쪽 끝을 맞춘다 — 검색창 «안» 우측에서 나오니까 */
   if (!phone) {
-    const anchor = $('#cond') || $('.fd');
+    /* ★찾는 칸 «왼쪽 끝» 에 맞춘다.
+       전에는 단추(오른쪽 끝)에 맞췄더니 폭 480 이 왼쪽으로 뻗어
+       사이드바까지 넘어가 목록 위에 어정쩡하게 걸쳤다(실측).
+       찾는 칸에서 나온 것이니 찾는 칸에서 시작하는 게 눈에 맞는다.
+       ★판 밖으로는 안 나간다 — 넘치면 판 안으로 당긴다. */
+    const box = $('.fd');
+    const pane = $('#p1');
     const panel = $('#fp');
     const place = () => {
-      const r = anchor.getBoundingClientRect();
-      const w = Math.min(480, innerWidth - 24);
-      let left = Math.round(r.right - w);
-      if (left < 12) left = 12;
-      panel.style.top = Math.round(r.bottom + 6) + 'px';
+      const r = box.getBoundingClientRect();
+      const p = pane.getBoundingClientRect();
+      const w = Math.min(460, Math.max(r.width, p.width - 24), innerWidth - 24);
+      let left = Math.round(r.left);
+      if (left + w > p.right - 12) left = Math.round(p.right - 12 - w);
+      if (left < p.left + 12) left = Math.round(p.left + 12);
+      panel.style.top = Math.round(r.bottom + 7) + 'px';
       panel.style.left = left + 'px';
       panel.style.width = w + 'px';
-      panel.style.maxHeight = Math.max(220, innerHeight - r.bottom - 24) + 'px';
+      panel.style.maxHeight = Math.max(240, innerHeight - r.bottom - 28) + 'px';
     };
     place();
     const on = () => place();

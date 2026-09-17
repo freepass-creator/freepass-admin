@@ -172,19 +172,22 @@
 :root.rt .a4{border-radius:0;box-shadow:var(--bev-in)}
 
 /* ── 세부필터 드롭 — 같은 markup, 결만 갈린다 ─────────────── */
-:root.rt .fpanel{border-radius:0;border:1px solid var(--line-2);box-shadow:var(--bev-hd)}
-:root.rt .fpanel header{height:var(--h-m);background:linear-gradient(var(--rt-head-a),var(--rt-face-b));
-  border-bottom:1px solid var(--line-2)}
-:root.rt .fpanel header b{font-weight:700}
-:root.rt .fmap{background:var(--tint);border-right:1px solid var(--line-2)}
+:root.rt .fpanel{border-radius:0;border:1px solid var(--line-2);
+  box-shadow:var(--bev-hd),var(--s3);animation:none}
+:root.rt .fpanel header{height:var(--h-l);background:linear-gradient(var(--rt-head-a),var(--rt-face-b));
+  border-bottom:1px solid var(--line-2);padding-left:8px}
+:root.rt .fpanel .hn b{font-size:16px}
+:root.rt .fpanel .hclr{border-radius:0;box-shadow:var(--bev);background:linear-gradient(var(--rt-face-a),var(--rt-face-b))}
+:root.rt .fmap{background:var(--tint);border-right:1px solid var(--line-2);padding:0}
 :root.rt .fmap button{height:var(--h-m);border-bottom:1px solid var(--line)}
-:root.rt .fmap button[aria-selected="true"]{background:var(--card);box-shadow:inset 3px 0 0 var(--key)}
+:root.rt .fmap button[aria-selected="true"]{background:var(--card);margin-right:0;
+  border-top:0;box-shadow:inset 3px 0 0 var(--key)}
+:root.rt .fmap button[aria-selected="true"]::before{display:none}
 :root.rt .fmap .b{border-radius:0}
-:root.rt .fvals h4 i{border-radius:0}
-:root.rt .fopt{height:var(--h-m);border-bottom:1px solid var(--line)}
-:root.rt .fopt .bx{border-radius:0;box-shadow:var(--bev-in);background:var(--card)}
-:root.rt .fopt[aria-pressed="true"] .bx{background:var(--key);box-shadow:var(--bev-in)}
-:root.rt .fopt .fq{border-radius:0}
+:root.rt .fvals h4 i,:root.rt .fopt .fq{border-radius:0}
+:root.rt .fopt{height:var(--h-m);border-radius:0;margin-bottom:0;border-bottom:1px solid var(--line)}
+:root.rt .fopt .fmeter{border-radius:0;opacity:.8}
+:root.rt .fopt[aria-pressed="true"]{background:var(--key-soft)}
 
 /* ══ ★레트로 «어둡게» ══════════════════════════════════════
    같은 결이다 — 볼록·오목·격자·굴림은 그대로 두고 «면과 글자만» 뒤집는다.

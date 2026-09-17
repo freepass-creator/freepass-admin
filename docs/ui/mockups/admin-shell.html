@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>계약 접수 데스크</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="./admin-shell.retro.css?v=36">
+<link rel="stylesheet" href="./admin-shell.retro.css?v=37">
 <style>
 :root{
   /* 판은 «미색» 이다. 순백을 크게 깔면 오후에 눈이 시리다 */
@@ -244,6 +244,10 @@ kbd{font-family:var(--mono);font-size:9.5px;font-weight:600;border-radius:3px;pa
 .fd .fx.on .b{background:#fff;color:var(--key)}
 .sb{height:var(--h-ctl);padding:0 10px;border:1px solid var(--line-2);border-radius:var(--r-ctl);background:var(--card);cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:var(--sp)}
 .sb:hover{background:var(--tint)}
+/* 달 고르개 — 찾는 칸과 «같은 키» 로 선다 */
+.sel{height:var(--h-ctl);padding:0 8px;border:1px solid var(--line-2);border-radius:var(--r-ctl);
+  background:var(--card);color:var(--ink);font-size:12px;cursor:pointer}
+.sel:focus{outline:none;border-color:var(--key);box-shadow:var(--ring)}
 .sb[aria-pressed="true"]{background:var(--key);border-color:var(--key);color:#fff;font-weight:600}
 .sb .b{font-family:var(--mono);font-size:10px;opacity:.85}
 .tok{height:var(--h-chip);padding:0 5px 0 9px;border:1px solid var(--key-line);border-radius:var(--r-chip);background:var(--key-soft);color:var(--key);font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:default}
@@ -614,10 +618,13 @@ table.g tr.expbody:hover td{background:var(--tint)}
 <div id="pickroot"></div>
 <div id="sheetroot"></div>
 
-<script src="./admin-shell.data.js?v=36"></script>
+<script src="./admin-shell.data.js?v=37"></script>
 <!-- ★ERP5(freepasserp5) 진짜 자료. ?data=sample 을 붙이면 표본으로 되돌아간다 -->
-<script src="./erp5.data.js?v=36"></script>
-<script src="./erp5.bridge.js?v=36"></script>
-<script src="./admin-shell.app.js?v=36"></script>
-<script src="./admin-shell.esign.js?v=36"></script>
-<script src="./admin-shell.mobile.js?v=36"></script>
+<script src="./erp5.data.js?v=37"></script>
+<script src="./erp5.bridge.js?v=37"></script>
+<script src="./admin-shell.app.js?v=37"></script>
+<script src="./admin-shell.esign.js?v=37"></script>
+<script src="./admin-shell.mobile.js?v=37"></script>
+<!-- ★ERP5 실적 461줄. 아직 Firestore 에 «안 썼다» — 보여주기만 한다 -->
+<script src="./erp5.ledger.js?v=37"></script>
+<script src="./erp5.ledger.bridge.js?v=37"></script>

@@ -16,6 +16,7 @@ const S = {
   mini: false, draft: null, saving: false, seq: 16,
   pick: null, pickQ: '',
   ecTab: 'mk', ecQ: '', ecOpen: true,
+  stlTab: 'open', stlQ: '', stlMonth: '',
 };
 
 const NAV = [

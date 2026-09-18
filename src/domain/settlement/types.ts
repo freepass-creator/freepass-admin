@@ -140,11 +140,11 @@ export const isPerformance = (r: SettlementRow) => r.progress.delivered && !r.pr
 /** ★아직 «접수» 다 — 인도 전이라 실적이 안 섰다 */
 export const isOpenIntake = (r: SettlementRow) => !r.progress.delivered && !r.progress.cancelled;
 
-/** 남는 것. ★청구를 «모르면» 마진도 모른다 — 0 으로 세지 않는다 */
-export function margin(r: SettlementRow): Maybe<number> {
-  if (r.money.claim === null) return null;
-  return r.money.claim - (r.money.pay ?? 0);
-}
+/**
+ * 남는 것 — ★money.ts 의 marginOf 와 «같다»(프로모션·가감·비율까지). 전에는 청구 − 지급만 봐서 금액 줄과 어긋났다
+ *   (디자인 세션 2026-09-18 알림). 옛 이름을 지우지 않고 같은 셈으로 돌린다.
+ */
+export { marginOf as margin } from './money';
 
 /**
  * ★이 줄이 지금 «무엇에 막혀 있나». 없으면 null.

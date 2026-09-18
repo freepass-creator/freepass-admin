@@ -14,6 +14,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Share } from './Share';
 import { ChosenOffer } from './chosen-offer';
+import { ActionBar } from './Primitives';
 
 export function DetailTabs({ summary, info, applyBase, initialOffer }: {
   summary: ReactNode; info: ReactNode;
@@ -36,14 +37,12 @@ export function DetailTabs({ summary, info, applyBase, initialOffer }: {
         <div hidden={tab !== 'info'}>{info}</div>
       </div>
       {/* ★하단바 — 판 바닥(§14-3): [공유 3] [이 상품 접수하기 7] */}
-      <div className="dz-bar">
-        <div className="dz-bar-go">
-          <Share />
-          {applyBase && offer && (
-            <a className="primary" href={`${applyBase}${applyBase.includes('?') ? '&' : '?'}offer=${encodeURIComponent(offer)}`}>이 상품 접수하기</a>
-          )}
-        </div>
-      </div>
+      <ActionBar>
+        <Share />
+        {applyBase && offer && (
+          <a className="primary" href={`${applyBase}${applyBase.includes('?') ? '&' : '?'}offer=${encodeURIComponent(offer)}`}>이 상품 접수하기</a>
+        )}
+      </ActionBar>
     </ChosenOffer.Provider>
   );
 }

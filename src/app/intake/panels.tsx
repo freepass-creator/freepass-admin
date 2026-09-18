@@ -17,6 +17,8 @@ import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/Intak
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
 import { MoneyForm } from './MoneyForm';
+import { PaidRounds } from './PaidRounds';
+import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 
@@ -132,6 +134,10 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref }
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</p>}
       <Progress code={r.id} paper={r.progress.paper} delivered={r.progress.delivered}
         deliveredAt={r.progress.deliveredAt ?? ''} cancelled={r.progress.cancelled} today={today()} />
+      {/* 받은 회차 — 분납 · 인도된 줄에서만(기능 세션 2026-09-18) */}
+      {roundsOf(r.payKind) >= 2 && r.progress.delivered && (
+        <PaidRounds code={r.id} rounds={roundsOf(r.payKind)} paid={r.paidRounds} disabled={r.progress.cancelled} />
+      )}
 
       {/* 돈 — 한 곳에서 센 금액((수수료 + 프로모션) × 비율 + 가감). 나머지 원자는 아래 «성격별 구역» 이 다 싣는다 */}
       <h3 className="dz-sub">금액</h3>

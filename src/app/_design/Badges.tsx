@@ -31,7 +31,7 @@ export function 신원(text: string): { icon: string; good?: boolean } {
 
 /** ① 신원 칩 — tone: plain(옅은 면) · act(할 일 있음 — 옅은 남색 면 + 남색 글자) · 좋은 소식은 초록 */
 export function Tag({ children, tone = 'plain', icon, good }: {
-  children: ReactNode; tone?: 'plain' | 'act'; icon?: string; good?: boolean;
+  children: ReactNode; tone?: 'plain' | 'act' | 'warn'; icon?: string; good?: boolean;
 }) {
   return (
     <i className={`dz-badge ${tone}${good ? ' good' : ''}`}>

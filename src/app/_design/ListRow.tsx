@@ -19,9 +19,9 @@ import type { ReactNode } from 'react';
 import { PerkMarks, Tag, 신원 } from './Badges';
 
 /** 접수·실적 한 칸 — 끝 · 취소는 제 그림, 할 일이 남았으면(act) 기다림 */
-const 할일 = (text: string, tone: 'plain' | 'act') => {
+const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
   const s = 신원(text);
-  return tone === 'act' && s.icon === 'tag' ? { icon: 'clock' } : s;
+  return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };
 
 export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
@@ -34,7 +34,7 @@ export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'p
   badge?: ReactNode;
   /** 뱃지 여럿(상품: 상품구분 · 배차상태) — 늘 옅은 바탕 */
   badges?: ReactNode[];
-  tone?: 'plain' | 'act';
+  tone?: 'plain' | 'act' | 'warn';
   /** 둘째 줄 앞의 «살필 것» 한 마디 — 남색 굵게(예: 차종이 「세부모델까지」만 확정) */
   flag?: ReactNode;
   meta?: ReactNode;

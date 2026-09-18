@@ -6,7 +6,8 @@ import type { Offer } from '../../domain/product/types';
 import { vehicleName } from '../_fn/product';
 import { num, sp, txt, vocab, won } from '../_fn/fmt';
 import { settlements } from '../../server/erp5';
-import { blockOf, isOpenIntake, type SettlementRow } from '../../domain/settlement/types';
+import { blockOf, type SettlementRow } from '../../domain/settlement/types';
+import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow } from '../_design/ListRow';
@@ -226,11 +227,15 @@ export async function ProductWorkspace({ q, mode, base }: {
    *   주소 칸은 i 로 시작한다(iq · iv · im · isup · ich) — 상품 쪽 거름과 안 섞이게.
    */
   const iq = sp(q.iq).trim().toLowerCase();
-  const iv = sp(q.iv) || 'open';
-  const 진행 = (r: SettlementRow) =>
-    iv === 'open' ? isOpenIntake(r)
-      : iv === 'delivered' ? r.progress.delivered && !r.progress.cancelled
-        : iv === 'cancelled' ? r.progress.cancelled : true;
+  /**
+   * ★접수 목록 칸 = 계약이 앉는 자리 다섯(기능 stage.ts · 대표 2026-09-18 「접수 → 분납실적/완납실적 → 완납·인도 기준 청구·지급」)
+   *   당월접수 · 미완료 · 분납실적 · 완납실적 · 취소. 옛 「진행중 / 인도완료」 가름은 버렸다.
+   *   처음 여는 칸 = 당월접수(이달의 일). ★미완료(지난달 이전 접수인데 아직 인도 전)는 오래 있을수록 위험 — 단추·줄을 붉게.
+   */
+  const iv = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : '당월접수';
+  const 칸의 = new Map(irows.map((r) => [r, bucketOf(r)] as const));
+  const 칸수 = Object.fromEntries(BUCKETS.map((b) => [b, irows.filter((r) => 칸의.get(r) === b).length])) as Record<Bucket, number>;
+  const 진행 = (r: SettlementRow) => iv === 'all' || 칸의.get(r) === iv;
   /** 접수 판의 세부검색 축 — 상품 판과 같은 두 칸 조건판 · 같은 셈(주소 칸은 i 로 시작) */
   const 접수축: [string, string, (r: SettlementRow) => string][] = [
     ['im', '접수월', (r) => String(r.receivedAt ?? '').slice(0, 7)],
@@ -381,8 +386,10 @@ export async function ProductWorkspace({ q, mode, base }: {
             <FilterSheet axes={접수판축} count={ishown.length} unit="건" />
           </div>
           <div className="quick-filters">
-            {([['all', '전체'], ['open', '진행중'], ['delivered', '인도완료'], ['cancelled', '취소']] as const).map(([v, label]) => (
-              <Link key={v} className={iv === v ? 'active' : ''} href={keep({ iv: v === 'open' ? '' : v })}>{label}</Link>
+            <Link className={iv === 'all' ? 'active' : ''} href={keep({ iv: 'all' })}>전체</Link>
+            {BUCKETS.map((b) => (
+              <Link key={b} className={`${iv === b ? 'active' : ''}${b === '미완료' && 칸수[b] ? ' warn' : ''}`}
+                href={keep({ iv: b === '당월접수' ? '' : b })}>{b} <small>{칸수[b]}</small></Link>
             ))}
           </div>
           </div>
@@ -392,7 +399,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
                   href={keep({ ic: r.id, w: '', v: 'work' })}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
-                  tone={!r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
+                  tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}

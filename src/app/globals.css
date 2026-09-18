@@ -1145,3 +1145,9 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-sec-empty > summary::-webkit-details-marker { display: none; }
 .dz-sec-empty > summary:hover { background: var(--박스); color: #6b7580; }
 .dz-sec-empty > .dz-sec-table { margin-top: 4px; }
+
+/* ★미완료 — 지난달 이전 접수인데 아직 인도 전. 오래 있을수록 위험(기능 stage.ts) — 붉은 결로 눈에 띄게(색으로만 · 규칙 ④) */
+.fn-main .workspace .quick-filters a small { margin-left: 4px; font-size: var(--글보조); opacity: .7; font-variant-numeric: tabular-nums; }
+.fn-main .workspace .quick-filters a.warn:not(.active) { color: #a8261d; font-weight: 700; }
+.fn-main .workspace .quick-filters a.warn.active { background: #a8261d; }
+.dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; font-weight: 700; }

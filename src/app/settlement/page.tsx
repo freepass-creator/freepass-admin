@@ -5,7 +5,7 @@ import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '..
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
-import { IssueForm } from './LifeForms';
+import { ClaimLink, IssueForm } from './LifeForms';
 import { Icon } from '../_design/Icon';
 
 export const dynamic = 'force-dynamic';
@@ -159,6 +159,8 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                   : <p className="dz-warn">{계획.error}</p>}
                 {어긋남 && <p className="dz-warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</p>}
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
+                {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
+                  live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt} response={장.response ?? null} />}
               </div>
             )}
           </div>

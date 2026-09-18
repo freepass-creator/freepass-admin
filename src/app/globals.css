@@ -1418,3 +1418,79 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 }
 .dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
 .dz-choice input:focus-visible + span { box-shadow: 0 0 0 2px var(--ci스카이); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 청구 링크 (/c/[token]) — 공급사가 여는 문. 관리자 틀 없음 · 옷은 같은 규격(§14-9)
+   ═══════════════════════════════════════════════════════════════════ */
+.cl-main { max-width: 720px; margin: 0 auto; padding: 24px 16px 96px; color: var(--글); font-size: var(--글메인); }
+body:has(> .cl-main) { background: var(--바닥); }
+.cl-brand { display: inline-flex; align-items: center; gap: 8px; font-size: var(--글제목); }
+.cl-brand b { font-weight: 700; color: var(--ci남색); letter-spacing: -.2px; }
+.cl-card { padding: 20px; border: 1px solid var(--선); border-radius: var(--r); background: var(--판); }
+.cl-door { max-width: 420px; margin: 12vh auto 0; display: grid; gap: 12px; }
+.cl-main h1 { margin: 0; font-size: var(--글제목); font-weight: 800; letter-spacing: -.4px; }
+.cl-muted { margin: 0; color: #6b7580; font-size: var(--글보조); line-height: 18px; }
+.cl-door form { display: grid; gap: 12px; }
+.cl-door label, .cl-memo { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.cl-door input, .cl-memo textarea {
+  height: var(--컨트롤); padding: 0 12px; border: 1px solid var(--선); border-radius: var(--r); background: var(--판);
+  font-size: 16px; color: var(--글); font-family: inherit;
+}
+.cl-memo textarea { height: auto; padding: 10px 12px; }
+.cl-primary, .cl-sub-btn {
+  height: 44px; border: 0; border-radius: var(--r); font-size: var(--글메인); font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.cl-primary { background: var(--ci남색); color: #fff; }
+.cl-primary:disabled { opacity: .5; cursor: default; }
+.cl-sub-btn { background: var(--박스손); color: #4f5862; font-weight: 600; }
+.cl-err { margin: 0; color: #a8261d; font-weight: 700; font-size: var(--글보조); }
+.cl-head { display: grid; gap: 8px; margin: 0 0 16px; }
+.cl-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cl-sum > div { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--r); background: var(--박스); }
+.cl-sum span { font-size: var(--글보조); color: #6b7580; }
+.cl-sum b { font-size: var(--글메인); font-variant-numeric: tabular-nums; }
+.cl-sum .cl-total { background: var(--고름); }
+.cl-sum .cl-total b { color: var(--ci남색); font-size: var(--글제목); }
+.cl-sum .cl-muted { grid-column: 1 / -1; }
+.cl-sub { margin: 20px 0 8px; font-size: var(--글메인); font-weight: 700; }
+.cl-list { display: grid; gap: 8px; }
+.cl-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px; border-radius: var(--r); background: var(--판); }
+.cl-row input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--ci남색); }
+.cl-row.pick { cursor: pointer; }
+.cl-row.pick:has(input:checked) { background: #fdecea; }
+.cl-row-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.cl-row-body b { font-size: var(--글메인); }
+.cl-row-body small, .cl-row-amt small { font-size: var(--글보조); color: #6b7580; }
+.cl-row-amt { flex: none; display: grid; gap: 2px; text-align: right; font-variant-numeric: tabular-nums; }
+.cl-row.minus .cl-row-amt b { color: #a8261d; }
+.cl-warn { font-style: normal; font-size: var(--글보조); color: #a8261d; font-weight: 700; }
+.cl-memo { margin: 16px 0 0; }
+.cl-answer { margin: 16px 0 0; padding: 12px; border-radius: var(--r); font-weight: 700; }
+.cl-answer.ok { background: #e8f5ee; color: #1e7a45; }
+.cl-answer.warn { background: #fdecea; color: #a8261d; }
+/* 하단바 — 화면 바닥에 붙는다 · 보조 3 : 주 7 */
+.cl-bar {
+  position: sticky; bottom: 0; margin: 16px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); gap: 8px; background: var(--바닥);
+}
+@media (max-width: 600px) {
+  .cl-sum { grid-template-columns: 1fr 1fr; }
+  .cl-sum .cl-total { grid-column: 1 / -1; }
+  .cl-row { flex-wrap: wrap; }
+  .cl-row-amt { width: 100%; text-align: left; }
+}
+html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-height: 100%; }
+/* 청구 링크(관리자) — 발행 상자 안 한 덩이: 상태 한 줄 · 작은 글자 단추 · 한 번만 보이는 주소 */
+.dz-claim-link { margin-top: 8px; padding-top: 8px; display: grid; gap: 6px; }
+.dz-claim-link p { margin: 0; font-size: var(--글보조); color: #4f5862; }
+.dz-claim-link p b { color: var(--글); font-size: var(--글메인); }
+.dz-claim-link-go { display: flex; flex-wrap: wrap; gap: 4px; }
+.dz-claim-link-go button, .dz-claim-url button {
+  height: var(--컨트롤); padding: 0 12px; border: 0; border-radius: var(--r); background: var(--판);
+  color: var(--ci남색); font-size: var(--글메인); font-weight: 600; cursor: pointer;
+}
+.dz-claim-link-go button:hover, .dz-claim-url button:hover { background: var(--박스손); }
+.dz-claim-url { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; border-radius: var(--r); background: var(--고름); }
+.dz-claim-url code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: var(--글보조); color: var(--ci남색); }
+.dz-claim-url small { flex-basis: 100%; font-size: var(--글보조); color: #6b7580; }
+.dz-ok-txt { color: #1e7a45; font-weight: 700; }

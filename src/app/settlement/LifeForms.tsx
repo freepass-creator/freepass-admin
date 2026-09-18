@@ -4,8 +4,8 @@
  *   셈 · 막는 규칙 · 순서는 전부 기능 쪽(lifecycle.ts · lifecycleAction · issueInvoiceAction) — 오류 글은 받은 그대로 보인다.
  *   ⚠ 운영 원장(ERP5)에 바로 쓴다. 모양 확인 때 누르지 않는다.
  */
-import { startTransition, useActionState } from 'react';
-import { issueInvoiceAction, lifecycleAction, type FormState } from '../intake/actions';
+import { startTransition, useActionState, useState } from 'react';
+import { createClaimLinkAction, issueInvoiceAction, lifecycleAction, revokeClaimLinkAction, type FormState } from '../intake/actions';
 
 const 보냄 = (act: (f: FormData) => void) => (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
@@ -74,5 +74,53 @@ export function SideStep({ code, kind, label, on, month, biz, day }: {
         : <button type="submit" name="on" value={on ? '0' : '1'}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>}
       {오류(s)}
     </form>
+  );
+}
+
+/**
+ * ★청구 링크 — PDF 대신 링크(대표 2026-09-18 「공급사한테 청구서 PDF 말고 이제 그냥 청구 링크를 보내자 · 사업자등록번호 넣으면 보이게끔」)
+ *   발행된 장에만 선다. 링크 주소는 «만든 그 순간 한 번만» 보인다(서버엔 해시뿐) — 복사 단추. 다시 만들면 옛 링크는 죽는다.
+ *   상대가 열어 본 횟수 · 답(확인 · 이의)을 같이 보인다. 하는 일은 기능 쪽 createClaimLinkAction · revokeClaimLinkAction.
+ *   ⚠ 운영 원장 — 모양 확인 때 누르지 않는다.
+ */
+export function ClaimLink({ month, axis, party, live, openCount, openedAt, response }: {
+  month: string; axis: '공급사' | '영업채널'; party: string;
+  /** 살아 있는 링크가 있나(만든 적 있고 안 거둠) */
+  live: boolean; openCount?: number; openedAt?: number;
+  response?: { state: '확인' | '이의'; at: number; memo?: string } | null;
+}) {
+  const [made, make, making] = useActionState<FormState & { url?: string; warn?: string }, FormData>(createClaimLinkAction, { errors: [] });
+  const [gone, revoke, revoking] = useActionState<FormState, FormData>(revokeClaimLinkAction, { errors: [] });
+  const [copied, setCopied] = useState(false);
+  const 날 = (t?: number) => (t ? new Date(t + 9 * 3600_000).toISOString().slice(0, 10) : '');
+  const 칸 = (<><input type="hidden" name="month" value={month} /><input type="hidden" name="axis" value={axis} /><input type="hidden" name="party" value={party} /></>);
+  return (
+    <div className="dz-claim-link">
+      <p>
+        <b>청구 링크</b>{' '}
+        {live ? <span>살아 있음</span> : <span className="dz-muted">없음</span>}
+        {openCount ? <span> · 열어봄 {openCount}번{openedAt ? ` (${날(openedAt)})` : ''}</span> : null}
+        {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의 — ${response.memo ?? ''}`} ({날(response.at)})</span>}
+      </p>
+      <div className="dz-claim-link-go">
+        <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>
+          {칸}<button type="submit" disabled={making}>{making ? '만드는 중…' : live ? '새로 만들기(옛 링크 죽음)' : '링크 만들기'}</button>
+        </form>
+        {live && (
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>
+            {칸}<button type="submit" disabled={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
+          </form>
+        )}
+      </div>
+      {made.url && (
+        <div className="dz-claim-url">
+          <code>{made.url}</code>
+          <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(made.url!); setCopied(true); } catch { /* 막혔다 */ } }}>{copied ? '복사됨' : '복사'}</button>
+          <small>이 주소는 지금 한 번만 보입니다 — 잃으면 새로 만듭니다.</small>
+        </div>
+      )}
+      {made.warn && <p className="dz-warn">{made.warn}</p>}
+      {오류(made)}{오류(gone)}
+    </div>
   );
 }

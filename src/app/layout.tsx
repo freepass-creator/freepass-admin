@@ -1,34 +1,20 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import './globals.css';
 import './_fn/fn.css';
-import { writeEnabled } from '../adapters/erp5/settlement-repository';
-import { Brand, TopMenu } from './_design/Brand';
 
 export const metadata = {
   title: 'freepass-admin',
   description: 'FreePass internal admin ERP',
 };
 
-/** 메뉴 넷 — 대표 2026-09-18 「상품찾기 계약접수 정산관리 전자계약 이 4가지」 */
-const MENU = [
-  ['/products', '상품찾기'],
-  ['/intake', '계약접수'],
-  ['/settlement', '정산관리'],
-  ['/esign', '전자계약'],
-] as const;
-
+/**
+ * 루트 — 쪽 틀(html · body)과 옷만. ★관리자 띠 · 메뉴는 여기 없다 — 관리자 쪽마다 `_design/AdminChrome` 을 쓴다.
+ *   청구 링크(/c/[token])는 공급사가 여는 문이라 관리자 틀이 절대 실리면 안 된다(기능 세션 2026-09-18).
+ */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body>
-        <nav className="fn-top">
-          <Brand />
-          <TopMenu items={MENU} />
-          <span className="fn-state">ERP5 freepasserp5 · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</span>
-        </nav>
-        <main className="fn-main">{children}</main>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

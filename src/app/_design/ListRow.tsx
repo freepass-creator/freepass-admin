@@ -18,14 +18,14 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PerkMarks, Tag, 상품신원, 신원 } from './Badges';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 /**
  * ★상태 칸 — 사진이 없는 목록(접수 · 정산 묶음 · 실적 줄)은 사진 자리에 «상태 그림» 하나(대표 2026-09-18
  *   「상품목록 아닌 곳에도 상품목록 사진처럼 썸네일 아이콘 하나 해서 그 목록의 상태값을 표현 · 직관적으로 어떤 상태인지」).
  *   그림 + 한 낱말 · 색은 면에만(남색 = 진행 · 초록 = 끝 · 붉음 = 멈춤/위험 · 회색 = 대기/취소 · 호박 = 보류).
  */
-export type RowStatus = { icon: string; label: string; tone: 'navy' | 'green' | 'red' | 'grey' | 'amber' };
+export type RowStatus = { icon: IconName; label: string; tone: 'navy' | 'green' | 'red' | 'grey' | 'amber' };
 
 export function StatusTile({ s }: { s: RowStatus }) {
   return (

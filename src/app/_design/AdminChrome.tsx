@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { Brand, TopMenu } from './Brand';
 import { logoutAction } from '../login/actions';
+import { currentAdmin } from '../../server/require-admin';
 
 /** 메뉴 넷 — 대표 2026-09-18 「상품찾기 계약접수 정산관리 전자계약 이 4가지」 */
 const MENU = [
@@ -18,7 +19,9 @@ const MENU = [
  *   화면에도, 쪽 원본(RSC)에도 실리면 안 된다(기능 세션 2026-09-18 「루트 layout 밖으로」).
  *   ⓘ 관리자 쪽들을 라우트 그룹으로 옮기면 상대 경로 import 가 다 깨져 기능 세션 파일을 흔든다 — 그래서 쪽마다 layout 한 줄.
  */
-export function AdminChrome({ children }: { children: ReactNode }) {
+export async function AdminChrome({ children }: { children: ReactNode }) {
+  /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
+  const 나 = await currentAdmin();
   return (
     <>
       <nav className="fn-top">
@@ -26,6 +29,7 @@ export function AdminChrome({ children }: { children: ReactNode }) {
         <TopMenu items={MENU} />
         <span className="fn-state">ERP5 freepasserp5 · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</span>
         {/* 로그아웃 — 기능 쪽 logoutAction(쿠키 지우고 /login 으로) */}
+        {나 && <span className="dz-me">{나.name}</span>}
         <form action={logoutAction} className="dz-logout"><button type="submit">로그아웃</button></form>
       </nav>
       <main className="fn-main">{children}</main>

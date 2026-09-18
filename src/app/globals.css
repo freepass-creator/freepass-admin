@@ -1577,3 +1577,6 @@ body > nav.fn-top .dz-logout button {
 }
 body > nav.fn-top .dz-logout button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 @media (max-width: 900px) { body > nav.fn-top .dz-logout { margin-left: auto; } }
+/* 위 띠 — 로그인한 사람 이름(로그아웃 바로 왼쪽 · 보조 12 · 흰 글자 흐리게) */
+body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 255, .86); white-space: nowrap; }
+@media (max-width: 900px) { body > nav.fn-top .dz-me { margin-left: auto; } body > nav.fn-top .dz-me + .dz-logout { margin-left: 0; } }

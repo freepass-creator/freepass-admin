@@ -36,6 +36,8 @@ export interface SectionItem {
   article?: string;
   /** 사람이 알아야 할 한 줄 — 「미확인」 · 까닭 등 */
   note?: string;
+  /** ★늘 보여야 하는 칸 — 구역이 접혀도 이 칸은 밖에 선다 */
+  pinned?: boolean;
 }
 
 export interface Section {
@@ -161,6 +163,17 @@ const EXTRA: { key: string; label: string; group: string; type: FieldType }[] = 
   { key: 'payAdjust', label: '가감(지급)', group: '요율·돈', type: 'money' },
   { key: 'adjustReason', label: '가감 사유', group: '요율·돈', type: 'text' },
 ];
+/**
+ * ★「상태」 구역에서 늘 보여야 하는 칸 — 정산 생애주기의 발자국이다 (erp4 engine ⑤).
+ *   청구: 접수 → 청구(청구서) → 확인 → 수금   ·   지급: 접수 → 통보 → 확인 → 지급
+ *   정정요청은 «멈춘 자리» 라 늘 보여야 한다 — 안 보이면 멈춘 줄을 아무도 못 찾는다.
+ *   나머지(날짜·메모·사업자번호·거둔 때)는 접혀도 된다.
+ */
+export const SETTLEMENT_PINNED = new Set([
+  'claimStage', 'payStage',
+  'billed', 'invoiceIssued', 'collected', 'collectedAmt', 'paid', 'paidAmt',
+  'supplierOk', 'supplierFix', 'supplierFixAmt', 'channelOk', 'channelFix', 'channelFixAmt',
+]);
 const MONEY_KEYS = /Written|Incentive|Amt|carry(Claim|Pay)|prepaid|^rent$|^deposit$|^price$/;
 const RATE_KEYS = /Rate$|settleRatio/;
 const DATE_KEYS = /At$|^receivedAt$|Month$/;
@@ -178,7 +191,11 @@ export function settlementSections(raw: Record<string, unknown>): Section[] {
     items: fields.filter((f) => f.group === g).map((f) => {
       const x = raw[f.key];
       const value = x === undefined || x === '' ? null : (typeof x === 'object' ? JSON.stringify(x) : x) as SectionItem['value'];
-      return { key: f.key, label: f.label, value, type: typeOf(f), ...('note' in f && f.note ? { note: String(f.note) } : {}) };
+      return {
+        key: f.key, label: f.label, value, type: typeOf(f),
+        ...('note' in f && f.note ? { note: String(f.note) } : {}),
+        ...(SETTLEMENT_PINNED.has(f.key) ? { pinned: true } : {}),
+      };
     }),
   }));
 }

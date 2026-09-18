@@ -49,6 +49,7 @@ export type EsignSnapshot = {
   contractDate: string;
   templateVersion: string;
   agreementVersion: string;
+  templateState: Record<string, string>;
   templateFields: Record<string, string>;
   requiredDocuments: EsignRequiredDocument[];
   consentProfile: ConsentProfile;

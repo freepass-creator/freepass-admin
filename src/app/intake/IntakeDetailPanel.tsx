@@ -104,7 +104,6 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   }
   const events = await settlements.events(r.plate, r.receivedAt);
   const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
-  const 부호 = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : n < 0 ? '−' : ''}${won(Math.abs(n))}`);
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}

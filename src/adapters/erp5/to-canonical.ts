@@ -12,6 +12,7 @@ import type {
   CanonicalProduct, Offer, PolicyValue, VehicleMasterRef, VehicleSpecs, RegistrationInfo,
 } from '../../domain/product/types';
 import { photosOf } from './photos';
+import { creditOf, perksOf, productKindOf } from './perks';
 import { matchToMaster, type MasterIndex } from '../../domain/product/master-match';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
 
@@ -226,6 +227,15 @@ export function toCanonicalProduct(
       ...(() => {
         const { photos, photoLink } = photosOf(d);
         return { ...(photos.length ? { photoUrl: photos[0], photos } : {}), ...(photoLink ? { photoLink } : {}) };
+      })(),
+      ...(() => {
+        const kind = productKindOf(d.product_type);
+        const deposits = offers.filter((o) => o.monthlyRent > 0).map((o) => o.deposit);
+        return {
+          ...(kind ? { productKind: kind } : {}),
+          credit: creditOf(d, policy ?? {}),
+          perks: perksOf(d, policy, deposits),
+        };
       })(),
       supplierProductKey: key,
       vehicle: vehicleRefOf(d, master),

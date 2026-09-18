@@ -21,7 +21,7 @@
  * 폰은 아래에서 올라오는 시트(82vh) — 원본 그대로. 웹은 검색창 바로 밑에 같은 폭으로 뜬다.
  */
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
 import { 고른값 } from './pick';
 
 export type FacetOption = { key: string; label: string; count: number };
@@ -45,6 +45,7 @@ export function FilterSheet({ axes, count, unit }: {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const dialogId = useId();
   const close = useCallback(() => {
     setOpen(false);
     requestAnimationFrame(() => trigger.current?.focus());
@@ -85,12 +86,12 @@ export function FilterSheet({ axes, count, unit }: {
   return (
     <div className="dz-fs" ref={box}>
       <button ref={trigger} type="button" className={`dz-fs-open${open ? ' on' : ''}`}
-        onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-haspopup="dialog" aria-controls="admin-filter-sheet">
+        onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-haspopup="dialog" aria-controls={dialogId}>
         세부검색{total ? <i>{total}</i> : null}
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div id="admin-filter-sheet" className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+          <div id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>

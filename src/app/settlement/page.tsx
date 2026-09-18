@@ -6,6 +6,7 @@ import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { IssueForm } from './LifeForms';
+import { Icon } from '../_design/Icon';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} />
               <div className="searchbox dz-searchbox">
-                <span aria-hidden>⌕</span>
+                <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
                 <input name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
               </div>
             </form>

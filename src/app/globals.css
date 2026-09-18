@@ -1292,3 +1292,50 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-row-status.amber { background: #fbeedd; color: #94560f; }
 /* 줄이 고른(옅은 남색) 면일 때 남색 칸이 묻히지 않게 한 단 짙게 */
 .dz-row.on .dz-row-status.navy { background: #d5deec; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 크기 규격 — 두 단뿐: 뱃지 22 · 컨트롤 40 (대표 2026-09-18
+     「검색창이랑 버튼이랑 규격이 같았으면 좋겠어 · 사이즈 규격이 상하나 이런 것들 · 규격이 다 중구난방」)
+     ⚠ 앞서(실측): 검색창 40 · 단추 33 · 하단바 44 · 판 머리 32 · 뱃지 22 — 다섯 가지 높이가 섞였다.
+     ⇒ 누르는 것 · 쓰는 것은 전부 40(검색창 · 퀵 단추 · 탭 · 기간 · 하단바 · 입력칸 · 달 넘기기 · 걸음 길).
+        검색창 «안»의 세부검색 단추만 32(창 40 안에서 위아래 4 · 오른쪽 4). 글은 메인 14 · 줄 16 · 가운데.
+   ★★ 색 위계 — 바닥 < 판 < 카드 < 손 < 고름 (「목록카드 색깔도 위계를 확실하게 · 배경이랑 살짝만 차이 나도」)
+     바닥 #eef1f4 · 판 #fff(선) · 카드 #f6f7f9(판보다 «살짝»만) · 손 댄 카드 #eef1f4 · 고른 카드 옅은 남색 #e6ecf5.
+     카드 안 뱃지는 카드보다 한 단 짙게(#eaeef2) — 고른 카드 위에서는 흰 면.
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --컨트롤: 40px; --카드: #f6f7f9; --카드손: #eef1f4; }
+
+/* 컨트롤 40 */
+.fn-main .workspace .dz-searchbox { height: var(--컨트롤); padding: 0 4px 0 12px; gap: 8px; }
+.fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
+.dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
+.fn-main .workspace .quick-filters a,
+.fn-main .workspace .tabs button, .fn-main .workspace .tabs a,
+.fn-main .workspace .offer-picker button,
+.fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub,
+.dz-bar-go > .primary, .dz-bar-go > .dz-bar-sub,
+.dz-path li, .dz-month > a, .dz-month > span:not(.dz-month-sum),
+.dz-side-step button, .dz-side-step input,
+.dz-money input, .dz-money button, .dz-life-form input,
+.dz-fs-head button, .dz-fs-axis button, .dz-fs-more, .dz-fs-check {
+  height: var(--컨트롤); line-height: 16px;
+}
+.dz-month > a, .dz-month > span:not(.dz-month-sum) { width: var(--컨트롤); }
+.dz-fs-axis { height: var(--컨트롤); }
+/* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
+.dz-fs-open { top: 4px; right: 4px; height: 32px; line-height: 16px; }
+/* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
+@media (max-width: 900px) {
+  :root { --판탭: 56px; }
+  .phone-tabs { height: var(--판탭); }
+  .phone-tabs a { height: var(--컨트롤); line-height: 16px; }
+  .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: 44px; }  /* 폰 엄지 자리만 44 */
+}
+
+/* 색 위계 — 카드 */
+.dz-row { background: var(--카드); }
+.dz-row:hover { background: var(--카드손); }
+.dz-row.on, .dz-row.on:hover { background: var(--고름); }
+.dz-row .dz-badge.plain { background: #eaeef2; }
+.dz-row.on .dz-badge.plain { background: var(--판); }
+.dz-row .dz-row-thumb { background: #eceff3; }

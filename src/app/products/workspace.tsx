@@ -15,6 +15,7 @@ import { Tag, 신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
 import { PhotoGallery } from '../_design/PhotoGallery';
 import { ProductInfo } from '../_design/ProductInfo';
+import { Icon } from '../_design/Icon';
 import { productSections } from '../../domain/catalog/sections';
 import { 매칭, 매칭끝 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
@@ -289,7 +290,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['q', 'id', 'offer'])}
-              <span aria-hidden>⌕</span>
+              <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
               <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
             </form>
             {/* ★세부검색 = 화이트라벨 두 칸 조건판(창 «안» 오른쪽 끝) — 고르면 바로 걸린다 */}
@@ -389,7 +390,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['iq'])}
-              <span aria-hidden>⌕</span>
+              <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
               <input name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델 · 공급사 · 채널" />
             </form>
             <FilterSheet axes={접수판축} count={ishown.length} unit="건" />

@@ -214,7 +214,39 @@ export class EsignService {
       if (['반려', '만료', '해지'].includes(stage.state)) attention.push(stage.label);
       if (session.status === 'pending_review') attention.push('승인 필요');
     }
-    return { session, publicUrl: S(priv?.publicUrl), stage: adminStage(session), attention };
+    const assetMap = (priv?.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
+    const review = session && priv && Number(priv.submittedAt || 0) ? {
+      submittedAt: Number(priv.submittedAt || 0),
+      customerName: S(priv.customerName),
+      customerPhone: S(priv.customerPhone),
+      customerBirth: S(priv.customerBirth),
+      customerAddress: S(priv.customerAddress),
+      driverLicenseNo: S(priv.driverLicenseNo),
+      signerName: S(priv.signerName),
+      signerRole: S(priv.signerRole),
+      emergency: [S(priv.emergencyRelation), S(priv.emergencyName), S(priv.emergencyPhone)].filter(Boolean).join(' · '),
+      cms: priv.cms && typeof priv.cms === 'object'
+        ? [S((priv.cms as Record<string, unknown>).bank), S((priv.cms as Record<string, unknown>).holderName), (() => { const a=S((priv.cms as Record<string, unknown>).accountNo).replace(/\D/g,''); return a ? '••••'+a.slice(-4) : ''; })()].filter(Boolean).join(' · ')
+        : '',
+      assets: Object.entries(assetMap).map(([key, value]) => ({
+        key,
+        label: key === 'id_card' ? '운전면허증' : key === 'selfie' ? '본인 얼굴' : session.snapshot.requiredDocuments.find((d) => 'support:' + d.key === key)?.label || key,
+        name: S(value.name),
+        contentType: S(value.contentType),
+        url: '/api/esign/asset/' + encodeURIComponent(session.id) + '/' + encodeURIComponent(key),
+      })),
+    } : undefined;
+    return { session, publicUrl: S(priv?.publicUrl), stage: adminStage(session), attention, ...(review ? { review } : {}) };
+  }
+
+  async adminAsset(sessionId: string, key: string) {
+    const priv = await this.repo.getPrivate(sessionId);
+    const assets = (priv?.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
+    const asset = assets[key];
+    if (!asset) return null;
+    const path = S(asset.path), sha = S(asset.sha256);
+    if (!path || !sha) return null;
+    return this.assets.get(path, sha);
   }
 
   async issue(contractId: string, actor = 'admin') {

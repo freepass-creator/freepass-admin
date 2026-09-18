@@ -48,16 +48,19 @@
   },
   "controls": {
     "standard": {
-      "heightPx": 33,
-      "fontPx": 14
+      "heightPx": 40,
+      "fontPx": 14,
+      "token": "--ui-control-h"
     },
     "searchField": {
       "heightPx": 40,
-      "fontPx": 14
+      "fontPx": 14,
+      "token": "--ui-control-h"
     },
     "primary": {
       "heightPx": 44,
-      "fontPx": 14
+      "fontPx": 14,
+      "token": "--ui-action-h"
     },
     "mobileTouchMinimumPx": 44,
     "whiteLabelIdentityBadge": {
@@ -65,6 +68,14 @@
       "paddingY": 5,
       "paddingX": 10,
       "radiusPx": 8
+    },
+    "desktopGlobalChromeCompact": {
+      "heightPx": 33,
+      "note": "TopMenu only; outside workspace control hierarchy"
+    },
+    "searchEmbeddedFacet": {
+      "visualHeightPx": 32,
+      "note": "inside 40px search box; not a standalone workspace control"
     }
   },
   "panels": {
@@ -166,7 +177,12 @@
     "globals.css contains legacy rules overridden later by final rules",
     "UI-SPEC still contains historical specs below the current-baseline section",
     "row body height 64 vs rendered row about 88 needs explicit terminology",
-    "some mobile back/compact controls have visual size below 44px touch target",
     "--박스 and --카드 must keep separate roles: info box vs list row"
+  ],
+  "implementedFixes": [
+    "CSS exposes shared --ui-* aliases without changing current visual values",
+    "ListRow dimensions route through shared UI tokens",
+    "support text outliers in status/internal/article labels normalized to 12px",
+    "mobile back visual remains 32px but hit area is expanded to 44px"
   ]
 }

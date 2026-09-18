@@ -463,15 +463,26 @@ Summary box는 `summary-grid` 규격을 사용한다.
 | 상세 tab | `DetailTabs` |
 | 차량 사진 | `PhotoGallery` |
 
-## CSS 공통 패턴 — 다음 공통화 후보
+## 공통 primitive — 구현 완료
 
-| 역할 | 현재 | 권장 공통화 이름 |
+`src/app/_design/Primitives.tsx`
+
+| 역할 | 공통 primitive |
+|---|---|
+| Panel header | `PanelHeader` |
+| Search input core | `SearchField` |
+| Bottom action | `ActionBar` |
+| Empty state | `EmptyState` |
+| Summary values | `SummaryGrid / SummaryItem` |
+
+핵심 4개 실제 화면(`products/intake/settlement/esign`)은 위 primitive를 사용한다.
+raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `npm run ui:check`가 실패시킨다.
+
+## 다음 공통화 후보
+
+| 역할 | 현재 | 후보 |
 |---|---|---|
-| Panel header | `.panel-head` | `PanelHeader` |
-| Search | `.dz-searchbox` | `SearchBox` |
-| Bottom action | `.dz-bar` | `ActionBar` |
-| Empty state | `.dz-empty` | `EmptyState` |
-| Summary values | `.summary-grid` | `SummaryGrid` |
+| Search outer/form | `.dz-searchbox` + route별 form | `SearchBox` |
 | Notice | `.dz-warn/.dz-ok` | `Notice` |
 
 **공통화는 모양을 바꾸는 작업이 아니다. 동일 마크업을 한 곳으로 모으는 작업이다.**
@@ -536,7 +547,7 @@ depth 0 목록
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
 ## A. CSS cascade가 정본 역할을 하고 있음
-`globals.css` 상단에 옛 규격이 남고 아래에서 계속 덮는 구조다.
+`globals.css` 상단에 옛 규격이 남고 아래에서 계속 덮는 구조다. **파일 맨 위에 LEGACY BASE 경고를 추가해 새 코드가 그 값을 복사하지 않게 표시했다.**
 
 **위험:** 다음 AI가 위쪽 값을 읽고 되돌릴 수 있음.
 
@@ -595,3 +606,21 @@ depth 0 목록
 # 19. 한 문장 규칙
 
 > **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 업무 컨트롤은 40, 주 행동·모바일 터치는 44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**
+
+
+---
+
+# 20. 자동 검사
+
+PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한다.
+
+1. `npm run typecheck`
+2. `npm test`
+3. `npm run ui:check`
+
+`ui:check`는:
+- 핵심 화면이 공통 primitive를 우회해 raw 공통 마크업을 다시 만드는지
+- `--ui-*` 핵심 토큰이 사라졌는지
+- machine SSOT의 18/14/12 · 40 · 44 · radius 4가 변했는지
+
+를 검사한다.

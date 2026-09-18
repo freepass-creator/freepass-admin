@@ -6,7 +6,12 @@
  *   정본은 freepasserp5 다(계정 185 · 실측 2026-09-18). 그래서 freepasserp5 로 붙는다.
  *
  * ── 누가 들어오나
- *   ERP5 `user` 문서의 role === 'admin' 이고 막히지 않은 사람만 (실측: admin 4 · agent 146 · provider 16 · agent_admin 1).
+ *   ① ERP5 `user` 문서의 role === 'admin' 이고 막히지 않은 사람 (실측: admin 4 · agent 146 · provider 16 · agent_admin 1)
+ *   ② ADMIN_EMAILS 에 적힌 이메일 — 대표 2026-09-18 「pyh@teamjpk.com kjs@teamjpk.com 이 두명은 로그인되게 해줘야지」
+ *      (pyh 는 Auth 계정은 있는데 ERP5 user 문서가 없다 — 실측). ★ERP5 user 의 role 을 바꾸지 않는다 —
+ *      그건 erp4 등 다른 앱의 권한까지 바꾼다. 이 목록은 «이 어드민에만» 통한다.
+ *      ★★이메일만으로는 안 연다 — Firebase 는 공개 키로 «아무나 가입» 할 수 있어서, 아직 없는 주소(kjs — 실측 계정 없음)를
+ *        남이 먼저 가입하면 관리자가 된다. 그래서 목록의 이메일은 ADMIN_UIDS 에 고정된 계정이거나 이메일 인증을 마친 계정일 때만.
  *   ★영업자·공급사 계정은 비밀번호가 맞아도 못 들어온다 — 원장을 고치는 화면이다.
  *
  * ── 어떻게
@@ -40,10 +45,24 @@ export interface AdminUser { uid: string; name: string; role: 'admin' }
 
 const cache = new Map<string, { at: number; user: AdminUser | null }>();
 
-/** ERP5 user 문서에서 관리자인지 — ★role 이 admin 이고 막히지 않았을 때만 */
-export async function adminOf(uid: string): Promise<AdminUser | null> {
+/** ADMIN_EMAILS — 쉼표로 여럿. 대소문자 안 가림 */
+export const adminEmails = () => new Set((process.env.ADMIN_EMAILS ?? '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean));
+/** ADMIN_UIDS — 목록 이메일의 «바로 그 계정» 고정 */
+export const adminUids = () => new Set((process.env.ADMIN_UIDS ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+
+/** 관리자인지 — ERP5 user role=admin 이거나 ADMIN_EMAILS 에 있다 */
+export async function adminOf(uid: string, email?: string): Promise<AdminUser | null> {
   const hit = cache.get(uid);
   if (hit && Date.now() - hit.at < 60_000) return hit.user;
+  if (email && adminEmails().has(email.trim().toLowerCase())) {
+    const pinned = adminUids().has(uid);
+    const verified = pinned ? true : await adminAuth().getUser(uid).then((u) => u.emailVerified).catch(() => false);
+    if (pinned || verified) {
+      const user = { uid, name: email.split('@')[0], role: 'admin' as const };
+      cache.set(uid, { at: Date.now(), user });
+      return user;
+    }
+  }
   const db = erp5();
   let doc: FirebaseFirestore.DocumentData | undefined = (await db.collection('user').where('uid', '==', uid).limit(1).get()).docs[0]?.data();
   if (!doc) { const d = await db.collection('user').doc(uid).get(); doc = d.exists ? d.data() : undefined; }
@@ -62,23 +81,23 @@ export async function signIn(email: string, password: string): Promise<{ ok: tru
   const key = process.env.FIREBASE_WEB_API_KEY?.trim();
   if (!key) return { ok: false, error: '로그인 설정(FIREBASE_WEB_API_KEY)이 없습니다 — 관리자에게 알려 주세요' };
   if (!email.trim() || !password) return { ok: false, error: '이메일과 비밀번호를 넣어 주세요' };
-  let idToken: string, uid: string;
+  let idToken: string, uid: string, signedEmail: string;
   try {
     const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(key)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim(), password, returnSecureToken: true }),
       signal: AbortSignal.timeout(10_000),
     });
-    const j = await r.json() as { idToken?: string; localId?: string; error?: { message?: string } };
+    const j = await r.json() as { idToken?: string; localId?: string; email?: string; error?: { message?: string } };
     if (!r.ok || !j.idToken || !j.localId) {
       if (String(j.error?.message ?? '').startsWith('TOO_MANY_ATTEMPTS')) return { ok: false, error: '여러 번 틀려 잠시 막혔습니다 — 잠시 뒤 다시 해 주세요' };
       return { ok: false, error: FAIL };
     }
-    idToken = j.idToken; uid = j.localId;
+    idToken = j.idToken; uid = j.localId; signedEmail = j.email ?? email.trim();
   } catch {
     return { ok: false, error: '지금 로그인할 수 없습니다 — 잠시 뒤 다시 해 주세요' };
   }
-  const user = await adminOf(uid);
+  const user = await adminOf(uid, signedEmail);
   if (!user) return { ok: false, error: FAIL };
   const cookie = await adminAuth().createSessionCookie(idToken, { expiresIn: SESSION_MS });
   return { ok: true, cookie, user };
@@ -89,7 +108,7 @@ export async function verifySession(cookie: string | undefined): Promise<AdminUs
   if (!cookie) return null;
   try {
     const d = await adminAuth().verifySessionCookie(cookie, true);
-    return await adminOf(d.uid);
+    return await adminOf(d.uid, d.email);
   } catch { return null; }
 }
 

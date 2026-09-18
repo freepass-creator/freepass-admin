@@ -16,6 +16,8 @@
  *      그건 erp4 등 다른 앱의 권한까지 바꾼다. 이 목록은 «이 어드민에만» 통한다.
  *      ★★이메일만으로는 안 연다 — Firebase 는 공개 키로 «아무나 가입» 할 수 있어서, 아직 없는 주소(kjs — 실측 계정 없음)를
  *        남이 먼저 가입하면 관리자가 된다. 그래서 목록의 이메일은 ADMIN_UIDS 에 고정된 계정이거나 이메일 인증을 마친 계정일 때만.
+ *   ③ 구글 워크스페이스(teamjpk.com) 사람 — 대표 2026-09-18 「구글 워크스페이스에 있는 사람은 다 들어올 수 있어야지」
+ *      구글 로그인으로만(구글이 서명한 hd=teamjpk.com) — src/server/google-login.ts
  *   ★영업자·공급사 계정은 비밀번호가 맞아도 못 들어온다 — 원장을 고치는 화면이다.
  *
  * ── 어떻게
@@ -34,6 +36,7 @@ import { readFileSync } from 'node:fs';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { verifyGoogleSession } from './google-login';
 
 export const AUTH_COOKIE = 'fpa_session';
 export const SESSION_MS = 5 * 24 * 3600_000;
@@ -126,6 +129,10 @@ export async function signIn(email: string, password: string): Promise<{ ok: tru
 /** 쿠키 → 관리자. ★취소된 세션(비밀번호 바꿈·강제 로그아웃)도 거른다 */
 export async function verifySession(cookie: string | undefined): Promise<AdminUser | null> {
   if (!cookie) return null;
+  /* 구글 워크스페이스로 들어온 세션 — 우리가 서명한 것(g1.…) */
+  if (cookie.startsWith('g1.')) {
+    try { const g = verifyGoogleSession(cookie); return g ? { uid: g.uid, name: g.name, role: 'admin' } : null; } catch { return null; }
+  }
   try {
     const d = await adminAuth().verifySessionCookie(cookie, true);
     return await adminOf(d.uid, d.email);
@@ -134,12 +141,12 @@ export async function verifySession(cookie: string | undefined): Promise<AdminUs
 
 /** 로그아웃 — 그 사람의 세션을 모두 끊는다(다른 기기 포함) */
 export async function signOut(cookie: string | undefined): Promise<void> {
-  if (!cookie) return;
+  if (!cookie || cookie.startsWith('g1.')) return;   // 구글 쪽 세션은 쿠키를 지우면 끝이다
   try { const d = await adminAuth().verifySessionCookie(cookie); await adminAuth().revokeRefreshTokens(d.uid); } catch { /* 이미 끊겼다 */ }
 }
 
 /** 로그인 없이 열리는 길 — 청구 링크 · 사진 · 로그인 자체 · Next 내부 */
 export function isPublicPath(path: string): boolean {
-  return path === '/login' || path.startsWith('/c/') || path.startsWith('/api/img')
+  return path === '/login' || path.startsWith('/login/google') || path.startsWith('/c/') || path.startsWith('/api/img')
     || path.startsWith('/_next/') || path === '/favicon.ico' || /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(path);
 }

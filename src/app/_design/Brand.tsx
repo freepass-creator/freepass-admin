@@ -27,9 +27,10 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 /**
  * 위 띠의 메뉴 — «지금 있는 곳»을 색으로 말한다(규칙 ④ 강조는 색으로만). 글자만(규칙 ③).
  *   켜진 메뉴 = 한 단 밝은 남색 면 + 스카이 글자 — CI 두 색을 다 쓴다. 선·밑줄은 긋지 않는다.
- * ★폰에서는 이 메뉴가 안 보인다 — ☰ 시트(`_design/MobileMenu`)가 대신한다
- *   (대표 2026-09-18 「하단에 어떻게 해야 될지 동선 좀 짜 봐」 — 아래 띠 메뉴 넷 + 판 하단바가 두 줄이던 것을 갈랐다).
- *   메뉴 이름·차례는 여기 하나(`AdminChrome` 의 `MENU`)뿐이다 — 시트도 같은 목록을 받는다.
+ * ★폰에서는 이 메뉴가 안 보인다 — `_design/MobileTabBar`의 다섯 걸음
+ *   (상품 · 접수 · 계약 · 청구 · 지급)이 대신한다.
+ *   Desktop 4축과 Mobile 5걸음은 같은 업무를 다른 깊이로 배열한 것이며,
+ *   청구·지급은 Desktop의 「정산관리」 한 축을 모바일에서 두 입구로 나눈 것이다.
  */
 export function TopMenu({ items }: { items: readonly (readonly [string, string])[] }) {
   const path = usePathname() || '/';

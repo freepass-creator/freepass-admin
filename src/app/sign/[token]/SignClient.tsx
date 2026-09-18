@@ -2,7 +2,7 @@
 
 import {
   useCallback, useEffect, useMemo, useRef, useState,
-  type PointerEvent as ReactPointerEvent, type RefObject,
+  type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject,
 } from 'react';
 import { AGREEMENT_SECTIONS, AGREEMENT_TITLE } from '../../../domain/esign/agreement';
 import { applySignerRole } from '../../../domain/esign/required-documents';
@@ -218,7 +218,7 @@ export function SignClient({ token }: { token: string }) {
   return <div className="sg-shell">
     <div className="sg-brand">freepass</div>
     <div className="sg-card">
-      <div className="sg-progress" style={{ ['--steps' as string]: steps.length } as React.CSSProperties}>{steps.map((x, i) => <span key={x[0]} className={'sg-dot' + (i <= step ? ' on' : '')}/>)}</div>
+      <div className="sg-progress" style={{ ['--steps' as string]: steps.length } as CSSProperties}>{steps.map((x, i) => <span key={x[0]} className={'sg-dot' + (i <= step ? ' on' : '')}/>)}</div>
       {view.session?.status === 'rejected' && <div className="sg-alert warn">보완 요청: {view.rejectReason || '제출자료를 다시 확인해 주세요.'}</div>}
       {error && <div className="sg-alert warn">{error}</div>}
       <div className="sg-head"><h1>{current[1]}</h1><p>{String(step + 1)} / {String(steps.length)} 단계 · 계약번호 {snapshot.contractCode}</p></div>

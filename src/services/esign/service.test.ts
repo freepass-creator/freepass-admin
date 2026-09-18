@@ -18,6 +18,7 @@ class Repo implements EsignRepository {
   async findSessionByTokenHash(hash:string){return [...this.sessions.values()].find(x=>x.tokenHash===hash)??null;}
   async createSession(session:EsignSession,publicUrl:string){for(const s of this.sessions.values())if(s.contractId===session.contractId&&!['signed','revoked'].includes(s.status))s.status='revoked';this.sessions.set(session.id,structuredClone(session));this.priv.set(session.id,{sessionId:session.id,contractId:session.contractId,publicUrl});}
   async updateSession(id:string,patch:Partial<EsignSession>){Object.assign(this.sessions.get(id)!,structuredClone(patch));}
+  async transitionSession(id:string,allowed:EsignSession['status'][],patch:Partial<EsignSession>){const s=this.sessions.get(id);if(!s||!allowed.includes(s.status))return false;Object.assign(s,structuredClone(patch));return true;}
   async getPrivate(id:string){return (this.priv.get(id)??null) as (EsignPrivateSubmission&Record<string,unknown>)|null;}
   async putPrivate(id:string,data:Record<string,unknown>){this.priv.set(id,{...(this.priv.get(id)||{}),...structuredClone(data)});}
   async appendEvent(){/* covered by state assertions */}
@@ -53,9 +54,9 @@ test('full esign flow: issue -> open -> upload -> submit -> approve', async () =
   await svc.publicView(token);
   assert.equal(repo.contract.get('c1')?.sign_status,'열람');
   await svc.progress(token,'summary');
-  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([1,2,3]));
-  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([4,5,6]));
-  await svc.upload(token,'support:resident_register','rr.pdf','application/pdf',new Uint8Array([7,8,9]));
+  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'support:resident_register','rr.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
   const required=issued.session.snapshot.consentProfile.requiredKeys;
   await svc.submit(token,{
     customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',

@@ -9,6 +9,7 @@ export interface EsignRepository {
   findSessionByTokenHash(hash: string): Promise<EsignSession | null>;
   createSession(session: EsignSession, publicUrl: string): Promise<void>;
   updateSession(id: string, patch: Partial<EsignSession>): Promise<void>;
+  transitionSession(id: string, allowed: EsignSession['status'][], patch: Partial<EsignSession>): Promise<boolean>;
   getPrivate(sessionId: string): Promise<(EsignPrivateSubmission & Record<string, unknown>) | null>;
   putPrivate(sessionId: string, data: Record<string, unknown>): Promise<void>;
   appendEvent(contractId: string, sessionId: string, type: string, by: string, detail?: Record<string, unknown>): Promise<void>;

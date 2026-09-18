@@ -67,6 +67,18 @@ export interface CanonicalProduct {
    *   갈래로 접는 것은 «보이는 쪽» 이 할 일이다(대표 2026-09-18 「디자인과 기능은 분리」).
    */
   status?: string;
+  /**
+   * 대표 사진 한 장 — 목록 카드 썸네일. ★없으면 비운다(28% 가 사진 없음). 지어내지 않는다.
+   * 고르는 차례는 화이트라벨과 같다 (adapters/erp5/photos.ts).
+   */
+  photoUrl?: string;
+  /** 사진 전부 — 상세. 첫 장이 `photoUrl` 이다. */
+  photos?: string[];
+  /**
+   * 사진이 있는 «곳» — 드라이브 폴더·공급사 상세페이지. ★이미지가 아니다. `<img>` 에 넣지 않는다.
+   * 사진을 아직 못 푼 차는 이것만 있다 — 화면은 「원본 사진 보기」 링크로 쓸 수 있다.
+   */
+  photoLink?: string;
   supplierProductKey: string;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;

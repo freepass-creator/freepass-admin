@@ -11,6 +11,7 @@
 import type {
   CanonicalProduct, Offer, PolicyValue, VehicleMasterRef, VehicleSpecs, RegistrationInfo,
 } from '../../domain/product/types';
+import { photosOf } from './photos';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
 
 export type Erp5Doc = Record<string, unknown>;
@@ -219,6 +220,10 @@ export function toCanonicalProduct(
       /* ★이름과 코드를 «둘 다» 든다 — 사람은 이름을, 대조는 코드를 본다 */
       supplierName: S(d.provider_name),
       status: S(d.vehicle_status),
+      ...(() => {
+        const { photos, photoLink } = photosOf(d);
+        return { ...(photos.length ? { photoUrl: photos[0], photos } : {}), ...(photoLink ? { photoLink } : {}) };
+      })(),
       supplierProductKey: key,
       vehicle: vehicleRefOf(d),
       specs: specsOf(d),

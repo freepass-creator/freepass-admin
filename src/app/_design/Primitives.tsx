@@ -31,7 +31,7 @@ export function SearchField({ name, defaultValue, placeholder }: {
   return (
     <>
       <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
-      <input name={name} defaultValue={defaultValue} placeholder={placeholder} />
+      <input name={name} defaultValue={defaultValue} placeholder={placeholder} aria-label={placeholder ?? name} />
     </>
   );
 }

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type 계약 = Awaited<ReturnType<typeof contracts.list>>[number];
 
-const SIGN_FILTERS = ['', '발행', '열람', '진행중', '서명완료', '미연결'] as const;
+const SIGN_FILTERS = ['', '전자서명', '발행', '열람', '진행중', '서명완료', '미연결'] as const;
 
 function 서명상태(c: 계약): RowStatus {
   if (c.signStatus === '서명완료') return { icon: 'circle-check', label: '서명완료', tone: 'green' };
@@ -24,6 +24,7 @@ export default async function EsignPage({ searchParams }: {
   const q = await searchParams;
   const text = sp(q.q).trim().toLowerCase();
   const sign = SIGN_FILTERS.includes(sp(q.sign) as (typeof SIGN_FILTERS)[number]) ? sp(q.sign) : '';
+  const status = sp(q.status);
   const id = sp(q.id);
 
   let all: Awaited<ReturnType<typeof contracts.list>>;
@@ -33,11 +34,13 @@ export default async function EsignPage({ searchParams }: {
     return <><h1>전자계약</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
   }
 
-  const searched = all.filter((c) => !text
-    || [c.code, c.plate, c.vehicle, c.customer, c.agent, c.signStatus, c.status]
-      .join(' ').toLowerCase().includes(text));
+  const searched = all.filter((c) => (!status || c.status === status))
+    .filter((c) => !text
+      || [c.code, c.plate, c.vehicle, c.customer, c.agent, c.signStatus, c.status]
+        .join(' ').toLowerCase().includes(text));
   const shown = searched.filter((c) => {
     if (!sign) return true;
+    if (sign === '전자서명') return !!c.signStatus;
     if (sign === '미연결') return !c.signStatus;
     return c.signStatus === sign;
   });
@@ -55,9 +58,12 @@ export default async function EsignPage({ searchParams }: {
     return s ? `/esign?${s}` : '/esign';
   };
 
-  const count = (s: string) => s === '미연결'
-    ? all.filter((c) => !c.signStatus).length
-    : s ? all.filter((c) => c.signStatus === s).length : all.length;
+  const count = (s: string) => s === '전자서명'
+    ? all.filter((c) => !!c.signStatus).length
+    : s === '미연결'
+      ? all.filter((c) => !c.signStatus).length
+      : s ? all.filter((c) => c.signStatus === s).length : all.length;
+  const contractStatuses = [...new Set(all.map((c) => c.status).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'ko'));
 
   const byCode = new Map<string, number>();
   for (const c of all) byCode.set(c.code, (byCode.get(c.code) ?? 0) + 1);
@@ -74,6 +80,7 @@ export default async function EsignPage({ searchParams }: {
 
           <form className="dz-find" action="/esign">
             {sign && <input type="hidden" name="sign" value={sign} />}
+            {status && <input type="hidden" name="status" value={status} />}
             <div className="searchbox dz-searchbox">
               <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
               <input name="q" defaultValue={sp(q.q)} placeholder="고객 · 차량번호 · 계약코드 · 담당자" />
@@ -88,6 +95,18 @@ export default async function EsignPage({ searchParams }: {
               </Link>
             ))}
           </div>
+
+          {contractStatuses.length > 1 && (
+            <div className="quick-filters">
+              <Link className={!status ? 'active' : ''} href={keep({ status: '', id: '', v: 'list' })}>계약 전체</Link>
+              {contractStatuses.map((s) => (
+                <Link key={String(s)} className={status === s ? 'active' : ''}
+                  href={keep({ status: String(s), id: '', v: 'list' })}>
+                  {txt(s)} <small>{all.filter((c) => c.status === s).length}</small>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {duplicateCodes.length > 0 && (
             <p className="dz-warn">

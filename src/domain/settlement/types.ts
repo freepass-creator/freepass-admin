@@ -113,6 +113,11 @@ export interface SettlementRow {
   deposit: Maybe<number>;
   price: Maybe<number>;          // 차량가액 — ★신차만 값이 있다. 0 을 찍지 않는다
   payKind: Maybe<string>;        // 일시납 · 2회분납 · 3회분납
+  /**
+   * 받은 회차 — ★사람이 «분납이 끊겼을 때» 멈춘 회차를 적는다(ERP5 `paidRounds`).
+   *   안 적혀 있으면 기간 비례로 본다(stage.ts paidRoundsOf). 적혀 있어야 「끊겼다」 고 말할 수 있다.
+   */
+  paidRounds: Maybe<number>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

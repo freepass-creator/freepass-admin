@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { settlementCode, settlementKey, eventDocId } from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
-import { settlementMonthOf } from '../month.js';
+import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
+import { claimAmountOf, payAmountOf } from '../money.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
@@ -80,55 +81,102 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.equal(progressPatch({ cancelled: true }, { kind: 'paper', on: true }).ok, false));
 });
 
-describe('청구월 — erp4 settlementMonthOf 와 같다', () => {
-  it('박힌 청구월이 이긴다', () => assert.deepEqual(settlementMonthOf({ billMonth: '2026-07', deliveredAt: '2026-08-03' }), { month: '2026-07', basis: 'WRITTEN' }));
-  it('분납은 접수월 + (회차−1)', () => assert.deepEqual(settlementMonthOf({ receivedAt: '2026-08-20', deliveredAt: '2026-08-25', payKind: '2회분납' }), { month: '2026-09', basis: 'INSTALLMENT' }));
-  it('일시납은 인도월', () => assert.equal(settlementMonthOf({ receivedAt: '2026-08-30', deliveredAt: '2026-09-02', payKind: '일시납' })?.month, '2026-09'));
-  it('★인도 전이면 접수월(예정) — 「접수되면 청구서에 미리 올라가 있는 거지」', () =>
-    assert.deepEqual(settlementMonthOf({ receivedAt: '2026-09-10', payKind: '일시납' }), { month: '2026-09', basis: 'FORECAST' }));
+const NOW = new Date(2026, 8, 18);   // 2026-09-18
+const row = (o: Record<string, unknown>) => toSettlementRow({
+  code: 'r', plate: '1가1', receivedAt: '2026-06-01', supplier: 'A', channel: 'X', delivered: true, deliveredAt: '2026-06-10',
+  cancelled: false, billMonth: '', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납', ...o,
+}, 'r').row;
+
+describe('★완납·인도 기준 — 대표 「접수 -> 분납실적/완납실적 -> 완납인도기준으로 청구 및 지급」', () => {
+  it('인도 전이면 청구월이 없다(아직) — 접수', () => {
+    const r = row({ delivered: false, deliveredAt: '' });
+    assert.equal(billingMonth(r, NOW), null);
+    assert.equal(stageOf(r, NOW), '접수');
+  });
+  it('일시납은 인도월 · 완납실적', () => {
+    const r = row({});
+    assert.equal(billingMonth(r, NOW), '2026-06');
+    assert.equal(stageOf(r, NOW), '완납실적');
+  });
+  it('분납은 인도일부터 — 1회차는 인도 때 · 완납월에 청구 (9월 인도분부터)', () => {
+    const r = row({ payKind: '3회분납', receivedAt: '2026-09-01', deliveredAt: '2026-09-05' });
+    assert.equal(billingMonth(r, NOW), '2026-11');           // 인도 9/5 + 2개월
+    assert.equal(paidRoundsOf(r, NOW), 1);
+    assert.equal(bucketOf(r, NOW), '당월접수');                // 당월 접수는 이달이 끝날 때까지 접수
+    assert.equal(stageOf(r, new Date(2026, 9, 2)), '분납실적');
+  });
+  it('9월 전 인도분은 옛 규칙(인도월) 그대로 — 지난 달을 흔들지 않는다', () =>
+    assert.equal(billingMonth(row({ payKind: '2회분납', deliveredAt: '2026-08-20' }), NOW), '2026-08'));
+  it('박힌 청구월이 이긴다', () => assert.equal(billingMonth(row({ billMonth: '2026-07' }), NOW), '2026-07'));
+  it('당월 접수 · 지난달 이전인데 인도 전이면 미완료', () => {
+    assert.equal(bucketOf(row({ receivedAt: '2026-09-02', delivered: false, deliveredAt: '' }), NOW), '당월접수');
+    assert.equal(bucketOf(row({ receivedAt: '2026-07-02', delivered: false, deliveredAt: '' }), NOW), '미완료');
+  });
 });
 
-describe('청구목록 · 지급목록 — erp4 claimOf/payOf · 환수', () => {
+describe('★분납이 끊기면 — 받은 회차는 사람이 적는다', () => {
+  const broken = { payKind: '2회분납', deliveredAt: '2026-07-01', paidRounds: 1 };
+  it('적힌 회차가 있어야 끊겼다고 말한다 — 받은 만큼 비례 (133호1997 1,688,750 × 1/2)', () => {
+    const r = row({ ...broken, claimWritten: 1_688_750 });
+    assert.equal(billingMonth(r, NOW), '2026-07');          // 받은 1회차의 달
+    assert.equal(claimAmountOf(r, NOW), 844_375);
+  });
+  it('안 적혔으면 기간 비례라 「받은 것」 — 전액', () =>
+    assert.equal(claimAmountOf(row({ ...broken, paidRounds: null }), NOW), 1_000_000));
+  it('★스타·아이카는 끊기면 지급 0', () => {
+    assert.equal(payAmountOf(row({ ...broken, supplier: '아이카' }), NOW), 0);
+    assert.equal(payAmountOf(row({ ...broken, supplier: '손오공' }), NOW), 400_000);
+  });
+});
+
+describe('받은 회차 찍기', () => {
+  it('분납·인도된 줄만 · 1~회차 수', () => {
+    assert.equal(progressPatch({ payKind: '일시납', delivered: true }, { kind: 'paidRounds', rounds: 1 }).ok, false);
+    assert.equal(progressPatch({ payKind: '2회분납', delivered: false }, { kind: 'paidRounds', rounds: 1 }).ok, false);
+    assert.equal(progressPatch({ payKind: '2회분납', delivered: true }, { kind: 'paidRounds', rounds: 3 }).ok, false);
+    const r = progressPatch({ payKind: '2회분납', delivered: true }, { kind: 'paidRounds', rounds: 1 });
+    assert.deepEqual(r.ok && r.patch, { paidRounds: 1 });
+  });
+});
+
+describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () => {
   const mk = (o: Record<string, unknown>) => toSettlementRow({
     code: String(o.code), plate: '1가1', receivedAt: '2026-08-01', supplier: 'A', channel: 'X',
-    delivered: true, cancelled: false, billMonth: '2026-08', claimWritten: 100, payWritten: 40, payStage: '접수',
+    delivered: true, deliveredAt: '2026-08-03', cancelled: false, billMonth: '2026-08', claimWritten: 100, payWritten: 40, payStage: '접수',
     ...o,
   }, String(o.code)).row;
   const rows = [
     mk({ code: 'a' }),
     mk({ code: 'b', supplier: 'B', claimWritten: 0, billed: false }),           // 안 끝난 0 → 모름
-    mk({ code: 'c', delivered: false, billMonth: '' }),                        // 인도 전 → 접수월 예정
-    mk({ code: 'd', cancelled: true }),                                        // 취소 — 안 선다
-    mk({ code: 'e', settleExclude: true }),                                    // 정산 제외 — 안 선다
+    mk({ code: 'c', delivered: false, deliveredAt: '', billMonth: '' }),       // ★인도 전 → 안 선다
+    mk({ code: 'd', cancelled: true }),
+    mk({ code: 'e', settleExclude: true }),
     mk({ code: 'g', channel: 'Y', payStage: '통보', billed: true }),
-    mk({ code: 'h', claimIncentive: 30, payIncentive: 20 }),                   // 무보증 수수료
-    mk({ code: 'i', settleTarget: '영업' }),                                    // 청구에 안 선다
-    mk({ code: 'j', billHold: true }),                                         // 청구 보류 — 금액 0
+    mk({ code: 'h', claimIncentive: 30, payIncentive: 20 }),
+    mk({ code: 'i', settleTarget: '영업' }),
+    mk({ code: 'j', billHold: true }),
+    mk({ code: 'k', billMonth: '', deliveredAt: '2026-08-20' }),               // 박힌 달(8월)에 계산으로 오는 줄 → 청구월 미정
   ];
   const claw = [{ plate: '1가1', month: '2026-08', supplier: 'A', channel: 'X', supplierAmt: 50, agentAmt: 10, reason: '중도해지', at: '2026-08-20' }];
-  it('취소·제외는 빠지고 인도 전 줄은 예정으로 선다', () => {
-    const a = claimLedger(rows, '2026-08', claw).find((g) => g.party === 'A')!;
-    assert.deepEqual(a.rows.map((r) => r.id).sort(), ['a', 'c', 'g', 'h', 'j']);
-    assert.equal(a.forecast, 1);
+  it('인도 전 줄은 안 선다 · 취소·제외도 안 선다', () => {
+    const a = claimLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'A')!;
+    assert.deepEqual(a.rows.map((r) => r.id).sort(), ['a', 'g', 'h', 'j']);
   });
-  it('★인센티브를 더한다 · 보류는 0 · 환수를 뺀다', () => {
-    const a = claimLedger(rows, '2026-08', claw).find((g) => g.party === 'A')!;
-    assert.equal(a.total, 100 + 100 + 100 + 130 + 0);   // a · c · g · h(인센 30) · j(보류)
-    assert.equal(a.hold, 1);
-    assert.equal(a.clawbackTotal, 50);
-    assert.equal(a.net, 430 - 50);
+  it('★닫힌 달을 흔들지 않는다 — 계산으로 온 줄은 청구월 미정', () => {
+    assert.ok(claimLedger(rows, '청구월 미정', [], NOW).some((g) => g.rows.some((r) => r.id === 'k')));
+    assert.ok(ledgerMonths(rows, [], NOW).includes('청구월 미정'));
+  });
+  it('인센티브를 더한다 · 보류는 0 · 환수를 뺀다', () => {
+    const a = claimLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'A')!;
+    assert.equal(a.total, 100 + 100 + 130 + 0);
+    assert.equal(a.net, 330 - 50);
   });
   it('★모르는 금액은 합에 안 넣고 따로 센다', () => {
-    const b = claimLedger(rows, '2026-08').find((g) => g.party === 'B')!;
+    const b = claimLedger(rows, '2026-08', [], NOW).find((g) => g.party === 'B')!;
     assert.equal(b.total, 0); assert.equal(b.unknown, 1);
   });
-  it('정산대상 「영업」 은 지급에만 선다 · 지급은 영업채널별', () => {
-    assert.ok(!claimLedger(rows, '2026-08').some((g) => g.rows.some((r) => r.id === 'i')));
-    const x = payLedger(rows, '2026-08', claw).find((g) => g.party === 'X')!;
-    assert.ok(x.rows.some((r) => r.id === 'i'));
-    assert.equal(x.clawbackTotal, 10);
-    assert.equal(payLedger(rows, '2026-08').find((g) => g.party === 'Y')!.done, 1);
+  it('정산대상 「영업」 은 지급에만 선다', () => {
+    assert.ok(!claimLedger(rows, '2026-08', [], NOW).some((g) => g.rows.some((r) => r.id === 'i')));
+    assert.ok(payLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'X')!.rows.some((r) => r.id === 'i'));
   });
-  it('달 목록에 환수만 있는 달도 선다', () =>
-    assert.ok(ledgerMonths(rows, [{ ...claw[0], month: '2026-03' }]).includes('2026-03')));
 });

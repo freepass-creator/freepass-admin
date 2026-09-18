@@ -4,25 +4,33 @@
  *
  * ★화면을 모른다. 무엇이 어느 목록에 서고 얼마인지만 센다 — 화면과 셈이 «같은 함수» 를 쓴다.
  * ★★셈은 erp4 와 «같다» — 대표 2026-09-18 「기능적으로 정산 계약쪽 문제 없나??」 로 대 보니 셋이 달랐다.
- *   ① 달      erp4 `settlementMonthOf` — 박힌 청구월 > 분납(접수월+회차−1) > 인도월 > 인도 전은 접수월(예정)
- *             (전에는 박힌 청구월만 보고 인도 전 줄을 뺐다 — 사장님 09-08 「접수되면 청구서에 미리 올라가 있는 거지」)
- *   ② 금액    erp4 `claimOf`/`payOf` — (적힌 금액 + 인센티브) × 정산비율 · 제외·보류·대상 가름
- *             (전에는 인센티브=무보증 수수료를 빠뜨렸다)
+ *   ① 달      erp4 settlement-stage `billingMonthIn` — 인도가 관문 · 박힌 청구월 > 일시납 인도월 > 분납 완납월(끊기면 받은 회차 달)
+ *             ★대표 2026-09-18 「완납인도기준으로 청구 및 지급」 — 인도 전 줄은 안 선다(전에 «예정» 으로 올렸던 것을 걷었다)
+ *             ★박힌 달은 닫혔다 — 계산으로 늦게 오는 줄은 「청구월 미정」 으로
+ *   ② 금액    money.ts — (수수료 + 프로모션) × 비율 × 받은 몫 + 가감 · 스타·아이카 끊기면 지급 0
  *   ③ 환수    `settlement_clawbacks` 를 그 달·그 상대에서 뺀다 — 환수는 «반대 부호의 한 줄»
  *
  * 청구목록 = 공급사별 (받을 곳) · 지급목록 = 영업채널별 (줄 곳)
  */
-import { settlementMonthOf, type MonthBasis } from './month';
+import { billingMonthIn, brokenOf, lockedMonthsOf, paidRatioOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
 
-export const NO_MONTH = '달 모름';
+/** 인도는 됐는데 달이 닫혀(박힌 달) 계산으로 못 들어간 줄 — 사람이 달을 정한다 */
+export const NO_MONTH = '청구월 미정';
 
 export interface Clawback {
   plate: string; month: string; supplier: string; channel: string;
   supplierAmt: number; agentAmt: number; reason: string; at: string;
 }
 
-export interface LedgerLine { row: SettlementRow; month: string; basis: MonthBasis | null; amount: Maybe<number> }
+export interface LedgerLine {
+  row: SettlementRow;
+  month: string;
+  amount: Maybe<number>;
+  /** 분납이 끊겨 받은 만큼만 선 줄 — ratio 는 받은 몫(0~1) */
+  broken: boolean;
+  ratio: number;
+}
 
 export interface LedgerGroup {
   party: string;           // 공급사 또는 영업채널
@@ -36,18 +44,25 @@ export interface LedgerGroup {
   done: number;
   /** 청구 보류 — 금액에 안 넣는다(erp4 claimOf) */
   hold: number;
-  /** 인도 전이라 «예정» 으로 선 줄 */
+  /** ⚠ 더 안 쓴다 — 인도 전 «예정» 줄은 목록에 안 선다(대표 2026-09-18 「완납인도기준」). 늘 0 */
   forecast: number;
+  /** 분납이 끊겨 받은 만큼만 선 줄 수 */
+  broken: number;
   clawbacks: Clawback[];
   clawbackTotal: number;
   /** 합 − 환수 */
   net: number;
 }
 
-const monthOfRow = (r: SettlementRow) => {
-  const m = settlementMonthOf({ billMonth: r.progress.billMonth, receivedAt: r.receivedAt, deliveredAt: r.progress.deliveredAt, payKind: r.payKind });
-  return { month: m?.month ?? NO_MONTH, basis: m?.basis ?? null };
-};
+/**
+ * 그 줄의 청구·지급 달. ★인도 전이면 null — 목록에 안 선다(「아직」).
+ * 인도됐는데 달이 닫혀 못 들어가면 「청구월 미정」.
+ */
+function monthOfRow(r: SettlementRow, locked: ReadonlySet<string>, now: Date): string | null {
+  const m = billingMonthIn(r, locked, now);
+  if (m) return m;
+  return r.progress.delivered ? NO_MONTH : null;
+}
 
 /** 목록에 설 수 있나 — 취소·정산 제외는 어느 목록에도 안 선다 */
 const inLedger = (r: SettlementRow) => !r.progress.cancelled && !r.progress.settleExclude;
@@ -56,20 +71,22 @@ const inLedger = (r: SettlementRow) => !r.progress.cancelled && !r.progress.sett
 import { claimAmountOf, payAmountOf } from './money';
 export { claimAmountOf, payAmountOf };
 
-export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly Clawback[] = []): string[] {
+export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly Clawback[] = [], now = new Date()): string[] {
   const m = new Set<string>();
-  for (const r of rows) if (inLedger(r)) m.add(monthOfRow(r).month);
+  const locked = lockedMonthsOf(rows);
+  for (const r of rows) { if (!inLedger(r)) continue; const x = monthOfRow(r, locked, now); if (x) m.add(x); }
   for (const c of clawbacks) if (c.month) m.add(c.month);
   return [...m].sort((a, b) => (a === NO_MONTH ? 1 : b === NO_MONTH ? -1 : b.localeCompare(a)));
 }
 
 function group(
   rows: readonly SettlementRow[], clawbacks: readonly Clawback[], month: string,
-  side: 'claim' | 'pay',
+  side: 'claim' | 'pay', now: Date,
 ): LedgerGroup[] {
   const by = new Map<string, LedgerGroup>();
+  const locked = lockedMonthsOf(rows);
   const get = (party: string) => {
-    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, hold: 0, forecast: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
+    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
     by.set(party, g);
     return g;
   };
@@ -78,15 +95,16 @@ function group(
     /* ★정산 대상 가름 — 「영업」 만이면 청구에 안 서고, 「공급」 만이면 지급에 안 선다 (erp4 claimOf/payOf) */
     if (side === 'claim' && r.settleTarget === '영업') continue;
     if (side === 'pay' && r.settleTarget === '공급') continue;
-    const { month: m, basis } = monthOfRow(r);
+    const m = monthOfRow(r, locked, now);
     if (m !== month) continue;
     const g = get((side === 'claim' ? r.supplier : r.channel) ?? '(이름 없음)');
-    const amount = side === 'claim' ? claimAmountOf(r) : payAmountOf(r);
-    g.lines.push({ row: r, month: m, basis, amount });
+    const amount = side === 'claim' ? claimAmountOf(r, now) : payAmountOf(r, now);
+    const broken = brokenOf(r, now);
+    g.lines.push({ row: r, month: m, amount, broken, ratio: paidRatioOf(r, now) });
+    if (broken) g.broken += 1;
     if (amount === null) g.unknown += 1; else g.total += amount;
     if (side === 'claim' ? r.progress.billed : r.payStage === '통보') g.done += 1;
     if (side === 'claim' && r.progress.billHold) g.hold += 1;
-    if (basis === 'FORECAST') g.forecast += 1;
   }
   for (const c of clawbacks) {
     if (c.month !== month) continue;
@@ -105,19 +123,19 @@ function group(
 }
 
 /** 청구목록 — 공급사에게 받을 것. 끝남 = 청구서를 보냈다(`billed`). */
-export const claimLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = []) =>
-  group(rows, clawbacks, month, 'claim');
+export const claimLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
+  group(rows, clawbacks, month, 'claim', now);
 
 /** 지급목록 — 영업채널에 줄 것. 끝남 = 지급 단계가 「통보」 다(ERP5 `payStage`). */
-export const payLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = []) =>
-  group(rows, clawbacks, month, 'pay');
+export const payLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
+  group(rows, clawbacks, month, 'pay', now);
 
 export function ledgerTotals(groups: readonly LedgerGroup[]) {
   return groups.reduce(
     (t, g) => ({
       rows: t.rows + g.lines.length, total: t.total + g.total, unknown: t.unknown + g.unknown, done: t.done + g.done,
-      forecast: t.forecast + g.forecast, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
+      forecast: t.forecast + g.forecast, broken: t.broken + g.broken, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
     }),
-    { rows: 0, total: 0, unknown: 0, done: 0, forecast: 0, clawback: 0, net: 0 },
+    { rows: 0, total: 0, unknown: 0, done: 0, forecast: 0, broken: 0, clawback: 0, net: 0 },
   );
 }

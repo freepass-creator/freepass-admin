@@ -57,7 +57,10 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
   const kind = S(f, 'kind');
   const on = S(f, 'on') === '1';
   let change: ProgressChange;
-  if (kind === 'paper') change = { kind, on };
+  if (kind === 'paidRounds') {
+    const t = S(f, 'rounds');
+    change = { kind, rounds: t ? Number(t) : null };
+  } else if (kind === 'paper') change = { kind, on };
   else if (kind === 'delivered') change = { kind, on, deliveredAt: S(f, 'deliveredAt') };
   else if (kind === 'cancelled') change = { kind, on, reason: S(f, 'reason') };
   else return { errors: [`모르는 진행 칸: ${kind}`] };

@@ -114,6 +114,7 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
 /* ── 진행 체크 — 계약서 · 인도 · 취소 ─────────────────────────── */
 
 export type ProgressChange =
+  | { kind: 'paidRounds'; rounds: number | null }
   | { kind: 'paper'; on: boolean }
   | { kind: 'delivered'; on: boolean; deliveredAt?: string }
   | { kind: 'cancelled'; on: boolean; reason?: string };
@@ -131,6 +132,20 @@ export function progressPatch(
   const S = (v: unknown) => String(v ?? '');
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
 
+  /*
+   * 받은 회차 — ★분납이 «끊겼을 때» 사람이 멈춘 회차를 적는다. 비우면(null) 기간 비례로 돌아간다.
+   *   인도 전에는 못 적는다(1회차는 인도 때 낸다). 회차 수를 넘지 못한다.
+   */
+  if (c.kind === 'paidRounds') {
+    const n = (() => { const m = /(\d)\s*회/.exec(S(cur.payKind)); const k = m ? Number(m[1]) : 1; return k >= 2 ? k : 1; })();
+    if (n < 2) return { ok: false, error: '분납 줄이 아닙니다 — 받은 회차는 분납에만 적습니다' };
+    if (!B(cur.delivered)) return { ok: false, error: '인도 전입니다 — 1회차는 인도 때 냅니다' };
+    if (c.rounds !== null && (!Number.isInteger(c.rounds) || c.rounds < 1 || c.rounds > n)) return { ok: false, error: `받은 회차는 1~${n} 사이입니다` };
+    const before = cur.paidRounds === undefined || cur.paidRounds === null ? '' : S(cur.paidRounds);
+    const after = c.rounds === null ? '' : String(c.rounds);
+    if (before === after) return { ok: true, patch: {}, events: [] };
+    return { ok: true, patch: { paidRounds: c.rounds }, events: [{ field: '받은회차', from: before, to: after }] };
+  }
   if (c.kind === 'paper') {
     if (B(cur.paper) === c.on) return { ok: true, patch: {}, events: [] };
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };

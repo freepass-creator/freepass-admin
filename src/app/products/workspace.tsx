@@ -38,6 +38,20 @@ import {
  * 폰은 `?v=list|detail|work` 로 판을 한 장씩(규칙 ⑧).
  */
 
+/** 실제 Canonical product shape에 붙는 차 축 판정은 workspace 가까이에 둔다. */
+type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
+const 차맞음: Record<차축, (p: 상품, k: string) => boolean> = {
+  status: (p, k) => p.status === k,
+  kind: (p, k) => p.productKind === k,
+  perk: (p, k) => (p.perks ?? []).includes(k),
+  supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
+  cls: (p, k) => p.vehicleClass === k,
+  fuel: (p, k) => p.specs.fuel === k,
+};
+
+/** 사진 URL은 서버 proxy 규칙을 반드시 거친다. */
+const 사진 = (p: { photoUrl?: string }): string | undefined =>
+  p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;

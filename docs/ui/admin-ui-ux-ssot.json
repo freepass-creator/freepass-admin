@@ -231,10 +231,38 @@
     "cssImportOrder": [
       "src/app/globals.css",
       "src/app/_design/admin-final.css",
-      "src/app/_fn/fn.css"
+      "src/app/_fn/fn.css",
+      "src/app/_design/admin-micro-polish.css"
     ],
     "intakePanelsBoundary": "src/app/intake/panels.tsx",
     "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
-    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
+    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx",
+    "microPolishCss": "src/app/_design/admin-micro-polish.css"
+  },
+  "microPolish": {
+    "preserves": [
+      "layout",
+      "brand colors",
+      "18/14/12 typography",
+      "40/44 controls",
+      "radius 4",
+      "ListRow/Panel/ActionBar semantics"
+    ],
+    "allows": [
+      "subtle panel elevation",
+      "selected-row rail",
+      "focus ring",
+      "hover/press depth",
+      "action-bar separation",
+      "tabular numeric alignment"
+    ],
+    "forbids": [
+      "sidebar redesign",
+      "dashboard KPI cards",
+      "new card system",
+      "new brand palette",
+      "large shadows",
+      "glassmorphism"
+    ]
   }
 }

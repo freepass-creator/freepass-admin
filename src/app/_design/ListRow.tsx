@@ -16,7 +16,13 @@
  */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { PerkMarks, Tag } from './Badges';
+import { PerkMarks, Tag, 신원 } from './Badges';
+
+/** 접수·실적 한 칸 — 끝 · 취소는 제 그림, 할 일이 남았으면(act) 기다림 */
+const 할일 = (text: string, tone: 'plain' | 'act') => {
+  const s = 신원(text);
+  return tone === 'act' && s.icon === 'tag' ? { icon: 'clock' } : s;
+};
 
 export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
   href: string;
@@ -52,8 +58,9 @@ export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'p
         <span className="dz-row-l1">
           <b>{title}</b>
           <span className="dz-row-badges">
-            {(badges ?? []).filter(Boolean).map((x, i) => <Tag key={i}>{x}</Tag>)}
-            {badge ? <Tag tone={tone}>{badge}</Tag> : null}
+            {/* 신원 칩 — 아이콘 + 글자(갈래마다 그림 · 좋은 소식은 초록). 할 일(act)은 기다림 그림 */}
+            {(badges ?? []).filter(Boolean).map((x, i) => <Tag key={i} {...(typeof x === 'string' ? 신원(x) : {})}>{x}</Tag>)}
+            {badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
           </span>
         </span>
         <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>

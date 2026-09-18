@@ -778,10 +778,17 @@ body { background: var(--바닥); }
 }
 .dz-row .dz-badge { background: var(--판); }          /* 줄 바탕(회색) 위에서는 흰 면 */
 .dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; font-weight: 600; }
+/* 신원 칩 — 아이콘 + 글자(erp4 「박스 뱃지 말고 아이콘 텍스트」). 좋은 소식(출고가능·즉시출고·끝)은 초록 — 화이트라벨 good */
+.dz-badge { gap: 4px; }
+.dz-badge .dz-ico { flex: none; opacity: .8; }
+.dz-badge.good, .dz-row .dz-badge.good { background: #e8f5ee; color: #1e7a45 !important; font-weight: 600; }
 
 .dz-perks { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 12px; row-gap: 4px; }
 .dz-perk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--글메인); font-weight: 700; color: var(--글); white-space: nowrap; }
-.dz-perk em { font-style: normal; color: var(--ci남색); font-weight: 700; }
+/* 조건 표시 — 색은 아이콘에만: 혜택 남색 ✓ · 무심사 초록 방패 · 신용조회·소득확인 흐린 방패(손님이 «해야 할 일») */
+.dz-perk .dz-ico { flex: none; color: var(--ci남색); }
+.dz-perk.good .dz-ico { color: #1e8a4c; }
+.dz-perk.ask .dz-ico { color: #9aa3ad; }
 .dz-perk-note { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
 .dz-perks.compact { column-gap: 8px; }
 .dz-perks.compact .dz-perk { font-size: var(--글보조); }
@@ -952,3 +959,102 @@ body { background: var(--바닥); }
 .dz-money button:disabled { opacity: .5; cursor: default; }
 .dz-errs { grid-column: 1 / -1; margin: 0; padding: 0 0 0 16px; color: #b3261e; font-size: var(--글보조); }
 @media (max-width: 900px) { .dz-money input { font-size: 16px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 상세 사진 — 큰 사진 + 넘기기 (erp4 ProductDetail 사진 칸 · 대표 2026-09-18 ② 선택)
+     큰 사진 16:10 · ‹ › · 밀어 넘기기 · 「N / M」 · 누르면 크게 · 웹만 옆 세로 썸네일(큰 사진 높이만큼 · 안에서 구름)
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-gal { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.dz-gal.many { grid-template-columns: minmax(0, 1fr) 64px; }
+.dz-gal-main {
+  position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--r);
+  background: var(--박스); cursor: zoom-in; touch-action: pan-y; user-select: none;
+}
+.dz-gal-main img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.dz-gal-main.empty { display: flex; align-items: center; justify-content: center; cursor: default; font-size: var(--글보조); color: #98a1ab; }
+.dz-gal-main.empty a { color: var(--ci남색); font-weight: 600; }
+.dz-gal-step {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 27, 53, .55); color: #fff; cursor: pointer;
+}
+.dz-gal-step:hover { background: rgba(15, 27, 53, .8); }
+.dz-gal-step.l { left: 8px; } .dz-gal-step.r { right: 8px; }
+.dz-gal-main small, .dz-gal-big small {
+  position: absolute; right: 8px; bottom: 8px; z-index: 2; padding: 0 8px; line-height: 20px; border-radius: var(--r);
+  background: rgba(15, 27, 53, .86); color: #fff; font-size: var(--글보조); font-variant-numeric: tabular-nums; pointer-events: none;
+}
+/* 세로 썸네일 — 줄 높이(=큰 사진)만 받는다: height 0 + min-height 100% */
+.dz-gal-thumbs {
+  height: 0; min-height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 6px; scrollbar-width: none;
+}
+.dz-gal-thumbs::-webkit-scrollbar { display: none; }
+.dz-gal-thumbs button {
+  flex: none; width: 100%; aspect-ratio: 16 / 10; padding: 0; border: 0; border-radius: var(--r);
+  overflow: hidden; background: var(--박스); opacity: .55; cursor: pointer;
+}
+.dz-gal-thumbs button img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dz-gal-thumbs button:hover { opacity: .85; }
+/* 고른 썸네일 — 선 대신 «밝기»로(흐린 것 사이에서 혼자 선명) + 남색 테 */
+.dz-gal-thumbs button.on { opacity: 1; box-shadow: inset 0 0 0 2px var(--ci남색); }
+.dz-gal-big {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 16, 30, .94); cursor: zoom-out;
+}
+.dz-gal-big img { max-width: 94vw; max-height: 88vh; object-fit: contain; cursor: default; }
+.dz-gal-big .dz-gal-step { width: 44px; height: 44px; }
+.dz-gal-big small { right: 50%; transform: translateX(50%); bottom: 16px; }
+.dz-gal-close {
+  position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .12); color: #fff; cursor: pointer;
+}
+@media (max-width: 900px) {
+  .dz-gal.many { grid-template-columns: minmax(0, 1fr); }
+  .dz-gal-thumbs { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 성격별 구역 — 구역마다 제 자리 (대표 2026-09-18 「성격에 따라서 잘 만들어 … 막 뭉쳐놓지 말고」)
+     erp4 DetailTable 규격: 머리(아이콘 하나 + 이름 + 칸 수) → 같은 표(항목 │ 값). 칸 안에는 그림을 안 넣는다.
+     머리 무게 = 중요도: main 남색 면 · sub 회색 면 · trace 면 없음. 선은 없다 — 표는 옅은 박스, 줄은 사이로.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-secs { display: grid; gap: 12px; margin-top: 4px; }
+.dz-sec > summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 33px; cursor: pointer; user-select: none;
+}
+.dz-sec > summary::-webkit-details-marker { display: none; }
+.dz-sec-ico {
+  flex: none; width: 26px; height: 26px; border-radius: var(--r);
+  display: inline-flex; align-items: center; justify-content: center; background: var(--박스); color: #6b7580;
+}
+.dz-sec.main .dz-sec-ico { background: var(--ci남색); color: #fff; }
+.dz-sec.trace .dz-sec-ico { background: transparent; color: #9aa3ad; }
+.dz-sec > summary b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
+.dz-sec.trace > summary b { color: #6b7580; }
+.dz-sec > summary small { font-size: var(--글보조); color: #9aa3ad; font-variant-numeric: tabular-nums; }
+.dz-sec-fold { margin-left: auto; display: inline-flex; color: #9aa3ad; transition: transform .15s; }
+.dz-sec[open] .dz-sec-fold { transform: rotate(180deg); }
+.dz-sec > summary:hover .dz-sec-fold { color: var(--글); }
+.dz-sec-hint { margin: 2px 0 0 34px; font-size: var(--글보조); color: #6b7580; }
+.dz-sec-table { margin: 8px 0 0; padding: 4px 12px; background: var(--박스); border-radius: var(--r); }
+.dz-sec-table > div { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); gap: 12px; padding: 7px 0; }
+.dz-sec-table dt {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  font-size: var(--글보조); line-height: 18px; color: #6b7580;
+}
+.dz-sec-table dd { margin: 0; min-width: 0; font-size: var(--글메인); line-height: 18px; color: var(--글); overflow-wrap: anywhere; }
+.dz-sec-table dd a { color: var(--ci남색); font-weight: 600; }
+/* ⑤ 모르는 값 — 칸은 두고 흐리게(지우면 «없음»을 못 본다 · erp4 dimDashes) */
+.dz-sec-table .dz-none { color: #c3c9cf; }
+.dz-sec-table > div.none dt { color: #9aa3ad; }
+/* 내부 전용 — 손님·견적서에 절대 안 나가는 값(심사기준 · 신용등급 · 수수료 환수) */
+.dz-internal {
+  font-style: normal; font-size: 11px; line-height: 16px; padding: 0 5px; border-radius: var(--r);
+  background: #fbeedd; color: #94560f; font-weight: 600;
+}
+.dz-article { font-size: 11px; color: #9aa3ad; }
+.dz-sec-note { display: block; margin-top: 2px; font-size: var(--글보조); color: #6b7580; }
+.dz-sec-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.dz-sec-list i { font-style: normal; font-size: var(--글보조); line-height: 22px; padding: 0 8px; border-radius: var(--r); background: var(--판); }

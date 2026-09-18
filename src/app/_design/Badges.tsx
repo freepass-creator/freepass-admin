@@ -1,30 +1,61 @@
 /**
- * ★★★**뱃지는 두 가지뿐 — 화이트라벨 규격을 가져왔다** (대표 2026-09-18)
- *   「여기 뱃지 규격이 왜 다르지?? 뱃지 규격이랑 이런 거는 화이트라벨 거 갖고 와도 될 것 같은데???
- *    규격 통일 좀 제대로 하자 … 갖고 올 거는 갖고 오고」
+ * ★★★**뱃지는 두 가지뿐 — 화이트라벨 규격 · 아이콘 + 글자** (대표 2026-09-18)
+ *   「뱃지 규격이랑 이런 거는 화이트라벨 거 갖고 와도 될 거 같은데 … 갖고 올 거는 갖고 오고」
+ *   「우리가 만들어 놓은 erp4 디자인 중에서 … 아이콘 + 텍스트 타입이나 이런 거 잘 생각해봐」
+ *   erp4 집 규칙(대표 2026-08-28 · 08-30) 「박스 뱃지 쓰지 말고 아이콘 텍스트 형태로 · **모든 곳에서**」
  *
- * 정본 = freepasserp4 `components/shop/shop-ui.tsx` — 거기는 «딱 두 가지»로 갈려 있다:
- *   ① 신원 딱지(Tag)  — 이 차가 «무엇»인가: 상품구분 · 배차상태 · 할 일. **상자**(면 하나 · 라운드 4 · 22px · 12px 글자).
- *   ② 조건 표시(PerkMark) — 손님이 «되나»: 무심사 · 분납가능 · 만21세 … **상자 없이 ✓ + 굵은 글자**.
- *      화이트라벨 설명 그대로: 「면이 없으면 신원 딱지와 한눈에 갈리고, 글자를 진하게 세울 수 있어 오히려 더 또렷하다 —
- *      회색 면에 회색 글자로 눕히면 셀링포인트가 딱지로 보인다」 · 「색은 아이콘에만, 글자는 먹색」
- * ⚠ 앞서 1줄 뱃지(흰 상자 22px)와 3줄 혜택 칩(옅은 남색 상자 20px)이 크기·색이 달라 «같은 것의 두 규격»처럼 보였다.
- * ⓘ 제미나이는 네 모양(채움·테두리·20px 칩·경고)을 권했지만 버렸다 — 테두리는 「선 없음」 규칙에 어긋나고,
- *   모양이 넷이면 대표가 지적한 «규격이 왜 다르냐»가 되풀이된다. 뜻은 «색»으로만 가른다(규칙 ④).
+ * 정본 = freepasserp4 `components/shop/shop-ui.tsx` 의 두 얼굴:
+ *   ① 신원 칩(StateChip → Tag) — 이 차가 «무엇»인가: 출고상태 · 상품구분 · 할 일.
+ *      옅은 면 + 아이콘 + 작은 글자 · **테두리 없음**(테두리가 붙는 순간 박스 뱃지다).
+ *      좋은 소식(출고가능 · 즉시출고 · 끝)은 초록 — 원본 `good`.
+ *   ② 조건 표시(PerkMark) — 손님이 «되나»: 심사 · 혜택. **면 없이 아이콘 + 굵은 먹색 글자.** 색은 아이콘에만.
+ *      ★심사는 방패 — 무심사는 초록, 신용조회 · 소득확인은 흐린 회색(원본 `ask`: 손님이 «해야 할 일»이라
+ *        혜택 색을 주면 서류가 혜택으로 보인다). 나머지 혜택은 남색 ✓.
+ *      ⚠ 앞서 「✓신용조회」가 「✓분납가능」과 같은 얼굴이었다 — 심사 요구가 혜택처럼 읽혔다.
+ * ⚠ 앞서 ①은 아이콘 없는 회색 상자였다(화이트라벨의 절반만 가져왔다).
  */
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
 
-/** ① 신원 딱지 — tone: plain(회색 면) · act(할 일 있음 — 옅은 남색 면 + 남색 글자) */
-export function Tag({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'act' }) {
-  return <i className={`dz-badge ${tone}`}>{children}</i>;
+/**
+ * 신원 칩의 그림 — 원본 erp4 `SIGNAL_ICON` 그대로: 그림은 «값»이 아니라 «갈래»를 가리킨다.
+ *   출고상태만 상태에 따라 갈린다(살 수 있나 ○✓ / 기다려야 하나 ◷ / 안 되나 ⊘) — 글자를 못 읽어도 먼저 걸러진다.
+ */
+export function 신원(text: string): { icon: string; good?: boolean } {
+  if (/출고가능|즉시출고/.test(text)) return { icon: 'circle-check', good: true };
+  if (/불가|종료|말소|취소/.test(text)) return { icon: 'circle-slash' };
+  if (/계약중|상품화중|출고협의|대기|다음/.test(text)) return { icon: 'clock' };
+  if (text === '끝') return { icon: 'circle-check', good: true };
+  return { icon: 'tag' };
 }
 
-/** ② 조건 표시 — ✓ + 굵은 먹색 글자, 상자 없음. note(「정책 추정」)는 회색 글자로 끝에 */
+/** ① 신원 칩 — tone: plain(옅은 면) · act(할 일 있음 — 옅은 남색 면 + 남색 글자) · 좋은 소식은 초록 */
+export function Tag({ children, tone = 'plain', icon, good }: {
+  children: ReactNode; tone?: 'plain' | 'act'; icon?: string; good?: boolean;
+}) {
+  return (
+    <i className={`dz-badge ${tone}${good ? ' good' : ''}`}>
+      {icon ? <Icon name={icon} size={12} stroke={2.2} /> : null}{children}
+    </i>
+  );
+}
+
+/** 심사 값인가 — 도메인 perks 는 심사를 맨 앞에 싣는다(무심사 · 신용조회 · 소득확인 …) */
+const 심사 = (m: string) => /심사|신용|소득/.test(m);
+
+/** ② 조건 표시 — 아이콘 + 굵은 먹색 글자, 면 없음. note(「정책 추정」)는 회색 글자로 끝에 */
 export function PerkMarks({ marks, note, compact }: { marks: string[]; note?: string; compact?: boolean }) {
   if (!marks.length && !note) return null;
   return (
     <span className={`dz-perks${compact ? ' compact' : ''}`}>
-      {marks.map((m) => <span key={m} className="dz-perk"><em aria-hidden>✓</em>{m}</span>)}
+      {marks.map((m) => {
+        const kind = 심사(m) ? (/무심사/.test(m) ? 'good' : 'ask') : 'perk';
+        return (
+          <span key={m} className={`dz-perk ${kind}`}>
+            <Icon name={kind === 'perk' ? 'check' : 'shield-check'} size={compact ? 12 : 14} stroke={2.4} />{m}
+          </span>
+        );
+      })}
       {note && <span className="dz-perk-note">{note}</span>}
     </span>
   );

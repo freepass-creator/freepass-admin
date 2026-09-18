@@ -10,8 +10,12 @@ import { blockOf, isOpenIntake, type SettlementRow } from '../../domain/settleme
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow } from '../_design/ListRow';
+import { Tag, 신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
-import { 매칭, 매칭끝, 정책이름표, 정책값글 } from '../_design/words';
+import { PhotoGallery } from '../_design/PhotoGallery';
+import { Sections } from '../_design/Sections';
+import { productSections } from '../../domain/catalog/sections';
+import { 매칭, 매칭끝 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
@@ -125,12 +129,6 @@ const 사진 = (p: { photoUrl?: string }): string | undefined =>
  *     차례가 뜻이다: 심사 → 분납가능 → 무보증 → 만N세 → 경력무관 → 무사고(사장님 2026-08-28 「맨 앞에 심사조건」).
  */
 
-/**
- * 정책이 얼마나 믿을 만한가 — 심사·혜택은 정책에서 나오므로 «추정» 정책이면 혜택도 추정이다(기능 세션).
- *   칸이 없으면 «모름» — 「없음」과 다르다.
- */
-const 정책상태 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string =>
-  s === 'CONFIRMED' ? '확정' : s === 'INFERRED' ? '추정' : s === 'MISSING' ? '없음' : '모름';
 /** 혜택 칩 옆에 붙는 한 마디 — 확정이면 안 붙인다 */
 const 정책말 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string | undefined =>
   s === 'INFERRED' ? '정책 추정' : s === 'MISSING' ? '정책 없음' : undefined;
@@ -335,12 +333,9 @@ export async function ProductWorkspace({ q, mode, base }: {
             <>
               <DetailTabs
                 summary={<>
-                  <div className="hero-car">
-                    {사진(car)
-                      ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
-                      : <span>사진 없음{car.photoLink ? <> · <a href={car.photoLink} target="_blank" rel="noreferrer">원본 사진 보기</a></> : null}</span>}
-                    <small>SSOT</small>
-                  </div>
+                  {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
+                  <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
+                    photos={(car.photos?.length ? car.photos : car.photoUrl ? [car.photoUrl] : []).filter((x) => x && x.trim()).map((x) => imgSrc(x)).filter((x): x is string => !!x)} />
                   <div className="vehicle-title">
                     <div>
                       <h2>{vehicleName(car) || car.id}</h2>
@@ -349,49 +344,22 @@ export async function ProductWorkspace({ q, mode, base }: {
                         <p className="dz-note">차종 {매칭(car.vehicle.matchLevel)}{car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : ''}</p>
                       )}
                     </div>
-                    <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
+                    <Tag {...신원(txt(car.status))}>{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</Tag>
                   </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
-                  <OfferPicker key={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                  <OfferPicker key={`기간-${car.id}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     perks={car.perks} perksNote={정책말(car.policyState)}
                     applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined} />
                 </>}
                 info={<>
                   <div className="vehicle-title">
-                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
-                    <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
+                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
+                    <Tag {...신원(txt(car.status))}>{txt(car.status)}</Tag>
                   </div>
-                  <h3 className="dz-sub">차량</h3>
-                  <dl className="summary-grid">
-                    {([
-                      ['공급사', car.supplierName ?? car.supplierId], ['출고상태', txt(car.status)],
-                      ['상품구분', txt(car.productKind)], ['심사', txt(car.credit)],
-                      ['외장색', txt(car.extColor)], ['내장색', txt(car.intColor)],
-                      ['차급', txt(car.vehicleClass)], ['차량가', car.consumerPrice ? `${won(car.consumerPrice)}원` : '—'],
-                      ['정책', 정책상태(car.policyState)], ['입고일', txt(car.firstSeenAt)],
-                      ['연식', car.specs.modelYear ? String(car.specs.modelYear) : '—'], ['주행거리', num(car.specs.mileageKm, 'km')],
-                      ['연료', txt(car.specs.fuel)], ['배기량', num(car.specs.displacementCc, 'cc')],
-                      ['인승', num(car.specs.seats)], ['구동', txt(car.specs.drivetrain)],
-                      ['최초등록일', txt(car.registration?.firstRegistrationDate)], ['차대번호', txt(car.registration?.vin)],
-                      ['차종 매칭', 매칭(car.vehicle.matchLevel) + (!매칭끝(car.vehicle.matchLevel) && car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : '')], ['상품코드', car.id],
-                    ] as [string, string][]).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-                  </dl>
-                  <h3 className="dz-sub">옵션{car.optionsUnverified ? ' · 미확인' : ''}</h3>
-                  <p className="dz-para">{txt(car.options)}</p>
-                  {(car.sourceUrl || car.ticaLink) && (
-                    <p className="dz-links">
-                      {car.sourceUrl && <a href={car.sourceUrl} target="_blank" rel="noreferrer">공급사 원본 보기</a>}
-                      {car.ticaLink && <a href={car.ticaLink} target="_blank" rel="noreferrer">롯데 T카 보기</a>}
-                    </p>
-                  )}
-                  <h3 className="dz-sub">정책 {car.productPolicies.length}</h3>
-                  {car.productPolicies.length === 0
-                    ? <p className="dz-empty">붙은 정책이 없습니다 — 「없다」가 아니라 ERP5 에 정책 코드가 안 걸렸거나 못 찾은 것입니다.</p>
-                    : <dl className="summary-grid">
-                        {car.productPolicies.map((v, i) => <div key={i}><dt>{정책이름표(v.policyId)}</dt><dd>{정책값글(v)}</dd></div>)}
-                      </dl>}
+                  {/* ★원자를 성격별 구역으로 — 기능 쪽 productSections(erp4 사전 이름) · 모양은 _design/Sections */}
+                  <Sections sections={productSections(car)} />
                 </>}
               />
             </>

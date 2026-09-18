@@ -168,7 +168,7 @@ html, body { font-size: var(--글메인); }
   display: inline-flex; align-items: center; justify-content: center;
   height: 33px; padding: 0 12px; line-height: 15px; white-space: nowrap;
 }
-.primary { display: flex; align-items: center; justify-content: center; height: 44px; line-height: 1; font-weight: 700; }
+.primary { display: flex; align-items: center; justify-content: center; height: var(--ui-action-h,44px); line-height: 1; font-weight: 700; }
 
 /* ★남은 검정 셋 — 재 보니 선택자가 달랐다(완료 칩은 `.checks span.done`, 위 띠 켜짐은 `.topbar nav button.active`) */
 .checks span.done { background: var(--켜짐); color: #fff; }
@@ -324,7 +324,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
 .fn-main .workspace label.searchbox {
   display: flex; flex-direction: row; align-items: center; gap: 8px;
-  height: 40px; padding: 0 12px; font-size: var(--글메인); color: #7b8590;
+  height: var(--ui-control-h,40px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace label.searchbox input {
   flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; outline: 0;
@@ -610,7 +610,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-searchbox {
   position: relative; display: flex; align-items: center; gap: 8px;
-  height: 40px; padding: 0 4px 0 12px; font-size: var(--글메인); color: #7b8590;
+  height: var(--ui-control-h,40px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace .dz-searchbox > input[name="q"] {
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;

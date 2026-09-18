@@ -10,7 +10,7 @@
  *   손님 카톡과 계약 스냅샷까지 흘러갔다. 여기서도 세 말(무심사·소득확인·신용조회) 중 하나로
  *   읽힐 때만 혜택 줄에 세운다.
  */
-import { strOf as S } from './atom.js';
+import { strOf as S } from './atom';
 type Rec = Record<string, unknown>;
 
 /* ── 상품구분 캐논 (erp4 lib/intake/entities.ts PRODUCT_TYPES · PRODUCT_TYPE_LEGACY) ── */

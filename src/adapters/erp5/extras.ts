@@ -5,7 +5,7 @@
  *   대 보니 색상 687 · 옵션 570 · 차급 614 대가 ERP5 에 있는데 안 옮기고 있었다(실측 2026-09-18 · 목록 694).
  * ★원자 글자를 그대로 옮긴다. 고치지 않는다 — 단, 뜻이 다른 값이 섞인 칸은 «걸러» 옮긴다(아래 차급).
  */
-import { strOrUndef as S, positiveNumOrUndef as N } from './atom.js';
+import { strOrUndef as S, positiveNumOrUndef as N } from './atom';
 type Rec = Record<string, unknown>;
 
 /**

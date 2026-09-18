@@ -12,7 +12,7 @@ import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
-import { numOrZero as N, strOf as S } from './atom.js';
+import { numOrZero as N, strOf as S } from './atom';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**

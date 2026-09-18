@@ -1,6 +1,6 @@
 import { erp5 } from './firestore';
 import { indexMaster, type MasterIndex, type VehicleMasterNode } from '../../domain/product/master-match';
-import { strOf as S } from './atom.js';
+import { strOf as S } from './atom';
 
 /** ERP5 `vehicle_master` 문서 → 노드. `variants` 는 JSON 글자로 들어 있다(실측). */
 export function nodeFromErp5(id: string, d: Record<string, unknown>): VehicleMasterNode {

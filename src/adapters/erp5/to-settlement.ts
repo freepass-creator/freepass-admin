@@ -8,7 +8,7 @@
 import type {
   Block, ClaimStage, FeeBasis, Maybe, PayStage, SettlementRow, SettleTarget,
 } from '../../domain/settlement/types';
-import { boolOf as b, numOrNull as n, strOrNull as s } from './atom.js';
+import { boolOf as b, numOrNull as n, strOrNull as s } from './atom';
 
 export type Erp5Row = Record<string, unknown>;
 

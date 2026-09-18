@@ -1,5 +1,5 @@
 import { erp5 } from './firestore';
-import { strOf as S, numOrNull as N } from './atom.js';
+import { strOf as S, numOrNull as N } from './atom';
 
 /**
  * **전자계약 — ERP5 `contract` 읽기.**

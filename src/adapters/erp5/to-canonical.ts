@@ -16,7 +16,7 @@ import { creditOf, perksOf, productKindOf } from './perks';
 import { extrasOf } from './extras';
 import { matchToMaster, type MasterIndex } from '../../domain/product/master-match';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
-import { strOrUndef as S, numOrUndef as N } from './atom.js';
+import { strOrUndef as S, numOrUndef as N } from './atom';
 
 export type Erp5Doc = Record<string, unknown>;
 

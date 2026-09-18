@@ -40,6 +40,11 @@ export class Erp5EsignRepository implements EsignRepository {
     return rows[0]??null;
   }
 
+  async getSession(id:string):Promise<EsignSession|null>{
+    const d=await erp5().collection(SESSIONS).doc(id).get();
+    return d.exists ? ({id:d.id,...d.data()} as EsignSession) : null;
+  }
+
   async findSessionByTokenHash(hash:string):Promise<EsignSession|null>{
     const q=await erp5().collection(SESSIONS).where('tokenHash','==',hash).limit(1).get();
     const d=q.docs[0]; return d?({id:d.id,...d.data()} as EsignSession):null;

@@ -12,6 +12,7 @@ import { imgSrc } from '../../server/image-proxy';
 import { ListRow } from '../_design/ListRow';
 import { DetailTabs } from '../_design/DetailTabs';
 import { 매칭, 매칭끝, 정책이름표, 정책값글 } from '../_design/words';
+import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 
 
 /**
@@ -257,14 +258,19 @@ export async function ProductWorkspace({ q, mode, base }: {
                     <small>SSOT</small>
                   </div>
                   <div className="vehicle-title">
-                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
+                    <div>
+                      <h2>{vehicleName(car) || car.id}</h2>
+                      <p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p>
+                      {!매칭끝(car.vehicle.matchLevel) && (
+                        <p className="dz-note">차종 {매칭(car.vehicle.matchLevel)}{car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : ''}</p>
+                      )}
+                    </div>
                     <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
                   </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
-                  <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
-                    supplier={car.supplierName ?? car.supplierId} match={매칭(car.vehicle.matchLevel)}
-                    matchNote={매칭끝(car.vehicle.matchLevel) ? undefined : car.vehicle.matchNote}
-                    perks={car.perks} perksNote={정책말(car.policyState)} />
+                  <OfferPicker offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                    perks={car.perks} perksNote={정책말(car.policyState)}
+                    applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined} />
                 </>}
                 info={<>
                   <div className="vehicle-title">
@@ -307,11 +313,17 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
-        {mode === 'intake' && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
+          <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
+        </section>}
+        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
+          <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })} />
+        </section>}
+        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="panel-head">
             <div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div>
             <div className="dz-head-right">
-              <Link className="new-app" href="/intake/new">+ 신규접수</Link>
+              <Link className="new-app" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규접수</Link>
               <span className="count">{ishown.length.toLocaleString()}건</span>
             </div>
           </div>
@@ -344,7 +356,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
-                  href={`/intake/${encodeURIComponent(r.id)}`}
+                  href={keep({ ic: r.id, w: '', v: 'work' })}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={!r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}

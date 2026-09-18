@@ -10,11 +10,13 @@
  *                 값 (메인 14 굵게) ············· [칩] [칩] [칩]     ← 혜택조건 (없으면 곁값)
  * ```
  *   · 세 줄 · 줄 높이 64 — 무엇을 더 싣든 «줄을 늘리지 않는다». 사진 없는 목록(접수·실적)은 사진 칸만 빠진다.
- *   · 강조는 색으로만(규칙 ④) — 뱃지 `tone="act"`(할 일이 있다) 는 옅은 남색 면 + 남색 글자.
+ *   · 뱃지는 두 가지뿐(_design/Badges, 화이트라벨 규격) — 1줄 신원 딱지(상자) · 3줄 조건 표시(✓ + 굵은 글자, 상자 없음).
+ *   · 강조는 색으로만(규칙 ④) — 딱지 `tone="act"`(할 일이 있다) 는 옅은 남색 면 + 남색 글자.
  *   · 고른 줄 = 옅은 남색 면. 선은 없다(규칙 ①).
  */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { PerkMarks, Tag } from './Badges';
 
 export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
   href: string;
@@ -50,15 +52,15 @@ export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'p
         <span className="dz-row-l1">
           <b>{title}</b>
           <span className="dz-row-badges">
-            {(badges ?? []).filter(Boolean).map((x, i) => <i key={i} className="dz-badge plain">{x}</i>)}
-            {badge ? <i className={`dz-badge ${tone}`}>{badge}</i> : null}
+            {(badges ?? []).filter(Boolean).map((x, i) => <Tag key={i}>{x}</Tag>)}
+            {badge ? <Tag tone={tone}>{badge}</Tag> : null}
           </span>
         </span>
         <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
         <span className="dz-row-l3">
           <strong>{value}</strong>
           {칩.length
-            ? <span className="dz-chips">{칩.map((c) => <i key={c}>{c}</i>)}</span>
+            ? <PerkMarks marks={칩} compact />
             : aside ? <small>{aside}</small> : null}
         </span>
       </span>

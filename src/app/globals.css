@@ -690,3 +690,71 @@ body { background: var(--바닥); }
 /* 판 머리 오른쪽 — 행동 단추와 건수가 나란히(접수 판). 상품 판은 건수만. 건수 자리가 두 판에서 같다(맨 오른쪽) */
 .dz-head-right { display: flex; align-items: center; gap: 8px; }
 .fn-main .workspace .work-panel .list { display: flex; flex-direction: column; gap: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 뱃지 두 가지 — 화이트라벨 규격 (대표 2026-09-18 「뱃지 규격이 왜 다르지? 화이트라벨 거 갖고 와」)
+   ① 신원 딱지(Tag) — 상자 하나 규격: 22px · 라운드 4 · 보조 12 · 좌우 8. 뜻은 색으로만(plain 회색 / act 옅은 남색)
+   ② 조건 표시(PerkMarks) — 상자 없이 ✓ + 굵은 먹색 글자(색은 ✓ 에만). 신원 딱지와 한눈에 갈린다.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-badge, .fn-main .workspace .status-dot {
+  display: inline-flex; align-items: center; height: 22px; line-height: 14px; padding: 0 8px;
+  border-radius: var(--r); font-style: normal; font-size: var(--글보조) !important; font-weight: 500; white-space: nowrap;
+  background: var(--박스); color: #4f5862 !important;
+}
+.dz-row .dz-badge { background: var(--판); }          /* 줄 바탕(회색) 위에서는 흰 면 */
+.dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; font-weight: 600; }
+
+.dz-perks { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 12px; row-gap: 4px; }
+.dz-perk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--글메인); font-weight: 700; color: var(--글); white-space: nowrap; }
+.dz-perk em { font-style: normal; color: var(--ci남색); font-weight: 700; }
+.dz-perk-note { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-perks.compact { column-gap: 8px; }
+.dz-perks.compact .dz-perk { font-size: var(--글보조); }
+/** 목록 3줄 — 표시는 «받은 차례 그대로 다» 싣고, 자리가 모자라면 뒤에서부터 통째로 숨는다(반쯤 잘린 것 없음) */
+.dz-row-l3 .dz-perks.compact { flex: 0 1 auto; min-width: 0; justify-content: flex-end; height: 17px; overflow: hidden; }
+.detail-panel .dz-perks { margin: 12px 0 0; }
+
+/* ★ 선택 Offer — «한 줄» (대표 「대여료 저렇게 공간 많이 두고 할 필요 없어, 한 줄로」)
+   월 값만 굵게, 보증금·선납·주행은 옆에 붙는다(제미나이: 월 값만 보이면 오접수 사고 — 빼지 않는다) */
+.dz-offer-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 12px 0 0;
+  padding: 10px 12px; border-radius: var(--r); background: var(--남색옅음);
+  font-size: var(--글메인); color: #4f5862;
+}
+.dz-offer-line b { font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.dz-offer-line span + span::before, .dz-offer-line b + span::before { content: '|'; margin-right: 12px; color: #b8c2cf; }
+.fn-main .workspace button.primary, .fn-main .workspace a.primary { margin-top: 12px; width: 100%; border: 0; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 오른쪽 판 — 신규 접수 · 접수 상세 (절대 법칙: 쪽을 안 옮기고 판만 바뀐다)
+   기능 쪽 폼·진행 체크 부품이 판 안에서 같은 옷(선 없는 박스 · 33 칸 · 남색 주 단추)을 입게 한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-picked { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--r); background: var(--박스); margin-bottom: 12px; }
+.dz-picked > span { font-size: var(--글보조); color: #6b7580; }
+.dz-picked > b { font-size: var(--글메인); font-weight: 700; }
+.dz-picked > p { margin: 0; font-size: var(--글보조); color: #6b7580; }
+.dz-picked > strong { font-size: var(--글메인); color: var(--ci남색); }
+.dz-warn { margin: 0 0 8px; font-size: var(--글보조); color: #b3261e; }
+.dz-ok { margin: 0 0 8px; font-size: var(--글보조); color: #1f6b35; }
+
+.fn-main .workspace .work-panel .fn-box {
+  border: 0; border-radius: var(--r); background: var(--박스); padding: 12px; margin: 8px 0;
+}
+.fn-main .workspace .work-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .work-panel input:not([type="checkbox"]):not([type="radio"]),
+.fn-main .workspace .work-panel select, .fn-main .workspace .work-panel textarea {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  color: var(--글); font: inherit; font-size: var(--글메인);
+}
+.fn-main .workspace .work-panel textarea { height: auto; min-height: 66px; padding: 8px; }
+.fn-main .workspace .work-panel input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--ci남색); }
+.fn-main .workspace .work-panel form button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
+}
+.fn-main .workspace .work-panel form button[type="submit"]:not([name]) { background: var(--ci남색); color: #fff; font-weight: 600; }
+.fn-main .workspace .work-panel form button:disabled { opacity: .45; cursor: not-allowed; }
+.dz-event { display: flex; gap: 8px; align-items: baseline; padding: 8px 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글보조); }
+.dz-event b { font-size: var(--글보조); }
+.dz-event small { margin-left: auto; color: #6b7580; }
+.dz-list-plain { margin: 0; padding-left: 18px; font-size: var(--글보조); color: #6b7580; }

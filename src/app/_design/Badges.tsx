@@ -15,14 +15,14 @@
  * ⚠ 앞서 ①은 아이콘 없는 회색 상자였다(화이트라벨의 절반만 가져왔다).
  */
 import type { ReactNode } from 'react';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 /**
  * ★★상품의 신원 칩 — 화이트라벨 «그대로»(대표 2026-09-18 「화이트라벨이랑 통일할 거면 확실하게 통일하고 … 어정쩡하게 하지 말고」)
  *   원본 = freepasserp4 components/shop/ShopCard.tsx · ShopDetail.tsx 의 stateMarks:
  *     출고상태 → CircleCheck(출고가능·즉시출고면 good 초록) · 상품구분 → Tag. 그 밖의 그림을 짓지 않는다.
  */
-export function 상품신원(text: string, kind: 'status' | 'kind'): { icon: string; good?: boolean } {
+export function 상품신원(text: string, kind: 'status' | 'kind'): { icon: IconName; good?: boolean } {
   return kind === 'kind' ? { icon: 'tag' } : { icon: 'circle-check', good: /출고가능|즉시출고/.test(text) };
 }
 
@@ -30,7 +30,7 @@ export function 상품신원(text: string, kind: 'status' | 'kind'): { icon: str
  * 업무 칩의 그림(접수 · 정산 — 화이트라벨에 없는 값) — 모양은 화이트라벨 칩과 같고 그림만 갈래를 말한다(erp4 SIGNAL_ICON): 그림은 «값»이 아니라 «갈래»를 가리킨다.
  *   출고상태만 상태에 따라 갈린다(살 수 있나 ○✓ / 기다려야 하나 ◷ / 안 되나 ⊘) — 글자를 못 읽어도 먼저 걸러진다.
  */
-export function 신원(text: string): { icon: string; good?: boolean } {
+export function 신원(text: string): { icon: IconName; good?: boolean } {
   if (/출고가능|즉시출고/.test(text)) return { icon: 'circle-check', good: true };
   if (/불가|종료|말소|취소/.test(text)) return { icon: 'circle-slash' };
   if (/계약중|상품화중|출고협의|대기|다음/.test(text)) return { icon: 'clock' };
@@ -43,7 +43,7 @@ export function 신원(text: string): { icon: string; good?: boolean } {
  *   tone: plain(옅은 면) · good(초록) — 화이트라벨 둘. 업무 칩만 act(할 일 — 옅은 남색) · warn(위험 — 붉음)을 더 쓴다.
  */
 export function Tag({ children, tone = 'plain', icon, good }: {
-  children: ReactNode; tone?: 'plain' | 'act' | 'warn'; icon?: string; good?: boolean;
+  children: ReactNode; tone?: 'plain' | 'act' | 'warn'; icon?: IconName; good?: boolean;
 }) {
   return (
     <i className={`dz-badge ${tone}${good ? ' good' : ''}`}>

@@ -15,7 +15,6 @@ import { Tag, 상품신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
 import { PhotoGallery } from '../_design/PhotoGallery';
 import { ProductInfo } from '../_design/ProductInfo';
-import { Icon } from '../_design/Icon';
 import { productSections } from '../../domain/catalog/sections';
 import { 매칭, 매칭끝 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';

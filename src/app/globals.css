@@ -270,7 +270,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .dz-terms .dz-term:hover { background: var(--박스손); }
 .dz-terms .dz-term.on { background: var(--고름); color: var(--ci남색); }
 .dz-go {
-  display: flex; align-items: center; justify-content: center; height: 44px; margin-top: 12px;
+  display: flex; align-items: center; justify-content: center; height: var(--ui-action-h); margin-top: 12px;
   border-radius: var(--r); background: var(--ci남색); color: #fff; text-decoration: none;
   font-size: var(--글메인); line-height: 14px; font-weight: 700;
 }
@@ -656,7 +656,7 @@ body { background: var(--바닥); }
 /* ★두 칸은 따로 구른다 — 오른쪽을 내려도 왼쪽 지도는 제자리 */
 .dz-fs-body nav { flex: 0 0 112px; overflow-y: auto; background: var(--박스); padding: 4px 0; }
 .dz-fs-body nav button {
-  display: flex; align-items: center; gap: 6px; width: 100%; height: 44px; padding: 0 10px 0 14px;
+  display: flex; align-items: center; gap: 6px; width: 100%; height: var(--ui-touch-min); padding: 0 10px 0 14px;
   border: 0; background: transparent; text-align: left; cursor: pointer;
   color: #6b7580; font-size: var(--글메인);
 }
@@ -670,7 +670,7 @@ body { background: var(--바닥); }
 .dz-fs-axis b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
 /* 값 한 줄 — 네모 · 이름 · 건수(오른쪽 끝, 흐리게). 한 열(두 열이면 숫자가 옆 라벨에 붙어 읽힌다) */
 .dz-fs-check {
-  display: flex; align-items: center; gap: 10px; width: 100%; height: 40px; padding: 0 4px;
+  display: flex; align-items: center; gap: 10px; width: 100%; height: var(--ui-control-h); padding: 0 4px;
   border: 0; border-radius: var(--r); background: transparent; text-align: left; cursor: pointer;
   color: #4f5862; font-size: var(--글메인);
 }
@@ -689,7 +689,7 @@ body { background: var(--바닥); }
 .dz-fs-more { margin-top: 4px; }
 .dz-fs-foot { flex: none; padding: 8px 12px 12px; }
 .dz-fs-foot .primary {
-  width: 100%; height: 44px; border: 0; border-radius: var(--r); cursor: pointer;
+  width: 100%; height: var(--ui-action-h); border: 0; border-radius: var(--ui-radius); cursor: pointer;
   background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700;
 }
 /* 폰 — 아래에서 올라오는 시트(원본 82vh). 뒤판을 눌러 닫는다. 위를 조금 남겨 «어디로 돌아가는지» 보인다 */
@@ -706,7 +706,7 @@ body { background: var(--바닥); }
   .dz-fs-head b { font-size: var(--글제목); }
   .dz-fs-body nav { flex-basis: 116px; }
   .dz-fs-body nav button { height: 50px; }
-  .dz-fs-check { height: 44px; }
+  .dz-fs-check { height: var(--ui-touch-min); }
   .dz-fs-check .box { width: 20px; height: 20px; }
   .dz-fs-foot .primary { height: 52px; }
   /* ⚠ 틀고정 머리(.dz-listtop, sticky z 8)가 쌓임 맥락을 만들어 시트가 그 안에 갇힌다 — 폰 판 단추(z 20)가
@@ -1000,10 +1000,10 @@ body { background: var(--바닥); }
   background: rgba(10, 16, 30, .94); cursor: zoom-out;
 }
 .dz-gal-big img { max-width: 94vw; max-height: 88vh; object-fit: contain; cursor: default; }
-.dz-gal-big .dz-gal-step { width: 44px; height: 44px; }
+.dz-gal-big .dz-gal-step { width: var(--ui-touch-min); height: var(--ui-touch-min); }
 .dz-gal-big small { right: 50%; transform: translateX(50%); bottom: 16px; }
 .dz-gal-close {
-  position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  position: absolute; top: 12px; right: 12px; width: var(--ui-touch-min); height: var(--ui-touch-min); padding: 0; border: 0; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .12); color: #fff; cursor: pointer;
 }
 @media (max-width: 900px) {
@@ -1076,13 +1076,13 @@ body { background: var(--바닥); }
 .dz-bar-go:has(> .dz-bar-sub):not(:has(> .primary)) { grid-template-columns: minmax(0, 1fr); }
 .fn-main .dz-bar-go .primary, .dz-bar-go .primary {
   /* ★주는 오른쪽(대표 2026-09-18) — 칸 비율은 .dz-bar-go 가 정한다 */
-  min-width: 0; width: auto; height: 44px; margin: 0; border: 0; border-radius: var(--r);
+  min-width: 0; width: auto; height: var(--ui-action-h); margin: 0; border: 0; border-radius: var(--ui-radius);
   display: flex; align-items: center; justify-content: center;
   background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700; text-decoration: none; cursor: pointer;
 }
 .dz-bar-go .primary:disabled { opacity: .5; cursor: default; }
 .dz-bar-sub {
-  min-width: 0; justify-content: center; height: 44px; padding: 0 12px; border: 0; border-radius: var(--r);
+  min-width: 0; justify-content: center; height: var(--ui-action-h); padding: 0 12px; border: 0; border-radius: var(--ui-radius);
   background: var(--박스); color: #4f5862; font-size: var(--글메인); font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 .dz-bar-sub:hover { background: var(--박스손); }
@@ -1449,12 +1449,12 @@ body:has(> .cl-main) { background: var(--바닥); }
 .cl-door form { display: grid; gap: 12px; }
 .cl-door label, .cl-memo { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .cl-door input, .cl-memo textarea {
-  height: var(--컨트롤); padding: 0 12px; border: 1px solid var(--선); border-radius: var(--r); background: var(--판);
+  height: var(--ui-control-h); padding: 0 12px; border: 1px solid var(--선); border-radius: var(--ui-radius); background: var(--판);
   font-size: 16px; color: var(--글); font-family: inherit;
 }
 .cl-memo textarea { height: auto; padding: 10px 12px; }
 .cl-primary, .cl-sub-btn {
-  height: 44px; border: 0; border-radius: var(--r); font-size: var(--글메인); font-weight: 700; cursor: pointer; font-family: inherit;
+  height: var(--ui-action-h); border: 0; border-radius: var(--ui-radius); font-size: var(--ui-text-main); font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .cl-primary { background: var(--ci남색); color: #fff; }
 .cl-primary:disabled { opacity: .5; cursor: default; }
@@ -1574,7 +1574,7 @@ html:has(.lg-main), html:has(.lg-main) body { background: var(--바닥); min-hei
 }
 .lg-card input:focus { outline: 0; border-color: var(--ci남색); }
 .lg-card button {
-  height: 44px; margin-top: 4px; border: 0; border-radius: var(--r); background: var(--ci남색); color: #fff;
+  height: var(--ui-action-h); margin-top: 4px; border: 0; border-radius: var(--ui-radius); background: var(--ci남색); color: #fff;
   font-size: var(--글메인); font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .lg-card button:disabled { opacity: .5; cursor: default; }

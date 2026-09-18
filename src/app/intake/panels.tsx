@@ -16,7 +16,7 @@ import { vehicleName } from '../_fn/product';
 import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
-import { ActionBar, EmptyState, PanelHeader, SummaryGrid } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SummaryGrid } from '../_design/Primitives';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { previewFeeAction } from './actions';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
@@ -109,12 +109,12 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
                       : <span className="dz-warn-txt">직접 넣어야 함</span>
                 }</dd></div>
               </dl>
-            : <p className="dz-warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</p>}
+            : <Notice tone="warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</Notice>}
           {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
-      {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</p>}
+      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
       <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
       <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
         productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
@@ -193,7 +193,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
           {stage === '정정' && <li className="warn">정정</li>}
         </ol>
         {stage === '접수' && <EmptyState>{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</EmptyState>}
-        {(stage === '수금' || stage === '지급') && <p className="dz-ok">{끝말}까지 끝난 줄입니다.</p>}
+        {(stage === '수금' || stage === '지급') && <Notice tone="ok">{끝말}까지 끝난 줄입니다.</Notice>}
         {주?.form}
         <div className="dz-side-steps">
           {청구축 && !r.progress.billed && <SideStep code={r.id} kind="hold" label={r.progress.billHold ? '청구 보류 중' : '청구 보류'} on={r.progress.billHold} />}
@@ -216,8 +216,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
       <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
-      {created && <p className="dz-ok">ERP5 에 새 접수를 세웠습니다.</p>}
-      {exists && <p className="dz-warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</p>}
+      {created && <Notice tone="ok">ERP5 에 새 접수를 세웠습니다.</Notice>}
+      {exists && <Notice tone="warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</Notice>}
       <div className="vehicle-title">
         <div><h2>{txt(r.customer)}</h2><p>{txt(r.plate)} · {txt(r.model)} · 접수 {txt(r.receivedAt)}</p></div>
         <Tag {...신원(다음 === '끝' || 다음 === '취소됨' ? 다음 : '다음')} tone={다음 === '끝' || 다음 === '취소됨' ? 'plain' : 'act'}>{다음 === '끝' || 다음 === '취소됨' ? 다음 : `다음 · ${다음}`}</Tag>
@@ -227,7 +227,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {걸음}
 
       <h3 className="dz-sub">진행</h3>
-      {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</p>}
+      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</Notice>}
       <Progress code={r.id} paper={r.progress.paper} delivered={r.progress.delivered}
         deliveredAt={r.progress.deliveredAt ?? ''} cancelled={r.progress.cancelled} today={today()} />
       {/* 받은 회차 — 분납 · 인도된 줄에서만(기능 세션 2026-09-18) */}
@@ -254,7 +254,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
       <h3 className="dz-sub">돈 고치기 — 수수료 · 프로모션 · 가감</h3>
       <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled} />
-      {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</p>}
+      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</Notice>}
       <MoneyForm code={r.id}
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
         promoReason={r.money.promoReason} claimAdjust={r.money.claimAdjust} payAdjust={r.money.payAdjust}

@@ -48,6 +48,21 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+const layout = await readFile(path.join(root, 'src/app/layout.tsx'), 'utf8');
+const importOrder = [
+  "import './globals.css';",
+  "import './_design/admin-final.css';",
+  "import './_fn/fn.css';",
+  "import './_design/admin-micro-polish.css';",
+];
+let lastImport = -1;
+for (const item of importOrder) {
+  const at = layout.indexOf(item);
+  if (at < 0) errors.push(`src/app/layout.tsx: missing CSS import ${item}`);
+  if (at >= 0 && at <= lastImport) errors.push('src/app/layout.tsx: micro-polish CSS must load last');
+  lastImport = Math.max(lastImport, at);
+}
+
 for (const file of coreFiles) {
   const src = await readFile(path.join(root, file), 'utf8');
   for (const rule of forbidden) {
@@ -63,7 +78,8 @@ for (const file of noInlineStyleFiles) {
 
 const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
 const cssFinal = await readFile(path.join(root, 'src/app/_design/admin-final.css'), 'utf8');
-const css = `${cssBase}\n${cssFinal}`;
+const cssPolish = await readFile(path.join(root, 'src/app/_design/admin-micro-polish.css'), 'utf8');
+const css = `${cssBase}\n${cssFinal}\n${cssPolish}`;
 for (const token of requiredCss) {
   if (!css.includes(token)) errors.push(`admin CSS: missing shared token ${token}`);
 }
@@ -113,4 +129,5 @@ if (errors.length) {
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- visual baseline: 18/14/12 · control 40 · action/touch 44 · radius 4');
   console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);
+  console.log('- micro-polish layer: layout-preserving visual depth only');
 }

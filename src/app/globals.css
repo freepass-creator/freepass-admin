@@ -21,8 +21,17 @@
   --판: #ffffff;     /* 판 */
   --박스: #f4f6f8;   /* 판 위의 카드·칸 */
   --박스손: #eaeef2; /* 손을 댄 카드 */
-  --고름: #e1e7ee;   /* 고른 카드 — 선 대신 면이 짙어진다 */
-  --켜짐: #171a1e;   /* 켜진 단추 */
+  --고름: #e6ecf5;   /* 고른 카드 — 선 대신 면이 짙어진다(남색 집안) */
+  /**
+   * ★켜짐 = **프리패스 네이비** — 대표 2026-09-18 「너무 쨍한 거 없애고 우리 고유 남색 제대로 활용하고」
+   *   정본 = freepasserp4 `app/globals.css:37` 「Brand — 프리패스 네이비」 `--brand:#1B2A4A`.
+   *   ⚠ `#14263F` 는 유니오토모빌(화이트라벨 손님사) 색이다 — 우리 색이 아니다.
+   *   ⚠ 앞서 켜짐이 #171a1e(거의 검정)였다. 흰 판 위 검정은 대비가 너무 세서 «쨍»하다.
+   */
+  --켜짐: #1B2A4A;
+  --켜짐깊이: #0F1B35;  /* 맨 위 띠 — 판보다 한 단 깊게 */
+  --남색옅음: #e6ecf5;  /* 고른 카드 — 남색 집안의 옅은 면 */
+  --글: #1d2733;       /* 본문 글자 — 순검정 대신 남색 기운 도는 먹색 */
   --선: #dfe4e9;     /* ★선은 판 박스와 검색창에만 쓴다 */
 }
 
@@ -84,3 +93,121 @@
   .workspace { height: auto; display: flex; flex-direction: column; }
   .panel { border-bottom: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 대표 2026-09-18 — 「너무 쨍한 거 없애고 우리 고유 남색」 · 「글씨 크기 통상적인 범위로」 · 「모바일 웹」
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 쨍함 걷기 — 검정 덩이들을 남색으로 */
+html, body { color: var(--글); }
+.topbar { background: var(--켜짐깊이); }
+.offer-block { background: var(--켜짐); }
+
+/**
+ * ★★★**글씨는 세 단뿐 — 제목 · 메인 · 보조** — 대표 2026-09-18
+ *   「글씨가 다 통일됐으면 좋겠어. 그냥 **제목글 메인글 보조글로만 3위계**로만 텍스트 하고」
+ *   (전에는 9·10·11·12·13·14·17·20·21 아홉 가지 — 대부분 10~11px 라 통상 범위 밑이었다)
+ *
+ *     제목 18   판 제목 · 차 이름 · 가장 큰 금액      «무엇을 보는가»
+ *     메인 14   본문 · 값 · 이름 · 단추 · 입력         «읽고 누르는 것»
+ *     보조 12   꼬리표 · 설명 · 뱃지 · 날짜·번호       «곁들이는 것»
+ *
+ *   ★큰 금액(월 920,000원)도 제목 단이다 — 네 번째 크기를 만들지 않는다. 강조는 «색»으로 한다(규칙 ④).
+ *   ★여기 없는 글자는 몸(`body`)의 메인 14 를 물려받는다 — 새 크기가 새어 들어올 자리를 막는다.
+ */
+:root { --글제목: 18px; --글메인: 14px; --글보조: 12px; }
+html, body { font-size: var(--글메인); }
+
+.panel h1, .vehicle-title h2, .selected-offer-card h2, .application-detail-head h2,
+.offer-block strong, .topbar strong
+  { font-size: var(--글제목); }
+
+.admin-user, .searchbox, .searchbox input, .form-stack input,
+.summary-grid dd, .price b, .app-top b, .app-top strong, .row-title strong,
+.selected-offer-card b, .snapshot-box b, .work-hint b, .hero-car,
+.topbar button, .quick-filters button, .work-tabs button, .offer-picker button, .tabs button,
+.icon-btn, .new-app, .progress-actions button, .danger-link, .primary
+  { font-size: var(--글메인); }
+
+.eyebrow, .thumb, .price small, .summary-grid dt, .product-row p, .vehicle-title p,
+.offer-block p, .offer-block>div, .application-card p, .application-detail-head p, .application-detail-head span,
+.selected-offer-card p, .selected-offer-card>span, .snapshot-box p, .snapshot-box>span,
+.work-hint span, .form-stack label, .topbar span, .app-top span,
+.row-title span, .chips span, .checks span, .status-dot, .application-status, .hero-car small, .count
+  { font-size: var(--글보조); }
+
+/**
+ * ★★**단추·뱃지도 규격이 둘뿐** — 대표 2026-09-18 「표는 크기에 맞춰서 버튼 뱃지 이렇게 했으면 좋겠고」
+ *   높이를 «정해» 두고 글자를 가운데에 세운다 — 줄 높이로 맞추면 글꼴마다 1px 씩 뜬다.
+ *     뱃지   22 높이 · 보조 12 · 좌우 8      (상태·세부트림·조건·완료 칩·SSOT·건수)
+ *     단추   33 높이 · 메인 14 · 좌우 12     (필터·탭·표 안 단추·진행 단추·위 띠 메뉴)
+ *     주 단추 44 높이 · 메인 14 굵게         (이 상품 접수하기) — 한 판에 하나
+ *
+ *   ★★**왜 33·줄높이 15 인가 — 잉크로 쟀다** (대표 「1미리 앞에서 재봐, 레이저로 쏴서 정확해야 함」)
+ *     글자 «획»의 높이가 홀수다 — 메인 14 한글은 13px, 보조 12 한글은 11px(캔버스 actualBoundingBox 로 실측).
+ *     ⚠ 처음엔 상자만 홀수(33)로 바꿨다 → 오히려 33곳이 반 픽셀 쏠렸다. 줄 높이가 14(짝수)라
+ *       줄 상자가 상자 안 «9.5px» 자리에 놓였기 때문이다. 반 픽셀은 상자가 아니라 줄에서 생겼다.
+ *     ⇒ 상자 높이 × 줄 높이 조합을 전부 셈해, 반 픽셀이 «한 번도» 안 생기고 획이 가운데 오는 것을 골랐다.
+ *       단추 33 · 줄 15 → 18곳 중 14곳이 위아래 같은 px. 남는 넷(「후불」「상세필터」「요약」「공유」)은
+ *       획이 짝수(14·12)라 1px 차이가 남는다 — 글자마다 획이 달라 더는 못 줄인다.
+ *     ⓘ 뱃지(보조 12)는 **어떤 조합으로도 1px 차이가 최소**다 — 획 11(홀수)을 반 픽셀 없는 자리에
+ *       놓으면 늘 한쪽이 1px 많다. 그래서 흔한 22 로 두었다. 모든 뱃지가 «같은 쪽으로» 같은 만큼이다.
+ *     ⓘ 주 단추는 굵은 획이 14px(짝수)라 44 가 맞다 — 그래서 그것만 짝수다.
+ */
+.row-title span, .chips span, .checks span, .status-dot, .application-status, .hero-car small, .count {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 22px; padding: 0 8px; line-height: 14px; border-radius: var(--r); white-space: nowrap;
+}
+.quick-filters button, .work-tabs button, .offer-picker button, .tabs button, .icon-btn, .new-app,
+.progress-actions button, .topbar nav button {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; padding: 0 12px; line-height: 15px; white-space: nowrap;
+}
+.primary { display: flex; align-items: center; justify-content: center; height: 44px; line-height: 1; font-weight: 700; }
+
+/* ★남은 검정 셋 — 재 보니 선택자가 달랐다(완료 칩은 `.checks span.done`, 위 띠 켜짐은 `.topbar nav button.active`) */
+.checks span.done { background: var(--켜짐); color: #fff; }
+/** 위 띠(깊은 남색) 위의 켜진 메뉴 — 검은 알약 대신 «한 단 밝은 남색» 면. 띠와 같은 집안이라 쨍하지 않다. */
+.topbar nav button.active { background: var(--켜짐); color: #fff; }
+/** 사진 위 딱지(SSOT) — 사진 밝기와 무관하게 읽혀야 하므로 짙게 깔되, 검정이 아니라 남색으로. */
+.hero-car small { background: rgba(15, 27, 53, .86); color: #fff; }
+
+/** ★「판매중」 딱지만 원본이 `!important` 로 10px 에 못을 박아 두어 세 단 밖으로 샜다(실측). 같은 힘으로 되돌린다. */
+.status-dot { font-size: var(--글보조) !important; padding: 0 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 폰 — 판을 «한 장씩» (대표 2026-09-18 「모바일 웹 적용해봐」)
+   ⚠ 앞서는 판 셋을 세로로 이어 붙여 문서가 2,411px 였다 — 상세를 보려면 한참 내려야 했고,
+     위 메뉴도 폰에서 사라져 다른 판으로 가는 길이 스크롤뿐이었다.
+   ⇒ 아래 탭 셋(상품 · 상세 · 접수)으로 한 장씩. 차를 누르면 상세로, 「이 상품 접수하기」는 접수로 넘어간다.
+   ★옷은 그대로다 — 탭은 단추 규격(33·메인 14), 켜진 것은 남색 면, 탭 띠는 «판 박스»라 선을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+.phone-tabs { display: none; }
+@media (max-width: 900px) {
+  .workspace { padding: 8px 8px calc(8px + 49px + 8px + env(safe-area-inset-bottom)); gap: 8px; }
+  .workspace[data-phone="product"] .detail-panel, .workspace[data-phone="product"] .work-panel,
+  .workspace[data-phone="detail"] .product-panel, .workspace[data-phone="detail"] .work-panel,
+  .workspace[data-phone="work"] .product-panel, .workspace[data-phone="work"] .detail-panel { display: none; }
+  .panel { min-height: calc(100dvh - 64px - 8px - 49px - 16px - env(safe-area-inset-bottom)); padding: 16px; }
+  .phone-tabs {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 20;
+    padding: 7px; background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  }
+  .phone-tabs button {
+    display: flex; align-items: center; justify-content: center;
+    height: 33px; line-height: 15px; border: 0; border-radius: var(--r);
+    background: transparent; color: #4f5862; font-size: var(--글메인);
+  }
+  .phone-tabs button.active { background: var(--켜짐); color: #fff; }
+  /* ★폰 입력칸은 16 — 그 밑이면 iOS 가 칸을 누를 때 화면을 확 당긴다(세 단 규칙의 단 하나 예외, 폰에서만) */
+  .searchbox input, .form-stack input { font-size: 16px; }
+}
+
+/**
+ * ★단추 줄은 «넘긴다» — 가로로 굴리지 않는다.
+ *   ⚠ 글씨를 통상 크기(14)로 올리자 필터 줄·접수 탭 줄이 판 폭을 넘어 가로 스크롤바가 섰다(실측, 판 폭 ~250px).
+ *     원본이 `overflow:auto` 로 «굴려서» 버티고 있었다. 굴리면 끝 단추(「상세필터」「취소」)가 안 보인다.
+ *   ⇒ 줄을 넘겨 다 보이게 한다. 칩 줄도 같다.
+ */
+.quick-filters, .work-tabs, .offer-picker, .chips { flex-wrap: wrap; overflow: visible; row-gap: 4px; }

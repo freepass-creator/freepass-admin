@@ -35,14 +35,16 @@ export default function AdminHome(){
   const [activeAppId,setActiveAppId]=useState<string|null>(null);
   const [customer,setCustomer]=useState('');
   const [phone,setPhone]=useState('');
+  /** ★폰에서는 판을 한 장씩 — 대표 2026-09-18 「모바일 웹 적용해봐」. PC 는 이 값을 안 본다(판 셋이 다 선다). */
+  const [phoneView,setPhoneView]=useState<'product'|'detail'|'work'>('product');
 
   const filtered=useMemo(()=>PRODUCTS.filter(p=>`${p.name} ${p.sub} ${p.supplier} ${p.offers.flatMap(o=>o.policies).join(' ')}`.toLowerCase().includes(query.toLowerCase())),[query]);
   const selected=PRODUCTS.find(p=>p.id===selectedId)??PRODUCTS[0];
   const selectedOffer=selected.offers.find(o=>o.id===offerId)??selected.offers[0];
   const activeApp=apps.find(a=>a.id===activeAppId)??null;
 
-  function selectProduct(p:Product){setSelectedId(p.id);setOfferId(p.offers[0].id)}
-  function openNew(){setCustomer('');setPhone('');setWork('new')}
+  function selectProduct(p:Product){setSelectedId(p.id);setOfferId(p.offers[0].id);setPhoneView('detail')}
+  function openNew(){setCustomer('');setPhone('');setWork('new');setPhoneView('work')}
   function submitApplication(){
     if(!customer.trim()||!phone.trim()) return;
     const stamp=String(apps.length+15).padStart(3,'0');
@@ -55,7 +57,7 @@ export default function AdminHome(){
 
   return <main className="admin-shell">
     <header className="topbar"><div><strong>freepasserp.com</strong><span>admin · v1</span></div><nav><button className="active">상품·접수</button><button>정산</button><button>설정</button></nav><div className="admin-user">관리자</div></header>
-    <section className="workspace">
+    <section className="workspace" data-phone={phoneView}>
       <section className="panel product-panel">
         <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div><span className="count">{filtered.length}건</span></div>
         <label className="searchbox">⌕<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="모델, 조건, 정책 검색"/></label>
@@ -83,5 +85,10 @@ export default function AdminHome(){
         {work==='detail'&&activeApp&&<><div className="panel-head"><div><p className="eyebrow">APPLICATION</p><h1>접수 상세</h1></div><button className="icon-btn" onClick={()=>setWork('list')}>목록</button></div><div className="application-detail-head"><span>{activeApp.no}</span><h2>{activeApp.customer} · {activeApp.vehicle}</h2><p>{activeApp.phone}</p></div><div className="snapshot-box"><span>접수 당시 조건</span><b>{activeApp.offer.term}개월 · 월 {money(activeApp.offer.rent)}</b><p>보증금 {money(activeApp.offer.deposit)} · 연 {activeApp.offer.mileage.toLocaleString()}km</p></div><div className="progress-actions"><button className={activeApp.contract?'done':''} onClick={()=>patchApp('contract')}>계약서 {activeApp.contract?'✓':'-'}</button><button className={activeApp.docs?'done':''} onClick={()=>patchApp('docs')}>필수서류 {activeApp.docs?'✓':'-'}</button><button className={activeApp.delivery?'done':''} onClick={()=>patchApp('delivery')}>인도완료 {activeApp.delivery?'✓':'-'}</button></div><div className={`application-status ${activeApp.cancelled?'cancelled':''}`}>{activeApp.cancelled?'취소':activeApp.delivery?'인도완료':activeApp.contract?'계약완료 · 진행중':'접수완료'}</div>{!activeApp.cancelled&&<button className="danger-link" onClick={cancelApp}>접수 취소</button>}</>}
       </section>
     </section>
+    <nav className="phone-tabs" aria-label="판 바꾸기">
+      <button className={phoneView==='product'?'active':''} onClick={()=>setPhoneView('product')}>상품</button>
+      <button className={phoneView==='detail'?'active':''} onClick={()=>setPhoneView('detail')}>상세</button>
+      <button className={phoneView==='work'?'active':''} onClick={()=>setPhoneView('work')}>접수</button>
+    </nav>
   </main>
 }

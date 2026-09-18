@@ -20,9 +20,9 @@ const 오류 = (s: FormState) => (s.errors.length ? <ul className="dz-errs">{s.e
 
 /** 발행 — 한 달 · 한 축 · 한 상대. 칸은 숨은 셋뿐, 단추는 하단바 */
 export function IssueForm({ id, month, axis, party }: { id: string; month: string; axis: '공급사' | '영업채널'; party: string }) {
-  const [s, act] = useActionState<FormState & { invoiceNo?: string }, FormData>(issueInvoiceAction, { errors: [] });
+  const [s, act, pending] = useActionState<FormState & { invoiceNo?: string }, FormData>(issueInvoiceAction, { errors: [] });
   return (
-    <form id={id} onSubmit={보냄(act)}>
+    <form id={id} onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="month" value={month} /><input type="hidden" name="axis" value={axis} /><input type="hidden" name="party" value={party} />
       {s.invoiceNo && <Notice tone="ok">발행했습니다 — {s.invoiceNo}</Notice>}
       {오류(s)}
@@ -38,9 +38,9 @@ export function LifeForm({ id, code, kind, axis, need, amount, day }: {
   id: string; code: string; kind: string; axis: '공급사' | '영업채널';
   need: 'none' | 'money' | 'correct'; amount?: number | null; day?: string;
 }) {
-  const [s, act] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
+  const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
-    <form id={id} className={need === 'none' ? '' : 'dz-life-form'} onSubmit={보냄(act)}>
+    <form id={id} className={need === 'none' ? '' : 'dz-life-form'} onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} /><input type="hidden" name="axis" value={axis} />
       {need === 'money' && <>
         <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" /></label>
@@ -60,19 +60,19 @@ export function SideStep({ code, kind, label, on, month, biz, day }: {
   code: string; kind: 'hold' | 'billMonth' | 'invoice'; label: string;
   on?: boolean; month?: string; biz?: string; day?: string;
 }) {
-  const [s, act] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
+  const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
-    <form className="dz-side-step" onSubmit={보냄(act)}>
+    <form className="dz-side-step" onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} />
       <b>{label}</b>
-      {kind === 'billMonth' && <input name="month" type="month" defaultValue={month} aria-label="청구월" />}
+      {kind === 'billMonth' && <input name="month" type="month" defaultValue={month} aria-label="청구월" disabled={pending} />}
       {kind === 'invoice' && !on && <>
-        <input name="day" type="date" defaultValue={day} aria-label="계산서 날짜" />
-        <input name="biz" defaultValue={biz} placeholder="사업자번호" aria-label="사업자번호" />
+        <input name="day" type="date" defaultValue={day} aria-label="계산서 날짜" disabled={pending} />
+        <input name="biz" defaultValue={biz} placeholder="사업자번호" aria-label="사업자번호" disabled={pending} />
       </>}
       {kind === 'billMonth'
-        ? <button type="submit">달 정하기</button>
-        : <button type="submit" name="on" value={on ? '0' : '1'}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>}
+        ? <button type="submit" disabled={pending} aria-busy={pending}>달 정하기</button>
+        : <button type="submit" name="on" value={on ? '0' : '1'} disabled={pending} aria-busy={pending}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>}
       {오류(s)}
     </form>
   );
@@ -104,12 +104,12 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, respo
         {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의 — ${response.memo ?? ''}`} ({날(response.at)})</span>}
       </p>
       <div className="dz-claim-link-go">
-        <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>
-          {칸}<button type="submit" disabled={making}>{making ? '만드는 중…' : live ? '새로 만들기(옛 링크 죽음)' : '링크 만들기'}</button>
+        <form aria-busy={making} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>
+          {칸}<button type="submit" disabled={making} aria-busy={making}>{making ? '만드는 중…' : live ? '새로 만들기(옛 링크 죽음)' : '링크 만들기'}</button>
         </form>
         {live && (
-          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>
-            {칸}<button type="submit" disabled={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
+          <form aria-busy={revoking} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>
+            {칸}<button type="submit" disabled={revoking} aria-busy={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
           </form>
         )}
       </div>

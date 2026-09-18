@@ -1709,3 +1709,22 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 
 /* 공통 진행 폼 줄 — inline margin 제거. 기능/배치 값은 기존 8px 그대로. */
 .dz-progress-row { margin-bottom: 8px; }
+
+
+/* ══ 공통 키보드/모션 UX — 시각 디자인은 평상시 그대로, 상호작용 상태만 보강 ══ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ci남색);
+  outline-offset: 2px;
+}
+body > nav.fn-top :where(a, button):focus-visible,
+.dz-tabbar :where(a, button):focus-visible {
+  outline-color: var(--ci스카이);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

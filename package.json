@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "ui:check": "tsx scripts/check-ui-ssot.mts"
   },
   "dependencies": {
     "firebase-admin": "^14.4.0",

@@ -4,6 +4,8 @@ import { settlements, today } from '../../server/erp5';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
+import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
+import { IssueForm } from './LifeForms';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +21,9 @@ export const dynamic = 'force-dynamic';
  *   · 금액 = line.amount(끊긴 분납은 받은 만큼) · 묶음 합 = g.net(합 − 환수) · 달 = ledgerMonths(환수 달 포함)
  *   · 「청구월 미정」(NO_MONTH) — 인도됐는데 셈한 달이 이미 닫혀 못 들어간 줄. ★사람이 달을 정할 자리 — 붉게.
  *   · 끊김 — 줄마다 「끊김 · 받은 몫 50%」.
- * ⓘ 청구서 발행 · 수금 · 지급을 여기서 누르는 길은 업무 규칙이 굳은 뒤 연다(기능 세션 — 추측 구현 금지). 지금은 «읽기».
+ * ★정산 생애주기(기능 lifecycle · 대표 「기능은 SSOT·코딩으로, 배열은 디자인이 그 기준으로」) — 주 걸음은 «하단바»(§14-3):
+ *   가운데 묶음 판 = [청구서/지급명세 발행] · 오른쪽 접수 상세 = 그 줄의 다음 걸음(확인 · 정정 · 수금/지급). 곁 걸음(보류 · 청구월 · 계산서)은 본문.
+ *   ⚠ 운영 원장에 바로 쓴다 — 모양 확인 때 누르지 않는다.
  */
 export default async function SettlementPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
@@ -46,6 +50,13 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
   const gSel = groups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
   const ic = sp(q.ic);
+  /* ── 발행 — 고른 묶음(한 달 · 한 상대)의 청구서/지급명세. 미리보기 = 기능 쪽 planInvoice 그대로(발행과 같은 셈) ── */
+  const axis: Axis = tab === 'claim' ? '공급사' : '영업채널';
+  const 장부 = month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
+  const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
+  const 계획 = gSel ? planInvoice(month, axis, gSel.party, gSel.lines, cb, 장, 장부.map((x) => x.invoiceNo), Date.now(), '미리보기') : null;
+  const 어긋남 = 계획?.ok ? driftOf(장, { supply: 계획.invoice.supply, vat: 계획.invoice.vat, lines: 계획.invoice.lines }) : null;
+  const 문서 = tab === 'claim' ? '청구서' : '지급명세';
   const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v)) ?? (ic ? 'work' : sp(q.g) ? 'detail' : 'list');
 
   const keep = (extra: Record<string, string>) => {
@@ -125,6 +136,17 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <div><dt>{tab === 'claim' ? '청구서 보냄' : '지급 통보'}</dt><dd>{gSel.done} / {gSel.lines.length}</dd></div>
               </dl>
             )}
+            {/* 발행 — 번호 · 미리보기(공급가 · 부가세 · 합계) · 막힌 까닭 · 발행 뒤 원장이 바뀜 */}
+            {gSel && 계획 && (
+              <div className="dz-issue">
+                <p><b>{문서}</b> {장 ? <>{장.invoiceNo} · 발행 {new Date(장.issuedAt).toISOString().slice(0, 10)}</> : <span className="dz-muted">아직 안 나감</span>}</p>
+                {계획.ok
+                  ? <p className="dz-issue-sum">공급가 {won(계획.invoice.supply)} · 부가세 {won(계획.invoice.vat)} · <b>합계 {won(계획.invoice.total)}원</b>{계획.invoice.clawback ? ` (환수 −${won(계획.invoice.clawback)})` : ''}</p>
+                  : <p className="dz-warn">{계획.error}</p>}
+                {어긋남 && <p className="dz-warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</p>}
+                <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
+              </div>
+            )}
           </div>
           <div className="list">
             {gSel?.lines.map(({ row: r, amount, broken, ratio }) => {
@@ -150,12 +172,23 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             ))}
             {!gSel && <p className="dz-empty">왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</p>}
           </div>
+          {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
+          {gSel && (
+            <div className="dz-bar">
+              <div className="dz-bar-go">
+                <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}>
+                  {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ── 접수 상세 — 계약접수와 같은 판 ─────────────────── */}
         <section className="panel work-panel">
           {ic
-            ? <IntakeDetailPanel code={ic} back={keep({ ic: '', v: 'detail' })} />
+            ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
+                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }) }} />
             : (
               <>
                 <div className="panel-head"><div><h1>접수 상세</h1></div></div>

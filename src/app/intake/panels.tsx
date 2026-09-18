@@ -17,6 +17,8 @@ import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/Intak
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
 import { MoneyForm } from './MoneyForm';
+import { LifeForm, SideStep } from '../settlement/LifeForms';
+import type { Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
@@ -88,13 +90,18 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
 }
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
-export async function IntakeDetailPanel({ code, created, exists, back, newHref }: {
+export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
   code: string; created?: boolean; exists?: boolean; back: string;
   /** 없으면(정산관리) 하단바는 [목록] 하나 */
   newHref?: string;
+  /**
+   * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
+   * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
+   */
+  life?: { axis: Axis; mode: string; link: (mode: string) => string };
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
-  const 바 = (
+  let 바 = (
     <div className="dz-bar">
       <div className="dz-bar-go">
         <Link className="dz-bar-sub" href={back}>목록</Link>
@@ -113,12 +120,67 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref }
     );
   }
   const { row: r, raw, warnings } = hit;
-  const 구역 = settlementSections(raw);
-  const events = await settlements.events(r.plate, r.receivedAt);
-  const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
+  const 구역 = settlementSections(raw);
+
+  /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
+  let 걸음: React.ReactNode = null;
+  if (life) {
+    const 청구축 = life.axis === '공급사';
+    const stage = 청구축 ? r.claimStage : r.payStage;
+    const 길 = 청구축 ? ['접수', '청구', '확인', '수금'] : ['접수', '통보', '확인', '지급'];
+    const fid = `life-${r.id}`;
+    const 끝말 = 청구축 ? '수금' : '지급';
+    const 정정중 = life.mode === 'correct' && stage !== '접수';
+    let 주: { label: string; form: React.ReactNode } | null = null;
+    let 보조: React.ReactNode = <Link className="dz-bar-sub" href={back}>목록</Link>;
+    if (정정중) {
+      주 = { label: '정정 저장', form: <LifeForm id={fid} code={r.id} kind="correct" axis={life.axis} need="correct" /> };
+      보조 = <Link className="dz-bar-sub" href={life.link('')}>취소</Link>;
+    } else if (stage === '청구' || stage === '통보') {
+      주 = { label: `${life.axis} 확인`, form: <LifeForm id={fid} code={r.id} kind="confirm" axis={life.axis} need="none" /> };
+      보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
+    } else if (stage === '정정') {
+      주 = { label: '정정 풂', form: <LifeForm id={fid} code={r.id} kind="uncorrect" axis={life.axis} need="none" /> };
+    } else if (stage === '확인') {
+      주 = {
+        label: `${끝말} 찍기`,
+        form: <LifeForm id={fid} code={r.id} kind={청구축 ? 'collected' : 'paid'} axis={life.axis} need="money"
+          amount={청구축 ? 청구 : 지급} day={today()} />,
+      };
+      보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
+    }
+    걸음 = (
+      <>
+        <h3 className="dz-sub">정산 걸음 · {life.axis}</h3>
+        {/* 걸음 길 — 지금 자리는 남색 면, 정정은 붉은 면(곁길) */}
+        <ol className="dz-path">
+          {길.map((x) => <li key={x} className={x === stage ? 'on' : 길.indexOf(x) < 길.indexOf(stage) ? 'done' : ''}>{x}</li>)}
+          {stage === '정정' && <li className="warn">정정</li>}
+        </ol>
+        {stage === '접수' && <p className="dz-empty">{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</p>}
+        {(stage === '수금' || stage === '지급') && <p className="dz-ok">{끝말}까지 끝난 줄입니다.</p>}
+        {주?.form}
+        <div className="dz-side-steps">
+          {청구축 && !r.progress.billed && <SideStep code={r.id} kind="hold" label={r.progress.billHold ? '청구 보류 중' : '청구 보류'} on={r.progress.billHold} />}
+          {!r.progress.billed && r.progress.delivered && <SideStep code={r.id} kind="billMonth" label="청구월" month={r.progress.billMonth ?? today().slice(0, 7)} />}
+          {청구축 && r.progress.billed && <SideStep code={r.id} kind="invoice" label={r.progress.invoiceIssued ? '계산서 끊음' : '계산서'} on={r.progress.invoiceIssued} day={today()} />}
+        </div>
+      </>
+    );
+    바 = (
+      <div className="dz-bar">
+        <div className="dz-bar-go">
+          {보조}
+          {주 && <button type="submit" form={fid} className="primary">{주.label}</button>}
+        </div>
+      </div>
+    );
+  }
+  const events = await settlements.events(r.plate, r.receivedAt);
+  const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
   const 부호 = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : n < 0 ? '−' : ''}${won(Math.abs(n))}`);
   return (
     <>
@@ -131,6 +193,9 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref }
         <div><h2>{txt(r.customer)}</h2><p>{txt(r.plate)} · {txt(r.model)} · 접수 {txt(r.receivedAt)}</p></div>
         <Tag {...신원(다음 === '끝' || 다음 === '취소됨' ? 다음 : '다음')} tone={다음 === '끝' || 다음 === '취소됨' ? 'plain' : 'act'}>{다음 === '끝' || 다음 === '취소됨' ? 다음 : `다음 · ${다음}`}</Tag>
       </div>
+
+      {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
+      {걸음}
 
       <h3 className="dz-sub">진행</h3>
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</p>}

@@ -1234,3 +1234,44 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
   .fn-main .workspace { padding-bottom: var(--아래띠); }
   .fn-main .workspace > .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 8px); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 정산 걸음 · 발행 (기능 lifecycle — 대표 「기능은 SSOT·코딩으로, 배열은 디자인이 그 기준으로」)
+   ═══════════════════════════════════════════════════════════════════ */
+/* 실적 줄 판(목록 판) — 하단바는 흐름 안 판 바닥(옆 판들과 같은 줄) */
+@media (min-width: 901px) {
+  .fn-main .workspace > .st-lines > .dz-bar { position: static; margin: 0; padding: 12px 0 0; }
+}
+/* 발행 상자 — 번호 · 미리보기 · 경고 */
+.dz-issue { margin: 0 0 12px; padding: 10px 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
+.dz-issue p { margin: 0; line-height: 22px; }
+.dz-issue .dz-issue-sum { color: #4f5862; font-size: var(--글보조); font-variant-numeric: tabular-nums; }
+.dz-issue .dz-issue-sum b { color: var(--글); font-size: var(--글메인); }
+.dz-issue .dz-warn, .dz-issue .dz-errs { margin-top: 6px; }
+.dz-muted { color: #9aa3ad; }
+/* 걸음 길 — 접수 → 청구 → 확인 → 수금. 지나온 곳 흐린 남색 글자 · 지금 남색 면 · 정정 붉은 면 */
+.dz-path { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; padding: 0; list-style: none; }
+.dz-path li {
+  display: inline-flex; align-items: center; height: 33px; padding: 0 12px; border-radius: var(--r);
+  background: var(--박스); color: #9aa3ad; font-size: var(--글메인);
+}
+.dz-path li.done { color: var(--ci남색); }
+.dz-path li.on { background: var(--ci남색); color: #fff; font-weight: 700; }
+.dz-path li.warn { background: #fdecea; color: #a8261d; font-weight: 700; }
+/* 주 걸음에 딸린 칸(금액 · 날 · 사유) — 하단바 단추가 이 폼을 보낸다 */
+.dz-life-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; padding: 12px; border-radius: var(--r); background: var(--박스); }
+.dz-life-form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.dz-life-form label.wide, .dz-life-form .dz-errs { grid-column: 1 / -1; }
+.dz-life-form input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판); font-size: var(--글메인); color: var(--글); }
+/* 곁 걸음 — 한 줄에 이름 · 칸 · 작은 단추(글자 단추 규칙 ③) */
+.dz-side-steps { display: grid; gap: 4px; margin: 0 0 12px; }
+.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 33px; }
+.dz-side-step b { min-width: 88px; font-size: var(--글보조); color: #6b7580; font-weight: 400; }
+.dz-side-step input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
+.dz-side-step button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  color: var(--ci남색); font-size: var(--글메인); font-weight: 600; cursor: pointer;
+}
+.dz-side-step button:hover { background: var(--박스손); }
+.dz-side-step .dz-errs { flex-basis: 100%; }
+@media (max-width: 900px) { .dz-life-form input, .dz-side-step input { font-size: 16px; } }

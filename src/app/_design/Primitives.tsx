@@ -51,3 +51,8 @@ export function SummaryGrid({ children }: { children: ReactNode }) {
 export function SummaryItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return <div><dt>{label}</dt><dd>{children}</dd></div>;
 }
+
+
+export function Notice({ tone, children }: { tone: 'warn' | 'ok'; children: ReactNode }) {
+  return <p className={tone === 'warn' ? 'dz-warn' : 'dz-ok'}>{children}</p>;
+}

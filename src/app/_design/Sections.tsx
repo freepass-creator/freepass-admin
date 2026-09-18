@@ -22,10 +22,10 @@
  * ★선은 없다(규칙 ①) — 표는 옅은 박스, 줄은 사이로 가른다.
  */
 import type { Section, SectionItem } from '../../domain/catalog/sections';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
 /** 구역 → 머리 그림 (erp4 section-icons 의 짝을 이 집 구역 이름에 맞췄다) */
-const 그림: Record<string, string> = {
+const 그림: Record<string, IconName> = {
   vehicle: 'car', spec: 'gauge', look: 'palette', release: 'truck', supply: 'building', match: 'link',
   screening: 'shield-check', policy_product: 'file-text', policy_sales: 'file-text', policy_contract: 'file-text', policy_other: 'info',
   진행: 'activity', 정체: 'id-card', 상대: 'users', 조건: 'file-text', '요율·돈': 'wallet', 날: 'calendar', '정산 축': 'scale', 상태: 'activity', 이월: 'repeat', 출처: 'database',

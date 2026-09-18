@@ -1,1 +1,86 @@
 *{box-sizing:border-box}html,body{margin:0;background:#f3f5f7;color:#15181c;font-family:Inter,Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}.admin-shell{min-height:100vh}.topbar{height:64px;background:#111418;color:#fff;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;border-bottom:1px solid #252a30}.topbar>div:first-child{display:flex;align-items:baseline;gap:10px}.topbar strong{font-size:17px;letter-spacing:-.4px}.topbar span{font-size:11px;color:#8f98a3}.topbar nav{display:flex;gap:4px}.topbar button{border:0;background:transparent;color:#89929d;padding:9px 14px;border-radius:8px}.topbar button.active{background:#242a31;color:#fff}.admin-user{justify-self:end;font-size:13px;color:#c9ced4}.workspace{height:calc(100vh - 64px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#dce1e6}.panel{min-width:0;background:#fff;padding:22px;overflow:auto}.panel-head{min-height:48px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.eyebrow{margin:0 0 3px;font-size:10px;letter-spacing:1.4px;color:#9aa2aa;font-weight:700}.panel h1{font-size:20px;margin:0;letter-spacing:-.7px}.count{padding:6px 9px;background:#f1f3f5;border-radius:7px;color:#4d555e!important}.searchbox{height:42px;border:1px solid #dce1e5;border-radius:10px;display:flex;align-items:center;gap:8px;padding:0 13px;color:#9aa2aa;font-size:13px;background:#fafbfc}.searchbox input{border:0;outline:0;background:transparent;width:100%;font-size:13px;color:#1d2329}.quick-filters,.chips,.work-tabs,.offer-picker{display:flex;gap:6px;overflow:auto}.quick-filters{padding:10px 0 13px}.quick-filters button,.work-tabs button,.offer-picker button{white-space:nowrap;border:1px solid #e0e4e8;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px;color:#555e67}.quick-filters button:first-child,.work-tabs button.active,.offer-picker button.active{background:#171a1e;color:#fff;border-color:#171a1e}.list,.application-list{display:flex;flex-direction:column;gap:8px}.product-row{display:flex;gap:12px;padding:11px;border:1px solid #e5e8eb;border-radius:12px;cursor:pointer}.product-row:hover,.application-card:hover{background:#fafbfc}.product-row.selected{border-color:#22272d;box-shadow:0 0 0 1px #22272d}.thumb{width:82px;height:64px;border-radius:9px;background:linear-gradient(135deg,#e8ebee,#f8f9fa);display:grid;place-items:center;color:#a2a9b0;font-size:10px}.grow{min-width:0;flex:1}.row-title{display:flex;justify-content:space-between;gap:8px}.row-title strong{font-size:14px}.row-title span{font-size:9px;padding:4px 6px;background:#f0f3f5;border-radius:5px;color:#5e6770}.product-row p{margin:5px 0 8px;font-size:11px;color:#858d95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{display:flex;justify-content:space-between;align-items:end}.price b{font-size:13px}.price small{font-size:10px;color:#7e8790}.icon-btn,.new-app{border:1px solid #dfe3e7;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px}.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e8eb;margin-bottom:14px}.tabs button{border:0;background:none;padding:10px;color:#969da5}.tabs button.active{color:#111;border-bottom:2px solid #111;font-weight:700}.hero-car{height:190px;border-radius:14px;background:linear-gradient(145deg,#e9ecef,#f8f9fa);display:flex;align-items:center;justify-content:center;position:relative;color:#a5acb3;font-size:12px}.hero-car small{position:absolute;right:10px;bottom:9px;background:#20252a;color:#fff;border-radius:10px;padding:4px 7px}.vehicle-title{display:flex;justify-content:space-between;align-items:start;padding:17px 0}.vehicle-title h2{font-size:20px;margin:0 0 5px}.vehicle-title p{margin:0;font-size:12px;color:#808891}.status-dot{font-size:10px!important;color:#303941!important;background:#edf1f3;padding:5px 8px;border-radius:7px}.summary-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e7eaed;border-radius:12px;overflow:hidden;margin:0}.summary-grid div{padding:11px 12px;border-bottom:1px solid #edf0f2}.summary-grid div:nth-child(odd){border-right:1px solid #edf0f2}.summary-grid div:nth-last-child(-n+2){border-bottom:0}.summary-grid dt{font-size:10px;color:#8e969e}.summary-grid dd{margin:4px 0 0;font-size:12px;font-weight:650}.offer-picker{padding-top:12px}.offer-block{margin-top:8px;background:#171a1e;color:#fff;border-radius:13px;padding:15px}.offer-block>div{display:flex;justify-content:space-between;color:#aeb5bc;font-size:11px}.offer-block strong{display:block;font-size:21px;margin-top:10px}.offer-block p{font-size:10px;color:#aeb5bc;margin:6px 0 0}.chips{padding:11px 0}.chips span{font-size:10px;background:#f0f3f5;border-radius:7px;padding:6px 8px;white-space:nowrap}.primary{width:100%;height:44px;border:0;border-radius:10px;background:#111418;color:#fff;font-weight:700}.new-app{background:#171a1e;color:#fff;border-color:#171a1e}.work-tabs{padding-bottom:13px}.application-card{border:1px solid #e5e8eb;border-radius:12px;padding:13px;cursor:pointer;user-select:none}.app-top{display:flex;justify-content:space-between;gap:10px}.app-top div{display:flex;flex-direction:column;gap:3px}.app-top b{font-size:13px}.app-top span{font-size:9px;color:#929aa2}.app-top strong{font-size:12px}.checks{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:12px 0 9px}.checks span{font-size:10px;text-align:center;padding:7px 4px;border-radius:6px;background:#f0f2f4;color:#9ba2a9}.checks span.done{background:#252a30;color:#fff}.application-card p{margin:0;font-size:10px;color:#78818a}.work-hint{margin-top:12px;border:1px dashed #d5dade;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:4px}.work-hint b{font-size:11px}.work-hint span{font-size:10px;color:#8b939b;line-height:1.5}.selected-offer-card,.snapshot-box{border:1px solid #e2e6e9;background:#f8f9fa;border-radius:14px;padding:16px;margin-bottom:16px}.selected-offer-card>span,.snapshot-box>span{display:block;font-size:10px;color:#8a929a;margin-bottom:7px}.selected-offer-card h2{margin:0 0 4px;font-size:20px}.selected-offer-card p{margin:0 0 14px;font-size:11px;color:#7d858d}.selected-offer-card b,.snapshot-box b{display:block;font-size:14px}.selected-offer-card small{display:block;margin-top:10px;color:#8a929a;line-height:1.5}.form-stack{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}.form-stack label{font-size:11px;font-weight:700;color:#535c64}.form-stack input{display:block;width:100%;height:42px;margin-top:6px;border:1px solid #dce1e5;border-radius:9px;padding:0 11px;outline:0}.form-stack input:focus{border-color:#20252a}.application-detail-head{padding:4px 0 18px}.application-detail-head span{font-size:10px;color:#90979f}.application-detail-head h2{margin:6px 0;font-size:20px}.application-detail-head p{margin:0;color:#7d858d;font-size:12px}.snapshot-box p{margin:6px 0 0;font-size:11px;color:#7d858d}.progress-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.progress-actions button{height:58px;border:1px solid #dfe3e6;background:#f5f7f8;color:#7e878f;border-radius:10px;font-size:11px}.progress-actions button.done{background:#171a1e;color:#fff;border-color:#171a1e}.application-status{margin-top:14px;padding:12px;border-radius:10px;background:#eef1f3;text-align:center;font-size:12px;font-weight:700}.application-status.cancelled{background:#f5eeee;color:#8a4747}.danger-link{width:100%;margin-top:10px;border:0;background:transparent;color:#a74f4f;font-size:11px;padding:10px}@media(max-width:900px){.topbar{grid-template-columns:1fr auto}.topbar nav{display:none}.workspace{display:block;height:auto}.panel{min-height:calc(100vh - 64px);border-bottom:8px solid #eef1f3}}
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 대표 확정 2026-09-18 — «박스에 담는다 · 선은 없다 · 라운드는 4»
+   「버튼은 라인 없이 그냥 텍스트로만」 「목록은 카드형으로 박스, 근데 이거도 라인 없이」
+   「다 카드형 카드버튼형으로 통일하고 표도 그렇게」 「라운드만 4로」 「패널 나눠 놓은 것도 카드형으로」
+   「박스에 담아 넣자」 「심플하게」
+
+   「이해했지? 모든 건 다 박스형으로. 근데 **라인 있는 건 패널 박스랑 검색 말고는** 다 없음.
+    **선택된 거나 강조해야 할 건 색깔로만 위계**를 주자」
+
+   규칙 다섯 — 이 덩이가 원본(위)을 덮는다. 되돌리려면 이 덩이만 지우면 된다.
+     ① 선은 딱 두 곳   판 박스 · 검색창. 나머지는 선 없는 박스 — 가르는 것은 «면의 밝기»와 «사이»다.
+     ② 라운드는 4     열 가지(5~14px)였던 것을 하나로.
+     ③ 단추는 글자    평소엔 글자만. 손을 대면 옅은 면이 깔린다.
+     ④ 켜진 것은 검은 면   탭·필터·완료·선택 — «켜짐»의 말은 하나다.
+     ⑤ 판·목록·표는 박스   바탕(회색) 위에 판(흰 박스), 판 위에 카드(옅은 회색 박스).
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --r: 4px;
+  --바닥: #eef1f4;   /* 판 뒤 바탕 */
+  --판: #ffffff;     /* 판 */
+  --박스: #f4f6f8;   /* 판 위의 카드·칸 */
+  --박스손: #eaeef2; /* 손을 댄 카드 */
+  --고름: #e1e7ee;   /* 고른 카드 — 선 대신 면이 짙어진다 */
+  --켜짐: #171a1e;   /* 켜진 단추 */
+  --선: #dfe4e9;     /* ★선은 판 박스와 검색창에만 쓴다 */
+}
+
+/* ⑤ 판 셋을 박스로 — 1px 틈으로 긋던 세로선을 걷고 사이를 준다 */
+.topbar { border-bottom: 0; }
+.workspace { gap: 12px; padding: 12px; background: var(--바닥); height: calc(100vh - 64px); }
+.panel { border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
+
+/* ① 선 걷기 + ② 라운드 4 — 목록 카드 · 표 · 상자 */
+.product-row, .application-card, .selected-offer-card, .snapshot-box, .work-hint {
+  border: 0; border-radius: var(--r); background: var(--박스); box-shadow: none;
+}
+/**
+ * ★고른 기간의 값(「선택 Offer · 월 920,000원」)은 **검은 박스 그대로** — 그 판에서 가장 센 강조다.
+ *   ⚠ 한 번 옅은 회색으로 덮었다가 흰 글자가 회색 위에서 사라졌다(실측). 강조는 «색»으로 주는 것이라
+ *     검은 면이 곧 강조다. 라운드만 4로 맞춘다.
+ */
+.offer-block { border: 0; border-radius: var(--r); }
+.product-row:hover, .application-card:hover { background: var(--박스손); }
+.product-row.selected { border: 0; box-shadow: none; background: var(--고름); }
+
+/* 표도 박스 — 줄·칸 선 대신 칸마다 작은 박스, 사이는 틈 */
+.summary-grid { border: 0; border-radius: 0; gap: 4px; background: none; overflow: visible; }
+.summary-grid div, .summary-grid div:nth-child(odd), .summary-grid div:nth-last-child(-n+2) {
+  border: 0; border-radius: var(--r); background: var(--박스);
+}
+
+/* 라운드 4 — 남은 것 전부 */
+.count, .thumb, .row-title span, .hero-car, .hero-car small, .status-dot, .chips span,
+.checks span, .application-status, .topbar button { border-radius: var(--r); }
+
+/* 입력칸 — 선 대신 면 */
+/* ★검색창은 선을 가진다 — 판 다음으로 «여기서 시작한다»는 자리라서. 접수 입력칸은 선 없는 박스. */
+.searchbox { border: 1px solid var(--선); border-radius: var(--r); background: var(--판); }
+.form-stack input { border: 0; border-radius: var(--r); background: var(--박스); }
+.form-stack input:focus { border: 0; background: var(--박스손); }
+
+/* ③ 단추는 글자만 — 평소엔 면도 선도 없다 */
+.quick-filters button, .work-tabs button, .offer-picker button, .icon-btn, .progress-actions button, .tabs button {
+  border: 0; border-radius: var(--r); background: transparent; color: #4f5862;
+}
+.quick-filters button:hover, .work-tabs button:hover, .offer-picker button:hover,
+.icon-btn:hover, .progress-actions button:hover, .tabs button:hover { background: var(--박스손); }
+.tabs { border-bottom: 0; gap: 4px; }
+/* 진행 단추(계약서·서류·인도)는 «상자 안의 칸»이라 옅은 면을 깐다 — 글자만이면 셋이 한 줄 글로 읽힌다 */
+.progress-actions button { background: var(--박스손); color: #7e878f; }
+
+/* ④ 켜진 것은 검은 면 — 탭·필터·기간·완료가 같은 말을 쓴다 */
+.quick-filters button:first-child, .work-tabs button.active, .offer-picker button.active,
+.progress-actions button.done, .tabs button.active {
+  border: 0; background: var(--켜짐); color: #fff;
+}
+
+/* 주 단추 — 검은 면 · 선 없음 · 라운드 4 */
+.primary, .new-app { border: 0; border-radius: var(--r); background: var(--켜짐); color: #fff; }
+
+/* 폰 — 판 사이 굵은 선 대신 같은 사이 */
+@media (max-width: 900px) {
+  .workspace { height: auto; display: flex; flex-direction: column; }
+  .panel { border-bottom: 0; }
+}

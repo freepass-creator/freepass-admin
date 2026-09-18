@@ -562,7 +562,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .dz-row {
   display: flex; gap: 12px; align-items: stretch;
-  padding: var(--ui-panel-gap); border-radius: var(--ui-radius); background: var(--박스);
+  padding: var(--ui-item-pad); border-radius: var(--ui-radius); background: var(--박스);
   color: var(--글); text-decoration: none; cursor: pointer;
 }
 .dz-row:hover { background: var(--박스손); }
@@ -629,7 +629,7 @@ body { background: var(--바닥); }
 .dz-fs-open i, .dz-fs-body nav i {
   font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--ci남색); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: var(--ci남색); color: #fff; font-size: var(--ui-text-support); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 /* 웹 — 뒤판 없이 창 바로 밑에 같은 폭으로 뜬다 */
 .dz-fs-back { display: contents; }
@@ -1042,10 +1042,10 @@ body { background: var(--바닥); }
 .dz-sec-table > div.none dt { color: #9aa3ad; }
 /* 내부 전용 — 손님·견적서에 절대 안 나가는 값(심사기준 · 신용등급 · 수수료 환수) */
 .dz-internal {
-  font-style: normal; font-size: 11px; line-height: 16px; padding: 0 5px; border-radius: var(--r);
+  font-style: normal; font-size: var(--ui-text-support); line-height: 16px; padding: 0 5px; border-radius: var(--ui-radius);
   background: #fbeedd; color: #94560f; font-weight: 600;
 }
-.dz-article { font-size: 11px; color: #9aa3ad; }
+.dz-article { font-size: var(--ui-text-support); color: #9aa3ad; }
 .dz-sec-note { display: block; margin-top: 2px; font-size: var(--글보조); color: #6b7580; }
 .dz-sec-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .dz-sec-list i { font-style: normal; font-size: var(--글보조); line-height: 22px; padding: 0 8px; border-radius: var(--r); background: var(--판); }
@@ -1272,7 +1272,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
   flex: none; width: var(--ui-status-tile); height: var(--ui-status-tile); border-radius: var(--ui-radius);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
-.dz-row-status em { font-style: normal; font-size: 11px; line-height: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dz-row-status em { font-style: normal; font-size: var(--ui-text-support); line-height: 14px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dz-row-status.navy { background: var(--남색옅음); color: var(--ci남색); }
 .dz-row-status.green { background: #e8f5ee; color: #1e7a45; }
 .dz-row-status.red { background: #fdecea; color: #a8261d; }
@@ -1307,6 +1307,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
   --ui-panel-pad: 22px;
   --ui-panel-pad-mobile: 16px;
   --ui-list-gap: 8px;
+  --ui-item-pad: 12px;
   --ui-row-body-h: 64px;
   --ui-thumb-w: 82px;
   --ui-thumb-h: 64px;

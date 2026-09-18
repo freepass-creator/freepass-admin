@@ -369,3 +369,112 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 @media (max-width: 900px) {
   .fn-main .workspace { height: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 덮개 — 기능 뼈대 화면 전부에 확정 옷을 입힌다 (대표 2026-09-18)
+   「디자인을 다시 덮고 기능은 기능만 손대라고 해」
+   계약접수 · 정산관리 · 전자계약 · 상품 「전부 보기」가 맨 표(테두리·11px·검정 탭) 그대로였다.
+   ⇒ 그 화면들이 공통으로 쓰는 몇 안 되는 이름(fn-box · fn-tabs · fn-filter · 표 · 입력칸)을
+     확정 규칙(§14)으로 한 겹 덮는다. 화면마다 따로 고치지 않는다 — 새 뼈대 화면도 태어나자마자 이 옷을 입는다.
+   범위 = 판 셋 화면(`.workspace`)이 «아닌» 기능 화면. 동작(폼·서버 액션·「—」 표기)은 안 건드린다.
+   ═══════════════════════════════════════════════════════════════════ */
+body { background: var(--바닥); }
+
+/* ⑤ 화면 한 장 = 판 박스 하나 — 선을 가진 두 곳 중 하나(규칙 ①) */
+.fn-main:not(:has(> .workspace)) {
+  margin: 12px; padding: 20px 24px 32px;
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  font-size: var(--글메인); color: var(--글);
+}
+.fn-main:not(:has(> .workspace)) p { margin: 0 0 8px; }
+
+/* ⑥ 글씨 세 단 — 제목 18 · 메인 14 · 보조 12. 소제목은 크기를 안 늘리고 «색»으로 가른다(규칙 ④) */
+.fn-main:not(:has(> .workspace)) h1 {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 12px; font-size: var(--글제목); font-weight: 700;
+}
+.fn-main:not(:has(> .workspace)) h2 { margin: 24px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.fn-main:not(:has(> .workspace)) .fn-muted { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace)) .fn-err { color: #b3261e; }
+.fn-main:not(:has(> .workspace)) .fn-ok { color: #1f6b35; }
+.fn-main:not(:has(> .workspace)) a { color: var(--ci남색); text-decoration: none; }
+.fn-main:not(:has(> .workspace)) a:hover { text-decoration: underline; }
+/** 제목 옆 「+ 새 접수」 — 그 화면의 주 행동이라 남색 카드 단추. (뼈대가 인라인 13px 를 박아 두어 같은 힘으로 덮는다) */
+.fn-main:not(:has(> .workspace)) h1 > a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); background: var(--ci남색); color: #fff !important;
+  font-size: var(--글메인) !important; font-weight: 600; margin-left: 0 !important; text-decoration: none !important;
+}
+
+/* 입력 — 선 없는 박스(규칙 ①) · 단추 규격 33(규칙 ⑦) */
+.fn-main:not(:has(> .workspace)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace)) input, .fn-main:not(:has(> .workspace)) select, .fn-main:not(:has(> .workspace)) textarea {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 15px;
+}
+.fn-main:not(:has(> .workspace)) textarea { height: auto; min-height: 66px; padding: 8px; }
+.fn-main:not(:has(> .workspace)) input:focus, .fn-main:not(:has(> .workspace)) select:focus,
+.fn-main:not(:has(> .workspace)) textarea:focus { outline: 0; background: var(--박스손); }
+.fn-main:not(:has(> .workspace)) input[type="checkbox"], .fn-main:not(:has(> .workspace)) input[type="radio"] {
+  width: 16px; height: 16px; padding: 0; accent-color: var(--ci남색);
+}
+/** ★찾기 칸은 선을 가진다 — 규칙 ①의 «검색창». 그 화면에서 «여기서 시작한다»는 자리다. */
+.fn-main:not(:has(> .workspace)) input[name="q"] { background: var(--판); border: 1px solid var(--선); min-width: 220px; }
+
+/* ③ 단추는 글자만 · ④ 이 폼의 주 행동(보내기)은 남색 면 */
+.fn-main:not(:has(> .workspace)) button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 15px; cursor: pointer;
+}
+.fn-main:not(:has(> .workspace)) button:hover:not(:disabled) { background: var(--박스손); }
+.fn-main:not(:has(> .workspace)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
+.fn-main:not(:has(> .workspace)) button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 탭 — 글자만, 켜진 것은 남색 면(검은 알약이던 것) */
+.fn-main:not(:has(> .workspace)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace)) .fn-tabs a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border: 0; border-radius: var(--r); background: transparent; color: #4f5862; text-decoration: none;
+}
+.fn-main:not(:has(> .workspace)) .fn-tabs a:hover { background: var(--박스손); }
+.fn-main:not(:has(> .workspace)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
+
+/* 상자·값 묶음 — 선 없는 박스(규칙 ⑤) */
+.fn-main:not(:has(> .workspace)) .fn-box { border: 0; border-radius: var(--r); background: var(--박스); padding: 12px 16px; margin: 8px 0; }
+.fn-main:not(:has(> .workspace)) dl { margin: 0; }
+.fn-main:not(:has(> .workspace)) dt { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace)) dd { margin: 2px 0 8px; font-size: var(--글메인); }
+.fn-main:not(:has(> .workspace)) details > summary { cursor: pointer; padding: 8px 0; color: var(--ci남색); font-weight: 600; }
+
+/* ★표도 박스 — 칸 선을 다 걷고 «줄마다 박스», 줄 사이는 틈(규칙 ① ⑤) */
+.fn-main:not(:has(> .workspace)) table { border-collapse: separate; border-spacing: 0 4px; background: transparent; }
+.fn-main:not(:has(> .workspace)) th, .fn-main:not(:has(> .workspace)) td {
+  border: 0; padding: 8px 10px; white-space: nowrap; font-size: var(--글메인); text-align: left;
+}
+.fn-main:not(:has(> .workspace)) th {
+  background: none; padding: 0 10px 2px; font-size: var(--글보조); font-weight: 600; color: #6b7580;
+}
+.fn-main:not(:has(> .workspace)) td { background: var(--박스); }
+.fn-main:not(:has(> .workspace)) tr > td:first-child { border-radius: var(--r) 0 0 var(--r); }
+.fn-main:not(:has(> .workspace)) tr > td:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.fn-main:not(:has(> .workspace)) tbody tr:hover > td { background: var(--박스손); }
+.fn-main:not(:has(> .workspace)) td.n { text-align: right; font-variant-numeric: tabular-nums; }
+/** 머리칸이 줄 머리(th)로 쓰인 표(정책 표) — 줄 이름표라 옅은 남색 면, 보조 글씨 */
+.fn-main:not(:has(> .workspace)) tbody th { background: var(--남색옅음); color: var(--ci남색); padding: 8px 10px; border-radius: var(--r) 0 0 var(--r); }
+
+@media (max-width: 900px) {
+  .fn-main:not(:has(> .workspace)) { margin: 8px; padding: 16px; }
+  .fn-main:not(:has(> .workspace)) input, .fn-main:not(:has(> .workspace)) select, .fn-main:not(:has(> .workspace)) textarea { font-size: 16px; }
+}
+/**
+ * ★칸은 «담긴 곳보다 밝게» — 새 접수 폼은 칸들이 상자(.fn-box, 옅은 회색) 안에 있어,
+ *   칸도 옅은 회색이면 칸이 상자에 묻혀 «안 보였다»(실측: 날짜·고르기 칸만 겨우 보임).
+ *   흰 판 위의 칸 = 옅은 회색 박스, 회색 상자 안의 칸 = 흰 박스. 선 없이 면의 밝기로만 가른다(규칙 ①).
+ */
+.fn-main:not(:has(> .workspace)) .fn-box input:not([type="checkbox"]):not([type="radio"]),
+.fn-main:not(:has(> .workspace)) .fn-box select,
+.fn-main:not(:has(> .workspace)) .fn-box textarea { background: var(--판); }
+.fn-main:not(:has(> .workspace)) .fn-box input:focus,
+.fn-main:not(:has(> .workspace)) .fn-box select:focus,
+.fn-main:not(:has(> .workspace)) .fn-box textarea:focus { background: var(--남색옅음); }

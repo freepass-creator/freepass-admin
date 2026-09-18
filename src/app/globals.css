@@ -1339,3 +1339,23 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-row .dz-badge.plain { background: #eaeef2; }
 .dz-row.on .dz-badge.plain { background: var(--판); }
 .dz-row .dz-row-thumb { background: #eceff3; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 규격 점검(2026-09-18 대표 「ui ux 효율화나 규격 안 맞춰진 거 있어?」) — 화면마다 재서 어긋난 것을 표(§14-9)로 되돌린다
+   ═══════════════════════════════════════════════════════════════════ */
+/* ① 글 — 12 밑으로 내려간 것(상태 칸 11 · 조항 11 · 내부 딱지 11 · 건수 동그라미 11 · 달 합계 곁글 10) → 보조 12 */
+.dz-row-status em, .dz-article, .dz-internal, .dz-fs-open i, .dz-fs-body nav i, .dz-month-sum small { font-size: var(--글보조); }
+.dz-fs-open i, .dz-fs-body nav i { min-width: 20px; height: 20px; border-radius: 10px; }
+/* ② 컨트롤 40 — 폼 칸 · 진행 체크 · 곁 걸음 · 프로모션/가감 칸이 33 이었다(옛 .fn-main 규칙이 더 셌다) */
+.fn-main .workspace .panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.fn-main .workspace .panel select,
+.fn-main .workspace .panel .fn-box button,
+.fn-main .workspace .panel .dz-side-step button,
+.fn-main .workspace .panel .dz-money button {
+  height: var(--컨트롤); line-height: 16px; box-sizing: border-box;
+}
+.fn-main .workspace .dz-searchbox > input { height: 100%; }
+/* ③ 선은 판 · 검색창뿐 — 폰 판 탭 밑줄을 걷는다(면의 밝기로 가른다) */
+@media (max-width: 900px) { .phone-tabs { border-bottom: 0; } }
+/* ④ 효율 — 쪽 나눔을 걷어 목록이 675줄 · 노드 2만 개다. 화면 밖 줄은 그리지 않는다(자리만 88 을 잡아 둔다) */
+.dz-row { content-visibility: auto; contain-intrinsic-size: auto 88px; }

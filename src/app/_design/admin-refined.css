@@ -1,0 +1,468 @@
+/* FreePass Admin visual implementation R1
+ * 목적: 현재 기능/DOM/SSOT를 유지하면서 4개 실제 route가 승인된 디자인 언어로 안정적으로 보이게 한다.
+ * 적용 순서: globals.css -> admin-final.css -> _fn/fn.css -> admin-refined.css
+ * 이 파일은 "새 디자인"이 아니라 최종 시각 구현층이다.
+ */
+
+/* ─────────────────────────────────────────
+   0. Global chrome
+   ───────────────────────────────────────── */
+body { background: var(--바닥); }
+
+body > nav.fn-top {
+  height: 56px;
+  padding: 0 20px;
+  gap: 14px;
+  background: var(--ci남색);
+  box-shadow: none;
+}
+
+body > nav.fn-top .dz-brand { margin-right: 8px; }
+body > nav.fn-top .dz-menu { gap: 4px; }
+body > nav.fn-top .dz-menu a {
+  min-width: 104px;
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius);
+}
+body > nav.fn-top .dz-menu a.on {
+  background: rgba(158,197,243,.15);
+  color: #dbeafe;
+}
+body > nav.fn-top .fn-state { margin-left: auto; }
+
+/* ─────────────────────────────────────────
+   1. Workspace / panel system
+   ───────────────────────────────────────── */
+.fn-main:has(> .workspace) { background: var(--바닥); }
+.fn-main .workspace {
+  height: calc(100vh - 56px);
+  gap: var(--ui-panel-gap);
+  padding: var(--ui-panel-gap);
+  background: var(--바닥);
+}
+
+.fn-main .workspace > .panel {
+  min-width: 0;
+  padding: var(--ui-panel-pad);
+  border: 1px solid var(--선);
+  border-radius: var(--ui-radius);
+  background: var(--판);
+  box-shadow: none;
+}
+
+@media (min-width: 901px) {
+  .workspace[data-mode="find"],
+  .workspace[data-mode="esign"] {
+    grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
+  }
+  .workspace[data-mode="find"] > .product-panel,
+  .workspace[data-mode="esign"] > .product-panel {
+    grid-column: auto;
+  }
+
+  .workspace[data-mode="intake"],
+  .workspace[data-mode="settle"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 공통 판 머리 */
+.fn-main .workspace .panel-head {
+  min-height: 32px;
+  margin: 0 0 12px;
+  gap: 6px;
+}
+.fn-main .workspace .panel-head h1 {
+  font-size: var(--ui-text-title);
+  line-height: 32px;
+  font-weight: 800;
+  letter-spacing: -.35px;
+}
+.fn-main .workspace .panel-head > .count {
+  font-size: var(--ui-text-main) !important;
+  line-height: 32px;
+  color: #9aa3ad !important;
+}
+
+/* 목록 판의 상단 영역은 고정된 하나의 덩어리처럼 읽히게 */
+.fn-main .workspace > .panel > .dz-listtop {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin: 0 0 10px;
+  padding: 0 0 2px;
+  background: var(--판);
+}
+
+/* ─────────────────────────────────────────
+   2. Search / filters
+   ───────────────────────────────────────── */
+.fn-main .workspace .dz-find {
+  gap: 8px;
+  margin: 0;
+}
+.fn-main .workspace .dz-searchbox {
+  height: var(--ui-control-h);
+  border: 1px solid var(--선);
+  border-radius: var(--ui-radius);
+  background: var(--판);
+  box-shadow: none;
+}
+.fn-main .workspace .dz-searchbox:focus-within {
+  border-color: #aeb8c4;
+  box-shadow: 0 0 0 2px rgba(27,42,74,.05);
+}
+.fn-main .workspace .quick-filters {
+  gap: 4px;
+  margin: 8px 0 10px;
+  padding: 0;
+}
+.fn-main .workspace .quick-filters a {
+  height: var(--ui-control-h);
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: #4f5862;
+  font-size: var(--ui-text-main);
+  white-space: nowrap;
+}
+.fn-main .workspace .quick-filters a:hover { background: var(--박스손); }
+.fn-main .workspace .quick-filters a.active {
+  background: var(--ci남색);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────
+   3. Unified ListRow
+   ───────────────────────────────────────── */
+.fn-main .workspace .list {
+  gap: var(--ui-list-gap);
+}
+.fn-main .workspace a.dz-row,
+.fn-main .workspace .dz-row {
+  min-height: 88px;
+  padding: var(--ui-item-pad);
+  gap: 12px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: var(--카드);
+  color: var(--글);
+  box-shadow: none;
+  transition: background-color .12s ease;
+}
+.fn-main .workspace a.dz-row:hover,
+.fn-main .workspace .dz-row:hover { background: var(--카드손); }
+.fn-main .workspace a.dz-row.on,
+.fn-main .workspace .dz-row.on {
+  background: var(--고름);
+}
+.fn-main .workspace .dz-row-thumb {
+  width: var(--ui-thumb-w);
+  height: var(--ui-thumb-h);
+  border-radius: var(--ui-radius);
+  background: #eceff3;
+}
+.fn-main .workspace .dz-row-body {
+  height: var(--ui-row-body-h);
+  min-width: 0;
+}
+.fn-main .workspace .dz-row-l1 b,
+.fn-main .workspace .dz-row-l2.value strong,
+.fn-main .workspace .dz-row-l3 strong {
+  font-size: var(--ui-text-main);
+  line-height: 17px;
+}
+.fn-main .workspace .dz-row-l2,
+.fn-main .workspace .dz-row-l3 small {
+  font-size: var(--ui-text-support);
+  color: #6b7580;
+}
+
+/* 상태 타일은 이미지 썸네일과 같은 무게 */
+.fn-main .workspace .dz-row-status {
+  width: var(--ui-status-tile);
+  height: var(--ui-status-tile);
+  border-radius: var(--ui-radius);
+}
+
+/* ─────────────────────────────────────────
+   4. Product detail
+   ───────────────────────────────────────── */
+.fn-main .workspace .detail-panel {
+  min-width: 0;
+}
+.fn-main .workspace .tabs {
+  height: 40px;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 4px;
+  border: 0;
+  background: var(--박스);
+  border-radius: var(--ui-radius);
+}
+.fn-main .workspace .tabs button {
+  height: 40px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: #7b8590;
+  font-size: var(--ui-text-main);
+}
+.fn-main .workspace .tabs button.active {
+  background: var(--고름);
+  color: var(--ci남색);
+  font-weight: 700;
+}
+.fn-main .workspace .vehicle-title {
+  padding: 16px 0 12px;
+  gap: 16px;
+}
+.fn-main .workspace .vehicle-title h2 {
+  font-size: var(--ui-text-title);
+  line-height: 24px;
+}
+.fn-main .workspace .vehicle-title p {
+  margin-top: 4px;
+  font-size: var(--ui-text-support);
+  color: #7b8590;
+}
+.fn-main .workspace .summary-grid {
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 4px;
+  margin: 12px 0 0;
+}
+.fn-main .workspace .summary-grid > div {
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+}
+.fn-main .workspace .summary-grid dt {
+  font-size: var(--ui-text-support);
+  color: #7b8590;
+}
+.fn-main .workspace .summary-grid dd {
+  margin: 4px 0 0;
+  font-size: var(--ui-text-main);
+  font-weight: 700;
+}
+.fn-main .workspace .detail-panel .dz-perks {
+  margin: 12px 0 0;
+}
+.fn-main .workspace .offer-picker {
+  gap: 4px;
+  margin-top: 12px;
+  padding: 0;
+}
+.fn-main .workspace .offer-picker button {
+  min-width: 78px;
+  height: var(--ui-control-h);
+  padding: 0 12px;
+  border-radius: var(--ui-radius);
+}
+.fn-main .workspace .dz-offer-line {
+  min-height: 44px;
+  margin: 8px 0 0;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+  color: #4f5862;
+}
+.fn-main .workspace .dz-offer-line b { color: var(--ci남색); }
+
+/* 상세 사진은 '큰 카드'가 아니라 판 안의 읽는 요소 */
+.fn-main .workspace .dz-gal-main {
+  border-radius: var(--ui-radius);
+  background: #f0f2f4;
+}
+
+/* ─────────────────────────────────────────
+   5. Intake WORK
+   ───────────────────────────────────────── */
+.fn-main .workspace .work-panel {
+  min-width: 0;
+}
+.fn-main .workspace .dz-picked {
+  margin: 0 0 12px;
+  padding: 12px;
+  gap: 4px;
+  border-radius: var(--ui-radius);
+  background: var(--고름);
+}
+.fn-main .workspace .dz-picked-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 4px;
+}
+.fn-main .workspace .dz-picked-grid > div {
+  min-height: 58px;
+  padding: 9px 10px;
+  border-radius: var(--ui-radius);
+  background: var(--판);
+}
+
+.fn-main .workspace .dz-form-group {
+  padding: 12px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+}
+.fn-main .workspace .dz-form-grid {
+  gap: 8px;
+}
+.fn-main .workspace .dz-intake-form input:not([type="checkbox"]):not([type="hidden"]),
+.fn-main .workspace .dz-intake-form select,
+.fn-main .workspace .dz-intake-form textarea {
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: var(--판);
+}
+.fn-main .workspace .dz-form-more > summary {
+  background: var(--박스);
+  border-radius: var(--ui-radius);
+}
+
+/* ─────────────────────────────────────────
+   6. Settlement
+   ───────────────────────────────────────── */
+.fn-main .workspace[data-mode="settle"] .dz-month {
+  min-height: 40px;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+}
+.fn-main .workspace[data-mode="settle"] .dz-month-sum {
+  margin-left: auto;
+}
+.fn-main .workspace[data-mode="settle"] .st-lines .summary-grid {
+  margin: 0 0 8px;
+}
+.fn-main .workspace .dz-issue {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+}
+.fn-main .workspace .dz-issue-sum {
+  margin: 4px 0 0;
+  color: #4f5862;
+  font-size: var(--ui-text-support);
+}
+.fn-main .workspace .dz-path {
+  gap: 4px;
+}
+.fn-main .workspace .dz-path li {
+  border-radius: var(--ui-radius);
+}
+
+/* ─────────────────────────────────────────
+   7. E-sign
+   ───────────────────────────────────────── */
+.fn-main .workspace[data-mode="esign"] .detail-panel .summary-grid {
+  margin-top: 12px;
+}
+.fn-main .workspace[data-mode="esign"] .detail-panel .dz-sub {
+  margin-top: 20px;
+}
+
+/* 문서 미리보기 느낌을 실제 데이터 없이 과장하지 않는다.
+   signed PDF가 있든 없든 상세판은 계약정보를 우선 읽게 한다. */
+.fn-main .workspace[data-mode="esign"] .detail-panel {
+  background: var(--판);
+}
+
+/* ─────────────────────────────────────────
+   8. Action hierarchy
+   ───────────────────────────────────────── */
+.fn-main .workspace .dz-bar {
+  background: linear-gradient(to bottom, rgba(255,255,255,0), var(--판) 12px);
+}
+.fn-main .workspace .dz-bar-go {
+  gap: 8px;
+}
+.fn-main .workspace .dz-bar-go > .primary,
+.fn-main .workspace .dz-bar-go > .dz-bar-sub {
+  min-height: var(--ui-action-h);
+  border-radius: var(--ui-radius);
+}
+.fn-main .workspace .dz-bar-go > .primary {
+  background: var(--ci남색);
+  color: #fff;
+}
+.fn-main .workspace .dz-bar-go > .dz-bar-sub {
+  background: var(--박스);
+  color: #4f5862;
+}
+
+/* ─────────────────────────────────────────
+   9. Desktop density / large screens
+   ───────────────────────────────────────── */
+@media (min-width: 1400px) {
+  :root {
+    --ui-panel-pad: 20px;
+  }
+  .fn-main .workspace {
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+/* ─────────────────────────────────────────
+   10. Mobile — same information, one panel
+   ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  body > nav.fn-top {
+    height: 52px;
+    padding: 0 14px;
+  }
+
+  .fn-main .workspace {
+    height: auto;
+    padding: 8px 8px var(--아래띠);
+    gap: 8px;
+  }
+
+  .fn-main .workspace > .panel {
+    padding: var(--ui-panel-pad-mobile);
+    border-radius: var(--ui-radius);
+  }
+
+  .fn-main .workspace .dz-listtop {
+    top: 0;
+    padding-bottom: 2px;
+  }
+
+  .fn-main .workspace .quick-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .fn-main .workspace a.dz-row,
+  .fn-main .workspace .dz-row {
+    min-height: 88px;
+  }
+
+  .fn-main .workspace .summary-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .fn-main .workspace .dz-bar {
+    background: var(--판);
+  }
+}

@@ -6,6 +6,7 @@
  */
 import { startTransition, useActionState, useState } from 'react';
 import { createClaimLinkAction, issueInvoiceAction, lifecycleAction, revokeClaimLinkAction, type FormState } from '../intake/actions';
+import { Notice } from '../_design/Primitives';
 
 const 보냄 = (act: (f: FormData) => void) => (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
@@ -23,7 +24,7 @@ export function IssueForm({ id, month, axis, party }: { id: string; month: strin
   return (
     <form id={id} onSubmit={보냄(act)}>
       <input type="hidden" name="month" value={month} /><input type="hidden" name="axis" value={axis} /><input type="hidden" name="party" value={party} />
-      {s.invoiceNo && <p className="dz-ok">발행했습니다 — {s.invoiceNo}</p>}
+      {s.invoiceNo && <Notice tone="ok">발행했습니다 — {s.invoiceNo}</Notice>}
       {오류(s)}
     </form>
   );
@@ -119,7 +120,7 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, respo
           <small>이 주소는 지금 한 번만 보입니다 — 잃으면 새로 만듭니다.</small>
         </div>
       )}
-      {made.warn && <p className="dz-warn">{made.warn}</p>}
+      {made.warn && <Notice tone="warn">{made.warn}</Notice>}
       {오류(made)}{오류(gone)}
     </div>
   );

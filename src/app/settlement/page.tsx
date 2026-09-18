@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ListRow } from '../_design/ListRow';
+import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
@@ -69,6 +69,15 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const 앞달 = i >= 0 ? 달들[i + 1] : 달들[0];
   const 뒤달 = i > 0 ? 달들[i - 1] : undefined;
   const 달로 = (m: string) => keep({ month: m, g: '', ic: '', v: 'list' });
+  /** 실적 줄의 상태 칸 — 그 축의 걸음(접수 → 청구/통보 → 확인 → 수금/지급) · 곁길(보류 · 정정 · 끊김) */
+  const 줄상태 = (stage: string, hold: boolean, broken: boolean): RowStatus =>
+    hold ? { icon: 'pause', label: '보류', tone: 'amber' }
+      : stage === '정정' ? { icon: 'alert', label: '정정', tone: 'red' }
+        : broken ? { icon: 'alert', label: '끊김', tone: 'red' }
+          : stage === '수금' || stage === '지급' ? { icon: 'circle-check', label: stage, tone: 'green' }
+            : stage === '확인' ? { icon: 'shield-check', label: '확인', tone: 'navy' }
+              : stage === '청구' || stage === '통보' ? { icon: 'send', label: stage, tone: 'navy' }
+                : { icon: 'clipboard', label: '접수', tone: 'grey' };
   const 금액 = (n: number | null | undefined) => (n === null || n === undefined ? '금액 모름' : `${won(n)}원`);
 
   return (
@@ -111,6 +120,10 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           <div className="list">
             {shownGroups.map((g) => (
               <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
+                status={month === NO_MONTH ? { icon: 'alert', label: '미정', tone: 'red' }
+                  : g.done >= g.lines.length ? { icon: 'circle-check', label: '완료', tone: 'green' }
+                    : g.done > 0 ? { icon: 'clock', label: `${g.done}/${g.lines.length}`, tone: 'navy' }
+                      : { icon: 'file-text', label: '대기', tone: 'grey' }}
                 title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
                 tone={g.done < g.lines.length ? 'act' : 'plain'}
                 meta={[`${g.lines.length}줄`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
@@ -153,6 +166,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
               const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
               return (
                 <ListRow key={r.id} href={keep({ g: gSel.party, ic: r.id, v: 'work' })} selected={r.id === ic}
+                  status={줄상태(tab === 'claim' ? r.claimStage : r.payStage, r.progress.billHold && tab === 'claim', broken)}
                   title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
                   tone={r.progress.billHold || !끝 ? 'act' : 'plain'}
                   flag={broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined}
@@ -163,6 +177,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             {/* 환수 — 접수 줄의 체크가 아니라 «반대 부호의 한 줄»(기능 세션) */}
             {gSel?.clawbacks.map((c, k) => (
               <div key={`환수-${k}`} className="dz-row dz-row-minus">
+                <StatusTile s={{ icon: 'repeat', label: '환수', tone: 'red' }} />
                 <span className="dz-row-body">
                   <span className="dz-row-l1"><b>환수 · {c.plate}</b></span>
                   <span className="dz-row-l2">{c.reason || '—'} · {c.at?.slice(0, 10)}</span>

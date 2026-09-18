@@ -17,6 +17,22 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PerkMarks, Tag, 신원 } from './Badges';
+import { Icon } from './Icon';
+
+/**
+ * ★상태 칸 — 사진이 없는 목록(접수 · 정산 묶음 · 실적 줄)은 사진 자리에 «상태 그림» 하나(대표 2026-09-18
+ *   「상품목록 아닌 곳에도 상품목록 사진처럼 썸네일 아이콘 하나 해서 그 목록의 상태값을 표현 · 직관적으로 어떤 상태인지」).
+ *   그림 + 한 낱말 · 색은 면에만(남색 = 진행 · 초록 = 끝 · 붉음 = 멈춤/위험 · 회색 = 대기/취소 · 호박 = 보류).
+ */
+export type RowStatus = { icon: string; label: string; tone: 'navy' | 'green' | 'red' | 'grey' | 'amber' };
+
+export function StatusTile({ s }: { s: RowStatus }) {
+  return (
+    <span className={`dz-row-status ${s.tone}`} aria-label={s.label}>
+      <Icon name={s.icon} size={20} stroke={2} /><em>{s.label}</em>
+    </span>
+  );
+}
 
 /** 접수·실적 한 칸 — 끝 · 취소는 제 그림, 할 일이 남았으면(act) 기다림 */
 const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
@@ -24,11 +40,13 @@ const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
   return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };
 
-export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
+export function ListRow({ href, selected, thumb, status, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
   href: string;
   selected?: boolean;
   /** 사진 칸 — 상품 목록만 준다. `null` 이면 「사진 없음」 칸이 서고, `undefined` 면 칸 자체가 없다. */
   thumb?: string | null;
+  /** 상태 칸 — 사진 없는 목록에서 사진 자리에 선다 */
+  status?: RowStatus;
   title: ReactNode;
   /** 뱃지 하나(접수·실적) — `tone` 이 이 뱃지에 걸린다 */
   badge?: ReactNode;
@@ -47,6 +65,7 @@ export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'p
   const 칩 = (chips ?? []).filter(Boolean);
   return (
     <Link href={href} className={`dz-row${selected ? ' on' : ''}`}>
+      {thumb === undefined && status && <StatusTile s={status} />}
       {thumb !== undefined && (
         <span className="dz-row-thumb">
           {thumb

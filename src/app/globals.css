@@ -1275,3 +1275,20 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-side-step button:hover { background: var(--박스손); }
 .dz-side-step .dz-errs { flex-basis: 100%; }
 @media (max-width: 900px) { .dz-life-form input, .dz-side-step input { font-size: 16px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상태 칸 — 사진 없는 목록의 «사진 자리» (대표 2026-09-18 「썸네일 아이콘 하나 해서 그 목록의 상태값 · 직관적으로」)
+     64×64 · 라운드 4 · 그림 20 + 한 낱말(보조). 색은 면에만 — 남색 진행 · 초록 끝 · 붉음 멈춤 · 회색 대기 · 호박 보류.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-row-status {
+  flex: none; width: 64px; height: 64px; border-radius: var(--r);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.dz-row-status em { font-style: normal; font-size: 11px; line-height: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dz-row-status.navy { background: var(--남색옅음); color: var(--ci남색); }
+.dz-row-status.green { background: #e8f5ee; color: #1e7a45; }
+.dz-row-status.red { background: #fdecea; color: #a8261d; }
+.dz-row-status.grey { background: var(--박스손); color: #6b7580; }
+.dz-row-status.amber { background: #fbeedd; color: #94560f; }
+/* 줄이 고른(옅은 남색) 면일 때 남색 칸이 묻히지 않게 한 단 짙게 */
+.dz-row.on .dz-row-status.navy { background: #d5deec; }

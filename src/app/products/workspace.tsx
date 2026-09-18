@@ -10,7 +10,7 @@ import { blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
-import { ListRow } from '../_design/ListRow';
+import { ListRow, type RowStatus } from '../_design/ListRow';
 import { Tag, 신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
 import { PhotoGallery } from '../_design/PhotoGallery';
@@ -236,6 +236,14 @@ export async function ProductWorkspace({ q, mode, base }: {
   const 칸의 = new Map(irows.map((r) => [r, bucketOf(r)] as const));
   const 칸수 = Object.fromEntries(BUCKETS.map((b) => [b, irows.filter((r) => 칸의.get(r) === b).length])) as Record<Bucket, number>;
   const 진행 = (r: SettlementRow) => iv === 'all' || 칸의.get(r) === iv;
+  /** 접수 줄의 상태 칸 — 칸(bucket)이 곧 상태. 당월접수는 인도 여부로 한 번 더 가른다 */
+  const 접수상태 = (r: SettlementRow, b?: Bucket): RowStatus =>
+    b === '취소' ? { icon: 'circle-slash', label: '취소', tone: 'grey' }
+      : b === '미완료' ? { icon: 'clock', label: '미완료', tone: 'red' }
+        : b === '완납실적' ? { icon: 'circle-check', label: '완납', tone: 'green' }
+          : b === '분납실적' ? { icon: 'repeat', label: '분납', tone: 'navy' }
+            : r.progress.delivered ? { icon: 'truck', label: '인도', tone: 'green' }
+              : { icon: 'clipboard', label: '접수', tone: 'navy' };
   /** 접수 판의 세부검색 축 — 상품 판과 같은 두 칸 조건판 · 같은 셈(주소 칸은 i 로 시작) */
   const 접수축: [string, string, (r: SettlementRow) => string][] = [
     ['im', '접수월', (r) => String(r.receivedAt ?? '').slice(0, 7)],
@@ -398,7 +406,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
-                  href={keep({ ic: r.id, w: '', v: 'work' })}
+                  href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}

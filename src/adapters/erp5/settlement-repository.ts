@@ -6,6 +6,7 @@ import { eventDocId, settlementKey } from '../../domain/settlement/code';
 import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch } from '../../domain/settlement/adjust';
 import { clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
+import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, snapshotOf, tokenHash } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
@@ -39,6 +40,21 @@ const audId = () => {
 };
 
 export type RowWithRaw = { row: SettlementRow; raw: Record<string, unknown>; warnings: string[] };
+
+/** 상대에게 보이는 것 — ★굳힌 사본 · 그 축 금액만 · 링크 칸(해시·잠금)은 안 싣는다 */
+export interface ClaimView {
+  invoiceNo: string; month: string; axis: Axis; party: string; partyName: string;
+  supply: number; vat: number; total: number; clawback: number; issuedAt: number;
+  lines: unknown[]; clawbacks: unknown[];
+  response: IssuedInvoice['response'] | null;
+}
+export function claimViewOf(inv: IssuedInvoice): ClaimView {
+  return {
+    invoiceNo: inv.invoiceNo, month: inv.month, axis: inv.axis, party: inv.party, partyName: inv.partyName ?? inv.party,
+    supply: inv.supply, vat: inv.vat, total: inv.total, clawback: inv.clawback ?? 0, issuedAt: inv.issuedAt,
+    lines: inv.snapshot?.lines ?? [], clawbacks: inv.snapshot?.clawbacks ?? [], response: inv.response ?? null,
+  };
+}
 
 export class Erp5SettlementRepository {
   async list(): Promise<RowWithRaw[]> {
@@ -192,6 +208,7 @@ export class Erp5SettlementRepository {
         }
       }
       const existing = invDoc.exists ? (invDoc.data() as IssuedInvoice) : null;
+      const party0 = await this.partyOf(axis, g.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)));
       const taken = sameMonth.docs.map((d) => String(d.data().invoiceNo ?? ''));
       const now = Date.now();
       const plan = planInvoice(month, axis, party, g.lines, claws, existing, taken, now, BY);
@@ -204,12 +221,126 @@ export class Erp5SettlementRepository {
         for (const e of x.events) ev[audId()] = { at: now, by: BY, ...e };
         if (x.events.length) tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
       }
-      /* ★다시 발행이면 번호는 그대로 · 합계·줄은 새로 (옛 합계는 history 로 남긴다) */
+      /* ★상대에게 보일 사본 — 발행한 줄(보류 뺀)만 · 그 축 금액만 */
+      const live = new Set(plan.invoice.codes);
+      const snapshot = snapshotOf(axis, party, month, g.lines.filter((l) => live.has(l.row.id)), claws);
+      /* ★다시 발행이면 번호는 그대로 · 합계·줄은 새로 (옛 합계는 history 로 남긴다) · 링크는 그대로 둔다(같은 링크로 새 사본이 보인다) */
       tx.set(invRef, {
+        ...(existing ?? {}),
         ...plan.invoice,
+        ...party0,
+        snapshot,
+        ...(existing ? { response: null } : {}),
         ...(existing ? { history: [...((existing as unknown as { history?: unknown[] }).history ?? []), { supply: existing.supply, vat: existing.vat, lines: existing.lines, issuedAt: existing.issuedAt }] } : {}),
       });
       return { ok: true as const, invoice: plan.invoice };
+    });
+  }
+
+  /**
+   * 상대 거래처 — ★코드로만 찾는다(가장 많이 쓰인 코드). 이름으로 맞추면 빈 이름이 우리 회사에 붙는다(실측).
+   */
+  private async partyOf(axis: Axis, codes: (string | null)[]): Promise<{ partyCode?: string; partyName?: string; partyBizNo?: string }> {
+    const count = new Map<string, number>();
+    for (const c of codes) if (c) count.set(c, (count.get(c) ?? 0) + 1);
+    const code = [...count].sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!code) return {};
+    const snap = await erp5().collection('partner').where('partner_code', '==', code).limit(5).get();
+    const p = snap.docs.map((d) => d.data()).find((x) => !x._deleted && !x.merged_into);
+    if (!p) return { partyCode: code };
+    return { partyCode: code, partyName: String(p.partner_name ?? ''), partyBizNo: bizDigits(p.business_number) };
+  }
+
+  private invoiceRef(month: string, axis: Axis, party: string) {
+    return erp5().collection(INVOICES).doc(`inv_${createHash('sha256').update(invoiceKey(month, axis, party)).digest('hex').slice(0, 16)}`);
+  }
+
+  /**
+   * **청구 링크 만들기** — 토큰은 이때 «한 번만» 돌려준다(ERP5 에는 해시만).
+   * ★발행한 뒤에만 · 사업자등록번호가 등록돼 있어야 · 새로 만들면 옛 링크는 못 쓴다.
+   */
+  async createClaimLink(month: string, axis: Axis, party: string): Promise<{ ok: true; token: string; warn?: string } | { ok: false; error: string }> {
+    mustWrite();
+    const ref = this.invoiceRef(month, axis, party);
+    const d = await ref.get();
+    if (!d.exists) return { ok: false, error: '아직 발행 전입니다 — 발행한 뒤에 링크를 만듭니다' };
+    const inv = d.data() as IssuedInvoice;
+    const biz = bizDigits(inv.partyBizNo);
+    if (biz.length !== 10) return { ok: false, error: `「${party}」 의 사업자등록번호가 거래처(partner ${inv.partyCode ?? '코드 없음'})에 없습니다 — 먼저 채워야 합니다` };
+    const token = newToken();
+    await ref.update({ linkHash: tokenHash(token), linkCreatedAt: Date.now(), linkRevokedAt: null, failCount: 0, lockedUntil: null });
+    return { ok: true, token, ...(bizChecksumOk(biz) ? {} : { warn: `등록된 사업자등록번호(${biz.slice(0, 3)}-…)가 검증번호에 안 맞습니다 — 상대가 바른 번호를 넣으면 안 열립니다. 거래처 번호를 확인하세요` }) };
+  }
+
+  async revokeClaimLink(month: string, axis: Axis, party: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    mustWrite();
+    const ref = this.invoiceRef(month, axis, party);
+    if (!(await ref.get()).exists) return { ok: false, error: '없는 청구서입니다' };
+    await ref.update({ linkRevokedAt: Date.now() });
+    return { ok: true };
+  }
+
+  /** 토큰으로 청구서 찾기 — 해시로만 찾는다 */
+  private async byToken(token: string) {
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
+    const snap = await erp5().collection(INVOICES).where('linkHash', '==', tokenHash(token)).limit(1).get();
+    return snap.empty ? null : snap.docs[0].ref;
+  }
+
+  /**
+   * **상대가 연다** — 사업자등록번호가 맞으면 굳힌 사본을 돌려준다. 틀리면 셈하고 10번이면 잠근다.
+   * ★돌려주는 것에 우리 몫·반대 축 금액·원장 코드 밖의 것은 없다.
+   */
+  async openClaim(token: string, bizNo: string): Promise<{ ok: true; view: ClaimView } | { ok: false; error: string }> {
+    const ref = await this.byToken(token);
+    if (!ref) return { ok: false, error: '링크를 찾을 수 없습니다' };
+    const db = erp5();
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      const inv = d.data() as IssuedInvoice;
+      const now = Date.now();
+      const r = checkOpen(inv, bizNo, now);
+      if (!r.ok) {
+        if (r.reason === 'WRONG') tx.update(ref, failPatch(inv, now));
+        return { ok: false as const, error: r.message };
+      }
+      tx.update(ref, { failCount: 0, openedAt: now, openCount: (inv.openCount ?? 0) + 1 });
+      return { ok: true as const, view: claimViewOf(inv) };
+    });
+  }
+
+  /**
+   * **상대가 답한다** — 확인 또는 이의. 매번 사업자등록번호를 다시 본다(링크는 문서 하나, 세션이 없다).
+   * 확인 → 그 줄들 그 축 「확인」 · 이의 → 고른 줄(없으면 전부) 「정정」 + 사유
+   */
+  async respondClaim(token: string, bizNo: string, kind: '확인' | '이의', memo: string, codes: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
+    mustWrite();
+    const ref = await this.byToken(token);
+    if (!ref) return { ok: false, error: '링크를 찾을 수 없습니다' };
+    const db = erp5();
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      const inv = d.data() as IssuedInvoice;
+      const now = Date.now();
+      const r = checkOpen(inv, bizNo, now);
+      if (!r.ok) { if (r.reason === 'WRONG') tx.update(ref, failPatch(inv, now)); return { ok: false as const, error: r.message }; }
+      if (kind === '이의' && !memo.trim()) return { ok: false as const, error: '무엇이 다른지 적어 주세요' };
+      const target = kind === '이의' && codes.length ? codes.filter((c) => inv.codes.includes(c)) : inv.codes;
+      const rowDocs = await Promise.all(target.map((c) => tx.get(db.collection(ROWS).doc(c))));
+      const who = `${inv.axis}-link:${inv.partyCode ?? inv.party}`;
+      for (const rd of rowDocs) {
+        if (!rd.exists) continue;
+        const cur = rd.data()!;
+        const { row } = toSettlementRow(cur, rd.id);
+        const p = lifePatch(row, kind === '확인' ? { kind: 'confirm', axis: inv.axis } : { kind: 'correct', axis: inv.axis, amount: null, memo: memo.trim() });
+        if (!p.ok || !p.events.length) continue;
+        tx.update(rd.ref, { ...p.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+        const ev: Record<string, unknown> = {};
+        for (const e of p.events) ev[audId()] = { at: now, by: who, ...e };
+        tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      }
+      tx.update(ref, { response: { state: kind, at: now, ...(memo.trim() ? { memo: memo.trim() } : {}), ...(kind === '이의' ? { codes: target } : {}) }, failCount: 0 });
+      return { ok: true as const };
     });
   }
 

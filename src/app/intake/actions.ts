@@ -213,3 +213,35 @@ export async function clawbackAction(_: FormState, f: FormData): Promise<FormSta
   revalidatePath('/intake');
   return { errors: [] };
 }
+
+/**
+ * **청구 링크 만들기** (관리자) — 폼 칸: month · axis · party → { url }
+ * ★토큰은 이 응답에서 «한 번만» 보인다(ERP5 에는 해시만). 잃어버리면 새로 만든다(옛 링크는 죽는다).
+ * 보낼 주소 = CLAIM_LINK_BASE(배포 주소) + /c/<토큰>. 비었으면 경로만 준다.
+ */
+export async function createClaimLinkAction(_: FormState, f: FormData): Promise<FormState & { url?: string; warn?: string }> {
+  const axis = S(f, 'axis') as Axis;
+  if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
+  try {
+    const r = await settlements.createClaimLink(S(f, 'month'), axis, S(f, 'party'));
+    if (!r.ok) return { errors: [r.error] };
+    const base = (process.env.CLAIM_LINK_BASE ?? '').replace(/\/$/, '');
+    revalidatePath('/settlement');
+    return { errors: [], url: `${base}/c/${r.token}`, ...(r.warn ? { warn: r.warn } : {}) };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `만들지 못했습니다 — ${(e as Error).message}`] };
+  }
+}
+
+/** 청구 링크 거두기 (관리자) — 폼 칸: month · axis · party */
+export async function revokeClaimLinkAction(_: FormState, f: FormData): Promise<FormState> {
+  const axis = S(f, 'axis') as Axis;
+  try {
+    const r = await settlements.revokeClaimLink(S(f, 'month'), axis, S(f, 'party'));
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `거두지 못했습니다 — ${(e as Error).message}`] };
+  }
+  revalidatePath('/settlement');
+  return { errors: [] };
+}

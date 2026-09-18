@@ -59,6 +59,16 @@ export interface IssuedInvoice {
   /** 이 장에서 뺀 환수(공급가) — 환수는 «반대 부호의 한 줄» 이다 */
   clawback: number;
   issuedAt: number; issuedBy: string;
+  /* ── 청구 링크 (claim-link.ts) — 저장소가 채운다 ── */
+  /** 상대 거래처 — 공급사/영업채널 코드 · 등록 상호 · 사업자등록번호(발행 때 굳힘) */
+  partyCode?: string; partyName?: string; partyBizNo?: string;
+  /** 상대에게 보일 «굳힌 사본» — 그 축의 금액만 */
+  snapshot?: { lines: unknown[]; clawbacks: unknown[] };
+  linkHash?: string; linkCreatedAt?: number; linkRevokedAt?: number | null;
+  failCount?: number; lockedUntil?: number | null;
+  openedAt?: number; openCount?: number;
+  /** 상대의 답 — 대기 · 확인 · 이의 */
+  response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] };
 }
 
 /** 발행 뒤 원장이 바뀌었나 — ★조용히 다른 금액을 인쇄하지 않는다 */

@@ -145,14 +145,16 @@
       "FilterSheet",
       "OfferPicker",
       "DetailTabs",
-      "PhotoGallery"
-    ],
-    "extractionCandidates": [
+      "PhotoGallery",
       "PanelHeader",
-      "SearchBox",
+      "SearchField",
       "ActionBar",
       "EmptyState",
       "SummaryGrid",
+      "SummaryItem"
+    ],
+    "extractionCandidates": [
+      "SearchBox",
       "Notice"
     ]
   },
@@ -183,6 +185,18 @@
     "CSS exposes shared --ui-* aliases without changing current visual values",
     "ListRow dimensions route through shared UI tokens",
     "support text outliers in status/internal/article labels normalized to 12px",
-    "mobile back visual remains 32px but hit area is expanded to 44px"
-  ]
+    "mobile back visual remains 32px but hit area is expanded to 44px",
+    "core products/intake/settlement/esign routes use shared visual primitives",
+    "CI runs typecheck, tests, and UI SSOT regression check",
+    "globals.css legacy base layer is explicitly marked as non-authoritative"
+  ],
+  "automation": {
+    "command": "npm run ui:check",
+    "workflow": ".github/workflows/ci.yml",
+    "checks": [
+      "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
+      "required --ui-* CSS tokens exist",
+      "machine SSOT baseline remains 18/14/12, control 40, primary/touch 44, radius 4"
+    ]
+  }
 }

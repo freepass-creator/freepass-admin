@@ -9,11 +9,13 @@
 import Link from 'next/link';
 import { productById, settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { blockOf, margin, type FeeBasis, type SettlementRow } from '../../domain/settlement/types';
+import { blockOf, type FeeBasis, type SettlementRow } from '../../domain/settlement/types';
+import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { num, txt, vocab, when, won, yes } from '../_fn/fmt';
 import { vehicleName } from '../_fn/product';
 import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
 import Progress from './[code]/Progress';
+import { MoneyForm } from './MoneyForm';
 
 /** 이름 → 가장 많이 쓴 코드. ★코드를 지어내지 않는다 — 원장에 이미 있는 짝만 쓴다. (기능 세션 규칙 그대로) */
 function codeMap(pairs: [string | null, string | null][]): Record<string, string> {
@@ -100,6 +102,10 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
   const { row: r, warnings } = hit;
   const events = await settlements.events(r.plate, r.receivedAt);
   const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
+  /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
+  const 청구 = claimAmountOf(r);
+  const 지급 = payAmountOf(r);
+  const 부호 = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : n < 0 ? '−' : ''}${won(Math.abs(n))}`);
   return (
     <>
       <div className="panel-head">
@@ -140,15 +146,27 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
         {칸('정산대상 · 비율', `${r.settleTarget} · ${r.settleRatio}`)}
         {칸('공급사 수수료', fee(r.supplierFee))}
         {칸('영업 수수료', fee(r.channelFee))}
-        {칸('청구금액', won(r.money.claim))}
-        {칸('지급액', won(r.money.pay))}
-        {칸('남는 것', won(margin(r)))}
+        {칸('청구금액', won(청구))}
+        {칸('지급액', won(지급))}
+        {칸('남는 것', 청구 === null ? '—' : won(청구 - (지급 ?? 0)))}
+        {칸('수수료 (청구 · 지급)', `${won(r.money.claim)} · ${won(r.money.pay)}`)}
+        {칸('프로모션 (청구 · 지급)', r.money.claimIncentive || r.money.payIncentive
+          ? `${won(r.money.claimIncentive)} · ${won(r.money.payIncentive)}${r.money.promoShare !== null ? ` · 영업자 ${Math.round(r.money.promoShare * 100)}%` : ''}`
+          : '—')}
+        {칸('가감 (청구 · 지급)', r.money.claimAdjust || r.money.payAdjust ? `${부호(r.money.claimAdjust)} · ${부호(r.money.payAdjust)}` : '—')}
+        {칸('셈 근거', txt(r.settleNote))}
         {칸('청구 · 지급 단계', `${r.claimStage} · ${r.payStage}`)}
         {칸('청구서 보냄', `${yes(r.progress.billed)} ${txt(r.progress.billedAt)}`)}
         {칸('계산서', `${yes(r.progress.invoiceIssued)} ${txt(r.progress.invoiceAt)}`)}
         {칸('수금', `${yes(r.progress.collected)} ${won(r.progress.collectedAmt)}`)}
         {칸('지급', `${yes(r.progress.paid)} ${won(r.progress.paidAmt)}`)}
       </dl>
+      <h3 className="dz-sub">프로모션 · 가감</h3>
+      {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</p>}
+      <MoneyForm code={r.id}
+        promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
+        promoReason={r.money.promoReason} claimAdjust={r.money.claimAdjust} payAdjust={r.money.payAdjust}
+        adjustReason={r.money.adjustReason} disabled={r.progress.cancelled} />
       {warnings.length > 0 && <><h3 className="dz-sub">살필 것</h3><ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul></>}
 
       <h3 className="dz-sub">고친 이력 {events.length}</h3>

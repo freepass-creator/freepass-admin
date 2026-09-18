@@ -72,6 +72,11 @@ export default function IntakeForm({ defaults, options }: { defaults: IntakeDefa
       <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>
       <label>차량가액 (신차만)<input name="price" inputMode="numeric" /></label>
 
+      {/* 프로모션 — 공급사가 더 주는 돈. ★수수료 칸은 없다(수수료는 기계가 ERP5 수수료표로 센다) · 영업자 몫은 비우면 100% */}
+      <label>프로모션 금액<input name="promoAmount" inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
+      <label>프로모션 영업자 몫 %<input name="promoSharePct" inputMode="numeric" placeholder="100" /></label>
+      <label style={{ gridColumn: 'span 2' }}>프로모션 사유<input name="promoReason" /></label>
+
       <label style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><input type="checkbox" name="paper" /> 계약서 받음</label>
       <label style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><input type="checkbox" name="delivered" checked={delivered} onChange={(e) => setDelivered(e.target.checked)} /> 인도 완료</label>
       {delivered && <label>인도일 *<input name="deliveredAt" type="date" required /></label>}

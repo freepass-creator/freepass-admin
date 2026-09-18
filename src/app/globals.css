@@ -928,3 +928,27 @@ body { background: var(--바닥); }
   /* 접수 덩이 — 아래 띠 바로 위 */
   .dz-apply { bottom: calc(var(--아래띠) + 8px); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 접수 상세 — 프로모션 · 가감 작은 폼 둘 (대표 2026-09-18 「수수료대로 계산하고 프로모션이나 가감」)
+     옷은 판 문법 그대로: 칸은 흰 입력(박스 안) · 저장은 남색 주 단추(33) · 에러는 받은 글 그대로
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-money { display: grid; gap: 8px; }
+.dz-money form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end;
+  padding: 12px; border-radius: var(--r); background: var(--박스);
+}
+.dz-money b { grid-column: 1 / -1; font-size: var(--글메인); color: var(--글); }
+.dz-money label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.dz-money label.wide { grid-column: 1 / -1; }
+.dz-money input {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  color: var(--글); font-size: var(--글메인); font-family: inherit;
+}
+.dz-money button {
+  grid-column: 1 / -1; justify-self: end; height: 33px; line-height: 15px; padding: 0 16px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600; cursor: pointer;
+}
+.dz-money button:disabled { opacity: .5; cursor: default; }
+.dz-errs { grid-column: 1 / -1; margin: 0; padding: 0 0 0 16px; color: #b3261e; font-size: var(--글보조); }
+@media (max-width: 900px) { .dz-money input { font-size: 16px; } }

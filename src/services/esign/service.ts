@@ -264,11 +264,14 @@ export class EsignService {
       session.status = 'opened';
       session.openedAt = now;
     }
+    const priv = await this.repo.getPrivate(session.id);
+    const assetKeys = Object.keys((priv?.assets as Record<string, unknown>) || {});
     return {
       session: { ...session, tokenHash: '' },
       stage: esignStage(session),
       rejectReason: session.rejectReason ?? '',
       supplementItems: session.supplementItems ?? [],
+      uploadedKeys: assetKeys,
     };
   }
 

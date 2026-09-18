@@ -328,7 +328,9 @@ export async function ProductWorkspace({ q, mode, base }: {
           </div>
           {car ? (
             <>
-              <DetailTabs
+              <DetailTabs key={`상세-${car.id}`}
+                initialOffer={sel.matchedOffers.some((x) => x.id === sp(q.offer)) ? sp(q.offer) : sel.lead?.id}
+                applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined}
                 summary={<>
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
@@ -347,8 +349,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
                   <OfferPicker key={`기간-${car.id}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
-                    perks={car.perks} perksNote={정책말(car.policyState)}
-                    applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined} />
+                    perks={car.perks} perksNote={정책말(car.policyState)} />
                 </>}
                 info={<>
                   <div className="vehicle-title">

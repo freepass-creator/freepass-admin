@@ -73,6 +73,9 @@ export async function ProductWorkspace({ q, mode, base }: {
   const text = sp(q.q).trim().toLowerCase();
   const supplier = sp(q.supplier);
   const status = sp(q.status);
+  /** 퀵 단추로 거는 두 축 — 상품구분 · 혜택(도메인이 정한 글자 그대로 맞춘다) */
+  const kind = sp(q.kind);
+  const perk = sp(q.perk);
   const term = Number(sp(q.term)) || 0;
   const max = Number(sp(q.max).replace(/,/g, '')) || 0;
   const page = Math.max(1, Number(sp(q.page)) || 1);
@@ -90,6 +93,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   const hits = searchProducts(rows, query).filter(({ product: p }) => {
     if (supplier && (p.supplierName ?? p.supplierId) !== supplier) return false;
     if (status && p.status !== status) return false;
+    if (kind && p.productKind !== kind) return false;
+    if (perk && !(p.perks ?? []).includes(perk)) return false;
     if (!text) return true;
     return `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
       .toLowerCase().includes(text);
@@ -103,6 +108,8 @@ export async function ProductWorkspace({ q, mode, base }: {
 
   const suppliers = vocab(rows.map((p) => p.supplierName ?? p.supplierId));
   const statuses = vocab(rows.map((p) => p.status));
+  const kinds = vocab(rows.map((p) => p.productKind));
+  const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
   const terms = [...new Set(rows.flatMap((p) => p.offers.map((o) => o.termMonths)))].sort((a, b) => a - b);
   const link = (n: number) => `${base}?${new URLSearchParams({ ...Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])), page: String(n) })}`;
 
@@ -145,6 +152,8 @@ export async function ProductWorkspace({ q, mode, base }: {
               <span aria-hidden>⌕</span>
               <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
               {status && <input type="hidden" name="status" value={status} />}
+              {kind && <input type="hidden" name="kind" value={kind} />}
+              {perk && <input type="hidden" name="perk" value={perk} />}
               <details className="dz-find-more" open={!!(supplier || term || max)}>
                 <summary>세부검색{supplier || term || max ? ' ●' : ''}</summary>
                 <div className="dz-find-panel">
@@ -156,11 +165,27 @@ export async function ProductWorkspace({ q, mode, base }: {
               </details>
             </div>
           </form>
+          {/**
+            * ★퀵 단추 — 대표 2026-09-18 「퀵버튼도 동일하게 있으면 되는데, 그거를 계약접수는 좌우로 스크롤해서 볼 수 있으면 되잖아」
+            *   두 화면 «같은 단추 줄»: 전체 · 출고상태 · 상품구분 · 혜택.
+            *   상품찾기(두 칸 폭)는 줄을 넘겨 다 보이고, 계약접수(한 칸 폭)는 같은 줄을 좌우로 넘겨 본다(CSS).
+            *   단추 글자는 목록에 뜨는 글자 그대로(데이터에서 뽑는다 — 지어낸 단추가 없다). 누르면 켜지고 다시 누르면 꺼진다.
+            */}
           <div className="quick-filters">
-            <Link className={!status ? 'active' : ''} href={keep({ status: '', page: '' })}>전체</Link>
-            {statuses.slice(0, 4).map((x) => (
-              <Link key={x} className={status === x ? 'active' : ''} href={keep({ status: x, page: '' })}>{x}</Link>
+            <Link className={!status && !kind && !perk ? 'active' : ''} href={keep({ status: '', kind: '', perk: '', page: '' })}>전체</Link>
+            {statuses.map((x) => (
+              <Link key={x} className={status === x ? 'active' : ''} href={keep({ status: status === x ? '' : x, page: '' })}>{x}</Link>
             ))}
+            <>
+              <span className="dz-quick-gap" aria-hidden />
+              {kinds.map((x) => (
+                <Link key={x} className={kind === x ? 'active' : ''} href={keep({ kind: kind === x ? '' : x, page: '' })}>{x}</Link>
+              ))}
+              <span className="dz-quick-gap" aria-hidden />
+              {perkList.map((x) => (
+                <Link key={x} className={perk === x ? 'active' : ''} href={keep({ perk: perk === x ? '' : x, page: '' })}>{x}</Link>
+              ))}
+            </>
           </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (

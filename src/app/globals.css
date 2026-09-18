@@ -674,3 +674,9 @@ body { background: var(--바닥); }
  *   차례가 뜻이라(심사가 맨 앞) 앞의 것이 늘 먼저 보인다.
  */
 .dz-row-l3 .dz-chips { flex: 0 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; height: 20px; overflow: hidden; }
+
+/* ★퀵 단추 줄 — 두 화면 같은 단추. 묶음(출고상태 | 상품구분 | 혜택) 사이는 한 칸 틈 */
+.dz-quick-gap { flex: none; width: 8px; }
+/** 계약접수(한 칸 폭)는 같은 줄을 좌우로 넘겨 본다 — 대표 「계약접수는 좌우로 스크롤해서 볼 수 있으면 되잖아」 */
+.fn-main .workspace[data-mode="intake"] .quick-filters { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; }
+.fn-main .workspace[data-mode="intake"] .quick-filters a { flex: none; }

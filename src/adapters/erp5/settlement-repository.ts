@@ -12,6 +12,7 @@ import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
+import { numOrZero as N, strOf as S } from './atom.js';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -57,6 +58,37 @@ export function claimViewOf(inv: IssuedInvoice): ClaimView {
 }
 
 export class Erp5SettlementRepository {
+  /**
+   * **한 줄을 고치는 공통 골격.** ★쓰기 셋(진행 · 생애주기 · 수수료 고치기)이 토씨 하나 없이
+   *   같은 모양이었다 — 줄을 읽고 · 도메인 순수함수에 넘기고 · 바뀐 칸만 쓰고 · 이력을 남긴다.
+   *   여기 한 곳만 고치면 셋이 같이 고쳐진다(따로 두면 한 곳만 고치고 잊는 사고가 난다).
+   * @param apply 원자(cur)와 도메인 줄(row)을 받아 {patch,events} 또는 실패 까닭을 낸다 — «무엇을 바꾸나»만 안다, 어떻게 쓰는지는 모른다.
+   */
+  private async mutateRow(
+    code: string,
+    apply: (cur: Record<string, unknown>, row: SettlementRow) => { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string },
+    by: string = BY,
+  ): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = d.data()!;
+      const { row } = toSettlementRow(cur, d.id);
+      const r = apply(cur, row);
+      if (!r.ok) return r;
+      if (!r.events.length) return { ok: true as const, changed: 0 };
+      const now = Date.now();
+      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+      const ev: Record<string, unknown> = {};
+      for (const e of r.events) ev[audId()] = { at: now, by, ...e };
+      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      return { ok: true as const, changed: r.events.length };
+    });
+  }
+
   async list(): Promise<RowWithRaw[]> {
     const snap = await erp5().collection(ROWS).get();
     return snap.docs.map((d) => {
@@ -69,8 +101,6 @@ export class Erp5SettlementRepository {
   /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */
   async clawbacks(): Promise<Clawback[]> {
     const snap = await erp5().collection('settlement_clawbacks').get();
-    const S = (v: unknown) => String(v ?? '').trim();
-    const N = (v: unknown) => { const n = Number(String(v ?? '').replace(/[,\s원]/g, '')); return Number.isFinite(n) ? n : 0; };
     return snap.docs.map((d) => {
       const c = d.data();
       return {
@@ -126,23 +156,7 @@ export class Erp5SettlementRepository {
 
   /** 계약서 · 인도 · 취소. ★바뀌는 칸만 쓰고 이력을 남긴다. 바뀔 게 없으면 안 쓴다. */
   async setProgress(code: string, change: ProgressChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    mustWrite();
-    const db = erp5();
-    const ref = db.collection(ROWS).doc(code);
-    return db.runTransaction(async (tx) => {
-      const d = await tx.get(ref);
-      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
-      const cur = d.data()!;
-      const r = progressPatch(cur, change);
-      if (!r.ok) return r;
-      if (!r.events.length) return { ok: true as const, changed: 0 };
-      const now = Date.now();
-      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
-      const ev: Record<string, unknown> = {};
-      for (const e of r.events) ev[audId()] = { at: now, by: BY, ...e };
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
-      return { ok: true as const, changed: r.events.length };
-    });
+    return this.mutateRow(code, (cur) => progressPatch(cur, change));
   }
 
   /**
@@ -151,30 +165,22 @@ export class Erp5SettlementRepository {
    *   그때는 다음 달 이월(carry)로 넘기는 것이 맞다(erp4 「가감사유 → 다음 달에 할 말」).
    */
   async setMoney(code: string, patch: Record<string, unknown>): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    mustWrite();
-    const db = erp5();
-    const ref = db.collection(ROWS).doc(code);
     const LABEL: Record<string, string> = {
       claimIncentive: '프로모션(공급사)', payIncentive: '프로모션(영업자)', promoShare: '프로모션 영업자 비율', promoReason: '프로모션 사유',
       claimAdjust: '가감(청구)', payAdjust: '가감(지급)', adjustReason: '가감 사유',
     };
     const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
     const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
-    return db.runTransaction(async (tx) => {
-      const d = await tx.get(ref);
-      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
-      const cur = d.data()!;
-      if (cur.cancelled === true) return { ok: false as const, error: '취소된 줄입니다' };
+    return this.mutateRow(code, (cur) => {
+      if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
       const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
-      if (!changed.length) return { ok: true as const, changed: 0 };
-      if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) return { ok: false as const, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
-      if (cur.paid === true && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false as const, error: '지급이 끝난 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
-      const now = Date.now();
-      tx.update(ref, { ...Object.fromEntries(changed), updatedAt: now, stateAt: new Date(now).toISOString() });
-      const ev: Record<string, unknown> = {};
-      for (const [k, v] of changed) ev[audId()] = { at: now, by: BY, field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') };
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
-      return { ok: true as const, changed: changed.length };
+      if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
+      if (cur.paid === true && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false, error: '지급이 끝난 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
+      return {
+        ok: true,
+        patch: Object.fromEntries(changed),
+        events: changed.map(([k, v]) => ({ field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') })),
+      };
     });
   }
 
@@ -352,24 +358,7 @@ export class Erp5SettlementRepository {
 
   /** 한 줄의 다음 걸음 — 확인 · 정정 · 계산서 · 수금 · 지급 · 보류 · 청구월 (domain/settlement/lifecycle.ts) */
   async setLifecycle(code: string, change: LifeChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    mustWrite();
-    const db = erp5();
-    const ref = db.collection(ROWS).doc(code);
-    return db.runTransaction(async (tx) => {
-      const d = await tx.get(ref);
-      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
-      const cur = d.data()!;
-      const { row } = toSettlementRow(cur, d.id);
-      const r = lifePatch(row, change);
-      if (!r.ok) return r;
-      if (!r.events.length) return { ok: true as const, changed: 0 };
-      const now = Date.now();
-      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
-      const ev: Record<string, unknown> = {};
-      for (const e of r.events) ev[audId()] = { at: now, by: BY, ...e };
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
-      return { ok: true as const, changed: r.events.length };
-    });
+    return this.mutateRow(code, (_cur, row) => lifePatch(row, change));
   }
 
   /**
@@ -399,23 +388,7 @@ export class Erp5SettlementRepository {
 
   /** 접수 뒤 수수료 고치기 (domain/settlement/adjust.ts feeFixPatch) */
   async setFee(code: string, claim: number | null, pay: number | null, reason: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    mustWrite();
-    const db = erp5();
-    const ref = db.collection(ROWS).doc(code);
-    return db.runTransaction(async (tx) => {
-      const d = await tx.get(ref);
-      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
-      const cur = d.data()!;
-      const r = feeFixPatch(cur, claim, pay, reason);
-      if (!r.ok) return r;
-      if (!r.events.length) return { ok: true as const, changed: 0 };
-      const now = Date.now();
-      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
-      const ev: Record<string, unknown> = {};
-      for (const e of r.events) ev[audId()] = { at: now, by: BY, ...e };
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
-      return { ok: true as const, changed: r.events.length };
-    });
+    return this.mutateRow(code, (cur) => feeFixPatch(cur, claim, pay, reason));
   }
 
   /** 한 줄의 이력 — 최신이 앞. */

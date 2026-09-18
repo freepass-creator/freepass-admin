@@ -1,4 +1,5 @@
 import { erp5 } from './firestore';
+import { strOf as S, numOrNull as N } from './atom.js';
 
 /**
  * **전자계약 — ERP5 `contract` 읽기.**
@@ -29,8 +30,6 @@ export interface ContractSummary {
   signedPdfUrl: string;
 }
 
-const S = (v: unknown) => String(v ?? '').trim();
-const N = (v: unknown) => { const n = Number(String(v ?? '').replace(/[,\s]/g, '')); return S(v) && Number.isFinite(n) ? n : null; };
 const T = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 
 export class Erp5ContractRepository {

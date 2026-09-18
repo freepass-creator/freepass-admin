@@ -12,6 +12,15 @@ import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 
 /**
+ * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
+ *   그대로 둔다(액션마다 돌려주는 꼴이 달라 — FormState · FeePreview … 한 틀로 못 묶는다).
+ *   대신 «쓰기가 실패했을 때 무슨 말을 하나» 는 여기 한 곳에서 정한다 — 8곳이 똑같은 삼항연산자를 복사해 갖고 있었다.
+ */
+function writeError(fallback: string, e: unknown): string {
+  return e instanceof WriteDisabledError ? (e as Error).message : `${fallback} — ${(e as Error).message}`;
+}
+
+/**
  * 화면 → 원장. ★여기는 «받아서 넘기기» 만 한다. 규칙은 domain/settlement/intake.ts 가 쥔다.
  */
 export type FormState = { errors: string[] };
@@ -48,7 +57,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   let res: { code: string; created: boolean };
   try { res = await settlements.createIntake(input); }
   catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
   /*
@@ -77,7 +86,7 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
     const r = await settlements.setProgress(code, change);
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath(`/intake/${code}`);
   revalidatePath('/intake');
@@ -107,7 +116,7 @@ export async function moneyAction(_: FormState, f: FormData): Promise<FormState>
     const r = await settlements.setMoney(code, patch);
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
   revalidatePath('/settlement');
@@ -129,7 +138,7 @@ export async function issueInvoiceAction(_: FormState, f: FormData): Promise<For
     revalidatePath('/intake');
     return { errors: [], invoiceNo: r.invoice.invoiceNo };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `발행하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('발행하지 못했습니다', e)] };
   }
 }
 
@@ -162,7 +171,7 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
     const r = await settlements.setLifecycle(S(f, 'code'), change);
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/settlement');
   revalidatePath('/intake');
@@ -197,7 +206,7 @@ export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
     const r = await settlements.setFee(S(f, 'code'), S(f, 'feeClaim') ? N(f, 'feeClaim') : null, S(f, 'feePay') ? N(f, 'feePay') : null, S(f, 'feeReason'));
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
   revalidatePath('/settlement');
@@ -216,7 +225,7 @@ export async function clawbackAction(_: FormState, f: FormData): Promise<FormSta
     const r = await settlements.createClawback(S(f, 'code'), { at: S(f, 'at'), supplierAmt: n('supplierAmt'), agentAmt: n('agentAmt'), reason: S(f, 'reason') });
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/settlement');
   revalidatePath('/intake');
@@ -239,7 +248,7 @@ export async function createClaimLinkAction(_: FormState, f: FormData): Promise<
     revalidatePath('/settlement');
     return { errors: [], url: `${base}/c/${r.token}`, ...(r.warn ? { warn: r.warn } : {}) };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `만들지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('만들지 못했습니다', e)] };
   }
 }
 
@@ -251,7 +260,7 @@ export async function revokeClaimLinkAction(_: FormState, f: FormData): Promise<
     const r = await settlements.revokeClaimLink(S(f, 'month'), axis, S(f, 'party'));
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
-    return { errors: [e instanceof WriteDisabledError ? e.message : `거두지 못했습니다 — ${(e as Error).message}`] };
+    return { errors: [writeError('거두지 못했습니다', e)] };
   }
   revalidatePath('/settlement');
   return { errors: [] };

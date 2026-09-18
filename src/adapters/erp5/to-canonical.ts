@@ -16,17 +16,10 @@ import { creditOf, perksOf, productKindOf } from './perks';
 import { extrasOf } from './extras';
 import { matchToMaster, type MasterIndex } from '../../domain/product/master-match';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
+import { strOrUndef as S, numOrUndef as N } from './atom.js';
 
 export type Erp5Doc = Record<string, unknown>;
 
-const S = (v: unknown) => { const s = String(v ?? '').trim(); return s || undefined; };
-const N = (v: unknown) => {
-  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
-  const s = String(v ?? '').replace(/[,\s]/g, '');
-  if (!s) return undefined;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : undefined;
-};
 
 /** 왜 한 줄을 못 실었나. ★버린 까닭을 반드시 남긴다 */
 export type SkipReason =

@@ -13,7 +13,7 @@
  *   그건 사진이 아니라 사진이 있는 «곳» 이다. 사진으로 내보내지 않고 `photoLink` 로 따로 든다.
  * ★없으면 비운다. 지어내지 않는다 — 회색 칸은 화면이 「사진 준비 중」 으로 말한다.
  */
-const S = (v: unknown) => String(v ?? '').trim();
+import { strOf as S } from './atom.js';
 const IMAGE_FILE_RE = /\.(jpe?g|png|webp|gif|avif|bmp)(\?|$|&)/i;
 const DRIVE_THUMB_RE = /^https:\/\/drive\.google\.com\/thumbnail\?/i;
 

@@ -680,3 +680,13 @@ body { background: var(--바닥); }
 /** 계약접수(한 칸 폭)는 같은 줄을 좌우로 넘겨 본다 — 대표 「계약접수는 좌우로 스크롤해서 볼 수 있으면 되잖아」 */
 .fn-main .workspace[data-mode="intake"] .quick-filters { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; }
 .fn-main .workspace[data-mode="intake"] .quick-filters a { flex: none; }
+
+/* 상세정보 — 옵션 원문 · 원본 링크 · 정책 추정 표시 */
+.dz-para { margin: 0; padding: 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); line-height: 1.6; color: var(--글); }
+.dz-links { display: flex; gap: 12px; margin: 8px 0 0; font-size: var(--글메인); }
+.dz-links a { color: var(--ci남색); font-weight: 600; }
+/** 「정책 추정」「정책 없음」 — 혜택 칩과 같은 자리지만 남색이 아니라 회색(믿을 만한 것만 남색) */
+.chips .dz-chip-note { background: var(--박스) !important; color: #6b7580 !important; }
+/* 판 머리 오른쪽 — 행동 단추와 건수가 나란히(접수 판). 상품 판은 건수만. 건수 자리가 두 판에서 같다(맨 오른쪽) */
+.dz-head-right { display: flex; align-items: center; gap: 8px; }
+.fn-main .workspace .work-panel .list { display: flex; flex-direction: column; gap: 8px; }

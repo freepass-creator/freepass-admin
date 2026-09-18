@@ -23,12 +23,14 @@ type 요금 = {
 const 원 = (n?: number) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 주행 = (n?: number) => (n ? `연 ${n.toLocaleString('ko-KR')}km` : '—');
 
-export function OfferPicker({ productId, offers, initial, supplier, match, matchNote, perks }: {
+export function OfferPicker({ productId, offers, initial, supplier, match, matchNote, perks, perksNote }: {
   productId: string; offers: 요금[]; initial?: string; supplier: string; match: string;
   /** 트림까지 확정이 아니면 «왜 거기서 멈췄나» — 기능 쪽 matchNote. 있으면 칸 밑에 작게 */
   matchNote?: string;
   /** 혜택조건 — 도메인이 정한 차례 그대로(심사가 맨 앞). 목업의 조건 칩 자리에 선다 */
   perks?: string[];
+  /** 정책이 추정·없음이면 혜택 칩 끝에 붙는 한 마디(「정책 추정」 · 「정책 없음」) — 혜택을 믿을지 말지 알려 준다 */
+  perksNote?: string;
 }) {
   /** 읽는 차례 — 개월 짧은 것부터, 같은 개월이면 주행 적은 것부터, 그래도 같으면 싼 것부터. */
   const 줄 = useMemo(() => [...offers].sort((a, b) =>
@@ -63,7 +65,12 @@ export function OfferPicker({ productId, offers, initial, supplier, match, match
               <p>보증금 {원(o.deposit)} · {주행(o.annualMileageKm)}{o.prepayment ? ` · 선납 ${원(o.prepayment)}` : ''}</p>
             </div>
           )}
-          {perks && perks.length > 0 && <div className="chips">{perks.map((x) => <span key={x}>{x}</span>)}</div>}
+          {((perks && perks.length > 0) || perksNote) && (
+            <div className="chips">
+              {(perks ?? []).map((x) => <span key={x}>{x}</span>)}
+              {perksNote && <span className="dz-chip-note">{perksNote}</span>}
+            </div>
+          )}
           {o && (
             <Link className="primary"
               href={`/intake/new?product=${encodeURIComponent(productId)}&offer=${encodeURIComponent(o.id)}`}>

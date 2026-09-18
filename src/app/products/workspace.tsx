@@ -67,6 +67,16 @@ const 사진 = (p: { photoUrl?: string }): string | undefined =>
  *     차례가 뜻이다: 심사 → 분납가능 → 무보증 → 만N세 → 경력무관 → 무사고(사장님 2026-08-28 「맨 앞에 심사조건」).
  */
 
+/**
+ * 정책이 얼마나 믿을 만한가 — 심사·혜택은 정책에서 나오므로 «추정» 정책이면 혜택도 추정이다(기능 세션).
+ *   칸이 없으면 «모름» — 「없음」과 다르다.
+ */
+const 정책상태 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string =>
+  s === 'CONFIRMED' ? '확정' : s === 'INFERRED' ? '추정' : s === 'MISSING' ? '없음' : '모름';
+/** 혜택 칩 옆에 붙는 한 마디 — 확정이면 안 붙인다 */
+const 정책말 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string | undefined =>
+  s === 'INFERRED' ? '정책 추정' : s === 'MISSING' ? '정책 없음' : undefined;
+
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
@@ -128,9 +138,36 @@ export async function ProductWorkspace({ q, mode, base }: {
   if (mode === 'intake') {
     try { irows = (await settlements.list()).map((x) => x.row); } catch (e) { intakeErr = (e as Error).message; }
   }
-  const open = irows.filter(isOpenIntake).sort((x, y) => String(y.receivedAt).localeCompare(String(x.receivedAt)));
-  const delivered = irows.filter((r) => r.progress.delivered && !r.progress.cancelled).length;
-  const cancelled = irows.filter((r) => r.progress.cancelled).length;
+  /**
+   * ★★접수 목록 판 = 상품 목록 판과 «같은 규격» — 대표 2026-09-18
+   *   「접수목록도 동일하게 목록 패널은 규격 동일한 거야. 그게 상품이냐 접수냐의 차이인 거고,
+   *    필터도 동일하게 있어야 하고, 검색창도 마찬가지고, 몇 건인지도 마찬가지고」
+   *   판 머리(이름 + 건수) → 검색창(안에 세부검색) → 퀵 단추 → 목록 한 줄. 상품 판과 차례·모양이 같다.
+   *   주소 칸은 i 로 시작한다(iq · iv · im · isup · ich) — 상품 쪽 거름과 안 섞이게.
+   */
+  const iq = sp(q.iq).trim().toLowerCase();
+  const iv = sp(q.iv) || 'open';
+  const im = sp(q.im);
+  const isup = sp(q.isup);
+  const ich = sp(q.ich);
+  const 진행 = (r: SettlementRow) =>
+    iv === 'open' ? isOpenIntake(r)
+      : iv === 'delivered' ? r.progress.delivered && !r.progress.cancelled
+        : iv === 'cancelled' ? r.progress.cancelled : true;
+  const ishown = irows
+    .filter(진행)
+    .filter((r) => !im || String(r.receivedAt ?? '').startsWith(im))
+    .filter((r) => !isup || r.supplier === isup)
+    .filter((r) => !ich || r.channel === ich)
+    .filter((r) => !iq || [r.plate, r.customer, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(iq))
+    .sort((x, y) => String(y.receivedAt).localeCompare(String(x.receivedAt)));
+  const imonths = [...new Set(irows.map((r) => String(r.receivedAt ?? '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  const isups = vocab(irows.map((r) => r.supplier));
+  const ichs = vocab(irows.map((r) => r.channel));
+  /** 한 폼이 다른 판의 거름을 지우지 않게 — 제 칸이 아닌 주소 칸은 숨은 칸으로 들고 간다 */
+  const 숨김 = (own: string[]) => Object.entries(q)
+    .filter(([k, v]) => !own.includes(k) && k !== 'page' && sp(v))
+    .map(([k, v]) => <input key={k} type="hidden" name={k} value={sp(v)} />);
 
   const car = sel?.product;
   return (
@@ -148,15 +185,16 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
             */}
           <form className="dz-find" action={base}>
+            {숨김(['q', 'status', 'kind', 'perk', 'supplier', 'term', 'max', 'id', 'offer'])}
             <div className="searchbox dz-searchbox">
               <span aria-hidden>⌕</span>
               <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
-              {status && <input type="hidden" name="status" value={status} />}
-              {kind && <input type="hidden" name="kind" value={kind} />}
-              {perk && <input type="hidden" name="perk" value={perk} />}
-              <details className="dz-find-more" open={!!(supplier || term || max)}>
-                <summary>세부검색{supplier || term || max ? ' ●' : ''}</summary>
+              <details className="dz-find-more" open={false}>
+                <summary>세부검색{supplier || term || max || kind || (status && status !== '즉시출고') || (perk && !['무심사', '만21세', '경력무관', '무보증'].includes(perk)) ? ' ●' : ''}</summary>
                 <div className="dz-find-panel">
+                  <label>출고상태<select name="status" defaultValue={status}><option value="">전체</option>{statuses.map((x) => <option key={x}>{x}</option>)}</select></label>
+                  <label>상품구분<select name="kind" defaultValue={kind}><option value="">전체</option>{kinds.map((x) => <option key={x}>{x}</option>)}</select></label>
+                  <label>혜택<select name="perk" defaultValue={perk}><option value="">전체</option>{perkList.map((x) => <option key={x}>{x}</option>)}</select></label>
                   <label>공급사<select name="supplier" defaultValue={supplier}><option value="">전체</option>{suppliers.map((x) => <option key={x}>{x}</option>)}</select></label>
                   <label>기간<select name="term" defaultValue={term || ''}><option value="">전체</option>{terms.map((t) => <option key={t} value={t}>{t}개월</option>)}</select></label>
                   <label>월 대여료 이하<input name="max" defaultValue={sp(q.max)} placeholder="800000" inputMode="numeric" /></label>
@@ -166,26 +204,20 @@ export async function ProductWorkspace({ q, mode, base }: {
             </div>
           </form>
           {/**
-            * ★퀵 단추 — 대표 2026-09-18 「퀵버튼도 동일하게 있으면 되는데, 그거를 계약접수는 좌우로 스크롤해서 볼 수 있으면 되잖아」
-            *   두 화면 «같은 단추 줄»: 전체 · 출고상태 · 상품구분 · 혜택.
-            *   상품찾기(두 칸 폭)는 줄을 넘겨 다 보이고, 계약접수(한 칸 폭)는 같은 줄을 좌우로 넘겨 본다(CSS).
-            *   단추 글자는 목록에 뜨는 글자 그대로(데이터에서 뽑는다 — 지어낸 단추가 없다). 누르면 켜지고 다시 누르면 꺼진다.
+            * ★퀵 단추는 «여섯»만 — 대표 2026-09-18 「퀵필터 그렇게까지 필요없다」
+            *   ⚠ 출고상태·상품구분·혜택을 다 세웠더니 19개였다. 남긴 것은 대표가 짚은 것 —
+            *     「지금 나갈 차」(즉시출고)와 「혜택조건(무심사, 21세, 경력무관)」 + 무보증.
+            *   나머지(출고상태 전부 · 상품구분 · 다른 혜택)는 버리지 않고 «세부검색» 으로 옮겼다.
+            *   데이터에 없는 단추는 안 세운다(지어낸 단추가 없다). 두 화면 같은 줄이다.
             */}
           <div className="quick-filters">
             <Link className={!status && !kind && !perk ? 'active' : ''} href={keep({ status: '', kind: '', perk: '', page: '' })}>전체</Link>
-            {statuses.map((x) => (
-              <Link key={x} className={status === x ? 'active' : ''} href={keep({ status: status === x ? '' : x, page: '' })}>{x}</Link>
+            {statuses.includes('즉시출고') && (
+              <Link className={status === '즉시출고' ? 'active' : ''} href={keep({ status: status === '즉시출고' ? '' : '즉시출고', page: '' })}>즉시출고</Link>
+            )}
+            {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
+              <Link key={x} className={perk === x ? 'active' : ''} href={keep({ perk: perk === x ? '' : x, page: '' })}>{x}</Link>
             ))}
-            <>
-              <span className="dz-quick-gap" aria-hidden />
-              {kinds.map((x) => (
-                <Link key={x} className={kind === x ? 'active' : ''} href={keep({ kind: kind === x ? '' : x, page: '' })}>{x}</Link>
-              ))}
-              <span className="dz-quick-gap" aria-hidden />
-              {perkList.map((x) => (
-                <Link key={x} className={perk === x ? 'active' : ''} href={keep({ perk: perk === x ? '' : x, page: '' })}>{x}</Link>
-              ))}
-            </>
           </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (
@@ -226,24 +258,27 @@ export async function ProductWorkspace({ q, mode, base }: {
                   </div>
                   <div className="vehicle-title">
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
-                    <span className="status-dot">{txt(car.status)}</span>
+                    <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
                   </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     supplier={car.supplierName ?? car.supplierId} match={매칭(car.vehicle.matchLevel)}
                     matchNote={매칭끝(car.vehicle.matchLevel) ? undefined : car.vehicle.matchNote}
-                    perks={car.perks} />
+                    perks={car.perks} perksNote={정책말(car.policyState)} />
                 </>}
                 info={<>
                   <div className="vehicle-title">
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
-                    <span className="status-dot">{txt(car.status)}</span>
+                    <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
                   </div>
                   <h3 className="dz-sub">차량</h3>
                   <dl className="summary-grid">
                     {([
                       ['공급사', car.supplierName ?? car.supplierId], ['출고상태', txt(car.status)],
                       ['상품구분', txt(car.productKind)], ['심사', txt(car.credit)],
+                      ['외장색', txt(car.extColor)], ['내장색', txt(car.intColor)],
+                      ['차급', txt(car.vehicleClass)], ['차량가', car.consumerPrice ? `${won(car.consumerPrice)}원` : '—'],
+                      ['정책', 정책상태(car.policyState)], ['입고일', txt(car.firstSeenAt)],
                       ['연식', car.specs.modelYear ? String(car.specs.modelYear) : '—'], ['주행거리', num(car.specs.mileageKm, 'km')],
                       ['연료', txt(car.specs.fuel)], ['배기량', num(car.specs.displacementCc, 'cc')],
                       ['인승', num(car.specs.seats)], ['구동', txt(car.specs.drivetrain)],
@@ -251,6 +286,14 @@ export async function ProductWorkspace({ q, mode, base }: {
                       ['차종 매칭', 매칭(car.vehicle.matchLevel) + (!매칭끝(car.vehicle.matchLevel) && car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : '')], ['상품코드', car.id],
                     ] as [string, string][]).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
                   </dl>
+                  <h3 className="dz-sub">옵션{car.optionsUnverified ? ' · 미확인' : ''}</h3>
+                  <p className="dz-para">{txt(car.options)}</p>
+                  {(car.sourceUrl || car.ticaLink) && (
+                    <p className="dz-links">
+                      {car.sourceUrl && <a href={car.sourceUrl} target="_blank" rel="noreferrer">공급사 원본 보기</a>}
+                      {car.ticaLink && <a href={car.ticaLink} target="_blank" rel="noreferrer">롯데 T카 보기</a>}
+                    </p>
+                  )}
                   <h3 className="dz-sub">정책 {car.productPolicies.length}</h3>
                   {car.productPolicies.length === 0
                     ? <p className="dz-empty">붙은 정책이 없습니다 — 「없다」가 아니라 ERP5 에 정책 코드가 안 걸렸거나 못 찾은 것입니다.</p>
@@ -263,28 +306,51 @@ export async function ProductWorkspace({ q, mode, base }: {
           ) : <p className="dz-empty">왼쪽에서 차를 고르면 여기 뜹니다.</p>}
         </section>
 
-        {/* ── 접수 목록 — 지금 할 일 (계약접수에서만) ───────────────────── */}
+        {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
         {mode === 'intake' && <section className="panel work-panel">
           <div className="panel-head">
             <div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div>
-            <Link className="new-app" href="/intake/new">+ 신규접수</Link>
+            <div className="dz-head-right">
+              <Link className="new-app" href="/intake/new">+ 신규접수</Link>
+              <span className="count">{ishown.length.toLocaleString()}건</span>
+            </div>
           </div>
-          <div className="work-tabs">
-            <Link className="active" href="/intake/list?view=open">진행중 {open.length}</Link>
-            <Link href="/intake/list?view=delivered">인도완료 {delivered}</Link>
-            <Link href="/intake/list?view=cancelled">취소 {cancelled}</Link>
+          <form className="dz-find" action={base}>
+            {숨김(['iq', 'iv', 'im', 'isup', 'ich'])}
+            <div className="searchbox dz-searchbox">
+              <span aria-hidden>⌕</span>
+              <input name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델 · 공급사 · 채널" />
+              <details className="dz-find-more">
+                <summary>세부검색{im || isup || ich ? ' ●' : ''}</summary>
+                <div className="dz-find-panel">
+                  <label>진행<select name="iv" defaultValue={iv}>
+                    <option value="open">진행중</option><option value="delivered">인도완료</option>
+                    <option value="cancelled">취소</option><option value="all">전체</option>
+                  </select></label>
+                  <label>접수월<select name="im" defaultValue={im}><option value="">전체</option>{imonths.map((m) => <option key={m}>{m}</option>)}</select></label>
+                  <label>공급사<select name="isup" defaultValue={isup}><option value="">전체</option>{isups.map((x) => <option key={x}>{x}</option>)}</select></label>
+                  <label>영업채널<select name="ich" defaultValue={ich}><option value="">전체</option>{ichs.map((x) => <option key={x}>{x}</option>)}</select></label>
+                  <div className="dz-find-go"><Link href={keep({ iq: '', iv: '', im: '', isup: '', ich: '' })} className="dz-clear">지우기</Link><button type="submit">찾기</button></div>
+                </div>
+              </details>
+            </div>
+          </form>
+          <div className="quick-filters">
+            {([['all', '전체'], ['open', '진행중'], ['delivered', '인도완료'], ['cancelled', '취소']] as const).map(([v, label]) => (
+              <Link key={v} className={iv === v ? 'active' : ''} href={keep({ iv: v === 'open' ? '' : v })}>{label}</Link>
+            ))}
           </div>
           {intakeErr ? <p className="dz-empty">ERP5 접수를 못 읽었습니다 — {intakeErr}</p> : (
-            <div className="application-list">
-              {open.slice(0, 30).map((r, i) => (
+            <div className="list">
+              {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
-                  href={`/intake/list?view=open&q=${encodeURIComponent(r.plate ?? '')}`}
-                  title={txt(r.customer)} badge={blockOf(r) ?? '끝'} tone={blockOf(r) ? 'act' : 'plain'}
+                  href={`/intake/${encodeURIComponent(r.id)}`}
+                  title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
+                  tone={!r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}
-              {open.length === 0 && <p className="dz-empty">진행 중인 접수가 없습니다.</p>}
-              {open.length > 30 && <Link className="dz-more" href="/intake/list?view=open">진행중 {open.length}건 전부 보기 →</Link>}
+              {ishown.length === 0 && <p className="dz-empty">조건에 맞는 접수가 없습니다.</p>}
             </div>
           )}
         </section>}

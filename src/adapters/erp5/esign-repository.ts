@@ -108,7 +108,15 @@ export class Erp5EsignRepository implements EsignRepository {
 
   async appendEvent(contractId:string,sessionId:string,type:string,by:string,detail:Record<string,unknown>={}){
     mustWrite();
-    await erp5().collection(EVENTS).add(clean({contractId,sessionId,type,by,at:Date.now(),...detail}));
+    await erp5().collection(EVENTS).add(clean({contractId,sessionId,type,by,at:Date.now(),detail}));
+  }
+
+  async listEvents(contractId:string){
+    const q=await erp5().collection(EVENTS).where('contractId','==',contractId).get();
+    return q.docs.map(d=>{
+      const x=d.data();
+      return {type:String(x.type??''),at:Number(x.at)||0,by:String(x.by??''),detail:(x.detail&&typeof x.detail==='object'&&!Array.isArray(x.detail)?x.detail:{}) as Record<string,unknown>};
+    }).sort((a,b)=>b.at-a.at);
   }
 }
 

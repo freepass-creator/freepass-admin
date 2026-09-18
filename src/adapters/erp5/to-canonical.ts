@@ -13,6 +13,7 @@ import type {
 } from '../../domain/product/types';
 import { photosOf } from './photos';
 import { creditOf, perksOf, productKindOf } from './perks';
+import { extrasOf } from './extras';
 import { matchToMaster, type MasterIndex } from '../../domain/product/master-match';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
 
@@ -235,6 +236,7 @@ export function toCanonicalProduct(
           ...(kind ? { productKind: kind } : {}),
           credit: creditOf(d, policy ?? {}),
           perks: perksOf(d, policy, deposits),
+          ...extrasOf(d, !!policy),
         };
       })(),
       supplierProductKey: key,

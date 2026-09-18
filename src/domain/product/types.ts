@@ -72,6 +72,29 @@ export interface CanonicalProduct {
    *   갈래로 접는 것은 «보이는 쪽» 이 할 일이다(대표 2026-09-18 「디자인과 기능은 분리」).
    */
   status?: string;
+  /* ── 상품찾기가 보일 것 (adapters/erp5/extras.ts) — 없으면 칸이 없다. 지어내지 않는다 ── */
+  extColor?: string;
+  intColor?: string;
+  /** 옵션 원문 */
+  options?: string;
+  /** 옵션이 공급사 원문으로 «확인 안 된» 것 — 화면은 옵션 옆에 「미확인」 을 보여야 한다 */
+  optionsUnverified?: boolean;
+  /** 차급 — 경형~대형 (+세단·SUV·MPV …). ★원자에 딴 말(「신차렌트」·「레이」)이 든 것은 걸러 비운다 */
+  vehicleClass?: string;
+  /** 차량가(신차가) · 원 */
+  consumerPrice?: number;
+  /** 배차상태의 까닭 — 공급사협의 · 공급사불가 · 계약선점 … */
+  statusReason?: string;
+  /** 공급사 원본 상세 링크 · 롯데 T카 링크(픽업구독) */
+  sourceUrl?: string;
+  ticaLink?: string;
+  /** ERP 에 처음 들어온 날 (YYYY-MM-DD) */
+  firstSeenAt?: string;
+  /**
+   * 정책 확정도 — CONFIRMED(운영자 연결·정규화) · INFERRED(추정) · MISSING(없음) · 칸 없음 = 모른다.
+   * ★심사·혜택(perks)은 이 정책에서 나온다. INFERRED 면 혜택도 추정이다.
+   */
+  policyState?: 'CONFIRMED' | 'INFERRED' | 'MISSING';
   /**
    * 상품구분 — 신차렌트 · 중고렌트 · 신차구독 · 중고구독 · 오플구독 · 픽업구독 · 오공구독 (erp4 캐논 7).
    * 재렌트→중고렌트처럼 옛 말은 캐논으로 접는다. 캐논 밖 글자는 원문 그대로. 없으면 칸이 없다.

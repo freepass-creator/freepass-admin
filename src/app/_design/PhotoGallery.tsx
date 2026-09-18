@@ -25,7 +25,8 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
     const s = strip.current;
     const el = s?.children[i] as HTMLElement | undefined;
     if (!s || !el) return;
-    s.scrollTo({ top: Math.max(0, el.offsetTop - (s.clientHeight - el.clientHeight) / 2), behavior: 'smooth' });
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    s.scrollTo({ top: Math.max(0, el.offsetTop - (s.clientHeight - el.clientHeight) / 2), behavior: reduce ? 'auto' : 'smooth' });
   }, [i]);
   /* 크게 보기 — ← → 넘기기 · Esc 닫기 */
   useEffect(() => {
@@ -82,7 +83,7 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
         </div>
       )}
       {big && (
-        <div className="dz-gal-big" role="dialog" aria-label="사진 크게 보기" onClick={() => setBig(false)}>
+        <div className="dz-gal-big" role="dialog" aria-modal="true" aria-label="사진 크게 보기" onClick={() => setBig(false)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={photos[i]} alt={alt} onClick={(e) => e.stopPropagation()} />
           {넘김}

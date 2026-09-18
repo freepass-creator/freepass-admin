@@ -76,6 +76,8 @@ const cssBaseline = [
 for (const [re, label] of cssBaseline) {
   if (!re.test(css)) errors.push(`src/app/globals.css: baseline mismatch or missing: ${label}`);
 }
+if (!/:focus-visible/.test(css)) errors.push('src/app/globals.css: missing shared focus-visible behavior');
+if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('src/app/globals.css: missing reduced-motion behavior');
 
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
   typography?: { title?: { px?: number }; main?: { px?: number }; support?: { px?: number } };

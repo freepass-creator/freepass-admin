@@ -1,12 +1,16 @@
 /**
- * **어드민 로그인 — freepasserp5 계정 · 관리자만.**
+ * **어드민 로그인 — erp4 계정(freepasserp3 Auth) · 관리자만.**
  *
  * ★대표 2026-09-18 「어드민 로그인 붙이는거는 우리 기존 로그인 화면 있지??」
- *   기존(erp4 app/login)과 «같은 방식» — Firebase 이메일·비밀번호. 다만 erp4 는 freepasserp3 에 붙어 있고,
- *   정본은 freepasserp5 다(계정 185 · 실측 2026-09-18). 그래서 freepasserp5 로 붙는다.
+ *            「이거 일단 프리패스erp4 계정을 같이 쓰자」 · 「거기서 관리자만 추려내면 되니까」
+ *   ⇒ 로그인은 «erp4 계정» 으로 받는다. 운영 erp4 는 freepasserp3 Auth 로 로그인한다(실측 2026-09-18 —
+ *     freepasserp3 계정 633 · 24시간 안 로그인 28명 / freepasserp5 계정 185 · 9월 10일 뒤 로그인 0 = 옮겨 놓은 사본).
+ *   ⇒ 관리자 판정도 erp4 기록(freepasserp3 Firestore `user`)으로 한다.
+ *   ★원장·상품 «데이터» 는 그대로 ERP5(freepasserp5)다. 로그인 문만 erp4 와 같이 쓴다.
+ *   ★RTDB 는 읽지 않는다 — 역할은 Firestore `user` 에서만.
  *
  * ── 누가 들어오나
- *   ① ERP5 `user` 문서의 role === 'admin' 이고 막히지 않은 사람 (실측: admin 4 · agent 146 · provider 16 · agent_admin 1)
+ *   ① erp4 `user` 문서의 role === 'admin' 이고 막히지 않은 사람 (실측: admin 4 · agent 146 · provider 16 · agent_admin 1)
  *   ② ADMIN_EMAILS 에 적힌 이메일 — 대표 2026-09-18 「pyh@teamjpk.com kjs@teamjpk.com 이 두명은 로그인되게 해줘야지」
  *      (pyh 는 Auth 계정은 있는데 ERP5 user 문서가 없다 — 실측). ★ERP5 user 의 role 을 바꾸지 않는다 —
  *      그건 erp4 등 다른 앱의 권한까지 바꾼다. 이 목록은 «이 어드민에만» 통한다.
@@ -26,9 +30,10 @@
  * ★비밀번호는 저장·기록하지 않는다. 오류는 «무엇이 틀렸는지» 를 가르지 않는다(계정이 있는지 새지 않게).
  * ★RTDB 없음.
  */
+import { readFileSync } from 'node:fs';
 import { getAuth } from 'firebase-admin/auth';
-import { getApps } from 'firebase-admin/app';
-import { erp5 } from '../adapters/erp5/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
+import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 
 export const AUTH_COOKIE = 'fpa_session';
 export const SESSION_MS = 5 * 24 * 3600_000;
@@ -36,10 +41,25 @@ export const SESSION_MS = 5 * 24 * 3600_000;
 export const authEnforced = () =>
   process.env.NODE_ENV === 'production' || process.env.ADMIN_AUTH?.trim() === 'on';
 
-const adminAuth = () => {
-  erp5();   // 앱을 세운다(freepasserp5 가 아니면 여기서 던진다)
-  return getAuth(getApps().find((a) => a.name === 'freepass-admin-erp5')!);
-};
+/**
+ * erp4 로그인 프로젝트 — AUTH_FIREBASE_SERVICE_ACCOUNT_JSON(배포) 또는 AUTH_SERVICE_ACCOUNT_PATH(개발).
+ * ★프로젝트가 AUTH_PROJECT_ID(기본 freepasserp3)가 아니면 던진다 — 엉뚱한 계정 창고로 조용히 붙지 않게.
+ */
+const AUTH_APP = 'freepass-admin-auth';
+let authApp: App | null = null;
+function erp4App(): App {
+  if (authApp) return authApp;
+  const hit = getApps().find((a) => a.name === AUTH_APP);
+  if (hit) return (authApp = hit);
+  const want = (process.env.AUTH_PROJECT_ID ?? 'freepasserp3').trim();
+  const raw = process.env.AUTH_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  const path = process.env.AUTH_SERVICE_ACCOUNT_PATH?.trim();
+  if (!raw && !path) throw new Error('로그인 자격증명이 없다 — AUTH_FIREBASE_SERVICE_ACCOUNT_JSON(배포) 또는 AUTH_SERVICE_ACCOUNT_PATH(개발)');
+  const sa = JSON.parse(raw || readFileSync(path!, 'utf8')) as { project_id: string; client_email: string; private_key: string };
+  if (sa.project_id !== want) throw new Error(`★로그인 프로젝트가 아니다: ${sa.project_id} (${want} 라야 한다)`);
+  return (authApp = initializeApp({ credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }), projectId: sa.project_id }, AUTH_APP));
+}
+const adminAuth = () => getAuth(erp4App());
 
 export interface AdminUser { uid: string; name: string; role: 'admin' }
 
@@ -63,7 +83,7 @@ export async function adminOf(uid: string, email?: string): Promise<AdminUser | 
       return user;
     }
   }
-  const db = erp5();
+  const db = getFirestore(erp4App());
   let doc: FirebaseFirestore.DocumentData | undefined = (await db.collection('user').where('uid', '==', uid).limit(1).get()).docs[0]?.data();
   if (!doc) { const d = await db.collection('user').doc(uid).get(); doc = d.exists ? d.data() : undefined; }
   const active = doc && doc.is_active !== false && doc._deleted !== true && !/비활성|정지|탈퇴|거절/.test(String(doc.status ?? ''));

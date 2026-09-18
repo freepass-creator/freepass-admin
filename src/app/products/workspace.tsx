@@ -60,6 +60,20 @@ const STATUS_ORDER: Record<string, number> = { 즉시출고: 0, 출고가능: 1,
 const 사진 = (p: { photoUrl?: string }): string | undefined =>
   p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
+/**
+ * 상품구분 · 혜택조건 — 기능 쪽 칸(`productKind` · `perks`, 요청함). 칸이 생기면 바로 목록 줄에 선다.
+ *   대표 「배차상태 상품구분 / 혜택조건(무심사, 21세, 경력무관) 이런 거는 한눈에 보이면 좋은데」
+ *   ★판정은 도메인 한 곳 — 화면은 받은 글자를 그대로 그린다(다시 짜면 상품찾기와 가게가 다르게 말한다).
+ */
+const 상품구분 = (p: unknown): string | undefined => {
+  const k = (p as { productKind?: unknown }).productKind;
+  return typeof k === 'string' && k.trim() ? k : undefined;
+};
+const 혜택 = (p: unknown): string[] => {
+  const v = (p as { perks?: unknown }).perks;
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
+};
+
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
@@ -160,9 +174,12 @@ export async function ProductWorkspace({ q, mode, base }: {
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
                 selected={!!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
-                title={vehicleName(p) || p.id} badge={txt(p.status)}
+                title={vehicleName(p) || p.id}
+                badges={[상품구분(p), txt(p.status)]}
+                flag={매칭끝(p.vehicle.matchLevel) ? undefined : 매칭(p.vehicle.matchLevel)}
                 meta={`${txt(p.registration?.vehicleNumber)} · ${p.specs.modelYear ?? '—'} · ${num(p.specs.mileageKm, 'km')} · ${txt(p.specs.fuel)}`}
-                value={o ? `월 ${won(o.monthlyRent)}원` : '—'} aside={o ? `${o.termMonths}개월` : undefined} />
+                value={o ? `월 ${won(o.monthlyRent)}원 · ${o.termMonths}개월` : '—'}
+                chips={혜택(p)} />
             ))}
             {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}
           </div>

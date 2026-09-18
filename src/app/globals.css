@@ -654,3 +654,13 @@ body { background: var(--바닥); }
 ::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
 /** 차종 매칭이 확정 전일 때 «왜 멈췄나» — 보조 글씨, 칸 밑에 */
 .dz-note { display: block; margin-top: 2px; font-size: var(--글보조); font-weight: 400; color: #6b7580; line-height: 1.4; }
+
+/* 목록 줄 — 뱃지 여럿 · 살필 것 표시 · 혜택 칩 (대표 「한눈에 보이면 좋은데 — 자리가 부족한가?」 → 줄은 안 늘린다) */
+.dz-row-badges { display: inline-flex; gap: 4px; flex: none; }
+.dz-flag { font-style: normal; font-weight: 700; color: var(--ci남색); margin-right: 6px; }
+.dz-chips { display: inline-flex; gap: 4px; flex: none; overflow: hidden; }
+.dz-chips i {
+  font-style: normal; display: inline-flex; align-items: center; height: 20px; line-height: 14px; padding: 0 6px;
+  border-radius: var(--r); background: var(--남색옅음); color: var(--ci남색); font-size: var(--글보조); white-space: nowrap;
+}
+.dz-row.on .dz-chips i, .dz-row.on .dz-badge.plain { background: var(--판); }

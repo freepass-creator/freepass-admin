@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { settlements, today } from '../../server/erp5';
+import { requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
 import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
@@ -24,6 +25,7 @@ const N = (f: FormData, k: string) => {
 };
 
 export async function createIntakeAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const input: IntakeInput = {
     receivedAt: S(f, 'receivedAt'), plate: S(f, 'plate'), model: S(f, 'model'),
     supplier: S(f, 'supplier'), supplierCode: S(f, 'supplierCode'),
@@ -58,6 +60,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const code = S(f, 'code');
   const kind = S(f, 'kind');
   const on = S(f, 'on') === '1';
@@ -87,6 +90,7 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
  * ★보낸 칸만 고친다 — 프로모션 칸이 없으면 프로모션을, 가감 칸이 없으면 가감을 안 건드린다.
  */
 export async function moneyAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const code = S(f, 'code');
   const patch: Record<string, unknown> = {};
   if (f.has('promoAmount')) {
@@ -115,6 +119,7 @@ export async function moneyAction(_: FormState, f: FormData): Promise<FormState>
  * ★발행하면 그 줄들의 청구월이 박히고(달이 닫힌다) 청구 축은 「청구」, 지급 축은 「통보」 로 간다.
  */
 export async function issueInvoiceAction(_: FormState, f: FormData): Promise<FormState & { invoiceNo?: string }> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const axis = S(f, 'axis') as Axis;
   if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
   try {
@@ -134,6 +139,7 @@ export async function issueInvoiceAction(_: FormState, f: FormData): Promise<For
  *   collected(amount, day) · paid(amount, day) · hold(on=1|0) · billMonth(month)
  */
 export async function lifecycleAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const kind = S(f, 'kind');
   const axis = S(f, 'axis') as Axis;
   const num = (k: string) => { const t = S(f, k).replace(/[,\s원]/g, ''); return t ? Number(t) : NaN; };
@@ -172,6 +178,7 @@ export type FeePreview =
   | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; version: string }
   | { status: 'ERROR'; why: string };
 export async function previewFeeAction(f: FormData): Promise<FeePreview> {
+  { const g = await requireAdmin(); if (g) return { status: 'ERROR', why: g }; }
   try {
     const set = await loadFeeRuleSet();
     const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
@@ -185,6 +192,7 @@ export async function previewFeeAction(f: FormData): Promise<FeePreview> {
 
 /** 접수 뒤 수수료 고치기. 폼 칸: code · feeClaim · feePay(비우면 그쪽 안 바꿈) · feeReason(필수) */
 export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   try {
     const r = await settlements.setFee(S(f, 'code'), S(f, 'feeClaim') ? N(f, 'feeClaim') : null, S(f, 'feePay') ? N(f, 'feePay') : null, S(f, 'feeReason'));
     if (!r.ok) return { errors: [r.error] };
@@ -202,6 +210,7 @@ export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
  * ★금액은 사람이 넣는다(조건이 공급사마다 다르다). 그 달 청구·지급에서 빠진다.
  */
 export async function clawbackAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const n = (k: string) => { const v = N(f, k); return v === null ? null : v; };
   try {
     const r = await settlements.createClawback(S(f, 'code'), { at: S(f, 'at'), supplierAmt: n('supplierAmt'), agentAmt: n('agentAmt'), reason: S(f, 'reason') });
@@ -220,6 +229,7 @@ export async function clawbackAction(_: FormState, f: FormData): Promise<FormSta
  * 보낼 주소 = CLAIM_LINK_BASE(배포 주소) + /c/<토큰>. 비었으면 경로만 준다.
  */
 export async function createClaimLinkAction(_: FormState, f: FormData): Promise<FormState & { url?: string; warn?: string }> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const axis = S(f, 'axis') as Axis;
   if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
   try {
@@ -235,6 +245,7 @@ export async function createClaimLinkAction(_: FormState, f: FormData): Promise<
 
 /** 청구 링크 거두기 (관리자) — 폼 칸: month · axis · party */
 export async function revokeClaimLinkAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const axis = S(f, 'axis') as Axis;
   try {
     const r = await settlements.revokeClaimLink(S(f, 'month'), axis, S(f, 'party'));

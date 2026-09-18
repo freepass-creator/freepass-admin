@@ -130,6 +130,13 @@ export function SignClient({ token }: { token: string }) {
         const maxStep = next.session.snapshot.customerType === '법인' ? 4 : 6;
         const savedStep = Number(draft.step || 0);
         if (Number.isInteger(savedStep) && savedStep > 0) setStep(Math.min(savedStep, maxStep));
+        if (next.session.status === 'rejected' && next.supplementItems?.length) {
+          const requested = new Set(next.supplementItems);
+          const target = next.session.snapshot.customerType === '법인'
+            ? (requested.has('documents') ? 3 : requested.has('signature') ? 4 : 1)
+            : (requested.has('identity') ? 2 : requested.has('selfie') ? 3 : requested.has('documents') ? 5 : requested.has('signature') ? 6 : 1);
+          setStep(target);
+        }
       }
       return next;
     } catch (e) {

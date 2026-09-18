@@ -48,6 +48,12 @@ const STATUS_ORDER: Record<string, number> = { 즉시출고: 0, 출고가능: 1,
  *   mode 'find'   — 상품찾기. 판 둘: 상품 목록(판 두 개 폭) | 상품 상세. 목록 카드는 그대로, 폭만 넓다.
  *   ★목록·상세는 «한 부품»이다 — 두 메뉴가 따로 지으면 같은 차가 두 화면에서 다르게 보인다.
  */
+/** 대표 사진 — 기능 쪽 칸 이름 `photoUrl`(요청함). 칸이 아직 없으면 undefined 라 「사진 없음」이 선다. */
+const 사진 = (p: unknown): string | undefined => {
+  const u = (p as { photoUrl?: unknown }).photoUrl;
+  return typeof u === 'string' && u.trim() ? u : undefined;
+};
+
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
@@ -142,6 +148,11 @@ export async function ProductWorkspace({ q, mode, base }: {
             {shown.map(({ product: p, lead: o }) => (
               <Link key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
                 className={`product-row${sel && p.id === sel.product.id ? ' selected' : ''}`}>
+                <div className="thumb">
+                  {사진(p)
+                    ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(p)} alt="" loading="lazy" />
+                    : <span>사진 없음</span>}
+                </div>
                 <div className="grow">
                   <div className="row-title"><strong>{vehicleName(p) || p.id}</strong><span>{txt(p.status)}</span></div>
                   <p>{txt(p.registration?.vehicleNumber)} · {p.specs.modelYear ?? '—'} · {num(p.specs.mileageKm, 'km')} · {txt(p.specs.fuel)}</p>
@@ -166,7 +177,11 @@ export async function ProductWorkspace({ q, mode, base }: {
           </div>
           {car ? (
             <>
-              <div className="hero-car"><span>사진 없음</span></div>
+              <div className="hero-car">
+                {사진(car)
+                  ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
+                  : <span>사진 없음</span>}
+              </div>
               <div className="vehicle-title">
                 <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
                 <span className="status-dot">{txt(car.status)}</span>

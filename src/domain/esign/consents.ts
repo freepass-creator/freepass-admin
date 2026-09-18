@@ -19,6 +19,15 @@ function gps(): ConsentAtom {
     items:['대여 차량 GPS·통신 단말 위치정보'], purpose:'차량 보호·사고 대응·계약 이행 확인',
     retention:'계약 기간 및 분쟁 절차 종료 시까지' };
 }
+function cms(): ConsentAtom {
+  return {
+    key:'cms_debit', label:'자동이체 출금 동의 및 계좌정보 수집·이용 동의', required:true,
+    items:['예금주 성명·관계·연락처','은행명·계좌번호','예금주 생년월일 또는 사업자등록번호'],
+    purpose:'계약서상 대여료 자동이체 등록 및 출금 관련 본인·예금주 확인',
+    retention:'계약 종료 후 관계 법령 및 금융거래 보존기간',
+    refusalNote:'자동이체 출금 동의를 거부하면 CMS 자동이체 방식으로 계약을 진행할 수 없습니다.',
+  };
+}
 function docs(required: EsignRequiredDocument[]): ConsentAtom | null {
   if (!required.length) return null;
   return { key:'supporting_documents_consent', label:'추가 제출서류 수집·이용 동의', required:true,
@@ -36,6 +45,7 @@ export function buildConsentProfile(input: {
   const payment = input.paymentMethod === 'CMS 자동이체' ? 'CMS 자동이체' : '계좌이체';
   const gpsInstalled = input.gpsInstalled === '장착' ? '장착' : '미장착';
   const atoms:ConsentAtom[]=[privacy(input.customerType)];
+  if (payment === 'CMS 자동이체') atoms.push(cms());
   if (gpsInstalled === '장착') atoms.push(gps());
   const d=docs(input.requiredDocuments); if(d) atoms.push(d);
   return {

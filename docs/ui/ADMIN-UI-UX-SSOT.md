@@ -666,3 +666,29 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 
 CSS import 순서는 **`globals.css → admin-final.css → _fn/fn.css`** 를 유지한다.
 이 순서를 바꾸는 것은 디자인 변경으로 취급한다.
+
+
+---
+
+# 22. Micro polish layer
+
+`src/app/_design/admin-micro-polish.css`는 **레이아웃/색 체계/컴포넌트 규격을 바꾸지 않는 시각 정밀화 층**이다.
+
+허용:
+- panel elevation 미세 보강
+- 선택행 left rail
+- search focus ring
+- button hover/press depth
+- ActionBar 경계감
+- numeric tabular 정렬
+
+금지:
+- 새 메뉴 구조
+- 새 카드 체계
+- 새로운 브랜드색
+- 큰 그림자/글래스모피즘
+- KPI 대시보드화
+- 기존 18/14/12 · 40/44 · radius 4 변경
+
+CSS import order:
+`globals.css → admin-final.css → _fn/fn.css → admin-micro-polish.css`

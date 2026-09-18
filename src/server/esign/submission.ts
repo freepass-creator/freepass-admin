@@ -26,9 +26,12 @@ export function validateSubmission(payload:PublicSubmissionPayload,snapshot:Esig
   if(corporate&&(!signerName||!(SIGNER_ROLES as readonly string[]).includes(signerRole))) throw new Error('법인 서명자와 관계를 확인해 주세요.');
   const emergencyRelation=S(payload.emergency_relation),emergencyName=S(payload.emergency_name),emergencyPhone=S(payload.emergency_phone).replace(/\D/g,'');
   if(!emergencyRelation||!emergencyName||emergencyPhone.length<10||emergencyPhone.length>11) throw new Error('비상연락처를 확인해 주세요.');
+  const cmsRequired=snapshot.consentProfile.cmsRequiredBeforeHandover;
+  const cms={holderName:S(payload.cms_holder_name),holderRelation:S(payload.cms_holder_relation),holderPhone:S(payload.cms_holder_phone).replace(/\D/g,''),bank:S(payload.cms_bank),accountNo:S(payload.cms_account_no).replace(/\D/g,''),holderIdentifier:S(payload.cms_holder_identifier).replace(/\D/g,'')};
+  if(cmsRequired&&(!cms.holderName||!cms.holderRelation||cms.holderPhone.length<10||cms.holderPhone.length>11||!cms.bank||cms.accountNo.length<6||cms.accountNo.length>24||!/^\d{6}(\d{4})?$/.test(cms.holderIdentifier))) throw new Error('자동이체 예금주·관계·연락처·은행·계좌번호·생년월일 또는 사업자번호를 확인해 주세요.');
   const uploaded=Array.isArray(payload.uploaded_documents)?payload.uploaded_documents.map(S):[];
   const docs=applySignerRole(snapshot.requiredDocuments,signerRole);
   const missing=docs.filter(d=>d.required&&!uploaded.includes(d.key));
   if(missing.length) throw new Error(`필수서류가 없습니다: ${missing.map(d=>d.label).join(' · ')}`);
-  return {name,phone,signature,consents,address,birth,license,signerName,signerRole,emergencyRelation,emergencyName,emergencyPhone,uploadedDocuments:uploaded};
+  return {name,phone,signature,consents,address,birth,license,signerName,signerRole,cms:cmsRequired?cms:null,emergencyRelation,emergencyName,emergencyPhone,uploadedDocuments:uploaded};
 }

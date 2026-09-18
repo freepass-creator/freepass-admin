@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { deflateSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
+import { EsignService } from './service';
+import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
+import type { EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+
+class Repo implements EsignRepository {
+  contract = new Map<string, Record<string, unknown>>();
+  sessions = new Map<string, EsignSession>();
+  priv = new Map<string, Record<string, unknown>>();
+  async getContract(id:string){return this.contract.get(id)??null;}
+  async createContract(id:string,data:Record<string,unknown>){if(this.contract.has(id))throw new Error('dup');this.contract.set(id,{id,...data});}
+  async updateContract(id:string,patch:Record<string,unknown>){this.contract.set(id,{...(this.contract.get(id)||{}),...patch});}
+  async getCurrentSession(contractId:string){return [...this.sessions.values()].filter(x=>x.contractId===contractId).sort((a,b)=>b.issuedAt-a.issuedAt)[0]??null;}
+  async getSession(id:string){return this.sessions.get(id)??null;}
+  async findSessionByTokenHash(hash:string){return [...this.sessions.values()].find(x=>x.tokenHash===hash)??null;}
+  async createSession(session:EsignSession,publicUrl:string){for(const s of this.sessions.values())if(s.contractId===session.contractId&&!['signed','revoked'].includes(s.status))s.status='revoked';this.sessions.set(session.id,structuredClone(session));this.priv.set(session.id,{sessionId:session.id,contractId:session.contractId,publicUrl});}
+  async updateSession(id:string,patch:Partial<EsignSession>){Object.assign(this.sessions.get(id)!,structuredClone(patch));}
+  async getPrivate(id:string){return (this.priv.get(id)??null) as (EsignPrivateSubmission&Record<string,unknown>)|null;}
+  async putPrivate(id:string,data:Record<string,unknown>){this.priv.set(id,{...(this.priv.get(id)||{}),...structuredClone(data)});}
+  async appendEvent(){/* covered by state assertions */}
+}
+
+class Assets implements EsignAssetStore {
+  m=new Map<string,{bytes:Uint8Array;contentType:string;sha256:string}>();
+  async put(path:string,bytes:Uint8Array,contentType:string){const sha256=createHash('sha256').update(bytes).digest('hex');this.m.set(path,{bytes:new Uint8Array(bytes),contentType,sha256});return{path,sha256,size:bytes.length};}
+  async get(path:string,expected?:string){const x=this.m.get(path);if(!x||expected&&x.sha256!==expected)return null;return{bytes:new Uint8Array(x.bytes),contentType:x.contentType};}
+}
+
+function chunk(type:string,data:Buffer){const len=Buffer.alloc(4);len.writeUInt32BE(data.length);return Buffer.concat([len,Buffer.from(type),data,Buffer.alloc(4)]);}
+function signature(){
+  const w=600,h=180,row=w*4+1,raw=Buffer.alloc(row*h);
+  for(let y=0;y<h;y++){raw[y*row]=0;for(let x=0;x<w;x++){const i=y*row+1+x*4;raw[i]=255;raw[i+1]=255;raw[i+2]=255;raw[i+3]=0;}}
+  for(let y=80;y<96;y++)for(let x=100;x<500;x++){const i=y*row+1+x*4;raw[i]=20;raw[i+1]=20;raw[i+2]=20;raw[i+3]=255;}
+  const ih=Buffer.alloc(13);ih.writeUInt32BE(w,0);ih.writeUInt32BE(h,4);ih[8]=8;ih[9]=6;
+  const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ih),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]);
+  return 'data:image/png;base64,'+png.toString('base64');
+}
+
+test('full esign flow: issue -> open -> upload -> submit -> approve', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{
+    contract_code:'FP-1',contract_status:'계약대기',customer_name:'홍길동',customer_phone:'01012345678',customer_type:'개인',
+    vehicle_name_snapshot:'GV70',car_number_snapshot:'12가3456',provider_company_code:'SONO',provider_company_name_snapshot:'손오공',
+    rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-18',
+    esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
+  });
+  const issued=await svc.issue('c1','tester');
+  assert.equal(repo.contract.get('c1')?.sign_status,'발행');
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  assert.equal(repo.contract.get('c1')?.sign_status,'열람');
+  await svc.progress(token,'summary');
+  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([1,2,3]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([4,5,6]));
+  await svc.upload(token,'support:resident_register','rr.pdf','application/pdf',new Uint8Array([7,8,9]));
+  const required=issued.session.snapshot.consentProfile.requiredKeys;
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    signature:signature(),consents:required,summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  assert.equal(repo.contract.get('c1')?.sign_status,'검토대기');
+  await svc.approve('c1','tester');
+  assert.equal(repo.contract.get('c1')?.sign_status,'서명완료');
+  const current=await repo.getCurrentSession('c1');
+  assert.equal(current?.status,'signed');
+  assert.ok(current?.sealHash);
+  assert.ok(current?.documentStoragePath);
+});

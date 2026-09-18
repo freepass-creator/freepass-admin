@@ -1,0 +1,175 @@
+/* FreePass Admin micro polish R1
+ * 현 디자인 95% 유지 + 깊이/정밀감 5% 보강.
+ * 금지: 레이아웃 변경, 새 색 체계, 새 카드 체계, 대시보드화.
+ */
+
+:root {
+  --ui-elev-panel:
+    0 1px 2px rgba(15, 27, 53, .035),
+    0 8px 20px rgba(15, 27, 53, .025);
+  --ui-elev-control:
+    0 1px 2px rgba(15, 27, 53, .055);
+  --ui-elev-control-hover:
+    0 2px 6px rgba(15, 27, 53, .085);
+  --ui-focus-ring: 0 0 0 3px rgba(27, 42, 74, .075);
+  --ui-selected-rail: 3px;
+}
+
+/* 1. Panel — 기존 흰 판/1px 선은 유지하고 깊이만 아주 약하게 */
+.fn-main .workspace > .panel {
+  box-shadow: var(--ui-elev-panel);
+}
+
+/* 2. 검색 — 시작점 역할을 더 정밀하게 */
+.fn-main .workspace .dz-searchbox {
+  transition: border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+.fn-main .workspace .dz-searchbox:hover {
+  border-color: #cbd2da;
+}
+.fn-main .workspace .dz-searchbox:focus-within {
+  border-color: #aeb8c4;
+  box-shadow: var(--ui-focus-ring);
+}
+
+/* 3. ListRow — 현재 선택면 유지 + 왼쪽 rail로 '선택' 타격감만 보강 */
+.fn-main .workspace a.dz-row,
+.fn-main .workspace .dz-row {
+  position: relative;
+  transition:
+    background-color .12s ease,
+    box-shadow .12s ease,
+    transform .08s ease;
+}
+.fn-main .workspace a.dz-row.on::before,
+.fn-main .workspace .dz-row.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: var(--ui-selected-rail);
+  border-radius: 0 2px 2px 0;
+  background: var(--ci남색);
+  opacity: .82;
+}
+@media (hover:hover) {
+  .fn-main .workspace a.dz-row:hover,
+  .fn-main .workspace .dz-row:hover {
+    box-shadow: 0 1px 4px rgba(15, 27, 53, .045);
+  }
+}
+
+/* 4. 상태칸 — 색 의미는 그대로, 면 경계만 한 단계 또렷하게 */
+.fn-main .workspace .dz-row-status {
+  box-shadow: inset 0 0 0 1px rgba(15, 27, 53, .025);
+}
+
+/* 5. Summary / picked / form box — 새 카드가 아니라 같은 면의 레이어감 */
+.fn-main .workspace .summary-grid > div,
+.fn-main .workspace .dz-picked,
+.fn-main .workspace .dz-form-group,
+.fn-main .workspace .fn-box {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+/* 6. 버튼 — 크기/색 그대로. hover/press만 물리감 */
+.fn-main .workspace .dz-bar-go > .primary,
+.fn-main .workspace .dz-bar-go > .dz-bar-sub,
+.fn-main .workspace .offer-picker button,
+.fn-main .workspace .quick-filters a,
+.fn-main .workspace .tabs button {
+  transition:
+    background-color .12s ease,
+    color .12s ease,
+    box-shadow .12s ease,
+    transform .06s ease;
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-bar-go > .primary:hover {
+    box-shadow: var(--ui-elev-control-hover);
+  }
+  .fn-main .workspace .dz-bar-go > .dz-bar-sub:hover,
+  .fn-main .workspace .offer-picker button:hover,
+  .fn-main .workspace .quick-filters a:hover,
+  .fn-main .workspace .tabs button:hover {
+    box-shadow: var(--ui-elev-control);
+  }
+}
+.fn-main .workspace .dz-bar-go > .primary:active,
+.fn-main .workspace .dz-bar-go > .dz-bar-sub:active,
+.fn-main .workspace .offer-picker button:active,
+.fn-main .workspace .quick-filters a:active,
+.fn-main .workspace .tabs button:active {
+  transform: translateY(1px);
+}
+
+/* 7. 선택/active — 기존 네이비 의미 그대로, 명암만 미세하게 */
+.fn-main .workspace .quick-filters a.active,
+.fn-main .workspace .offer-picker button.active {
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    0 1px 2px rgba(15,27,53,.08);
+}
+.fn-main .workspace .tabs button.active {
+  box-shadow: inset 0 -2px 0 rgba(27,42,74,.14);
+}
+
+/* 8. 하단 ActionBar — 내용과 액션의 경계를 선 대신 아주 옅은 깊이로 */
+.fn-main .workspace .dz-bar {
+  box-shadow: 0 -8px 16px -16px rgba(15,27,53,.28);
+}
+
+/* 9. PanelHeader — 새 장식 없이 제목/건수 baseline만 더 단단하게 */
+.fn-main .workspace .panel-head h1 {
+  text-rendering: optimizeLegibility;
+}
+.fn-main .workspace .panel-head > .count {
+  letter-spacing: -.15px;
+}
+
+/* 10. 숫자 — 금액/월/건수의 정렬감 */
+.fn-main .workspace :where(
+  .dz-row-l3 strong,
+  .summary-grid dd,
+  .dz-offer-line,
+  .dz-month-sum,
+  .dz-picked-grid dd,
+  .count
+) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 11. 키보드 focus — 기존 규칙보다 실제 컨트롤에서 조금 더 정밀 */
+.fn-main .workspace :where(a,button,input,select,textarea):focus-visible {
+  outline: 2px solid rgba(27,42,74,.52);
+  outline-offset: 2px;
+}
+
+/* 모바일은 hover/elevation을 줄이고 눌림감만 유지 */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel {
+    box-shadow: 0 1px 2px rgba(15,27,53,.025);
+  }
+  .fn-main .workspace a.dz-row:hover,
+  .fn-main .workspace .dz-row:hover {
+    box-shadow: none;
+  }
+  .fn-main .workspace .dz-bar {
+    box-shadow: 0 -6px 14px -14px rgba(15,27,53,.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-main .workspace a.dz-row,
+  .fn-main .workspace .dz-row,
+  .fn-main .workspace .dz-bar-go > .primary,
+  .fn-main .workspace .dz-bar-go > .dz-bar-sub,
+  .fn-main .workspace .offer-picker button,
+  .fn-main .workspace .quick-filters a,
+  .fn-main .workspace .tabs button {
+    transition: none;
+    transform: none !important;
+  }
+}

@@ -26,23 +26,23 @@ export function MoneyForm({ code, promoAmount, promoSharePct, promoReason, claim
   };
   return (
     <div className="dz-money">
-      <form onSubmit={send(promoAct)}>
+      <form onSubmit={send(promoAct)} aria-busy={promoPending}>
         <input type="hidden" name="code" value={code} />
         <b>프로모션</b>
         <label>금액<input name="promoAmount" defaultValue={칸값(promoAmount)} inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
         <label>영업자 몫 %<input name="promoSharePct" defaultValue={칸값(promoSharePct)} inputMode="numeric" placeholder="100" /></label>
         <label className="wide">사유<input name="promoReason" defaultValue={promoReason ?? ''} /></label>
         {promo.errors.length > 0 && <ul className="dz-errs">{promo.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <button type="submit" disabled={disabled || promoPending}>{promoPending ? '저장 중…' : '프로모션 저장'}</button>
+        <button type="submit" disabled={disabled || promoPending} aria-busy={promoPending}>{promoPending ? '저장 중…' : '프로모션 저장'}</button>
       </form>
-      <form onSubmit={send(adjAct)}>
+      <form onSubmit={send(adjAct)} aria-busy={adjPending}>
         <input type="hidden" name="code" value={code} />
         <b>가감</b>
         <label>청구 ±<input name="claimAdjust" defaultValue={칸값(claimAdjust)} inputMode="numeric" placeholder="빼는 돈은 −" /></label>
         <label>지급 ±<input name="payAdjust" defaultValue={칸값(payAdjust)} inputMode="numeric" placeholder="빼는 돈은 −" /></label>
         <label className="wide">사유 *<input name="adjustReason" defaultValue={adjustReason ?? ''} /></label>
         {adj.errors.length > 0 && <ul className="dz-errs">{adj.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <button type="submit" disabled={disabled || adjPending}>{adjPending ? '저장 중…' : '가감 저장'}</button>
+        <button type="submit" disabled={disabled || adjPending} aria-busy={adjPending}>{adjPending ? '저장 중…' : '가감 저장'}</button>
       </form>
     </div>
   );
@@ -56,14 +56,14 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
   const [s, act, pending] = useActionState<FormState, FormData>(feeAction, { errors: [] });
   return (
     <div className="dz-money">
-      <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}>
+      <form aria-busy={pending} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}>
         <input type="hidden" name="code" value={code} />
         <b>수수료 <small className="dz-sec-note inline">비운 쪽은 안 바뀝니다</small></b>
         <label>청구 수수료<input name="feeClaim" inputMode="numeric" placeholder={claim === null ? '금액 모름' : `지금 ${claim.toLocaleString('ko-KR')}`} /></label>
         <label>지급 수수료<input name="feePay" inputMode="numeric" placeholder={pay === null ? '금액 모름' : `지금 ${pay.toLocaleString('ko-KR')}`} /></label>
         <label className="wide">사유 *<input name="feeReason" /></label>
         {s.errors.length > 0 && <ul className="dz-errs">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <button type="submit" disabled={disabled || pending}>{pending ? '저장 중…' : '수수료 저장'}</button>
+        <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '수수료 저장'}</button>
       </form>
     </div>
   );
@@ -79,7 +79,7 @@ export function ClawbackForm({ code, today }: { code: string; today: string }) {
     <details className="dz-form-more">
       <summary>환수 세우기 <small>드물다 — 필요할 때만</small></summary>
       <div className="dz-money">
-        <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}>
+        <form aria-busy={pending} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}>
           <input type="hidden" name="code" value={code} />
           <label>환수일<input name="at" type="date" defaultValue={today} /></label>
           <span />
@@ -87,7 +87,7 @@ export function ClawbackForm({ code, today }: { code: string; today: string }) {
           <label>영업채널에서 돌려받을 것<input name="agentAmt" inputMode="numeric" /></label>
           <label className="wide">사유 *<input name="reason" /></label>
           {s.errors.length > 0 && <ul className="dz-errs">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          <button type="submit" disabled={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
+          <button type="submit" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
         </form>
       </div>
     </details>

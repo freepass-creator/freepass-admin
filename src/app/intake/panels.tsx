@@ -18,7 +18,7 @@ import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
 import { MoneyForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
-import type { Axis } from '../../domain/settlement/lifecycle';
+import { invoiceMoneyOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
@@ -148,7 +148,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       주 = {
         label: `${끝말} 찍기`,
         form: <LifeForm id={fid} code={r.id} kind={청구축 ? 'collected' : 'paid'} axis={life.axis} need="money"
-          amount={청구축 ? 청구 : 지급} day={today()} />,
+          /* ★기본값 = 통장에 오가는 돈 = 계산서 합계(부가세 포함). claimAmountOf/payAmountOf 는 공급가라 그대로 두면 매번 고쳐야 했다(기능 세션) */
+          amount={invoiceMoneyOf((청구축 ? 청구 : 지급) ?? 0, r.money.vatIncluded).total} day={today()} />,
       };
       보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
     }

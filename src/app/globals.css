@@ -381,103 +381,103 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 body { background: var(--바닥); }
 
 /* ⑤ 화면 한 장 = 판 박스 하나 — 선을 가진 두 곳 중 하나(규칙 ①) */
-.fn-main:not(:has(> .workspace)) {
+.fn-main:not(:has(> .workspace, > .admin-shell)) {
   margin: 12px; padding: 20px 24px 32px;
   background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
   font-size: var(--글메인); color: var(--글);
 }
-.fn-main:not(:has(> .workspace)) p { margin: 0 0 8px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) p { margin: 0 0 8px; }
 
 /* ⑥ 글씨 세 단 — 제목 18 · 메인 14 · 보조 12. 소제목은 크기를 안 늘리고 «색»으로 가른다(규칙 ④) */
-.fn-main:not(:has(> .workspace)) h1 {
+.fn-main:not(:has(> .workspace, > .admin-shell)) h1 {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   margin: 0 0 12px; font-size: var(--글제목); font-weight: 700;
 }
-.fn-main:not(:has(> .workspace)) h2 { margin: 24px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
-.fn-main:not(:has(> .workspace)) .fn-muted { font-size: var(--글보조); color: #6b7580; }
-.fn-main:not(:has(> .workspace)) .fn-err { color: #b3261e; }
-.fn-main:not(:has(> .workspace)) .fn-ok { color: #1f6b35; }
-.fn-main:not(:has(> .workspace)) a { color: var(--ci남색); text-decoration: none; }
-.fn-main:not(:has(> .workspace)) a:hover { text-decoration: underline; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) h2 { margin: 24px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-muted { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-err { color: #b3261e; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-ok { color: #1f6b35; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) a { color: var(--ci남색); text-decoration: none; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) a:hover { text-decoration: underline; }
 /** 제목 옆 「+ 새 접수」 — 그 화면의 주 행동이라 남색 카드 단추. (뼈대가 인라인 13px 를 박아 두어 같은 힘으로 덮는다) */
-.fn-main:not(:has(> .workspace)) h1 > a {
+.fn-main:not(:has(> .workspace, > .admin-shell)) h1 > a {
   display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
   border-radius: var(--r); background: var(--ci남색); color: #fff !important;
   font-size: var(--글메인) !important; font-weight: 600; margin-left: 0 !important; text-decoration: none !important;
 }
 
 /* 입력 — 선 없는 박스(규칙 ①) · 단추 규격 33(규칙 ⑦) */
-.fn-main:not(:has(> .workspace)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
-.fn-main:not(:has(> .workspace)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
-.fn-main:not(:has(> .workspace)) input, .fn-main:not(:has(> .workspace)) select, .fn-main:not(:has(> .workspace)) textarea {
+.fn-main:not(:has(> .workspace, > .admin-shell)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea {
   height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
   background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 15px;
 }
-.fn-main:not(:has(> .workspace)) textarea { height: auto; min-height: 66px; padding: 8px; }
-.fn-main:not(:has(> .workspace)) input:focus, .fn-main:not(:has(> .workspace)) select:focus,
-.fn-main:not(:has(> .workspace)) textarea:focus { outline: 0; background: var(--박스손); }
-.fn-main:not(:has(> .workspace)) input[type="checkbox"], .fn-main:not(:has(> .workspace)) input[type="radio"] {
+.fn-main:not(:has(> .workspace, > .admin-shell)) textarea { height: auto; min-height: 66px; padding: 8px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input:focus, .fn-main:not(:has(> .workspace, > .admin-shell)) select:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) textarea:focus { outline: 0; background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input[type="checkbox"], .fn-main:not(:has(> .workspace, > .admin-shell)) input[type="radio"] {
   width: 16px; height: 16px; padding: 0; accent-color: var(--ci남색);
 }
 /** ★찾기 칸은 선을 가진다 — 규칙 ①의 «검색창». 그 화면에서 «여기서 시작한다»는 자리다. */
-.fn-main:not(:has(> .workspace)) input[name="q"] { background: var(--판); border: 1px solid var(--선); min-width: 220px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input[name="q"] { background: var(--판); border: 1px solid var(--선); min-width: 220px; }
 
 /* ③ 단추는 글자만 · ④ 이 폼의 주 행동(보내기)은 남색 면 */
-.fn-main:not(:has(> .workspace)) button {
+.fn-main:not(:has(> .workspace, > .admin-shell)) button {
   height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
   background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 15px; cursor: pointer;
 }
-.fn-main:not(:has(> .workspace)) button:hover:not(:disabled) { background: var(--박스손); }
-.fn-main:not(:has(> .workspace)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
-.fn-main:not(:has(> .workspace)) button:disabled { opacity: .45; cursor: not-allowed; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) button:hover:not(:disabled) { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* 탭 — 글자만, 켜진 것은 남색 면(검은 알약이던 것) */
-.fn-main:not(:has(> .workspace)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
-.fn-main:not(:has(> .workspace)) .fn-tabs a {
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a {
   display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
   border: 0; border-radius: var(--r); background: transparent; color: #4f5862; text-decoration: none;
 }
-.fn-main:not(:has(> .workspace)) .fn-tabs a:hover { background: var(--박스손); }
-.fn-main:not(:has(> .workspace)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a:hover { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
 
 /* 상자·값 묶음 — 선 없는 박스(규칙 ⑤) */
-.fn-main:not(:has(> .workspace)) .fn-box { border: 0; border-radius: var(--r); background: var(--박스); padding: 12px 16px; margin: 8px 0; }
-.fn-main:not(:has(> .workspace)) dl { margin: 0; }
-.fn-main:not(:has(> .workspace)) dt { font-size: var(--글보조); color: #6b7580; }
-.fn-main:not(:has(> .workspace)) dd { margin: 2px 0 8px; font-size: var(--글메인); }
-.fn-main:not(:has(> .workspace)) details > summary { cursor: pointer; padding: 8px 0; color: var(--ci남색); font-weight: 600; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box { border: 0; border-radius: var(--r); background: var(--박스); padding: 12px 16px; margin: 8px 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dl { margin: 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dt { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dd { margin: 2px 0 8px; font-size: var(--글메인); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) details > summary { cursor: pointer; padding: 8px 0; color: var(--ci남색); font-weight: 600; }
 
 /* ★표도 박스 — 칸 선을 다 걷고 «줄마다 박스», 줄 사이는 틈(규칙 ① ⑤) */
-.fn-main:not(:has(> .workspace)) table { border-collapse: separate; border-spacing: 0 4px; background: transparent; }
-.fn-main:not(:has(> .workspace)) th, .fn-main:not(:has(> .workspace)) td {
+.fn-main:not(:has(> .workspace, > .admin-shell)) table { border-collapse: separate; border-spacing: 0 4px; background: transparent; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) th, .fn-main:not(:has(> .workspace, > .admin-shell)) td {
   border: 0; padding: 8px 10px; white-space: nowrap; font-size: var(--글메인); text-align: left;
 }
-.fn-main:not(:has(> .workspace)) th {
+.fn-main:not(:has(> .workspace, > .admin-shell)) th {
   background: none; padding: 0 10px 2px; font-size: var(--글보조); font-weight: 600; color: #6b7580;
 }
-.fn-main:not(:has(> .workspace)) td { background: var(--박스); }
-.fn-main:not(:has(> .workspace)) tr > td:first-child { border-radius: var(--r) 0 0 var(--r); }
-.fn-main:not(:has(> .workspace)) tr > td:last-child { border-radius: 0 var(--r) var(--r) 0; }
-.fn-main:not(:has(> .workspace)) tbody tr:hover > td { background: var(--박스손); }
-.fn-main:not(:has(> .workspace)) td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) td { background: var(--박스); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tr > td:first-child { border-radius: var(--r) 0 0 var(--r); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tr > td:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tbody tr:hover > td { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) td.n { text-align: right; font-variant-numeric: tabular-nums; }
 /** 머리칸이 줄 머리(th)로 쓰인 표(정책 표) — 줄 이름표라 옅은 남색 면, 보조 글씨 */
-.fn-main:not(:has(> .workspace)) tbody th { background: var(--남색옅음); color: var(--ci남색); padding: 8px 10px; border-radius: var(--r) 0 0 var(--r); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tbody th { background: var(--남색옅음); color: var(--ci남색); padding: 8px 10px; border-radius: var(--r) 0 0 var(--r); }
 
 @media (max-width: 900px) {
-  .fn-main:not(:has(> .workspace)) { margin: 8px; padding: 16px; }
-  .fn-main:not(:has(> .workspace)) input, .fn-main:not(:has(> .workspace)) select, .fn-main:not(:has(> .workspace)) textarea { font-size: 16px; }
+  .fn-main:not(:has(> .workspace, > .admin-shell)) { margin: 8px; padding: 16px; }
+  .fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea { font-size: 16px; }
 }
 /**
  * ★칸은 «담긴 곳보다 밝게» — 새 접수 폼은 칸들이 상자(.fn-box, 옅은 회색) 안에 있어,
  *   칸도 옅은 회색이면 칸이 상자에 묻혀 «안 보였다»(실측: 날짜·고르기 칸만 겨우 보임).
  *   흰 판 위의 칸 = 옅은 회색 박스, 회색 상자 안의 칸 = 흰 박스. 선 없이 면의 밝기로만 가른다(규칙 ①).
  */
-.fn-main:not(:has(> .workspace)) .fn-box input:not([type="checkbox"]):not([type="radio"]),
-.fn-main:not(:has(> .workspace)) .fn-box select,
-.fn-main:not(:has(> .workspace)) .fn-box textarea { background: var(--판); }
-.fn-main:not(:has(> .workspace)) .fn-box input:focus,
-.fn-main:not(:has(> .workspace)) .fn-box select:focus,
-.fn-main:not(:has(> .workspace)) .fn-box textarea:focus { background: var(--남색옅음); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box input:not([type="checkbox"]):not([type="radio"]),
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box select,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box textarea { background: var(--판); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box input:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box select:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box textarea:focus { background: var(--남색옅음); }
 
 /* ═══════════════════════════════════════════════════════════════════
    ★ 상품찾기 — 판 둘: 상품 목록(판 두 개 폭) | 상품 상세 (대표 2026-09-18)
@@ -488,3 +488,18 @@ body { background: var(--바닥); }
 .fn-main .workspace[data-mode="find"] .list {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; align-content: start;
 }
+
+/**
+ * ★★**확정 목업(/design)은 «기준본»이다 — 덮개를 씌우지 않고 확정 때 모습 그대로 보인다** (대표 2026-09-18 「저 3단 배열 기본디자인 안 없어진 거지?」)
+ *   ⚠ 덮개가 목업에도 씌워져 켜진 탭·필터의 남색 면이 사라졌고, 새 위 띠 밑에 목업의 띠가 한 번 더 서서 띠가 둘이었다(실측).
+ *   ⇒ 덮개 범위에서 목업(`main.admin-shell`)을 뺀다. 그 화면에서는 새 위 띠를 접고 판 박스 틀도 걷는다.
+ */
+/**
+ * ★★위 띠는 «CI 띠 하나»다 — 대표 2026-09-18 「야 이 느낌 상단이었잖아」 · 「저렇게 상단 디자인했는데 갑자기 내용 페이지만 바뀐 거잖아」
+ *   ⚠ 한 번 거꾸로 했다 — 목업 화면에서 CI 띠를 접고 목업의 옛 띠를 살렸다. 위는 어느 화면이든 CI 띠이고, 바뀌는 것은 그 아래 내용이다.
+ *   ⇒ 목업의 옛 띠(.topbar)를 접는다. CI 띠 밑에 판 셋이 바로 선다.
+ */
+.admin-shell > .topbar { display: none; }
+.admin-shell { min-height: 0; }
+.fn-main:has(> .admin-shell) { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.admin-shell > .workspace { height: calc(100vh - 56px); }

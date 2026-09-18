@@ -1,28 +1,32 @@
+/* ★★디자인 세션 2026-09-18 — 이 파일의 «.fn-main X» 는 전부 :where() 로 감쌌다(힘 0).
+     확정 옷(globals.css 의 판 셋·덮개)이 같은 힘 싸움 없이 이기고, 확정 목업(/design, .admin-shell) 밑으로는 아예 안 내려간다.
+     ⚠ 앞서 뼈대의 단추 테두리·11px 라벨이 확정 목업 단추까지 눌러 목업에 회색 테두리가 섰다(실측).
+     기능 세션 동의: 「_fn/fn.css 포함 — 덮으셔도 됩니다」 */
 /* ★기능 화면의 최소 뼈대 — 대표 2026-09-18 「디자인은 신경쓰지 말고」. 표가 읽힐 만큼만. */
 .fn-top { display: flex; gap: 16px; align-items: center; padding: 8px 12px; background: #111418; color: #fff; font-size: 13px; }
 .fn-top a { color: #cfd5db; text-decoration: none; padding: 4px 8px; }
 .fn-top a:hover { color: #fff; }
 .fn-top .fn-state { margin-left: auto; font-size: 11px; color: #9aa3ab; }
-.fn-main { padding: 12px 16px 40px; font-size: 13px; }
-.fn-main h1 { font-size: 18px; margin: 4px 0 10px; }
-.fn-main h2 { font-size: 15px; margin: 18px 0 8px; }
-.fn-main form.fn-filter { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; margin-bottom: 10px; }
-.fn-main label { display: inline-flex; flex-direction: column; gap: 2px; font-size: 11px; color: #555; }
-.fn-main input, .fn-main select, .fn-main textarea { font: inherit; font-size: 13px; padding: 3px 5px; border: 1px solid #b9c0c7; background: #fff; }
-.fn-main button { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid #8a939c; background: #eef1f4; cursor: pointer; }
-.fn-main button:disabled { opacity: .5; cursor: not-allowed; }
-.fn-main table { border-collapse: collapse; background: #fff; }
-.fn-main th, .fn-main td { border: 1px solid #d3d8dd; padding: 3px 6px; white-space: nowrap; text-align: left; }
-.fn-main th { background: #eef1f4; font-weight: 600; }
-.fn-main td.n { text-align: right; font-variant-numeric: tabular-nums; }
-.fn-main .fn-wrap { overflow-x: auto; }
-.fn-main .fn-muted { color: #7a828a; font-size: 12px; }
-.fn-main .fn-err { color: #a12a2a; }
-.fn-main .fn-ok { color: #1f6b35; }
-.fn-main .fn-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
-.fn-main .fn-tabs a { padding: 3px 8px; border: 1px solid #c7cdd3; text-decoration: none; color: #333; background: #fff; }
-.fn-main .fn-tabs a.on { background: #111418; color: #fff; border-color: #111418; }
-.fn-main .fn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 16px; }
-.fn-main dl { margin: 0; } .fn-main dt { font-size: 11px; color: #777; } .fn-main dd { margin: 0 0 6px; }
-.fn-main details > summary { cursor: pointer; padding: 4px 0; }
-.fn-main .fn-box { border: 1px solid #d3d8dd; background: #fff; padding: 10px; margin: 8px 0; }
+:where(.fn-main:not(:has(> .admin-shell))) { padding: 12px 16px 40px; font-size: 13px; }
+:where(.fn-main:not(:has(> .admin-shell))) h1 { font-size: 18px; margin: 4px 0 10px; }
+:where(.fn-main:not(:has(> .admin-shell))) h2 { font-size: 15px; margin: 18px 0 8px; }
+:where(.fn-main:not(:has(> .admin-shell))) form.fn-filter { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; margin-bottom: 10px; }
+:where(.fn-main:not(:has(> .admin-shell))) label { display: inline-flex; flex-direction: column; gap: 2px; font-size: 11px; color: #555; }
+:where(.fn-main:not(:has(> .admin-shell))) input, :where(.fn-main:not(:has(> .admin-shell))) select, :where(.fn-main:not(:has(> .admin-shell))) textarea { font: inherit; font-size: 13px; padding: 3px 5px; border: 1px solid #b9c0c7; background: #fff; }
+:where(.fn-main:not(:has(> .admin-shell))) button { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid #8a939c; background: #eef1f4; cursor: pointer; }
+:where(.fn-main:not(:has(> .admin-shell))) button:disabled { opacity: .5; cursor: not-allowed; }
+:where(.fn-main:not(:has(> .admin-shell))) table { border-collapse: collapse; background: #fff; }
+:where(.fn-main:not(:has(> .admin-shell))) th, :where(.fn-main:not(:has(> .admin-shell))) td { border: 1px solid #d3d8dd; padding: 3px 6px; white-space: nowrap; text-align: left; }
+:where(.fn-main:not(:has(> .admin-shell))) th { background: #eef1f4; font-weight: 600; }
+:where(.fn-main:not(:has(> .admin-shell))) td.n { text-align: right; font-variant-numeric: tabular-nums; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-wrap { overflow-x: auto; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-muted { color: #7a828a; font-size: 12px; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-err { color: #a12a2a; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-ok { color: #1f6b35; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-tabs a { padding: 3px 8px; border: 1px solid #c7cdd3; text-decoration: none; color: #333; background: #fff; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-tabs a.on { background: #111418; color: #fff; border-color: #111418; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 16px; }
+:where(.fn-main:not(:has(> .admin-shell))) dl { margin: 0; } :where(.fn-main:not(:has(> .admin-shell))) dt { font-size: 11px; color: #777; } :where(.fn-main:not(:has(> .admin-shell))) dd { margin: 0 0 6px; }
+:where(.fn-main:not(:has(> .admin-shell))) details > summary { cursor: pointer; padding: 4px 0; }
+:where(.fn-main:not(:has(> .admin-shell))) .fn-box { border: 1px solid #d3d8dd; background: #fff; padding: 10px; margin: 8px 0; }

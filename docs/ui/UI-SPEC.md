@@ -1,5 +1,9 @@
 # UI 규격 — freepass-admin
 
+> **현행 UI/UX 공통 정본:** [ADMIN-UI-UX-SSOT.md](ADMIN-UI-UX-SSOT.md)  
+> AI/자동검사용: [admin-ui-ux-ssot.json](admin-ui-ux-ssot.json)  
+> 이 문서의 아래 과거 규격과 충돌하면 **ADMIN-UI-UX-SSOT가 우선**한다.
+
 ## 0. 실제 앱 정본 — 2026-09-18
 
 > 아래 기존 mockup 규격은 설계 이력으로 유지한다. **값이 다르면 이 절과 실제 `src/app` 구현이 우선**한다.

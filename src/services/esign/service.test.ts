@@ -22,6 +22,7 @@ class Repo implements EsignRepository {
   async getPrivate(id:string){return (this.priv.get(id)??null) as (EsignPrivateSubmission&Record<string,unknown>)|null;}
   async putPrivate(id:string,data:Record<string,unknown>){this.priv.set(id,{...(this.priv.get(id)||{}),...structuredClone(data)});}
   async appendEvent(){/* covered by state assertions */}
+  async listEvents(){return [];}
 }
 
 class Assets implements EsignAssetStore {

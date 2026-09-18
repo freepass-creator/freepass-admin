@@ -184,7 +184,7 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 | 등급 | 높이 | 글자 | 용도 |
 |---|---:|---:|---|
 | Badge / signal | content based | 12 | 상태·신원 표시 |
-| Standard control | **33px** | 14 | 필터, 탭, 보조 버튼, 표 안 행동 |
+| Standard workspace control | **40px** | 14 | 필터, 탭, 기간, 보조 버튼, 업무 입력 |
 | Search / field | **40px** | 14 | 검색창, 주요 입력 |
 | Primary action | **44px** | 14 bold | 저장, 접수, 발행, 승인 |
 | Mobile touch action | **44px 이상** | 14 | 엄지로 누르는 주요 행동 |
@@ -206,7 +206,7 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 
 ### Utility
 - 필터·탭·작은 조작
-- 33px
+- 업무 workspace에서는 40px
 - 평소 투명/중립
 - active에서 Navy 면
 
@@ -218,11 +218,13 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 ## 6-2. Mobile touch
 정본: **touch target 44px 이상**
 
-현재 알려진 예외/부채:
-- `.dz-phone-back` visual box 32px
-- 일부 month arrow / compact action 33px
+현재 처리:
+- `.dz-phone-back`은 보이는 상자 32px를 유지하되 **실제 hit-area 44px**를 확보했다.
+- 달 넘기기 등 workspace 조작은 공통 `--ui-control-h` 40px를 사용한다.
 
-시각 크기를 유지하더라도 hit-area는 44 이상으로 맞추는 것이 목표다.
+승인된 compact 예외:
+- Desktop global chrome의 TopMenu는 33px. 업무 Panel 내부 컨트롤과 다른 층이다.
+- 검색창 내부 `세부검색` 단추는 32px visual이지만 40px search box 안의 내부 조작이다.
 
 ---
 
@@ -342,7 +344,7 @@ Tone:
 
 ## Quick filter
 - search 아래
-- height 33
+- height **40px** (`--ui-control-h`)
 - active = Navy
 - 같은 축 선택값은 주소/query SSOT와 연결
 
@@ -557,10 +559,7 @@ depth 0 목록
 - **rendered row ≈ 88**
 
 ## D. Mobile back hit-area
-현재 일부 visual 32px.
-
-정본 목표:
-- mobile hit-area >= 44
+처리 완료: visual 32px는 유지하면서 pseudo hit-area를 **44px**로 확장했다.
 
 ## E. 2개의 secondary surface
 `--박스`, `--카드`가 둘 다 존재한다.
@@ -578,7 +577,7 @@ depth 0 목록
 새 화면/컴포넌트 추가 전 반드시 확인:
 
 - [ ] Title/Main/Support 18/14/12 안에서 해결했나?
-- [ ] 버튼이 33/40/44 체계 안에 있나?
+- [ ] 업무 컨트롤 40 / 주 행동·모바일 터치 44 체계 안에 있나?
 - [ ] mobile touch는 44 이상인가?
 - [ ] radius 4가 기본인가?
 - [ ] 신원 = Tag, 조건 = PerkMarks로 갈랐나?
@@ -595,4 +594,4 @@ depth 0 목록
 
 # 19. 한 문장 규칙
 
-> **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 행동은 33/40/44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**
+> **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 업무 컨트롤은 40, 주 행동·모바일 터치는 44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**

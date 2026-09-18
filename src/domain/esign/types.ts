@@ -92,6 +92,10 @@ export type EsignPrivateSubmission = {
   driverLicenseNo?: string;
   signerName?: string;
   signerRole?: string;
+  cms?: {
+    holderName: string; holderRelation: string; holderPhone: string;
+    bank: string; accountNo: string; holderIdentifier: string;
+  };
   emergencyRelation: string;
   emergencyName: string;
   emergencyPhone: string;

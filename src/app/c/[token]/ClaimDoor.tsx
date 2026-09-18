@@ -6,7 +6,10 @@
  *   PC · 폰 둘 다 본다(공급사 담당자).
  */
 import { startTransition, useActionState, useState } from 'react';
+import { Exo_2 } from 'next/font/google';
 import { openClaimAction, respondClaimAction, type OpenState } from '../actions';
+
+const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
 type 줄 = {
   code: string; receivedAt?: string; plate?: string; model?: string; customer?: string; deliveredAt?: string;
@@ -18,16 +21,9 @@ type 답 = { state: '확인' | '이의'; at: number; memo?: string };
 const 원 = (n: number | undefined | null) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 날 = (t: number | string | undefined) => (t === undefined ? '—' : typeof t === 'number' ? new Date(t + 9 * 3600_000).toISOString().slice(0, 10) : t);
 
+/** 워드마크 — 공식 법인 CI(ci_center fp): 마크 없음 · Exo 2 · 「freepass」 600 #1B2A4A + 「mobility」 300 #7F93B3. 공급사에게는 법인 이름으로 선다 */
 function Brand() {
-  return (
-    <div className="cl-brand">
-      <svg viewBox="0 0 512 512" aria-hidden width="24" height="24">
-        <rect width="512" height="512" rx="96" fill="#1B2A4A" />
-        <path d="M128 264 l80 80 L384 168" fill="none" stroke="#ffffff" strokeWidth={52} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <b>freepass</b>
-    </div>
-  );
+  return <div className={`cl-brand ${레터링.className}`}><b>freepass</b><i>mobility</i></div>;
 }
 
 export function ClaimDoor({ token }: { token: string }) {

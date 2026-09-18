@@ -1,7 +1,7 @@
 'use client';
 /**
  * 로그인 폼 — erp4 LoginView 의 로그인 칸 그대로(이메일 · 비밀번호 · 로그인), 옷은 우리 규격(§14-9: 컨트롤 40 · 주 단추 44 · 라운드 4).
- *   워드마크는 CI 규격(Exo 2 · 「freepass」 600 + 「admin」 300 · 남색 네모 + 흰 체크 — 흰 바탕 위라 원본 색).
+ *   워드마크는 공식 CI 그대로(ci_center) — 마크 없음 · Exo 2 · 「freepass」 600 #1B2A4A + 「admin」 300 #7F93B3.
  */
 import { useActionState } from 'react';
 import { Exo_2 } from 'next/font/google';
@@ -15,10 +15,6 @@ export function LoginForm({ next }: { next: string }) {
     <main className="lg-main">
       <section className="lg-card">
         <div className={`lg-brand ${레터링.className}`}>
-          <svg viewBox="0 0 512 512" aria-hidden width="28" height="28">
-            <rect width="512" height="512" rx="96" fill="#1B2A4A" />
-            <path d="M128 264 l80 80 L384 168" fill="none" stroke="#ffffff" strokeWidth={52} strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
           <span><b>freepass</b><i>admin</i></span>
         </div>
         <header>

@@ -1,19 +1,13 @@
 'use client';
 /**
- * ★★★**freepass-admin 의 얼굴 — 프리패스 CI 규격 그대로** (대표 2026-09-18)
- *   「freepass admin 은 우리 CI 규격에 맞춰서 BI 규격으로 해주세요」
- *   「상단바도 남색이랑 색깔 잘 활용합시다」
+ * ★★★**freepass-admin 의 얼굴 — 공식 CI 워드마크 그대로** (대표 2026-09-18)
+ *   「freepass admin 은 우리 CI 규격에 맞춰서 BI 규격으로 해주세요」 · 「공식적인 CI 에는 그 체크박스 네모가 없어」
  *
- * 정본 = freepasserp4 — 새로 짓지 않는다. 거기 적힌 값을 옮긴다.
- *   · 색    `app/globals.css:4` 「프리패스 CI(네이비 #1B2A4A · 스카이 #9EC5F3)」
- *   · 마크  `public/icon.svg` — 둥근 네모(라운드 96/512 = 18.75%) + 체크
- *           체크 꼭짓점 (128,264)-(208,344)-(384,168) · 획 52 · 끝 둥글게
- *   · 반전  남색 띠 위에서는 «흰 네모 + 남색 체크» — `components/sign/sign.css` 「.brand-mark」
- *           (대표 2026-08-28 「하얀 네모에 체크는 남색이라야 임팩트」 · 대비 14.1:1 로 원본 CI 와 같은 세기)
- *   · 글자  워드마크는 Exo 2 — 「freepass」 600, 뒤에 붙는 말은 300 (명함과 같다 · `sign.css` 「CI 워드마크 규격」)
- *
- * ⚠ 앞서 상단바는 `freepass-admin` 을 본문 글꼴로 적은 글자 한 줄이었다 — 마크도, CI 글꼴도 없었다.
- * ⚠ 좌표·비율을 고칠 일이 생기면 **fp4 `public/icon.svg` 와 같이** 고친다. 여기만 고치면 마크가 둘이 된다.
+ * 정본 = CI / BI Center(`C:\dev\ci_center\index.html` BRANDS · roleColor) — 새로 짓지 않는다. 거기 적힌 값을 옮긴다.
+ *   · **마크 없음 — 워드마크뿐.** Exo 2 · 앞말 600(main) + 뒷말 300(base) · 사이 2px.
+ *   · 색  밝은 바탕: main `#1B2A4A` · base `#7F93B3`
+ *         남색 바탕(ctx 'brand' — 위 띠): main `#FFFFFF` · base `rgba(255,255,255,.55)`
+ * ⚠ 앞서 erp4 앱 아이콘(둥근 네모 + 체크)을 CI 마크처럼 붙였다 — 공식 CI 에는 없다. 걷었다.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,22 +15,10 @@ import { Exo_2 } from 'next/font/google';
 
 const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
-/** CI 마크 — 띠 위 반전형(흰 네모 + 남색 체크). 크기는 감싸는 쪽이 정한다. */
-export function BrandMark() {
-  return (
-    <svg className="dz-mark" viewBox="0 0 512 512" aria-hidden>
-      <rect width="512" height="512" rx="96" fill="#ffffff" />
-      <path d="M128 264 l80 80 L384 168" fill="none" stroke="#1B2A4A" strokeWidth={52}
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/** 마크 + 워드마크 — 「freepass」(600) 「admin」(300). 누르면 첫 화면으로. */
+/** 워드마크 — 「freepass」(600) 「admin」(300). 누르면 첫 화면으로. */
 export function Brand({ tail = 'admin' }: { tail?: string }) {
   return (
     <Link href="/" className={`dz-brand ${레터링.className}`} aria-label={`freepass ${tail}`}>
-      <BrandMark />
       <span className="dz-word"><b>freepass</b><i>{tail}</i></span>
     </Link>
   );

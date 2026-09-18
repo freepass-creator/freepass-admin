@@ -1580,3 +1580,16 @@ body > nav.fn-top .dz-logout button:hover { background: rgba(255, 255, 255, .08)
 /* 위 띠 — 로그인한 사람 이름(로그아웃 바로 왼쪽 · 보조 12 · 흰 글자 흐리게) */
 body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 255, .86); white-space: nowrap; }
 @media (max-width: 900px) { body > nav.fn-top .dz-me { margin-left: auto; } body > nav.fn-top .dz-me + .dz-logout { margin-left: 0; } }
+
+/* ★공식 CI 워드마크(ci_center) — 마크 없음 · 앞말 600 + 뒷말 300 · 사이 2px (대표 「공식적인 CI 에는 그 체크박스 네모가 없어」) */
+.dz-brand { gap: 0; }
+.dz-word { font-size: 20px; }
+.dz-word b { color: #fff; }
+.dz-word i { margin-left: 2px; color: rgba(255, 255, 255, .55); }
+.lg-brand { gap: 0; }
+.lg-brand span { font-size: 24px; }
+.lg-brand b { color: #1B2A4A; }
+.lg-brand i { margin-left: 2px; color: #7F93B3; }
+.cl-brand { gap: 0; font-size: 20px; line-height: 1; letter-spacing: -.2px; }
+.cl-brand b { font-weight: 600; color: #1B2A4A; }
+.cl-brand i { font-style: normal; font-weight: 300; margin-left: 2px; color: #7F93B3; }

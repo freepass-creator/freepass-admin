@@ -6,6 +6,7 @@ import {
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
 import { sha256, signedSnapshot } from '../../domain/esign/snapshot';
+import { templateFieldsFromContract } from '../../domain/esign/template-fields';
 import type {
   EsignAdminState, EsignPrivateSubmission, EsignSession, EsignSnapshot,
 } from '../../domain/esign/types';
@@ -185,6 +186,7 @@ export class EsignService {
         tax: customerType === '개인사업자' ? '사업자' : '개인',
       },
       templateFields: {
+        ...templateFieldsFromContract(c),
         contract_code: S(c.contract_code) || contractId,
         contract_date: contractDate,
         customer_name: customerName,
@@ -195,8 +197,6 @@ export class EsignService {
         rent_month: String(term ?? ''),
         deposit_amount: String(deposit ?? ''),
         company_name: supplierName || supplierCode,
-        driver_age: S(c.driver_age_snapshot),
-        annual_mileage: S(c.annual_mileage_snapshot),
         payment_method: S(c.payment_method_snapshot || c.payment_method) || '계좌이체',
       },
       requiredDocuments,

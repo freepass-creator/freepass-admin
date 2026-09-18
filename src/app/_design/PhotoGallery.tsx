@@ -60,9 +60,12 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
         onPointerDown={(e) => setX0(e.clientX)}
         onPointerUp={(e) => {
           const s = x0; setX0(null);
-          if (s !== null && Math.abs(e.clientX - s) > 40) { go(e.clientX < s ? 1 : -1); return; }
+          /* 화살표처럼 pointerdown 을 부모까지 안 올린 조작은 크게보기로 번지지 않는다. */
+          if (s === null) return;
+          if (Math.abs(e.clientX - s) > 40) { go(e.clientX < s ? 1 : -1); return; }
           setBig(true);
-        }}>
+        }}
+        onPointerCancel={() => setX0(null)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photos[i]} alt={alt} draggable={false} />
         {넘김}

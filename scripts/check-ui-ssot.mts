@@ -8,6 +8,8 @@ const coreFiles = [
   'src/app/intake/panels.tsx',
   'src/app/settlement/page.tsx',
   'src/app/esign/page.tsx',
+  'src/app/_design/DetailTabs.tsx',
+  'src/app/_design/OfferPicker.tsx',
 ];
 
 const forbidden = [
@@ -15,6 +17,8 @@ const forbidden = [
   { re: /className="dz-bar"/g, use: '<ActionBar />' },
   { re: /className="dz-empty"/g, use: '<EmptyState />' },
   { re: /className="summary-grid"/g, use: '<SummaryGrid />' },
+  { re: /className="dz-warn"/g, use: '<Notice tone="warn" />' },
+  { re: /className="dz-ok"/g, use: '<Notice tone="ok" />' },
 ];
 
 const requiredCss = [
@@ -72,7 +76,7 @@ if (errors.length) {
   process.exitCode = 1;
 } else {
   console.log('UI/UX SSOT check PASS');
-  console.log(`- core routes: ${coreFiles.length}`);
-  console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / SummaryGrid`);
+  console.log(`- checked UI files: ${coreFiles.length}`);
+  console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- visual baseline: 18/14/12 · control 40 · action/touch 44 · radius 4');
 }

@@ -6,7 +6,7 @@ import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { ClaimLink, IssueForm } from './LifeForms';
-import { Icon } from '../_design/Icon';
+import { ActionBar, EmptyState, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,15 +87,11 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         {/* ── 묶음 — 공급사(청구) / 영업채널(지급) ─────────────────── */}
         <section className="panel product-panel">
           <div className="dz-listtop">
-            <div className="panel-head">
-              <div><h1>{tab === 'claim' ? '청구목록' : '지급목록'}</h1></div>
-              <span className="count">{groups.length}곳 · {t.rows}줄</span>
-            </div>
+            <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} />
               <div className="searchbox dz-searchbox">
-                <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
-                <input name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
+                <SearchField name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
               </div>
             </form>
             <div className="quick-filters">
@@ -131,25 +127,22 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                   g.clawbacks.length ? `환수 ${g.clawbacks.length}` : ''].filter(Boolean).join(' · ')}
                 value={`${won(g.net)}원`} aside={who} />
             ))}
-            {shownGroups.length === 0 && <p className="dz-empty">이 달에 선 {who}가 없습니다.</p>}
+            {shownGroups.length === 0 && <EmptyState>이 달에 선 {who}가 없습니다.</EmptyState>}
           </div>
         </section>
 
         {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
         <section className="panel detail-panel st-lines">
           <div className="dz-listtop">
-            <div className="panel-head">
-              <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="묶음으로">‹</Link>
-              <div><h1>{gSel ? gSel.party : '실적 줄'}</h1></div>
-              {gSel && <span className="count">{gSel.lines.length}줄</span>}
-            </div>
+            <PanelHeader title={gSel ? gSel.party : '실적 줄'} count={gSel ? `${gSel.lines.length}줄` : undefined}
+              backHref={keep({ v: 'list' })} backLabel="묶음으로" />
             {gSel && (
-              <dl className="summary-grid">
-                <div><dt>합</dt><dd>{won(gSel.total)}원</dd></div>
-                <div><dt>환수</dt><dd>{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</dd></div>
-                <div><dt>{tab === 'claim' ? '청구할 돈' : '줄 돈'}</dt><dd><b>{won(gSel.net)}원</b></dd></div>
-                <div><dt>{tab === 'claim' ? '청구서 보냄' : '지급 통보'}</dt><dd>{gSel.done} / {gSel.lines.length}</dd></div>
-              </dl>
+              <SummaryGrid>
+                <SummaryItem label="합">{won(gSel.total)}원</SummaryItem>
+                <SummaryItem label="환수">{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</SummaryItem>
+                <SummaryItem label={tab === 'claim' ? '청구할 돈' : '줄 돈'}><b>{won(gSel.net)}원</b></SummaryItem>
+                <SummaryItem label={tab === 'claim' ? '청구서 보냄' : '지급 통보'}>{gSel.done} / {gSel.lines.length}</SummaryItem>
+              </SummaryGrid>
             )}
             {/* 발행 — 번호 · 미리보기(공급가 · 부가세 · 합계) · 막힌 까닭 · 발행 뒤 원장이 바뀜 */}
             {gSel && 계획 && (
@@ -189,17 +182,15 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 </span>
               </div>
             ))}
-            {!gSel && <p className="dz-empty">왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</p>}
+            {!gSel && <EmptyState>왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</EmptyState>}
           </div>
           {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
           {gSel && (
-            <div className="dz-bar">
-              <div className="dz-bar-go">
-                <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}>
-                  {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
-                </button>
-              </div>
-            </div>
+            <ActionBar>
+              <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}>
+                {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
+              </button>
+            </ActionBar>
           )}
         </section>
 
@@ -210,9 +201,9 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }) }} />
             : (
               <>
-                <div className="panel-head"><Link className="dz-phone-back" href={keep({ v: 'detail' })} aria-label="실적으로">‹</Link><div><h1>접수 상세</h1></div></div>
-                <p className="dz-empty">가운데 실적 줄을 누르면 그 접수의 진행 · 금액 · 원자 전부가 여기 섭니다.</p>
-                <p className="dz-empty">청구서 발행 · 수금 · 지급 처리는 업무 규칙이 굳으면 여기 하단바로 들어옵니다.</p>
+                <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />
+                <EmptyState>가운데 실적 줄을 누르면 그 접수의 진행 · 금액 · 원자 전부가 여기 섭니다.</EmptyState>
+                <EmptyState>청구서 발행 · 수금 · 지급 처리는 업무 규칙이 굳으면 여기 하단바로 들어옵니다.</EmptyState>
               </>
             )}
         </section>

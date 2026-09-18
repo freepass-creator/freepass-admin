@@ -4,7 +4,7 @@ import { searchProducts } from '../../domain/search/search-products';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import type { Offer } from '../../domain/product/types';
 import { vehicleName } from '../_fn/product';
-import { num, sp, txt, vocab, won } from '../_fn/fmt';
+import { sp, txt, vocab, won } from '../_fn/fmt';
 import { settlements } from '../../server/erp5';
 import { blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
@@ -59,14 +59,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   const text = sp(q.q).trim().toLowerCase();
   /** 축마다 고른 값 — 주소 `?status=즉시출고,출고협의` (같은 축 안은 «또는», 축끼리는 «이면서») */
   const psel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
-  const page = Math.max(1, Number(sp(q.page)) || 1);
-
   let all: Awaited<ReturnType<typeof productList>>;
   try { all = await productList(); }
   catch (e) {
     return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
   }
-  const { rows, report } = all;
+  const { rows } = all;
 
   /*
    * ★요금 축(기간 · 대여료 · 보증금)은 «한 요금이 모두» 만족해야 걸린다(S-02) — 그래서 차가 아니라 요금을 거른다.

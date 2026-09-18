@@ -5,6 +5,7 @@ export interface EsignRepository {
   createContract(id: string, data: Record<string, unknown>): Promise<void>;
   updateContract(id: string, patch: Record<string, unknown>): Promise<void>;
   getCurrentSession(contractId: string): Promise<EsignSession | null>;
+  getSession(id: string): Promise<EsignSession | null>;
   findSessionByTokenHash(hash: string): Promise<EsignSession | null>;
   createSession(session: EsignSession, publicUrl: string): Promise<void>;
   updateSession(id: string, patch: Partial<EsignSession>): Promise<void>;

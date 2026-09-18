@@ -43,6 +43,7 @@
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { intakeRecord } from '../src/domain/settlement/intake';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -161,8 +162,15 @@ for (const f of F04.rows as Record<string, unknown>[]) {
   const e = E.get(k);
 
   if (!e) {
-    /* ② 시트에만 — 새로 세운다. ★어디서 왔는지 박는다 */
-    const data: Record<string, unknown> = {};
+    /* ② 시트에만 — 새로 세운다. ★어디서 왔는지 박는다
+     *   ★기존 줄과 «같은 꼴» 로 세운다 — 2026-09-18 시트 칸만으로 세웠다가 10줄에 claimStage 등 50여 칸이 빠졌다
+     *     (디자인 세션이 찾음 · scripts/settlement-shape-fill.mts 로 메움). 기본 꼴 위에 시트 값을 얹는다. */
+    const base = intakeRecord({
+      receivedAt: String(f.receivedAt ?? ''), plate: String(f.plate ?? ''), model: '', supplier: '', supplierCode: '', customer: '',
+      channel: '', channelCode: '', agent: '', agentCode: '', product: '', rentKind: '', contractType: '', term: null, rent: null,
+      deposit: null, price: null, payKind: '', paper: false, delivered: false, deliveredAt: '', note: '',
+    }, Date.now());
+    const data: Record<string, unknown> = { ...base, settleNote: '', fromSheet: 'F04 연동' };
     for (const [c, v] of Object.entries(f)) if (!빈(v) && !안옮김.has(c)) data[c] = v;
     /** 청구·지급은 ERP5 이름으로 둔다 — 한 원장에 두 이름이 서면 안 된다 */
     if (!빈(f.claim)) data.claimWritten = f.claim;

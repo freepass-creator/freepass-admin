@@ -18,7 +18,7 @@ export type IntakeOptions = {
  * 접수 입력. ★모양은 신경 쓰지 않는다 (대표 2026-09-18). 하는 일만 —
  *   영업채널·담당·공급사를 고르면 원장에 이미 있는 «코드» 를 따라 채운다(지어내지 않는다).
  */
-export default function IntakeForm({ defaults, options }: { defaults: IntakeDefaults; options: IntakeOptions }) {
+export default function IntakeForm({ defaults, options, cancelHref }: { defaults: IntakeDefaults; options: IntakeOptions; cancelHref?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
   const [channel, setChannel] = useState('');
   const [channelCode, setChannelCode] = useState('');
@@ -75,16 +75,21 @@ export default function IntakeForm({ defaults, options }: { defaults: IntakeDefa
       {/* 프로모션 — 공급사가 더 주는 돈. ★수수료 칸은 없다(수수료는 기계가 ERP5 수수료표로 센다) · 영업자 몫은 비우면 100% */}
       <label>프로모션 금액<input name="promoAmount" inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
       <label>프로모션 영업자 몫 %<input name="promoSharePct" inputMode="numeric" placeholder="100" /></label>
-      <label style={{ gridColumn: 'span 2' }}>프로모션 사유<input name="promoReason" /></label>
+      <label style={{ gridColumn: '1 / -1' }}>프로모션 사유<input name="promoReason" /></label>
 
       <label style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><input type="checkbox" name="paper" /> 계약서 받음</label>
       <label style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><input type="checkbox" name="delivered" checked={delivered} onChange={(e) => setDelivered(e.target.checked)} /> 인도 완료</label>
       {delivered && <label>인도일 *<input name="deliveredAt" type="date" required /></label>}
       <label style={{ gridColumn: '1 / -1' }}>메모<textarea name="note" rows={2} /></label>
 
-      <div style={{ gridColumn: '1 / -1' }}>
+      {/* 하단바 규격(dz-bar) — 판 바닥에 붙는 주 단추 하나 */}
+      <div className="dz-bar" style={{ gridColumn: '1 / -1' }}>
         {state.errors.length > 0 && <ul className="fn-err">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <button type="submit" disabled={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+        {/* ★하단바는 상황에 맞게 바뀐다 — 신규 접수 중에는 [취소] [접수 저장] (대표 2026-09-18) */}
+        <div className="dz-bar-go">
+          {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
+          <button type="submit" className="primary" disabled={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+        </div>
       </div>
     </form>
   );

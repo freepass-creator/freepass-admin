@@ -87,7 +87,6 @@ export function FilterSheet({ axes, count, unit }: {
           <div className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
-              {total ? <button type="button" onClick={clearAll}>초기화</button> : null}
               <button type="button" onClick={() => setOpen(false)} aria-label="닫기">닫기</button>
             </div>
             <div className="dz-fs-body">
@@ -114,7 +113,9 @@ export function FilterSheet({ axes, count, unit }: {
                 </>}
               </div>
             </div>
-            <div className="dz-fs-foot">
+            {/* 하단바 규격(dz-bar) — 보조(초기화) 왼쪽 작게 · 주 단추가 나머지 */}
+            <div className="dz-fs-foot dz-bar-go">
+              {total ? <button type="button" className="dz-bar-sub" onClick={clearAll}>초기화</button> : null}
               <button type="button" className="primary" onClick={() => setOpen(false)}>
                 {count.toLocaleString('ko-KR')}{unit} 보기
               </button>

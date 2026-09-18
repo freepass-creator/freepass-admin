@@ -66,8 +66,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   return (
     <>
       <div className="panel-head">
-        <div><p className="eyebrow">NEW APPLICATION</p><h1>신규 접수</h1></div>
-        <Link className="icon-btn" href={back}>목록</Link>
+        <div><h1>신규 접수</h1></div>
       </div>
       {product ? (
         <div className="dz-picked">
@@ -81,21 +80,31 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
       ) : <p className="dz-empty">상품 없이 직접 넣습니다. 상품에서 고르려면 가운데 상세에서 「이 상품 접수하기」.</p>}
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</p>}
       <p className="dz-empty">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
-      <div className="dz-form"><IntakeForm defaults={defaults} options={options} /></div>
+      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} /></div>
     </>
   );
 }
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
-export async function IntakeDetailPanel({ code, created, exists, back }: {
-  code: string; created?: boolean; exists?: boolean; back: string;
+export async function IntakeDetailPanel({ code, created, exists, back, newHref }: {
+  code: string; created?: boolean; exists?: boolean; back: string; newHref: string;
 }) {
+  /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
+  const 바 = (
+    <div className="dz-bar">
+      <div className="dz-bar-go">
+        <Link className="dz-bar-sub" href={back}>목록</Link>
+        <Link className="primary" href={newHref}>+ 신규 접수</Link>
+      </div>
+    </div>
+  );
   const hit = await settlements.get(code);
   if (!hit) {
     return (
       <>
-        <div className="panel-head"><div><p className="eyebrow">APPLICATION</p><h1>접수 상세</h1></div><Link className="icon-btn" href={back}>목록</Link></div>
+        <div className="panel-head"><div><h1>접수 상세</h1></div></div>
         <p className="dz-empty">이 접수를 못 찾았습니다 — {code}</p>
+        {바}
       </>
     );
   }
@@ -110,8 +119,7 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
   return (
     <>
       <div className="panel-head">
-        <div><p className="eyebrow">APPLICATION</p><h1>접수 상세</h1></div>
-        <Link className="icon-btn" href={back}>목록</Link>
+        <div><h1>접수 상세</h1></div>
       </div>
       {created && <p className="dz-ok">ERP5 에 새 접수를 세웠습니다.</p>}
       {exists && <p className="dz-warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</p>}
@@ -162,6 +170,7 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
           ))}
         </div>
       )}
+      {바}
     </>
   );
 }

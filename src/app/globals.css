@@ -845,7 +845,8 @@ body { background: var(--바닥); }
    ★★★ 틀고정 — 무엇이 서 있고 무엇이 구르나 (대표 2026-09-18 「각 스크롤에 틀고정 될 것과 이런 것들 잘 챙겨 주시고 · 모바일까지」)
    ─ PC ─  판 하나 = 제 스크롤. 판 머리는 늘 서 있다.
      목록 판  : [머리 · 검색창 · 퀵 단추] 서 있음(.dz-listtop) → 목록만 구름 → 쪽 넘김 줄은 바닥에 서 있음
-     상세 판  : [머리 · 요약/상세정보 탭] 서 있음 → 몸통(.dz-tabbody)만 구름 → [기간 · 값 한 줄 · 접수하기]는 바닥에 붙음
+     상세 판  : 판 전체가 구른다 — ★서 있는 것은 [기간 · 값 한 줄 · 공유 · 접수하기] 하나뿐(바닥에 붙음)
+                대표 2026-09-18 「세부 페이지에는 접수 버튼 빼고는 틀고정 필요 없지」 — 앞서 머리·탭까지 서 있었다
      신규 접수·접수 상세 : 머리(「목록」)는 위에 붙고 몸통이 구름
    ─ 폰 ─  쪽 전체가 구른다(판 한 장씩). 목록 머리·검색·퀵은 화면 위에 붙고, 접수하기 덩이는 아래 탭 바로 위에 붙는다.
    ═══════════════════════════════════════════════════════════════════ */
@@ -854,8 +855,10 @@ body { background: var(--바닥); }
   .fn-main .workspace > .panel > .dz-listtop { flex: none; }
   .fn-main .workspace > .panel > .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px; }
   .fn-main .workspace > .panel > .dz-pager { flex: none; }
-  /* 상세 판 — 탭 밑 몸통만 구른다 */
-  .fn-main .workspace > .detail-panel > .dz-tabbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* 상세 판 — 판 전체가 구른다(머리·탭도 같이). 접수 덩이만 바닥에 붙는다 */
+  .fn-main .workspace > .detail-panel { display: block; overflow-y: auto; }
+  /* 판 여백(22) 밑까지 흰 면으로 덮어 바닥에 딱 붙인다 */
+  .fn-main .workspace > .detail-panel .dz-apply { bottom: -22px; margin-bottom: -22px; padding-bottom: 22px; }
   /* 신규 접수 · 접수 상세 — 판 전체가 구르되 머리는 붙는다 */
   .fn-main .workspace > .work-panel:not(:has(> .list)) { display: block; overflow-y: auto; }
   .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head {
@@ -1061,3 +1064,84 @@ body { background: var(--바닥); }
 /* 정정요청 걸린 칸 — 멈춘 자리. 선 없이 색으로만(옅은 붉은 면 + 진한 글자) */
 .dz-sec-table > div.stop { margin: 0 -8px; padding: 7px 8px; border-radius: var(--r); background: #fdecea; }
 .dz-sec-table > div.stop dt, .dz-sec-table > div.stop dd { color: #a8261d; font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 하단바 규격 — 하단바를 쓰는 곳은 모두 이것 하나 (대표 2026-09-18 「하단바 규격도 잡아서 하단바 쓰는 곳은 동일하게」)
+     쓰는 곳: 상품 상세 접수 덩이(공유 · 이 상품 접수하기) · 세부검색 판 바닥(초기화 · N대 보기) · 신규 접수 폼(접수 저장)
+     ┌────────────────────────────────────────────┐
+     │ [ 보조 3 ]  [          주 단추 7          ] │   높이 44 · 보조 = 회색 면(왼쪽) · 주 = 남색(오른쪽) · 폭 3 : 7
+     └────────────────────────────────────────────┘
+     · 판 바닥에 붙는다(sticky) · 흰 면 · 선 없음(규칙 ①) — 위와는 사이(12)로 가른다
+     · 폰은 아래 메뉴 띠 바로 위에 붙는다(.dz-apply 규칙) · 판이 제 스크롤인 곳은 판 여백까지 덮는다
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-bar { position: sticky; bottom: 0; z-index: 4; background: var(--판); padding-top: 12px; }
+/* ★주 7 : 보조 3 — 칸으로 나눈다(flex 는 안쪽 여백이 비율을 흐렸다: 140 : 270 실측) · 단추가 하나면 한 줄 다 */
+.dz-bar-go { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 8px; }
+.dz-bar-go:has(> .dz-bar-sub) { grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); }
+.fn-main .dz-bar-go .primary, .dz-bar-go .primary {
+  /* ★주는 오른쪽(대표 2026-09-18) — 칸 비율은 .dz-bar-go 가 정한다 */
+  min-width: 0; width: auto; height: 44px; margin: 0; border: 0; border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.dz-bar-go .primary:disabled { opacity: .5; cursor: default; }
+.dz-bar-sub {
+  min-width: 0; justify-content: center; height: 44px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: #4f5862; font-size: var(--글메인); font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.dz-bar-sub:hover { background: var(--박스손); }
+.dz-fs-foot.dz-bar-go { padding: 12px; }
+@media (max-width: 900px) {
+  .dz-fs-foot.dz-bar-go .primary, .dz-fs-foot .dz-bar-sub { height: 52px; }
+}
+/* 신규 접수 폼 — 오른쪽 판(제 스크롤) 바닥에 붙는다. 판 여백(22)까지 덮는다 */
+@media (min-width: 901px) {
+  .fn-main .workspace > .work-panel .dz-bar { bottom: -22px; margin-bottom: -22px; padding-bottom: 22px; }
+}
+@media (max-width: 900px) {
+  .fn-main .workspace > .work-panel .dz-bar { bottom: calc(var(--아래띠) + 8px); }
+}
+/* 보조 단추가 링크일 때(목록 · 취소) — 단추와 같은 얼굴 */
+a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.fn-main .workspace a.dz-bar-sub { color: #4f5862; }
+/* 접수 목록 판(목록이 제 스크롤) — 바는 목록 밑에 서 있다(흐름 안 · 판 바닥) */
+@media (min-width: 901px) {
+  .fn-main .workspace > .work-panel:has(> .list) > .dz-bar { flex: none; position: static; margin: 0; padding: 12px 0 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상세정보 — erp4 읽는 차례(§14-5) · 여러 칸 표(대여료 · 보험) · 제목 옆 한 낱말 · 빈 칸 접기 · 영업 전용
+   ═══════════════════════════════════════════════════════════════════ */
+/* 여러 칸 표 — 머리 줄은 보조 회색, 첫 칸은 항목. 선 없이 옅은 박스(규칙 ①) */
+.dz-sec-grid {
+  width: 100%; margin: 8px 0 0; border-collapse: separate; border-spacing: 0;
+  background: var(--박스); border-radius: var(--r); font-size: var(--글메인);
+}
+.fn-main .dz-sec-grid th, .fn-main .dz-sec-grid td { border: 0; background: transparent; }
+.dz-sec-grid th, .dz-sec-grid td { padding: 7px 12px; text-align: left; font-weight: 400; line-height: 18px; vertical-align: top; }
+.dz-sec-grid thead th { padding-top: 10px; font-size: var(--글보조); color: #9aa3ad; }
+.dz-sec-grid tbody th { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-sec-grid td { color: var(--글); font-variant-numeric: tabular-nums; }
+.dz-sec-grid td b { font-weight: 700; }
+.dz-sec-grid tbody tr:last-child > * { padding-bottom: 10px; }
+.dz-sec-grid .dz-none { color: #c3c9cf; }
+/* 표 밑에 이어지는 한 칸 표 — 사이를 붙인다 */
+.dz-sec-grid + .dz-sec-table { margin-top: 6px; }
+/* 제목 옆 한 낱말(보험료 포함 · 밖에 안 나감) — 읽을 값이 아니라 구역 전체의 성격 */
+.dz-sec-tag {
+  font-style: normal; font-size: var(--글보조); line-height: 20px; padding: 0 8px; border-radius: var(--r);
+  background: var(--남색옅음); color: var(--ci남색); font-weight: 600;
+}
+/* 영업 전용 — 내부 값만 모인 구역: 호박색 결(내부 딱지와 같은 말) */
+.dz-sec.inner .dz-sec-ico { background: #fbeedd; color: #94560f; }
+.dz-sec.inner .dz-sec-tag { background: #fbeedd; color: #94560f; }
+.dz-sec.inner .dz-sec-table { background: #fdf7ef; }
+/* 빈 칸 N개 — 구역 끝에 접혀 있다. 펼치면 흐린 칸들이 선다 */
+.dz-sec-empty { margin-top: 4px; }
+.dz-sec-empty > summary {
+  list-style: none; display: inline-flex; align-items: center; height: 28px; padding: 0 8px; border-radius: var(--r);
+  font-size: var(--글보조); color: #9aa3ad; cursor: pointer;
+}
+.dz-sec-empty > summary::-webkit-details-marker { display: none; }
+.dz-sec-empty > summary:hover { background: var(--박스); color: #6b7580; }
+.dz-sec-empty > .dz-sec-table { margin-top: 4px; }

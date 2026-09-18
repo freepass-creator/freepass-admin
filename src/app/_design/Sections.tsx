@@ -41,7 +41,7 @@ const 접힘 = (key: string, n: number) => key.startsWith('policy_') || key === 
 const 수 = (n: number) => n.toLocaleString('ko-KR');
 
 /** 값의 꼴 — type 만 받아서 화면이 정한다(기능 쪽은 꼴을 안 정한다) */
-function 꼴(it: SectionItem) {
+export function 꼴(it: SectionItem) {
   const v = it.value;
   if (v === null || v === undefined || (Array.isArray(v) && !v.length)) return <span className="dz-none">—</span>;
   if (Array.isArray(v)) return <span className="dz-sec-list">{v.map((x) => <i key={x}>{x}</i>)}</span>;
@@ -66,7 +66,7 @@ function 꼴(it: SectionItem) {
   }
 }
 
-const 있음 = (it: SectionItem) => !(it.value === null || (Array.isArray(it.value) && !it.value.length));
+export const 있음 = (it: SectionItem) => !(it.value === null || (Array.isArray(it.value) && !it.value.length));
 /** 정정요청이 걸렸다 — «멈춘 자리»라 눈에 걸려야 한다(색으로만 · 규칙 ④) */
 const 멈춤 = (it: SectionItem) => /Fix$/.test(it.key) && (it.value === true || it.value === 'true' || it.value === 'Y');
 

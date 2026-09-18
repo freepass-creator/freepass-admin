@@ -13,7 +13,7 @@ import { ListRow } from '../_design/ListRow';
 import { Tag, 신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
 import { PhotoGallery } from '../_design/PhotoGallery';
-import { Sections } from '../_design/Sections';
+import { ProductInfo } from '../_design/ProductInfo';
 import { productSections } from '../../domain/catalog/sections';
 import { 매칭, 매칭끝 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
@@ -33,7 +33,6 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
  */
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
-const PAGE = 100;
 
 /**
  * ★목록 한 줄의 «대표 요금» — 대표 2026-08-21 「대여료 «최저가» 기준」.
@@ -170,8 +169,8 @@ export async function ProductWorkspace({ q, mode, base }: {
     .map((h) => ({ ...h, lead: lead(h.matchedOffers) }))
     .sort((a, b) => (STATUS_ORDER[a.product.status ?? ''] ?? 9) - (STATUS_ORDER[b.product.status ?? ''] ?? 9)
       || (a.lead?.monthlyRent ?? Infinity) - (b.lead?.monthlyRent ?? Infinity));
-  const shown = sorted.slice((page - 1) * PAGE, page * PAGE);
-  const pages = Math.max(1, Math.ceil(sorted.length / PAGE));
+  /* ★쪽을 나누지 않는다 — 목록은 쭉 구른다(대표 2026-09-18 「스크롤이 쭉쭉쭉 되어야 함」). 사진은 화면에 올 때 부른다(lazy) */
+  const shown = sorted;
 
   const statuses = vocab(rows.map((p) => p.status));
   const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
@@ -201,7 +200,6 @@ export async function ProductWorkspace({ q, mode, base }: {
     const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
   });
-  const link = (n: number) => `${base}?${new URLSearchParams({ ...Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])), page: String(n) })}`;
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
   const selId = sp(q.id);
@@ -267,7 +265,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
           <div className="panel-head">
-            <div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div>
+            <div><h1>상품 목록</h1></div>
             <span className="count">{sorted.length.toLocaleString()}대</span>
           </div>
           {/**
@@ -316,18 +314,12 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
             {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}
           </div>
-          <p className="dz-pager">
-            {page > 1 ? <Link href={link(page - 1)}>← 앞</Link> : <span />}
-            <span>{page} / {pages}쪽</span>
-            {page < pages ? <Link href={link(page + 1)}>뒤 →</Link> : <span />}
-          </p>
         </section>
 
         {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
         <section className="panel detail-panel">
           <div className="panel-head">
-            <div><p className="eyebrow">DETAIL</p><h1>상품 상세</h1></div>
-            <button className="icon-btn" type="button">공유</button>
+            <div><h1>상품 상세</h1></div>
           </div>
           {car ? (
             <>
@@ -358,8 +350,8 @@ export async function ProductWorkspace({ q, mode, base }: {
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
                     <Tag {...신원(txt(car.status))}>{txt(car.status)}</Tag>
                   </div>
-                  {/* ★원자를 성격별 구역으로 — 기능 쪽 productSections(erp4 사전 이름) · 모양은 _design/Sections */}
-                  <Sections sections={productSections(car)} />
+                  {/* ★상세정보 — erp4 읽는 차례로 묶었다(차량 → 대여료 → 운전자 → 보험 → 계약 → 영업 전용 → 기타) · 원자는 기능 쪽 productSections 그대로 */}
+                  <ProductInfo sections={productSections(car)} offers={car.offers} />
                 </>}
               />
             </>
@@ -371,16 +363,14 @@ export async function ProductWorkspace({ q, mode, base }: {
           <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
-          <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })} />
+          <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}
+            newHref={keep({ w: 'new', product: '', offer: '', ic: '', created: '', exists: '', v: 'work' })} />
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
           <div className="panel-head">
-            <div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div>
-            <div className="dz-head-right">
-              <Link className="new-app" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규접수</Link>
-              <span className="count">{ishown.length.toLocaleString()}건</span>
-            </div>
+            <div><h1>접수 목록</h1></div>
+            <span className="count">{ishown.length.toLocaleString()}건</span>
           </div>
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
@@ -409,6 +399,13 @@ export async function ProductWorkspace({ q, mode, base }: {
               {ishown.length === 0 && <p className="dz-empty">조건에 맞는 접수가 없습니다.</p>}
             </div>
           )}
+          {/* ★하단바 — 접수 목록에서는 [+ 신규 접수] 하나(대표 2026-09-18 「신규접수 버튼도 하단으로 옮기는 게 맞지 않나」)
+                누르면 같은 자리에 [취소] [접수 저장] 이 선다 — 판이 바뀌면 바도 따라 바뀐다 */}
+          <div className="dz-bar">
+            <div className="dz-bar-go">
+              <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
+            </div>
+          </div>
         </section>}
       </section>
 

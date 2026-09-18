@@ -29,6 +29,23 @@ type 요금 = {
 const 원 = (n?: number) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 주행 = (n?: number) => (n ? `연 ${n.toLocaleString('ko-KR')}km` : '—');
 
+/**
+ * 공유 — 지금 보는 차의 주소를 건넨다. 폰은 기기 공유창(navigator.share), 웹은 주소 복사.
+ * ★주소에 고른 차·기간이 다 들어 있다(`?id=&offer=`) — 받은 사람이 같은 자리를 연다.
+ */
+function Share() {
+  const [done, setDone] = useState(false);
+  const go = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share && window.matchMedia('(max-width: 900px)').matches) { await navigator.share({ url }); return; }
+      await navigator.clipboard.writeText(url);
+      setDone(true); setTimeout(() => setDone(false), 1500);
+    } catch { /* 닫았거나 막혔다 — 아무 일 없다 */ }
+  };
+  return <button type="button" className="dz-bar-sub" onClick={go}>{done ? '복사됨' : '공유'}</button>;
+}
+
 export function OfferPicker({ offers, initial, perks, perksNote, onApply, applyBase }: {
   offers: 요금[]; initial?: string;
   /** 혜택조건 — 도메인이 정한 차례 그대로(심사가 맨 앞) */
@@ -57,7 +74,7 @@ export function OfferPicker({ offers, initial, perks, perksNote, onApply, applyB
       <PerkMarks marks={perks ?? []} note={perksNote} />
       {줄.length === 0 ? <p className="dz-empty">받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</p> : (
         /* ★틀고정 — 기간 · 값 한 줄 · 접수하기는 판 아래에 붙는다(사진·혜택을 훑는 동안에도 손 닿는 자리) */
-        <div className="dz-apply">
+        <div className="dz-apply dz-bar">
           <div className="offer-picker">
             {줄.map((x) => (
               <button key={x.id} type="button" onClick={() => set고름(x.id)} className={x.id === 고름 ? 'active' : ''}>
@@ -73,10 +90,14 @@ export function OfferPicker({ offers, initial, perks, perksNote, onApply, applyB
               <span>주행 {주행(o.annualMileageKm)}</span>
             </p>
           )}
-          {o && applyBase && <a className="primary" href={`${applyBase}${applyBase.includes('?') ? '&' : '?'}offer=${encodeURIComponent(o.id)}`}>이 상품 접수하기</a>}
-          {o && !applyBase && onApply && (
-            <button type="button" className="primary" onClick={() => onApply(o.id)}>이 상품 접수하기</button>
-          )}
+          {/* ★공유는 접수 단추 «왼쪽에 작게»(대표 2026-09-18) — 앞서 판 머리 오른쪽 위에 따로 서 있었다 */}
+          <div className="dz-bar-go">
+            <Share />
+            {o && applyBase && <a className="primary" href={`${applyBase}${applyBase.includes('?') ? '&' : '?'}offer=${encodeURIComponent(o.id)}`}>이 상품 접수하기</a>}
+            {o && !applyBase && onApply && (
+              <button type="button" className="primary" onClick={() => onApply(o.id)}>이 상품 접수하기</button>
+            )}
+          </div>
         </div>
       )}
     </>

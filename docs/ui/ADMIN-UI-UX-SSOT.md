@@ -620,7 +620,34 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 
 `ui:check`는:
 - 핵심 화면이 공통 primitive를 우회해 raw 공통 마크업을 다시 만드는지
+- 안정적인 UI 값이 inline style로 다시 들어오는지
 - `--ui-*` 핵심 토큰이 사라졌는지
-- machine SSOT의 18/14/12 · 40 · 44 · radius 4가 변했는지
+- 실제 CSS와 machine SSOT의 18/14/12 · 40 · 44 · radius 4가 변했는지
+- focus-visible / reduced-motion 공통 규칙이 사라졌는지
 
 를 검사한다.
+
+
+---
+
+# 21. 이번 정리에서 실제 코드에 반영된 것
+
+문서 규격만 선언한 것이 아니라 아래 항목은 실제 코드에 적용됐다.
+
+- 공통 primitive: `PanelHeader / SearchField / ActionBar / EmptyState / Notice / SummaryGrid / SummaryItem`
+- 핵심 화면 `products / intake / settlement / esign`의 반복 마크업을 공통 primitive로 교체
+- `DetailTabs`와 `OfferPicker`도 공통 ActionBar / EmptyState 사용
+- `--ui-*` 토큰으로 공통 치수 연결
+- 모바일 뒤로가기 visual 32px 유지 + 실제 hit-area 44px
+- 세부검색: 닫힌 뒤 trigger로 focus 복귀 · unique dialog id · busy 상태 노출
+- 상품 상세 tab에 `tablist/tab/tabpanel` 의미 추가
+- ListRow 선택 상태를 접근성 트리에 노출
+- 저장/정산 폼 pending 중 중복 조작 방지 + `aria-busy`
+- PhotoGallery 화살표 클릭이 크게보기로 번지는 pointer 이벤트 오류 수정
+- PhotoGallery reduced-motion 대응
+- 전역 `:focus-visible` 및 `prefers-reduced-motion` 공통 규칙
+- Badge/ListRow/Sections의 icon 이름 일부를 `IconName`으로 타입 고정
+- 안정적인 inline style을 CSS class로 이동
+- `AGENTS / MASTER / WORK-INBOX`의 오래된 UI 규칙에 최신 SSOT 우선관계 명시
+
+위 항목은 **기능/업무규칙/화면 디자인을 바꾸지 않는 범위의 정리**다.

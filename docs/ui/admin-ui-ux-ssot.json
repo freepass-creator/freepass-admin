@@ -232,6 +232,9 @@
       "src/app/globals.css",
       "src/app/_design/admin-final.css",
       "src/app/_fn/fn.css"
-    ]
+    ],
+    "intakePanelsBoundary": "src/app/intake/panels.tsx",
+    "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
+    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
   }
 }

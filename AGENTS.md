@@ -6,11 +6,17 @@
 2. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
 3. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
 4. `docs/MASTER-v1.md` — 장기 제품 기준
-5. 해당 작업의 PR / Issue / AI Core Gate
+5. UI/UX 작업이면 `docs/ui/ADMIN-UI-UX-SSOT.md` + `docs/ui/admin-ui-ux-ssot.json`
+6. 해당 작업의 PR / Issue / AI Core Gate
 
 메일 원문 출처 추적이 필요하면 `docs/memory/EMAIL-RND-INDEX.md`에서 Gmail message id와 제목을 확인한다.
 
 `docs/WORK-INBOX.md`가 ChatGPT 채팅과 Work 사이의 공용 최신 인수인계판이다. `EMAIL-RND-CONSOLIDATED.md`는 과거 이메일의 의미를 잃지 않기 위한 장기 기억이며 최신 결정보다 우선하지 않는다. Work는 채팅 내용을 자동으로 안다고 가정하지 말고, 이 파일들의 최신 결정을 개발에 반영한다. 서로 충돌하는 내용이 있으면 사용자의 최신 명시 결정과 AI Core Gate를 확인하고 임의 해석하지 않는다.
+
+### UI/UX 공통 정본
+버튼·텍스트·패널·목록·뱃지·상태·모바일 동선 등 **눈에 보이는 공통 규격**은
+`docs/ui/ADMIN-UI-UX-SSOT.md`가 정본이다. 새 화면마다 별도 크기·위계·색·라운드를 만들지 않는다.
+기계 판독용 `docs/ui/admin-ui-ux-ssot.json`도 같은 결정을 담는다.
 
 ## 1. Source of truth
 이 저장소가 freepass-admin(관리자 화면) 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.

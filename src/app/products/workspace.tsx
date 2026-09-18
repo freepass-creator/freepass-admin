@@ -176,6 +176,8 @@ export async function ProductWorkspace({ q, mode, base }: {
       <section className="workspace" data-phone={view} data-mode={mode}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
         <section className="panel product-panel">
+          {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
+          <div className="dz-listtop">
           <div className="panel-head">
             <div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div>
             <span className="count">{sorted.length.toLocaleString()}대</span>
@@ -219,6 +221,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
               <Link key={x} className={perk === x ? 'active' : ''} href={keep({ perk: perk === x ? '' : x, page: '' })}>{x}</Link>
             ))}
+          </div>
           </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (
@@ -268,7 +271,9 @@ export async function ProductWorkspace({ q, mode, base }: {
                     <span className="status-dot">{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</span>
                   </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
-                  <OfferPicker offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                  {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
+                        ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
+                  <OfferPicker key={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     perks={car.perks} perksNote={정책말(car.policyState)}
                     applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined} />
                 </>}
@@ -320,6 +325,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })} />
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
+          <div className="dz-listtop">
           <div className="panel-head">
             <div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div>
             <div className="dz-head-right">
@@ -351,6 +357,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             {([['all', '전체'], ['open', '진행중'], ['delivered', '인도완료'], ['cancelled', '취소']] as const).map(([v, label]) => (
               <Link key={v} className={iv === v ? 'active' : ''} href={keep({ iv: v === 'open' ? '' : v })}>{label}</Link>
             ))}
+          </div>
           </div>
           {intakeErr ? <p className="dz-empty">ERP5 접수를 못 읽었습니다 — {intakeErr}</p> : (
             <div className="list">

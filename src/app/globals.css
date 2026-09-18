@@ -758,3 +758,52 @@ body { background: var(--바닥); }
 .dz-event b { font-size: var(--글보조); }
 .dz-event small { margin-left: auto; color: #6b7580; }
 .dz-list-plain { margin: 0; padding-left: 18px; font-size: var(--글보조); color: #6b7580; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 틀고정 — 무엇이 서 있고 무엇이 구르나 (대표 2026-09-18 「각 스크롤에 틀고정 될 것과 이런 것들 잘 챙겨 주시고 · 모바일까지」)
+   ─ PC ─  판 하나 = 제 스크롤. 판 머리는 늘 서 있다.
+     목록 판  : [머리 · 검색창 · 퀵 단추] 서 있음(.dz-listtop) → 목록만 구름 → 쪽 넘김 줄은 바닥에 서 있음
+     상세 판  : [머리 · 요약/상세정보 탭] 서 있음 → 몸통(.dz-tabbody)만 구름 → [기간 · 값 한 줄 · 접수하기]는 바닥에 붙음
+     신규 접수·접수 상세 : 머리(「목록」)는 위에 붙고 몸통이 구름
+   ─ 폰 ─  쪽 전체가 구른다(판 한 장씩). 목록 머리·검색·퀵은 화면 위에 붙고, 접수하기 덩이는 아래 탭 바로 위에 붙는다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .fn-main .workspace > .panel { display: flex; flex-direction: column; overflow: hidden; }
+  .fn-main .workspace > .panel > .dz-listtop { flex: none; }
+  .fn-main .workspace > .panel > .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px; }
+  .fn-main .workspace > .panel > .dz-pager { flex: none; }
+  /* 상세 판 — 탭 밑 몸통만 구른다 */
+  .fn-main .workspace > .detail-panel > .dz-tabbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* 신규 접수 · 접수 상세 — 판 전체가 구르되 머리는 붙는다 */
+  .fn-main .workspace > .work-panel:not(:has(> .list)) { display: block; overflow-y: auto; }
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head {
+    position: sticky; top: -22px; z-index: 6; margin: -22px -22px 12px; padding: 22px 22px 8px; background: var(--판);
+  }
+}
+/* 상세 요약의 접수 덩이 — 몸통 바닥에 붙는다(PC · 폰 공통). 밑 내용이 비치지 않게 흰 면 */
+.dz-apply { position: sticky; bottom: 0; z-index: 4; background: var(--판); padding-bottom: 2px; }
+.dz-apply .offer-picker { padding-top: 12px; }
+
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel { overflow: visible; }
+  /** 폰 — 목록 머리·검색·퀵이 화면 위에 붙는다. 판 여백(16)만큼 끌어올려 흰 면으로 덮는다 */
+  .fn-main .workspace > .panel > .dz-listtop {
+    position: sticky; top: 0; z-index: 8; margin: -16px -16px 8px; padding: 16px 16px 4px; background: var(--판);
+  }
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head {
+    position: sticky; top: 0; z-index: 8; margin: -16px -16px 12px; padding: 16px 16px 8px; background: var(--판);
+  }
+  /** 폰 — 접수하기 덩이는 아래 탭(49 + 사이 8·8) 바로 위에 붙는다 */
+  .dz-apply { bottom: calc(49px + 16px + env(safe-area-inset-bottom)); }
+  /** 폰 아래 탭은 계약접수·상품찾기 두 화면 모두에 선다(판 한 장씩) */
+  .fn-main .workspace { padding-bottom: calc(8px + 49px + 8px + env(safe-area-inset-bottom)); }
+}
+/**
+ * ★폰 — 판을 «한 장씩»(규칙 ⑧). ⚠ 옛 목업 규칙은 data-phone="product" 를 봤는데 새 화면은 list·detail·work 를 쓴다
+ *   — 이름이 어긋나 폰에서 판 셋이 한꺼번에 섰다(실측). 새 이름으로 다시 건다.
+ */
+@media (max-width: 900px) {
+  .fn-main .workspace[data-phone="list"] > .panel:not(.product-panel),
+  .fn-main .workspace[data-phone="detail"] > .panel:not(.detail-panel),
+  .fn-main .workspace[data-phone="work"] > .panel:not(.work-panel) { display: none; }
+}

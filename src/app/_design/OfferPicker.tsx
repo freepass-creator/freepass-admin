@@ -56,7 +56,8 @@ export function OfferPicker({ offers, initial, perks, perksNote, onApply, applyB
     <>
       <PerkMarks marks={perks ?? []} note={perksNote} />
       {줄.length === 0 ? <p className="dz-empty">받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</p> : (
-        <>
+        /* ★틀고정 — 기간 · 값 한 줄 · 접수하기는 판 아래에 붙는다(사진·혜택을 훑는 동안에도 손 닿는 자리) */
+        <div className="dz-apply">
           <div className="offer-picker">
             {줄.map((x) => (
               <button key={x.id} type="button" onClick={() => set고름(x.id)} className={x.id === 고름 ? 'active' : ''}>
@@ -76,7 +77,7 @@ export function OfferPicker({ offers, initial, perks, perksNote, onApply, applyB
           {o && !applyBase && onApply && (
             <button type="button" className="primary" onClick={() => onApply(o.id)}>이 상품 접수하기</button>
           )}
-        </>
+        </div>
       )}
     </>
   );

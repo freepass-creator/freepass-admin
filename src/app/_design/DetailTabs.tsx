@@ -16,8 +16,11 @@ export function DetailTabs({ summary, info }: { summary: ReactNode; info: ReactN
         <button type="button" className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
         <button type="button" className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>상세정보</button>
       </div>
-      <div hidden={tab !== 'summary'}>{summary}</div>
-      <div hidden={tab !== 'info'}>{info}</div>
+      {/* ★틀고정 — 탭은 서 있고 이 몸통만 구른다 */}
+      <div className="dz-tabbody">
+        <div hidden={tab !== 'summary'}>{summary}</div>
+        <div hidden={tab !== 'info'}>{info}</div>
+      </div>
     </>
   );
 }

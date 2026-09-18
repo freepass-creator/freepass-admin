@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
-import { Icon } from '../_design/Icon';
+import { ActionBar, EmptyState, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,17 +73,13 @@ export default async function EsignPage({ searchParams }: {
     <section className="workspace" data-mode="esign" data-phone={view}>
       <section className="panel product-panel">
         <div className="dz-listtop">
-          <div className="panel-head">
-            <div><h1>계약 목록</h1></div>
-            <span className="count">{shown.length.toLocaleString()}건</span>
-          </div>
+          <PanelHeader title="계약 목록" count={`${shown.length.toLocaleString()}건`} />
 
           <form className="dz-find" action="/esign">
             {sign && <input type="hidden" name="sign" value={sign} />}
             {status && <input type="hidden" name="status" value={status} />}
             <div className="searchbox dz-searchbox">
-              <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
-              <input name="q" defaultValue={sp(q.q)} placeholder="고객 · 차량번호 · 계약코드 · 담당자" />
+              <SearchField name="q" defaultValue={sp(q.q)} placeholder="고객 · 차량번호 · 계약코드 · 담당자" />
             </div>
           </form>
 
@@ -130,18 +126,15 @@ export default async function EsignPage({ searchParams }: {
               aside={c.term === null || c.term === undefined ? '기간 미확인' : `${num(c.term)}개월`}
             />
           ))}
-          {shown.length === 0 && <p className="dz-empty">이 조건에 맞는 계약이 없습니다.</p>}
+          {shown.length === 0 && <EmptyState>이 조건에 맞는 계약이 없습니다.</EmptyState>}
         </div>
       </section>
 
       <section className="panel detail-panel">
         {selected ? (
           <>
-            <div className="panel-head">
-              <Link className="dz-phone-back" href={keep({ id: '', v: 'list' })} aria-label="계약 목록으로">‹</Link>
-              <div><h1>계약 상세</h1></div>
-              <span className="count">{txt(selected.code)}</span>
-            </div>
+            <PanelHeader title="계약 상세" count={txt(selected.code)}
+              backHref={keep({ id: '', v: 'list' })} backLabel="계약 목록으로" />
 
             <div className="vehicle-title">
               <div>
@@ -150,42 +143,40 @@ export default async function EsignPage({ searchParams }: {
               </div>
             </div>
 
-            <dl className="summary-grid">
-              <div><dt>계약상태</dt><dd>{txt(selected.status)}</dd></div>
-              <div><dt>서명상태</dt><dd>{txt(selected.signStatus)}</dd></div>
-              <div><dt>기간</dt><dd>{selected.term === null || selected.term === undefined ? '—' : `${num(selected.term)}개월`}</dd></div>
-              <div><dt>월 대여료</dt><dd>{selected.rent === null || selected.rent === undefined ? '—' : `${won(selected.rent)}원`}</dd></div>
-            </dl>
+            <SummaryGrid>
+              <SummaryItem label="계약상태">{txt(selected.status)}</SummaryItem>
+              <SummaryItem label="서명상태">{txt(selected.signStatus)}</SummaryItem>
+              <SummaryItem label="기간">{selected.term === null || selected.term === undefined ? '—' : `${num(selected.term)}개월`}</SummaryItem>
+              <SummaryItem label="월 대여료">{selected.rent === null || selected.rent === undefined ? '—' : `${won(selected.rent)}원`}</SummaryItem>
+            </SummaryGrid>
 
             <h3 className="dz-sub">계약 정보</h3>
-            <dl className="summary-grid">
-              <div><dt>양식</dt><dd>{txt(selected.kind)}</dd></div>
-              <div><dt>보험</dt><dd>{txt(selected.insurance)}</dd></div>
-              <div><dt>계약일</dt><dd>{txt(selected.contractDate)}</dd></div>
-              <div><dt>만든 때</dt><dd>{when(selected.createdAt)}</dd></div>
-              <div><dt>발송</dt><dd>{when(selected.signSentAt)}</dd></div>
-              <div><dt>서명</dt><dd>{when(selected.signedAt)}</dd></div>
-            </dl>
+            <SummaryGrid>
+              <SummaryItem label="양식">{txt(selected.kind)}</SummaryItem>
+              <SummaryItem label="보험">{txt(selected.insurance)}</SummaryItem>
+              <SummaryItem label="계약일">{txt(selected.contractDate)}</SummaryItem>
+              <SummaryItem label="만든 때">{when(selected.createdAt)}</SummaryItem>
+              <SummaryItem label="발송">{when(selected.signSentAt)}</SummaryItem>
+              <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
+            </SummaryGrid>
 
-            <div className="dz-bar">
-              <div className="dz-bar-go">
-                {selected.signUrl && (
-                  <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">서명창 열기</a>
-                )}
-                {selected.signedPdfUrl && (
-                  <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
-                )}
-              </div>
-            </div>
+            <ActionBar>
+              {selected.signUrl && (
+                <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">서명창 열기</a>
+              )}
+              {selected.signedPdfUrl && (
+                <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
+              )}
+            </ActionBar>
 
             {!selected.signUrl && !selected.signedPdfUrl && (
-              <p className="dz-empty">연결된 전자서명 링크나 완료 문서가 없습니다.</p>
+              <EmptyState>연결된 전자서명 링크나 완료 문서가 없습니다.</EmptyState>
             )}
           </>
         ) : (
           <>
-            <div className="panel-head"><div><h1>계약 상세</h1></div></div>
-            <p className="dz-empty">왼쪽에서 계약을 고르면 상세가 여기 섭니다.</p>
+            <PanelHeader title="계약 상세" />
+            <EmptyState>왼쪽에서 계약을 고르면 상세가 여기 섭니다.</EmptyState>
           </>
         )}
       </section>

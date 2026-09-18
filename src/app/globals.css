@@ -1408,3 +1408,13 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .fn-main .workspace > .work-panel > .dz-form { flex: 1 0 auto; display: flex; flex-direction: column; }
 .dz-intake-form { flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; }
 .dz-intake-form > .dz-bar { margin-top: auto; }
+/* 상품구분 고르기 — 단추 줄(40 · 켜진 것 남색 면). 신차렌트는 선출고 · 견적출고 · 신차발주 중 사람이 고른다 */
+.dz-choice { display: flex; flex-wrap: wrap; gap: 4px; clear: both; }
+.dz-choice label { position: relative; flex-direction: row !important; }
+.dz-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.dz-choice span {
+  display: inline-flex; align-items: center; height: var(--컨트롤); line-height: 16px; padding: 0 14px; border-radius: var(--r);
+  background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
+}
+.dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
+.dz-choice input:focus-visible + span { box-shadow: 0 0 0 2px var(--ci스카이); }

@@ -6,8 +6,8 @@ import { createIntakeAction, previewFeeAction, type FeePreview, type FormState }
 export type IntakeDefaults = {
   receivedAt: string; plate: string; model: string; supplier: string; supplierCode: string;
   term: string; rent: string; deposit: string;
-  /** 차에서 온 상품구분 · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
-  product?: string; price?: string;
+  /** 차에서 온 원장 상품구분 · 렌트구분(기능 ledgerKindOf) · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
+  product?: string; rentKind?: string; price?: string;
 };
 export type IntakeOptions = {
   channels: string[]; channelCode: Record<string, string>;
@@ -27,10 +27,17 @@ export type IntakeOptions = {
  *   ★하는 일은 기능 쪽 그대로 — 영업채널·담당·공급사를 고르면 원장에 이미 있는 «코드» 를 따라 채운다(지어내지 않는다).
  *   ★필수는 도메인(validateIntake)이 정한다: 차량번호 · 공급사 · 접수일 · 고객명 · 영업채널 · 영업담당.
  */
-export default function IntakeForm({ defaults, options, cancelHref, picked, fee }: {
+export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts }: {
   defaults: IntakeDefaults; options: IntakeOptions; cancelHref?: string; picked?: boolean;
   /** 차 골라 접수 — 서버가 미리 센 수수료(previewFeeAction 과 같은 셈) */
   fee?: FeePreview | null;
+  /**
+   * 차 골라 접수에서 상품구분을 «사람이 고를» 말들 — 비었으면 짝이 하나로 떨어진 것(숨은 칸으로 간다).
+   * ★원장 상품구분이 수수료 갈래를 정한다(기능 ledgerKindOf) — 신차렌트는 선출고/견적출고/신차발주 중 사람이 고른다.
+   */
+  productChoices?: string[];
+  /** 원장 상품구분 전부(기능 LEDGER_PRODUCTS) — 직접 접수의 고를 말 */
+  ledgerProducts?: readonly string[];
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
   const [channel, setChannel] = useState('');
@@ -109,8 +116,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee 
       <summary>더 넣기 <small>선택 — 없어도 접수됩니다</small></summary>
       <div className="dz-form-grid">
         {picked && <label>접수일<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>}
-        {picked && sel('product', options.products, '상품구분', defaults.product)}
-        {sel('rentKind', options.rentKinds, '렌트구분')}
+        {!picked && sel('rentKind', options.rentKinds, '렌트구분')}
         {sel('contractType', options.contractTypes, '계약방식')}
         {sel('payKind', options.payKinds, '분납여부')}
         {picked && 코드}
@@ -131,7 +137,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee 
     /* ★`action=` 로 넘기면 React 19 가 제출 뒤 입력칸을 비운다 — 틀려서 되돌아와도 쓴 것이 다 날아간다.
          그래서 손으로 넘긴다. */
     <form className="dz-intake-form"
-      onChange={(e) => { if (!picked && ['supplier', 'product', 'model', 'term', 'rent', 'price'].includes((e.target as unknown as HTMLInputElement).name)) 다시셈(e.currentTarget); }}
+      onChange={(e) => { if (['supplier', 'product', 'model', 'term', 'rent', 'price'].includes((e.target as unknown as HTMLInputElement).name)) 다시셈(e.currentTarget); }}
       onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
       <datalist id="dl-channel">{options.channels.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
@@ -144,6 +150,19 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee 
             <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
           ))}
           <input type="hidden" name="supplierCode" value={supplierCode} />
+          <input type="hidden" name="rentKind" value={defaults.rentKind ?? ''} />
+          {/* 상품구분 — 짝이 하나면 숨은 칸 · 아니면 사람이 고른다(수수료 갈래가 갈린다) */}
+          {productChoices?.length
+            ? 묶음('상품구분 — 골라 주세요', (
+              <div className="dz-choice" role="radiogroup" aria-label="상품구분">
+                {productChoices.map((c) => (
+                  <label key={c}><input type="radio" name="product" value={c} defaultChecked={c === defaults.product} required /><span>{c}</span></label>
+                ))}
+              </div>
+            ))
+            : <input type="hidden" name="product" value={defaults.product ?? ''} />}
+          {/* 고른 상품구분의 수수료 — 표가 내면 여기 한 줄, 못 내면 아래 「수수료 — 직접 넣으세요」가 선다(두 번 안 쓴다) */}
+          {productChoices?.length && !직접 ? 미리글 : null}
           {묶음('고객 · 영업', <div className="dz-form-grid">{사람}</div>)}
           {직접 && 묶음('수수료 — 직접 넣으세요', <>{미리글}<div className="dz-form-grid">{수수료칸}</div></>)}
         </>
@@ -162,7 +181,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee 
           {묶음('조건', (
             <div className="dz-form-grid">
               <label>접수일 *<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>
-              {sel('product', options.products, '상품구분')}
+              {sel('product', [...(ledgerProducts ?? options.products)], '상품구분')}
               <label>계약기간(개월)<input name="term" defaultValue={defaults.term} inputMode="numeric" /></label>
               <label>렌탈료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
               <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>

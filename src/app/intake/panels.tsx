@@ -18,6 +18,7 @@ import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { previewFeeAction } from './actions';
+import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { invoiceMoneyOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
@@ -44,6 +45,9 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   rows: SettlementRow[]; productId: string; offerId: string; back: string;
 }) {
   const product = productId ? await productById(productId) : null;
+  /* ★차의 상품구분 → 원장 상품구분 · 렌트구분(기능 ledgerKindOf) — 원장 말이 수수료 갈래를 정한다 */
+  const 짝 = product ? ledgerKindOf(product.productKind) : null;
+  const 고를말 = product ? (짝 ? (짝.certain ? [] : 짝.choices) : [...LEDGER_PRODUCTS]) : [];
   const offer = product?.offers.find((o) => o.id === offerId);
   const options: IntakeOptions = {
     channels: vocab(rows.map((r) => r.channel)),
@@ -67,7 +71,8 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
-    product: product?.productKind ?? '',
+    product: 짝?.product ?? '',
+    rentKind: 짝?.rentKind ?? '',
     price: product?.consumerPrice ? String(product.consumerPrice) : '',
   };
   /*
@@ -91,26 +96,28 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
         <div className="dz-picked">
           <span className="dz-picked-label">접수 상품</span>
           <b>{vehicleName(product)}</b>
-          <p>{txt(product.registration?.vehicleNumber)} · {product.supplierName ?? product.supplierId}{product.productKind ? ` · ${product.productKind}` : ''}</p>
+          <p>{txt(product.registration?.vehicleNumber)} · {product.supplierName ?? product.supplierId}{짝?.certain ? ` · ${짝.product}` : product.productKind ? ` · ${product.productKind}` : ''}</p>
           {offer
             ? <dl className="dz-picked-grid">
                 <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
                 <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}원</dd></div>
                 <div><dt>보증금</dt><dd>{won(offer.deposit)}원</dd></div>
                 <div><dt>수수료</dt><dd>{
-                  !수수료 ? '—'
+                  고를말.length ? <span className="dz-muted">상품구분을 고르면 섭니다</span>
+                  : !수수료 ? '—'
                     : 수수료.status === 'AUTO' ? <>청구 <b>{won(수수료.claim)}</b> · 지급 <b>{won(수수료.pay)}</b></>
                       : <span className="dz-warn-txt">직접 넣어야 함</span>
                 }</dd></div>
               </dl>
             : <p className="dz-warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</p>}
-          {수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
-          {수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
+          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
+          {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : <p className="dz-empty">차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</p>}
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</p>}
       <p className="dz-empty">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
-      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료} /></div>
+      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
+        productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
     </>
   );
 }

@@ -61,6 +61,9 @@ SALES / WHITE LABEL / 정산 전체 구현을 이 흐름보다 먼저 벌리지 
 
 ## 3. ADMIN UI/UX 핵심
 
+> **현행 주의:** 이 절의 초기 1/3 설계는 이후 §14(2026-09-18 확정)로 대체되었다.  
+> 현재 눈에 보이는 공통 규격은 `docs/ui/ADMIN-UI-UX-SSOT.md`가 정본이다. §3의 초기 1/3·과거 버튼 크기를 새 구현 근거로 쓰지 않는다.
+
 Desktop 기본:
 
 ```text
@@ -278,6 +281,8 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 ---
 
 ## 12. ADMIN 웹 UI·UX R&D 업데이트 — 2026-09-13
+
+> **§12는 R&D 이력이다.** 최종 배열·시각 규격은 아래 §14 및 `ADMIN-UI-UX-SSOT.md`가 우선한다.
 
 상태: **CANDIDATE / USER DIRECTION CONFIRMED / EXACT IMAGE APPROVAL PENDING / IMPLEMENTATION HOLD**
 

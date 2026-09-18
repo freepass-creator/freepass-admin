@@ -546,3 +546,52 @@ body { background: var(--바닥); }
 .thumb, .hero-car { position: relative; }
 .thumb img, .hero-car img { position: absolute; inset: 0; }
 .hero-car small { z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 목록 한 줄 규격 — 모든 목록이 이것 하나 (대표 2026-09-18 「목록 규격 통일해야 할 듯」)
+   기준 = 확정 목업의 상품 카드. 사진 82×64 | 세 줄(제목·뱃지 / 곁 정보 / 값·곁값) · 높이 64 고정.
+   사진 없는 목록(접수·실적)은 사진 칸만 빠지고 높이는 같다 — 목록끼리 줄이 나란히 선다.
+     l1  제목 메인 14 굵게  ········  뱃지 22 · 보조 12  (tone act = 할 일 있음 → 옅은 남색 면)
+     l2  곁 정보 보조 12 회색 · 한 줄(넘치면 …)
+     l3  값 메인 14 굵게    ········  곁값 보조 12 회색
+   선 없음 · 라운드 4 · 바탕 --박스 · 손 대면 --박스손 · 고른 줄 --고름(옅은 남색)
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-row {
+  display: flex; gap: 12px; align-items: stretch;
+  padding: 12px; border-radius: var(--r); background: var(--박스);
+  color: var(--글); text-decoration: none; cursor: pointer;
+}
+.dz-row:hover { background: var(--박스손); }
+.dz-row.on { background: var(--고름); }
+.dz-row-thumb {
+  position: relative; flex: none; width: 82px; height: 64px; overflow: hidden;
+  border-radius: var(--r); background: linear-gradient(135deg, #e8ebee, #f8f9fa);
+  display: flex; align-items: center; justify-content: center;
+}
+.dz-row-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.dz-row-thumb em { font-style: normal; font-size: var(--글보조); color: #98a1ab; }
+.dz-row-body { flex: 1; min-width: 0; height: 64px; display: flex; flex-direction: column; justify-content: space-between; }
+.dz-row-l1, .dz-row-l3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.dz-row-l1 b {
+  font-size: var(--글메인); font-weight: 700; line-height: 22px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dz-row-l2 {
+  font-size: var(--글보조); line-height: 14px; color: #6b7580;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dz-row-l3 strong { font-size: var(--글메인); font-weight: 700; line-height: 17px; white-space: nowrap; }
+.dz-row-l3 small { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-badge {
+  flex: none; display: inline-flex; align-items: center; height: 22px; line-height: 14px; padding: 0 8px;
+  border-radius: var(--r); font-style: normal; font-size: var(--글보조); white-space: nowrap;
+  background: var(--판); color: #4f5862;
+}
+.dz-badge.act { background: var(--남색옅음); color: var(--ci남색); font-weight: 600; }
+/* 판 안의 링크 규칙(.fn-main .workspace a)이 글자색을 물려받게 해 두어, 줄 글자색을 여기서 한 번 더 세운다 */
+.fn-main .workspace a.dz-row { color: var(--글); }
+/** 판 하나 너비 목록(정산관리 · 접수 전체) — 같은 줄이 «한 줄에 여럿» 선다. 상품찾기의 넓은 목록과 같은 칸 폭(280~). */
+.dz-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin: 0 0 12px; }
+/** 덮개의 링크 규칙(남색 글자·밑줄)이 줄 글자까지 물들이지 않게 — 줄은 링크지만 «글»이다 */
+.fn-main:not(:has(> .workspace, > .admin-shell)) a.dz-row { color: var(--글); text-decoration: none; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) details .dz-list { margin-top: 8px; }

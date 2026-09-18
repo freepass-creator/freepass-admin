@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ListRow } from '../../_design/ListRow';
 import { settlements } from '../../../server/erp5';
 import { blockOf, isOpenIntake } from '../../../domain/settlement/types';
 import { num, sp, txt, won, yes } from '../../_fn/fmt';
@@ -52,26 +53,15 @@ export default async function IntakeList({ searchParams }: { searchParams: Promi
         <button type="submit">찾기</button>
       </form>
       <p>{shown.length}줄</p>
-      <div className="fn-wrap">
-        <table>
-          <thead><tr>
-            <th>접수일</th><th>차량번호</th><th>모델</th><th>고객</th><th>공급사</th><th>영업채널</th><th>담당</th>
-            <th>상품</th><th>기간</th><th>렌탈료</th><th>계약서</th><th>인도</th><th>인도일</th><th>취소</th><th>다음 할 일</th><th></th>
-          </tr></thead>
-          <tbody>
-            {shown.map((r) => (
-              <tr key={r.id}>
-                <td>{txt(r.receivedAt)}</td><td>{txt(r.plate)}</td><td>{txt(r.model)}</td><td>{txt(r.customer)}</td>
-                <td>{txt(r.supplier)}</td><td>{txt(r.channel)}</td><td>{txt(r.agent)}</td><td>{txt(r.product)}</td>
-                <td className="n">{num(r.term)}</td><td className="n">{won(r.rent)}</td>
-                <td>{yes(r.progress.paper)}</td><td>{yes(r.progress.delivered)}</td><td>{txt(r.progress.deliveredAt)}</td>
-                <td>{r.progress.cancelled ? '취소' : ''}</td>
-                <td>{blockOf(r) ?? (r.progress.cancelled ? '' : '끝')}</td>
-                <td><Link href={`/intake/${r.id}`}>열기</Link></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* ★목록 한 줄 규격(_design/ListRow) — 접수 한 건 = 한 줄 */}
+      <div className="dz-list">
+        {shown.map((r) => (
+          <ListRow key={r.id} href={`/intake/${r.id}`}
+            title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
+            tone={!r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
+            meta={[r.plate, r.model, r.supplier, r.channel, r.agent].filter(Boolean).join(' · ') || '—'}
+            value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
+        ))}
       </div>
     </>
   );

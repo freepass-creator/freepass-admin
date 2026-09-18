@@ -9,6 +9,7 @@ import { settlements } from '../../server/erp5';
 import { blockOf, isOpenIntake, type SettlementRow } from '../../domain/settlement/types';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
+import { ListRow } from '../_design/ListRow';
 
 
 /**
@@ -138,19 +139,12 @@ export async function ProductWorkspace({ q, mode, base }: {
           </form>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (
-              <Link key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
-                className={`product-row${sel && p.id === sel.product.id ? ' selected' : ''}`}>
-                <div className="thumb">
-                  {사진(p)
-                    ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(p)} alt="" loading="lazy" />
-                    : <span>사진 없음</span>}
-                </div>
-                <div className="grow">
-                  <div className="row-title"><strong>{vehicleName(p) || p.id}</strong><span>{txt(p.status)}</span></div>
-                  <p>{txt(p.registration?.vehicleNumber)} · {p.specs.modelYear ?? '—'} · {num(p.specs.mileageKm, 'km')} · {txt(p.specs.fuel)}</p>
-                  <div className="price"><b>월 {won(o?.monthlyRent)}원</b><small>{o ? `${o.termMonths}개월` : '—'}</small></div>
-                </div>
-              </Link>
+              <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
+                selected={!!sel && p.id === sel.product.id}
+                thumb={사진(p) ?? null}
+                title={vehicleName(p) || p.id} badge={txt(p.status)}
+                meta={`${txt(p.registration?.vehicleNumber)} · ${p.specs.modelYear ?? '—'} · ${num(p.specs.mileageKm, 'km')} · ${txt(p.specs.fuel)}`}
+                value={o ? `월 ${won(o.monthlyRent)}원` : '—'} aside={o ? `${o.termMonths}개월` : undefined} />
             ))}
             {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}
           </div>
@@ -204,14 +198,11 @@ export async function ProductWorkspace({ q, mode, base }: {
           {intakeErr ? <p className="dz-empty">ERP5 접수를 못 읽었습니다 — {intakeErr}</p> : (
             <div className="application-list">
               {open.slice(0, 30).map((r, i) => (
-                <Link key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`} className="application-card" href={`/intake/list?view=open&q=${encodeURIComponent(r.plate ?? '')}`}>
-                  <div className="app-top"><div><b>{txt(r.customer)}</b><span>{txt(r.receivedAt)} · {txt(r.plate)}</span></div><strong>{txt(r.model)}</strong></div>
-                  <div className="checks">
-                    <span className={r.progress.paper ? 'done' : ''}>계약서</span>
-                    <span className={r.progress.delivered ? 'done' : ''}>인도</span>
-                  </div>
-                  <p>{blockOf(r) ? `다음 할 일 · ${blockOf(r)}` : '할 일 없음'}</p>
-                </Link>
+                <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
+                  href={`/intake/list?view=open&q=${encodeURIComponent(r.plate ?? '')}`}
+                  title={txt(r.customer)} badge={blockOf(r) ?? '끝'} tone={blockOf(r) ? 'act' : 'plain'}
+                  meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
+                  value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}
               {open.length === 0 && <p className="dz-empty">진행 중인 접수가 없습니다.</p>}
               {open.length > 30 && <Link className="dz-more" href="/intake/list?view=open">진행중 {open.length}건 전부 보기 →</Link>}

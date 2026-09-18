@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ListRow } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
 import { sp, txt, won, yes } from '../_fn/fmt';
@@ -44,41 +45,34 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         {' '}· {tab === 'claim' ? '청구서 보냄' : '지급 통보'} {t.done}/{t.rows}</p>
       {tab === 'pay' && <p className="fn-muted">「지급함(paid)」 칸은 원장에서 아직 아무도 안 씁니다 — 0건은 「안 줬다」 가 아니라 「안 적었다」 입니다.</p>}
 
-      <div className="fn-wrap">
-        <table>
-          <thead><tr><th>{who}</th><th>줄</th><th>합</th><th>금액 모름</th><th>{tab === 'claim' ? '청구서 보냄' : '지급 통보'}</th><th>보류</th></tr></thead>
-          <tbody>{groups.map((g) => (
-            <tr key={g.party}><td><a href={`#g-${encodeURIComponent(g.party)}`}>{g.party}</a></td><td className="n">{g.rows.length}</td>
-              <td className="n">{won(g.total)}</td><td className="n">{g.unknown || ''}</td><td className="n">{g.done}/{g.rows.length}</td><td className="n">{g.hold || ''}</td></tr>
-          ))}</tbody>
-        </table>
+      {/* ★목록 한 줄 규격(_design/ListRow) — 묶음 한 곳 = 한 줄 */}
+      <div className="dz-list">
+        {groups.map((g) => (
+          <ListRow key={g.party} href={`#g-${encodeURIComponent(g.party)}`}
+            title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.rows.length}`}
+            tone={g.done < g.rows.length ? 'act' : 'plain'}
+            meta={`${g.rows.length}줄${g.unknown ? ` · 금액 모름 ${g.unknown}` : ''}${g.hold ? ` · 보류 ${g.hold}` : ''}`}
+            value={`${won(g.total)}원`} aside={who} />
+        ))}
       </div>
 
       {groups.map((g) => (
         <details key={g.party} id={`g-${encodeURIComponent(g.party)}`}>
           <summary><b>{g.party}</b> — {g.rows.length}줄 · {won(g.total)}{g.unknown ? ` · 모름 ${g.unknown}` : ''}</summary>
-          <div className="fn-wrap"><table>
-            <thead><tr>
-              <th>접수일</th><th>차량번호</th><th>모델</th><th>고객</th><th>{tab === 'claim' ? '영업채널' : '공급사'}</th><th>인도일</th>
-              <th>상품</th><th>렌탈료</th><th>{tab === 'claim' ? '청구금액' : '지급액'}</th><th>{tab === 'claim' ? '청구 단계' : '지급 단계'}</th>
-              <th>{tab === 'claim' ? '청구서' : '지급함'}</th><th>계산서</th><th>{tab === 'claim' ? '수금' : '확인'}</th><th>보류</th><th>메모</th><th></th>
-            </tr></thead>
-            <tbody>{g.rows.map((r) => (
-              <tr key={r.id}>
-                <td>{txt(r.receivedAt)}</td><td>{txt(r.plate)}</td><td>{txt(r.model)}</td><td>{txt(r.customer)}</td>
-                <td>{txt(tab === 'claim' ? r.channel : r.supplier)}</td><td>{txt(r.progress.deliveredAt)}</td>
-                <td>{txt(r.product)}</td><td className="n">{won(r.rent)}</td>
-                <td className="n">{won(tab === 'claim' ? r.money.claim : r.money.pay)}</td>
-                <td>{tab === 'claim' ? r.claimStage : r.payStage}</td>
-                <td>{yes(tab === 'claim' ? r.progress.billed : r.progress.paid)}</td>
-                <td>{yes(r.progress.invoiceIssued)}</td>
-                <td>{yes(tab === 'claim' ? r.progress.collected : r.progress.channelOk)}</td>
-                <td>{r.progress.billHold ? '보류' : ''}</td>
-                <td>{txt(r.settleNote || r.note)}</td>
-                <td><Link href={`/intake/${r.id}`}>열기</Link></td>
-              </tr>
-            ))}</tbody>
-          </table></div>
+          <div className="dz-list">
+            {g.rows.map((r) => {
+              const 돈 = tab === 'claim' ? r.money.claim : r.money.pay;
+              const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
+              return (
+                <ListRow key={r.id} href={`/intake/${r.id}`}
+                  title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
+                  tone={r.progress.billHold || !끝 ? 'act' : 'plain'}
+                  meta={[r.plate, r.model, tab === 'claim' ? r.channel : r.supplier, r.progress.deliveredAt ? `인도 ${r.progress.deliveredAt}` : ''].filter(Boolean).join(' · ') || '—'}
+                  value={`${tab === 'claim' ? '청구' : '지급'} ${won(돈)}${돈 === null || 돈 === undefined ? '' : '원'}`}
+                  aside={txt(r.receivedAt)} />
+              );
+            })}
+          </div>
         </details>
       ))}
     </>

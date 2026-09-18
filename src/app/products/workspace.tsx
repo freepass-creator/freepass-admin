@@ -22,6 +22,7 @@ import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
+import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 
 
 /**
@@ -281,10 +282,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
-          <div className="panel-head">
-            <div><h1>상품 목록</h1></div>
-            <span className="count">{sorted.length.toLocaleString()}대</span>
-          </div>
+          <PanelHeader title="상품 목록" count={`${sorted.length.toLocaleString()}대`} />
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
@@ -293,8 +291,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['q', 'id', 'offer'])}
-              <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
-              <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
+              <SearchField name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
             </form>
             {/* ★세부검색 = 화이트라벨 두 칸 조건판(창 «안» 오른쪽 끝) — 고르면 바로 걸린다 */}
             <FilterSheet axes={상품판축} count={sorted.length} unit="대" />
@@ -328,16 +325,13 @@ export async function ProductWorkspace({ q, mode, base }: {
                 value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
                 chips={p.perks} />
             ))}
-            {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}
+            {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>
         </section>
 
         {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
         <section className="panel detail-panel">
-          <div className="panel-head">
-            <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="상품 목록으로">‹</Link>
-            <div><h1>상품 상세</h1></div>
-          </div>
+          <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
               <DetailTabs key={`상세-${car.id}`}
@@ -381,7 +375,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 </>}
               />
             </>
-          ) : <p className="dz-empty">왼쪽에서 차를 고르면 여기 뜹니다.</p>}
+          ) : <EmptyState>왼쪽에서 차를 고르면 여기 뜹니다.</EmptyState>}
         </section>
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
@@ -394,15 +388,11 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
-          <div className="panel-head">
-            <div><h1>접수 목록</h1></div>
-            <span className="count">{ishown.length.toLocaleString()}건</span>
-          </div>
+          <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['iq'])}
-              <span className="dz-search-ico" aria-hidden><Icon name="search" size={18} stroke={2.2} /></span>
-              <input name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델 · 공급사 · 채널" />
+              <SearchField name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델 · 공급사 · 채널" />
             </form>
             <FilterSheet axes={접수판축} count={ishown.length} unit="건" />
           </div>
@@ -414,7 +404,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
           </div>
           </div>
-          {intakeErr ? <p className="dz-empty">ERP5 접수를 못 읽었습니다 — {intakeErr}</p> : (
+          {intakeErr ? <EmptyState>ERP5 접수를 못 읽었습니다 — {intakeErr}</EmptyState> : (
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
@@ -424,16 +414,14 @@ export async function ProductWorkspace({ q, mode, base }: {
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}
-              {ishown.length === 0 && <p className="dz-empty">조건에 맞는 접수가 없습니다.</p>}
+              {ishown.length === 0 && <EmptyState>조건에 맞는 접수가 없습니다.</EmptyState>}
             </div>
           )}
           {/* ★하단바 — 접수 목록에서는 [+ 신규 접수] 하나(대표 2026-09-18 「신규접수 버튼도 하단으로 옮기는 게 맞지 않나」)
                 누르면 같은 자리에 [취소] [접수 저장] 이 선다 — 판이 바뀌면 바도 따라 바뀐다 */}
-          <div className="dz-bar">
-            <div className="dz-bar-go">
-              <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
-            </div>
-          </div>
+          <ActionBar>
+            <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
+          </ActionBar>
         </section>}
       </section>
 

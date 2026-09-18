@@ -882,3 +882,49 @@ body { background: var(--바닥); }
   .fn-main .workspace[data-phone="detail"] > .panel:not(.detail-panel),
   .fn-main .workspace[data-phone="work"] > .panel:not(.work-panel) { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 폰 아래 띠 — 메뉴 넷을 아이콘으로 (대표 2026-09-18 「모바일은 버튼이 하단바에 4개가 아이콘으로 들어가면 되잖아」)
+     위 띠 = CI 얼굴만(한 줄) · 아래 띠 = 메뉴 넷(아이콘 + 이름, 남색 띠 · 켜진 것 스카이 — 위 띠와 같은 말)
+     ⚠ 앞서 폰 위 띠가 두 줄(얼굴 + 메뉴 넷)이었고, 아래에는 판 탭(상품 · 상세 · 접수)이 떠 있었다.
+     ⇒ 판 탭은 위로 올라가 얼굴 띠 밑에 붙는다(틀고정). 엄지 자리는 메뉴가 갖는다 — 앱의 통상 짜임.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-menu svg { display: none; }
+@media (max-width: 900px) {
+  :root { --아래띠: calc(56px + env(safe-area-inset-bottom)); --판탭: 49px; }
+  body > nav.fn-top { height: 52px; flex-wrap: nowrap; padding: 0 16px; }
+  body > nav.fn-top .dz-menu {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; width: auto;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    height: var(--아래띠); padding: 0 0 env(safe-area-inset-bottom);
+    background: var(--ci남색); box-shadow: 0 -1px 0 rgba(255, 255, 255, .06);
+  }
+  body > nav.fn-top .dz-menu a {
+    flex-direction: column; gap: 4px; height: 56px; padding: 0; border-radius: 0;
+    color: rgba(255, 255, 255, .6); font-size: var(--글보조); line-height: 14px;
+  }
+  body > nav.fn-top .dz-menu a:hover { background: transparent; }
+  /* 켜진 것 — 면 대신 스카이 색(아이콘 · 글자 같이). 아래 띠 한 칸 전체에 면을 깔면 무겁다 */
+  body > nav.fn-top .dz-menu a.on { background: transparent; color: var(--ci스카이); font-weight: 600; }
+  body > nav.fn-top .dz-menu svg { display: block; width: 22px; height: 22px; }
+
+  /* 쪽 밑이 아래 띠에 안 가리게 */
+  /* ⚠ 덮개의 여백 규칙(.fn-main:not(:has(…)))이 더 세서 16 으로 남아 정산 끝줄이 아래 띠 밑에 깔렸다(실측) — 한 단 세게 */
+  body > main.fn-main:not(:has(> .workspace)) { padding-bottom: calc(var(--아래띠) + 16px); }
+  .fn-main:has(> .workspace) { display: flex; flex-direction: column; padding-bottom: 0; }
+
+  /* 판 탭(상품 · 상세 · 접수) — 얼굴 띠 밑에 붙어 선다. 흰 띠 한 줄, 켜진 것 남색 면 */
+  .phone-tabs {
+    order: -1; position: sticky; top: 0; left: auto; right: auto; bottom: auto; z-index: 12;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 4px;
+    height: var(--판탭); padding: 8px; margin: 0;
+    background: var(--판); border: 0; border-bottom: 1px solid var(--선); border-radius: 0;
+  }
+  .fn-main .workspace { padding-bottom: calc(var(--아래띠) + 8px); }
+  .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 16px); }
+  /* 틀고정 머리 — 판 탭 밑에 붙는다 */
+  .fn-main .workspace > .panel > .dz-listtop,
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head { top: var(--판탭); }
+  /* 접수 덩이 — 아래 띠 바로 위 */
+  .dz-apply { bottom: calc(var(--아래띠) + 8px); }
+}

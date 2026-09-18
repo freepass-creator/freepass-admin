@@ -59,9 +59,11 @@ for (const file of noInlineStyleFiles) {
   if (/style=\{\{/.test(src)) errors.push(`${file}: inline visual style found; move stable UI values to globals.css / SSOT tokens`);
 }
 
-const css = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
+const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
+const cssFinal = await readFile(path.join(root, 'src/app/_design/admin-final.css'), 'utf8');
+const css = `${cssBase}\n${cssFinal}`;
 for (const token of requiredCss) {
-  if (!css.includes(token)) errors.push(`src/app/globals.css: missing shared token ${token}`);
+  if (!css.includes(token)) errors.push(`admin CSS: missing shared token ${token}`);
 }
 
 const cssBaseline = [
@@ -74,10 +76,10 @@ const cssBaseline = [
   [/--r:\s*4px/, '--r 4px'],
 ] as const;
 for (const [re, label] of cssBaseline) {
-  if (!re.test(css)) errors.push(`src/app/globals.css: baseline mismatch or missing: ${label}`);
+  if (!re.test(css)) errors.push(`admin CSS: baseline mismatch or missing: ${label}`);
 }
-if (!/:focus-visible/.test(css)) errors.push('src/app/globals.css: missing shared focus-visible behavior');
-if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('src/app/globals.css: missing reduced-motion behavior');
+if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
+if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
   typography?: { title?: { px?: number }; main?: { px?: number }; support?: { px?: number } };

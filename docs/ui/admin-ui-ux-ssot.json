@@ -221,5 +221,17 @@
     "tabSemantics": true,
     "selectedRowSemantics": true,
     "busyStates": true
+  },
+  "files": {
+    "baseCss": "src/app/globals.css",
+    "finalCss": "src/app/_design/admin-final.css",
+    "primitives": "src/app/_design/Primitives.tsx",
+    "productWorkspaceConfig": "src/app/products/workspace-config.ts",
+    "intakeOptions": "src/app/intake/intake-options.ts",
+    "cssImportOrder": [
+      "src/app/globals.css",
+      "src/app/_design/admin-final.css",
+      "src/app/_fn/fn.css"
+    ]
   }
 }

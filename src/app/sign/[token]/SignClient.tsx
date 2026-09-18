@@ -180,11 +180,12 @@ export function SignClient({ token }: { token: string }) {
 
   async function progress(key: string) {
     const map: Record<string, string> = { summary: 'summary', information: 'information', 'id-card': 'identity', selfie: 'identity', agreement: 'agreement', documents: 'documents' };
-    if (!map[key]) return;
+    if (!map[key] && key !== 'document') return;
     await json('/api/esign/public/' + encodeURIComponent(token), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'progress', step: map[key] }),
+      body: JSON.stringify({ action: 'progress', step: map[key] || key }),
     });
+    if (key === 'document') await load();
   }
 
   async function upload(kind: string, file: File | null) {
@@ -346,8 +347,13 @@ export function SignClient({ token }: { token: string }) {
       </>}
 
       {current[0] === 'signature' && <>
-        <p>확인한 계약·약관에 서명해 주세요.</p><SignaturePad canvasRef={canvasRef}/>
-        <div className="sg-actions"><button className="sg-secondary" onClick={() => setStep((n) => n - 1)}>이전</button><button className="sg-primary" onClick={() => void submit()} disabled={busy}>{busy ? '제출 중…' : '전자서명·제출'}</button></div>
+        <div className="sg-alert ok">서명 전에 지금까지 입력한 값이 반영된 작성본 계약서를 확인해 주세요.</div>
+        <div className="sg-actions one">
+          <a className="sg-secondary" href={'/api/esign/public/' + encodeURIComponent(token) + '/document'} target="_blank" rel="noreferrer"
+            onClick={() => void progress('document')}>작성본 계약서 열기</a>
+        </div>
+        <p>작성본을 확인한 뒤 아래 서명란에 직접 서명해 주세요.</p><SignaturePad canvasRef={canvasRef}/>
+        <div className="sg-actions"><button className="sg-secondary" onClick={() => setStep((n) => n - 1)}>이전</button><button className="sg-primary" onClick={() => void submit()} disabled={busy || !Number(view.session?.progress?.document || 0)}>{busy ? '제출 중…' : Number(view.session?.progress?.document || 0) ? '전자서명·제출' : '작성본 확인 후 제출'}</button></div>
       </>}
     </div>
   </div>;

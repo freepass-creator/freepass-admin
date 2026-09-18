@@ -9,6 +9,8 @@
  */
 import { settlementCode } from './code';
 import type { FeeResult } from './fee';
+import { promotionPatch } from './adjust';
+import type { Promotion } from './promotion';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -33,6 +35,8 @@ export interface IntakeInput {
   delivered: boolean;
   deliveredAt: string;
   note: string;
+  /** 프로모션 — 대표 2026-09-17 「접수할때 프로모션 업셀링 금액을 넣어야함」 · 영업자 몫 기본 100% */
+  promotion?: Promotion;
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -53,6 +57,7 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
   /* ★인도완료는 인도일과 «같이» 온다. 날짜 없이 켜면 청구월이 안 선다 (erp4 appendIntake 와 같은 규칙) */
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
+  if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['계약기간', x.term], ['렌탈료', x.rent], ['보증금', x.deposit], ['차량가액', x.price]] as const) {
     if (v !== null && (!Number.isFinite(v) || v < 0)) e.push(`${k} 값을 읽지 못했습니다`);
   }
@@ -85,7 +90,9 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     term: x.term ?? 0, rent: x.rent ?? 0, deposit: x.deposit ?? 0, price: x.price ?? 0,
     payKind: x.payKind.trim(),
     supplierRate: auto ? auto.rule.claim : 0, agentRate: auto ? auto.rule.pay : 0,
-    claimWritten: auto ? auto.claim : 0, payWritten: auto ? auto.pay : 0, claimIncentive: 0, payIncentive: 0,
+    claimWritten: auto ? auto.claim : 0, payWritten: auto ? auto.pay : 0,
+    ...(x.promotion?.amount ? promotionPatch(x.promotion) : { claimIncentive: 0, payIncentive: 0 }),
+    claimAdjust: 0, payAdjust: 0, adjustReason: '',
     paper: x.paper, delivered: x.delivered, deliveredAt: x.delivered ? x.deliveredAt : '',
     cancelled: false,
     billMonth: '', settleTarget: '양쪽', settleRatio: 1,

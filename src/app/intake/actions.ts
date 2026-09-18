@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { settlements, today } from '../../server/erp5';
 import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 
 /**
  * 화면 → 원장. ★여기는 «받아서 넘기기» 만 한다. 규칙은 domain/settlement/intake.ts 가 쥔다.
@@ -31,6 +32,8 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     payKind: S(f, 'payKind'),
     paper: f.get('paper') === 'on', delivered: f.get('delivered') === 'on', deliveredAt: S(f, 'deliveredAt'),
     note: S(f, 'note'),
+    /* 프로모션 — 금액 · 영업자 몫(%) · 사유. ★몫을 비우면 100% (대표 「기본 100%」) */
+    promotion: promotionFromInput(f.get('promoAmount'), f.get('promoSharePct'), S(f, 'promoReason')),
   };
   const errors = validateIntake(input, today());
   if (errors.length) return { errors };
@@ -67,5 +70,34 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
   }
   revalidatePath(`/intake/${code}`);
   revalidatePath('/intake');
+  return { errors: [] };
+}
+
+/**
+ * 프로모션 · 가감 — 접수 뒤에 얹거나 고친다. 폼 칸:
+ *   code · promoAmount · promoSharePct(0~100, 비우면 100) · promoReason · claimAdjust · payAdjust · adjustReason
+ * ★보낸 칸만 고친다 — 프로모션 칸이 없으면 프로모션을, 가감 칸이 없으면 가감을 안 건드린다.
+ */
+export async function moneyAction(_: FormState, f: FormData): Promise<FormState> {
+  const code = S(f, 'code');
+  const patch: Record<string, unknown> = {};
+  if (f.has('promoAmount')) {
+    const p = promotionFromInput(f.get('promoAmount'), f.get('promoSharePct'), S(f, 'promoReason'));
+    if (p.amount && p.agentShare === null) return { errors: ['프로모션 영업자 몫은 0~100% 로 넣습니다'] };
+    Object.assign(patch, promotionPatch(p));
+  }
+  if (f.has('claimAdjust') || f.has('payAdjust')) {
+    const a = adjustmentFromInput(f.get('claimAdjust'), f.get('payAdjust'), f.get('adjustReason'));
+    if (!a.ok) return { errors: [a.error] };
+    Object.assign(patch, adjustPatch(a.adjust));
+  }
+  try {
+    const r = await settlements.setMoney(code, patch);
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+  }
+  revalidatePath('/intake');
+  revalidatePath('/settlement');
   return { errors: [] };
 }

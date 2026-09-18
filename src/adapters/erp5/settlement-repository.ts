@@ -119,6 +119,39 @@ export class Erp5SettlementRepository {
     });
   }
 
+  /**
+   * 프로모션 · 가감 — 수수료표 셈 위에 사람이 얹는 돈 (domain/settlement/adjust.ts).
+   * ★청구서가 나간 줄의 청구 쪽, 지급이 끝난 줄의 지급 쪽은 못 바꾼다 — 나간 종이와 원장이 갈린다.
+   *   그때는 다음 달 이월(carry)로 넘기는 것이 맞다(erp4 「가감사유 → 다음 달에 할 말」).
+   */
+  async setMoney(code: string, patch: Record<string, unknown>): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    const LABEL: Record<string, string> = {
+      claimIncentive: '프로모션(공급사)', payIncentive: '프로모션(영업자)', promoShare: '프로모션 영업자 비율', promoReason: '프로모션 사유',
+      claimAdjust: '가감(청구)', payAdjust: '가감(지급)', adjustReason: '가감 사유',
+    };
+    const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
+    const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = d.data()!;
+      if (cur.cancelled === true) return { ok: false as const, error: '취소된 줄입니다' };
+      const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
+      if (!changed.length) return { ok: true as const, changed: 0 };
+      if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) return { ok: false as const, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
+      if (cur.paid === true && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false as const, error: '지급이 끝난 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
+      const now = Date.now();
+      tx.update(ref, { ...Object.fromEntries(changed), updatedAt: now, stateAt: new Date(now).toISOString() });
+      const ev: Record<string, unknown> = {};
+      for (const [k, v] of changed) ev[audId()] = { at: now, by: BY, field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') };
+      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      return { ok: true as const, changed: changed.length };
+    });
+  }
+
   /** 한 줄의 이력 — 최신이 앞. */
   async events(plate: unknown, receivedAt: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
     const d = await erp5().collection(EVENTS).doc(eventDocId(plate, receivedAt)).get();

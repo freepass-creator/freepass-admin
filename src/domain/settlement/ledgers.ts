@@ -56,11 +56,12 @@ const inLedger = (r: SettlementRow) => !r.progress.cancelled && !r.progress.sett
 export function claimAmountOf(r: SettlementRow): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
-  return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * (r.settleRatio || 1));
+  /* ★가감은 비율을 안 곱한다 — 사람이 «이 건에서 이만큼» 이라고 적은 최종 금액이다 (adjust.ts) */
+  return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * (r.settleRatio || 1)) + (r.money.claimAdjust ?? 0);
 }
 export function payAmountOf(r: SettlementRow): Maybe<number> {
   if (r.money.pay === null) return null;
-  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * (r.settleRatio || 1));
+  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * (r.settleRatio || 1)) + (r.money.payAdjust ?? 0);
 }
 
 export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly Clawback[] = []): string[] {

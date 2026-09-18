@@ -69,10 +69,17 @@ export interface SettlementMoney {
   pay: Maybe<number>;        // 지급액   (영업채널에 줄 것)
   claimIncentive: Maybe<number>;
   payIncentive: Maybe<number>;
-  /** 표 산출과 다르게 나갈 때. ★사유 없는 가감은 다음 달에 아무도 못 읽는다 */
+  /**
+   * 가감 — 이 건만 더하거나(+) 빼는(−) 돈. ERP5 `claimAdjust`·`payAdjust`·`adjustReason` (domain/settlement/adjust.ts).
+   * ★사유 없는 가감은 다음 달에 아무도 못 읽는다.
+   * ⚠ `supplierFixAmt`(정정금액)와 다르다 — 그건 상대가 요청한 «정정 금액» 이지 더할 돈이 아니다.
+   */
   claimAdjust: Maybe<number>;
   payAdjust: Maybe<number>;
   adjustReason: Maybe<string>;
+  /** 프로모션 영업자 몫 비율(0~1) · 사유 — 금액은 claimIncentive/payIncentive */
+  promoShare: Maybe<number>;
+  promoReason: Maybe<string>;
   /** 다음 달로 넘긴 것 */
   carryClaim: Maybe<number>;
   carryPay: Maybe<number>;

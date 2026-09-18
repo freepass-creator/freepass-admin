@@ -122,7 +122,10 @@ if (APPLY) {
     /** 사람이 읽는 규칙 — 셈은 코드가 하지만 «무엇을 셈하나» 는 여기 적힌다 */
     notes: {
       month: '박힌 청구월 > 분납은 접수월+(회차−1) > 일시납은 인도월 > 인도 전은 접수월(예정) — erp4 settlementMonthOf',
-      money: '청구 = (claimWritten + claimIncentive) × settleRatio · 정산대상 「영업」·정산제외·청구보류면 0 / 지급 = (payWritten + payIncentive) × settleRatio · 「공급」·제외면 0 — erp4 claimOf/payOf',
+      money: '청구 = (claimWritten + claimIncentive) × settleRatio + claimAdjust · 정산대상 「영업」·정산제외·청구보류면 0 / 지급 = (payWritten + payIncentive) × settleRatio + payAdjust · 「공급」·제외면 0 — erp4 claimOf/payOf + 가감(대표 2026-09-18)',
+      promotion: '프로모션 = 공급사가 더 주는 돈(claimIncentive) + 그중 영업자 몫(payIncentive = 금액 × promoShare · 기본 100% · 대표 2026-09-17) · 사유 promoReason',
+      adjust: '가감 = 이 건만 ±(claimAdjust · payAdjust) · 사유 adjustReason 필수 · 비율 안 곱함 · 청구서 나간 줄/지급 끝난 줄은 못 바꿈(다음 달 이월). supplierFixAmt(정정금액)는 가감이 아니다',
+      forward: '새 접수는 이 수수료표대로 셈한다(대표 2026-09-18 「앞으로는 수수료 대로 계산」) — 표가 못 내는 건(건별 책정·표에 없음)은 0 + 까닭',
       clawback: '환수는 접수 줄의 체크가 아니라 settlement_clawbacks 의 «반대 부호 한 줄» — 그 달·그 상대에서 뺀다',
       manual: 'auto=false 규칙(건별 책정·최대 9%·구독료+정액·조건분기)은 기계가 금액을 내지 않는다 — 적힌 금액이 정본',
     },

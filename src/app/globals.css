@@ -520,3 +520,29 @@ body { background: var(--바닥); }
 .thumb { flex: none; }
 .thumb img, .hero-car img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .thumb span, .hero-car > span { font-size: var(--글보조); color: #98a1ab; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상세 아래 절반 — 확정 목업 그대로 되돌림 (대표 2026-09-18 「기간은 버튼 눌러서 고르자 · 그대로 복구해봐」)
+   기간 단추 → 남색 선택 Offer 박스 → 「이 상품 접수하기」. 링크가 된 두 자리(상세정보 · 접수하기)만 단추 모양을 입힌다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .tabs a {
+  display: flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
+}
+.fn-main .workspace .tabs a:hover { background: var(--박스손); }
+.fn-main .workspace a.primary {
+  display: flex; align-items: center; justify-content: center; margin-top: 12px;
+  color: #fff; text-decoration: none;
+}
+.fn-main .workspace .offer-block { margin-top: 12px; }
+.fn-main .workspace .summary-grid + .offer-picker { margin-top: 12px; }
+/** 폰 — 기간 단추 줄만 좌우로 흐른다(대표 「계약기간은 모바일에서는 좌우로 흐르게」, ⑨의 유일한 예외) */
+@media (max-width: 900px) {
+  .offer-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .offer-picker::-webkit-scrollbar { display: none; }
+  .offer-picker button { flex: none; }
+}
+/** 사진은 칸에 «딱» 맞춘다 — 칸이 가운데 정렬(grid)이라 사진이 제 비율로 82×109 까지 커진 뒤 잘리고 있었다(실측). */
+.thumb, .hero-car { position: relative; }
+.thumb img, .hero-car img { position: absolute; inset: 0; }
+.hero-car small { z-index: 1; }

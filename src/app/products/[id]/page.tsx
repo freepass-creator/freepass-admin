@@ -42,8 +42,9 @@ export default async function ProductDetail({
       </div>
 
       <h2>요금 (Offer) — 고른 요금으로 접수합니다</h2>
-      {/* ★계약기간은 카드 단추 — 차 확인 → 기간 선택 → 접수(디자인 부품 `_design/OfferPicker`, 접수 주소는 앞과 같다) */}
-      <OfferPicker productId={p.id} offers={p.offers} initial={picked} />
+      {/* ★기간은 단추로 고른다 — 확정 목업 그대로(디자인 부품 `_design/OfferPicker`, 접수 주소는 앞과 같다) */}
+      <OfferPicker productId={p.id} offers={p.offers} initial={picked}
+        supplier={p.supplierName ?? p.supplierId} match={txt(p.vehicle.matchLevel)} />
 
       <h2>정책 ({p.productPolicies.length})</h2>
       {p.productPolicies.length === 0

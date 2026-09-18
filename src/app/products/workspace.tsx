@@ -113,17 +113,6 @@ export async function ProductWorkspace({ q, mode, base }: {
   const cancelled = irows.filter((r) => r.progress.cancelled).length;
 
   const car = sel?.product;
-  const 사양: [string, string][] = car ? [
-    ['공급사', car.supplierName ?? car.supplierId],
-    ['출고상태', txt(car.status)],
-    ['연식', car.specs.modelYear ? String(car.specs.modelYear) : '—'],
-    ['주행거리', num(car.specs.mileageKm, 'km')],
-    ['연료', txt(car.specs.fuel)],
-    ['배기량', num(car.specs.displacementCc, 'cc')],
-    ['인승', num(car.specs.seats)],
-    ['구동', txt(car.specs.drivetrain)],
-  ] : [];
-
   return (
     <>
       <section className="workspace" data-phone={view} data-mode={mode}>
@@ -169,28 +158,31 @@ export async function ProductWorkspace({ q, mode, base }: {
           </p>
         </section>
 
-        {/* ── 상품 상세 — 확인 → 기간 선택 → 접수 ───────────────────── */}
+        {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
         <section className="panel detail-panel">
           <div className="panel-head">
             <div><p className="eyebrow">DETAIL</p><h1>상품 상세</h1></div>
-            {car && <Link className="icon-btn" href={`/products/${encodeURIComponent(car.id)}`}>전부 보기</Link>}
+            <button className="icon-btn" type="button">공유</button>
           </div>
           {car ? (
             <>
+              <div className="tabs">
+                <button className="active" type="button">요약</button>
+                <Link href={`/products/${encodeURIComponent(car.id)}`}>상세정보</Link>
+              </div>
               <div className="hero-car">
                 {사진(car)
                   ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
                   : <span>사진 없음</span>}
+                <small>SSOT</small>
               </div>
               <div className="vehicle-title">
-                <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
+                <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
                 <span className="status-dot">{txt(car.status)}</span>
               </div>
-              <dl className="summary-grid">
-                {사양.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-              </dl>
               {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
-              <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id} />
+              <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                supplier={car.supplierName ?? car.supplierId} match={txt(car.vehicle.matchLevel)} />
             </>
           ) : <p className="dz-empty">왼쪽에서 차를 고르면 여기 뜹니다.</p>}
         </section>

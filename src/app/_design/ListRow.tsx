@@ -71,7 +71,7 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   /** ★차례가 뜻이다(심사가 맨 앞) — 자르지 않고 다 싣는다. 자리가 모자라면 CSS 가 «뒤에서부터 통째로» 숨긴다. */
   const 칩 = (chips ?? []).filter(Boolean);
   return (
-    <Link href={href} className={`dz-row${selected ? ' on' : ''}`}>
+    <Link href={href} className={`dz-row${selected ? ' on' : ''}`} aria-current={selected ? 'true' : undefined}>
       {thumb === undefined && status && <StatusTile s={status} />}
       {thumb !== undefined && (
         <span className="dz-row-thumb">

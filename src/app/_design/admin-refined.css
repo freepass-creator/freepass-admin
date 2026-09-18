@@ -466,3 +466,61 @@ body > nav.fn-top .fn-state { margin-left: auto; }
     background: var(--판);
   }
 }
+
+
+/* ─────────────────────────────────────────
+   11. E-sign real-data document preview
+   ───────────────────────────────────────── */
+.fn-main .workspace .dz-contract-preview {
+  margin: 16px 0 0;
+  padding: 18px;
+  display: flex;
+  justify-content: center;
+  border-radius: var(--ui-radius);
+  background: var(--박스);
+}
+.fn-main .workspace .dz-contract-paper {
+  width: min(100%, 310px);
+  min-height: 260px;
+  padding: 22px;
+  border: 1px solid var(--선);
+  border-radius: var(--ui-radius);
+  background: var(--판);
+  box-shadow: 0 8px 24px rgba(15,27,53,.05);
+}
+.fn-main .workspace .dz-contract-brand {
+  margin-bottom: 16px;
+  color: var(--ci남색);
+  font-size: var(--ui-text-main);
+  font-weight: 800;
+  letter-spacing: -.2px;
+}
+.fn-main .workspace .dz-contract-paper h3 {
+  margin: 0 0 18px;
+  color: var(--글);
+  font-size: var(--ui-text-main);
+  line-height: 20px;
+}
+.fn-main .workspace .dz-contract-paper dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.fn-main .workspace .dz-contract-paper dl > div {
+  display: grid;
+  grid-template-columns: 72px minmax(0,1fr);
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf0f2;
+}
+.fn-main .workspace .dz-contract-paper dt {
+  color: #7b8590;
+  font-size: var(--ui-text-support);
+}
+.fn-main .workspace .dz-contract-paper dd {
+  margin: 0;
+  color: var(--글);
+  font-size: var(--ui-text-support);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

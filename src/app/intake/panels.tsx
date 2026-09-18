@@ -11,12 +11,12 @@ import { productById, settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
-import { txt, vocab, when, won } from '../_fn/fmt';
+import { txt, when, won } from '../_fn/fmt';
 import { vehicleName } from '../_fn/product';
-import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
+import IntakeForm, { type IntakeDefaults } from './new/IntakeForm';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
-import { ActionBar, EmptyState, Notice, PanelHeader, SummaryGrid } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { previewFeeAction } from './actions';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
@@ -26,20 +26,7 @@ import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
-
-/** 이름 → 가장 많이 쓴 코드. ★코드를 지어내지 않는다 — 원장에 이미 있는 짝만 쓴다. (기능 세션 규칙 그대로) */
-function codeMap(pairs: [string | null, string | null][]): Record<string, string> {
-  const m = new Map<string, Map<string, number>>();
-  for (const [name, code] of pairs) {
-    if (!name || !code) continue;
-    const c = m.get(name) ?? new Map<string, number>();
-    c.set(code, (c.get(code) ?? 0) + 1);
-    m.set(name, c);
-  }
-  return Object.fromEntries([...m].map(([n, c]) => [n, [...c].sort((a, b) => b[1] - a[1])[0][0]]));
-}
-
-const 칸 = (k: string, v: React.ReactNode) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>;
+import { buildIntakeOptions } from './intake-options';
 
 /** 오른쪽 판 — 신규 접수. 상품에서 왔으면 차·요금이 미리 채워진다. */
 export async function NewIntakePanel({ rows, productId, offerId, back }: {
@@ -50,19 +37,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   const 짝 = product ? ledgerKindOf(product.productKind) : null;
   const 고를말 = product ? (짝 ? (짝.certain ? [] : 짝.choices) : [...LEDGER_PRODUCTS]) : [];
   const offer = product?.offers.find((o) => o.id === offerId);
-  const options: IntakeOptions = {
-    channels: vocab(rows.map((r) => r.channel)),
-    channelCode: codeMap(rows.map((r) => [r.channel, r.channelCode])),
-    agents: vocab(rows.map((r) => r.agent)),
-    agentCode: codeMap(rows.map((r) => [r.agent, r.agentCode])),
-    agentChannel: codeMap(rows.map((r) => [r.agent, r.channel])),
-    suppliers: vocab(rows.map((r) => r.supplier)),
-    supplierCode: codeMap(rows.map((r) => [r.supplier, r.supplierCode])),
-    products: vocab(rows.map((r) => r.product)),
-    rentKinds: vocab(rows.map((r) => r.rentKind)),
-    contractTypes: vocab(rows.map((r) => r.contractType)),
-    payKinds: vocab(rows.map((r) => r.payKind)),
-  };
+  const options = buildIntakeOptions(rows);
   const defaults: IntakeDefaults = {
     receivedAt: today(),
     plate: product?.registration?.vehicleNumber ?? '',
@@ -238,12 +213,12 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 돈 — 한 곳에서 센 금액((수수료 + 프로모션) × 비율 + 가감). 나머지 원자는 아래 «성격별 구역» 이 다 싣는다 */}
       <h3 className="dz-sub">금액</h3>
       <SummaryGrid>
-        {칸('청구금액', won(청구))}
-        {칸('지급액', won(지급))}
-        {칸('남는 것', 청구 === null ? '—' : won(청구 - (지급 ?? 0)))}
-        {칸('청구월', txt(r.progress.billMonth))}
-        {칸('셈 근거', txt(r.settleNote))}
-        {칸('청구 · 지급 단계', `${r.claimStage} · ${r.payStage}`)}
+        <SummaryItem label="청구금액">{won(청구)}</SummaryItem>
+        <SummaryItem label="지급액">{won(지급)}</SummaryItem>
+        <SummaryItem label="남는 것">{청구 === null ? '—' : won(청구 - (지급 ?? 0))}</SummaryItem>
+        <SummaryItem label="청구월">{txt(r.progress.billMonth)}</SummaryItem>
+        <SummaryItem label="셈 근거">{txt(r.settleNote)}</SummaryItem>
+        <SummaryItem label="청구 · 지급 단계">{r.claimStage} · {r.payStage}</SummaryItem>
       </SummaryGrid>
 
       {/* ★정산 진행 — 늘 보일 칸(pinned · 기능 쪽이 정함): 청구 축 · 지급 축의 발자국과 정정요청(«멈춘 자리»).

@@ -6,6 +6,8 @@ const root = process.cwd();
 const coreFiles = [
   'src/app/products/workspace.tsx',
   'src/app/intake/panels.tsx',
+  'src/app/intake/NewIntakePanel.tsx',
+  'src/app/intake/IntakeDetailPanel.tsx',
   'src/app/settlement/page.tsx',
   'src/app/esign/page.tsx',
   'src/app/_design/DetailTabs.tsx',

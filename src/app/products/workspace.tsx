@@ -284,8 +284,6 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="panel-head">
             <div><h1>상품 목록</h1></div>
             <span className="count">{sorted.length.toLocaleString()}대</span>
-            {/* 폰 — 판 사이 길은 머리에(위 판 탭을 걷었다 · 대표 「모바일에서 위에 중복되는 거 없애라고」) */}
-            {mode === 'intake' && <Link className="dz-phone-jump" href={keep({ v: 'work' })}>접수 목록 ›</Link>}
           </div>
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
@@ -344,7 +342,15 @@ export async function ProductWorkspace({ q, mode, base }: {
             <>
               <DetailTabs key={`상세-${car.id}`}
                 initialOffer={sel.matchedOffers.some((x) => x.id === sp(q.offer)) ? sp(q.offer) : sel.lead?.id}
-                applyBase={mode === 'intake' ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' }) : undefined}
+                /**
+                 * ★접수하기 — 늘 켜져 있다 (대표 2026-09-18 「상품 상세가 나오는 거고 거기서 접수를 누르면
+                 *   접수하기 화면으로 바로 이동」). 접수는 늘 `/intake` 한 곳에 산다 — 지금 쪽이 그 쪽(mode==='intake')이면
+                 *   같은 쪽 오른쪽 판만 바꾸고(keep), 상품찾기(mode==='find')면 «다른 쪽»으로 건너간다(cross).
+                 *   ⚠ keep() 은 base(`/products`)로 주소를 짓는다 — 상품찾기에서 그대로 쓰면 없는 주소가 된다.
+                 */
+                applyBase={mode === 'intake'
+                  ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' })
+                  : `/intake?${new URLSearchParams({ w: 'new', product: car.id, v: 'work' })}`}
                 summary={<>
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
@@ -389,7 +395,6 @@ export async function ProductWorkspace({ q, mode, base }: {
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
           <div className="panel-head">
-            <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="상품 목록으로">‹</Link>
             <div><h1>접수 목록</h1></div>
             <span className="count">{ishown.length.toLocaleString()}건</span>
           </div>

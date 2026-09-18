@@ -894,29 +894,17 @@ body { background: var(--바닥); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   ★★★ 폰 아래 띠 — 메뉴 넷을 아이콘으로 (대표 2026-09-18 「모바일은 버튼이 하단바에 4개가 아이콘으로 들어가면 되잖아」)
-     위 띠 = CI 얼굴만(한 줄) · 아래 띠 = 메뉴 넷(아이콘 + 이름, 남색 띠 · 켜진 것 스카이 — 위 띠와 같은 말)
-     ⚠ 앞서 폰 위 띠가 두 줄(얼굴 + 메뉴 넷)이었고, 아래에는 판 탭(상품 · 상세 · 접수)이 떠 있었다.
-     ⇒ 판 탭은 위로 올라가 얼굴 띠 밑에 붙는다(틀고정). 엄지 자리는 메뉴가 갖는다 — 앱의 통상 짜임.
+   ★★★ 폰 위 띠 — 메뉴는 ☰ 시트로, 아래 띠(고정 메뉴 넷)는 걷었다 (대표 2026-09-18 「동선 좀 짜 봐」)
+     ⚠ 그 전에는 얼굴 띠 밑에 아래 메뉴 띠(56px, 아이콘 넷)가 늘 떠 있고, 그 «위»에 각 판의 하단바가
+     또 떠서 엄지 자리에 버튼 줄이 둘이었다. 메뉴 넷 · 로그아웃은 `_design/MobileMenu` 시트로 옮겼다
+     (위 띠 오른쪽 끝 ☰). 엄지 자리(화면 맨 아래 한 줄)는 «지금 판이 할 일»(§14-3 하단바)에게 전부 준다.
+     그 줄 왼쪽에 «홈»(계약접수로) 하나만 고정으로 겹쳐 선다(`_design/MobileMenu` PhoneHome) — 아래 이어지는 절.
    ═══════════════════════════════════════════════════════════════════ */
-.dz-menu svg { display: none; }
 @media (max-width: 900px) {
-  :root { --아래띠: calc(56px + env(safe-area-inset-bottom)); --판탭: 49px; }
+  :root { --아래띠: env(safe-area-inset-bottom); --판탭: 49px; }
   body > nav.fn-top { height: 52px; flex-wrap: nowrap; padding: 0 16px; }
-  body > nav.fn-top .dz-menu {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; width: auto;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-    height: var(--아래띠); padding: 0 0 env(safe-area-inset-bottom);
-    background: var(--ci남색); box-shadow: 0 -1px 0 rgba(255, 255, 255, .06);
-  }
-  body > nav.fn-top .dz-menu a {
-    flex-direction: column; gap: 4px; height: 56px; padding: 0; border-radius: 0;
-    color: rgba(255, 255, 255, .6); font-size: var(--글보조); line-height: 14px;
-  }
-  body > nav.fn-top .dz-menu a:hover { background: transparent; }
-  /* 켜진 것 — 면 대신 스카이 색(아이콘 · 글자 같이). 아래 띠 한 칸 전체에 면을 깔면 무겁다 */
-  body > nav.fn-top .dz-menu a.on { background: transparent; color: var(--ci스카이); font-weight: 600; }
-  body > nav.fn-top .dz-menu svg { display: block; width: 22px; height: 22px; }
+  /* 글자 메뉴 넷(웹 것)은 폰에서 아예 안 그린다 — ☰ 시트가 대신한다 */
+  body > nav.fn-top .dz-menu { display: none; }
 
   /* 쪽 밑이 아래 띠에 안 가리게 */
   /* ⚠ 덮개의 여백 규칙(.fn-main:not(:has(…)))이 더 세서 16 으로 남아 정산 끝줄이 아래 띠 밑에 깔렸다(실측) — 한 단 세게 */
@@ -1576,10 +1564,11 @@ body > nav.fn-top .dz-logout button {
   color: rgba(255, 255, 255, .72); font-size: var(--글보조); cursor: pointer; font-family: inherit;
 }
 body > nav.fn-top .dz-logout button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
-@media (max-width: 900px) { body > nav.fn-top .dz-logout { margin-left: auto; } }
+/* 폰 — 이름 · 로그아웃은 여기 안 선다(중복이다) · ☰ 시트 안에 있다(_design/MobileMenu) */
+@media (max-width: 900px) { body > nav.fn-top .dz-logout { display: none; } }
 /* 위 띠 — 로그인한 사람 이름(로그아웃 바로 왼쪽 · 보조 12 · 흰 글자 흐리게) */
 body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 255, .86); white-space: nowrap; }
-@media (max-width: 900px) { body > nav.fn-top .dz-me { margin-left: auto; } body > nav.fn-top .dz-me + .dz-logout { margin-left: 0; } }
+@media (max-width: 900px) { body > nav.fn-top .dz-me { display: none; } }
 
 /* ★공식 CI 워드마크(ci_center) — 마크 없음 · 앞말 600 + 뒷말 300 · 사이 2px (대표 「공식적인 CI 에는 그 체크박스 네모가 없어」) */
 .dz-brand { gap: 0; }
@@ -1630,4 +1619,67 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 @media (max-width: 900px) {
   .fn-main .workspace .quick-filters { scrollbar-width: none; }
   .fn-main .workspace .quick-filters::-webkit-scrollbar { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 폰 ☰ 메뉴 시트 · 하단 홈 — 동선 정본 (대표 2026-09-18 「하단에 어떻게 해야 될지 동선 좀 짜 봐 …
+     하단 버튼 아무튼 홈으로 가는 버튼만 하나 만들어 놓고 하단 버튼은 뭘 … 네가 잘 구상 좀 해 봐」)
+
+     위 띠   freepass admin ······················· ☰   메뉴 넷 · 로그아웃(자주 안 바뀜) → 시트
+     하단   [홈 44]  [보조 3]  [주 7]                    홈은 늘 같은 자리 · 판마다 걸음만 바뀜(§14-3)
+
+   부품 = `_design/MobileMenu.tsx`(MobileMenu · PhoneHome). 웹(901px↑)에는 안 보인다(위 띠가 다 보이니까).
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-burger, .dz-phone-home { display: none; }
+@media (max-width: 900px) {
+  .dz-burger {
+    display: inline-flex; align-items: center; justify-content: center; margin-left: auto;
+    width: 36px; height: 36px; border: 0; border-radius: var(--r); background: transparent; color: #fff; cursor: pointer;
+  }
+  .dz-burger:active { background: rgba(255, 255, 255, .12); }
+
+  /* 시트 — 위에서 살짝, 얼굴 띠 밑으로. 배경을 누르거나 Esc 로 닫는다 */
+  .dz-msheet-back { position: fixed; inset: 0; z-index: 60; background: rgba(15, 27, 53, .42); }
+  .dz-msheet {
+    position: absolute; top: 0; right: 0; left: 0; max-width: 320px; margin-left: auto;
+    background: var(--판); border-radius: 0 0 0 var(--r); overflow: hidden;
+  }
+  .dz-msheet-head {
+    display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 8px 0 16px;
+    background: var(--ci남색); color: #fff;
+  }
+  .dz-msheet-head b { flex: 1; min-width: 0; font-size: var(--글메인); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dz-msheet-head button {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+    border: 0; border-radius: var(--r); background: transparent; color: #fff; cursor: pointer;
+  }
+  .dz-msheet-head button:active { background: rgba(255, 255, 255, .12); }
+  .dz-msheet nav { display: grid; padding: 8px; gap: 2px; }
+  .dz-msheet nav a {
+    display: flex; align-items: center; gap: 12px; height: var(--컨트롤); padding: 0 10px;
+    border-radius: var(--r); color: var(--글); text-decoration: none; font-size: var(--글메인);
+  }
+  .dz-msheet nav a svg { flex: none; color: #6b7580; }
+  .dz-msheet nav a:active { background: var(--박스손); }
+  .dz-msheet nav a.on { background: var(--남색옅음); color: var(--ci남색); font-weight: 700; }
+  .dz-msheet nav a.on svg { color: var(--ci남색); }
+  .dz-msheet-logout { padding: 8px; border-top: 1px solid var(--선); }
+  .dz-msheet-logout button {
+    width: 100%; height: var(--컨트롤); border: 0; border-radius: var(--r); background: transparent;
+    color: #a8261d; font-size: var(--글메인); font-weight: 600; cursor: pointer; text-align: left; padding: 0 10px;
+  }
+  .dz-msheet-logout button:active { background: #fdecea; }
+
+  /* 홈 — 판 하단바(§14-3)와 같은 줄에 고정으로 겹쳐 선다. 바(44 · padding-bottom 16)와 바닥을 맞춘다 */
+  .dz-phone-home {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    position: fixed; left: 12px; bottom: calc(var(--아래띠) + 16px); z-index: 10;
+    width: 44px; height: 44px; border-radius: var(--r);
+    background: var(--ci남색); color: #fff; text-decoration: none;
+    box-shadow: 0 2px 8px rgba(15, 27, 53, .22);
+  }
+  .dz-phone-home span { font-size: 10px; line-height: 11px; font-weight: 600; }
+  .dz-phone-home:active { background: var(--켜짐깊이); }
+  /* 하단바 — 홈 자리(44 + 사이 8)만큼 왼쪽을 비운다. `.dz-bar >` 로 좁혀 세부검색 시트 바닥(dz-fs-foot)은 안 건드린다 */
+  .fn-main .workspace .dz-bar > .dz-bar-go { padding-left: 64px; }
 }

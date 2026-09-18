@@ -89,6 +89,8 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   return (
     <>
       <div className="panel-head">
+        {/* 폰 — 접수 목록(탭 홈)으로 뒤로. §14 개정 「하단은 홈 + 그 판 걸음」 — 이 판은 접수 tab 의 depth1 */}
+        <Link className="dz-phone-back" href={back} aria-label="접수 목록으로">‹</Link>
         <div><h1>신규 접수</h1></div>
       </div>
       {product ? (
@@ -146,7 +148,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   if (!hit) {
     return (
       <>
-        <div className="panel-head"><div><h1>접수 상세</h1></div></div>
+        <div className="panel-head"><Link className="dz-phone-back" href={back} aria-label="목록으로">‹</Link><div><h1>접수 상세</h1></div></div>
         <p className="dz-empty">이 접수를 못 찾았습니다 — {code}</p>
         {바}
       </>
@@ -219,6 +221,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   return (
     <>
       <div className="panel-head">
+        {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
+        <Link className="dz-phone-back" href={back} aria-label="목록으로">‹</Link>
         <div><h1>접수 상세</h1></div>
       </div>
       {created && <p className="dz-ok">ERP5 에 새 접수를 세웠습니다.</p>}

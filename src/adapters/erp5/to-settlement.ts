@@ -7,7 +7,7 @@
  */
 import type {
   Block, ClaimStage, FeeBasis, Maybe, PayStage, SettlementRow, SettleTarget,
-} from '../../domain/settlement/types.js';
+} from '../../domain/settlement/types';
 
 export type Erp5Row = Record<string, unknown>;
 
@@ -104,6 +104,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
       collected: b(d.collected), collectedAmt: n(d.collectedAmt),
       paid: b(d.paid), paidAmt: n(d.paidAmt),
       supplierOk: b(d.supplierOk), channelOk: b(d.channelOk),
+      billHold: b(d.billHold), settleExclude: b(d.settleExclude),
     },
     claimStage: pick(d.claimStage, CLAIM_STAGES, '접수'),
     payStage: pick(d.payStage, PAY_STAGES, '접수'),

@@ -10,8 +10,8 @@
  */
 import type {
   CanonicalProduct, Offer, PolicyValue, VehicleMasterRef, VehicleSpecs, RegistrationInfo,
-} from '../../domain/product/types.js';
-import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse.js';
+} from '../../domain/product/types';
+import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
 
 export type Erp5Doc = Record<string, unknown>;
 
@@ -216,6 +216,9 @@ export function toCanonicalProduct(
       id,
       version: 1,
       supplierId: S(d.provider_company_code) ?? S(d.partner_code) ?? '',
+      /* ★이름과 코드를 «둘 다» 든다 — 사람은 이름을, 대조는 코드를 본다 */
+      supplierName: S(d.provider_name),
+      status: S(d.vehicle_status),
       supplierProductKey: key,
       vehicle: vehicleRefOf(d),
       specs: specsOf(d),

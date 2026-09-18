@@ -56,6 +56,10 @@ export interface SettlementProgress {
   paidAmt: Maybe<number>;
   supplierOk: boolean;       // 공급사가 확인했나
   channelOk: boolean;        // 영업채널이 확인했나
+  /** 청구 보류 (ERP5 `billHold`) — 실적은 섰는데 이번 달 청구에서 뺀다 */
+  billHold: boolean;
+  /** 정산 제외 (ERP5 `settleExclude`) — 청구·지급 어느 목록에도 안 선다 */
+  settleExclude: boolean;
 }
 
 /** 돈 */

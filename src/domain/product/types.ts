@@ -54,6 +54,19 @@ export interface CanonicalProduct {
    */
   version: number;
   supplierId: string;
+  /**
+   * 사람이 읽는 공급사 이름. `supplierId` 는 «코드» 다 — 화면에 코드를 띄우면 아무도 못 읽는다.
+   * ⚠ 없을 수 있다. 그때 화면은 코드를 보이되 «이름이 없다» 는 것을 숨기지 않는다.
+   */
+  supplierName?: string;
+  /**
+   * **지금 나갈 수 있나.** ERP5 `vehicle_status` 실측(2026-09-18 · 694대) —
+   *   출고가능 407 · 출고협의 250 · 즉시출고 30 · 계약중 5 · 상품화중 2
+   * ★목록의 «첫 칸» 이다. 이것이 없으면 출고불가 차를 상담하게 된다.
+   * ⚠ 값을 우리가 정하지 않는다 — 공급사가 준 말을 그대로 들고 있는다.
+   *   갈래로 접는 것은 «보이는 쪽» 이 할 일이다(대표 2026-09-18 「디자인과 기능은 분리」).
+   */
+  status?: string;
   supplierProductKey: string;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;

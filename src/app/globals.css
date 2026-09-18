@@ -1358,7 +1358,8 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 /* ③ 선은 판 · 검색창뿐 — 폰 판 탭 밑줄을 걷는다(면의 밝기로 가른다) */
 @media (max-width: 900px) { .phone-tabs { border-bottom: 0; } }
 /* ④ 효율 — 쪽 나눔을 걷어 목록이 675줄 · 노드 2만 개다. 화면 밖 줄은 그리지 않는다(자리만 88 을 잡아 둔다) */
-.dz-row { content-visibility: auto; contain-intrinsic-size: auto 88px; }
+/* ⚠ 자리 크기는 «안쪽 상자» 기준이다 — 줄 88 = 안쪽 64 + 위아래 여백 12·12. 88 을 주면 그리지 않은 줄이 112 로 섰다(실측) */
+.dz-row { content-visibility: auto; contain-intrinsic-size: auto 64px; }
 
 /* ═══════════════════════════════════════════════════════════════════
    ★ 접수 폼 — 두 갈래(차 골라 접수 · 직접 접수) · 묶음(차량 · 고객·영업 · 조건 · 수수료) · 더 넣기(접힘)
@@ -1494,3 +1495,37 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .dz-claim-url code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: var(--글보조); color: var(--ci남색); }
 .dz-claim-url small { flex-basis: 100%; font-size: var(--글보조); color: #6b7580; }
 .dz-ok-txt { color: #1e7a45; font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 뱃지 = 화이트라벨 «그대로» (대표 2026-09-18 「화이트라벨이랑 통일할 거면 확실하게 통일하고 · 개별로 쓸 거면 개별로 · 어정쩡하게 하지 말고」)
+     ⚠ 앞서: 모양만 화이트라벨이고 크기(22 · 라운드 4 · 아이콘 12/14)와 색(우리 회색 · 우리 초록)은 우리 것 — 반반이었다.
+     ⇒ 값 전부를 원본에서 옮긴다(freepasserp4 components/shop/shop-ui.tsx StateChip · PerkMark · app/globals.css 색):
+       신원 칩  안쪽 5·10 · 라운드 8(SHOP.r.chip) · 12px(cap)/600 · 아이콘 13 · 사이 4
+                면 #f7f8fb(zebra) 글 #52525b(mute) · good 면 #f0fdf4 글 #15803d
+       조건 표시 면 없음 · 700 · 먹 #18181b · 상세 13px/아이콘 15/사이 16 · 카드 12px/아이콘 13/사이 12 · 아이콘 사이 4
+                아이콘 색 good #15803d · ask #a1a1aa · 혜택 #1B2A4A
+     ★표(§14-9)의 «라운드 4 · 글 12/14/18» 에서 뱃지 둘만 예외 — 화이트라벨과 같은 물건이라서.
+     업무 칩(접수 · 정산)은 화이트라벨에 없다 — 모양은 같은 칩, 뜻 색 둘(act 남색 · warn 붉음)만 더한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --wl-zebra: #f7f8fb; --wl-mute: #52525b; --wl-ink: #18181b; --wl-faint: #a1a1aa; --wl-ok: #15803d; --wl-okbg: #f0fdf4; }
+.dz-badge, .fn-main .workspace .dz-badge, .dz-row .dz-badge, .dz-row .dz-badge.plain, .dz-row.on .dz-badge.plain {
+  height: auto; padding: 5px 10px; gap: 4px; border-radius: 8px; line-height: 14px;
+  font-size: 12px !important; font-weight: 600; background: var(--wl-zebra); color: var(--wl-mute) !important;
+}
+.dz-badge .dz-ico { opacity: 1; }
+.dz-badge.good, .dz-row .dz-badge.good { background: var(--wl-okbg); color: var(--wl-ok) !important; }
+.dz-badge.act, .dz-row .dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; }
+.dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; }
+/* 조건 표시 — 상세(기본) */
+.dz-perks { column-gap: 16px; row-gap: 8px; }
+.dz-perk { gap: 4px; font-size: 13px; font-weight: 700; color: var(--wl-ink); }
+.dz-perk .dz-ico { color: var(--ci남색); }
+.dz-perk.good .dz-ico { color: var(--wl-ok); }
+.dz-perk.ask .dz-ico { color: var(--wl-faint); }
+/* 조건 표시 — 카드(목록 한 줄) */
+.dz-perks.compact { column-gap: 12px; }
+.dz-perks.compact .dz-perk { font-size: 12px; }
+/* 뜻 색이 plain 규칙에 눌렸다(실측: 고른 줄 · 상세의 「즉시출고」가 회색) — 뜻 색을 한 단 세게 */
+.fn-main .workspace .dz-badge.good, .fn-main .workspace .dz-row.on .dz-badge.good { background: var(--wl-okbg); color: var(--wl-ok) !important; }
+.fn-main .workspace .dz-badge.act, .fn-main .workspace .dz-row.on .dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; }
+.fn-main .workspace .dz-badge.warn, .fn-main .workspace .dz-row.on .dz-badge.warn { background: #fdecea; color: #a8261d !important; }

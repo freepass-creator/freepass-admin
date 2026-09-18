@@ -18,7 +18,16 @@ import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 
 /**
- * 신원 칩의 그림 — 원본 erp4 `SIGNAL_ICON` 그대로: 그림은 «값»이 아니라 «갈래»를 가리킨다.
+ * ★★상품의 신원 칩 — 화이트라벨 «그대로»(대표 2026-09-18 「화이트라벨이랑 통일할 거면 확실하게 통일하고 … 어정쩡하게 하지 말고」)
+ *   원본 = freepasserp4 components/shop/ShopCard.tsx · ShopDetail.tsx 의 stateMarks:
+ *     출고상태 → CircleCheck(출고가능·즉시출고면 good 초록) · 상품구분 → Tag. 그 밖의 그림을 짓지 않는다.
+ */
+export function 상품신원(text: string, kind: 'status' | 'kind'): { icon: string; good?: boolean } {
+  return kind === 'kind' ? { icon: 'tag' } : { icon: 'circle-check', good: /출고가능|즉시출고/.test(text) };
+}
+
+/**
+ * 업무 칩의 그림(접수 · 정산 — 화이트라벨에 없는 값) — 모양은 화이트라벨 칩과 같고 그림만 갈래를 말한다(erp4 SIGNAL_ICON): 그림은 «값»이 아니라 «갈래»를 가리킨다.
  *   출고상태만 상태에 따라 갈린다(살 수 있나 ○✓ / 기다려야 하나 ◷ / 안 되나 ⊘) — 글자를 못 읽어도 먼저 걸러진다.
  */
 export function 신원(text: string): { icon: string; good?: boolean } {
@@ -29,13 +38,16 @@ export function 신원(text: string): { icon: string; good?: boolean } {
   return { icon: 'tag' };
 }
 
-/** ① 신원 칩 — tone: plain(옅은 면) · act(할 일 있음 — 옅은 남색 면 + 남색 글자) · 좋은 소식은 초록 */
+/**
+ * ① 신원 칩 — 화이트라벨 StateChip 그대로: 옅은 면 · 아이콘 13 · 12px/600 · 안쪽 5·10 · 라운드 8 · 테두리 없음.
+ *   tone: plain(옅은 면) · good(초록) — 화이트라벨 둘. 업무 칩만 act(할 일 — 옅은 남색) · warn(위험 — 붉음)을 더 쓴다.
+ */
 export function Tag({ children, tone = 'plain', icon, good }: {
   children: ReactNode; tone?: 'plain' | 'act' | 'warn'; icon?: string; good?: boolean;
 }) {
   return (
     <i className={`dz-badge ${tone}${good ? ' good' : ''}`}>
-      {icon ? <Icon name={icon} size={12} stroke={2.2} /> : null}{children}
+      {icon ? <Icon name={icon} size={13} stroke={2} /> : null}{children}
     </i>
   );
 }
@@ -43,7 +55,11 @@ export function Tag({ children, tone = 'plain', icon, good }: {
 /** 심사 값인가 — 도메인 perks 는 심사를 맨 앞에 싣는다(무심사 · 신용조회 · 소득확인 …) */
 const 심사 = (m: string) => /심사|신용|소득/.test(m);
 
-/** ② 조건 표시 — 아이콘 + 굵은 먹색 글자, 면 없음. note(「정책 추정」)는 회색 글자로 끝에 */
+/**
+ * ② 조건 표시 — 화이트라벨 PerkMark 그대로: 면 없이 아이콘 + 굵은(700) 먹색 글자.
+ *   상세 = 13px · 아이콘 15 · 사이 16 / 카드(compact) = 12px · 아이콘 13 · 사이 12 (ShopDetail · ShopCard 의 값)
+ *   아이콘 색: 무심사 초록 #15803d · 신용조회·소득확인 흐림 #a1a1aa(ask) · 혜택 남색 #1B2A4A. note(「정책 추정」)는 회색 글자로 끝에
+ */
 export function PerkMarks({ marks, note, compact }: { marks: string[]; note?: string; compact?: boolean }) {
   if (!marks.length && !note) return null;
   return (
@@ -52,7 +68,7 @@ export function PerkMarks({ marks, note, compact }: { marks: string[]; note?: st
         const kind = 심사(m) ? (/무심사/.test(m) ? 'good' : 'ask') : 'perk';
         return (
           <span key={m} className={`dz-perk ${kind}`}>
-            <Icon name={kind === 'perk' ? 'check' : 'shield-check'} size={compact ? 12 : 14} stroke={2.4} />{m}
+            <Icon name={kind === 'perk' ? 'check' : 'shield-check'} size={compact ? 13 : 15} stroke={2} />{m}
           </span>
         );
       })}

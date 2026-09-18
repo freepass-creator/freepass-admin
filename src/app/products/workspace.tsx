@@ -11,7 +11,7 @@ import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow, type RowStatus } from '../_design/ListRow';
-import { Tag, 신원 } from '../_design/Badges';
+import { Tag, 상품신원 } from '../_design/Badges';
 import { DetailTabs } from '../_design/DetailTabs';
 import { PhotoGallery } from '../_design/PhotoGallery';
 import { ProductInfo } from '../_design/ProductInfo';
@@ -352,7 +352,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                         <p className="dz-note">차종 {매칭(car.vehicle.matchLevel)}{car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : ''}</p>
                       )}
                     </div>
-                    <Tag {...신원(txt(car.status))}>{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</Tag>
+                    <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</Tag>
                   </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
@@ -363,7 +363,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 info={<>
                   <div className="vehicle-title">
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
-                    <Tag {...신원(txt(car.status))}>{txt(car.status)}</Tag>
+                    <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}</Tag>
                   </div>
                   {/* ★상세정보 — erp4 읽는 차례로 묶었다(차량 → 대여료 → 운전자 → 보험 → 계약 → 영업 전용 → 기타) · 원자는 기능 쪽 productSections 그대로 */}
                   <ProductInfo sections={productSections(car)} offers={car.offers} />

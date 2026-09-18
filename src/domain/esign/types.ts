@@ -67,7 +67,9 @@ export type EsignSession = {
   expiresAt: number;
   openedAt?: number;
   submittedAt?: number;
+  submittingAt?: number;
   approvedAt?: number;
+  approvingAt?: number;
   revokedAt?: number;
   rejectedAt?: number;
   rejectReason?: string;

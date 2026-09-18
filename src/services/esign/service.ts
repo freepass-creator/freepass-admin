@@ -289,7 +289,43 @@ export class EsignService {
       rejectReason: session.rejectReason ?? '',
       supplementItems: session.supplementItems ?? [],
       uploadedKeys: assetKeys,
+      draft: priv?.draft && typeof priv.draft === 'object' ? priv.draft : null,
     };
+  }
+
+  async saveDraft(token: string, payload: Record<string, unknown>) {
+    const session = await this.byToken(token);
+    if (!['sent', 'opened', 'in_progress', 'rejected'].includes(session.status)) {
+      throw new Error('현재 링크에서는 작성내용을 저장할 수 없습니다.');
+    }
+    const max = (key: string, n: number) => S(payload[key]).slice(0, n);
+    const stepRaw = Number(payload.step);
+    const consentRaw = Array.isArray(payload.consents) ? payload.consents.map(S).filter((x) => session.snapshot.consentProfile.requiredKeys.includes(x)) : [];
+    const draft = {
+      customer_name: max('customer_name', 40),
+      customer_phone: max('customer_phone', 30),
+      customer_birth: max('customer_birth', 10),
+      customer_address: max('customer_address', 200),
+      driver_license_no: max('driver_license_no', 30),
+      signer_name: max('signer_name', 40),
+      signer_role: max('signer_role', 30),
+      emergency_relation: max('emergency_relation', 30),
+      emergency_name: max('emergency_name', 40),
+      emergency_phone: max('emergency_phone', 30),
+      cms_holder_name: max('cms_holder_name', 80),
+      cms_holder_relation: max('cms_holder_relation', 40),
+      cms_holder_phone: max('cms_holder_phone', 30),
+      cms_bank: max('cms_bank', 40),
+      cms_account_no: max('cms_account_no', 30),
+      cms_holder_identifier: max('cms_holder_identifier', 20),
+      consents: [...new Set(consentRaw)],
+      summaryConfirmedAt: Number(payload.summaryConfirmedAt || 0) || 0,
+      agreementReadAt: Number(payload.agreementReadAt || 0) || 0,
+      step: Number.isInteger(stepRaw) ? Math.max(0, Math.min(8, stepRaw)) : 0,
+      savedAt: Date.now(),
+    };
+    await this.repo.putPrivate(session.id, { draft });
+    return { ok: true, savedAt: draft.savedAt };
   }
 
   async progress(token: string, step: string) {

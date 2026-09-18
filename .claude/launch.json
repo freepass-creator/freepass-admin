@@ -4,8 +4,25 @@
     {
       "name": "mockups",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "docs/ui/mockups"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4321",
+        "--directory",
+        "docs/ui/mockups"
+      ],
       "port": 4321
+    },
+    {
+      "name": "fp-settlement",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "C:/dev/fp-settlement",
+        "run",
+        "dev"
+      ],
+      "port": 4010
     }
   ]
 }

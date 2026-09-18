@@ -6,7 +6,7 @@ import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { ClaimLink, IssueForm } from './LifeForms';
-import { ActionBar, EmptyState, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,7 +112,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 {t.unknown ? <small className="dz-warn-txt"> · 금액 모름 {t.unknown}</small> : null}
               </span>
             </div>
-            {month === NO_MONTH && <p className="dz-warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</p>}
+            {month === NO_MONTH && <Notice tone="warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</Notice>}
           </div>
           <div className="list">
             {shownGroups.map((g) => (
@@ -150,8 +150,8 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <p><b>{문서}</b> {장 ? <>{장.invoiceNo} · 발행 {new Date(장.issuedAt).toISOString().slice(0, 10)}</> : <span className="dz-muted">아직 안 나감</span>}</p>
                 {계획.ok
                   ? <p className="dz-issue-sum">공급가 {won(계획.invoice.supply)} · 부가세 {won(계획.invoice.vat)} · <b>합계 {won(계획.invoice.total)}원</b>{계획.invoice.clawback ? ` (환수 −${won(계획.invoice.clawback)})` : ''}</p>
-                  : <p className="dz-warn">{계획.error}</p>}
-                {어긋남 && <p className="dz-warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</p>}
+                  : <Notice tone="warn">{계획.error}</Notice>}
+                {어긋남 && <Notice tone="warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</Notice>}
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
                 {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
                   live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt} response={장.response ?? null} />}

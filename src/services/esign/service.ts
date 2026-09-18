@@ -378,7 +378,7 @@ export class EsignService {
   }
 
   async progress(token: string, step: string) {
-    const allowed = new Set(['summary', 'information', 'identity', 'agreement', 'documents']);
+    const allowed = new Set(['summary', 'information', 'identity', 'agreement', 'documents', 'document']);
     if (!allowed.has(step)) throw new Error('모르는 전자계약 단계입니다.');
     const session = await this.byToken(token);
     const now = Date.now();
@@ -421,6 +421,7 @@ export class EsignService {
     if (!claimed) throw new Error('이미 제출 처리 중이거나 사용할 수 없는 링크입니다.');
 
     try {
+      if (!Number(session.progress?.document || 0)) throw new Error('서명 전에 작성된 계약서를 열어 확인해 주세요.');
       const priv0 = await this.repo.getPrivate(session.id);
       const assets = (priv0?.assets as Record<string, Record<string, unknown>>) || {};
       const uploadedDocs = Object.keys(assets).filter((k) => k.startsWith('support:')).map((k) => k.slice('support:'.length));

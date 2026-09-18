@@ -1291,10 +1291,30 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
      바닥 #eef1f4 · 판 #fff(선) · 카드 #f6f7f9(판보다 «살짝»만) · 손 댄 카드 #eef1f4 · 고른 카드 옅은 남색 #e6ecf5.
      카드 안 뱃지는 카드보다 한 단 짙게(#eaeef2) — 고른 카드 위에서는 흰 면.
    ═══════════════════════════════════════════════════════════════════ */
-:root { --컨트롤: 40px; --카드: #f6f7f9; --카드손: #eef1f4; }
+:root {
+  --컨트롤: 40px; --카드: #f6f7f9; --카드손: #eef1f4;
+
+  /* ★공통 UI/UX SSOT aliases — 화면값은 안 바꾸고, 다음 화면이 같은 숫자를 재사용하게 이름만 세운다.
+     현행 관리자 workspace 기준: 본문 컨트롤 40 · 주행동/모바일 터치 44 · 기본 라운드 4 · 글 18/14/12. */
+  --ui-text-title: var(--글제목);
+  --ui-text-main: var(--글메인);
+  --ui-text-support: var(--글보조);
+  --ui-radius: var(--r);
+  --ui-control-h: var(--컨트롤);
+  --ui-action-h: 44px;
+  --ui-touch-min: 44px;
+  --ui-panel-gap: 12px;
+  --ui-panel-pad: 22px;
+  --ui-panel-pad-mobile: 16px;
+  --ui-list-gap: 8px;
+  --ui-row-body-h: 64px;
+  --ui-thumb-w: 82px;
+  --ui-thumb-h: 64px;
+  --ui-status-tile: 64px;
+}
 
 /* 컨트롤 40 */
-.fn-main .workspace .dz-searchbox { height: var(--컨트롤); padding: 0 4px 0 12px; gap: 8px; }
+.fn-main .workspace .dz-searchbox { height: var(--ui-control-h); padding: 0 4px 0 12px; gap: 8px; }
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
 .fn-main .workspace .quick-filters a,
@@ -1306,18 +1326,18 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-side-step button, .dz-side-step input,
 .dz-money input, .dz-money button, .dz-life-form input,
 .dz-fs-head button, .dz-fs-axis button, .dz-fs-more, .dz-fs-check {
-  height: var(--컨트롤); line-height: 16px;
+  height: var(--ui-control-h); line-height: 16px;
 }
-.dz-month > a, .dz-month > span:not(.dz-month-sum) { width: var(--컨트롤); }
-.dz-fs-axis { height: var(--컨트롤); }
+.dz-month > a, .dz-month > span:not(.dz-month-sum) { width: var(--ui-control-h); }
+.dz-fs-axis { height: var(--ui-control-h); }
 /* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
 .dz-fs-open { top: 4px; right: 4px; height: 32px; line-height: 16px; }
 /* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
 @media (max-width: 900px) {
   :root { --판탭: 56px; }
   .phone-tabs { height: var(--판탭); }
-  .phone-tabs a { height: var(--컨트롤); line-height: 16px; }
-  .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: 44px; }  /* 폰 엄지 자리만 44 */
+  .phone-tabs a { height: var(--ui-control-h); line-height: 16px; }
+  .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */
 }
 
 /* 색 위계 — 카드 */
@@ -1594,8 +1614,12 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   .phone-tabs { display: none; }
   .fn-main .workspace .panel-head .dz-phone-back {
     display: inline-flex; align-items: center; justify-content: center; align-self: center;
-    width: 32px; height: 32px; margin: 0 2px 0 -8px; border-radius: var(--r);
+    position: relative; width: 32px; height: 32px; margin: 0 2px 0 -8px; border-radius: var(--r);
     color: var(--글); font-size: 24px; line-height: 1; text-decoration: none;
+  }
+  /* 보이는 상자는 32 그대로 두되 실제 터치 영역은 SSOT 바닥 44를 확보한다 — 레이아웃 변화 없음. */
+  .fn-main .workspace .panel-head .dz-phone-back::before {
+    content:""; position:absolute; inset:-6px;
   }
   .fn-main .workspace .panel-head .dz-phone-back:active { background: var(--박스손); }
 }

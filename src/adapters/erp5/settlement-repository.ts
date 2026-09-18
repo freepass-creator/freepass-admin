@@ -3,7 +3,9 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { eventDocId, settlementKey } from '../../domain/settlement/code';
-import { intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { feeFixPatch } from '../../domain/settlement/adjust';
+import { clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
@@ -58,6 +60,7 @@ export class Erp5SettlementRepository {
       return {
         plate: S(c.plate), month: S(c.month), supplier: S(c.supplier), channel: S(c.channel),
         supplierAmt: N(c.supplierAmt), agentAmt: N(c.agentAmt), reason: S(c.reason), at: S(c.at),
+        ...(S(c.code) ? { code: S(c.code) } : {}),
       };
     });
   }
@@ -80,6 +83,8 @@ export class Erp5SettlementRepository {
     /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
     const rules = await loadFeeRuleSet();
     const fee = feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price });
+    const manualErr = feeManualErrors(input, fee);
+    if (manualErr.length) throw new Error(manualErr.join(' · '));
     const rec = intakeRecord(input, Date.now(), fee, rules.version);
     const code = String(rec.code);
     const plate = String(rec.plate);
@@ -225,6 +230,52 @@ export class Erp5SettlementRepository {
       const cur = d.data()!;
       const { row } = toSettlementRow(cur, d.id);
       const r = lifePatch(row, change);
+      if (!r.ok) return r;
+      if (!r.events.length) return { ok: true as const, changed: 0 };
+      const now = Date.now();
+      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+      const ev: Record<string, unknown> = {};
+      for (const e of r.events) ev[audId()] = { at: now, by: BY, ...e };
+      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      return { ok: true as const, changed: r.events.length };
+    });
+  }
+
+  /**
+   * 환수 세우기 (domain/settlement/clawback.ts) — settlement_clawbacks 에 한 줄 · 원장 줄에는 이력만.
+   * ★같은 차·같은 달 환수가 이미 있으면 새로 안 세운다.
+   */
+  async createClawback(code: string, input: ClawbackInput): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = d.data()!;
+      const { row } = toSettlementRow(cur, d.id);
+      const now = Date.now();
+      const r = clawbackRecord(row, input, BY, now);
+      if (!r.ok) return r;
+      const cref = db.collection('settlement_clawbacks').doc(r.id);
+      if ((await tx.get(cref)).exists) return { ok: false as const, error: `이 차의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
+      tx.create(cref, r.doc);
+      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)),
+        { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
+      return { ok: true as const, id: r.id };
+    });
+  }
+
+  /** 접수 뒤 수수료 고치기 (domain/settlement/adjust.ts feeFixPatch) */
+  async setFee(code: string, claim: number | null, pay: number | null, reason: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = d.data()!;
+      const r = feeFixPatch(cur, claim, pay, reason);
       if (!r.ok) return r;
       if (!r.events.length) return { ok: true as const, changed: 0 };
       const now = Date.now();

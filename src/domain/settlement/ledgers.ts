@@ -21,6 +21,8 @@ export const NO_MONTH = '청구월 미정';
 export interface Clawback {
   plate: string; month: string; supplier: string; channel: string;
   supplierAmt: number; agentAmt: number; reason: string; at: string;
+  /** 어느 정산 줄의 환수인가 — 어드민에서 세운 것만 있다(옛 23건은 차번뿐) */
+  code?: string;
 }
 
 export interface LedgerLine {

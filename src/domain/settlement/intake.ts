@@ -37,6 +37,13 @@ export interface IntakeInput {
   note: string;
   /** 프로모션 — 대표 2026-09-17 「접수할때 프로모션 업셀링 금액을 넣어야함」 · 영업자 몫 기본 100% */
   promotion?: Promotion;
+  /**
+   * 수수료 직접 입력 — 대표 2026-09-18 「차 골라서 접수하거나 아니면 직접접수하는 방식으로」.
+   * 표가 못 내는 건(신차발주 「주는 대로」 · 표에 없는 공급사)은 사람이 넣는다.
+   * ★넣은 값이 이긴다(erp4 「적힌 값이 이긴다」). 표가 낸 값과 «다르게» 넣으면 사유가 있어야 한다.
+   * null 이면 그쪽은 표대로.
+   */
+  feeManual?: { claim: number | null; pay: number | null; reason: string };
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -58,6 +65,9 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   /* ★인도완료는 인도일과 «같이» 온다. 날짜 없이 켜면 청구월이 안 선다 (erp4 appendIntake 와 같은 규칙) */
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
+  for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {
+    if (v !== null && v !== undefined && (!Number.isFinite(v) || v < 0)) e.push(`${k} 값을 읽지 못했습니다`);
+  }
   for (const [k, v] of [['계약기간', x.term], ['렌탈료', x.rent], ['보증금', x.deposit], ['차량가액', x.price]] as const) {
     if (v !== null && (!Number.isFinite(v) || v < 0)) e.push(`${k} 값을 읽지 못했습니다`);
   }
@@ -76,9 +86,13 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
   const code = settlementCode(x.plate, x.receivedAt);
   const iso = new Date(nowMs).toISOString();
   const auto = fee?.status === 'AUTO' ? fee : null;
-  const feeNote = !fee ? '수수료: 셈 안 함'
+  const m = x.feeManual;
+  const mClaim = m?.claim ?? null, mPay = m?.pay ?? null;
+  const tableNote = !fee ? '수수료: 셈 안 함'
     : fee.status === 'AUTO' ? `수수료표 ${feeVersion ?? ''} · ${fee.rule.id}`.trim()
       : `수수료: ${fee.why}`;
+  const feeNote = mClaim === null && mPay === null ? tableNote
+    : [`수수료 직접 입력${m?.reason ? ` — ${m.reason}` : ''}`, auto ? `(표 ${auto.claim.toLocaleString()}/${auto.pay.toLocaleString()})` : `(${tableNote})`].join(' ');
   return {
     code,
     plate: x.plate.replace(/\s/g, ''), receivedAt: x.receivedAt,
@@ -89,8 +103,9 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     product: x.product.trim(), rentKind: x.rentKind.trim(), contractType: x.contractType.trim(),
     term: x.term ?? 0, rent: x.rent ?? 0, deposit: x.deposit ?? 0, price: x.price ?? 0,
     payKind: x.payKind.trim(),
-    supplierRate: auto ? auto.rule.claim : 0, agentRate: auto ? auto.rule.pay : 0,
-    claimWritten: auto ? auto.claim : 0, payWritten: auto ? auto.pay : 0,
+    /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
+    supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,
+    claimWritten: mClaim ?? (auto ? auto.claim : 0), payWritten: mPay ?? (auto ? auto.pay : 0),
     ...(x.promotion?.amount ? promotionPatch(x.promotion) : { claimIncentive: 0, payIncentive: 0 }),
     claimAdjust: 0, payAdjust: 0, adjustReason: '',
     paper: x.paper, delivered: x.delivered, deliveredAt: x.delivered ? x.deliveredAt : '',
@@ -173,4 +188,15 @@ export function progressPatch(
   }
   if (!B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
   return { ok: true, patch: { cancelled: false }, events: [{ field: '취소', from: 'true', to: 'false' }] };
+}
+
+/**
+ * 표가 낸 값과 «다르게» 직접 넣었으면 사유가 있어야 한다 — 저장 직전에 표를 셈한 뒤 부른다.
+ * ★표가 못 내는 건(MANUAL·NO_RULE·NO_BASE)은 사유 없이 넣어도 된다 — 그게 «주는 대로» 다.
+ */
+export function feeManualErrors(x: IntakeInput, fee: FeeResult): string[] {
+  const m = x.feeManual;
+  if (!m || fee.status !== 'AUTO' || m.reason.trim()) return [];
+  const differs = (m.claim !== null && m.claim !== fee.claim) || (m.pay !== null && m.pay !== fee.pay);
+  return differs ? [`수수료표는 ${fee.claim.toLocaleString()}/${fee.pay.toLocaleString()} 입니다 — 다르게 넣으려면 사유를 적어야 합니다`] : [];
 }

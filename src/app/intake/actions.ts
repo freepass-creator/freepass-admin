@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { settlements, today } from '../../server/erp5';
+import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
+import { feeOf } from '../../domain/settlement/fee';
 import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
@@ -35,6 +37,8 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     note: S(f, 'note'),
     /* 프로모션 — 금액 · 영업자 몫(%) · 사유. ★몫을 비우면 100% (대표 「기본 100%」) */
     promotion: promotionFromInput(f.get('promoAmount'), f.get('promoSharePct'), S(f, 'promoReason')),
+    /* 수수료 직접 입력 — 비우면 표대로 */
+    ...((S(f, 'feeClaim') || S(f, 'feePay')) ? { feeManual: { claim: N(f, 'feeClaim'), pay: N(f, 'feePay'), reason: S(f, 'feeReason') } } : {}),
   };
   const errors = validateIntake(input, today());
   if (errors.length) return { errors };
@@ -150,6 +154,57 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
   }
   try {
     const r = await settlements.setLifecycle(S(f, 'code'), change);
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+  }
+  revalidatePath('/settlement');
+  revalidatePath('/intake');
+  return { errors: [] };
+}
+
+/**
+ * **수수료 미리보기** — 저장하지 않는다. 폼 칸: supplier · product · model · term · rent · price
+ * ★저장할 때와 «같은 셈» (ERP5 수수료표). 화면은 이걸로 「표대로면 얼마」 를 보여 주고, 직접 입력 칸의 기본값으로 쓴다.
+ */
+export type FeePreview =
+  | { status: 'AUTO'; claim: number; pay: number; ruleId: string; basis: string; version: string }
+  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; version: string }
+  | { status: 'ERROR'; why: string };
+export async function previewFeeAction(f: FormData): Promise<FeePreview> {
+  try {
+    const set = await loadFeeRuleSet();
+    const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
+    const r = feeOf(set, { supplier: S(f, 'supplier'), product: S(f, 'product'), model: S(f, 'model'), term: num('term'), rent: num('rent'), price: num('price') });
+    if (r.status === 'AUTO') return { status: 'AUTO', claim: r.claim, pay: r.pay, ruleId: r.rule.id, basis: r.rule.basis, version: set.version };
+    return { status: r.status, why: r.why, ...('rule' in r ? { ruleId: r.rule.id } : {}), version: set.version };
+  } catch (e) {
+    return { status: 'ERROR', why: (e as Error).message };
+  }
+}
+
+/** 접수 뒤 수수료 고치기. 폼 칸: code · feeClaim · feePay(비우면 그쪽 안 바꿈) · feeReason(필수) */
+export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
+  try {
+    const r = await settlements.setFee(S(f, 'code'), S(f, 'feeClaim') ? N(f, 'feeClaim') : null, S(f, 'feePay') ? N(f, 'feePay') : null, S(f, 'feeReason'));
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+  }
+  revalidatePath('/intake');
+  revalidatePath('/settlement');
+  return { errors: [] };
+}
+
+/**
+ * 환수 세우기 — 대표 「환수가 생기는경우가 있을수도 있으니까 그건 열어두고」.
+ * 폼 칸: code · at(환수일 YYYY-MM-DD) · supplierAmt(공급사에 돌려줄 것) · agentAmt(영업채널에서 돌려받을 것) · reason(필수)
+ * ★금액은 사람이 넣는다(조건이 공급사마다 다르다). 그 달 청구·지급에서 빠진다.
+ */
+export async function clawbackAction(_: FormState, f: FormData): Promise<FormState> {
+  const n = (k: string) => { const v = N(f, k); return v === null ? null : v; };
+  try {
+    const r = await settlements.createClawback(S(f, 'code'), { at: S(f, 'at'), supplierAmt: n('supplierAmt'), agentAmt: n('agentAmt'), reason: S(f, 'reason') });
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };

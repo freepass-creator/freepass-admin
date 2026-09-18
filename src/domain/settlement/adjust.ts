@@ -60,3 +60,32 @@ export const adjustPatch = (a: Adjustment): Record<string, unknown> =>
   ({ claimAdjust: a.claim, payAdjust: a.pay, adjustReason: a.claim || a.pay ? a.reason : '' });
 
 export { promotionFromInput };
+
+/**
+ * **접수 뒤 수수료 고치기** — 「금액 모름」 줄에 넣거나, 표와 다르게 정해진 금액으로 바꾼다.
+ * ★사유가 있어야 한다 · 청구서가 나간 줄의 청구, 지급명세가 나간 줄의 지급은 못 바꾼다(나간 종이와 갈린다 — 가감·이월로).
+ */
+export function feeFixPatch(
+  cur: Record<string, unknown>, claim: number | null, pay: number | null, reason: string,
+): { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
+  if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
+  if (!reason.trim()) return { ok: false, error: '수수료를 고치는 사유를 적어야 합니다' };
+  for (const [k, v] of [['청구', claim], ['지급', pay]] as const) if (v !== null && (!Number.isFinite(v) || v < 0)) return { ok: false, error: `${k} 수수료 값을 읽지 못했습니다` };
+  const patch: Record<string, unknown> = {};
+  const events: { field: string; from: string; to: string }[] = [];
+  if (claim !== null && Number(cur.claimWritten ?? 0) !== claim) {
+    if (cur.billed === true) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 가감이나 다음 달 이월로' };
+    patch.claimWritten = Math.round(claim); patch.supplierRate = 0;
+    events.push({ field: '청구금액', from: String(cur.claimWritten ?? ''), to: String(Math.round(claim)) });
+  }
+  if (pay !== null && Number(cur.payWritten ?? 0) !== pay) {
+    if (['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 가감이나 다음 달 이월로' };
+    patch.payWritten = Math.round(pay); patch.agentRate = 0;
+    events.push({ field: '지급액', from: String(cur.payWritten ?? ''), to: String(Math.round(pay)) });
+  }
+  if (!events.length) return { ok: true, patch: {}, events: [] };
+  const note = [String(cur.settleNote ?? '').trim(), `[수수료 고침] ${reason.trim()}`].filter(Boolean).join(' / ');
+  patch.settleNote = note;
+  events.push({ field: '수수료 사유', from: '', to: reason.trim() });
+  return { ok: true, patch, events };
+}

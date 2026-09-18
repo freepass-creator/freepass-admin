@@ -23,6 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   try {
     const body = await request.json() as Record<string, unknown>;
     const action = String(body.action ?? '');
+    if (action === 'draft') return json(await esign.saveDraft(token, body.payload && typeof body.payload === 'object' ? body.payload as Record<string, unknown> : {}));
     if (action === 'progress') return json(await esign.progress(token, String(body.step ?? '')));
     if (action === 'submit') return json(await esign.submit(token, body.payload && typeof body.payload === 'object' ? body.payload as Record<string, unknown> : {}));
     return json({ error: '모르는 전자계약 요청입니다.' }, 400);

@@ -1,0 +1,33 @@
+name: E-sign PDF Smoke
+
+on:
+  push:
+    branches:
+      - work/gpt/esign-port-implementation-r1
+    paths:
+      - 'src/server/esign/pdf.ts'
+      - 'src/server/esign/document.ts'
+      - 'public/contract-template/**'
+      - 'scripts/smoke-esign-pdf.mts'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Render sealed Korean PDF
+        env:
+          AWS_LAMBDA_FUNCTION_VERSION: ci
+        run: npx tsx scripts/smoke-esign-pdf.mts

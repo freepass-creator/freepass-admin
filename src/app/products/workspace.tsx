@@ -22,6 +22,10 @@ import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
+import {
+  STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
+  많은순, 보증금, 정책말, type 상품축, type 요금축, type 차축,
+} from './workspace-config';
 
 
 /**
@@ -34,108 +38,6 @@ import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Prim
  * 폰은 `?v=list|detail|work` 로 판을 한 장씩(규칙 ⑧).
  */
 
-type SP = Promise<Record<string, string | string[] | undefined>>;
-
-/**
- * ★목록 한 줄의 «대표 요금» — 대표 2026-08-21 「대여료 «최저가» 기준」.
- *   인수형은 만기에 차를 사는 값이라 빼고 고른다. 인수형만 있으면 그걸 쓴다.
- *   ★검색 조건이 걸리면 «조건을 만족한 Offer» 안에서만 고른다 (S-03 — 다른 Offer 값을 섞지 않는다).
- */
-function lead(offers: Offer[]): Offer | undefined {
-  const plain = offers.filter((o) => !o.id.includes('인수형'));
-  const pool = plain.length ? plain : offers;
-  return pool.reduce<Offer | undefined>((a, b) => (!a || b.monthlyRent < a.monthlyRent ? b : a), undefined);
-}
-
-
-/** 지금 나갈 수 있는 것이 앞 */
-const STATUS_ORDER: Record<string, number> = { 즉시출고: 0, 출고가능: 1, 출고협의: 2 };
-
-/**
- * ★★세부검색의 축 — 화이트라벨 `SHOP_AXES` 의 짜임(대표 2026-09-18 「이미 화이트라벨이나 레트로 화면에 만들어 놓은 필터」)
- *   구간은 원본 `product-filters.ts` 의 RENT_BANDS · DEP_BANDS 를 옮겨 적었다(원본이 바뀌면 원본대로).
- *   축은 이 집에 «있는 칸»만 — 가게 축 중 연식·주행·제조사는 ERP5 상품에 아직 안 들어와 안 세운다(지어낸 축이 없다).
- */
-type 구간 = { k: string; label: string; lo: number; hi: number };
-const 대여료구간: 구간[] = [
-  { k: 'r50', label: '50만↓', lo: 0, hi: 500000 }, { k: 'r60', label: '50~60만', lo: 500000, hi: 600000 },
-  { k: 'r70', label: '60~70만', lo: 600000, hi: 700000 }, { k: 'r80', label: '70~80만', lo: 700000, hi: 800000 },
-  { k: 'r90', label: '80~90만', lo: 800000, hi: 900000 }, { k: 'r100', label: '90~100만', lo: 900000, hi: 1000000 },
-  { k: 'r150', label: '100~150만', lo: 1000000, hi: 1500000 }, { k: 'r200', label: '150만↑', lo: 1500000, hi: Infinity },
-];
-const 보증금구간: 구간[] = [
-  { k: 'd0', label: '없음', lo: -1, hi: 1 }, { k: 'd1', label: '100만↓', lo: 1, hi: 1000000 },
-  { k: 'd2', label: '100~200만', lo: 1000000, hi: 2000000 }, { k: 'd3', label: '200~300만', lo: 2000000, hi: 3000000 },
-  { k: 'd4', label: '300만↑', lo: 3000000, hi: Infinity },
-];
-/** 값이 비면 어느 구간에도 안 든다 — 「모른다」는 조건이 아니다(원본 mile 규칙 · S-08) */
-const 구간에 = (bands: 구간[], k: string, n?: number | null) => {
-  const b = bands.find((x) => x.k === k);
-  return !!b && n !== undefined && n !== null && n > b.lo && n <= b.hi;
-};
-/** 요금(Offer) 축 — 한 요금이 모두 만족해야 한다(S-02). 차 축 — 차 한 대의 칸 */
-const 요금축 = ['term', 'rent', 'dep'] as const;
-const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
-type 요금축 = (typeof 요금축)[number];
-type 차축 = (typeof 차축)[number];
-type 상품축 = 요금축 | 차축;
-/** 판 왼쪽 지도의 차례 — 지금 나갈 차 → 무엇 → 조건 → 값 → 누구 것 */
-const 상품축이름: [상품축, string][] = [
-  ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
-  ['rent', '월 대여료'], ['dep', '보증금'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
-];
-const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> = {
-  term: (o, k) => String(o.termMonths) === k,
-  rent: (o, k) => 구간에(대여료구간, k, o.monthlyRent),
-  dep: (o, k) => 구간에(보증금구간, k, o.deposit),
-};
-type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
-const 차맞음: Record<차축, (p: 상품, k: string) => boolean> = {
-  status: (p, k) => p.status === k,
-  kind: (p, k) => p.productKind === k,
-  perk: (p, k) => (p.perks ?? []).includes(k),
-  supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
-  cls: (p, k) => p.vehicleClass === k,
-  fuel: (p, k) => p.specs.fuel === k,
-};
-/** 받은 값의 차례 — 원자에 많이 있는 것부터(원본 standingRanked: 차례는 «전체» 대수로 — 누를 때 줄이 안 뛴다) */
-const 많은순 = (vals: string[]) => {
-  const m = new Map<string, number>();
-  for (const v of vals) if (v) m.set(v, (m.get(v) ?? 0) + 1);
-  return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([k]) => k);
-};
-
-/**
- * ★★★**메뉴마다 제 일에 특화** — 대표 2026-09-18
- *   「상품찾기는 상품 찾고 상세 화면 보는 거에 특화되어 있고, 접수는 접수 특화, 정산은 정산 특화,
- *    계약은 전자계약 날리는 거에 특화」 · 「이게 우리 메인인데 이거는 접수 화면이고」
- *   「상품찾기는 상품목록 패널 + 상품상세 패널만」 · 「상품목록 2개 패널 사이즈, 상품목록은 그대로」
- *
- *   mode 'intake' — 계약접수 = 메인. 판 셋: 상품 목록 | 상품 상세 | 접수 목록
- *   mode 'find'   — 상품찾기. 판 둘: 상품 목록(판 두 개 폭) | 상품 상세. 목록 카드는 그대로, 폭만 넓다.
- *   ★목록·상세는 «한 부품»이다 — 두 메뉴가 따로 지으면 같은 차가 두 화면에서 다르게 보인다.
- */
-/**
- * 대표 사진 — 기능 쪽 `photoUrl`. ★반드시 `imgSrc()` 로 감싼다(기능 세션 실측):
- *   구글 드라이브 썸네일은 브라우저가 바로 부르면 18장 중 16장이 깨진다 — 우리 서버(/api/img)를 거치면 18/18.
- *   바로 뜨는 곳(소카·롯데 등)은 imgSrc 가 그대로 돌려준다.
- */
-const 사진 = (p: { photoUrl?: string }): string | undefined =>
-  p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
-
-/**
- * 상품구분(`productKind`) · 혜택조건(`perks`) — 기능 쪽 도메인 칸(3bd7fc6).
- *   대표 「배차상태 상품구분 / 혜택조건(무심사, 21세, 경력무관) 이런 거는 한눈에 보이면 좋은데」
- *   ★판정은 도메인 한 곳(adapters/erp5/perks.ts) — 화면은 받은 글자를 «받은 차례 그대로» 그린다.
- *     차례가 뜻이다: 심사 → 분납가능 → 무보증 → 만N세 → 경력무관 → 무사고(사장님 2026-08-28 「맨 앞에 심사조건」).
- */
-
-/** 혜택 칩 옆에 붙는 한 마디 — 확정이면 안 붙인다 */
-/** 목록 둘째 줄의 보증금 — 0 은 「없음」(화이트라벨 「보증금 없음」) · 값이 없으면 「—」(모름) */
-const 보증금 = (n?: number | null) => (n === undefined || n === null ? '—' : n === 0 ? '없음' : `${won(n)}원`);
-
-const 정책말 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string | undefined =>
-  s === 'INFERRED' ? '정책 추정' : s === 'MISSING' ? '정책 없음' : undefined;
 
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;

@@ -11,7 +11,7 @@
  *   ⇒ 하단바([공유] [이 상품 접수하기])를 탭 «밖», 판 바닥에 둔다 — 어느 탭에서나, 어느 판에서나 같은 줄에 선다.
  *     기간 · 값 한 줄은 본문으로 돌아갔다(요약에서 구른다). 고른 요금은 OfferPicker 가 useChosenOffer 로 알려 준다.
  */
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useId, useState, type ReactNode } from 'react';
 import { Share } from './Share';
 import { ChosenOffer } from './chosen-offer';
 import { ActionBar } from './Primitives';
@@ -24,17 +24,22 @@ export function DetailTabs({ summary, info, applyBase, initialOffer }: {
   applyBase?: string;
 }) {
   const [tab, setTab] = useState<'summary' | 'info'>('summary');
+  const uid = useId();
+  const summaryTab = `${uid}-summary-tab`, infoTab = `${uid}-info-tab`;
+  const summaryPanel = `${uid}-summary-panel`, infoPanel = `${uid}-info-panel`;
   const [offer, setOffer] = useState(initialOffer ?? '');
   const 알림 = useCallback((id: string) => setOffer(id), []);
   return (
     <ChosenOffer.Provider value={알림}>
-      <div className="tabs">
-        <button type="button" className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
-        <button type="button" className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>상세정보</button>
+      <div className="tabs" role="tablist" aria-label="상품 상세 보기">
+        <button id={summaryTab} role="tab" aria-selected={tab === 'summary'} aria-controls={summaryPanel}
+          type="button" className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
+        <button id={infoTab} role="tab" aria-selected={tab === 'info'} aria-controls={infoPanel}
+          type="button" className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>상세정보</button>
       </div>
       <div className="dz-tabbody">
-        <div hidden={tab !== 'summary'}>{summary}</div>
-        <div hidden={tab !== 'info'}>{info}</div>
+        <div id={summaryPanel} role="tabpanel" aria-labelledby={summaryTab} hidden={tab !== 'summary'}>{summary}</div>
+        <div id={infoPanel} role="tabpanel" aria-labelledby={infoTab} hidden={tab !== 'info'}>{info}</div>
       </div>
       {/* ★하단바 — 판 바닥(§14-3): [공유 3] [이 상품 접수하기 7] */}
       <ActionBar>

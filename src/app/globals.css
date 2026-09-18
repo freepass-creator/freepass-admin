@@ -1666,3 +1666,11 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   .fn-main .workspace { padding-bottom: var(--아래띠); }
   .panel { min-height: calc(100dvh - 52px - var(--아래띠) - 16px); }
 }
+
+
+/* GPT R2 — actual /esign uses the same two-panel workspace as product-find. */
+.workspace[data-mode="esign"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workspace[data-mode="esign"] > .product-panel { grid-column: span 2; }
+@media (max-width: 900px) {
+  .workspace[data-mode="esign"] > .product-panel { grid-column: auto; }
+}

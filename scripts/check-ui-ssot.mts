@@ -48,6 +48,21 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+const layout = await readFile(path.join(root, 'src/app/layout.tsx'), 'utf8');
+const importOrder = [
+  "import './globals.css';",
+  "import './_design/admin-final.css';",
+  "import './_fn/fn.css';",
+  "import './_design/admin-refined.css';",
+];
+let last = -1;
+for (const item of importOrder) {
+  const at = layout.indexOf(item);
+  if (at < 0) errors.push(`src/app/layout.tsx: missing CSS import ${item}`);
+  if (at >= 0 && at <= last) errors.push('src/app/layout.tsx: admin-refined.css must load last after fn.css');
+  last = Math.max(last, at);
+}
+
 for (const file of coreFiles) {
   const src = await readFile(path.join(root, file), 'utf8');
   for (const rule of forbidden) {
@@ -63,9 +78,23 @@ for (const file of noInlineStyleFiles) {
 
 const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
 const cssFinal = await readFile(path.join(root, 'src/app/_design/admin-final.css'), 'utf8');
-const css = `${cssBase}\n${cssFinal}`;
+const cssRefined = await readFile(path.join(root, 'src/app/_design/admin-refined.css'), 'utf8');
+const css = `${cssBase}\n${cssFinal}\n${cssRefined}`;
 for (const token of requiredCss) {
   if (!css.includes(token)) errors.push(`admin CSS: missing shared token ${token}`);
+}
+
+const requiredRefinedCss = [
+  '.workspace[data-mode="find"]',
+  '.workspace[data-mode="intake"]',
+  '.workspace[data-mode="settle"]',
+  '.workspace[data-mode="esign"]',
+  '.fn-main .workspace a.dz-row',
+  '.fn-main .workspace .summary-grid',
+  '.fn-main .workspace .dz-bar',
+];
+for (const selector of requiredRefinedCss) {
+  if (!cssRefined.includes(selector)) errors.push(`admin-refined.css: missing implementation selector ${selector}`);
 }
 
 const cssBaseline = [
@@ -113,4 +142,5 @@ if (errors.length) {
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- visual baseline: 18/14/12 · control 40 · action/touch 44 · radius 4');
   console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);
+  console.log('- visual implementation layer: admin-refined.css loaded last');
 }

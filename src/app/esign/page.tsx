@@ -3,15 +3,20 @@ import { contracts } from '../../server/erp5';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { esign } from '../../server/esign';
+import { EsignAdminActions } from './EsignAdminActions';
+import { esignStage } from '../../domain/esign/progress';
 
 export const dynamic = 'force-dynamic';
 
 type 계약 = Awaited<ReturnType<typeof contracts.list>>[number];
 
-const SIGN_FILTERS = ['', '전자서명', '발행', '열람', '진행중', '서명완료', '미연결'] as const;
+const SIGN_FILTERS = ['', '전자서명', '발행', '열람', '진행중', '검토대기', '반려', '서명완료', '미연결'] as const;
 
 function 서명상태(c: 계약): RowStatus {
   if (c.signStatus === '서명완료') return { icon: 'circle-check', label: '서명완료', tone: 'green' };
+  if (c.signStatus === '검토대기') return { icon: 'clock', label: '검토대기', tone: 'amber' };
+  if (c.signStatus === '반려') return { icon: 'alert', label: '보완', tone: 'red' };
   if (c.signStatus === '진행중') return { icon: 'clock', label: '진행중', tone: 'navy' };
   if (c.signStatus === '열람') return { icon: 'info', label: '열람', tone: 'amber' };
   if (c.signStatus === '발행') return { icon: 'send', label: '발행', tone: 'navy' };
@@ -46,6 +51,8 @@ export default async function EsignPage({ searchParams }: {
   });
 
   const selected = shown.find((c) => c.id === id) ?? shown[0] ?? null;
+  const admin = selected ? await esign.adminState(selected.id) : null;
+  const stage = admin?.session ? esignStage(admin.session) : null;
   const view = (sp(q.v) === 'detail' || id) && selected ? 'detail' : 'list';
 
   const keep = (extra: Record<string, string>) => {
@@ -128,6 +135,9 @@ export default async function EsignPage({ searchParams }: {
           ))}
           {shown.length === 0 && <EmptyState>이 조건에 맞는 계약이 없습니다.</EmptyState>}
         </div>
+        <ActionBar>
+          <Link className="primary" href="/esign/new">+ 새 전자계약</Link>
+        </ActionBar>
       </section>
 
       <section className="panel detail-panel">
@@ -145,7 +155,7 @@ export default async function EsignPage({ searchParams }: {
 
             <SummaryGrid>
               <SummaryItem label="계약상태">{txt(selected.status)}</SummaryItem>
-              <SummaryItem label="서명상태">{txt(selected.signStatus)}</SummaryItem>
+              <SummaryItem label="전자계약">{stage?.label ?? txt(selected.signStatus)}</SummaryItem>
               <SummaryItem label="기간">{selected.term === null || selected.term === undefined ? '—' : `${num(selected.term)}개월`}</SummaryItem>
               <SummaryItem label="월 대여료">{selected.rent === null || selected.rent === undefined ? '—' : `${won(selected.rent)}원`}</SummaryItem>
             </SummaryGrid>
@@ -160,17 +170,25 @@ export default async function EsignPage({ searchParams }: {
               <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
             </SummaryGrid>
 
-            <ActionBar>
-              {selected.signUrl && (
-                <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">서명창 열기</a>
-              )}
-              {selected.signedPdfUrl && (
-                <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
-              )}
-            </ActionBar>
+            {admin?.attention?.map((x) => <Notice key={x} tone="warn">{x}</Notice>)}
 
-            {!selected.signUrl && !selected.signedPdfUrl && (
-              <EmptyState>연결된 전자서명 링크나 완료 문서가 없습니다.</EmptyState>
+            {admin?.session ? (
+              <EsignAdminActions
+                contractId={selected.id}
+                status={admin.session.status}
+                publicUrl={admin.publicUrl}
+                documentUrl={selected.signedPdfUrl}
+              />
+            ) : (
+              <>
+                <EsignAdminActions contractId={selected.id} status="" />
+                {(selected.signUrl || selected.signedPdfUrl) && (
+                  <ActionBar>
+                    {selected.signUrl && <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">기존 서명창</a>}
+                    {selected.signedPdfUrl && <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">기존 서명본</a>}
+                  </ActionBar>
+                )}
+              </>
             )}
           </>
         ) : (

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
-import { ActionBar, EmptyState, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,9 +105,9 @@ export default async function EsignPage({ searchParams }: {
           )}
 
           {duplicateCodes.length > 0 && (
-            <p className="dz-warn">
+            <Notice tone="warn">
               같은 계약코드가 둘 이상인 항목 {duplicateCodes.length}개 — ERP5 정리 대상이며 화면에서는 합치지 않습니다.
-            </p>
+            </Notice>
           )}
         </div>
 

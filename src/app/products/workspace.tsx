@@ -24,7 +24,7 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, 보증금, 정책말, type 상품축, type 요금축, type 차축,
+  많은순, 보증금, 정책말, type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
 
@@ -40,7 +40,7 @@ import {
 
 /** 실제 Canonical product shape에 붙는 차 축 판정은 workspace 가까이에 둔다. */
 type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
-const 차맞음: Record<차축, (p: 상품, k: string) => boolean> = {
+const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
   status: (p, k) => p.status === k,
   kind: (p, k) => p.productKind === k,
   perk: (p, k) => (p.perks ?? []).includes(k),
@@ -111,7 +111,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
   };
   const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
-    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축](o, k)) : 차맞음[a as 차축](h.product, k);
+    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축Type](o, k)) : 차맞음[a as 차축Type](h.product, k);
   const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
     const keys = 값명단[a].map((x) => x.k);
     const name = new Map(값명단[a].map((x) => [x.k, x.label]));

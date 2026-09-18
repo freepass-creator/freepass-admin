@@ -3,7 +3,7 @@
 상태: **NORMATIVE / UI·UX 공통 정본**  
 기준일: 2026-09-18  
 적용: `freepass-admin` 실제 관리자 화면  
-코드 기준: `src/app/globals.css` · `src/app/_design/*` · 실제 route workspace
+코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
 > 이 문서는 화면을 새로 디자인하는 문서가 아니다.  
 > **이미 확정된 화면의 눈에 보이는 위계·크기·역할을 한 곳에 고정**해서, 다음 화면과 다음 AI가 같은 규격을 쓰게 하는 문서다.
@@ -651,3 +651,15 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 - `AGENTS / MASTER / WORK-INBOX`의 오래된 UI 규칙에 최신 SSOT 우선관계 명시
 
 위 항목은 **기능/업무규칙/화면 디자인을 바꾸지 않는 범위의 정리**다.
+
+
+## F. 파일 책임 분리 — 2026-09-18 정리
+
+- `src/app/globals.css` — base/legacy 및 기존 화면 호환 규칙
+- `src/app/_design/admin-final.css` — 현재 관리자 UI의 final override / token / mobile / login / accessibility
+- `src/app/products/workspace-config.ts` — 상품 workspace의 정적 필터축·가격구간·대표요금·표시 helper
+- `src/app/intake/intake-options.ts` — 신규 접수의 기존 원장 선택지/code-map 준비
+- `src/app/_design/Primitives.tsx` — 반복 시각 primitive
+
+CSS import 순서는 **`globals.css → admin-final.css → _fn/fn.css`** 를 유지한다.
+이 순서를 바꾸는 것은 디자인 변경으로 취급한다.

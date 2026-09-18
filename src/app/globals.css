@@ -595,3 +595,62 @@ body { background: var(--바닥); }
 /** 덮개의 링크 규칙(남색 글자·밑줄)이 줄 글자까지 물들이지 않게 — 줄은 링크지만 «글»이다 */
 .fn-main:not(:has(> .workspace, > .admin-shell)) a.dz-row { color: var(--글); text-decoration: none; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) details .dz-list { margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 검색 — 창 하나 · 창 안의 세부검색 · 창 밑 퀵 단추 (대표 2026-09-18)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-searchbox {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 4px 0 12px; font-size: var(--글메인); color: #7b8590;
+}
+.fn-main .workspace .dz-searchbox > input[name="q"] {
+  flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;
+  font-size: var(--글메인); color: var(--글);
+}
+.dz-find-more > summary {
+  list-style: none; display: flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
+}
+.dz-find-more > summary::-webkit-details-marker { display: none; }
+.dz-find-more > summary:hover, .dz-find-more[open] > summary { background: var(--박스손); }
+/** 펼침판은 떠 있는 «판»이라 선을 가진다(규칙 ①의 판 박스). 창 바로 밑에 같은 폭으로 선다. */
+.dz-find-panel {
+  position: absolute; top: calc(100% + 4px); left: -1px; right: -1px; z-index: 30;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px;
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+}
+.fn-main .workspace .dz-find-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .dz-find-panel select, .fn-main .workspace .dz-find-panel input {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스);
+  color: var(--글); font-size: var(--글메인);
+}
+.dz-find-go { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.fn-main .workspace .dz-find-go button {
+  height: 33px; padding: 0 16px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600;
+}
+/** 퀵 단추 — 목업의 퀵 필터 그대로(글자만 · 켜진 것 남색 면). 이제 링크라 모양을 한 번 더 세운다 */
+.fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; }
+.fn-main .workspace .quick-filters a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
+}
+.fn-main .workspace .quick-filters a:hover { background: var(--박스손); }
+.fn-main .workspace .quick-filters a.active { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .dz-find { margin: 0; }
+
+/* 상세정보 — 소제목은 크기 대신 남색(규칙 ④) */
+.dz-sub { margin: 16px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 스크롤바 — 얇고 연하게, 통상 크기 (대표 2026-09-18 「스크롤로 직접 만질 필요는 거의 없을 것 같은데 · 연하게 · 웹 앱 둘 다」)
+   ⚠ 윈도우 기본 막대(굵은 회색 + 위아래 화살표)가 판마다 섰다. 사람은 휠·손가락으로 굴리지 막대를 잡지 않는다.
+   ═══════════════════════════════════════════════════════════════════ */
+* { scrollbar-width: thin; scrollbar-color: rgba(27, 42, 74, .18) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(27, 42, 74, .18); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(27, 42, 74, .32); }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+/** 차종 매칭이 확정 전일 때 «왜 멈췄나» — 보조 글씨, 칸 밑에 */
+.dz-note { display: block; margin-top: 2px; font-size: var(--글보조); font-weight: 400; color: #6b7580; line-height: 1.4; }

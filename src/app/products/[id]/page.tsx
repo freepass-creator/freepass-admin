@@ -5,6 +5,7 @@ import type { PolicyValue } from '../../../domain/product/types';
 import { num, sp, txt, won } from '../../_fn/fmt';
 import { vehicleName } from '../../_fn/product';
 import { OfferPicker } from '../../_design/OfferPicker';
+import { 매칭, 정책이름표, 정책값글 } from '../../_design/words';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export default async function ProductDetail({
         <dl><dt>출고상태</dt><dd>{txt(p.status)}</dd></dl>
         <dl><dt>공급사</dt><dd>{p.supplierName ?? '(이름 없음)'} · {p.supplierId}</dd></dl>
         <dl><dt>상품코드</dt><dd>{p.id}</dd></dl>
-        <dl><dt>차종 확정 깊이</dt><dd>{p.vehicle.matchLevel}</dd></dl>
+        <dl><dt>차종 확정 깊이</dt><dd>{매칭(p.vehicle.matchLevel)}</dd></dl>
         <dl><dt>연식</dt><dd>{p.specs.modelYear ?? "—"}</dd></dl>
         <dl><dt>주행거리</dt><dd>{num(p.specs.mileageKm, 'km')}</dd></dl>
         <dl><dt>연료</dt><dd>{txt(p.specs.fuel)}</dd></dl>
@@ -44,12 +45,12 @@ export default async function ProductDetail({
       <h2>요금 (Offer) — 고른 요금으로 접수합니다</h2>
       {/* ★기간은 단추로 고른다 — 확정 목업 그대로(디자인 부품 `_design/OfferPicker`, 접수 주소는 앞과 같다) */}
       <OfferPicker productId={p.id} offers={p.offers} initial={picked}
-        supplier={p.supplierName ?? p.supplierId} match={txt(p.vehicle.matchLevel)} />
+        supplier={p.supplierName ?? p.supplierId} match={매칭(p.vehicle.matchLevel)} />
 
       <h2>정책 ({p.productPolicies.length})</h2>
       {p.productPolicies.length === 0
         ? <p className="fn-muted">붙은 정책이 없습니다 — 「없다」가 아니라 ERP5 에 policy_code 가 안 걸렸거나 못 찾은 것입니다.</p>
-        : <table><tbody>{p.productPolicies.map((v, i) => <tr key={i}><th>{v.policyId}</th><td>{policyText(v)}</td></tr>)}</tbody></table>}
+        : <table><tbody>{p.productPolicies.map((v, i) => <tr key={i}><th>{정책이름표(v.policyId)}</th><td>{정책값글(v)}</td></tr>)}</tbody></table>}
     </>
   );
 }

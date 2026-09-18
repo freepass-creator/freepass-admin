@@ -23,8 +23,10 @@ type 요금 = {
 const 원 = (n?: number) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 주행 = (n?: number) => (n ? `연 ${n.toLocaleString('ko-KR')}km` : '—');
 
-export function OfferPicker({ productId, offers, initial, supplier, match }: {
+export function OfferPicker({ productId, offers, initial, supplier, match, matchNote }: {
   productId: string; offers: 요금[]; initial?: string; supplier: string; match: string;
+  /** 트림까지 확정이 아니면 «왜 거기서 멈췄나» — 기능 쪽 matchNote. 있으면 칸 밑에 작게 */
+  matchNote?: string;
 }) {
   /** 읽는 차례 — 개월 짧은 것부터, 같은 개월이면 주행 적은 것부터, 그래도 같으면 싼 것부터. */
   const 줄 = useMemo(() => [...offers].sort((a, b) =>
@@ -39,7 +41,7 @@ export function OfferPicker({ productId, offers, initial, supplier, match }: {
     <>
       <dl className="summary-grid">
         <div><dt>공급사</dt><dd>{supplier}</dd></div>
-        <div><dt>차종 매칭</dt><dd>{match}</dd></div>
+        <div><dt>차종 매칭</dt><dd>{match}{matchNote ? <small className="dz-note">{matchNote}</small> : null}</dd></div>
         <div><dt>보증금</dt><dd>{원(o?.deposit)}</dd></div>
         <div><dt>약정주행</dt><dd>{주행(o?.annualMileageKm)}</dd></div>
       </dl>

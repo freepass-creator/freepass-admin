@@ -10,6 +10,8 @@ import { blockOf, isOpenIntake, type SettlementRow } from '../../domain/settleme
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow } from '../_design/ListRow';
+import { DetailTabs } from '../_design/DetailTabs';
+import { 매칭, 매칭끝, 정책이름표, 정책값글 } from '../_design/words';
 
 
 /**
@@ -126,17 +128,33 @@ export async function ProductWorkspace({ q, mode, base }: {
             <div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div>
             <span className="count">{sorted.length.toLocaleString()}대</span>
           </div>
+          {/**
+            * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
+            *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
+            *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
+            */}
           <form className="dz-find" action={base}>
-            <label className="searchbox">⌕<input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" /></label>
-            <div className="dz-filters">
-              <select name="supplier" defaultValue={supplier} aria-label="공급사"><option value="">공급사 전체</option>{suppliers.map((x) => <option key={x}>{x}</option>)}</select>
-              <select name="status" defaultValue={status} aria-label="출고상태"><option value="">출고상태 전체</option>{statuses.map((x) => <option key={x}>{x}</option>)}</select>
-              <select name="term" defaultValue={term || ''} aria-label="기간"><option value="">기간 전체</option>{terms.map((t) => <option key={t} value={t}>{t}개월</option>)}</select>
-              <input name="max" defaultValue={sp(q.max)} placeholder="월 대여료 이하" aria-label="월 대여료 이하" inputMode="numeric" />
-              <button type="submit">찾기</button>
-              <Link href={base} className="dz-clear">지우기</Link>
+            <div className="searchbox dz-searchbox">
+              <span aria-hidden>⌕</span>
+              <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
+              {status && <input type="hidden" name="status" value={status} />}
+              <details className="dz-find-more" open={!!(supplier || term || max)}>
+                <summary>세부검색{supplier || term || max ? ' ●' : ''}</summary>
+                <div className="dz-find-panel">
+                  <label>공급사<select name="supplier" defaultValue={supplier}><option value="">전체</option>{suppliers.map((x) => <option key={x}>{x}</option>)}</select></label>
+                  <label>기간<select name="term" defaultValue={term || ''}><option value="">전체</option>{terms.map((t) => <option key={t} value={t}>{t}개월</option>)}</select></label>
+                  <label>월 대여료 이하<input name="max" defaultValue={sp(q.max)} placeholder="800000" inputMode="numeric" /></label>
+                  <div className="dz-find-go"><Link href={base} className="dz-clear">지우기</Link><button type="submit">찾기</button></div>
+                </div>
+              </details>
             </div>
           </form>
+          <div className="quick-filters">
+            <Link className={!status ? 'active' : ''} href={keep({ status: '', page: '' })}>전체</Link>
+            {statuses.slice(0, 4).map((x) => (
+              <Link key={x} className={status === x ? 'active' : ''} href={keep({ status: x, page: '' })}>{x}</Link>
+            ))}
+          </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
@@ -163,23 +181,47 @@ export async function ProductWorkspace({ q, mode, base }: {
           </div>
           {car ? (
             <>
-              <div className="tabs">
-                <button className="active" type="button">요약</button>
-                <Link href={`/products/${encodeURIComponent(car.id)}`}>상세정보</Link>
-              </div>
-              <div className="hero-car">
-                {사진(car)
-                  ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
-                  : <span>사진 없음{car.photoLink ? <> · <a href={car.photoLink} target="_blank" rel="noreferrer">원본 사진 보기</a></> : null}</span>}
-                <small>SSOT</small>
-              </div>
-              <div className="vehicle-title">
-                <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
-                <span className="status-dot">{txt(car.status)}</span>
-              </div>
-              {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
-              <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
-                supplier={car.supplierName ?? car.supplierId} match={txt(car.vehicle.matchLevel)} />
+              <DetailTabs
+                summary={<>
+                  <div className="hero-car">
+                    {사진(car)
+                      ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
+                      : <span>사진 없음{car.photoLink ? <> · <a href={car.photoLink} target="_blank" rel="noreferrer">원본 사진 보기</a></> : null}</span>}
+                    <small>SSOT</small>
+                  </div>
+                  <div className="vehicle-title">
+                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
+                    <span className="status-dot">{txt(car.status)}</span>
+                  </div>
+                  {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
+                  <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                    supplier={car.supplierName ?? car.supplierId} match={매칭(car.vehicle.matchLevel)}
+                    matchNote={매칭끝(car.vehicle.matchLevel) ? undefined : car.vehicle.matchNote} />
+                </>}
+                info={<>
+                  <div className="vehicle-title">
+                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)}</p></div>
+                    <span className="status-dot">{txt(car.status)}</span>
+                  </div>
+                  <h3 className="dz-sub">차량</h3>
+                  <dl className="summary-grid">
+                    {([
+                      ['공급사', car.supplierName ?? car.supplierId], ['출고상태', txt(car.status)],
+                      ['연식', car.specs.modelYear ? String(car.specs.modelYear) : '—'], ['주행거리', num(car.specs.mileageKm, 'km')],
+                      ['연료', txt(car.specs.fuel)], ['배기량', num(car.specs.displacementCc, 'cc')],
+                      ['인승', num(car.specs.seats)], ['구동', txt(car.specs.drivetrain)],
+                      ['최초등록일', txt(car.registration?.firstRegistrationDate)], ['차대번호', txt(car.registration?.vin)],
+                      ['차종 매칭', 매칭(car.vehicle.matchLevel) + (!매칭끝(car.vehicle.matchLevel) && car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : '')], ['상품코드', car.id],
+                    ] as [string, string][]).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+                  </dl>
+                  <h3 className="dz-sub">정책 {car.productPolicies.length}</h3>
+                  {car.productPolicies.length === 0
+                    ? <p className="dz-empty">붙은 정책이 없습니다 — 「없다」가 아니라 ERP5 에 정책 코드가 안 걸렸거나 못 찾은 것입니다.</p>
+                    : <dl className="summary-grid">
+                        {car.productPolicies.map((v, i) => <div key={i}><dt>{정책이름표(v.policyId)}</dt><dd>{정책값글(v)}</dd></div>)}
+                      </dl>}
+                </>}
+              />
             </>
           ) : <p className="dz-empty">왼쪽에서 차를 고르면 여기 뜹니다.</p>}
         </section>

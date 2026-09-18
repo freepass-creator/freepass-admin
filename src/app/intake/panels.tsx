@@ -16,6 +16,7 @@ import { vehicleName } from '../_fn/product';
 import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
+import { ActionBar, EmptyState, PanelHeader, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { previewFeeAction } from './actions';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
@@ -88,11 +89,8 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     : null;
   return (
     <>
-      <div className="panel-head">
-        {/* 폰 — 접수 목록(탭 홈)으로 뒤로. §14 개정 「하단은 홈 + 그 판 걸음」 — 이 판은 접수 tab 의 depth1 */}
-        <Link className="dz-phone-back" href={back} aria-label="접수 목록으로">‹</Link>
-        <div><h1>신규 접수</h1></div>
-      </div>
+      {/* 폰 — 접수 목록(탭 홈)으로 뒤로. §14 개정 「하단은 홈 + 그 판 걸음」 — 이 판은 접수 tab 의 depth1 */}
+      <PanelHeader title="신규 접수" backHref={back} backLabel="접수 목록으로" />
       {product ? (
         /* ★차 골라 접수 — 차 · 기간 · 값 · 수수료는 이미 정해졌다(읽기). 바꾸려면 가운데 상세에서 기간을 다시 골라 「이 상품 접수하기」 */
         <div className="dz-picked">
@@ -115,9 +113,9 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
           {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
-      ) : <p className="dz-empty">차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</p>}
+      ) : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</p>}
-      <p className="dz-empty">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
+      <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
       <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
         productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
     </>
@@ -137,19 +135,17 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   let 바 = (
-    <div className="dz-bar">
-      <div className="dz-bar-go">
-        <Link className="dz-bar-sub" href={back}>목록</Link>
-        {newHref && <Link className="primary" href={newHref}>+ 신규 접수</Link>}
-      </div>
-    </div>
+    <ActionBar>
+      <Link className="dz-bar-sub" href={back}>목록</Link>
+      {newHref && <Link className="primary" href={newHref}>+ 신규 접수</Link>}
+    </ActionBar>
   );
   const hit = await settlements.get(code);
   if (!hit) {
     return (
       <>
-        <div className="panel-head"><Link className="dz-phone-back" href={back} aria-label="목록으로">‹</Link><div><h1>접수 상세</h1></div></div>
-        <p className="dz-empty">이 접수를 못 찾았습니다 — {code}</p>
+        <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
+        <EmptyState>이 접수를 못 찾았습니다 — {code}</EmptyState>
         {바}
       </>
     );
@@ -196,7 +192,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
           {길.map((x) => <li key={x} className={x === stage ? 'on' : 길.indexOf(x) < 길.indexOf(stage) ? 'done' : ''}>{x}</li>)}
           {stage === '정정' && <li className="warn">정정</li>}
         </ol>
-        {stage === '접수' && <p className="dz-empty">{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</p>}
+        {stage === '접수' && <EmptyState>{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</EmptyState>}
         {(stage === '수금' || stage === '지급') && <p className="dz-ok">{끝말}까지 끝난 줄입니다.</p>}
         {주?.form}
         <div className="dz-side-steps">
@@ -220,11 +216,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const 부호 = (n: number | null) => (n === null ? '—' : `${n > 0 ? '+' : n < 0 ? '−' : ''}${won(Math.abs(n))}`);
   return (
     <>
-      <div className="panel-head">
-        {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
-        <Link className="dz-phone-back" href={back} aria-label="목록으로">‹</Link>
-        <div><h1>접수 상세</h1></div>
-      </div>
+      {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
+      <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
       {created && <p className="dz-ok">ERP5 에 새 접수를 세웠습니다.</p>}
       {exists && <p className="dz-warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</p>}
       <div className="vehicle-title">
@@ -246,14 +239,14 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 
       {/* 돈 — 한 곳에서 센 금액((수수료 + 프로모션) × 비율 + 가감). 나머지 원자는 아래 «성격별 구역» 이 다 싣는다 */}
       <h3 className="dz-sub">금액</h3>
-      <dl className="summary-grid">
+      <SummaryGrid>
         {칸('청구금액', won(청구))}
         {칸('지급액', won(지급))}
         {칸('남는 것', 청구 === null ? '—' : won(청구 - (지급 ?? 0)))}
         {칸('청구월', txt(r.progress.billMonth))}
         {칸('셈 근거', txt(r.settleNote))}
         {칸('청구 · 지급 단계', `${r.claimStage} · ${r.payStage}`)}
-      </dl>
+      </SummaryGrid>
 
       {/* ★정산 진행 — 늘 보일 칸(pinned · 기능 쪽이 정함): 청구 축 · 지급 축의 발자국과 정정요청(«멈춘 자리»).
             「상태」 구역이 접혀도 이 칸들은 여기 선다 — 숨으면 멈춘 줄을 아무도 못 찾는다(기능 세션 2026-09-18). */}
@@ -276,7 +269,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {warnings.length > 0 && <><h3 className="dz-sub">살필 것</h3><ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul></>}
 
       <h3 className="dz-sub">고친 이력 {events.length}</h3>
-      {events.length === 0 ? <p className="dz-empty">남은 이력이 없습니다.</p> : (
+      {events.length === 0 ? <EmptyState>남은 이력이 없습니다.</EmptyState> : (
         <div className="list">
           {events.map((e, i) => (
             <div key={i} className="dz-event">

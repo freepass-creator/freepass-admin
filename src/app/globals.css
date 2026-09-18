@@ -293,3 +293,79 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
   .dz-terms .dz-term { flex: 0 0 auto; scroll-snap-align: start; }
   .dz-go { margin-top: 10px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 상품·접수 한 화면 — 확정 판 셋 위에 진짜 ERP5 (2026-09-18)
+   대표 「야 디자인 아까 그 형태 어디 갔어」 — 확정 모양을 진짜 데이터 화면(/products)에 다시 세웠다.
+   ⓘ 이 화면은 기능 쪽 틀(`.fn-main`, `_fn/fn.css`) 안에 선다. 그 규칙(맨 표·테두리 입력칸·11px 라벨)이
+     판 안까지 스며들지 않게 여기서 한 단 세게 걷는다 — 그 파일은 안 건드린다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main:has(> .workspace) { padding: 0; font-size: var(--글메인); }
+.fn-main .workspace { height: calc(100vh - 56px); }
+.fn-main .workspace .panel { display: flex; flex-direction: column; }
+/** ⚠ 판을 세로 줄로 세우자 사진 자리가 «눌려» 납작해졌다(실측) — 판 안의 덩이는 줄지 않는다. 넘치면 판이 구른다. */
+.fn-main .workspace .panel > * { flex-shrink: 0; }
+.fn-main .workspace h1 { margin: 0; font-size: var(--글제목); }
+.fn-main .workspace h2 { margin: 0; font-size: var(--글제목); }
+
+/* 판 안의 링크는 «단추·카드»다 — 밑줄·파란 글자를 걷는다 */
+.fn-main .workspace a { color: inherit; text-decoration: none; }
+.fn-main .workspace .product-row, .fn-main .workspace .application-card { display: block; }
+.fn-main .workspace .list, .fn-main .workspace .application-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* 찾기 — 검색창은 선을 가진다(규칙 ①). 거름 칸은 선 없는 박스 */
+.fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+.fn-main .workspace label.searchbox {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  height: 40px; padding: 0 12px; font-size: var(--글메인); color: #7b8590;
+}
+.fn-main .workspace label.searchbox input {
+  flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; outline: 0;
+  font-size: var(--글메인); color: var(--글);
+}
+.fn-main .workspace .dz-filters { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fn-main .workspace .dz-filters select, .fn-main .workspace .dz-filters input {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: var(--글); font-size: var(--글메인);
+}
+.fn-main .workspace .dz-filters input { width: 128px; }
+.fn-main .workspace .dz-filters button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); line-height: 15px;
+}
+.fn-main .workspace .dz-clear { display: inline-flex; align-items: center; height: 33px; padding: 0 8px; color: #6b7580; font-size: var(--글메인); }
+
+/* 목록 카드 — 사진 칸이 아직 없다(ERP5 원자 → 화면 연결 전). 가짜 「CAR」 칸은 안 둔다 */
+.fn-main .workspace .product-row .grow { min-width: 0; }
+.fn-main .workspace .product-row p { margin: 4px 0 6px; }
+.fn-main .workspace .dz-pager { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 0; font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .dz-pager a { color: var(--ci남색); font-weight: 600; }
+
+/* 상세 — 요약 표는 칸마다 박스(규칙 ⑤) */
+.fn-main .workspace dl.summary-grid { margin: 12px 0 0; }
+.fn-main .workspace .summary-grid dt { font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .summary-grid dd { margin: 2px 0 0; font-size: var(--글메인); }
+
+/* 머리 단추 셋(전부 보기 · 신규접수 · 접수 탭)이 이제 링크다 — 단추 규격(33) 그대로 */
+.fn-main .workspace .icon-btn, .fn-main .workspace .new-app, .fn-main .workspace .work-tabs a {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r); font-size: var(--글메인); white-space: nowrap;
+}
+.fn-main .workspace .new-app { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .work-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.fn-main .workspace .work-tabs a { color: #4f5862; }
+.fn-main .workspace .work-tabs a:hover { background: var(--박스손); }
+.fn-main .workspace .work-tabs a.active { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .application-card p { margin: 8px 0 0; }
+.fn-main .workspace .dz-more { display: block; padding: 8px 0; color: var(--ci남색); font-weight: 600; font-size: var(--글메인); }
+
+/* 폰 탭도 링크다 */
+.phone-tabs a {
+  display: flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; border-radius: var(--r);
+  color: #4f5862; font-size: var(--글메인); text-decoration: none;
+}
+.phone-tabs a.active { background: var(--ci남색); color: #fff; }
+@media (max-width: 900px) {
+  .fn-main .workspace { height: auto; }
+}

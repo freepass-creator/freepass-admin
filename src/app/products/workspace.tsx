@@ -8,6 +8,7 @@ import { num, sp, txt, vocab, won } from '../_fn/fmt';
 import { settlements } from '../../server/erp5';
 import { blockOf, isOpenIntake, type SettlementRow } from '../../domain/settlement/types';
 import { OfferPicker } from '../_design/OfferPicker';
+import { imgSrc } from '../../server/image-proxy';
 
 
 /**
@@ -48,11 +49,13 @@ const STATUS_ORDER: Record<string, number> = { 즉시출고: 0, 출고가능: 1,
  *   mode 'find'   — 상품찾기. 판 둘: 상품 목록(판 두 개 폭) | 상품 상세. 목록 카드는 그대로, 폭만 넓다.
  *   ★목록·상세는 «한 부품»이다 — 두 메뉴가 따로 지으면 같은 차가 두 화면에서 다르게 보인다.
  */
-/** 대표 사진 — 기능 쪽 칸 이름 `photoUrl`(요청함). 칸이 아직 없으면 undefined 라 「사진 없음」이 선다. */
-const 사진 = (p: unknown): string | undefined => {
-  const u = (p as { photoUrl?: unknown }).photoUrl;
-  return typeof u === 'string' && u.trim() ? u : undefined;
-};
+/**
+ * 대표 사진 — 기능 쪽 `photoUrl`. ★반드시 `imgSrc()` 로 감싼다(기능 세션 실측):
+ *   구글 드라이브 썸네일은 브라우저가 바로 부르면 18장 중 16장이 깨진다 — 우리 서버(/api/img)를 거치면 18/18.
+ *   바로 뜨는 곳(소카·롯데 등)은 imgSrc 가 그대로 돌려준다.
+ */
+const 사진 = (p: { photoUrl?: string }): string | undefined =>
+  p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
@@ -173,7 +176,7 @@ export async function ProductWorkspace({ q, mode, base }: {
               <div className="hero-car">
                 {사진(car)
                   ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={사진(car)} alt={vehicleName(car) || car.id} />
-                  : <span>사진 없음</span>}
+                  : <span>사진 없음{car.photoLink ? <> · <a href={car.photoLink} target="_blank" rel="noreferrer">원본 사진 보기</a></> : null}</span>}
                 <small>SSOT</small>
               </div>
               <div className="vehicle-title">

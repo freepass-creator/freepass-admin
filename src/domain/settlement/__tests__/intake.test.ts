@@ -2,7 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { settlementCode, settlementKey, eventDocId } from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
-import { claimLedger, ledgerMonths, NO_MONTH, payLedger } from '../ledgers.js';
+import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
+import { settlementMonthOf } from '../month.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
@@ -79,7 +80,15 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.equal(progressPatch({ cancelled: true }, { kind: 'paper', on: true }).ok, false));
 });
 
-describe('청구목록 · 지급목록', () => {
+describe('청구월 — erp4 settlementMonthOf 와 같다', () => {
+  it('박힌 청구월이 이긴다', () => assert.deepEqual(settlementMonthOf({ billMonth: '2026-07', deliveredAt: '2026-08-03' }), { month: '2026-07', basis: 'WRITTEN' }));
+  it('분납은 접수월 + (회차−1)', () => assert.deepEqual(settlementMonthOf({ receivedAt: '2026-08-20', deliveredAt: '2026-08-25', payKind: '2회분납' }), { month: '2026-09', basis: 'INSTALLMENT' }));
+  it('일시납은 인도월', () => assert.equal(settlementMonthOf({ receivedAt: '2026-08-30', deliveredAt: '2026-09-02', payKind: '일시납' })?.month, '2026-09'));
+  it('★인도 전이면 접수월(예정) — 「접수되면 청구서에 미리 올라가 있는 거지」', () =>
+    assert.deepEqual(settlementMonthOf({ receivedAt: '2026-09-10', payKind: '일시납' }), { month: '2026-09', basis: 'FORECAST' }));
+});
+
+describe('청구목록 · 지급목록 — erp4 claimOf/payOf · 환수', () => {
   const mk = (o: Record<string, unknown>) => toSettlementRow({
     code: String(o.code), plate: '1가1', receivedAt: '2026-08-01', supplier: 'A', channel: 'X',
     delivered: true, cancelled: false, billMonth: '2026-08', claimWritten: 100, payWritten: 40, payStage: '접수',
@@ -88,24 +97,38 @@ describe('청구목록 · 지급목록', () => {
   const rows = [
     mk({ code: 'a' }),
     mk({ code: 'b', supplier: 'B', claimWritten: 0, billed: false }),           // 안 끝난 0 → 모름
-    mk({ code: 'c', delivered: false }),                                          // 실적 아님
-    mk({ code: 'd', cancelled: true }),                                           // 취소
-    mk({ code: 'e', settleExclude: true }),                                       // 정산 제외
-    mk({ code: 'f', billMonth: '' }),                                             // 달 모름
+    mk({ code: 'c', delivered: false, billMonth: '' }),                        // 인도 전 → 접수월 예정
+    mk({ code: 'd', cancelled: true }),                                        // 취소 — 안 선다
+    mk({ code: 'e', settleExclude: true }),                                    // 정산 제외 — 안 선다
     mk({ code: 'g', channel: 'Y', payStage: '통보', billed: true }),
+    mk({ code: 'h', claimIncentive: 30, payIncentive: 20 }),                   // 무보증 수수료
+    mk({ code: 'i', settleTarget: '영업' }),                                    // 청구에 안 선다
+    mk({ code: 'j', billHold: true }),                                         // 청구 보류 — 금액 0
   ];
-  it('실적 · 제외 아님만 선다 · 달 모름은 따로', () => {
-    assert.deepEqual(ledgerMonths(rows), ['2026-08', NO_MONTH]);
-    assert.equal(claimLedger(rows, '2026-08').reduce((n, g) => n + g.rows.length, 0), 3);
+  const claw = [{ plate: '1가1', month: '2026-08', supplier: 'A', channel: 'X', supplierAmt: 50, agentAmt: 10, reason: '중도해지', at: '2026-08-20' }];
+  it('취소·제외는 빠지고 인도 전 줄은 예정으로 선다', () => {
+    const a = claimLedger(rows, '2026-08', claw).find((g) => g.party === 'A')!;
+    assert.deepEqual(a.rows.map((r) => r.id).sort(), ['a', 'c', 'g', 'h', 'j']);
+    assert.equal(a.forecast, 1);
+  });
+  it('★인센티브를 더한다 · 보류는 0 · 환수를 뺀다', () => {
+    const a = claimLedger(rows, '2026-08', claw).find((g) => g.party === 'A')!;
+    assert.equal(a.total, 100 + 100 + 100 + 130 + 0);   // a · c · g · h(인센 30) · j(보류)
+    assert.equal(a.hold, 1);
+    assert.equal(a.clawbackTotal, 50);
+    assert.equal(a.net, 430 - 50);
   });
   it('★모르는 금액은 합에 안 넣고 따로 센다', () => {
     const b = claimLedger(rows, '2026-08').find((g) => g.party === 'B')!;
     assert.equal(b.total, 0); assert.equal(b.unknown, 1);
   });
-  it('청구는 공급사별 · 지급은 영업채널별', () => {
-    assert.deepEqual(claimLedger(rows, '2026-08').map((g) => g.party).sort(), ['A', 'B']);
-    const pay = payLedger(rows, '2026-08');
-    assert.deepEqual(pay.map((g) => g.party).sort(), ['X', 'Y']);
-    assert.equal(pay.find((g) => g.party === 'Y')!.done, 1);
+  it('정산대상 「영업」 은 지급에만 선다 · 지급은 영업채널별', () => {
+    assert.ok(!claimLedger(rows, '2026-08').some((g) => g.rows.some((r) => r.id === 'i')));
+    const x = payLedger(rows, '2026-08', claw).find((g) => g.party === 'X')!;
+    assert.ok(x.rows.some((r) => r.id === 'i'));
+    assert.equal(x.clawbackTotal, 10);
+    assert.equal(payLedger(rows, '2026-08').find((g) => g.party === 'Y')!.done, 1);
   });
+  it('달 목록에 환수만 있는 달도 선다', () =>
+    assert.ok(ledgerMonths(rows, [{ ...claw[0], month: '2026-03' }]).includes('2026-03')));
 });

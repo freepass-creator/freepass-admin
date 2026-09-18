@@ -1,6 +1,7 @@
 import { erp5 } from './firestore';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
+import type { Clawback } from '../../domain/settlement/ledgers';
 import { eventDocId, settlementKey } from '../../domain/settlement/code';
 import { intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 
@@ -40,6 +41,20 @@ export class Erp5SettlementRepository {
     });
   }
 
+  /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */
+  async clawbacks(): Promise<Clawback[]> {
+    const snap = await erp5().collection('settlement_clawbacks').get();
+    const S = (v: unknown) => String(v ?? '').trim();
+    const N = (v: unknown) => { const n = Number(String(v ?? '').replace(/[,\s원]/g, '')); return Number.isFinite(n) ? n : 0; };
+    return snap.docs.map((d) => {
+      const c = d.data();
+      return {
+        plate: S(c.plate), month: S(c.month), supplier: S(c.supplier), channel: S(c.channel),
+        supplierAmt: N(c.supplierAmt), agentAmt: N(c.agentAmt), reason: S(c.reason), at: S(c.at),
+      };
+    });
+  }
+
   async get(code: string): Promise<RowWithRaw | null> {
     const d = await erp5().collection(ROWS).doc(code).get();
     if (!d.exists) return null;
@@ -61,7 +76,12 @@ export class Erp5SettlementRepository {
     const key = settlementKey(plate, input.receivedAt);
 
     return db.runTransaction(async (tx) => {
-      const same = await tx.get(db.collection(ROWS).where('plate', '==', plate));
+      /*
+       * ★같은 날 접수를 다 읽어 «열쇠» 로 견준다. 차번으로 찾으면 안 된다 —
+       *   원장에 띄어쓰기가 든 차번이 있다(실측 6줄: 「12가 3456」). 그대로 찾으면 못 알아보고 두 줄이 선다.
+       *   접수일은 461줄 모두 YYYY-MM-DD 한 꼴이다(실측).
+       */
+      const same = await tx.get(db.collection(ROWS).where('receivedAt', '==', input.receivedAt));
       const hit = same.docs.find((d) => settlementKey(d.data().plate, d.data().receivedAt) === key);
       if (hit) return { code: hit.id, created: false };
       const byId = await tx.get(db.collection(ROWS).doc(code));

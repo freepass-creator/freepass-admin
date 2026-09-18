@@ -131,6 +131,9 @@ const 사진 = (p: { photoUrl?: string }): string | undefined =>
  */
 
 /** 혜택 칩 옆에 붙는 한 마디 — 확정이면 안 붙인다 */
+/** 목록 둘째 줄의 보증금 — 0 은 「없음」(화이트라벨 「보증금 없음」) · 값이 없으면 「—」(모름) */
+const 보증금 = (n?: number | null) => (n === undefined || n === null ? '—' : n === 0 ? '없음' : `${won(n)}원`);
+
 const 정책말 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string | undefined =>
   s === 'INFERRED' ? '정책 추정' : s === 'MISSING' ? '정책 없음' : undefined;
 
@@ -319,11 +322,10 @@ export async function ProductWorkspace({ q, mode, base }: {
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
                 selected={!!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
-                title={vehicleName(p) || p.id}
+                product
+                title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
                 badges={[p.productKind, txt(p.status)]}
-                flag={매칭끝(p.vehicle.matchLevel) ? undefined : 매칭(p.vehicle.matchLevel)}
-                meta={`${txt(p.registration?.vehicleNumber)} · ${p.specs.modelYear ?? '—'} · ${num(p.specs.mileageKm, 'km')} · ${txt(p.specs.fuel)}`}
-                value={o ? `월 ${won(o.monthlyRent)}원 · ${o.termMonths}개월` : '—'}
+                value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
                 chips={p.perks} />
             ))}
             {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}

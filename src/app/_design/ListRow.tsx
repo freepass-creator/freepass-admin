@@ -40,7 +40,7 @@ const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
   return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };
 
-export function ListRow({ href, selected, thumb, status, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips }: {
+export function ListRow({ href, selected, thumb, status, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips, product }: {
   href: string;
   selected?: boolean;
   /** 사진 칸 — 상품 목록만 준다. `null` 이면 「사진 없음」 칸이 서고, `undefined` 면 칸 자체가 없다. */
@@ -60,6 +60,12 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   aside?: ReactNode;
   /** 셋째 줄 오른쪽 칩(혜택조건) — 받은 차례 그대로. 있으면 곁값 대신 선다 */
   chips?: string[];
+  /**
+   * ★상품 줄 — 대표 2026-09-18 「맨 첫 줄에 세부 모델만(제조사 필요 없고) + 상태 배지 · 상품구분 배지 →
+   *   그다음이 바로 기간 · 대여료 · 보증금 → 세 번째 줄이 21세 되냐 뭐 되냐 이런 조건」 · 「재원 이런 건 필요 없어 — 눌러서 보면 되고」
+   *   ⇒ 1줄 이름 + 칩 · 2줄 값(굵게, 왼쪽) · 3줄 조건 표시(왼쪽). 곁 정보(차번·연식·주행·연료) 줄이 없다.
+   */
+  product?: boolean;
 }) {
   /** ★차례가 뜻이다(심사가 맨 앞) — 자르지 않고 다 싣는다. 자리가 모자라면 CSS 가 «뒤에서부터 통째로» 숨긴다. */
   const 칩 = (chips ?? []).filter(Boolean);
@@ -83,13 +89,22 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
             {badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
           </span>
         </span>
-        <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
-        <span className="dz-row-l3">
-          <strong>{value}</strong>
-          {칩.length
-            ? <PerkMarks marks={칩} compact />
-            : aside ? <small>{aside}</small> : null}
-        </span>
+        {product ? (
+          <>
+            <span className="dz-row-l2 value"><strong>{value}</strong></span>
+            <span className="dz-row-l3 perks">{칩.length ? <PerkMarks marks={칩} compact /> : <small>조건 없음</small>}</span>
+          </>
+        ) : (
+          <>
+            <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
+            <span className="dz-row-l3">
+              <strong>{value}</strong>
+              {칩.length
+                ? <PerkMarks marks={칩} compact />
+                : aside ? <small>{aside}</small> : null}
+            </span>
+          </>
+        )}
       </span>
     </Link>
   );

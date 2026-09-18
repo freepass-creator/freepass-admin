@@ -1529,3 +1529,9 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .fn-main .workspace .dz-badge.good, .fn-main .workspace .dz-row.on .dz-badge.good { background: var(--wl-okbg); color: var(--wl-ok) !important; }
 .fn-main .workspace .dz-badge.act, .fn-main .workspace .dz-row.on .dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; }
 .fn-main .workspace .dz-badge.warn, .fn-main .workspace .dz-row.on .dz-badge.warn { background: #fdecea; color: #a8261d !important; }
+/* ★상품 줄(§14-1-2 상품) — 1줄 세부모델 + 칩 · 2줄 기간·월·보증금(굵게) · 3줄 조건(왼쪽). 곁 정보 줄 없음 */
+.dz-row-l2.value { display: flex; min-width: 0; }
+.dz-row-l2.value strong { font-size: var(--글메인); font-weight: 700; line-height: 17px; color: var(--글); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dz-row-l3.perks { justify-content: flex-start; }
+.dz-row-l3.perks .dz-perks.compact { justify-content: flex-start; flex: 1 1 auto; }
+.dz-row-l3.perks small { font-size: var(--글보조); color: #9aa3ad; }

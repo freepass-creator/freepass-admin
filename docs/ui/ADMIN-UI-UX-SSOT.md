@@ -659,6 +659,9 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 - `src/app/_design/admin-final.css` — 현재 관리자 UI의 final override / token / mobile / login / accessibility
 - `src/app/products/workspace-config.ts` — 상품 workspace의 정적 필터축·가격구간·대표요금·표시 helper
 - `src/app/intake/intake-options.ts` — 신규 접수의 기존 원장 선택지/code-map 준비
+- `src/app/intake/panels.tsx` — 외부에서 쓰는 안정적 re-export 경계
+- `src/app/intake/NewIntakePanel.tsx` — 신규접수 WORK 판
+- `src/app/intake/IntakeDetailPanel.tsx` — 접수상세/정산연계 WORK 판
 - `src/app/_design/Primitives.tsx` — 반복 시각 primitive
 
 CSS import 순서는 **`globals.css → admin-final.css → _fn/fn.css`** 를 유지한다.

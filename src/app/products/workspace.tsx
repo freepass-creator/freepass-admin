@@ -61,18 +61,11 @@ const 사진 = (p: { photoUrl?: string }): string | undefined =>
   p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
 /**
- * 상품구분 · 혜택조건 — 기능 쪽 칸(`productKind` · `perks`, 요청함). 칸이 생기면 바로 목록 줄에 선다.
+ * 상품구분(`productKind`) · 혜택조건(`perks`) — 기능 쪽 도메인 칸(3bd7fc6).
  *   대표 「배차상태 상품구분 / 혜택조건(무심사, 21세, 경력무관) 이런 거는 한눈에 보이면 좋은데」
- *   ★판정은 도메인 한 곳 — 화면은 받은 글자를 그대로 그린다(다시 짜면 상품찾기와 가게가 다르게 말한다).
+ *   ★판정은 도메인 한 곳(adapters/erp5/perks.ts) — 화면은 받은 글자를 «받은 차례 그대로» 그린다.
+ *     차례가 뜻이다: 심사 → 분납가능 → 무보증 → 만N세 → 경력무관 → 무사고(사장님 2026-08-28 「맨 앞에 심사조건」).
  */
-const 상품구분 = (p: unknown): string | undefined => {
-  const k = (p as { productKind?: unknown }).productKind;
-  return typeof k === 'string' && k.trim() ? k : undefined;
-};
-const 혜택 = (p: unknown): string[] => {
-  const v = (p as { perks?: unknown }).perks;
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
-};
 
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
@@ -175,11 +168,11 @@ export async function ProductWorkspace({ q, mode, base }: {
                 selected={!!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
                 title={vehicleName(p) || p.id}
-                badges={[상품구분(p), txt(p.status)]}
+                badges={[p.productKind, txt(p.status)]}
                 flag={매칭끝(p.vehicle.matchLevel) ? undefined : 매칭(p.vehicle.matchLevel)}
                 meta={`${txt(p.registration?.vehicleNumber)} · ${p.specs.modelYear ?? '—'} · ${num(p.specs.mileageKm, 'km')} · ${txt(p.specs.fuel)}`}
                 value={o ? `월 ${won(o.monthlyRent)}원 · ${o.termMonths}개월` : '—'}
-                chips={혜택(p)} />
+                chips={p.perks} />
             ))}
             {shown.length === 0 && <p className="dz-empty">조건에 맞는 차가 없습니다.</p>}
           </div>
@@ -213,7 +206,8 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   <OfferPicker productId={car.id} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     supplier={car.supplierName ?? car.supplierId} match={매칭(car.vehicle.matchLevel)}
-                    matchNote={매칭끝(car.vehicle.matchLevel) ? undefined : car.vehicle.matchNote} />
+                    matchNote={매칭끝(car.vehicle.matchLevel) ? undefined : car.vehicle.matchNote}
+                    perks={car.perks} />
                 </>}
                 info={<>
                   <div className="vehicle-title">
@@ -224,6 +218,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   <dl className="summary-grid">
                     {([
                       ['공급사', car.supplierName ?? car.supplierId], ['출고상태', txt(car.status)],
+                      ['상품구분', txt(car.productKind)], ['심사', txt(car.credit)],
                       ['연식', car.specs.modelYear ? String(car.specs.modelYear) : '—'], ['주행거리', num(car.specs.mileageKm, 'km')],
                       ['연료', txt(car.specs.fuel)], ['배기량', num(car.specs.displacementCc, 'cc')],
                       ['인승', num(car.specs.seats)], ['구동', txt(car.specs.drivetrain)],

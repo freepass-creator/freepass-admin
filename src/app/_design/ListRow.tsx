@@ -32,10 +32,11 @@ export function ListRow({ href, selected, thumb, title, badge, badges, tone = 'p
   meta?: ReactNode;
   value?: ReactNode;
   aside?: ReactNode;
-  /** 셋째 줄 오른쪽 칩(혜택조건) — 셋까지. 있으면 곁값 대신 선다 */
+  /** 셋째 줄 오른쪽 칩(혜택조건) — 받은 차례 그대로. 있으면 곁값 대신 선다 */
   chips?: string[];
 }) {
-  const 칩 = (chips ?? []).filter(Boolean).slice(0, 3);
+  /** ★차례가 뜻이다(심사가 맨 앞) — 자르지 않고 다 싣는다. 자리가 모자라면 CSS 가 «뒤에서부터 통째로» 숨긴다. */
+  const 칩 = (chips ?? []).filter(Boolean);
   return (
     <Link href={href} className={`dz-row${selected ? ' on' : ''}`}>
       {thumb !== undefined && (

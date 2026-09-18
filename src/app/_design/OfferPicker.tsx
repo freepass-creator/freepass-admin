@@ -10,7 +10,7 @@
  * ⚠ 한 번 목업을 버리고 «카드 + 합친 접수 단추»로 새로 지었었다 — 확정 디자인을 바꾼 것이라 되돌렸다.
  * ⓘ 목업과 다른 것 하나 — 같은 개월이 둘 이상이면(오플 「12_2만」「12_3만」) 단추에 주행 한도를 붙인다.
  *   안 붙이면 「12개월」 단추가 둘 서서 무엇을 누르는지 모른다.
- * ⓘ 조건 칩(만 21세 · 카드결제 …)은 아직 비운다 — 원자의 정책 값이 사람 말로 안 바뀌어 있다(기능 쪽 일).
+ * ★조건 칩 = 도메인의 혜택조건(`perks`) — 받은 차례 그대로. 비었으면 자리째 안 그린다.
  */
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -23,10 +23,12 @@ type 요금 = {
 const 원 = (n?: number) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 주행 = (n?: number) => (n ? `연 ${n.toLocaleString('ko-KR')}km` : '—');
 
-export function OfferPicker({ productId, offers, initial, supplier, match, matchNote }: {
+export function OfferPicker({ productId, offers, initial, supplier, match, matchNote, perks }: {
   productId: string; offers: 요금[]; initial?: string; supplier: string; match: string;
   /** 트림까지 확정이 아니면 «왜 거기서 멈췄나» — 기능 쪽 matchNote. 있으면 칸 밑에 작게 */
   matchNote?: string;
+  /** 혜택조건 — 도메인이 정한 차례 그대로(심사가 맨 앞). 목업의 조건 칩 자리에 선다 */
+  perks?: string[];
 }) {
   /** 읽는 차례 — 개월 짧은 것부터, 같은 개월이면 주행 적은 것부터, 그래도 같으면 싼 것부터. */
   const 줄 = useMemo(() => [...offers].sort((a, b) =>
@@ -61,6 +63,7 @@ export function OfferPicker({ productId, offers, initial, supplier, match, match
               <p>보증금 {원(o.deposit)} · {주행(o.annualMileageKm)}{o.prepayment ? ` · 선납 ${원(o.prepayment)}` : ''}</p>
             </div>
           )}
+          {perks && perks.length > 0 && <div className="chips">{perks.map((x) => <span key={x}>{x}</span>)}</div>}
           {o && (
             <Link className="primary"
               href={`/intake/new?product=${encodeURIComponent(productId)}&offer=${encodeURIComponent(o.id)}`}>

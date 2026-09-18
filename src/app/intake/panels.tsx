@@ -100,6 +100,7 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
     );
   }
   const { row: r, raw, warnings } = hit;
+  const 구역 = settlementSections(raw);
   const events = await settlements.events(r.plate, r.receivedAt);
   const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
@@ -135,6 +136,11 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
         {칸('청구 · 지급 단계', `${r.claimStage} · ${r.payStage}`)}
       </dl>
 
+      {/* ★정산 진행 — 늘 보일 칸(pinned · 기능 쪽이 정함): 청구 축 · 지급 축의 발자국과 정정요청(«멈춘 자리»).
+            「상태」 구역이 접혀도 이 칸들은 여기 선다 — 숨으면 멈춘 줄을 아무도 못 찾는다(기능 세션 2026-09-18). */}
+      <Sections sections={[{ key: '진행', title: '정산 진행', hint: '청구: 접수 → 청구 → 확인 → 수금 · 지급: 접수 → 통보 → 확인 → 지급',
+        items: 구역.flatMap((x) => x.items.filter((it) => it.pinned)) }]} />
+
       <h3 className="dz-sub">프로모션 · 가감</h3>
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</p>}
       <MoneyForm code={r.id}
@@ -143,7 +149,7 @@ export async function IntakeDetailPanel({ code, created, exists, back }: {
         adjustReason={r.money.adjustReason} disabled={r.progress.cancelled} />
       {/* ★정산 줄 원자 전부 — erp4 settlement-atom 묶음 그대로(정체 · 상대 · 조건 · 요율·돈 · 날 · 정산 축 · 상태 · 이월 · 출처) */}
       <h3 className="dz-sub">원자 전부</h3>
-      <Sections sections={settlementSections(raw)} />
+      <Sections sections={구역} />
       {warnings.length > 0 && <><h3 className="dz-sub">살필 것</h3><ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul></>}
 
       <h3 className="dz-sub">고친 이력 {events.length}</h3>

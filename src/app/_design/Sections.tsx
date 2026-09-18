@@ -28,12 +28,12 @@ import { Icon } from './Icon';
 const 그림: Record<string, string> = {
   vehicle: 'car', spec: 'gauge', look: 'palette', release: 'truck', supply: 'building', match: 'link',
   screening: 'shield-check', policy_product: 'file-text', policy_sales: 'file-text', policy_contract: 'file-text', policy_other: 'info',
-  정체: 'id-card', 상대: 'users', 조건: 'file-text', '요율·돈': 'wallet', 날: 'calendar', '정산 축': 'scale', 상태: 'activity', 이월: 'repeat', 출처: 'database',
+  진행: 'activity', 정체: 'id-card', 상대: 'users', 조건: 'file-text', '요율·돈': 'wallet', 날: 'calendar', '정산 축': 'scale', 상태: 'activity', 이월: 'repeat', 출처: 'database',
 };
 /** 머리 무게 — 차를 고르는·돈을 셈하는 데 필요한 것만 main */
 const 무게: Record<string, 'main' | 'sub' | 'trace'> = {
   vehicle: 'main', screening: 'main', policy_other: 'trace',
-  '요율·돈': 'main', 상태: 'main', 출처: 'trace',
+  '요율·돈': 'main', 상태: 'main', 출처: 'trace', 진행: 'main',
 };
 /** 처음에 접혀 서는 구역 */
 const 접힘 = (key: string, n: number) => key.startsWith('policy_') || key === '출처' || n > 14;
@@ -67,6 +67,8 @@ function 꼴(it: SectionItem) {
 }
 
 const 있음 = (it: SectionItem) => !(it.value === null || (Array.isArray(it.value) && !it.value.length));
+/** 정정요청이 걸렸다 — «멈춘 자리»라 눈에 걸려야 한다(색으로만 · 규칙 ④) */
+const 멈춤 = (it: SectionItem) => /Fix$/.test(it.key) && (it.value === true || it.value === 'true' || it.value === 'Y');
 
 export function Sections({ sections }: { sections: Section[] }) {
   return (
@@ -85,7 +87,7 @@ export function Sections({ sections }: { sections: Section[] }) {
             {s.hint && <p className="dz-sec-hint">{s.hint}</p>}
             <dl className="dz-sec-table">
               {s.items.map((it) => (
-                <div key={it.key} className={있음(it) ? '' : 'none'}>
+                <div key={it.key} className={`${있음(it) ? '' : 'none'}${멈춤(it) ? ' stop' : ''}`}>
                   <dt>
                     {it.label}
                     {it.exposure === 'internal' && <i className="dz-internal" title="내부 전용 — 손님·견적서에 안 나가는 값">내부</i>}

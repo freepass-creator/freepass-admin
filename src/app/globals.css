@@ -1058,3 +1058,6 @@ body { background: var(--바닥); }
 .dz-sec-note { display: block; margin-top: 2px; font-size: var(--글보조); color: #6b7580; }
 .dz-sec-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .dz-sec-list i { font-style: normal; font-size: var(--글보조); line-height: 22px; padding: 0 8px; border-radius: var(--r); background: var(--판); }
+/* 정정요청 걸린 칸 — 멈춘 자리. 선 없이 색으로만(옅은 붉은 면 + 진한 글자) */
+.dz-sec-table > div.stop { margin: 0 -8px; padding: 7px 8px; border-radius: var(--r); background: #fdecea; }
+.dz-sec-table > div.stop dt, .dz-sec-table > div.stop dd { color: #a8261d; font-weight: 700; }

@@ -41,6 +41,7 @@ function signature(){
 }
 
 test('full esign flow: issue -> open -> upload -> submit -> approve', async () => {
+  process.env.ESIGN_PDF_MODE = 'html';
   const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
   repo.contract.set('c1',{
     contract_code:'FP-1',contract_status:'계약대기',customer_name:'홍길동',customer_phone:'01012345678',customer_type:'개인',

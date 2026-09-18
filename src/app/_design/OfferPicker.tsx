@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useChosenOffer } from './chosen-offer';
 import { PerkMarks } from './Badges';
+import { EmptyState } from './Primitives';
 
 type 요금 = {
   id: string; termMonths: number; monthlyRent: number;
@@ -52,7 +53,7 @@ export function OfferPicker({ offers, initial, perks, perksNote }: {
   return (
     <>
       <PerkMarks marks={perks ?? []} note={perksNote} />
-      {줄.length === 0 ? <p className="dz-empty">받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</p> : (
+      {줄.length === 0 ? <EmptyState>받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</EmptyState> : (
         /* 기간 · 값 한 줄 — 본문과 같이 구른다. ★고른 요금은 판 하단바(DetailTabs)가 받아 「이 상품 접수하기」에 싣는다 */
         <div className="dz-apply">
           <div className="offer-picker">

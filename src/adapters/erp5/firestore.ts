@@ -58,7 +58,7 @@ function credential(): Sa {
 let app: App | null = null;
 
 /** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
-export function erp5(): Firestore {
+export function erp5App(): App {
   if (!app) {
     app = getApps().find((a) => a.name === APP_NAME) ?? null;
   }
@@ -69,7 +69,11 @@ export function erp5(): Firestore {
       projectId: sa.project_id,
     }, APP_NAME);
   }
-  return getFirestore(app);
+  return app;
+}
+
+export function erp5(): Firestore {
+  return getFirestore(erp5App());
 }
 
 /** 붙었나 — 화면·상태줄이 「어디를 보고 있나」 를 말할 수 있게. */

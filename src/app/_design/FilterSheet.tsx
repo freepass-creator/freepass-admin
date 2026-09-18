@@ -21,7 +21,7 @@
  * 폰은 아래에서 올라오는 시트(82vh) — 원본 그대로. 웹은 검색창 바로 밑에 같은 폭으로 뜬다.
  */
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { 고른값 } from './pick';
 
 export type FacetOption = { key: string; label: string; count: number };
@@ -44,6 +44,11 @@ export function FilterSheet({ axes, count, unit }: {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => {
+    setOpen(false);
+    requestAnimationFrame(() => trigger.current?.focus());
+  }, []);
 
   /** 값이 하나도 없는 축은 안 세운다 — 눌러도 빈 칸이 나오는 이름을 지도에 두지 않는다(원본) */
   const shown = useMemo(() => axes.filter((a) => a.options.length), [axes]);
@@ -55,12 +60,12 @@ export function FilterSheet({ axes, count, unit }: {
   /* 닫기 — 바깥을 누르거나 Esc */
   useEffect(() => {
     if (!open) return;
-    const down = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const down = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) close(); };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
-  }, [open]);
+  }, [open, close]);
 
   const go = (edit: (u: URLSearchParams) => void) => {
     const u = new URLSearchParams(params.toString());
@@ -79,15 +84,16 @@ export function FilterSheet({ axes, count, unit }: {
   const cur = shown.find((a) => a.key === active);
   return (
     <div className="dz-fs" ref={box}>
-      <button type="button" className={`dz-fs-open${open ? ' on' : ''}`} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+      <button ref={trigger} type="button" className={`dz-fs-open${open ? ' on' : ''}`}
+        onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-haspopup="dialog" aria-controls="admin-filter-sheet">
         세부검색{total ? <i>{total}</i> : null}
       </button>
       {open && (
-        <div className="dz-fs-back" onClick={() => setOpen(false)}>
-          <div className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+        <div className="dz-fs-back" onClick={close}>
+          <div id="admin-filter-sheet" className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
-              <button type="button" onClick={() => setOpen(false)} aria-label="닫기">닫기</button>
+              <button type="button" onClick={close} aria-label="닫기">닫기</button>
             </div>
             <div className="dz-fs-body">
               {/* 왼쪽 — 축 지도. 오른쪽과 «따로» 구른다 */}
@@ -103,7 +109,7 @@ export function FilterSheet({ axes, count, unit }: {
                 })}
               </nav>
               {/* 오른쪽 — 고른 축의 값 */}
-              <div className={`dz-fs-vals${pending ? ' wait' : ''}`}>
+              <div className={`dz-fs-vals${pending ? ' wait' : ''}`} aria-busy={pending}>
                 {cur && <>
                   <div className="dz-fs-axis">
                     <b>{cur.label}</b>
@@ -116,7 +122,7 @@ export function FilterSheet({ axes, count, unit }: {
             {/* 하단바 규격(dz-bar) — 보조(초기화) 왼쪽 작게 · 주 단추가 나머지 */}
             <div className="dz-fs-foot dz-bar-go">
               {total ? <button type="button" className="dz-bar-sub" onClick={clearAll}>초기화</button> : null}
-              <button type="button" className="primary" onClick={() => setOpen(false)}>
+              <button type="button" className="primary" onClick={close}>
                 {count.toLocaleString('ko-KR')}{unit} 보기
               </button>
             </div>

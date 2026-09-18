@@ -115,6 +115,7 @@ export type EsignAdminState = {
   publicUrl: string;
   stage: '작성' | '발송 전' | '고객 작성 중' | '검토 대기' | '완료';
   attention: string[];
+  events: Array<{ type: string; at: number; by: string; detail: Record<string, unknown> }>;
   review?: {
     submittedAt: number;
     customerName: string;

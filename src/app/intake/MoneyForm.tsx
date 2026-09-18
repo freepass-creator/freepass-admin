@@ -58,7 +58,7 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
     <div className="dz-money">
       <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}>
         <input type="hidden" name="code" value={code} />
-        <b>수수료 <small className="dz-sec-note" style={{ display: 'inline', marginLeft: 6 }}>비운 쪽은 안 바뀝니다</small></b>
+        <b>수수료 <small className="dz-sec-note inline">비운 쪽은 안 바뀝니다</small></b>
         <label>청구 수수료<input name="feeClaim" inputMode="numeric" placeholder={claim === null ? '금액 모름' : `지금 ${claim.toLocaleString('ko-KR')}`} /></label>
         <label>지급 수수료<input name="feePay" inputMode="numeric" placeholder={pay === null ? '금액 모름' : `지금 ${pay.toLocaleString('ko-KR')}`} /></label>
         <label className="wide">사유 *<input name="feeReason" /></label>

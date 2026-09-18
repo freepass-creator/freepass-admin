@@ -3,6 +3,7 @@ import { contracts } from '../../server/erp5';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { ContractPreview } from './ContractPreview';
 
 export const dynamic = 'force-dynamic';
 
@@ -159,6 +160,15 @@ export default async function EsignPage({ searchParams }: {
               <SummaryItem label="발송">{when(selected.signSentAt)}</SummaryItem>
               <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
             </SummaryGrid>
+
+            <ContractPreview
+              code={selected.code}
+              kind={selected.kind}
+              customer={selected.customer}
+              vehicle={selected.vehicle}
+              status={selected.signStatus ?? selected.status}
+              signedAt={selected.signedAt}
+            />
 
             <ActionBar>
               {selected.signUrl && (

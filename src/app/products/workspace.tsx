@@ -284,6 +284,8 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="panel-head">
             <div><h1>상품 목록</h1></div>
             <span className="count">{sorted.length.toLocaleString()}대</span>
+            {/* 폰 — 판 사이 길은 머리에(위 판 탭을 걷었다 · 대표 「모바일에서 위에 중복되는 거 없애라고」) */}
+            {mode === 'intake' && <Link className="dz-phone-jump" href={keep({ v: 'work' })}>접수 목록 ›</Link>}
           </div>
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
@@ -335,6 +337,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
         <section className="panel detail-panel">
           <div className="panel-head">
+            <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="상품 목록으로">‹</Link>
             <div><h1>상품 상세</h1></div>
           </div>
           {car ? (
@@ -386,6 +389,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
           <div className="panel-head">
+            <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="상품 목록으로">‹</Link>
             <div><h1>접수 목록</h1></div>
             <span className="count">{ishown.length.toLocaleString()}건</span>
           </div>
@@ -428,12 +432,6 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>}
       </section>
 
-      {/* 폰 — 판을 한 장씩(규칙 ⑧) */}
-      <nav className="phone-tabs" aria-label="판 바꾸기">
-        <Link className={view === 'list' ? 'active' : ''} href={keep({ v: 'list' })}>상품</Link>
-        <Link className={view === 'detail' ? 'active' : ''} href={keep({ v: 'detail' })}>상세</Link>
-        {mode === 'intake' && <Link className={view === 'work' ? 'active' : ''} href={keep({ v: 'work' })}>접수</Link>}
-      </nav>
     </>
   );
 }

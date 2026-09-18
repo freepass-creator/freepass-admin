@@ -1593,3 +1593,41 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 .cl-brand { gap: 0; font-size: 20px; line-height: 1; letter-spacing: -.2px; }
 .cl-brand b { font-weight: 600; color: #1B2A4A; }
 .cl-brand i { font-style: normal; font-weight: 300; margin-left: 2px; color: #7F93B3; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 폰 — 위 판 탭(상품 · 상세 · 접수)을 걷었다 (대표 2026-09-18 「모바일에서 위에 중복되는 거 없애라고」)
+     아래 메뉴 띠와 겹치고 판 머리 이름과도 겹쳤다. 판 사이 길은 «판 머리»가 든다:
+     상세 · 접수 목록 · 실적 · 접수 상세 = 머리 앞 「‹」(돌아가기) · 상품 목록(계약접수) = 머리 끝 「접수 목록 ›」.
+     웹은 판이 다 보이니 이 길은 폰에서만 선다.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-phone-back, .dz-phone-jump { display: none; }
+@media (max-width: 900px) {
+  :root { --판탭: 0px; }
+  .phone-tabs { display: none; }
+  .fn-main .workspace .panel-head .dz-phone-back {
+    display: inline-flex; align-items: center; justify-content: center; align-self: center;
+    width: 32px; height: 32px; margin: 0 2px 0 -8px; border-radius: var(--r);
+    color: var(--글); font-size: 24px; line-height: 1; text-decoration: none;
+  }
+  .fn-main .workspace .panel-head .dz-phone-jump {
+    display: inline-flex; align-items: center; align-self: center; height: 32px; margin-left: auto; padding: 0 8px;
+    border-radius: var(--r); color: var(--ci남색); font-size: var(--글메인); font-weight: 700; text-decoration: none;
+  }
+  .fn-main .workspace .panel-head .dz-phone-back:active, .fn-main .workspace .panel-head .dz-phone-jump:active { background: var(--박스손); }
+}
+/* 폰 — 상품 줄은 네 줄(폭 375 에서 사진 82 + 칩 둘이면 이름이 「모…」로 잘렸다 · 실측):
+   ① 세부모델 ② 상품구분 · 출고상태 칩 ③ 기간 · 월 · 보증금(넘치면 넘긴다) ④ 조건 */
+@media (max-width: 900px) {
+  .dz-row:has(.dz-row-l2.value) { contain-intrinsic-size: auto 104px; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-body { height: auto; min-height: 64px; gap: 4px; justify-content: flex-start; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-l1 { flex-wrap: wrap; row-gap: 4px; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 0 100%; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong { white-space: normal; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks .dz-perks.compact { height: auto; flex-wrap: wrap; }
+}
+.dz-seg { white-space: nowrap; }
+/* 폰 — 가로로 흐르는 퀵 단추 줄은 굴림 막대를 안 보인다(손가락으로 민다) */
+@media (max-width: 900px) {
+  .fn-main .workspace .quick-filters { scrollbar-width: none; }
+  .fn-main .workspace .quick-filters::-webkit-scrollbar { display: none; }
+}

@@ -139,6 +139,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         <section className="panel detail-panel st-lines">
           <div className="dz-listtop">
             <div className="panel-head">
+              <Link className="dz-phone-back" href={keep({ v: 'list' })} aria-label="묶음으로">‹</Link>
               <div><h1>{gSel ? gSel.party : '실적 줄'}</h1></div>
               {gSel && <span className="count">{gSel.lines.length}줄</span>}
             </div>
@@ -209,7 +210,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }) }} />
             : (
               <>
-                <div className="panel-head"><div><h1>접수 상세</h1></div></div>
+                <div className="panel-head"><Link className="dz-phone-back" href={keep({ v: 'detail' })} aria-label="실적으로">‹</Link><div><h1>접수 상세</h1></div></div>
                 <p className="dz-empty">가운데 실적 줄을 누르면 그 접수의 진행 · 금액 · 원자 전부가 여기 섭니다.</p>
                 <p className="dz-empty">청구서 발행 · 수금 · 지급 처리는 업무 규칙이 굳으면 여기 하단바로 들어옵니다.</p>
               </>
@@ -217,12 +218,6 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         </section>
       </section>
 
-      {/* 폰 — 판을 한 장씩 */}
-      <nav className="phone-tabs" aria-label="판 바꾸기">
-        <Link className={view === 'list' ? 'active' : ''} href={keep({ v: 'list' })}>묶음</Link>
-        <Link className={view === 'detail' ? 'active' : ''} href={keep({ v: 'detail' })}>실적</Link>
-        <Link className={view === 'work' ? 'active' : ''} href={keep({ v: 'work' })}>상세</Link>
-      </nav>
     </>
   );
 }

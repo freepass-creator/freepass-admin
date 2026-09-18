@@ -211,3 +211,85 @@ html, body { font-size: var(--글메인); }
  *   ⇒ 줄을 넘겨 다 보이게 한다. 칩 줄도 같다.
  */
 .quick-filters, .work-tabs, .offer-picker, .chips { flex-wrap: wrap; overflow: visible; row-gap: 4px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 위 띠 · CI/BI — 대표 2026-09-18
+   「freepass admin 은 우리 CI 규격에 맞춰서 BI 규격으로」 · 「상단바도 남색이랑 색깔 잘 활용합시다」
+   정본 = freepasserp4 — 색 `app/globals.css:4` (네이비 #1B2A4A · 스카이 #9EC5F3) · 마크 `public/icon.svg`
+   ⓘ 띠 자체는 기능 쪽 틀(`.fn-top`, `_fn/fn.css`)이다. 그 파일은 안 건드리고 여기서 한 단 센 선택자로 입힌다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --ci남색: #1B2A4A; --ci스카이: #9EC5F3; }
+/** ⚠ 띠가 다시 검정(#111418)이었다 — 「쨍한 것 없애고 남색」. 띠는 CI 남색 그 자체다. */
+body > nav.fn-top {
+  height: 56px; padding: 0 16px; gap: 16px;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인);
+}
+body > nav.fn-top .fn-state { font-size: var(--글보조); color: rgba(255, 255, 255, .6); }
+
+.dz-brand { display: inline-flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; flex: none; }
+.dz-mark { display: block; width: 24px; height: 24px; flex: none; }
+/** 워드마크 — 로고 레터링이라 Exo 2. 크기는 제목 단(18). 「freepass」 600 · 뒷말 300(명함 규격). */
+.dz-word { font-size: var(--글제목); line-height: 1; letter-spacing: -.2px; white-space: nowrap; }
+.dz-word b { font-weight: 600; }
+.dz-word i { font-style: normal; font-weight: 300; margin-left: 3px; color: rgba(255, 255, 255, .86); }
+
+/** 메뉴 — 글자만(규칙 ③). 지금 있는 곳 = 한 단 밝은 남색 면 + 스카이 글자(규칙 ④, CI 두 색). */
+.dz-menu { display: flex; gap: 4px; }
+body > nav.fn-top .dz-menu a {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r);
+  color: rgba(255, 255, 255, .72); text-decoration: none; font-size: var(--글메인);
+}
+body > nav.fn-top .dz-menu a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: var(--ci스카이); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 계약기간 — 카드 단추 · 폰에서는 좌우로 흐른다 (대표 2026-09-18)
+   「계약기간은 모바일에서는 좌우로 흐르게」 — ⑨(가로로 굴리지 않는다)의 «유일한 예외»다. 대표 지시.
+   고른 카드 = 옅은 남색 면(규칙 ④) · 접수 = 남색 주 단추. 고르기와 접수가 한 판에서 위아래로 선다.
+   ⚠ 선택자는 `.dz-terms .dz-term`(0,2,0) — 기능 쪽 `.fn-main button`(0,1,1)이 뒤에 불려서, 같은 힘이면
+     테두리·여백·바탕·글씨 크기까지 그쪽이 이겼다(실측: 카드에 회색 선). 그 파일은 안 건드리고 여기서 한 단 세게.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-offer { margin: 12px 0 20px; }
+.dz-terms { display: flex; flex-wrap: wrap; gap: 8px; }
+.dz-terms .dz-term {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-width: 136px; padding: 10px 12px; border: 0; border-radius: var(--r);
+  /* ★카드는 «바닥보다 밝은 면»이라야 박스로 읽힌다 — 이 화면은 판 없이 회색 바닥에 바로 서서,
+       옅은 회색(--박스)이면 안 고른 카드가 바닥에 묻혔다(실측). 회색 바닥 위 카드는 흰 면. */
+  background: var(--판); color: var(--글); text-align: left; font: inherit; cursor: pointer;
+}
+.dz-terms .dz-term b { font-size: var(--글메인); line-height: 15px; font-weight: 700; }
+.dz-terms .dz-term span { font-size: var(--글메인); line-height: 15px; }
+.dz-terms .dz-term small { font-size: var(--글보조); line-height: 14px; color: #6b7580; }
+.dz-terms .dz-term:hover { background: var(--박스손); }
+.dz-terms .dz-term.on { background: var(--고름); color: var(--ci남색); }
+.dz-go {
+  display: flex; align-items: center; justify-content: center; height: 44px; margin-top: 12px;
+  border-radius: var(--r); background: var(--ci남색); color: #fff; text-decoration: none;
+  font-size: var(--글메인); line-height: 14px; font-weight: 700;
+}
+.dz-empty { color: #6b7580; font-size: var(--글보조); }
+
+@media (max-width: 900px) {
+  /** 위 띠 — 두 줄. 얼굴이 위, 메뉴 넷이 아래에 같은 폭으로. 상태 글은 폰에서 접는다. */
+  body > nav.fn-top { height: auto; flex-wrap: wrap; padding: 10px 12px; row-gap: 8px; }
+  body > nav.fn-top .fn-state { display: none; }
+  .dz-menu { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  body > nav.fn-top .dz-menu a { padding: 0; }
+
+  /** 계약기간 — 화면 아래에 붙는다. 위로는 차를 훑고, 손가락 닿는 자리에서 기간을 넘겨 고르고 바로 접수. */
+  .dz-offer {
+    position: sticky; bottom: 0; z-index: 10;
+    margin: 12px -12px 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--바닥);
+  }
+  .dz-terms {
+    flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: 0 -12px; padding: 0 12px; scroll-padding: 0 12px;
+  }
+  .dz-terms::-webkit-scrollbar { display: none; }
+  /** 136 이면 375 폭에서 셋째 카드가 반쯤 보인다 — «옆에 더 있다»를 말없이 알린다. */
+  .dz-terms .dz-term { flex: 0 0 auto; scroll-snap-align: start; }
+  .dz-go { margin-top: 10px; }
+}

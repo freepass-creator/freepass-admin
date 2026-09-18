@@ -59,6 +59,7 @@ test('full esign flow: issue -> open -> upload -> submit -> approve', async () =
   await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
   await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
   await svc.upload(token,'support:resident_register','rr.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
+  await svc.progress(token,'document');
   const required=issued.session.snapshot.consentProfile.requiredKeys;
   await svc.submit(token,{
     customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',

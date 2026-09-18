@@ -13,6 +13,7 @@ import type {
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
+import { renderContractPdf } from '../../server/esign/pdf';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -505,10 +506,12 @@ export class EsignService {
       } catch {
         html = fallbackContractHtml(session.snapshot, submission, sealHash);
       }
+      const htmlOnly = process.env.ESIGN_PDF_MODE === 'html';
+      const documentBytes = htmlOnly ? new Uint8Array(Buffer.from(html, 'utf8')) : await renderContractPdf(html);
       const document = await this.assets.put(
-        'esign-documents/' + session.contractCode + '/' + session.id + '/signed-contract.html',
-        Buffer.from(html, 'utf8'),
-        'text/html; charset=utf-8',
+        'esign-documents/' + session.contractCode + '/' + session.id + (htmlOnly ? '/signed-contract.html' : '/signed-contract.pdf'),
+        documentBytes,
+        htmlOnly ? 'text/html; charset=utf-8' : 'application/pdf',
       );
       const committed = await this.repo.transitionSession(session.id, ['approving'], {
         status: 'signed',

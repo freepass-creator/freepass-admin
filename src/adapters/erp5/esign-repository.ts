@@ -9,6 +9,7 @@ const CONTRACTS='contract';
 const SESSIONS='esign_session';
 const PRIVATE='esign_private';
 const EVENTS='esign_event';
+const LOCKS='esign_issue_lock';
 
 const mustWrite=()=>{if(!writeEnabled()) throw new WriteDisabledError();};
 const clean=<T extends Record<string,unknown>>(x:T)=>Object.fromEntries(Object.entries(x).filter(([,v])=>v!==undefined)) as T;
@@ -35,7 +36,14 @@ export class Erp5EsignRepository implements EsignRepository {
   }
 
   async getCurrentSession(contractId:string):Promise<EsignSession|null>{
-    const q=await erp5().collection(SESSIONS).where('contractId','==',contractId).get();
+    const db=erp5();
+    const lock=await db.collection(LOCKS).doc(contractId).get();
+    const currentId=String(lock.data()?.currentSessionId??'');
+    if(currentId){
+      const d=await db.collection(SESSIONS).doc(currentId).get();
+      if(d.exists)return {id:d.id,...d.data()} as EsignSession;
+    }
+    const q=await db.collection(SESSIONS).where('contractId','==',contractId).get();
     const rows=q.docs.map(d=>({id:d.id,...d.data()} as EsignSession)).sort((a,b)=>b.issuedAt-a.issuedAt);
     return rows[0]??null;
   }
@@ -52,21 +60,40 @@ export class Erp5EsignRepository implements EsignRepository {
 
   async createSession(session:EsignSession,publicUrl:string){
     mustWrite();
-    const db=erp5();
-    const old=await db.collection(SESSIONS).where('contractId','==',session.contractId).get();
-    const batch=db.batch();
-    for(const d of old.docs){
-      const x=d.data() as Partial<EsignSession>;
-      if(!['signed','revoked'].includes(String(x.status))) batch.update(d.ref,{status:'revoked',revokedAt:Date.now()});
-    }
-    batch.create(db.collection(SESSIONS).doc(session.id),clean(session as unknown as Record<string,unknown>));
-    batch.set(db.collection(PRIVATE).doc(session.id),{sessionId:session.id,contractId:session.contractId,publicUrl,createdAt:Date.now()},{merge:true});
-    await batch.commit();
+    const db=erp5(), lockRef=db.collection(LOCKS).doc(session.contractId);
+    await db.runTransaction(async tx=>{
+      const lock=await tx.get(lockRef);
+      const oldId=String(lock.data()?.currentSessionId??'');
+      if(oldId&&oldId!==session.id){
+        const oldRef=db.collection(SESSIONS).doc(oldId), old=await tx.get(oldRef);
+        if(old.exists&&!['signed','revoked'].includes(String(old.data()?.status))){
+          tx.update(oldRef,{status:'revoked',revokedAt:Date.now()});
+        }
+      }
+      const nextRef=db.collection(SESSIONS).doc(session.id);
+      const existing=await tx.get(nextRef);
+      if(existing.exists)throw new Error('같은 전자계약 세션이 이미 있습니다.');
+      tx.create(nextRef,clean(session as unknown as Record<string,unknown>));
+      tx.set(db.collection(PRIVATE).doc(session.id),{sessionId:session.id,contractId:session.contractId,publicUrl,createdAt:Date.now()},{merge:true});
+      tx.set(lockRef,{currentSessionId:session.id,issuedAt:session.issuedAt,revision:session.revision},{merge:true});
+    });
   }
 
   async updateSession(id:string,patch:Partial<EsignSession>){
     mustWrite();
     await erp5().collection(SESSIONS).doc(id).update(clean(patch as unknown as Record<string,unknown>));
+  }
+
+  async transitionSession(id:string,allowed:EsignSession['status'][],patch:Partial<EsignSession>):Promise<boolean>{
+    mustWrite();
+    const db=erp5(), ref=db.collection(SESSIONS).doc(id);
+    return db.runTransaction(async tx=>{
+      const d=await tx.get(ref); if(!d.exists)return false;
+      const status=String(d.data()?.status) as EsignSession['status'];
+      if(!allowed.includes(status))return false;
+      tx.update(ref,clean(patch as unknown as Record<string,unknown>));
+      return true;
+    });
   }
 
   async getPrivate(sessionId:string):Promise<(EsignPrivateSubmission&Record<string,unknown>)|null>{

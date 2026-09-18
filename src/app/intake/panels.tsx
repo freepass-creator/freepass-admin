@@ -16,7 +16,8 @@ import { vehicleName } from '../_fn/product';
 import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
-import { MoneyForm } from './MoneyForm';
+import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
+import { previewFeeAction } from './actions';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { invoiceMoneyOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
@@ -66,25 +67,50 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
+    product: product?.productKind ?? '',
+    price: product?.consumerPrice ? String(product.consumerPrice) : '',
   };
+  /*
+   * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).
+   *   기능 쪽 셈(feeOf · ERP5 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
+   */
+  const 수수료 = product && offer
+    ? await previewFeeAction((() => {
+      const f = new FormData();
+      for (const [k, v] of Object.entries({ supplier: defaults.supplier, product: defaults.product ?? '', model: defaults.model, term: defaults.term, rent: defaults.rent, price: defaults.price ?? '' })) f.set(k, v);
+      return f;
+    })())
+    : null;
   return (
     <>
       <div className="panel-head">
         <div><h1>신규 접수</h1></div>
       </div>
       {product ? (
+        /* ★차 골라 접수 — 차 · 기간 · 값 · 수수료는 이미 정해졌다(읽기). 바꾸려면 가운데 상세에서 기간을 다시 골라 「이 상품 접수하기」 */
         <div className="dz-picked">
-          <span>접수 상품</span>
+          <span className="dz-picked-label">접수 상품</span>
           <b>{vehicleName(product)}</b>
-          <p>{txt(product.registration?.vehicleNumber)} · {product.supplierName ?? product.supplierId}</p>
+          <p>{txt(product.registration?.vehicleNumber)} · {product.supplierName ?? product.supplierId}{product.productKind ? ` · ${product.productKind}` : ''}</p>
           {offer
-            ? <strong>{offer.termMonths}개월 · 월 {won(offer.monthlyRent)}원 · 보증금 {won(offer.deposit)}원</strong>
-            : <p className="dz-warn">요금을 못 찾았습니다 — 기간을 다시 골라 주세요.</p>}
+            ? <dl className="dz-picked-grid">
+                <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
+                <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}원</dd></div>
+                <div><dt>보증금</dt><dd>{won(offer.deposit)}원</dd></div>
+                <div><dt>수수료</dt><dd>{
+                  !수수료 ? '—'
+                    : 수수료.status === 'AUTO' ? <>청구 <b>{won(수수료.claim)}</b> · 지급 <b>{won(수수료.pay)}</b></>
+                      : <span className="dz-warn-txt">직접 넣어야 함</span>
+                }</dd></div>
+              </dl>
+            : <p className="dz-warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</p>}
+          {수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
+          {수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
-      ) : <p className="dz-empty">상품 없이 직접 넣습니다. 상품에서 고르려면 가운데 상세에서 「이 상품 접수하기」.</p>}
+      ) : <p className="dz-empty">차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</p>}
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</p>}
       <p className="dz-empty">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
-      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} /></div>
+      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료} /></div>
     </>
   );
 }
@@ -223,7 +249,9 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       <Sections sections={[{ key: '진행', title: '정산 진행', hint: '청구: 접수 → 청구 → 확인 → 수금 · 지급: 접수 → 통보 → 확인 → 지급',
         items: 구역.flatMap((x) => x.items.filter((it) => it.pinned)) }]} />
 
-      <h3 className="dz-sub">프로모션 · 가감</h3>
+      {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
+      <h3 className="dz-sub">돈 고치기 — 수수료 · 프로모션 · 가감</h3>
+      <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled} />
       {!writeEnabled() && <p className="dz-warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</p>}
       <MoneyForm code={r.id}
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
@@ -232,6 +260,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* ★정산 줄 원자 전부 — erp4 settlement-atom 묶음 그대로(정체 · 상대 · 조건 · 요율·돈 · 날 · 정산 축 · 상태 · 이월 · 출처) */}
       <h3 className="dz-sub">원자 전부</h3>
       <Sections sections={구역} />
+      {/* 환수 — 인도된 줄(완납 · 분납실적)에서만 연다 */}
+      {!r.progress.cancelled && r.progress.delivered && <ClawbackForm code={r.id} today={today()} />}
       {warnings.length > 0 && <><h3 className="dz-sub">살필 것</h3><ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul></>}
 
       <h3 className="dz-sub">고친 이력 {events.length}</h3>

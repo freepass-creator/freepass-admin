@@ -1359,3 +1359,52 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 @media (max-width: 900px) { .phone-tabs { border-bottom: 0; } }
 /* ④ 효율 — 쪽 나눔을 걷어 목록이 675줄 · 노드 2만 개다. 화면 밖 줄은 그리지 않는다(자리만 88 을 잡아 둔다) */
 .dz-row { content-visibility: auto; contain-intrinsic-size: auto 88px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 접수 폼 — 두 갈래(차 골라 접수 · 직접 접수) · 묶음(차량 · 고객·영업 · 조건 · 수수료) · 더 넣기(접힘)
+     대표 2026-09-18 「담당자가 넣는 건 최소한 — 영업채널 · 담당자명 · 고객명이면 접수는 끝」 · 「수수료는 접수할 때도 알아야」
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-intake-form { display: grid; gap: 12px; }
+.dz-form-group { margin: 0; padding: 12px; border: 0; border-radius: var(--r); background: var(--박스); min-width: 0; }
+.dz-form-group > legend { float: left; width: 100%; margin: 0 0 8px; padding: 0; font-size: var(--글메인); font-weight: 700; color: var(--글); }
+.dz-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; clear: both; }
+.dz-form-grid label, .dz-intake-form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; min-width: 0; }
+.dz-form-grid label.wide { grid-column: 1 / -1; }
+.dz-form-grid label.check { flex-direction: row; align-items: center; gap: 8px; height: var(--컨트롤); font-size: var(--글메인); color: var(--글); }
+.fn-main .workspace .dz-intake-form input:not([type="checkbox"]):not([type="hidden"]),
+.fn-main .workspace .dz-intake-form select, .fn-main .workspace .dz-intake-form textarea {
+  width: 100%; padding: 0 10px; border: 0; border-radius: var(--r); background: var(--판);
+  font-size: var(--글메인); color: var(--글); font-family: inherit;
+}
+.fn-main .workspace .dz-intake-form textarea { padding: 8px 10px; min-height: 64px; }
+/* 더 넣기 — 접혀 있다(없어도 접수는 선다) */
+.dz-form-more { border-radius: var(--r); }
+.dz-form-more > summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; height: var(--컨트롤); padding: 0 12px;
+  border-radius: var(--r); background: var(--박스); cursor: pointer; font-size: var(--글메인); font-weight: 700; color: var(--글);
+}
+.dz-form-more > summary::-webkit-details-marker { display: none; }
+.dz-form-more > summary small { font-weight: 400; font-size: var(--글보조); color: #9aa3ad; }
+.dz-form-more > summary::after { content: '＋'; margin-left: auto; color: #9aa3ad; font-weight: 400; }
+.dz-form-more[open] > summary::after { content: '－'; }
+.dz-form-more > .dz-form-grid, .dz-form-more > .dz-money { padding: 12px; background: var(--박스); border-radius: 0 0 var(--r) var(--r); }
+.dz-form-more[open] > summary { border-radius: var(--r) var(--r) 0 0; }
+.dz-form-more > .dz-money form { background: none; padding: 0; }
+/* 수수료 한 줄 — 표대로 청구 · 지급 / 표가 못 내면 붉게 */
+.dz-fee-line { margin: 0 0 8px; font-size: var(--글메인); color: var(--글); clear: both; }
+.dz-fee-line small { margin-left: 6px; font-size: var(--글보조); color: #9aa3ad; }
+.dz-fee-line.warn { color: #a8261d; font-weight: 700; }
+/* 차 골라 접수 — 읽기 카드: 차 · 기간 · 값 · 수수료 */
+.fn-main .workspace .dz-picked { display: grid; gap: 4px; margin: 0 0 12px; padding: 12px; border-radius: var(--r); background: var(--고름); }
+.dz-picked-label { font-size: var(--글보조); color: var(--ci남색); font-weight: 700; }
+.dz-picked > b { font-size: var(--글메인); }
+.dz-picked > p { margin: 0; font-size: var(--글보조); color: #6b7580; }
+.dz-picked-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
+.dz-picked-grid > div { padding: 8px 10px; border-radius: var(--r); background: var(--판); }
+.dz-picked-grid dt { font-size: var(--글보조); color: #6b7580; }
+.dz-picked-grid dd { margin: 2px 0 0; font-size: var(--글메인); font-weight: 700; font-variant-numeric: tabular-nums; }
+.dz-picked-note { font-size: var(--글보조); color: #6b7580; }
+/* 접수 폼이 짧아도 하단바는 판 바닥(모든 판 같은 줄 · §14-3) — 폼이 판의 남은 높이를 채우고 바를 밑으로 민다 */
+.fn-main .workspace > .work-panel > .dz-form { flex: 1 0 auto; display: flex; flex-direction: column; }
+.dz-intake-form { flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.dz-intake-form > .dz-bar { margin-top: auto; }

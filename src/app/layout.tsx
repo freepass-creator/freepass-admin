@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './globals.css';
+import './_design/admin-final.css';
 import './_fn/fn.css';
 
 export const metadata = {

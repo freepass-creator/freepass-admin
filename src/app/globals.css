@@ -478,3 +478,13 @@ body { background: var(--바닥); }
 .fn-main:not(:has(> .workspace)) .fn-box input:focus,
 .fn-main:not(:has(> .workspace)) .fn-box select:focus,
 .fn-main:not(:has(> .workspace)) .fn-box textarea:focus { background: var(--남색옅음); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상품찾기 — 판 둘: 상품 목록(판 두 개 폭) | 상품 상세 (대표 2026-09-18)
+   「상품찾기는 상품목록 패널 + 상품상세 패널만」 · 「상품목록 2개 패널 사이즈, 상품목록은 그대로」
+   ★목록 카드는 «그대로»다 — 폭이 두 배가 됐다고 카드를 늘이지 않는다. 같은 카드가 두 줄로 선다.
+   ═══════════════════════════════════════════════════════════════════ */
+.workspace[data-mode="find"] { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.fn-main .workspace[data-mode="find"] .list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; align-content: start;
+}

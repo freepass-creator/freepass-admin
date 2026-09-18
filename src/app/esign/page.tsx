@@ -12,6 +12,10 @@ export const dynamic = 'force-dynamic';
 type 계약 = Awaited<ReturnType<typeof contracts.list>>[number];
 
 const SIGN_FILTERS = ['', '전자서명', '발행', '열람', '진행중', '검토대기', '반려', '서명완료', '미연결'] as const;
+const EVENT_LABEL: Record<string,string> = {
+  issued:'링크 발행', opened:'고객 열람', submitted:'고객 제출',
+  rejected:'보완 요청', revoked:'링크 해지', approved:'승인·봉인',
+};
 
 function 서명상태(c: 계약): RowStatus {
   if (c.signStatus === '서명완료') return { icon: 'circle-check', label: '서명완료', tone: 'green' };
@@ -195,6 +199,20 @@ export default async function EsignPage({ searchParams }: {
                 </div>
               </section>
             )}
+
+            {admin?.events?.length ? (
+              <section className="dz-esign-history">
+                <h3 className="dz-sub">전자계약 이력</h3>
+                <div className="dz-esign-history-list">
+                  {admin.events.slice(0, 10).map((event, index) => (
+                    <div key={`${event.type}-${event.at}-${index}`}>
+                      <b>{EVENT_LABEL[event.type] || event.type}</b>
+                      <span>{when(event.at)} · {event.by || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             {admin?.session ? (
               <EsignAdminActions

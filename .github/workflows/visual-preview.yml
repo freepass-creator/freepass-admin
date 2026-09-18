@@ -1,0 +1,59 @@
+name: Visual Preview
+
+on:
+  push:
+    branches:
+      - work/gpt/admin-visual-implementation-r1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install app
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Start Next.js
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > /tmp/freepass-preview.log 2>&1 &
+          echo $! > /tmp/freepass-preview.pid
+
+      - name: Wait for preview
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/visual-preview/products >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/freepass-preview.log
+          exit 1
+
+      - name: Capture four admin pages
+        run: |
+          mkdir -p artifacts/admin-preview
+          npx --yes playwright@1.55.0 screenshot --viewport-size="1600,1000" --wait-for-timeout=1200 http://127.0.0.1:3000/visual-preview/products artifacts/admin-preview/products.png
+          npx --yes playwright@1.55.0 screenshot --viewport-size="1600,1000" --wait-for-timeout=1200 http://127.0.0.1:3000/visual-preview/intake artifacts/admin-preview/intake.png
+          npx --yes playwright@1.55.0 screenshot --viewport-size="1600,1000" --wait-for-timeout=1200 http://127.0.0.1:3000/visual-preview/settlement artifacts/admin-preview/settlement.png
+          npx --yes playwright@1.55.0 screenshot --viewport-size="1600,1000" --wait-for-timeout=1200 http://127.0.0.1:3000/visual-preview/esign artifacts/admin-preview/esign.png
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: freepass-admin-coded-preview
+          path: artifacts/admin-preview/*.png
+          retention-days: 7

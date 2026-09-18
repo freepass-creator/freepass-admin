@@ -8,18 +8,9 @@
 import type {
   Block, ClaimStage, FeeBasis, Maybe, PayStage, SettlementRow, SettleTarget,
 } from '../../domain/settlement/types';
+import { boolOf as b, numOrNull as n, strOrNull as s } from './atom.js';
 
 export type Erp5Row = Record<string, unknown>;
-
-const s = (v: unknown): Maybe<string> => { const t = String(v ?? '').trim(); return t || null; };
-const n = (v: unknown): Maybe<number> => {
-  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
-  const t = String(v ?? '').replace(/[,\s원]/g, '');
-  if (!t) return null;
-  const x = Number(t);
-  return Number.isFinite(x) ? x : null;
-};
-const b = (v: unknown) => v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
 
 /**
  * ★요율이냐 정액이냐 — **1 이 가른다.**

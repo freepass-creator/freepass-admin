@@ -143,7 +143,7 @@ export type ProgressEvent = { field: string; from: string; to: string };
 export function progressPatch(
   cur: Record<string, unknown>, c: ProgressChange,
 ): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
-  const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true';
+  const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true';   // ★domain 은 adapters 를 모른다 — 어댑터 쪽 boolOf() 를 안 끌어온다(방향을 어긴다)
   const S = (v: unknown) => String(v ?? '');
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
 

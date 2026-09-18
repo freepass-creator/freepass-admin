@@ -16,6 +16,9 @@ export const strOf = (v: unknown): string => String(v ?? '').trim();
 /** 빈 글자는 undefined — `??` 로 기본값을 잇는 자리(옵셔널 칸)에 쓴다. */
 export const strOrUndef = (v: unknown): string | undefined => strOf(v) || undefined;
 
+/** 빈 글자는 null — 이 저장소의 정산 도메인(`Maybe<T> = T | null`)이 쓰는 「모른다」 꼴. */
+export const strOrNull = (v: unknown): string | null => strOf(v) || null;
+
 /** 콤마·공백·「원」을 버리고 숫자로. 못 읽으면 null — 바로 안 내보낸다(아래 세 함수가 「없을 때 뭘 주나」를 고른다). */
 const bareNumber = (v: unknown): number | null => {
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
@@ -39,3 +42,11 @@ export const positiveNumOrUndef = (v: unknown): number | undefined => {
   const n = bareNumber(v);
   return n !== null && n > 0 ? n : undefined;
 };
+
+/**
+ * ERP5 가 「예」 를 적는 여러 꼴 — 네이티브 boolean(사람이 어드민에서 접수할 때) ·
+ * 시트에서 옮겨 온 문자열 「TRUE」·「참」·「Y」·1(과거 F04 원문). ★모르는 값은 거짓이다 —
+ * 「불가」·「협의」 를 참으로 잘못 읽으면 안 받은 계약서를 받은 것으로 친다.
+ */
+export const boolOf = (v: unknown): boolean =>
+  v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;

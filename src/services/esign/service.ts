@@ -206,7 +206,7 @@ export class EsignService {
   }
 
   async adminState(contractId: string): Promise<EsignAdminState> {
-    const session = await this.repo.getCurrentSession(contractId);
+    const [session, events] = await Promise.all([this.repo.getCurrentSession(contractId), this.repo.listEvents(contractId)]);
     const priv = session ? await this.repo.getPrivate(session.id) : null;
     const attention: string[] = [];
     if (session) {
@@ -236,7 +236,7 @@ export class EsignService {
         url: '/api/esign/asset/' + encodeURIComponent(session.id) + '/' + encodeURIComponent(key),
       })),
     } : undefined;
-    return { session, publicUrl: S(priv?.publicUrl), stage: adminStage(session), attention, ...(review ? { review } : {}) };
+    return { session, publicUrl: S(priv?.publicUrl), stage: adminStage(session), attention, events, ...(review ? { review } : {}) };
   }
 
   async adminAsset(sessionId: string, key: string) {
@@ -249,10 +249,26 @@ export class EsignService {
     return this.assets.get(path, sha);
   }
 
-  async issue(contractId: string, actor = 'admin') {
-    const current = await this.repo.getCurrentSession(contractId);
-    if (current?.status === 'signed') throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
+  async previewContract(contractId: string) {
     const snapshot = await this.snapshot(contractId);
+    try { return await buildContractHtml(snapshot, { printButton: true }); }
+    catch { return fallbackContractHtml(snapshot); }
+  }
+
+  async issue(contractId: string, actor = 'admin') {
+    const [current, raw] = await Promise.all([this.repo.getCurrentSession(contractId), this.repo.getContract(contractId)]);
+    if (current?.status === 'signed') throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
+    if (!current && raw) {
+      const legacyStatus = S(raw.sign_status);
+      const legacyLink = S(raw.esign_sign_url || raw.sign_url);
+      if (legacyStatus === '서명완료') throw new Error('기존 ERP4에서 서명완료된 계약입니다. 완료본은 읽기 전용이며 수정하려면 새 계약을 만듭니다.');
+      if (legacyLink && ['발행','열람','진행중','검토대기','반려'].includes(legacyStatus)) {
+        throw new Error('기존 ERP4 전자계약 링크가 아직 활성입니다. 기존 링크를 마무리하거나 해지한 뒤 새 ERP5 전자계약을 발행해 주세요.');
+      }
+    }
+    const snapshot = await this.snapshot(contractId);
+    /* 링크를 내기 전에 템플릿이 실제로 렌더되는지 확인한다. 깨진 계약서 링크를 고객에게 보내지 않는다. */
+    await this.previewContract(contractId);
     const token = this.token();
     const hash = this.tokenHash(token);
     const id = this.sessionId(hash);

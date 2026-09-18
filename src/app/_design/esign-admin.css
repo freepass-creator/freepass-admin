@@ -5,3 +5,6 @@
 .dz-esign-result{display:grid;gap:6px}.dz-esign-result .dz-ok,.dz-esign-result .dz-warn{margin:0}
 .workspace.dz-esign-new{grid-template-columns:minmax(0,760px);justify-content:center}.workspace.dz-esign-new>.work-panel{width:100%}.dz-esign-create{display:grid;gap:12px}.dz-esign-create .dz-form-group{margin:0}
 @media(max-width:900px){.workspace.dz-esign-new{display:block}.dz-esign-actions{margin-top:10px}}
+
+.dz-esign-review{margin-top:18px}.dz-esign-review-assets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}.dz-esign-review-assets>a{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:var(--ui-radius);background:var(--박스);color:inherit;text-decoration:none}.dz-esign-review-assets>a:hover{background:var(--박스손)}.dz-esign-review-assets b{font-size:var(--글메인)}.dz-esign-review-assets span{font-size:var(--글보조);color:#6b7580;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.dz-esign-review-assets{grid-template-columns:1fr}}

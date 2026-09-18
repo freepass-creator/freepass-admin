@@ -12,3 +12,10 @@ export async function requireAdmin(): Promise<string | null> {
   const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
   return user ? null : '로그인이 필요합니다 — 다시 로그인해 주세요';
 }
+
+/** 지금 로그인한 관리자 — 위 띠에 이름을 띄울 때. 로그인이 꺼진 개발에서는 null */
+export async function currentAdmin(): Promise<{ name: string } | null> {
+  if (!authEnforced()) return null;
+  const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
+  return user ? { name: user.name } : null;
+}

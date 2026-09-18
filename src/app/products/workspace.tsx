@@ -13,6 +13,9 @@ import { ListRow } from '../_design/ListRow';
 import { DetailTabs } from '../_design/DetailTabs';
 import { 매칭, 매칭끝, 정책이름표, 정책값글 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
+import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
+import { 고른값 } from '../_design/pick';
+import { standingFixed, tallyMatch } from '../_design/facet-standing';
 
 
 /**
@@ -42,6 +45,60 @@ function lead(offers: Offer[]): Offer | undefined {
 
 /** 지금 나갈 수 있는 것이 앞 */
 const STATUS_ORDER: Record<string, number> = { 즉시출고: 0, 출고가능: 1, 출고협의: 2 };
+
+/**
+ * ★★세부검색의 축 — 화이트라벨 `SHOP_AXES` 의 짜임(대표 2026-09-18 「이미 화이트라벨이나 레트로 화면에 만들어 놓은 필터」)
+ *   구간은 원본 `product-filters.ts` 의 RENT_BANDS · DEP_BANDS 를 옮겨 적었다(원본이 바뀌면 원본대로).
+ *   축은 이 집에 «있는 칸»만 — 가게 축 중 연식·주행·제조사는 ERP5 상품에 아직 안 들어와 안 세운다(지어낸 축이 없다).
+ */
+type 구간 = { k: string; label: string; lo: number; hi: number };
+const 대여료구간: 구간[] = [
+  { k: 'r50', label: '50만↓', lo: 0, hi: 500000 }, { k: 'r60', label: '50~60만', lo: 500000, hi: 600000 },
+  { k: 'r70', label: '60~70만', lo: 600000, hi: 700000 }, { k: 'r80', label: '70~80만', lo: 700000, hi: 800000 },
+  { k: 'r90', label: '80~90만', lo: 800000, hi: 900000 }, { k: 'r100', label: '90~100만', lo: 900000, hi: 1000000 },
+  { k: 'r150', label: '100~150만', lo: 1000000, hi: 1500000 }, { k: 'r200', label: '150만↑', lo: 1500000, hi: Infinity },
+];
+const 보증금구간: 구간[] = [
+  { k: 'd0', label: '없음', lo: -1, hi: 1 }, { k: 'd1', label: '100만↓', lo: 1, hi: 1000000 },
+  { k: 'd2', label: '100~200만', lo: 1000000, hi: 2000000 }, { k: 'd3', label: '200~300만', lo: 2000000, hi: 3000000 },
+  { k: 'd4', label: '300만↑', lo: 3000000, hi: Infinity },
+];
+/** 값이 비면 어느 구간에도 안 든다 — 「모른다」는 조건이 아니다(원본 mile 규칙 · S-08) */
+const 구간에 = (bands: 구간[], k: string, n?: number | null) => {
+  const b = bands.find((x) => x.k === k);
+  return !!b && n !== undefined && n !== null && n > b.lo && n <= b.hi;
+};
+/** 요금(Offer) 축 — 한 요금이 모두 만족해야 한다(S-02). 차 축 — 차 한 대의 칸 */
+const 요금축 = ['term', 'rent', 'dep'] as const;
+const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
+type 요금축 = (typeof 요금축)[number];
+type 차축 = (typeof 차축)[number];
+type 상품축 = 요금축 | 차축;
+/** 판 왼쪽 지도의 차례 — 지금 나갈 차 → 무엇 → 조건 → 값 → 누구 것 */
+const 상품축이름: [상품축, string][] = [
+  ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
+  ['rent', '월 대여료'], ['dep', '보증금'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
+];
+const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> = {
+  term: (o, k) => String(o.termMonths) === k,
+  rent: (o, k) => 구간에(대여료구간, k, o.monthlyRent),
+  dep: (o, k) => 구간에(보증금구간, k, o.deposit),
+};
+type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
+const 차맞음: Record<차축, (p: 상품, k: string) => boolean> = {
+  status: (p, k) => p.status === k,
+  kind: (p, k) => p.productKind === k,
+  perk: (p, k) => (p.perks ?? []).includes(k),
+  supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
+  cls: (p, k) => p.vehicleClass === k,
+  fuel: (p, k) => p.specs.fuel === k,
+};
+/** 받은 값의 차례 — 원자에 많이 있는 것부터(원본 standingRanked: 차례는 «전체» 대수로 — 누를 때 줄이 안 뛴다) */
+const 많은순 = (vals: string[]) => {
+  const m = new Map<string, number>();
+  for (const v of vals) if (v) m.set(v, (m.get(v) ?? 0) + 1);
+  return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).map(([k]) => k);
+};
 
 /**
  * ★★★**메뉴마다 제 일에 특화** — 대표 2026-09-18
@@ -82,13 +139,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
   const text = sp(q.q).trim().toLowerCase();
-  const supplier = sp(q.supplier);
-  const status = sp(q.status);
-  /** 퀵 단추로 거는 두 축 — 상품구분 · 혜택(도메인이 정한 글자 그대로 맞춘다) */
-  const kind = sp(q.kind);
-  const perk = sp(q.perk);
-  const term = Number(sp(q.term)) || 0;
-  const max = Number(sp(q.max).replace(/,/g, '')) || 0;
+  /** 축마다 고른 값 — 주소 `?status=즉시출고,출고협의` (같은 축 안은 «또는», 축끼리는 «이면서») */
+  const psel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const page = Math.max(1, Number(sp(q.page)) || 1);
 
   let all: Awaited<ReturnType<typeof productList>>;
@@ -98,17 +150,23 @@ export async function ProductWorkspace({ q, mode, base }: {
   }
   const { rows, report } = all;
 
-  const query: ProductSearchQuery = {};
-  if (term) query.termMonths = [term];
-  if (max) query.monthlyRent = { max };
-  const hits = searchProducts(rows, query).filter(({ product: p }) => {
-    if (supplier && (p.supplierName ?? p.supplierId) !== supplier) return false;
-    if (status && p.status !== status) return false;
-    if (kind && p.productKind !== kind) return false;
-    if (perk && !(p.perks ?? []).includes(perk)) return false;
-    if (!text) return true;
-    return `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
-      .toLowerCase().includes(text);
+  /*
+   * ★요금 축(기간 · 대여료 · 보증금)은 «한 요금이 모두» 만족해야 걸린다(S-02) — 그래서 차가 아니라 요금을 거른다.
+   *   남은 요금이 곧 matchedOffers 다(S-03 — 상세·접수는 여기서 고른다). 여러 구간은 하나의 범위로 못 적어
+   *   도메인 질의(monthlyRent: {min,max})에 못 넣으므로, 도메인이 돌려준 요금을 같은 규칙으로 한 번 더 거른다.
+   */
+  const pool = searchProducts(rows, {} as ProductSearchQuery);
+  const 남은요금 = (h: (typeof pool)[number], skip?: 상품축) => h.matchedOffers.filter((o) =>
+    요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k))));
+  const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
+    차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
+    && 남은요금(h, skip).length > 0;
+  const searched = text ? pool.filter(({ product: p }) =>
+    `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
+      .toLowerCase().includes(text)) : pool;
+  const hits = searched.filter((h) => 통과(h)).map((h) => {
+    const matchedOffers = 남은요금(h);
+    return { ...h, matchedOffers, matchedOfferIds: matchedOffers.map((o) => o.id) };
   });
   const sorted = hits
     .map((h) => ({ ...h, lead: lead(h.matchedOffers) }))
@@ -117,11 +175,34 @@ export async function ProductWorkspace({ q, mode, base }: {
   const shown = sorted.slice((page - 1) * PAGE, page * PAGE);
   const pages = Math.max(1, Math.ceil(sorted.length / PAGE));
 
-  const suppliers = vocab(rows.map((p) => p.supplierName ?? p.supplierId));
   const statuses = vocab(rows.map((p) => p.status));
-  const kinds = vocab(rows.map((p) => p.productKind));
   const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
-  const terms = [...new Set(rows.flatMap((p) => p.offers.map((o) => o.termMonths)))].sort((a, b) => a - b);
+  /**
+   * ★교차 집계 — 원본 `shopFacets` 짜임: 줄(명단·차례)은 «전체»가 정하고, 숫자는 «제 축을 뺀 지금 조건»으로 센다.
+   *   누를 때 줄이 안 사라지고 안 뛴다 — 숫자만 오르내린다(대표 2026-09-10 「0이라고 해줘야지」).
+   */
+  const 값명단: Record<상품축, { k: string; label: string }[]> = {
+    status: 많은순(pool.map((h) => h.product.status ?? '')).sort((a, b) => (STATUS_ORDER[a] ?? 9) - (STATUS_ORDER[b] ?? 9))
+      .map((k) => ({ k, label: k })),
+    kind: 많은순(pool.map((h) => h.product.productKind ?? '')).map((k) => ({ k, label: k })),
+    perk: 많은순(pool.flatMap((h) => h.product.perks ?? [])).map((k) => ({ k, label: k })),
+    term: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.termMonths)))].sort((a, b) => a - b)
+      .map((m) => ({ k: String(m), label: `${m}개월` })),
+    rent: 대여료구간.map((b) => ({ k: b.k, label: b.label })),
+    dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
+    supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
+    cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
+    fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
+  };
+  const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
+    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축](o, k)) : 차맞음[a as 차축](h.product, k);
+  const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
+    const keys = 값명단[a].map((x) => x.k);
+    const name = new Map(값명단[a].map((x) => [x.k, x.label]));
+    const base = tallyMatch(pool, keys, (h, k) => 걸림(a, h, k, h.matchedOffers));
+    const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
+  });
   const link = (n: number) => `${base}?${new URLSearchParams({ ...Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])), page: String(n) })}`;
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
@@ -133,6 +214,8 @@ export async function ProductWorkspace({ q, mode, base }: {
     for (const [k, v] of Object.entries(extra)) { if (v) u.set(k, v); else u.delete(k); }
     return `${base}?${u}`;
   };
+  /** 퀵 단추 — 그 축의 고른 값 안에서 하나를 켜고 끈다(세부검색과 같은 주소 칸을 쓴다) */
+  const 켜끔 = (cur: string[], v: string) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]).join(',');
 
   let irows: SettlementRow[] = [];
   let intakeErr = '';
@@ -148,23 +231,30 @@ export async function ProductWorkspace({ q, mode, base }: {
    */
   const iq = sp(q.iq).trim().toLowerCase();
   const iv = sp(q.iv) || 'open';
-  const im = sp(q.im);
-  const isup = sp(q.isup);
-  const ich = sp(q.ich);
   const 진행 = (r: SettlementRow) =>
     iv === 'open' ? isOpenIntake(r)
       : iv === 'delivered' ? r.progress.delivered && !r.progress.cancelled
         : iv === 'cancelled' ? r.progress.cancelled : true;
-  const ishown = irows
-    .filter(진행)
-    .filter((r) => !im || String(r.receivedAt ?? '').startsWith(im))
-    .filter((r) => !isup || r.supplier === isup)
-    .filter((r) => !ich || r.channel === ich)
-    .filter((r) => !iq || [r.plate, r.customer, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(iq))
+  /** 접수 판의 세부검색 축 — 상품 판과 같은 두 칸 조건판 · 같은 셈(주소 칸은 i 로 시작) */
+  const 접수축: [string, string, (r: SettlementRow) => string][] = [
+    ['im', '접수월', (r) => String(r.receivedAt ?? '').slice(0, 7)],
+    ['isup', '공급사', (r) => r.supplier ?? ''],
+    ['ich', '영업채널', (r) => r.channel ?? ''],
+    ['iag', '영업담당', (r) => r.agent ?? ''],
+    ['ipr', '상품구분', (r) => r.product ?? ''],
+  ];
+  const isel = Object.fromEntries(접수축.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
+  const i통과 = (r: SettlementRow, skip?: string) => 접수축.every(([a, , of]) => a === skip || !isel[a].length || isel[a].includes(of(r)));
+  const isearched = irows.filter(진행)
+    .filter((r) => !iq || [r.plate, r.customer, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(iq));
+  const ishown = isearched.filter((r) => i통과(r))
     .sort((x, y) => String(y.receivedAt).localeCompare(String(x.receivedAt)));
-  const imonths = [...new Set(irows.map((r) => String(r.receivedAt ?? '').slice(0, 7)).filter(Boolean))].sort().reverse();
-  const isups = vocab(irows.map((r) => r.supplier));
-  const ichs = vocab(irows.map((r) => r.channel));
+  const 접수판축: FacetAxis[] = 접수축.map(([a, label, of]) => {
+    const keys = a === 'im' ? [...new Set(irows.map(of).filter(Boolean))].sort().reverse() : 많은순(irows.map(of));
+    const base = tallyMatch(irows, keys, (r, k) => of(r) === k);
+    const live = tallyMatch(isearched.filter((r) => i통과(r, a)), keys, (r, k) => of(r) === k);
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
+  });
   /** 한 폼이 다른 판의 거름을 지우지 않게 — 제 칸이 아닌 주소 칸은 숨은 칸으로 들고 간다 */
   const 숨김 = (own: string[]) => Object.entries(q)
     .filter(([k, v]) => !own.includes(k) && k !== 'page' && sp(v))
@@ -187,25 +277,15 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
             *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
             */}
-          <form className="dz-find" action={base}>
-            {숨김(['q', 'status', 'kind', 'perk', 'supplier', 'term', 'max', 'id', 'offer'])}
-            <div className="searchbox dz-searchbox">
+          <div className="dz-find">
+            <form className="searchbox dz-searchbox" action={base}>
+              {숨김(['q', 'id', 'offer'])}
               <span aria-hidden>⌕</span>
               <input name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
-              <details className="dz-find-more" open={false}>
-                <summary>세부검색{supplier || term || max || kind || (status && status !== '즉시출고') || (perk && !['무심사', '만21세', '경력무관', '무보증'].includes(perk)) ? ' ●' : ''}</summary>
-                <div className="dz-find-panel">
-                  <label>출고상태<select name="status" defaultValue={status}><option value="">전체</option>{statuses.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <label>상품구분<select name="kind" defaultValue={kind}><option value="">전체</option>{kinds.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <label>혜택<select name="perk" defaultValue={perk}><option value="">전체</option>{perkList.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <label>공급사<select name="supplier" defaultValue={supplier}><option value="">전체</option>{suppliers.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <label>기간<select name="term" defaultValue={term || ''}><option value="">전체</option>{terms.map((t) => <option key={t} value={t}>{t}개월</option>)}</select></label>
-                  <label>월 대여료 이하<input name="max" defaultValue={sp(q.max)} placeholder="800000" inputMode="numeric" /></label>
-                  <div className="dz-find-go"><Link href={base} className="dz-clear">지우기</Link><button type="submit">찾기</button></div>
-                </div>
-              </details>
-            </div>
-          </form>
+            </form>
+            {/* ★세부검색 = 화이트라벨 두 칸 조건판(창 «안» 오른쪽 끝) — 고르면 바로 걸린다 */}
+            <FilterSheet axes={상품판축} count={sorted.length} unit="대" />
+          </div>
           {/**
             * ★퀵 단추는 «여섯»만 — 대표 2026-09-18 「퀵필터 그렇게까지 필요없다」
             *   ⚠ 출고상태·상품구분·혜택을 다 세웠더니 19개였다. 남긴 것은 대표가 짚은 것 —
@@ -214,12 +294,13 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   데이터에 없는 단추는 안 세운다(지어낸 단추가 없다). 두 화면 같은 줄이다.
             */}
           <div className="quick-filters">
-            <Link className={!status && !kind && !perk ? 'active' : ''} href={keep({ status: '', kind: '', perk: '', page: '' })}>전체</Link>
+            <Link className={상품축이름.every(([a]) => !psel[a].length) ? 'active' : ''}
+              href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), page: '' })}>전체</Link>
             {statuses.includes('즉시출고') && (
-              <Link className={status === '즉시출고' ? 'active' : ''} href={keep({ status: status === '즉시출고' ? '' : '즉시출고', page: '' })}>즉시출고</Link>
+              <Link className={psel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(psel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
             {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
-              <Link key={x} className={perk === x ? 'active' : ''} href={keep({ perk: perk === x ? '' : x, page: '' })}>{x}</Link>
+              <Link key={x} className={psel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(psel.perk, x), page: '' })}>{x}</Link>
             ))}
           </div>
           </div>
@@ -333,26 +414,14 @@ export async function ProductWorkspace({ q, mode, base }: {
               <span className="count">{ishown.length.toLocaleString()}건</span>
             </div>
           </div>
-          <form className="dz-find" action={base}>
-            {숨김(['iq', 'iv', 'im', 'isup', 'ich'])}
-            <div className="searchbox dz-searchbox">
+          <div className="dz-find">
+            <form className="searchbox dz-searchbox" action={base}>
+              {숨김(['iq'])}
               <span aria-hidden>⌕</span>
               <input name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델 · 공급사 · 채널" />
-              <details className="dz-find-more">
-                <summary>세부검색{im || isup || ich ? ' ●' : ''}</summary>
-                <div className="dz-find-panel">
-                  <label>진행<select name="iv" defaultValue={iv}>
-                    <option value="open">진행중</option><option value="delivered">인도완료</option>
-                    <option value="cancelled">취소</option><option value="all">전체</option>
-                  </select></label>
-                  <label>접수월<select name="im" defaultValue={im}><option value="">전체</option>{imonths.map((m) => <option key={m}>{m}</option>)}</select></label>
-                  <label>공급사<select name="isup" defaultValue={isup}><option value="">전체</option>{isups.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <label>영업채널<select name="ich" defaultValue={ich}><option value="">전체</option>{ichs.map((x) => <option key={x}>{x}</option>)}</select></label>
-                  <div className="dz-find-go"><Link href={keep({ iq: '', iv: '', im: '', isup: '', ich: '' })} className="dz-clear">지우기</Link><button type="submit">찾기</button></div>
-                </div>
-              </details>
-            </div>
-          </form>
+            </form>
+            <FilterSheet axes={접수판축} count={ishown.length} unit="건" />
+          </div>
           <div className="quick-filters">
             {([['all', '전체'], ['open', '진행중'], ['delivered', '인도완료'], ['cancelled', '취소']] as const).map(([v, label]) => (
               <Link key={v} className={iv === v ? 'active' : ''} href={keep({ iv: v === 'open' ? '' : v })}>{label}</Link>

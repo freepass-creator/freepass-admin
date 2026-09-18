@@ -611,27 +611,102 @@ body { background: var(--바닥); }
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;
   font-size: var(--글메인); color: var(--글);
 }
-.dz-find-more > summary {
-  list-style: none; display: flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
-  border-radius: var(--r); color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 세부검색 = 화이트라벨 · 레트로의 «두 칸 조건판» (대표 2026-09-18)
+     원본 freepasserp4 ShopFilterSheet — 왼쪽 축 지도 · 오른쪽 값(네모 + 건수) · 바닥 「N대 보기」
+     우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만 · 글 셋(제목 18 · 메인 14 · 보조 12)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-find { position: relative; }
+/* 창 «안» 오른쪽 끝 — 창(40) 안에 단추(33)가 가운데로 선다 */
+.fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
+.dz-fs-open {
+  position: absolute; top: 3.5px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
+  height: 33px; line-height: 15px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
 }
-.dz-find-more > summary::-webkit-details-marker { display: none; }
-.dz-find-more > summary:hover, .dz-find-more[open] > summary { background: var(--박스손); }
-/** 펼침판은 떠 있는 «판»이라 선을 가진다(규칙 ①의 판 박스). 창 바로 밑에 같은 폭으로 선다. */
-.dz-find-panel {
-  position: absolute; top: calc(100% + 4px); left: -1px; right: -1px; z-index: 30;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px;
+.dz-fs-open:hover, .dz-fs-open.on { background: var(--박스손); }
+/* 고른 개수 — 동그라미가 제 모양(원본) */
+.dz-fs-open i, .dz-fs-body nav i {
+  font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ci남색); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+/* 웹 — 뒤판 없이 창 바로 밑에 같은 폭으로 뜬다 */
+.dz-fs-back { display: contents; }
+.dz-fs-sheet {
+  /* 창(40) 바로 밑 4px — .dz-find 는 밑 여백까지 품어 100% 로 재면 12px 떨어졌다(실측) */
+  position: absolute; top: 44px; left: 0; right: 0; z-index: 30;
+  display: flex; flex-direction: column; height: min(520px, 62vh); overflow: hidden;
   background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  box-shadow: 0 8px 24px rgba(15, 27, 53, .12);
 }
-.fn-main .workspace .dz-find-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
-.fn-main .workspace .dz-find-panel select, .fn-main .workspace .dz-find-panel input {
-  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스);
-  color: var(--글); font-size: var(--글메인);
+.dz-fs-head { flex: none; display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 16px; }
+.dz-fs-head b { flex: 1; font-size: var(--글메인); font-weight: 700; color: var(--글); }
+.dz-fs-head button, .dz-fs-axis button, .dz-fs-more {
+  height: 33px; line-height: 15px; padding: 0 10px; border: 0; border-radius: var(--r); background: transparent;
+  color: #6b7580; font-size: var(--글보조); cursor: pointer;
 }
-.dz-find-go { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-.fn-main .workspace .dz-find-go button {
-  height: 33px; padding: 0 16px; border: 0; border-radius: var(--r);
-  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600;
+.dz-fs-head button:hover, .dz-fs-axis button:hover, .dz-fs-more:hover { background: var(--박스손); }
+.dz-fs-body { flex: 1; min-height: 0; display: flex; }
+/* ★두 칸은 따로 구른다 — 오른쪽을 내려도 왼쪽 지도는 제자리 */
+.dz-fs-body nav { flex: 0 0 112px; overflow-y: auto; background: var(--박스); padding: 4px 0; }
+.dz-fs-body nav button {
+  display: flex; align-items: center; gap: 6px; width: 100%; height: 44px; padding: 0 10px 0 14px;
+  border: 0; background: transparent; text-align: left; cursor: pointer;
+  color: #6b7580; font-size: var(--글메인);
+}
+.dz-fs-body nav button span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-fs-body nav button:hover { color: var(--글); }
+/* 고른 축 — 흰 면으로 «떠올라» 오른쪽과 이어져 보인다(원본). 선 대신 면 */
+.dz-fs-body nav button.on { background: var(--판); color: var(--ci남색); font-weight: 700; }
+.dz-fs-vals { flex: 1; min-width: 0; overflow-y: auto; padding: 8px 16px 16px; transition: opacity .12s; }
+.dz-fs-vals.wait { opacity: .55; }
+.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; height: 33px; margin-bottom: 4px; }
+.dz-fs-axis b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
+/* 값 한 줄 — 네모 · 이름 · 건수(오른쪽 끝, 흐리게). 한 열(두 열이면 숫자가 옆 라벨에 붙어 읽힌다) */
+.dz-fs-check {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 40px; padding: 0 4px;
+  border: 0; border-radius: var(--r); background: transparent; text-align: left; cursor: pointer;
+  color: #4f5862; font-size: var(--글메인);
+}
+.dz-fs-check:hover { background: var(--박스); }
+.dz-fs-check .box {
+  flex: none; width: 17px; height: 17px; border-radius: var(--r); display: inline-flex; align-items: center; justify-content: center;
+  background: var(--박스손); color: #fff; font-size: 12px; line-height: 1; font-weight: 700;
+}
+.dz-fs-check .lab { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-fs-check .n { flex: none; color: #9aa3ad; font-size: var(--글보조); font-variant-numeric: tabular-nums; }
+.dz-fs-check.on { color: var(--글); font-weight: 700; }
+.dz-fs-check.on .box { background: var(--ci남색); }
+/* 0 — 줄은 서 있고 흐리게만(대표 2026-09-10 「0이라고 해줘야지」) */
+.dz-fs-check.zero:not(.on) { color: #b3bac2; }
+.dz-fs-check.zero:not(.on) .n { color: #c6ccd2; }
+.dz-fs-more { margin-top: 4px; }
+.dz-fs-foot { flex: none; padding: 8px 12px 12px; }
+.dz-fs-foot .primary {
+  width: 100%; height: 44px; border: 0; border-radius: var(--r); cursor: pointer;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700;
+}
+/* 폰 — 아래에서 올라오는 시트(원본 82vh). 뒤판을 눌러 닫는다. 위를 조금 남겨 «어디로 돌아가는지» 보인다 */
+@media (max-width: 900px) {
+  .dz-fs-back {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    position: fixed; inset: 0; z-index: 60; background: rgba(15, 27, 53, .42);
+  }
+  .dz-fs-sheet {
+    position: static; height: 82vh; border: 0; border-radius: 12px 12px 0 0; box-shadow: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .dz-fs-head { padding: 12px 8px 12px 16px; }
+  .dz-fs-head b { font-size: var(--글제목); }
+  .dz-fs-body nav { flex-basis: 116px; }
+  .dz-fs-body nav button { height: 50px; }
+  .dz-fs-check { height: 44px; }
+  .dz-fs-check .box { width: 20px; height: 20px; }
+  .dz-fs-foot .primary { height: 52px; }
+  /* ⚠ 틀고정 머리(.dz-listtop, sticky z 8)가 쌓임 맥락을 만들어 시트가 그 안에 갇힌다 — 폰 판 단추(z 20)가
+       시트 바닥 「N대 보기」를 덮었다(실측). 시트가 열린 동안만 머리를 위로 올린다. */
+  .fn-main .workspace > .panel > .dz-listtop:has(.dz-fs-back) { z-index: 70; }
 }
 /** 퀵 단추 — 목업의 퀵 필터 그대로(글자만 · 켜진 것 남색 면). 이제 링크라 모양을 한 번 더 세운다 */
 .fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; }

@@ -19,6 +19,7 @@ export function EsignAdminActions({ contractId, status, publicUrl, documentUrl }
   publicUrl?: string;
   documentUrl?: string;
 }) {
+  const previewUrl = '/api/esign/preview/' + encodeURIComponent(contractId);
   const [issued, issue, issuing] = useActionState(issueEsignAction, init);
   const [revoked, revoke, revoking] = useActionState(revokeEsignAction, init);
   const [rejected, reject, rejecting] = useActionState(rejectEsignAction, init);
@@ -29,12 +30,14 @@ export function EsignAdminActions({ contractId, status, publicUrl, documentUrl }
   </div>;
 
   if (status === 'pending_review') return <div className="dz-esign-actions">
+    <a className="dz-bar-sub" href={previewUrl} target="_blank" rel="noreferrer">계약서 미리보기</a>
     <form action={approve}><input type="hidden" name="contractId" value={contractId}/><button className="primary" disabled={approving}>승인·봉인</button></form>
     <form action={reject} className="dz-esign-reject"><input type="hidden" name="contractId" value={contractId}/><input name="items" placeholder="보완항목 예: identity,documents"/><textarea name="reason" placeholder="보완 사유" required/><button className="dz-bar-sub" disabled={rejecting}>보완요청</button></form>
     <Result state={approved}/><Result state={rejected}/>
   </div>;
 
   if (['sent','opened','in_progress','rejected'].includes(status)) return <div className="dz-esign-actions">
+    <a className="dz-bar-sub" href={previewUrl} target="_blank" rel="noreferrer">계약서 미리보기</a>
     {publicUrl && <div className="dz-esign-link"><input readOnly value={publicUrl}/><button type="button" onClick={() => navigator.clipboard.writeText(publicUrl)}>링크 복사</button></div>}
     <form action={issue}><input type="hidden" name="contractId" value={contractId}/><button className="primary" disabled={issuing}>새 링크 발행</button></form>
     <form action={revoke}><input type="hidden" name="contractId" value={contractId}/><button className="dz-bar-sub" disabled={revoking}>링크 해지</button></form>
@@ -42,6 +45,7 @@ export function EsignAdminActions({ contractId, status, publicUrl, documentUrl }
   </div>;
 
   return <div className="dz-esign-actions">
+    <a className="dz-bar-sub" href={previewUrl} target="_blank" rel="noreferrer">계약서 미리보기</a>
     <form action={issue}><input type="hidden" name="contractId" value={contractId}/><button className="primary" disabled={issuing}>고객 링크 발행</button></form>
     <Result state={issued}/>
   </div>;

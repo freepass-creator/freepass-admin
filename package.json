@@ -16,7 +16,9 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "zod": "4.1.12"
+    "zod": "4.1.12",
+    "@sparticuz/chromium": "131.0.1",
+    "playwright-core": "1.49.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

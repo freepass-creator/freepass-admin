@@ -8,6 +8,11 @@ export interface VehicleMasterRef {
   subModelId?: string;
   trimId?: string;
   matchLevel: VehicleMatchLevel;
+  /**
+   * ★왜 그 깊이에서 멈췄나 — 「세부모델 「K8」 이 마스터의 K8 아래에 없다」 처럼 사람이 읽는 말.
+   *   TRIM 까지 확정이면 없다. 화면은 이걸 그대로 보이면 된다 (차종마스터를 고칠 사람이 이걸 본다).
+   */
+  matchNote?: string;
 }
 
 export interface VehicleSpecs {

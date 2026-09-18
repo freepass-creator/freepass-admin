@@ -2,6 +2,7 @@ import type { ProductRepository } from '../../ports/repositories';
 import type { CanonicalProduct } from '../../domain/product/types';
 import { erp5 } from './firestore';
 import { toCanonicalProduct, type Erp5Doc, type SkipReason } from './to-canonical';
+import { loadMasterIndex } from './vehicle-master';
 
 /**
  * **상품 문 뒤 — ERP5 Firestore.** 대표 2026-09-18 「erp5 ssot 를 «직접» 읽는거야」
@@ -47,9 +48,10 @@ export class Erp5ProductRepository implements ProductRepository {
      * 정책을 «한 번에» 읽어 둔다 — 상품마다 부르면 1,615번 왕복한다.
      * ★실측(2026-09-18) policy 81건뿐이라 통째로 들고 있어도 가볍다.
      */
-    const [products, policies] = await Promise.all([
+    const [products, policies, master] = await Promise.all([
       db.collection('products').get(),
       db.collection('policy').get(),
+      loadMasterIndex(),
     ]);
     const policyBy = new Map<string, Erp5Doc>();
     for (const d of policies.docs) policyBy.set(d.id, d.data() as Erp5Doc);
@@ -61,7 +63,7 @@ export class Erp5ProductRepository implements ProductRepository {
     for (const d of products.docs) {
       const data = d.data() as Erp5Doc;
       const code = typeof data.policy_code === 'string' ? data.policy_code.trim() : '';
-      const result = toCanonicalProduct(data, d.id, code ? policyBy.get(code) : undefined, snapshotId);
+      const result = toCanonicalProduct(data, d.id, code ? policyBy.get(code) : undefined, snapshotId, master);
       if (!result.ok) { skipped[result.reason] += 1; continue; }
       if (result.warnings.length) warnings += 1;
       rows.push(result.product);
@@ -97,7 +99,7 @@ export class Erp5ProductRepository implements ProductRepository {
 
     const code = typeof data.policy_code === 'string' ? data.policy_code.trim() : '';
     const policy = code ? (await db.collection('policy').doc(code).get()).data() as Erp5Doc | undefined : undefined;
-    const result = toCanonicalProduct(data, docId, policy, snapshotId);
+    const result = toCanonicalProduct(data, docId, policy, snapshotId, await loadMasterIndex());
     return result.ok ? result.product : null;
   }
 

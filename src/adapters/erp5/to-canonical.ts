@@ -12,6 +12,7 @@ import type {
   CanonicalProduct, Offer, PolicyValue, VehicleMasterRef, VehicleSpecs, RegistrationInfo,
 } from '../../domain/product/types';
 import { photosOf } from './photos';
+import { matchToMaster, type MasterIndex } from '../../domain/product/master-match';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from './parse';
 
 export type Erp5Doc = Record<string, unknown>;
@@ -140,20 +141,22 @@ export function offersOf(price: unknown, productId: string): { offers: Offer[]; 
 }
 
 /** ★차종마스터에 붙었나. ERP5 는 `ssot_hold_reasons` 로 「없다」를 말한다 */
-function vehicleRefOf(d: Erp5Doc): VehicleMasterRef {
+function vehicleRefOf(d: Erp5Doc, master?: MasterIndex): VehicleMasterRef {
+  const trim = S(d.trim_name), sub = S(d.sub_model), model = S(d.model), maker = S(d.maker);
+  const base = { originId: S(d.origin) ?? '', manufacturerId: maker ?? '', modelId: model ?? '', subModelId: sub, trimId: trim };
+  /**
+   * ★마스터를 받으면 «지금의 마스터» 에 대어 판정한다 (domain/product/master-match.ts).
+   *   원자의 `ssot_hold_reasons` 는 freepasserp3 에서 옮겨 온 옛 표시라 믿지 않는다 — 실측 210대 중 대부분이 틀렸다.
+   */
+  if (master) {
+    const m = matchToMaster({ maker, model, subModel: sub, trim, year: N(d.year) }, master);
+    return { ...base, nodeId: m.nodeId, matchLevel: m.level, ...(m.why ? { matchNote: m.why } : {}) };
+  }
+  /* 마스터 없이 부를 때(시험·옛 길) — 옛 규칙 그대로 */
   const holds = Array.isArray(d.ssot_hold_reasons) ? (d.ssot_hold_reasons as unknown[]).map(String) : [];
   const identMiss = holds.some((h) => h.startsWith('IDENT:'));
-  const trim = S(d.trim_name), sub = S(d.sub_model), model = S(d.model);
   const matchLevel = identMiss ? 'UNMATCHED' : trim ? 'TRIM' : sub ? 'SUB_MODEL' : model ? 'MODEL' : 'UNMATCHED';
-  return {
-    nodeId: S(d.catalog_id) ?? '',
-    originId: S(d.origin) ?? '',
-    manufacturerId: S(d.maker) ?? '',
-    modelId: model ?? '',
-    subModelId: sub,
-    trimId: trim,
-    matchLevel,
-  };
+  return { ...base, nodeId: S(d.catalog_id) ?? '', matchLevel };
 }
 
 function specsOf(d: Erp5Doc): VehicleSpecs {
@@ -186,7 +189,7 @@ function registrationOf(d: Erp5Doc): RegistrationInfo | undefined {
  * @param snapshotId  이 스냅샷이 언제 것인지 — 접수가 이 값을 물고 간다
  */
 export function toCanonicalProduct(
-  d: Erp5Doc, docId: string, policy: Erp5Doc | undefined, snapshotId: string,
+  d: Erp5Doc, docId: string, policy: Erp5Doc | undefined, snapshotId: string, master?: MasterIndex,
 ): MapResult {
   const key = S(d.car_number) ?? docId;
 
@@ -201,7 +204,7 @@ export function toCanonicalProduct(
 
   if (!policy && S(d.policy_code)) warnings.push(`정책 ${S(d.policy_code)} 을 못 찾았다`);
   if (!S(d.policy_code)) warnings.push('정책이 안 붙어 있다 (policy_code 없음)');
-  if (S(d.ssot_status) === 'HOLD') warnings.push(`차종마스터 미등록 — ${(d.ssot_hold_reasons as unknown[] ?? []).join(' / ')}`);
+  if (!master && S(d.ssot_status) === 'HOLD') warnings.push(`차종마스터 미등록 — ${(d.ssot_hold_reasons as unknown[] ?? []).join(' / ')}`);
 
   const productPolicies = policyValuesOf(policy);
   /* 상품에만 붙는 조건 — 정책과 갈래가 다르므로 여기 둔다 */
@@ -225,7 +228,7 @@ export function toCanonicalProduct(
         return { ...(photos.length ? { photoUrl: photos[0], photos } : {}), ...(photoLink ? { photoLink } : {}) };
       })(),
       supplierProductKey: key,
-      vehicle: vehicleRefOf(d),
+      vehicle: vehicleRefOf(d, master),
       specs: specsOf(d),
       registration: registrationOf(d),
       offers,

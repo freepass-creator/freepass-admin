@@ -43,7 +43,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 `freepasserp.com` 도메인은 **운영 중인 `freepasserp4` 저장소가 갖고 있다**(`lib/brand.ts`의 `BRAND`). 이 저장소를 그 도메인 이름으로 부르지 않는다.
 
 ## 4. Current priority — ADMIN vertical slice
-현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
+현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. **화면 배열·버튼·텍스트·패널 위계는 `docs/ui/ADMIN-UI-UX-SSOT.md`가 정본**이며, 과거의 고정 `1/3 | 1/3 | 1/3` 문구를 일반 규칙으로 사용하지 않는다. 계약접수에서 상품의 `접수하기`는 같은 업무 문맥의 WORK 판으로 이어진다.
 
 ## 5. Search first
 검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다.

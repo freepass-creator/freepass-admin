@@ -12,13 +12,13 @@ export function PaidRounds({ code, rounds, paid, disabled }: { code: string; rou
   const [state, action, pending] = useActionState<FormState, FormData>(progressAction, { errors: [] });
   return (
     <div className="dz-money">
-      <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
+      <form aria-busy={pending} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="paidRounds" />
         <b>받은 회차 <small className="dz-sec-note inline">{rounds}회 분납 · 끊겼을 때만 적는다 — 비우면 기간으로 판정</small></b>
         <label>받은 회차<input name="rounds" defaultValue={paid ?? ''} inputMode="numeric" placeholder={`0 ~ ${rounds}`} /></label>
         <span />
         {state.errors.length > 0 && <ul className="dz-errs">{state.errors.map((x) => <li key={x}>{x}</li>)}</ul>}
-        <button type="submit" disabled={disabled || pending}>{pending ? '저장 중…' : '받은 회차 저장'}</button>
+        <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '받은 회차 저장'}</button>
       </form>
     </div>
   );

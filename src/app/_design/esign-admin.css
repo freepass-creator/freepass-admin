@@ -1,0 +1,7 @@
+/* E-sign admin additions — 기존 Admin UI SSOT 안에서만 사용 */
+.dz-esign-actions{display:grid;gap:8px;margin-top:14px}.dz-esign-actions>form{margin:0}.dz-esign-actions button,.dz-esign-actions a{width:100%}
+.dz-esign-reject{display:grid;gap:8px;padding:12px;border-radius:var(--ui-radius);background:var(--박스)}.dz-esign-reject input,.dz-esign-reject textarea{width:100%;border:0;border-radius:var(--ui-radius);background:var(--판);padding:8px 10px;font:inherit}.dz-esign-reject input{height:var(--ui-control-h)}.dz-esign-reject textarea{min-height:70px;resize:vertical}
+.dz-esign-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.dz-esign-link input{min-width:0;height:var(--ui-control-h);border:0;border-radius:var(--ui-radius);background:var(--박스);padding:0 10px;color:#4f5862}.dz-esign-link button{width:auto;min-width:64px;height:var(--ui-control-h);border:0;border-radius:var(--ui-radius);background:var(--박스손);color:var(--ci남색);font-weight:700}
+.dz-esign-result{display:grid;gap:6px}.dz-esign-result .dz-ok,.dz-esign-result .dz-warn{margin:0}
+.workspace.dz-esign-new{grid-template-columns:minmax(0,760px);justify-content:center}.workspace.dz-esign-new>.work-panel{width:100%}.dz-esign-create{display:grid;gap:12px}.dz-esign-create .dz-form-group{margin:0}
+@media(max-width:900px){.workspace.dz-esign-new{display:block}.dz-esign-actions{margin-top:10px}}

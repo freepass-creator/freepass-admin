@@ -1052,6 +1052,7 @@ body { background: var(--바닥); }
 }
 .dz-article { font-size: var(--ui-text-support); color: #9aa3ad; }
 .dz-sec-note { display: block; margin-top: 2px; font-size: var(--글보조); color: #6b7580; }
+.dz-sec-note.inline { display: inline; margin: 0 0 0 6px; }
 .dz-sec-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .dz-sec-list i { font-style: normal; font-size: var(--글보조); line-height: 22px; padding: 0 8px; border-radius: var(--r); background: var(--판); }
 /* 정정요청 걸린 칸 — 멈춘 자리. 선 없이 색으로만(옅은 붉은 면 + 진한 글자) */
@@ -1704,3 +1705,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 @media (max-width: 900px) {
   .workspace[data-mode="esign"] > .product-panel { grid-column: auto; }
 }
+
+
+/* 공통 진행 폼 줄 — inline margin 제거. 기능/배치 값은 기존 8px 그대로. */
+.dz-progress-row { margin-bottom: 8px; }

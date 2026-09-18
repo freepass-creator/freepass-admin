@@ -10,6 +10,15 @@ const coreFiles = [
   'src/app/esign/page.tsx',
   'src/app/_design/DetailTabs.tsx',
   'src/app/_design/OfferPicker.tsx',
+  'src/app/_design/FilterSheet.tsx',
+];
+
+const noInlineStyleFiles = [
+  ...coreFiles,
+  'src/app/intake/MoneyForm.tsx',
+  'src/app/intake/PaidRounds.tsx',
+  'src/app/intake/[code]/Progress.tsx',
+  'src/app/settlement/LifeForms.tsx',
 ];
 
 const forbidden = [
@@ -45,9 +54,27 @@ for (const file of coreFiles) {
   }
 }
 
+for (const file of noInlineStyleFiles) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (/style=\{\{/.test(src)) errors.push(`${file}: inline visual style found; move stable UI values to globals.css / SSOT tokens`);
+}
+
 const css = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
 for (const token of requiredCss) {
   if (!css.includes(token)) errors.push(`src/app/globals.css: missing shared token ${token}`);
+}
+
+const cssBaseline = [
+  [/--글제목:\s*18px/, '--글제목 18px'],
+  [/--글메인:\s*14px/, '--글메인 14px'],
+  [/--글보조:\s*12px/, '--글보조 12px'],
+  [/--컨트롤:\s*40px/, '--컨트롤 40px'],
+  [/--ui-action-h:\s*44px/, '--ui-action-h 44px'],
+  [/--ui-touch-min:\s*44px/, '--ui-touch-min 44px'],
+  [/--r:\s*4px/, '--r 4px'],
+] as const;
+for (const [re, label] of cssBaseline) {
+  if (!re.test(css)) errors.push(`src/app/globals.css: baseline mismatch or missing: ${label}`);
 }
 
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
@@ -79,4 +106,5 @@ if (errors.length) {
   console.log(`- checked UI files: ${coreFiles.length}`);
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- visual baseline: 18/14/12 · control 40 · action/touch 44 · radius 4');
+  console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);
 }

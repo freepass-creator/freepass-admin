@@ -18,12 +18,12 @@ export default function Progress({ code, paper, delivered, deliveredAt, cancelle
 
   return (
     <div className="fn-box">
-      <form onSubmit={send} style={{ marginBottom: 8 }}>
+      <form onSubmit={send} className="dz-progress-row">
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="paper" />
         계약서 {paper ? '● 받음' : '○ 안 받음'}{' '}
         <button name="on" value={paper ? '0' : '1'} disabled={pending || cancelled}>{paper ? '받음 해제' : '받음으로'}</button>
       </form>
-      <form onSubmit={send} style={{ marginBottom: 8 }}>
+      <form onSubmit={send} className="dz-progress-row">
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="delivered" />
         인도 {delivered ? `● 완료 (${deliveredAt || '인도일 없음'})` : '○ 전'}{' '}
         <input type="date" name="deliveredAt" defaultValue={deliveredAt || today} disabled={pending || cancelled} />{' '}

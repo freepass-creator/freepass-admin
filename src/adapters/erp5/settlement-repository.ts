@@ -4,6 +4,8 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { eventDocId, settlementKey } from '../../domain/settlement/code';
 import { intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { feeOf } from '../../domain/settlement/fee';
+import { loadFeeRuleSet } from './fee-rules';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -70,7 +72,10 @@ export class Erp5SettlementRepository {
   async createIntake(input: IntakeInput): Promise<{ code: string; created: boolean }> {
     mustWrite();
     const db = erp5();
-    const rec = intakeRecord(input, Date.now());
+    /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
+    const rules = await loadFeeRuleSet();
+    const fee = feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price });
+    const rec = intakeRecord(input, Date.now(), fee, rules.version);
     const code = String(rec.code);
     const plate = String(rec.plate);
     const key = settlementKey(plate, input.receivedAt);

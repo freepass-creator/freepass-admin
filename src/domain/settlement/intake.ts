@@ -8,6 +8,7 @@
  * ★칸 이름은 ERP5 원자 그대로다 (실측 461줄 · 70칸). 새 이름을 만들지 않는다.
  */
 import { settlementCode } from './code';
+import type { FeeResult } from './fee';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -61,11 +62,18 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
 /**
  * ERP5 원자 한 줄. ★기존 461줄은 70칸이 «늘 다 있다» — 새 줄도 같은 꼴로 세운다.
  *   빠진 칸이 있으면 읽는 쪽마다 「없음」 과 「빈 값」 을 따로 다뤄야 한다.
- * ⚠ 청구·지급 금액은 0 으로 둔다 — ERP5 가 «안 끝난 줄의 0» 을 「모름」 으로 읽는다(to-settlement claimOf).
+ *
+ * @param fee 수수료표(ERP5 `settlement_fee_rules`)로 셈한 결과.
+ *   ★AUTO 일 때만 요율·금액을 채운다. MANUAL(건별 책정 등)·NO_RULE·NO_BASE 는 0 으로 두고 까닭을 정산 메모에 남긴다 —
+ *   가장 비슷한 규칙에 끼워 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
-export function intakeRecord(x: IntakeInput, nowMs: number): Record<string, unknown> {
+export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
   const code = settlementCode(x.plate, x.receivedAt);
   const iso = new Date(nowMs).toISOString();
+  const auto = fee?.status === 'AUTO' ? fee : null;
+  const feeNote = !fee ? '수수료: 셈 안 함'
+    : fee.status === 'AUTO' ? `수수료표 ${feeVersion ?? ''} · ${fee.rule.id}`.trim()
+      : `수수료: ${fee.why}`;
   return {
     code,
     plate: x.plate.replace(/\s/g, ''), receivedAt: x.receivedAt,
@@ -76,13 +84,13 @@ export function intakeRecord(x: IntakeInput, nowMs: number): Record<string, unkn
     product: x.product.trim(), rentKind: x.rentKind.trim(), contractType: x.contractType.trim(),
     term: x.term ?? 0, rent: x.rent ?? 0, deposit: x.deposit ?? 0, price: x.price ?? 0,
     payKind: x.payKind.trim(),
-    supplierRate: 0, agentRate: 0,
-    claimWritten: 0, payWritten: 0, claimIncentive: 0, payIncentive: 0,
+    supplierRate: auto ? auto.rule.claim : 0, agentRate: auto ? auto.rule.pay : 0,
+    claimWritten: auto ? auto.claim : 0, payWritten: auto ? auto.pay : 0, claimIncentive: 0, payIncentive: 0,
     paper: x.paper, delivered: x.delivered, deliveredAt: x.delivered ? x.deliveredAt : '',
     cancelled: false,
     billMonth: '', settleTarget: '양쪽', settleRatio: 1,
     billHold: false, settleExclude: false, settledAlready: false, vatIncluded: false,
-    settleNote: '', stage: '접수', claimStage: '접수', payStage: '접수',
+    settleNote: feeNote, stage: '접수', claimStage: '접수', payStage: '접수',
     billed: false, billedAt: '', collected: false, collectedAt: '', collectedAmt: 0,
     paid: false, paidAt: '', paidAmt: 0,
     supplierOk: false, supplierFix: false, supplierFixAmt: 0, supplierMemo: '',

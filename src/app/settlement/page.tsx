@@ -2,79 +2,176 @@ import Link from 'next/link';
 import { ListRow } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
-import { sp, txt, won, yes } from '../_fn/fmt';
+import { sp, txt, won } from '../_fn/fmt';
+import { IntakeDetailPanel } from '../intake/panels';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * 정산관리 — 청구목록 · 지급목록. ★지금은 «읽기» 다.
- *   청구서 발행 · 수금 · 지급을 여기서 누르는 길은 업무 규칙이 굳은 뒤 연다 (AGENTS §10 — 추측 구현 금지).
+ * ★★★**정산관리 — 판 셋: 묶음 | 실적 줄 | 접수 상세** (대표 2026-09-18 · WORK-INBOX §14-0 「화면 = 같은 판의 배열」)
+ *   「정산은 정산 특화」 — 새로 그리지 않고 계약접수와 «같은 판»을 배열했다:
+ *   · 왼쪽  = 목록 판 규격(머리 + 건수 · 검색창 · 퀵 단추 · 목록 한 줄) — 공급사(청구) / 영업채널(지급) 묶음
+ *   · 가운데 = 목록 판 규격 — 고른 묶음의 실적 줄(+ 환수 줄)
+ *   · 오른쪽 = 접수 상세 판(계약접수와 «같은 부품» IntakeDetailPanel) — 줄을 누르면 여기 선다
+ *   ★절대 법칙 — 줄을 눌러도 쪽을 안 옮긴다(앞서 실적 줄이 /intake/[code] 로 넘어갔다). 주소 `?g=묶음&ic=접수코드`.
+ *
+ * 셈은 기능 쪽 그대로(ledgers · stage — 완납·인도 기준 청구·지급, 대표 2026-09-18):
+ *   · 금액 = line.amount(끊긴 분납은 받은 만큼) · 묶음 합 = g.net(합 − 환수) · 달 = ledgerMonths(환수 달 포함)
+ *   · 「청구월 미정」(NO_MONTH) — 인도됐는데 셈한 달이 이미 닫혀 못 들어간 줄. ★사람이 달을 정할 자리 — 붉게.
+ *   · 끊김 — 줄마다 「끊김 · 받은 몫 50%」.
+ * ⓘ 청구서 발행 · 수금 · 지급을 여기서 누르는 길은 업무 규칙이 굳은 뒤 연다(기능 세션 — 추측 구현 금지). 지금은 «읽기».
  */
 export default async function SettlementPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
   const tab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 
-  let rows: Awaited<ReturnType<typeof settlements.list>>;
-  try { rows = await settlements.list(); }
+  let all: Awaited<ReturnType<typeof settlements.list>>;
+  let cb: Awaited<ReturnType<typeof settlements.clawbacks>>;
+  try { [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]); }
   catch (e) { return <><h1>정산관리</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>; }
-  const all = rows.map((x) => x.row);
+  const rows = all.map((x) => x.row);
 
-  const months = ledgerMonths(all);
-  /* ★처음 여는 달 = 이번 달까지 중 가장 최근. 원장에 앞날 청구월(2026-10)이 적힌 줄이 있어 «맨 위» 로 고르면 엉뚱한 달이 열린다 */
+  const months = ledgerMonths(rows, cb);
+  /* ★처음 여는 달 = 이번 달까지 중 가장 최근(앞날 청구월이 적힌 줄이 있어 «맨 위»를 고르면 엉뚱한 달이 열린다) */
   const now = today().slice(0, 7);
-  const month = sp(q.month) || months.find((m) => m !== NO_MONTH && m <= now) || months[0] || NO_MONTH;
-  const groups = tab === 'claim' ? claimLedger(all, month) : payLedger(all, month);
+  const 달들 = months.filter((m) => m !== NO_MONTH);
+  const month = sp(q.month) || 달들.find((m) => m <= now) || 달들[0] || NO_MONTH;
+  const groups = tab === 'claim' ? claimLedger(rows, month, cb) : payLedger(rows, month, cb);
   const t = ledgerTotals(groups);
-  const href = (x: Record<string, string>) => `/settlement?${new URLSearchParams({ tab, month, ...x })}`;
   const who = tab === 'claim' ? '공급사' : '영업채널';
+  const 미정 = months.includes(NO_MONTH) ? (tab === 'claim' ? claimLedger(rows, NO_MONTH, cb) : payLedger(rows, NO_MONTH, cb)) : [];
+  const 미정수 = 미정.reduce((n, g) => n + g.lines.length, 0);
+
+  const gq = sp(q.gq).trim().toLowerCase();
+  const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
+  const gSel = groups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
+  const ic = sp(q.ic);
+  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v)) ?? (ic ? 'work' : sp(q.g) ? 'detail' : 'list');
+
+  const keep = (extra: Record<string, string>) => {
+    const u = new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])));
+    for (const [k, v] of Object.entries(extra)) { if (v) u.set(k, v); else u.delete(k); }
+    return `/settlement?${u}`;
+  };
+  /* 달 넘기기 — ‹ 앞 달 · 뒤 달 › (달 단추를 줄줄이 세우지 않는다) */
+  const i = 달들.indexOf(month);
+  const 앞달 = i >= 0 ? 달들[i + 1] : 달들[0];
+  const 뒤달 = i > 0 ? 달들[i - 1] : undefined;
+  const 달로 = (m: string) => keep({ month: m, g: '', ic: '', v: 'list' });
+  const 금액 = (n: number | null | undefined) => (n === null || n === undefined ? '금액 모름' : `${won(n)}원`);
 
   return (
     <>
-      <h1>정산관리</h1>
-      <div className="fn-tabs">
-        <a href={href({ tab: 'claim' })} className={tab === 'claim' ? 'on' : ''}>청구목록 (공급사에게 받을 것)</a>
-        <a href={href({ tab: 'pay' })} className={tab === 'pay' ? 'on' : ''}>지급목록 (영업채널에 줄 것)</a>
-      </div>
-      <div className="fn-tabs">{months.map((m) => <a key={m} href={href({ month: m })} className={m === month ? 'on' : ''}>{m}</a>)}</div>
-      <p className="fn-muted">
-        실적(인도 완료 · 취소 아님 · 정산 제외 아님)만 섭니다. 달은 ERP5 청구월(billMonth).
-        {' '}★금액을 «모르는» 줄은 합에 안 넣고 따로 셉니다 — 0 으로 세면 합이 거짓말을 합니다.
-      </p>
-      <p><b>{month}</b> · {who} {groups.length}곳 · {t.rows}줄 · 합 <b>{won(t.total)}</b>
-        {t.unknown > 0 && <span className="fn-err"> · 금액 모름 {t.unknown}줄</span>}
-        {' '}· {tab === 'claim' ? '청구서 보냄' : '지급 통보'} {t.done}/{t.rows}</p>
-      {tab === 'pay' && <p className="fn-muted">「지급함(paid)」 칸은 원장에서 아직 아무도 안 씁니다 — 0건은 「안 줬다」 가 아니라 「안 적었다」 입니다.</p>}
+      <section className="workspace" data-phone={view} data-mode="settle">
+        {/* ── 묶음 — 공급사(청구) / 영업채널(지급) ─────────────────── */}
+        <section className="panel product-panel">
+          <div className="dz-listtop">
+            <div className="panel-head">
+              <div><h1>{tab === 'claim' ? '청구목록' : '지급목록'}</h1></div>
+              <span className="count">{groups.length}곳 · {t.rows}줄</span>
+            </div>
+            <form className="dz-find" action="/settlement">
+              <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} />
+              <div className="searchbox dz-searchbox">
+                <span aria-hidden>⌕</span>
+                <input name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
+              </div>
+            </form>
+            <div className="quick-filters">
+              <Link className={tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', g: '', ic: '' })}>청구 · 공급사</Link>
+              <Link className={tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', g: '', ic: '' })}>지급 · 영업채널</Link>
+              {미정수 > 0 && (
+                <Link className={`${month === NO_MONTH ? 'active ' : ''}warn`} href={달로(NO_MONTH)}>{NO_MONTH} <small>{미정수}</small></Link>
+              )}
+            </div>
+            {/* 달 — ‹ 앞 달 | 2026-09 | 뒤 달 › · 합 */}
+            <div className="dz-month">
+              {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span />}
+              <b>{month}</b>
+              {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span />}
+              <span className="dz-month-sum">
+                {tab === 'claim' ? '청구' : '지급'} <b>{won(t.net)}원</b>
+                {t.clawback ? <small> · 환수 −{won(t.clawback)}</small> : null}
+                {t.unknown ? <small className="dz-warn-txt"> · 금액 모름 {t.unknown}</small> : null}
+              </span>
+            </div>
+            {month === NO_MONTH && <p className="dz-warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</p>}
+          </div>
+          <div className="list">
+            {shownGroups.map((g) => (
+              <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
+                title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
+                tone={g.done < g.lines.length ? 'act' : 'plain'}
+                meta={[`${g.lines.length}줄`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
+                  g.clawbacks.length ? `환수 ${g.clawbacks.length}` : ''].filter(Boolean).join(' · ')}
+                value={`${won(g.net)}원`} aside={who} />
+            ))}
+            {shownGroups.length === 0 && <p className="dz-empty">이 달에 선 {who}가 없습니다.</p>}
+          </div>
+        </section>
 
-      {/* ★목록 한 줄 규격(_design/ListRow) — 묶음 한 곳 = 한 줄 */}
-      <div className="dz-list">
-        {groups.map((g) => (
-          <ListRow key={g.party} href={`#g-${encodeURIComponent(g.party)}`}
-            title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.rows.length}`}
-            tone={g.done < g.rows.length ? 'act' : 'plain'}
-            meta={`${g.rows.length}줄${g.unknown ? ` · 금액 모름 ${g.unknown}` : ''}${g.hold ? ` · 보류 ${g.hold}` : ''}`}
-            value={`${won(g.total)}원`} aside={who} />
-        ))}
-      </div>
-
-      {groups.map((g) => (
-        <details key={g.party} id={`g-${encodeURIComponent(g.party)}`}>
-          <summary><b>{g.party}</b> — {g.rows.length}줄 · {won(g.total)}{g.unknown ? ` · 모름 ${g.unknown}` : ''}</summary>
-          <div className="dz-list">
-            {g.rows.map((r) => {
-              const 돈 = tab === 'claim' ? r.money.claim : r.money.pay;
+        {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
+        <section className="panel detail-panel st-lines">
+          <div className="dz-listtop">
+            <div className="panel-head">
+              <div><h1>{gSel ? gSel.party : '실적 줄'}</h1></div>
+              {gSel && <span className="count">{gSel.lines.length}줄</span>}
+            </div>
+            {gSel && (
+              <dl className="summary-grid">
+                <div><dt>합</dt><dd>{won(gSel.total)}원</dd></div>
+                <div><dt>환수</dt><dd>{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</dd></div>
+                <div><dt>{tab === 'claim' ? '청구할 돈' : '줄 돈'}</dt><dd><b>{won(gSel.net)}원</b></dd></div>
+                <div><dt>{tab === 'claim' ? '청구서 보냄' : '지급 통보'}</dt><dd>{gSel.done} / {gSel.lines.length}</dd></div>
+              </dl>
+            )}
+          </div>
+          <div className="list">
+            {gSel?.lines.map(({ row: r, amount, broken, ratio }) => {
               const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
               return (
-                <ListRow key={r.id} href={`/intake/${r.id}`}
+                <ListRow key={r.id} href={keep({ g: gSel.party, ic: r.id, v: 'work' })} selected={r.id === ic}
                   title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
                   tone={r.progress.billHold || !끝 ? 'act' : 'plain'}
+                  flag={broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined}
                   meta={[r.plate, r.model, tab === 'claim' ? r.channel : r.supplier, r.progress.deliveredAt ? `인도 ${r.progress.deliveredAt}` : ''].filter(Boolean).join(' · ') || '—'}
-                  value={`${tab === 'claim' ? '청구' : '지급'} ${won(돈)}${돈 === null || 돈 === undefined ? '' : '원'}`}
-                  aside={txt(r.receivedAt)} />
+                  value={금액(amount)} aside={txt(r.payKind)} />
               );
             })}
+            {/* 환수 — 접수 줄의 체크가 아니라 «반대 부호의 한 줄»(기능 세션) */}
+            {gSel?.clawbacks.map((c, k) => (
+              <div key={`환수-${k}`} className="dz-row dz-row-minus">
+                <span className="dz-row-body">
+                  <span className="dz-row-l1"><b>환수 · {c.plate}</b></span>
+                  <span className="dz-row-l2">{c.reason || '—'} · {c.at?.slice(0, 10)}</span>
+                  <span className="dz-row-l3"><strong>−{won(tab === 'claim' ? c.supplierAmt : c.agentAmt)}원</strong><small>{c.month}</small></span>
+                </span>
+              </div>
+            ))}
+            {!gSel && <p className="dz-empty">왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</p>}
           </div>
-        </details>
-      ))}
+        </section>
+
+        {/* ── 접수 상세 — 계약접수와 같은 판 ─────────────────── */}
+        <section className="panel work-panel">
+          {ic
+            ? <IntakeDetailPanel code={ic} back={keep({ ic: '', v: 'detail' })} />
+            : (
+              <>
+                <div className="panel-head"><div><h1>접수 상세</h1></div></div>
+                <p className="dz-empty">가운데 실적 줄을 누르면 그 접수의 진행 · 금액 · 원자 전부가 여기 섭니다.</p>
+                <p className="dz-empty">청구서 발행 · 수금 · 지급 처리는 업무 규칙이 굳으면 여기 하단바로 들어옵니다.</p>
+              </>
+            )}
+        </section>
+      </section>
+
+      {/* 폰 — 판을 한 장씩 */}
+      <nav className="phone-tabs" aria-label="판 바꾸기">
+        <Link className={view === 'list' ? 'active' : ''} href={keep({ v: 'list' })}>묶음</Link>
+        <Link className={view === 'detail' ? 'active' : ''} href={keep({ v: 'detail' })}>실적</Link>
+        <Link className={view === 'work' ? 'active' : ''} href={keep({ v: 'work' })}>상세</Link>
+      </nav>
     </>
   );
 }

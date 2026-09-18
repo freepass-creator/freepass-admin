@@ -1078,6 +1078,8 @@ body { background: var(--바닥); }
 /* ★주 7 : 보조 3 — 칸으로 나눈다(flex 는 안쪽 여백이 비율을 흐렸다: 140 : 270 실측) · 단추가 하나면 한 줄 다 */
 .dz-bar-go { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 8px; }
 .dz-bar-go:has(> .dz-bar-sub) { grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); }
+/* 단추가 보조 하나뿐이면(정산관리 접수 상세의 「목록」) 한 줄을 다 쓴다 */
+.dz-bar-go:has(> .dz-bar-sub):not(:has(> .primary)) { grid-template-columns: minmax(0, 1fr); }
 .fn-main .dz-bar-go .primary, .dz-bar-go .primary {
   /* ★주는 오른쪽(대표 2026-09-18) — 칸 비율은 .dz-bar-go 가 정한다 */
   min-width: 0; width: auto; height: 44px; margin: 0; border: 0; border-radius: var(--r);
@@ -1151,3 +1153,26 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .fn-main .workspace .quick-filters a.warn:not(.active) { color: #a8261d; font-weight: 700; }
 .fn-main .workspace .quick-filters a.warn.active { background: #a8261d; }
 .dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 정산관리 — 판 셋: 묶음 | 실적 줄 | 접수 상세 (§14-0 같은 판의 배열)
+   ═══════════════════════════════════════════════════════════════════ */
+/* 실적 줄 판은 «목록 판»이다 — 상세 판 이름(detail-panel)은 폰 한 장씩 규칙 때문에 빌렸을 뿐, 틀고정은 목록 판 그대로 */
+@media (min-width: 901px) {
+  .fn-main .workspace > .detail-panel.st-lines { display: flex; flex-direction: column; overflow: hidden; }
+}
+.st-lines .summary-grid { margin: 0 0 12px; }
+/* 달 넘기기 — ‹ 달 › · 합 */
+.dz-month { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; font-size: var(--글메인); }
+.dz-month > a, .dz-month > span:not(.dz-month-sum) {
+  display: inline-flex; align-items: center; justify-content: center; width: 33px; height: 33px; border-radius: var(--r);
+  color: #4f5862; font-size: 18px; text-decoration: none;
+}
+.dz-month > a:hover { background: var(--박스손); }
+.dz-month > b { min-width: 72px; text-align: center; font-variant-numeric: tabular-nums; }
+.dz-month-sum { margin-left: auto; color: #6b7580; font-size: var(--글보조); }
+.dz-month-sum b { color: var(--글); font-size: var(--글메인); }
+.dz-warn-txt { color: #a8261d; font-weight: 700; }
+/* 환수 줄 — 반대 부호의 한 줄: 금액은 붉게 */
+.dz-row-minus { cursor: default; }
+.dz-row-minus .dz-row-l3 strong { color: #a8261d; }

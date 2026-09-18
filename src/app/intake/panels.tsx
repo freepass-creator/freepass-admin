@@ -89,14 +89,16 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref }: {
-  code: string; created?: boolean; exists?: boolean; back: string; newHref: string;
+  code: string; created?: boolean; exists?: boolean; back: string;
+  /** 없으면(정산관리) 하단바는 [목록] 하나 */
+  newHref?: string;
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   const 바 = (
     <div className="dz-bar">
       <div className="dz-bar-go">
         <Link className="dz-bar-sub" href={back}>목록</Link>
-        <Link className="primary" href={newHref}>+ 신규 접수</Link>
+        {newHref && <Link className="primary" href={newHref}>+ 신규 접수</Link>}
       </div>
     </div>
   );

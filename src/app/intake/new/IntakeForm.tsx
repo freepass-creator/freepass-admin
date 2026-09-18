@@ -136,7 +136,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   return (
     /* ★`action=` 로 넘기면 React 19 가 제출 뒤 입력칸을 비운다 — 틀려서 되돌아와도 쓴 것이 다 날아간다.
          그래서 손으로 넘긴다. */
-    <form className="dz-intake-form"
+    <form className="dz-intake-form" aria-busy={pending}
       onChange={(e) => { if (['supplier', 'product', 'model', 'term', 'rent', 'price'].includes((e.target as unknown as HTMLInputElement).name)) 다시셈(e.currentTarget); }}
       onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
       <datalist id="dl-channel">{options.channels.map((v) => <option key={v} value={v} />)}</datalist>
@@ -198,7 +198,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         {state.errors.length > 0 && <ul className="dz-errs">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <div className="dz-bar-go">
           {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
-          <button type="submit" className="primary" disabled={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
         </div>
       </div>
     </form>

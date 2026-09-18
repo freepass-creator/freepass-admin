@@ -115,4 +115,17 @@ export type EsignAdminState = {
   publicUrl: string;
   stage: '작성' | '발송 전' | '고객 작성 중' | '검토 대기' | '완료';
   attention: string[];
+  review?: {
+    submittedAt: number;
+    customerName: string;
+    customerPhone: string;
+    customerBirth: string;
+    customerAddress: string;
+    driverLicenseNo: string;
+    signerName: string;
+    signerRole: string;
+    emergency: string;
+    cms: string;
+    assets: Array<{ key: string; label: string; name: string; contentType: string; url: string }>;
+  };
 };

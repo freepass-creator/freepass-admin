@@ -13,6 +13,7 @@ export interface EsignRepository {
   getPrivate(sessionId: string): Promise<(EsignPrivateSubmission & Record<string, unknown>) | null>;
   putPrivate(sessionId: string, data: Record<string, unknown>): Promise<void>;
   appendEvent(contractId: string, sessionId: string, type: string, by: string, detail?: Record<string, unknown>): Promise<void>;
+  listEvents(contractId: string): Promise<Array<{ type: string; at: number; by: string; detail: Record<string, unknown> }>>;
 }
 
 export interface EsignAssetStore {

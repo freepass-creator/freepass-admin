@@ -1,5 +1,5 @@
 export type EsignSessionStatus =
-  | 'sent' | 'opened' | 'in_progress' | 'pending_review'
+  | 'sent' | 'opened' | 'in_progress' | 'submitting' | 'pending_review'
   | 'rejected' | 'approving' | 'signed' | 'revoked';
 
 export type EsignTone = 'grey' | 'navy' | 'amber' | 'green' | 'red';

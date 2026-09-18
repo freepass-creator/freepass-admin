@@ -35,8 +35,8 @@ export function feeOf(raw: unknown, who: string): FeeBasis {
   return { mode: 'RATE', rate: v, note: '1 이하라 비율로 읽었다' };
 }
 
-const CLAIM_STAGES: ClaimStage[] = ['접수', '청구', '정정'];
-const PAY_STAGES: PayStage[] = ['접수', '확인', '통보'];
+const CLAIM_STAGES: ClaimStage[] = ['접수', '청구', '정정', '확인', '수금'];
+const PAY_STAGES: PayStage[] = ['접수', '통보', '정정', '확인', '지급'];
 const TARGETS: SettleTarget[] = ['양쪽', '공급', '영업'];
 const pick = <T extends string>(v: unknown, all: T[], dflt: T): T => {
   const t = String(v ?? '').trim() as T;
@@ -59,7 +59,8 @@ function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   const v = n(d.claimWritten);
   if (v === null) return { claim: null, why: '청구금액 칸이 비어 있다' };
   if (v !== 0) return { claim: v, why: null };
-  const done = String(d.payStage ?? '') === '통보' && b(d.billed);
+  /* 지급 축이 통보를 지났다(통보·확인·지급) + 청구서가 나갔다 = 끝난 줄 */
+  const done = ['통보', '확인', '지급'].includes(String(d.payStage ?? '')) && b(d.billed);
   if (done) return { claim: 0, why: null };                    /* 끝난 줄의 0 — 사실이다 */
   return { claim: null, why: '청구금액이 0 인데 아직 «안 끝난» 줄이다 — 모른다로 둔다' };
 }

@@ -6,6 +6,9 @@ import { eventDocId, settlementKey } from '../../domain/settlement/code';
 import { intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
+import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
+import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
+import { createHash } from 'node:crypto';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -17,6 +20,8 @@ import { loadFeeRuleSet } from './fee-rules';
  */
 const ROWS = 'settlement_rows';
 const EVENTS = 'settlement_events';
+/** 발행 기록 — 한 달 · 한 축 · 한 상대 = 한 문서. 번호가 여기서 안 바뀐다 */
+const INVOICES = 'settlement_invoices';
 const BY = 'freepass-admin';
 
 export class WriteDisabledError extends Error {
@@ -149,6 +154,85 @@ export class Erp5SettlementRepository {
       for (const [k, v] of changed) ev[audId()] = { at: now, by: BY, field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') };
       tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
       return { ok: true as const, changed: changed.length };
+    });
+  }
+
+  /**
+   * **청구서(공급사) · 지급명세(영업채널) 발행** — 한 달 · 한 축 · 한 상대.
+   * ★문서번호는 발행 때 붙고 안 바뀐다 — 같은 달·축·상대로 다시 발행하면 같은 번호를 다시 쓴다(settlement_invoices).
+   * ★발행하면 그 줄들의 청구월을 그 달로 박는다 — 이제 그 달은 닫힌다.
+   * ★계획과 쓰기 사이에 원장이 바뀌면(누가 고쳤으면) 쓰지 않고 「다시」 라고 말한다.
+   */
+  async issueInvoice(month: string, axis: Axis, party: string): Promise<{ ok: true; invoice: IssuedInvoice } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const [all, claws] = await Promise.all([this.list(), this.clawbacks()]);
+    const rows = all.map((x) => x.row);
+    const groups = axis === '공급사' ? claimLedger(rows, month, claws) : payLedger(rows, month, claws);
+    const g = groups.find((x) => x.party === party);
+    if (!g) return { ok: false, error: `${month} · ${party} 에 실릴 줄이 없습니다` };
+    const stamp = new Map(all.map((x) => [x.row.id, String(x.raw.updatedAt ?? '')]));
+    const key = invoiceKey(month, axis, party);
+    const invRef = db.collection(INVOICES).doc(`inv_${createHash('sha256').update(key).digest('hex').slice(0, 16)}`);
+
+    return db.runTransaction(async (tx) => {
+      const [invDoc, sameMonth, ...fresh] = await Promise.all([
+        tx.get(invRef),
+        tx.get(db.collection(INVOICES).where('month', '==', month)),
+        ...g.lines.map((l) => tx.get(db.collection(ROWS).doc(l.row.id))),
+      ]);
+      for (const d of fresh) {
+        if (!d.exists || String(d.data()!.updatedAt ?? '') !== stamp.get(d.id)) {
+          return { ok: false as const, error: '그 사이 원장이 바뀌었습니다 — 다시 불러와 발행합니다' };
+        }
+      }
+      const existing = invDoc.exists ? (invDoc.data() as IssuedInvoice) : null;
+      const taken = sameMonth.docs.map((d) => String(d.data().invoiceNo ?? ''));
+      const now = Date.now();
+      const plan = planInvoice(month, axis, party, g.lines, claws, existing, taken, now, BY);
+      if (!plan.ok) return plan;
+      for (const x of plan.patches) {
+        if (!Object.keys(x.patch).length) continue;
+        const cur = fresh.find((d) => d.id === x.code)!.data()!;
+        tx.update(db.collection(ROWS).doc(x.code), { ...x.patch, updatedAt: now, stateAt: new Date(now).toISOString(), [`invoiceNo${axis === '공급사' ? 'S' : 'P'}`]: plan.invoice.invoiceNo });
+        const ev: Record<string, unknown> = {};
+        for (const e of x.events) ev[audId()] = { at: now, by: BY, ...e };
+        if (x.events.length) tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      }
+      /* ★다시 발행이면 번호는 그대로 · 합계·줄은 새로 (옛 합계는 history 로 남긴다) */
+      tx.set(invRef, {
+        ...plan.invoice,
+        ...(existing ? { history: [...((existing as unknown as { history?: unknown[] }).history ?? []), { supply: existing.supply, vat: existing.vat, lines: existing.lines, issuedAt: existing.issuedAt }] } : {}),
+      });
+      return { ok: true as const, invoice: plan.invoice };
+    });
+  }
+
+  /** 그 달의 발행 기록 — 화면이 「이미 나갔나 · 번호 · 달라졌나(driftOf)」 를 말할 때 */
+  async invoices(month: string): Promise<IssuedInvoice[]> {
+    const snap = await erp5().collection(INVOICES).where('month', '==', month).get();
+    return snap.docs.map((d) => d.data() as IssuedInvoice).sort((a, b) => a.invoiceNo.localeCompare(b.invoiceNo));
+  }
+
+  /** 한 줄의 다음 걸음 — 확인 · 정정 · 계산서 · 수금 · 지급 · 보류 · 청구월 (domain/settlement/lifecycle.ts) */
+  async setLifecycle(code: string, change: LifeChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = d.data()!;
+      const { row } = toSettlementRow(cur, d.id);
+      const r = lifePatch(row, change);
+      if (!r.ok) return r;
+      if (!r.events.length) return { ok: true as const, changed: 0 };
+      const now = Date.now();
+      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+      const ev: Record<string, unknown> = {};
+      for (const e of r.events) ev[audId()] = { at: now, by: BY, ...e };
+      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      return { ok: true as const, changed: r.events.length };
     });
   }
 

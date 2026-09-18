@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { settlements, today } from '../../server/erp5';
 import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 
 /**
@@ -102,5 +103,58 @@ export async function moneyAction(_: FormState, f: FormData): Promise<FormState>
   }
   revalidatePath('/intake');
   revalidatePath('/settlement');
+  return { errors: [] };
+}
+
+/**
+ * 청구서(공급사) · 지급명세(영업채널) 발행. 폼 칸: month(YYYY-MM) · axis(공급사|영업채널) · party
+ * ★발행하면 그 줄들의 청구월이 박히고(달이 닫힌다) 청구 축은 「청구」, 지급 축은 「통보」 로 간다.
+ */
+export async function issueInvoiceAction(_: FormState, f: FormData): Promise<FormState & { invoiceNo?: string }> {
+  const axis = S(f, 'axis') as Axis;
+  if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
+  try {
+    const r = await settlements.issueInvoice(S(f, 'month'), axis, S(f, 'party'));
+    if (!r.ok) return { errors: [r.error] };
+    revalidatePath('/settlement');
+    revalidatePath('/intake');
+    return { errors: [], invoiceNo: r.invoice.invoiceNo };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `발행하지 못했습니다 — ${(e as Error).message}`] };
+  }
+}
+
+/**
+ * 한 줄의 다음 걸음. 폼 칸: code · kind 와 그에 딸린 칸
+ *   confirm(axis) · correct(axis, amount, memo) · uncorrect(axis) · invoice(on=1|0, biz, day)
+ *   collected(amount, day) · paid(amount, day) · hold(on=1|0) · billMonth(month)
+ */
+export async function lifecycleAction(_: FormState, f: FormData): Promise<FormState> {
+  const kind = S(f, 'kind');
+  const axis = S(f, 'axis') as Axis;
+  const num = (k: string) => { const t = S(f, k).replace(/[,\s원]/g, ''); return t ? Number(t) : NaN; };
+  let change: LifeChange;
+  switch (kind) {
+    case 'confirm': case 'uncorrect':
+      if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
+      change = { kind, axis }; break;
+    case 'correct':
+      if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
+      change = { kind, axis, amount: S(f, 'amount') ? num('amount') : null, memo: S(f, 'memo') }; break;
+    case 'invoice': change = { kind, on: S(f, 'on') === '1', biz: S(f, 'biz'), day: S(f, 'day') }; break;
+    case 'collected': change = { kind, amount: num('amount'), day: S(f, 'day') }; break;
+    case 'paid': change = { kind, amount: num('amount'), day: S(f, 'day') }; break;
+    case 'hold': change = { kind, on: S(f, 'on') === '1' }; break;
+    case 'billMonth': change = { kind, month: S(f, 'month') }; break;
+    default: return { errors: [`모르는 걸음: ${kind}`] };
+  }
+  try {
+    const r = await settlements.setLifecycle(S(f, 'code'), change);
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [e instanceof WriteDisabledError ? e.message : `저장하지 못했습니다 — ${(e as Error).message}`] };
+  }
+  revalidatePath('/settlement');
+  revalidatePath('/intake');
   return { errors: [] };
 }

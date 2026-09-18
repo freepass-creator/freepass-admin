@@ -103,7 +103,7 @@ function group(
     g.lines.push({ row: r, month: m, amount, broken, ratio: paidRatioOf(r, now) });
     if (broken) g.broken += 1;
     if (amount === null) g.unknown += 1; else g.total += amount;
-    if (side === 'claim' ? r.progress.billed : r.payStage === '통보') g.done += 1;
+    if (side === 'claim' ? r.progress.billed : ['통보', '확인', '지급'].includes(r.payStage)) g.done += 1;
     if (side === 'claim' && r.progress.billHold) g.hold += 1;
   }
   for (const c of clawbacks) {
@@ -126,7 +126,7 @@ function group(
 export const claimLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
   group(rows, clawbacks, month, 'claim', now);
 
-/** 지급목록 — 영업채널에 줄 것. 끝남 = 지급 단계가 「통보」 다(ERP5 `payStage`). */
+/** 지급목록 — 영업채널에 줄 것. 끝남 = 지급명세가 나갔다(지급 축 통보·확인·지급). */
 export const payLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
   group(rows, clawbacks, month, 'pay', now);
 

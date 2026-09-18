@@ -123,6 +123,8 @@ if (APPLY) {
     notes: {
       month: '인도가 관문(사람이 찍는다) — 박힌 청구월 > 인도 전은 없음 > 일시납 인도월 > 분납 완납월 = 인도일+(회차−1)개월(1회차는 인도 때) > 끊기면 받은 회차의 달 · 2026-09 인도분부터 모든 분납 완납 시점 · 박힌 달은 닫힘(계산으로 온 줄은 청구월 미정) — erp4 settlement-stage billingMonthIn · 대표 2026-09-18 「완납인도기준으로 청구 및 지급」',
       stage: '접수(인도 전 · 당월 접수) → 분납실적(인도됨 · 인도일+회차개월 전) → 완납실적 · 취소 — 사람이 보는 칸: 당월접수 · 미완료(지난달 이전 접수 · 인도 전) · 분납실적 · 완납실적 · 취소',
+      lifecycle: '두 축 — 청구(공급사) 접수→청구→확인→수금 · 지급(영업채널) 접수→통보→확인→지급 · 곁길 정정·보류·취소. 수금·지급은 사람이 찍는다(안 찍혔으면 「아직」) — erp4 settlement-atom',
+      invoice: '발행 = 한 달·한 축·한 상대 한 장(settlement_invoices) · 번호 FP-S(공급사)/FP-P(영업채널)-YYYYMM-NNN 그 달 순번 · 발행 때 붙고 안 바뀜(다시 발행 = 같은 번호) · 발행하면 줄의 청구월을 박아 달을 닫음 · 금액 모름·정정 중·청구월 미정이면 안 냄 · 환수를 빼고 부가세는 줄마다 · 발행 뒤 원장이 바뀌면 driftOf 로 알림',
       broken: '분납 끊김은 사람이 받은 회차(paidRounds)를 적어야 성립 — 받은 몫 = 받은 회차/전체 회차로 청구·지급 · 스타·아이카는 끊기면 지급 0',
       money: '청구 = (claimWritten + claimIncentive) × settleRatio + claimAdjust · 정산대상 「영업」·정산제외·청구보류면 0 / 지급 = (payWritten + payIncentive) × settleRatio + payAdjust · 「공급」·제외면 0 — erp4 claimOf/payOf + 가감(대표 2026-09-18)',
       promotion: '프로모션 = 공급사가 더 주는 돈(claimIncentive) + 그중 영업자 몫(payIncentive = 금액 × promoShare · 기본 100% · 대표 2026-09-17) · 사유 promoReason',

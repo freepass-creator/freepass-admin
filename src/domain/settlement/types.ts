@@ -25,10 +25,10 @@ export type FeeBasis =
   | { mode: 'FLAT'; amount: number; note?: string }    // 대당 1,000,000원
   | { mode: 'UNKNOWN'; raw: unknown; note?: string };  // 읽지 못했다
 
-/** 청구가 어디까지 갔나 (ERP5 `claimStage`) */
-export type ClaimStage = '접수' | '청구' | '정정';
-/** 지급이 어디까지 갔나 (ERP5 `payStage`) */
-export type PayStage = '접수' | '확인' | '통보';
+/** 청구가 어디까지 갔나 (ERP5 `claimStage`) — erp4 두 축: 접수 → 청구 → 확인 → 수금 · 곁길 정정 */
+export type ClaimStage = '접수' | '청구' | '정정' | '확인' | '수금';
+/** 지급이 어디까지 갔나 (ERP5 `payStage`) — 접수 → 통보 → 확인 → 지급 · 곁길 정정 */
+export type PayStage = '접수' | '통보' | '정정' | '확인' | '지급';
 /** 누구와 정산하나 (ERP5 `settleTarget`) */
 export type SettleTarget = '양쪽' | '공급' | '영업';
 

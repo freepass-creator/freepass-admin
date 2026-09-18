@@ -172,6 +172,30 @@ export default async function EsignPage({ searchParams }: {
 
             {admin?.attention?.map((x) => <Notice key={x} tone="warn">{x}</Notice>)}
 
+            {admin?.review && (
+              <section className="dz-esign-review">
+                <h3 className="dz-sub">고객 제출자료</h3>
+                <SummaryGrid>
+                  <SummaryItem label="제출">{when(admin.review.submittedAt)}</SummaryItem>
+                  <SummaryItem label="고객">{admin.review.customerName || '—'} · {admin.review.customerPhone || '—'}</SummaryItem>
+                  <SummaryItem label="생년월일">{admin.review.customerBirth || '—'}</SummaryItem>
+                  <SummaryItem label="면허번호">{admin.review.driverLicenseNo || '—'}</SummaryItem>
+                  <SummaryItem label="주소">{admin.review.customerAddress || '—'}</SummaryItem>
+                  <SummaryItem label="법인 서명자">{[admin.review.signerName, admin.review.signerRole].filter(Boolean).join(' · ') || '—'}</SummaryItem>
+                  <SummaryItem label="비상연락">{admin.review.emergency || '—'}</SummaryItem>
+                  <SummaryItem label="자동이체">{admin.review.cms || '—'}</SummaryItem>
+                </SummaryGrid>
+                <div className="dz-esign-review-assets">
+                  {admin.review.assets.map((asset) => (
+                    <a key={asset.key} href={asset.url} target="_blank" rel="noreferrer">
+                      <b>{asset.label}</b><span>{asset.name || asset.contentType || '자료 열기'}</span>
+                    </a>
+                  ))}
+                  {admin.review.assets.length === 0 && <EmptyState>제출된 파일이 없습니다.</EmptyState>}
+                </div>
+              </section>
+            )}
+
             {admin?.session ? (
               <EsignAdminActions
                 contractId={selected.id}

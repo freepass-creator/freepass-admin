@@ -16,7 +16,7 @@ import { vehicleName } from '../_fn/product';
 import IntakeForm, { type IntakeDefaults, type IntakeOptions } from './new/IntakeForm';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
-import { ActionBar, EmptyState, PanelHeader, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { ActionBar, EmptyState, PanelHeader, SummaryGrid } from '../_design/Primitives';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { previewFeeAction } from './actions';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
@@ -203,12 +203,10 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       </>
     );
     바 = (
-      <div className="dz-bar">
-        <div className="dz-bar-go">
-          {보조}
-          {주 && <button type="submit" form={fid} className="primary">{주.label}</button>}
-        </div>
-      </div>
+      <ActionBar>
+        {보조}
+        {주 && <button type="submit" form={fid} className="primary">{주.label}</button>}
+      </ActionBar>
     );
   }
   const events = await settlements.events(r.plate, r.receivedAt);

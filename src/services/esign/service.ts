@@ -18,6 +18,18 @@ const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n :
 const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
+const SUBMIT_CLAIM_TTL = 90_000;
+const APPROVE_CLAIM_TTL = 120_000;
+
+function uploadMagicOk(type: string, bytes: Uint8Array) {
+  if (type === 'application/pdf') return bytes.length >= 5 && Buffer.from(bytes.subarray(0, 5)).toString('ascii') === '%PDF-';
+  if (type === 'image/png') return bytes.length >= 8 && [137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
+  if (type === 'image/jpeg') return bytes.length >= 3 && bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff;
+  if (type === 'image/webp') return bytes.length >= 12
+    && Buffer.from(bytes.subarray(0,4)).toString('ascii')==='RIFF'
+    && Buffer.from(bytes.subarray(8,12)).toString('ascii')==='WEBP';
+  return false;
+}
 
 export type CreateContractInput = {
   customerName: string;
@@ -254,6 +266,11 @@ export class EsignService {
     const session = await this.byToken(token);
     const now = Date.now();
     if (session.status === 'revoked') throw new Error('해지된 전자계약 링크입니다.');
+    if (session.status === 'submitting' && Number(session.submittingAt || 0) <= now - SUBMIT_CLAIM_TTL) {
+      if (await this.repo.transitionSession(session.id, ['submitting'], { status: 'in_progress', submittingAt: 0 })) {
+        session.status = 'in_progress'; session.submittingAt = 0;
+      }
+    }
     if (session.expiresAt < now && !['pending_review', 'approving', 'signed'].includes(session.status)) {
       throw new Error('만료된 전자계약 링크입니다.');
     }
@@ -280,7 +297,7 @@ export class EsignService {
     if (!allowed.has(step)) throw new Error('모르는 전자계약 단계입니다.');
     const session = await this.byToken(token);
     const now = Date.now();
-    if (['revoked', 'signed', 'pending_review', 'approving'].includes(session.status)) {
+    if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) {
       throw new Error('현재 링크에서는 진행상태를 바꿀 수 없습니다.');
     }
     const progress = { ...(session.progress || {}), [step]: now };
@@ -291,9 +308,10 @@ export class EsignService {
 
   async upload(token: string, kind: string, name: string, contentType: string, bytes: Uint8Array) {
     const session = await this.byToken(token);
-    if (['revoked', 'signed', 'pending_review', 'approving'].includes(session.status)) throw new Error('지금은 파일을 올릴 수 없습니다.');
+    if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) throw new Error('지금은 파일을 올릴 수 없습니다.');
     if (bytes.byteLength <= 0 || bytes.byteLength > 10 * 1024 * 1024) throw new Error('파일은 10MB 이하만 올릴 수 있습니다.');
     if (!/^image\/(jpeg|png|webp)$/.test(contentType) && contentType !== 'application/pdf') throw new Error('JPG·PNG·WEBP·PDF만 올릴 수 있습니다.');
+    if (!uploadMagicOk(contentType, bytes)) throw new Error('파일 형식과 실제 내용이 맞지 않습니다.');
     const safe = kind.replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 80);
     const ext = contentType === 'application/pdf' ? 'pdf' : contentType.split('/')[1] || 'bin';
     const asset = await this.assets.put(
@@ -310,79 +328,95 @@ export class EsignService {
   async submit(token: string, payload: PublicSubmissionPayload) {
     const session = await this.byToken(token);
     const now = Date.now();
-    if (!['sent', 'opened', 'in_progress', 'rejected'].includes(session.status)) throw new Error('이미 제출했거나 사용할 수 없는 링크입니다.');
+    const staleSubmitting = session.status === 'submitting' && Number(session.submittingAt || 0) <= now - SUBMIT_CLAIM_TTL;
+    const allowed = staleSubmitting ? ['submitting'] as EsignSession['status'][]
+      : ['sent', 'opened', 'in_progress', 'rejected'] as EsignSession['status'][];
     if (session.expiresAt < now) throw new Error('만료된 전자계약 링크입니다.');
-    const priv0 = await this.repo.getPrivate(session.id);
-    const assets = (priv0?.assets as Record<string, Record<string, unknown>>) || {};
-    const uploadedDocs = Object.keys(assets).filter((k) => k.startsWith('support:')).map((k) => k.slice('support:'.length));
-    const result = validateSubmission({ ...payload, uploaded_documents: uploadedDocs }, session.snapshot);
-    if (session.snapshot.customerType !== '법인') {
-      if (!assets.id_card) throw new Error('운전면허증 사진을 올려 주세요.');
-      if (!assets.selfie) throw new Error('본인 얼굴 사진을 올려 주세요.');
-    }
-    const signatureBytes = Buffer.from(result.signature.replace(/^data:image\/png;base64,/, ''), 'base64');
-    const signatureAsset = await this.assets.put(
-      'esign-private/' + session.contractCode + '/' + session.id + '/signature.png',
-      signatureBytes,
-      'image/png',
-    );
-    const supportingDocuments = uploadedDocs.map((key) => {
-      const a = assets['support:' + key] || {};
-      return {
-        key,
-        path: S(a.path),
-        sha256: S(a.sha256),
-        label: session.snapshot.requiredDocuments.find((d) => d.key === key)?.label || key,
+    const claimed = await this.repo.transitionSession(session.id, allowed, { status: 'submitting', submittingAt: now });
+    if (!claimed) throw new Error('이미 제출 처리 중이거나 사용할 수 없는 링크입니다.');
+
+    try {
+      const priv0 = await this.repo.getPrivate(session.id);
+      const assets = (priv0?.assets as Record<string, Record<string, unknown>>) || {};
+      const uploadedDocs = Object.keys(assets).filter((k) => k.startsWith('support:')).map((k) => k.slice('support:'.length));
+      const result = validateSubmission({ ...payload, uploaded_documents: uploadedDocs }, session.snapshot);
+      if (session.snapshot.customerType !== '법인') {
+        if (!assets.id_card) throw new Error('운전면허증 사진을 올려 주세요.');
+        if (!assets.selfie) throw new Error('본인 얼굴 사진을 올려 주세요.');
+      }
+      const signatureBytes = Buffer.from(result.signature.replace(/^data:image\/png;base64,/, ''), 'base64');
+      const signatureAsset = await this.assets.put(
+        'esign-private/' + session.contractCode + '/' + session.id + '/signature.png',
+        signatureBytes,
+        'image/png',
+      );
+      const supportingDocuments = uploadedDocs.map((key) => {
+        const a = assets['support:' + key] || {};
+        return {
+          key,
+          path: S(a.path),
+          sha256: S(a.sha256),
+          label: session.snapshot.requiredDocuments.find((d) => d.key === key)?.label || key,
+        };
+      });
+      const consentTimes = Object.fromEntries(result.consents.map((key) => [key, now]));
+      const submission: EsignPrivateSubmission = {
+        sessionId: session.id,
+        contractId: session.contractId,
+        customerName: result.name,
+        customerPhone: result.phone,
+        customerBirth: result.birth || undefined,
+        customerAddress: result.address,
+        driverLicenseNo: result.license || undefined,
+        signerName: result.signerName || undefined,
+        signerRole: result.signerRole || undefined,
+        emergencyRelation: result.emergencyRelation,
+        emergencyName: result.emergencyName,
+        emergencyPhone: result.emergencyPhone,
+        consents: result.consents,
+        consentTimes,
+        sectionConfirmations: (payload.sectionConfirmations && typeof payload.sectionConfirmations === 'object'
+          ? payload.sectionConfirmations : {}) as Record<string, number>,
+        summaryConfirmedAt: Number(payload.summaryConfirmedAt || now),
+        agreementReadAt: Number(payload.agreementReadAt || now),
+        signaturePath: signatureAsset.path,
+        signatureSha256: signatureAsset.sha256,
+        supportingDocuments,
+        submittedAt: now,
       };
-    });
-    const consentTimes = Object.fromEntries(result.consents.map((key) => [key, now]));
-    const submission: EsignPrivateSubmission = {
-      sessionId: session.id,
-      contractId: session.contractId,
-      customerName: result.name,
-      customerPhone: result.phone,
-      customerBirth: result.birth || undefined,
-      customerAddress: result.address,
-      driverLicenseNo: result.license || undefined,
-      signerName: result.signerName || undefined,
-      signerRole: result.signerRole || undefined,
-      emergencyRelation: result.emergencyRelation,
-      emergencyName: result.emergencyName,
-      emergencyPhone: result.emergencyPhone,
-      consents: result.consents,
-      consentTimes,
-      sectionConfirmations: (payload.sectionConfirmations && typeof payload.sectionConfirmations === 'object'
-        ? payload.sectionConfirmations : {}) as Record<string, number>,
-      summaryConfirmedAt: Number(payload.summaryConfirmedAt || now),
-      agreementReadAt: Number(payload.agreementReadAt || now),
-      signaturePath: signatureAsset.path,
-      signatureSha256: signatureAsset.sha256,
-      supportingDocuments,
-      submittedAt: now,
-    };
-    await this.repo.putPrivate(session.id, { ...submission, assets });
-    await this.repo.updateSession(session.id, {
-      status: 'pending_review',
-      submittedAt: now,
-      progress: { ...(session.progress || {}), signed: now },
-    });
-    await this.repo.updateContract(session.contractId, { sign_status: '검토대기', sign_submitted_at: now, esign_progress: 6 });
-    await this.repo.appendEvent(session.contractId, session.id, 'submitted', 'customer', { documents: supportingDocuments.map((d) => d.key) });
-    return { ok: true, status: '검토대기' as const };
+      await this.repo.putPrivate(session.id, { ...submission, assets });
+      const committed = await this.repo.transitionSession(session.id, ['submitting'], {
+        status: 'pending_review',
+        submittingAt: 0,
+        submittedAt: now,
+        progress: { ...(session.progress || {}), signed: now },
+      });
+      if (!committed) throw new Error('제출 상태가 바뀌어 저장을 마치지 못했습니다.');
+      await this.repo.updateContract(session.contractId, { sign_status: '검토대기', sign_submitted_at: now, esign_progress: 6 });
+      await this.repo.appendEvent(session.contractId, session.id, 'submitted', 'customer', { documents: supportingDocuments.map((d) => d.key) });
+      return { ok: true, status: '검토대기' as const };
+    } catch (e) {
+      await this.repo.transitionSession(session.id, ['submitting'], {
+        status: session.status === 'rejected' ? 'rejected' : 'in_progress',
+        submittingAt: 0,
+      }).catch(() => false);
+      throw e;
+    }
   }
 
   async reject(contractId: string, reason: string, items: string[], actor = 'admin') {
     const session = await this.repo.getCurrentSession(contractId);
-    if (!session || session.status !== 'pending_review') throw new Error('검토대기 계약이 아닙니다.');
+    if (!session) throw new Error('전자계약 세션이 없습니다.');
     if (!reason.trim()) throw new Error('보완 사유를 적어 주세요.');
     const now = Date.now();
-    await this.repo.updateSession(session.id, {
+    const claimed = await this.repo.transitionSession(session.id, ['pending_review'], {
       status: 'rejected',
       rejectedAt: now,
       rejectReason: reason.trim(),
       supplementItems: items,
       expiresAt: now + TTL,
     });
+    if (!claimed) throw new Error('이미 승인·보완 처리가 시작된 계약입니다.');
     await this.repo.updateContract(contractId, {
       sign_status: '반려',
       sign_rejected_at: now,
@@ -396,60 +430,77 @@ export class EsignService {
     if (!session) return;
     if (session.status === 'signed') throw new Error('서명완료 계약은 해지할 수 없습니다.');
     const now = Date.now();
-    await this.repo.updateSession(session.id, { status: 'revoked', revokedAt: now });
+    const claimed = await this.repo.transitionSession(
+      session.id,
+      ['sent', 'opened', 'in_progress', 'rejected'],
+      { status: 'revoked', revokedAt: now },
+    );
+    if (!claimed) throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
     await this.repo.updateContract(contractId, { sign_status: '미발송', sign_revoked_at: now, esign_progress: 0 });
     await this.repo.appendEvent(contractId, session.id, 'revoked', actor);
   }
 
   async approve(contractId: string, actor = 'admin') {
     const session = await this.repo.getCurrentSession(contractId);
-    if (!session || session.status !== 'pending_review') throw new Error('검토대기 계약이 아닙니다.');
-    const priv = await this.repo.getPrivate(session.id);
-    if (!priv) throw new Error('고객 제출자료가 없습니다.');
-    const submission = priv as unknown as EsignPrivateSubmission;
-    const signature = await this.assets.get(submission.signaturePath, submission.signatureSha256);
-    if (!signature) throw new Error('서명 원본을 검증할 수 없습니다.');
-    const signatureDataUrl = 'data:image/png;base64,' + Buffer.from(signature.bytes).toString('base64');
-    const signed = signedSnapshot(session.snapshot, submission);
+    if (!session) throw new Error('전자계약 세션이 없습니다.');
     const now = Date.now();
-    const sealHash = sha256(JSON.stringify({
-      snapshot: signed,
-      signatureSha256: submission.signatureSha256,
-      submittedAt: submission.submittedAt,
-      approvedAt: now,
-    }));
-    let html: string;
+    const stale = session.status === 'approving' && Number(session.approvingAt || 0) <= now - APPROVE_CLAIM_TTL;
+    const allowed = stale ? ['approving'] as EsignSession['status'][] : ['pending_review'] as EsignSession['status'][];
+    const claimed = await this.repo.transitionSession(session.id, allowed, { status: 'approving', approvingAt: now });
+    if (!claimed) throw new Error('이미 승인·보완 처리가 시작된 계약입니다.');
+
     try {
-      html = await buildContractHtml(session.snapshot, { submission, signatureDataUrl, sealHash, printButton: true });
-    } catch {
-      html = fallbackContractHtml(session.snapshot, submission, sealHash);
+      const priv = await this.repo.getPrivate(session.id);
+      if (!priv) throw new Error('고객 제출자료가 없습니다.');
+      const submission = priv as unknown as EsignPrivateSubmission;
+      const signature = await this.assets.get(submission.signaturePath, submission.signatureSha256);
+      if (!signature) throw new Error('서명 원본을 검증할 수 없습니다.');
+      const signatureDataUrl = 'data:image/png;base64,' + Buffer.from(signature.bytes).toString('base64');
+      const signed = signedSnapshot(session.snapshot, submission);
+      const sealHash = sha256(JSON.stringify({
+        snapshot: signed,
+        signatureSha256: submission.signatureSha256,
+        submittedAt: submission.submittedAt,
+        approvedAt: now,
+      }));
+      let html: string;
+      try {
+        html = await buildContractHtml(session.snapshot, { submission, signatureDataUrl, sealHash, printButton: true });
+      } catch {
+        html = fallbackContractHtml(session.snapshot, submission, sealHash);
+      }
+      const document = await this.assets.put(
+        'esign-documents/' + session.contractCode + '/' + session.id + '/signed-contract.html',
+        Buffer.from(html, 'utf8'),
+        'text/html; charset=utf-8',
+      );
+      const committed = await this.repo.transitionSession(session.id, ['approving'], {
+        status: 'signed',
+        approvingAt: 0,
+        approvedAt: now,
+        signedSnapshot: signed,
+        sealHash,
+        documentSha256: document.sha256,
+        documentStoragePath: document.path,
+      });
+      if (!committed) throw new Error('승인 상태가 바뀌어 봉인을 완료하지 못했습니다.');
+      const adminUrl = '/api/esign/document/' + encodeURIComponent(session.id);
+      await this.repo.updateContract(contractId, {
+        contract_status: '계약완료',
+        sign_status: '서명완료',
+        sign_signed_at: submission.submittedAt,
+        esign_approved_at: now,
+        esign_seal_hash: sealHash,
+        esign_document_sha256: document.sha256,
+        signed_pdf_url: adminUrl,
+        signed_document_url: adminUrl,
+      });
+      await this.repo.appendEvent(contractId, session.id, 'approved', actor, { sealHash });
+      return { sealHash, documentUrl: adminUrl };
+    } catch (e) {
+      await this.repo.transitionSession(session.id, ['approving'], { status: 'pending_review', approvingAt: 0 }).catch(() => false);
+      throw e;
     }
-    const document = await this.assets.put(
-      'esign-documents/' + session.contractCode + '/' + session.id + '/signed-contract.html',
-      Buffer.from(html, 'utf8'),
-      'text/html; charset=utf-8',
-    );
-    await this.repo.updateSession(session.id, {
-      status: 'signed',
-      approvedAt: now,
-      signedSnapshot: signed,
-      sealHash,
-      documentSha256: document.sha256,
-      documentStoragePath: document.path,
-    });
-    const adminUrl = '/api/esign/document/' + encodeURIComponent(session.id);
-    await this.repo.updateContract(contractId, {
-      contract_status: '계약완료',
-      sign_status: '서명완료',
-      sign_signed_at: submission.submittedAt,
-      esign_approved_at: now,
-      esign_seal_hash: sealHash,
-      esign_document_sha256: document.sha256,
-      signed_pdf_url: adminUrl,
-      signed_document_url: adminUrl,
-    });
-    await this.repo.appendEvent(contractId, session.id, 'approved', actor, { sealHash });
-    return { sealHash, documentUrl: adminUrl };
   }
 
   async documentBySession(sessionId: string) {

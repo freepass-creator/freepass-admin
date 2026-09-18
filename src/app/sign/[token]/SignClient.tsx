@@ -15,6 +15,7 @@ type View = {
   rejectReason?: string;
   supplementItems?: string[];
   uploadedKeys?: string[];
+  draft?: Record<string, unknown> | null;
 };
 
 type FormState = {
@@ -28,11 +29,18 @@ type FormState = {
   emergency_relation: string;
   emergency_name: string;
   emergency_phone: string;
+  cms_holder_name: string;
+  cms_holder_relation: string;
+  cms_holder_phone: string;
+  cms_bank: string;
+  cms_account_no: string;
+  cms_holder_identifier: string;
 };
 
 const emptyForm: FormState = {
   customer_name: '', customer_phone: '', customer_birth: '', customer_address: '', driver_license_no: '',
   signer_name: '', signer_role: '대표이사', emergency_relation: '', emergency_name: '', emergency_phone: '',
+  cms_holder_name: '', cms_holder_relation: '', cms_holder_phone: '', cms_bank: '', cms_account_no: '', cms_holder_identifier: '',
 };
 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
@@ -95,11 +103,33 @@ export function SignClient({ token }: { token: string }) {
       setView(next);
       setUploaded(new Set(next.uploadedKeys || []));
       if (next.session?.snapshot) {
+        const draft = next.draft || {};
         setForm((f) => ({
           ...f,
-          customer_name: f.customer_name || next.session!.snapshot.customerName || '',
-          customer_phone: f.customer_phone || next.session!.snapshot.customerPhone || '',
+          customer_name: String(draft.customer_name ?? '') || f.customer_name || next.session!.snapshot.customerName || '',
+          customer_phone: String(draft.customer_phone ?? '') || f.customer_phone || next.session!.snapshot.customerPhone || '',
+          customer_birth: String(draft.customer_birth ?? '') || f.customer_birth,
+          customer_address: String(draft.customer_address ?? '') || f.customer_address,
+          driver_license_no: String(draft.driver_license_no ?? '') || f.driver_license_no,
+          signer_name: String(draft.signer_name ?? '') || f.signer_name,
+          signer_role: String(draft.signer_role ?? '') || f.signer_role,
+          emergency_relation: String(draft.emergency_relation ?? '') || f.emergency_relation,
+          emergency_name: String(draft.emergency_name ?? '') || f.emergency_name,
+          emergency_phone: String(draft.emergency_phone ?? '') || f.emergency_phone,
+          cms_holder_name: String(draft.cms_holder_name ?? '') || f.cms_holder_name,
+          cms_holder_relation: String(draft.cms_holder_relation ?? '') || f.cms_holder_relation,
+          cms_holder_phone: String(draft.cms_holder_phone ?? '') || f.cms_holder_phone,
+          cms_bank: String(draft.cms_bank ?? '') || f.cms_bank,
+          cms_account_no: String(draft.cms_account_no ?? '') || f.cms_account_no,
+          cms_holder_identifier: String(draft.cms_holder_identifier ?? '') || f.cms_holder_identifier,
         }));
+        const savedConsents = Array.isArray(draft.consents) ? draft.consents.map(String) : [];
+        if (savedConsents.length) setConsents(new Set(savedConsents));
+        if (Number(draft.summaryConfirmedAt || 0)) setSummaryAt(Number(draft.summaryConfirmedAt));
+        if (Number(draft.agreementReadAt || 0)) setAgreementAt(Number(draft.agreementReadAt));
+        const maxStep = next.session.snapshot.customerType === '법인' ? 4 : 6;
+        const savedStep = Number(draft.step || 0);
+        if (Number.isInteger(savedStep) && savedStep > 0) setStep(Math.min(savedStep, maxStep));
       }
       return next;
     } catch (e) {
@@ -128,7 +158,18 @@ export function SignClient({ token }: { token: string }) {
     ], [corporate]);
   const current = steps[step] || steps[0];
   const requiredDocs = snapshot ? applySignerRole(snapshot.requiredDocuments, form.signer_role) : [];
+  const cmsRequired = snapshot?.consentProfile.cmsRequiredBeforeHandover === true;
   const set = (key: keyof FormState, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  async function saveDraft(nextStep: number, summaryConfirmedAt = summaryAt, agreementReadAt = agreementAt) {
+    await json('/api/esign/public/' + encodeURIComponent(token), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'draft',
+        payload: { ...form, consents: [...consents], summaryConfirmedAt, agreementReadAt, step: nextStep },
+      }),
+    });
+  }
 
   async function progress(key: string) {
     const map: Record<string, string> = { summary: 'summary', information: 'information', 'id-card': 'identity', selfie: 'identity', agreement: 'agreement', documents: 'documents' };
@@ -158,6 +199,13 @@ export function SignClient({ token }: { token: string }) {
       if (!corporate && !/^\d{4}-\d{2}-\d{2}$/.test(form.customer_birth)) return '생년월일을 확인해 주세요.';
       if (!corporate && !form.driver_license_no.trim()) return '운전면허번호를 입력해 주세요.';
       if (corporate && (!form.signer_name.trim() || !form.signer_role)) return '법인 서명자를 확인해 주세요.';
+      if (cmsRequired) {
+        if (!form.cms_holder_name.trim() || !form.cms_holder_relation.trim() || form.cms_holder_phone.replace(/\D/g, '').length < 10
+          || !form.cms_bank.trim() || form.cms_account_no.replace(/\D/g, '').length < 6
+          || !/^\d{6}(\d{4})?$/.test(form.cms_holder_identifier.replace(/\D/g, ''))) {
+          return '자동이체 예금주·관계·연락처·은행·계좌번호·생년월일 또는 사업자번호를 확인해 주세요.';
+        }
+      }
       if (!form.emergency_relation || !form.emergency_name || form.emergency_phone.replace(/\D/g, '').length < 10) return '비상연락처를 확인해 주세요.';
     }
     if (key === 'id-card' && !uploaded.has('id_card')) return '운전면허증 사진을 올려 주세요.';
@@ -174,12 +222,16 @@ export function SignClient({ token }: { token: string }) {
     const key = current[0], fail = validateStep(key);
     if (fail) { setError(fail); return; }
     setError('');
-    if (key === 'summary' && !summaryAt) setSummaryAt(Date.now());
-    if (key === 'agreement' && !agreementAt) setAgreementAt(Date.now());
+    const nextSummaryAt = key === 'summary' && !summaryAt ? Date.now() : summaryAt;
+    const nextAgreementAt = key === 'agreement' && !agreementAt ? Date.now() : agreementAt;
+    if (nextSummaryAt !== summaryAt) setSummaryAt(nextSummaryAt);
+    if (nextAgreementAt !== agreementAt) setAgreementAt(nextAgreementAt);
     setBusy(true);
     try {
+      const nextStep = Math.min(step + 1, steps.length - 1);
+      await saveDraft(nextStep, nextSummaryAt, nextAgreementAt);
       await progress(key);
-      setStep((n) => Math.min(n + 1, steps.length - 1));
+      setStep(nextStep);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
@@ -244,6 +296,14 @@ export function SignClient({ token }: { token: string }) {
           {corporate && <label className="sg-field">서명자 성명 *<input value={form.signer_name} onChange={(e) => set('signer_name', e.target.value)}/></label>}
           {corporate && <label className="sg-field">법인과의 관계 *<select value={form.signer_role} onChange={(e) => set('signer_role', e.target.value)}><option>대표이사</option><option>위임받은 임직원</option></select></label>}
           <label className="sg-field wide">주소 *<input value={form.customer_address} onChange={(e) => set('customer_address', e.target.value)}/></label>
+          {cmsRequired && <>
+            <label className="sg-field">자동이체 예금주 *<input value={form.cms_holder_name} onChange={(e) => set('cms_holder_name', e.target.value)}/></label>
+            <label className="sg-field">계약자와의 관계 *<input value={form.cms_holder_relation} onChange={(e) => set('cms_holder_relation', e.target.value)}/></label>
+            <label className="sg-field">예금주 연락처 *<input value={form.cms_holder_phone} inputMode="tel" onChange={(e) => set('cms_holder_phone', e.target.value)}/></label>
+            <label className="sg-field">은행 *<input value={form.cms_bank} onChange={(e) => set('cms_bank', e.target.value)}/></label>
+            <label className="sg-field">계좌번호 *<input value={form.cms_account_no} inputMode="numeric" onChange={(e) => set('cms_account_no', e.target.value)}/></label>
+            <label className="sg-field">예금주 생년월일/사업자번호 *<input value={form.cms_holder_identifier} inputMode="numeric" onChange={(e) => set('cms_holder_identifier', e.target.value)}/></label>
+          </>}
           <label className="sg-field">비상연락 관계 *<input value={form.emergency_relation} onChange={(e) => set('emergency_relation', e.target.value)}/></label>
           <label className="sg-field">비상연락 성명 *<input value={form.emergency_name} onChange={(e) => set('emergency_name', e.target.value)}/></label>
           <label className="sg-field">비상연락처 *<input value={form.emergency_phone} inputMode="tel" onChange={(e) => set('emergency_phone', e.target.value)}/></label>

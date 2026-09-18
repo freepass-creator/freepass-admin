@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { Brand, TopMenu } from './Brand';
+import { logoutAction } from '../login/actions';
 
 /** 메뉴 넷 — 대표 2026-09-18 「상품찾기 계약접수 정산관리 전자계약 이 4가지」 */
 const MENU = [
@@ -24,6 +25,8 @@ export function AdminChrome({ children }: { children: ReactNode }) {
         <Brand />
         <TopMenu items={MENU} />
         <span className="fn-state">ERP5 freepasserp5 · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</span>
+        {/* 로그아웃 — 기능 쪽 logoutAction(쿠키 지우고 /login 으로) */}
+        <form action={logoutAction} className="dz-logout"><button type="submit">로그아웃</button></form>
       </nav>
       <main className="fn-main">{children}</main>
     </>

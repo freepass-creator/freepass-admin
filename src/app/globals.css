@@ -1535,3 +1535,45 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .dz-row-l3.perks { justify-content: flex-start; }
 .dz-row-l3.perks .dz-perks.compact { justify-content: flex-start; flex: 1 1 auto; }
 .dz-row-l3.perks small { font-size: var(--글보조); color: #9aa3ad; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 로그인 (/login) — erp4 LoginView 짜임 · 우리 규격(§14-9). 관리자 틀 없음
+   ═══════════════════════════════════════════════════════════════════ */
+html:has(.lg-main), html:has(.lg-main) body { background: var(--바닥); min-height: 100%; }
+.lg-main { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.lg-card {
+  width: 100%; max-width: 400px; display: grid; gap: 20px; padding: 32px 28px;
+  border: 1px solid var(--선); border-radius: var(--r); background: var(--판); color: var(--글);
+}
+.lg-brand { display: inline-flex; align-items: center; gap: 10px; }
+.lg-brand span { font-size: 22px; line-height: 1; letter-spacing: -.2px; color: var(--ci남색); }
+.lg-brand b { font-weight: 600; }
+.lg-brand i { font-style: normal; font-weight: 300; margin-left: 3px; color: #6b7580; }
+.lg-card header h1 { margin: 0 0 4px; font-size: var(--글제목); font-weight: 800; letter-spacing: -.4px; }
+.lg-card header p { margin: 0; font-size: var(--글보조); color: #6b7580; }
+.lg-card form { display: grid; gap: 12px; }
+.lg-card label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.lg-card input {
+  height: var(--컨트롤); padding: 0 12px; border: 1px solid var(--선); border-radius: var(--r); background: var(--판);
+  font-size: var(--글메인); color: var(--글); font-family: inherit;
+}
+.lg-card input:focus { outline: 0; border-color: var(--ci남색); }
+.lg-card button {
+  height: 44px; margin-top: 4px; border: 0; border-radius: var(--r); background: var(--ci남색); color: #fff;
+  font-size: var(--글메인); font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.lg-card button:disabled { opacity: .5; cursor: default; }
+.lg-err { margin: 0; padding: 8px 10px; border-radius: var(--r); background: #fdecea; color: #a8261d; font-size: var(--글보조); font-weight: 700; }
+.lg-foot { margin: 0; font-size: var(--글보조); color: #9aa3ad; text-align: center; }
+@media (max-width: 600px) {
+  .lg-card { padding: 24px 20px; }
+  .lg-card input { font-size: 16px; }
+}
+/* 위 띠 로그아웃 — 글자 단추(규칙 ③) · 띠 맨 오른쪽 */
+.dz-logout { margin: 0; display: inline-flex; }
+body > nav.fn-top .dz-logout button {
+  height: 33px; padding: 0 10px; border: 0; border-radius: var(--r); background: transparent;
+  color: rgba(255, 255, 255, .72); font-size: var(--글보조); cursor: pointer; font-family: inherit;
+}
+body > nav.fn-top .dz-logout button:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+@media (max-width: 900px) { body > nav.fn-top .dz-logout { margin-left: auto; } }

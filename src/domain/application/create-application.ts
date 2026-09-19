@@ -1,3 +1,4 @@
+import { AppError } from '../errors';
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
 import { assertActor, type ActorRef } from '../security/actor';
 import type { Application } from './types';
@@ -30,7 +31,7 @@ function clonePolicyValue(policy: PolicyValue): PolicyValue {
 
 function required(value: string | undefined, field: string): string {
   const trimmed = (value ?? '').trim();
-  if (!trimmed) throw new Error(`${field} is required.`);
+  if (!trimmed) throw new AppError('VALIDATION', `${field} is required.`, { field });
   return trimmed;
 }
 
@@ -42,7 +43,7 @@ function required(value: string | undefined, field: string): string {
  */
 export function createApplication(input: CreateApplicationInput): Application {
   const offer = input.product.offers.find((candidate) => candidate.id === input.offerId);
-  if (!offer) throw new Error('Selected offer does not belong to the product.');
+  if (!offer) throw new AppError('CONFLICT', 'Selected offer does not belong to the product.');
 
   const applicantName = required(input.applicantName, 'applicantName');
   const salesChannelId = required(input.salesChannelId, 'salesChannelId');

@@ -21,7 +21,7 @@ import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
-import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
   많은순, 보증금, 정책말, type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,

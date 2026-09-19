@@ -1,4 +1,5 @@
-import type { CanonicalProduct, Offer } from '../product/types';
+import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import { assertActor, type ActorRef } from '../security/actor';
 import type { Application } from './types';
 
 export interface CreateApplicationInput {
@@ -17,7 +18,14 @@ export interface CreateApplicationInput {
   product: CanonicalProduct;
   offerId: string;
   submissionId: string;
+  actor: ActorRef;
   now: string;
+}
+
+function clonePolicyValue(policy: PolicyValue): PolicyValue {
+  return policy.type === 'MULTI_SELECT'
+    ? { ...policy, value: [...policy.value] }
+    : { ...policy };
 }
 
 function required(value: string | undefined, field: string): string {
@@ -40,10 +48,11 @@ export function createApplication(input: CreateApplicationInput): Application {
   const salesChannelId = required(input.salesChannelId, 'salesChannelId');
   const assigneeId = required(input.assigneeId, 'assigneeId');
   const submissionId = required(input.submissionId, 'submissionId');
+  const actor = assertActor(input.actor);
 
   const snapshotOffer: Offer = {
     ...offer,
-    policyValues: offer.policyValues.map((policy) => ({ ...policy })),
+    policyValues: offer.policyValues.map(clonePolicyValue),
   };
 
   const applicantPhone = input.applicantPhone?.trim();
@@ -60,6 +69,7 @@ export function createApplication(input: CreateApplicationInput): Application {
     progress: {
       contractCompleted: false,
       documentsCompleted: false,
+      balanceCompleted: false,
       deliveryCompleted: false,
     },
     snapshot: {
@@ -69,10 +79,18 @@ export function createApplication(input: CreateApplicationInput): Application {
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
       offer: snapshotOffer,
-      productPolicies: input.product.productPolicies.map((policy) => ({ ...policy })),
+      productPolicies: input.product.productPolicies.map(clonePolicyValue),
       capturedAt: input.now,
     },
     submissionId,
+    history: [
+      {
+        type: 'APPLICATION_CREATED',
+        occurredAt: input.now,
+        actor,
+        source: input.source,
+      },
+    ],
     createdAt: input.now,
     updatedAt: input.now,
   };

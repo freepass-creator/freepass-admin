@@ -90,12 +90,14 @@ Connector는 FreePass 업무 규칙을 판단하지 않는다.
 - NOT_FOUND
 - CONFLICT
 - VERSION_MISMATCH
-- DUPLICATE_REUSED
 - UNAUTHORIZED
 - FORBIDDEN
-- EXTERNAL_DEPENDENCY
+- CANCELLED
 - PERSISTENCE
 - UNKNOWN
+
+현재 코드의 `AppError`는 위 의미 code를 운반한다.
+Service는 문자열 message를 비교해 흐름을 분기하지 않고 code를 사용한다.
 
 사용자 표시 문구와 내부 error code를 동일 문자열로 강제하지 않는다.
 
@@ -113,6 +115,22 @@ Connector는 FreePass 업무 규칙을 판단하지 않는다.
 - correlation/idempotency id
 
 Audit log는 일반 application memo와 분리한다.
+
+## 6. Application aggregate invariants
+
+Application 저장소 mutation은 다음 값을 불변으로 취급한다.
+
+- id
+- applicationNumber
+- submissionId
+- createdAt
+- 접수 당시 snapshot
+
+감사 history는 append-only다.
+기존 이벤트를 삭제·수정·순서 변경하지 않고 새 이벤트만 뒤에 추가한다.
+
+현재 개발용 File Repository는 이 불변식을 write 경계에서 검사한다.
+운영 Repository Adapter도 같은 의미를 transaction 안에서 보장해야 한다.
 
 ## 6. Version contract
 사용자가 본 Product version과 저장 시 version이 다르면 조용히 최신 조건으로 저장하지 않는다.

@@ -14,14 +14,6 @@ import type { CanonicalProduct } from '../domain/product/types';
 
 export interface ApplicationRepository {
   /**
-   * ★중복 저장을 막는 자리. 같은 `submissionId` 가 이미 있으면 **새로 만들지 않고
-   *   있던 것을 돌려준다.** 저장소가 막아야 한다 — 화면의 disabled 는 창을 둘 띄우면 뚫린다.
-   *
-   * @returns `created` — 이번에 진짜 만들어졌나. `false` 면 중복 요청이 걸러진 것이다.
-   */
-  create(application: Application): Promise<{ application: Application; created: boolean }>;
-
-  /**
    * 접수번호 발번 + submissionId 중복 확인 + 저장을 저장소의 한 원자 작업으로 묶는다.
    * build는 저장소가 확정한 그날 순번을 받아 Application을 만든다.
    *
@@ -46,8 +38,6 @@ export interface ApplicationRepository {
    */
   mutate(id: string, change: (current: Application) => Application): Promise<Application>;
 
-  /** 이미 있는 건만 갈아 끼운다. 없으면 던진다 — 조용히 만들어 내지 않는다. */
-  update(application: Application): Promise<Application>;
 
 }
 

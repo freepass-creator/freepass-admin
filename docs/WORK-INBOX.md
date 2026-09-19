@@ -18,7 +18,7 @@ freepass-admin은 단순 상품목록 ERP가 아니다.
  → Canonical Product SSOT
  → 영업자에게 판매 가능한 상품 제공
  → 고객 접수
- → 계약서 / 필수서류 / 인도
+ → 계약서 / 필수서류 / 잔금 / 인도
  → 실적 생성
  → 영업자 실적 1차 확인
  → 공급사 Cross Check
@@ -52,7 +52,7 @@ Canonical Product
  → Application Snapshot
  → 접수목록
  → 접수상세
- → 계약서 / 필수서류 / 인도 / 취소
+ → 계약서 / 필수서류 / 잔금 / 인도 / 취소
 ```
 
 SALES / WHITE LABEL / 정산 전체 구현을 이 흐름보다 먼저 벌리지 않는다.
@@ -153,7 +153,7 @@ ERP4 실제 atom 구조에서 확인한 철학을 참고한다. 기존 ERP4 DB/�
 - CONTRACTED
 - DELIVERED
 - CANCELLED
-- 별도 체크: 계약서 / 필수서류 / 인도
+- 별도 체크: 계약서 / 필수서류 / 잔금 / 인도
 
 `차량준비` 단계는 FreePass 업무가 아니므로 만들지 않는다.
 

@@ -65,7 +65,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
    * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
    *   오른쪽 판만 방금 만든 접수로 바뀐다 (/intake?ic=… — 디자인 세션과 맞춘 주소)
    */
-  redirect(`/intake?ic=${encodeURIComponent(res.code)}&${res.created ? 'created=1' : 'exists=1'}`);
+  redirect(`/intake?v=work&saved=${encodeURIComponent(res.code)}&${res.created ? 'created=1' : 'exists=1'}`);
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {

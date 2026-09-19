@@ -3,8 +3,8 @@
   "project_id": "freepass-admin",
   "repository": "freepass-creator/freepass-admin",
   "default_branch": "main",
-  "subject_revision": "1e257a3f0bcd857dfccceb89d6e25f2010ef9662",
-  "observed_at": "2026-09-19T10:18:39Z",
+  "subject_revision": "f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc",
+  "observed_at": "2026-09-19T10:31:00Z",
   "classification": {
     "kind": "NODE_APP",
     "framework": "Next.js 16",
@@ -42,10 +42,9 @@
   "readiness": {
     "status": "HOLD",
     "blockers": [
-      "Production persistence is not verified",
-      "Production auth and permission boundary is not verified",
-      "Audit event persistence is not implemented",
-      "Application number concurrency is not production-safe"
+      "Production persistence adapter is not implemented/verified; the current file repository only proves single-process atomic semantics.",
+      "Production auth/permission binding is not implemented/verified.",
+      "Production deployment target and runtime smoke are not verified."
     ],
     "review_required": true
   },
@@ -53,6 +52,8 @@
     "docs/reviews/ADMIN-DESIGN-FUNCTION-AUDIT-2026-09-18.md",
     "docs/SSOT.md",
     "docs/HANDOFF.md",
-    "contracts/BACKEND-BOUNDARIES.md"
+    "contracts/BACKEND-BOUNDARIES.md",
+    ".github/workflows/backend-check.yml",
+    "GitHub Actions run 35437615280: npm ci + typecheck + test + build PASS at f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc"
   ]
 }

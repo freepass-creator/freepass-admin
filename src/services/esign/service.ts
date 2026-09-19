@@ -47,6 +47,7 @@ export type CreateContractInput = {
   contractDate: string;
   contractKind: string;
   insuranceSide: '회사포함' | '고객직접';
+  settlementRowId?: string;
 };
 
 export class EsignService {
@@ -96,6 +97,7 @@ export class EsignService {
       deposit_amount_snapshot: Math.round(input.deposit),
       esign_contract_kind: input.contractKind,
       esign_insurance_side: input.insuranceSide,
+      settlement_row_id: input.settlementRowId?.trim() || '',
       created_at: now,
       created_by: actor,
       updated_at: now,
@@ -584,7 +586,8 @@ export class EsignService {
         signed_document_url: adminUrl,
       });
       await this.repo.appendEvent(contractId, session.id, 'approved', actor, { sealHash });
-      return { sealHash, documentUrl: adminUrl };
+      const linked = await this.repo.getContract(contractId);
+      return { sealHash, documentUrl: adminUrl, settlementRowId: S(linked?.settlement_row_id) };
     } catch (e) {
       await this.repo.transitionSession(session.id, ['approving'], { status: 'pending_review', approvingAt: 0 }).catch(() => false);
       throw e;

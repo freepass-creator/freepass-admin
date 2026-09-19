@@ -88,10 +88,6 @@ export class FileApplicationRepository implements ApplicationRepository {
     });
   }
 
-  async countByDatePrefix(prefix: string): Promise<number> {
-    const rows = await this.store.all();
-    return rows.filter((row) => row.applicationNumber.startsWith(prefix)).length;
-  }
 }
 
 export class FileProductRepository implements ProductRepository {

@@ -1,5 +1,7 @@
 import { join } from 'node:path';
+import { assertApplicationMutation } from '../../domain/application/invariants';
 import type { Application } from '../../domain/application/types';
+import { AppError } from '../../domain/errors';
 import type { CanonicalProduct } from '../../domain/product/types';
 import type { ApplicationRepository, ProductRepository } from '../../ports/repositories';
 import { JsonFileStore } from './json-file-store';
@@ -34,11 +36,11 @@ export class FileApplicationRepository implements ApplicationRepository {
       const application = build(sequence);
 
       if (application.submissionId !== submissionId) {
-        throw new Error('Application submissionId does not match the repository transaction key.');
+        throw new AppError('CONFLICT', 'Application submissionId does not match the repository transaction key.');
       }
 
       if (rows.some((row) => row.applicationNumber === application.applicationNumber)) {
-        throw new Error(`Duplicate application number: ${application.applicationNumber}`);
+        throw new AppError('CONFLICT', `Duplicate application number: ${application.applicationNumber}`);
       }
 
       return {
@@ -65,9 +67,9 @@ export class FileApplicationRepository implements ApplicationRepository {
   async mutate(id: string, change: (current: Application) => Application): Promise<Application> {
     return this.store.mutate((rows) => {
       const index = rows.findIndex((row) => row.id === id);
-      if (index < 0) throw new Error(`Application not found: ${id}`);
+      if (index < 0) throw new AppError('NOT_FOUND', `Application not found: ${id}`);
       const updated = change(rows[index]);
-      if (updated.id !== id) throw new Error('Application mutation cannot change id.');
+      assertApplicationMutation(rows[index], updated);
       const next = [...rows];
       next[index] = updated;
       return { rows: next, result: updated };

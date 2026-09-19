@@ -54,8 +54,8 @@
 2026-09-19:
 
 Verified baseline:
-- revision: `f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc`
-- GitHub Actions run: `35437615280`
+- revision: `3f1812c6968f57494c1e8204e7a67d54e1c1f3ea`
+- GitHub Actions run: `35437766677`
 - `npm ci`: PASS
 - `npm run typecheck`: PASS
 - `npm test`: PASS

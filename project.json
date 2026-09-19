@@ -1,0 +1,58 @@
+{
+  "schema": "ai-core-project-capsule/v1",
+  "project_id": "freepass-admin",
+  "repository": "freepass-creator/freepass-admin",
+  "default_branch": "main",
+  "subject_revision": "b603005a53a58aaaa1fb597b5e6b9c15812ee6d9",
+  "observed_at": "2026-09-19T10:18:12Z",
+  "classification": {
+    "kind": "NODE_APP",
+    "framework": "Next.js 16",
+    "package_manager": "npm"
+  },
+  "commands": {
+    "install": "npm ci",
+    "test": "npm test",
+    "build": "npm run build",
+    "start": "npm run dev",
+    "absent_reason": {}
+  },
+  "delivery": {
+    "targets": [],
+    "workflows": []
+  },
+  "instructions": [
+    "AGENTS.md",
+    "PROJECT.md",
+    "docs/WORK-INBOX.md",
+    "docs/MASTER-v1.md",
+    "docs/SSOT.md",
+    "docs/DECISIONS.md",
+    "docs/HANDOFF.md",
+    "docs/RELEASE.md",
+    "contracts/BACKEND-BOUNDARIES.md"
+  ],
+  "data_evidence": [
+    "docs/SSOT.md",
+    "src/domain",
+    "src/services",
+    "src/ports",
+    "src/adapters"
+  ],
+  "readiness": {
+    "status": "HOLD",
+    "blockers": [
+      "Production persistence is not verified",
+      "Production auth and permission boundary is not verified",
+      "Audit event persistence is not implemented",
+      "Application number concurrency is not production-safe"
+    ],
+    "review_required": true
+  },
+  "evidence_refs": [
+    "docs/reviews/ADMIN-DESIGN-FUNCTION-AUDIT-2026-09-18.md",
+    "docs/SSOT.md",
+    "docs/HANDOFF.md",
+    "contracts/BACKEND-BOUNDARIES.md"
+  ]
+}

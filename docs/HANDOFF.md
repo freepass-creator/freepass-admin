@@ -16,51 +16,58 @@ UI/UX는 AI Core/DevCenter 공통 규격 확정 전까지 HOLD다. 현재 기능
 - cancel reason 보존
 - 기존 ERP와 신규 프로젝트 isolation
 
+## Completed in backend hardening — 2026-09-19
+
+- 계약서 / 필수서류 / 잔금 / 인도 4개 진행 사실을 Domain에 반영
+- Application Snapshot의 MULTI_SELECT deep clone 보장
+- ActorRef + ActorProvider 경계 추가
+- APPLICATION_CREATED / APPLICATION_PROGRESS_CHANGED / APPLICATION_CANCELLED 최소 감사 이력 추가
+- submissionId 중복방지 + 접수번호 발번을 Repository 원자 create 계약으로 통합
+- 진행/취소 변경을 Repository 원자 mutate 계약으로 통합
+- 비원자 create/update write API를 ApplicationRepository에서 제거
+- 서로 다른 20건 동시 접수번호 중복 0 회귀테스트 추가
+- 서로 다른 진행 사실 동시 변경 시 lost update 방지 회귀테스트 추가
+- GitHub Actions backend gate 추가
+- revision `f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc`: npm ci / typecheck / test / build PASS (run 35437615280)
+
 ## Current gaps
 
 ### P0 — Product UI가 Domain/Search Service를 완전히 사용하지 않음
 실제 Next 화면과 Mockup에 Domain을 우회하는 별도 검색/상태 로직이 존재한다.
+UI/UX 재설계는 HOLD지만, 향후 연결 시 Domain 우회 로직은 제거해야 한다.
 
 ### P0 — Production persistence 미검증
-현재 file store는 개발용이다.
-필요:
-- Firestore repository 또는 승인된 운영 저장소
-- transaction
+현재 file store는 개발·검증용이며 단일 Node 프로세스 안의 queue 원자성만 증명한다.
+
+운영 Adapter 요구사항은 코드 계약으로 고정됨:
+- transaction/atomic create
+- atomic aggregate mutate
 - concurrency
 - idempotency
-- unique number
+- unique human-readable number
 - retry/failure semantics
 
-### P0 — Auth / permission / actor 경계 미구현
-상태 변경·취소·향후 정산 작업에 actor가 남아야 한다.
+남은 일은 승인된 운영 저장소 Adapter의 실제 구현/검증이다.
 
-### P0 — Audit event contract 미구현
-최소 이벤트:
-- APPLICATION_CREATED
-- APPLICATION_PROGRESS_CHANGED
-- APPLICATION_CANCELLED
-- PRODUCT_VERSION_REJECTED
-- DUPLICATE_SUBMISSION_REUSED
-
-### P0 — 접수번호 동시성
-count + 1 방식은 운영 멀티 인스턴스에서 안전하지 않다.
-
-### P1 — Domain과 최신 업무단계 정합
-계약서 / 필수서류 / 잔금 / 인도 4단계 기준을 Domain에서 단일 파생 규칙으로 수렴해야 한다.
+### P0 — Production Auth / Permission binding 미검증
+ActorProvider Port와 actor audit 의미는 들어갔지만 실제 관리자 인증 Adapter/권한 정책은 아직 연결하지 않았다.
 
 ### P1 — Settlement domain
 실적/환수/청구/지급 중 상당 부분이 Mockup 수준이다.
 
+### P1 — 운영 Audit 보존정책
+Application aggregate 안의 최소 이력은 구현됐다.
+운영에서 별도 append-only audit collection/sink가 필요한지는 persistence 설계와 함께 확정한다.
+
 ## Recommended backend sequence
-1. Error taxonomy + Audit event 최소 계약
-2. Repository transaction/idempotency 계약 명시
-3. Firestore Adapter 구현 전 테스트 fixture 확정
-4. Auth/actor port 설계
-5. persistence adapter 구현
-6. concurrency/idempotency integration test
-7. Application state contract 수렴
-8. Performance/Settlement Domain
-9. 마지막에 AI Core UI/UX 규격 적용
+1. 승인된 운영 persistence target 확정
+2. Firestore 등 운영 Repository Adapter 구현
+3. 실제 transaction/concurrency/idempotency integration test
+4. 관리자 Auth/Permission Adapter 연결
+5. production audit 보존정책 확정
+6. Performance/Settlement Domain
+7. 실제 UI를 Domain/Search/Application Service에 연결
+8. 마지막에 AI Core UI/UX 규격 적용
 
 ## Do not do
 - UI를 먼저 갈아엎지 않는다.

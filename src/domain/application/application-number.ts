@@ -1,3 +1,5 @@
+import { AppError } from '../errors';
+
 /**
  * 접수번호 — `A-YYMMDD-NNN`.
  *
@@ -13,6 +15,6 @@ export function datePrefix(now: Date): string {
 }
 
 export function applicationNumber(prefix: string, sequence: number): string {
-  if (!Number.isInteger(sequence) || sequence < 1) throw new Error('Application sequence must be a positive integer.');
+  if (!Number.isInteger(sequence) || sequence < 1) throw new AppError('VALIDATION', 'Application sequence must be a positive integer.');
   return `${prefix}${String(sequence).padStart(3, '0')}`;
 }

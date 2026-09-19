@@ -12,6 +12,7 @@ export function datePrefix(now: Date): string {
   return `A-${yy}${mm}${dd}-`;
 }
 
-export function applicationNumber(prefix: string, countToday: number): string {
-  return `${prefix}${String(countToday + 1).padStart(3, '0')}`;
+export function applicationNumber(prefix: string, sequence: number): string {
+  if (!Number.isInteger(sequence) || sequence < 1) throw new Error('Application sequence must be a positive integer.');
+  return `${prefix}${String(sequence).padStart(3, '0')}`;
 }

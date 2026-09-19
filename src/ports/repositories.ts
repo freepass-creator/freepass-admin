@@ -21,6 +21,18 @@ export interface ApplicationRepository {
    */
   create(application: Application): Promise<{ application: Application; created: boolean }>;
 
+  /**
+   * 접수번호 발번 + submissionId 중복 확인 + 저장을 저장소의 한 원자 작업으로 묶는다.
+   * build는 저장소가 확정한 그날 순번을 받아 Application을 만든다.
+   *
+   * 운영 Adapter(Firestore 등)는 이 전체를 하나의 transaction/atomic operation으로 구현해야 한다.
+   */
+  createSequenced(
+    datePrefix: string,
+    submissionId: string,
+    build: (sequence: number) => Application,
+  ): Promise<{ application: Application; created: boolean }>;
+
   get(id: string): Promise<Application | null>;
 
   findBySubmissionId(submissionId: string): Promise<Application | null>;

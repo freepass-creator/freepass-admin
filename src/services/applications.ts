@@ -1,4 +1,5 @@
 import { applicationNumber, datePrefix } from '../domain/application/application-number';
+import { isAppError } from '../domain/errors';
 import { createApplication } from '../domain/application/create-application';
 import type { Application } from '../domain/application/types';
 import { cancelApplication, updateApplicationProgress, type ProgressKey } from '../domain/application/update-progress';
@@ -120,7 +121,7 @@ export async function markProgress(
     });
     return { ok: true, application };
   } catch (error) {
-    if ((error as Error).message === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
+    if (isAppError(error, 'CANCELLED')) return { ok: false, reason: 'CANCELLED' };
     throw error;
   }
 }

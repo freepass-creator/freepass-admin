@@ -12,6 +12,19 @@
 
 `docs/WORK-INBOX.md`가 ChatGPT 채팅과 Work 사이의 공용 최신 인수인계판이다. `EMAIL-RND-CONSOLIDATED.md`는 과거 이메일의 의미를 잃지 않기 위한 장기 기억이며 최신 결정보다 우선하지 않는다. Work는 채팅 내용을 자동으로 안다고 가정하지 말고, 이 파일들의 최신 결정을 개발에 반영한다. 서로 충돌하는 내용이 있으면 사용자의 최신 명시 결정과 AI Core Gate를 확인하고 임의 해석하지 않는다.
 
+## 0.5 Project control documents
+AI Core/DevCenter의 운영 규격을 이 프로젝트에 적용한다. 기능 작업 전 다음 파일도 현재 revision에서 확인한다.
+
+- `PROJECT.md` — 프로젝트 범위와 backend 우선순위
+- `project.json` — AI Core Project Capsule snapshot. revision이 바뀌면 stale 여부를 확인한다.
+- `docs/SSOT.md` — 코드/도메인/데이터 정본 지도
+- `docs/DECISIONS.md` — 사용자 확정 및 구조 결정
+- `docs/HANDOFF.md` — 현재 backend gap과 다음 순서
+- `docs/RELEASE.md` — 검증·배포·rollback gate
+- `contracts/BACKEND-BOUNDARIES.md` — Domain/Service/Port/Adapter/Repository 경계
+
+이 문서들은 `docs/MASTER-v1.md`의 업무 의미를 대체하지 않는다. 새로운 두 번째 SSOT를 만들지 말고 각 문서의 소유 범위를 지킨다.
+
 ## 1. Source of truth
 이 저장소가 freepass-admin(관리자 화면) 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
 
@@ -53,6 +66,13 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 
 ## 9. Applications
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
+
+## 9.5 Backend evidence discipline
+- UI/UX는 AI Core/DevCenter 공통 규격 확정 전 독자 재설계를 보류한다.
+- backend write는 가능하면 `UI → Service → Domain → Port → Adapter/Repository` 경계를 통과한다.
+- 운영 저장소 연결 전 transaction, concurrency, idempotency, unique number, retry/failure semantics를 계약과 테스트로 먼저 고정한다.
+- 상태 변경/취소/정산 같은 민감 작업은 actor와 audit evidence를 남길 수 있는 경계를 마련한다.
+- `DESIGNED / CODED / TESTED / PERSISTENCE VERIFIED / DEPLOYMENT VERIFIED / USER APPROVED`를 같은 완료 상태로 합치지 않는다.
 
 ## 10. Development discipline
 - 확정되지 않은 업무규칙을 추측 구현하지 않는다.

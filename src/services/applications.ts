@@ -109,12 +109,20 @@ export async function markProgress(
   completed: boolean,
 ): Promise<ProgressResult> {
   const actor = await deps.actors.requireActor();
-  const application = await deps.applications.get(id);
-  if (!application) return { ok: false, reason: 'NOT_FOUND' };
-  if (application.status === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
+  const existing = await deps.applications.get(id);
+  if (!existing) return { ok: false, reason: 'NOT_FOUND' };
+  if (existing.status === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
 
-  const next = updateApplicationProgress(application, key, completed, deps.now().toISOString(), actor);
-  return { ok: true, application: await deps.applications.update(next) };
+  try {
+    const application = await deps.applications.mutate(id, (current) => {
+      if (current.status === 'CANCELLED') throw new Error('CANCELLED');
+      return updateApplicationProgress(current, key, completed, deps.now().toISOString(), actor);
+    });
+    return { ok: true, application };
+  } catch (error) {
+    if ((error as Error).message === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
+    throw error;
+  }
 }
 
 export type CancelResult =
@@ -129,13 +137,15 @@ export async function cancel(
   reason: string,
 ): Promise<CancelResult> {
   const actor = await deps.actors.requireActor();
-  const application = await deps.applications.get(id);
-  if (!application) return { ok: false, reason: 'NOT_FOUND' };
+  const existing = await deps.applications.get(id);
+  if (!existing) return { ok: false, reason: 'NOT_FOUND' };
   if (!reason.trim()) return { ok: false, reason: 'REASON_REQUIRED' };
 
   // 이미 취소된 건을 다시 취소해도 «첫 이유»를 덮지 않는다.
-  if (application.status === 'CANCELLED') return { ok: true, application };
+  if (existing.status === 'CANCELLED') return { ok: true, application: existing };
 
-  const next = cancelApplication(application, reason, deps.now().toISOString(), actor);
-  return { ok: true, application: await deps.applications.update(next) };
+  const application = await deps.applications.mutate(id, (current) =>
+    cancelApplication(current, reason, deps.now().toISOString(), actor),
+  );
+  return { ok: true, application };
 }

@@ -35,7 +35,7 @@ const APP_ERROR_MAP = Object.freeze({
   CANCELLED: { code: 'CANCELLED', status: 409, category: 'USER', retryable: false },
   PERSISTENCE: { code: 'PERSISTENCE_ERROR', status: 500, category: 'SYSTEM', retryable: true },
   UNKNOWN: { code: 'INTERNAL_ERROR', status: 500, category: 'SYSTEM', retryable: false },
-} as const satisfies Record<string, { code: string; status: number; category: CoreErrorCategory; retryable: boolean }>;
+} as const satisfies Record<string, { code: string; status: number; category: CoreErrorCategory; retryable: boolean }>);
 
 const SERVICE_REASON_MAP = Object.freeze({
   PRODUCT_NOT_FOUND: { code: 'NOT_FOUND', status: 404, category: 'USER', retryable: false },
@@ -44,7 +44,7 @@ const SERVICE_REASON_MAP = Object.freeze({
   NOT_FOUND: { code: 'NOT_FOUND', status: 404, category: 'USER', retryable: false },
   CANCELLED: { code: 'CANCELLED', status: 409, category: 'USER', retryable: false },
   REASON_REQUIRED: { code: 'VALIDATION_ERROR', status: 400, category: 'USER', retryable: false },
-} as const satisfies Record<string, { code: string; status: number; category: CoreErrorCategory; retryable: boolean }>;
+} as const satisfies Record<string, { code: string; status: number; category: CoreErrorCategory; retryable: boolean }>);
 
 function errorType(code: string): string {
   return `https://errors.freepass.ai/core/${code.toLowerCase().replaceAll('_', '-')}`;

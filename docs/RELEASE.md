@@ -52,15 +52,28 @@
 
 ## Current status
 2026-09-19:
-- Source: ACTIVE
-- Static: requires current execution evidence
-- Domain tests: existing tests present, current full PASS not asserted here
-- Persistence: NOT VERIFIED
-- Permission/Audit: NOT VERIFIED
-- Runtime smoke: NOT VERIFIED
+
+Verified baseline:
+- revision: `f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc`
+- GitHub Actions run: `35437615280`
+- `npm ci`: PASS
+- `npm run typecheck`: PASS
+- `npm test`: PASS
+- `npm run build`: PASS
+
+Current gates:
+- Source: PASS for the verified revision above
+- Static: PASS for the verified revision above
+- Domain tests: PASS for the verified revision above
+- Build/package: PASS for the verified revision above
+- Development file persistence: PASS for tested single-process semantics
+- Production persistence: NOT VERIFIED
+- Production Auth/Permission: NOT VERIFIED
+- Production audit retention policy: NOT VERIFIED
+- Runtime smoke against production binding: NOT VERIFIED
 - Production deployment: NOT VERIFIED
 
-따라서 현재 상태를 PRODUCTION READY로 표기하지 않는다.
+따라서 현재 상태를 PRODUCTION READY로 표기하지 않는다. 검증 PASS는 위 revision과 검사 범위에만 유효하다.
 
 ## Rollback
 운영 배포가 도입되면 최소 다음을 기록해야 한다.

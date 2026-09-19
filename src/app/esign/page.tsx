@@ -220,10 +220,11 @@ export default async function EsignPage({ searchParams }: {
                 status={admin.session.status}
                 publicUrl={admin.publicUrl}
                 documentUrl={selected.signedPdfUrl}
+                listHref={keep({ id: '', v: 'list' })}
               />
             ) : (
               <>
-                <EsignAdminActions contractId={selected.id} status="" />
+                <EsignAdminActions contractId={selected.id} status="" listHref={keep({ id: '', v: 'list' })} />
                 {(selected.signUrl || selected.signedPdfUrl) && (
                   <ActionBar>
                     {selected.signUrl && <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">기존 서명창</a>}

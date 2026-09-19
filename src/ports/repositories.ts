@@ -43,8 +43,6 @@ export interface ApplicationRepository {
   /** 이미 있는 건만 갈아 끼운다. 없으면 던진다 — 조용히 만들어 내지 않는다. */
   update(application: Application): Promise<Application>;
 
-  /** 접수번호를 발번하기 위한 그날치 개수. */
-  countByDatePrefix(prefix: string): Promise<number>;
 }
 
 export interface ProductRepository {

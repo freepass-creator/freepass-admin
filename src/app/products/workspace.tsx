@@ -134,6 +134,7 @@ export async function ProductWorkspace({ q, mode, base }: {
 
   let irows: SettlementRow[] = [];
   let intakeErr = '';
+  const savedIntake = sp(q.saved);
   if (mode === 'intake') {
     try { irows = (await settlements.list()).map((x) => x.row); } catch (e) { intakeErr = (e as Error).message; }
   }
@@ -317,11 +318,16 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
           </div>
           </div>
+          {savedIntake && <Notice tone={sp(q.exists) ? 'warn' : 'ok'}>
+            {sp(q.exists) ? '같은 차량번호 + 접수일이 이미 있어 기존 접수를 목록에서 표시했습니다.' : '접수를 저장했습니다. 방금 만든 접수를 목록에서 표시합니다.'}
+          </Notice>}
           {intakeErr ? <EmptyState>ERP5 접수를 못 읽었습니다 — {intakeErr}</EmptyState> : (
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
-                  href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
+                  href={keep({ ic: r.id, w: '', v: 'work', saved: '', created: '', exists: '' })}
+                  selected={r.id === savedIntake}
+                  status={접수상태(r, 칸의.get(r))}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}

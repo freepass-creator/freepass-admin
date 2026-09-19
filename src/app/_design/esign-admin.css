@@ -10,3 +10,10 @@
 @media(max-width:900px){.dz-esign-review-assets{grid-template-columns:1fr}}
 
 .dz-esign-history{margin-top:18px}.dz-esign-history-list{display:grid;gap:4px}.dz-esign-history-list>div{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:var(--ui-radius);background:var(--박스)}.dz-esign-history-list b{font-size:var(--글보조);color:var(--글)}.dz-esign-history-list span{font-size:var(--글보조);color:#6b7580;text-align:right}
+
+.dz-esign-inline-action{display:flex;align-items:center;justify-content:center;height:var(--ui-control-h);border-radius:var(--ui-radius);background:var(--박스);color:#4f5862;text-decoration:none;font-size:var(--글메인);font-weight:600}
+.dz-esign-inline-action:hover{background:var(--박스손)}
+.dz-esign-inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dz-esign-inline-row form{margin:0}
+.dz-esign-inline-row button{width:100%}
+.dz-esign-actions>.dz-bar{margin-top:4px}

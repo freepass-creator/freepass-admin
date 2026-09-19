@@ -40,6 +40,12 @@ export interface ApplicationRepository {
   /** 최신 접수가 앞. 접수목록 화면이 이걸 그대로 쓴다. */
   list(): Promise<Application[]>;
 
+  /**
+   * aggregate 한 건을 저장소의 원자 경계 안에서 읽고 변경한다.
+   * 운영 Adapter는 transaction/compare-and-set 등 실제 원자성을 보장해야 한다.
+   */
+  mutate(id: string, change: (current: Application) => Application): Promise<Application>;
+
   /** 이미 있는 건만 갈아 끼운다. 없으면 던진다 — 조용히 만들어 내지 않는다. */
   update(application: Application): Promise<Application>;
 

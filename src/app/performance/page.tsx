@@ -100,7 +100,13 @@ export default async function PerformancePage({ searchParams }: {
 
       <section className="panel work-panel">
         {selected
-          ? <IntakeDetailPanel code={selected.id} back={keep({ id:'', v:'list' })} />
+          ? <IntakeDetailPanel
+              code={selected.id}
+              title="실적 상세"
+              back={keep({ id:'', v:'list' })}
+              nextLabel="정산 보기"
+              nextHref={`/settlement?${new URLSearchParams({ tab:'claim', g:selected.supplier || '', ic:selected.id, v:'work' })}`}
+            />
           : <>
               <PanelHeader title="실적 상세" />
               <EmptyState>왼쪽에서 실적을 고르면 상세가 여기 섭니다.</EmptyState>

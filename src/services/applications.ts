@@ -2,6 +2,7 @@ import { applicationNumber, datePrefix } from '../domain/application/application
 import { createApplication } from '../domain/application/create-application';
 import type { Application } from '../domain/application/types';
 import { cancelApplication, updateApplicationProgress, type ProgressKey } from '../domain/application/update-progress';
+import type { ActorProvider } from '../ports/auth';
 import type { ApplicationRepository, ProductRepository } from '../ports/repositories';
 
 export interface SubmitApplicationInput {
@@ -38,6 +39,7 @@ export interface Deps {
   applications: ApplicationRepository;
   now: () => Date;
   newId: () => string;
+  actors: ActorProvider;
 }
 
 /**
@@ -49,6 +51,7 @@ export interface Deps {
  * 「상품이 바뀌었다」는 엉뚱한 말을 하면서 정작 접수는 이미 들어가 있는 꼴이 된다.
  */
 export async function submitApplication(deps: Deps, input: SubmitApplicationInput): Promise<SubmitResult> {
+  const actor = await deps.actors.requireActor();
   const already = await deps.applications.findBySubmissionId(input.submissionId);
   if (already) return { ok: true, application: already, created: false };
 
@@ -70,23 +73,28 @@ export async function submitApplication(deps: Deps, input: SubmitApplicationInpu
 
   const now = deps.now();
   const prefix = datePrefix(now);
-  const countToday = await deps.applications.countByDatePrefix(prefix);
 
-  const application = createApplication({
-    id: deps.newId(),
-    applicationNumber: applicationNumber(prefix, countToday),
-    applicantName: input.applicantName,
-    salesChannelId: input.salesChannelId,
-    assigneeId: input.assigneeId,
-    applicantPhone: input.applicantPhone,
-    source: input.source ?? 'ADMIN',
-    product,
-    offerId: input.offerId,
-    submissionId: input.submissionId,
-    now: now.toISOString(),
-  });
+  const stored = await deps.applications.createSequenced(
+    prefix,
+    input.submissionId,
+    (sequence) =>
+      createApplication({
+        id: deps.newId(),
+        applicationNumber: applicationNumber(prefix, sequence),
+        applicantName: input.applicantName,
+        salesChannelId: input.salesChannelId,
+        assigneeId: input.assigneeId,
+        applicantPhone: input.applicantPhone,
+        source: input.source ?? 'ADMIN',
+        product,
+        offerId: input.offerId,
+        submissionId: input.submissionId,
+        actor,
+        now: now.toISOString(),
+      }),
+  );
 
-  return { ok: true, ...(await deps.applications.create(application)) };
+  return { ok: true, ...stored };
 }
 
 export type ProgressResult =
@@ -95,16 +103,17 @@ export type ProgressResult =
   | { ok: false; reason: 'CANCELLED' };
 
 export async function markProgress(
-  deps: Pick<Deps, 'applications' | 'now'>,
+  deps: Pick<Deps, 'applications' | 'now' | 'actors'>,
   id: string,
   key: ProgressKey,
   completed: boolean,
 ): Promise<ProgressResult> {
+  const actor = await (deps as Pick<Deps, 'actors'>).actors.requireActor();
   const application = await deps.applications.get(id);
   if (!application) return { ok: false, reason: 'NOT_FOUND' };
   if (application.status === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
 
-  const next = updateApplicationProgress(application, key, completed, deps.now().toISOString());
+  const next = updateApplicationProgress(application, key, completed, deps.now().toISOString(), actor);
   return { ok: true, application: await deps.applications.update(next) };
 }
 
@@ -119,6 +128,7 @@ export async function cancel(
   id: string,
   reason: string,
 ): Promise<CancelResult> {
+  const actor = await deps.actors.requireActor();
   const application = await deps.applications.get(id);
   if (!application) return { ok: false, reason: 'NOT_FOUND' };
   if (!reason.trim()) return { ok: false, reason: 'REASON_REQUIRED' };
@@ -126,6 +136,6 @@ export async function cancel(
   // 이미 취소된 건을 다시 취소해도 «첫 이유»를 덮지 않는다.
   if (application.status === 'CANCELLED') return { ok: true, application };
 
-  const next = cancelApplication(application, reason, deps.now().toISOString());
+  const next = cancelApplication(application, reason, deps.now().toISOString(), actor);
   return { ok: true, application: await deps.applications.update(next) };
 }

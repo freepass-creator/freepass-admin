@@ -16,10 +16,13 @@ import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
-export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
+export async function IntakeDetailPanel({ code, created, exists, back, newHref, nextHref, nextLabel, title = '접수 상세', life }: {
   code: string; created?: boolean; exists?: boolean; back: string;
-  /** 없으면(정산관리) 하단바는 [목록] 하나 */
+  title?: string;
+  /** 없으면 하단바는 [목록] 또는 nextHref가 있으면 [목록][다음업무] */
   newHref?: string;
+  nextHref?: string;
+  nextLabel?: string;
   /**
    * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
    * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
@@ -31,13 +34,14 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     <ActionBar>
       <Link className="dz-bar-sub" href={back}>목록</Link>
       {newHref && <Link className="primary" href={newHref}>+ 신규 접수</Link>}
+      {!newHref && nextHref && <Link className="primary" href={nextHref}>{nextLabel || '다음'}</Link>}
     </ActionBar>
   );
   const hit = await settlements.get(code);
   if (!hit) {
     return (
       <>
-        <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
+        <PanelHeader title={title} backHref={back} backLabel="목록으로" />
         <EmptyState>이 접수를 못 찾았습니다 — {code}</EmptyState>
         {바}
       </>
@@ -107,7 +111,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
-      <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
+      <PanelHeader title={title} backHref={back} backLabel="목록으로" />
       {created && <Notice tone="ok">ERP5 에 새 접수를 세웠습니다.</Notice>}
       {exists && <Notice tone="warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</Notice>}
       <div className="vehicle-title">

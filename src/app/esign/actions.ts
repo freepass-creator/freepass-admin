@@ -3,13 +3,13 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { esign } from '../../server/esign';
-import { settlements } from '../../server/erp5';
+import { contracts, settlements } from '../../server/erp5';
 import { currentAdmin, requireAdmin } from '../../server/require-admin';
 
 export type EsignActionState = { error?: string; ok?: string; url?: string };
 
 const S = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
-const N = (f: FormData, k: string) => Number(S(f, k).replace(/[,s원]/g, ''));
+const N = (f: FormData, k: string) => Number(S(f, k).replace(/[,\s원]/g, ''));
 
 async function actor() {
   const gate = await requireAdmin();
@@ -45,18 +45,33 @@ export async function rejectEsignAction(_: EsignActionState, f: FormData): Promi
 export async function approveEsignAction(_: EsignActionState, f: FormData): Promise<EsignActionState> {
   try {
     const r = await esign.approve(S(f, 'contractId'), await actor());
+    let syncWarning = '';
     if (r.settlementRowId) {
-      await settlements.setProgress(r.settlementRowId, { kind: 'paper', on: true });
+      try {
+        const synced = await settlements.setProgress(r.settlementRowId, { kind: 'paper', on: true });
+        if (!synced.ok) syncWarning = ' 접수의 계약완료 표시는 자동 반영하지 못했습니다: ' + synced.error;
+      } catch (e) {
+        syncWarning = ' 접수의 계약완료 표시는 자동 반영하지 못했습니다: ' + (e as Error).message;
+      }
       revalidatePath('/intake');
       revalidatePath('/performance');
     }
     revalidatePath('/esign');
-    return { ok: '승인·봉인했습니다.', url: r.documentUrl };
+    return { ok: '승인·봉인했습니다.' + syncWarning, url: r.documentUrl };
   } catch (e) { return { error: (e as Error).message }; }
 }
 
 export async function createEsignContractAction(_: EsignActionState, f: FormData): Promise<EsignActionState> {
   try {
+    const settlementRowId = S(f, 'settlementRowId');
+    if (settlementRowId) {
+      const linked = await contracts.getBySettlementRowId(settlementRowId);
+      if (linked) {
+        const returnTo = S(f, 'returnTo');
+        if (returnTo.startsWith('/intake?')) redirect(returnTo);
+        redirect('/esign?id=' + encodeURIComponent(linked.id) + '&v=detail');
+      }
+    }
     const r = await esign.createContract({
       customerName: S(f, 'customerName'),
       customerPhone: S(f, 'customerPhone'),

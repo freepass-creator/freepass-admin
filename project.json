@@ -3,8 +3,8 @@
   "project_id": "freepass-admin",
   "repository": "freepass-creator/freepass-admin",
   "default_branch": "main",
-  "subject_revision": "f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc",
-  "observed_at": "2026-09-19T10:31:00Z",
+  "subject_revision": "3f1812c6968f57494c1e8204e7a67d54e1c1f3ea",
+  "observed_at": "2026-09-19T10:34:50Z",
   "classification": {
     "kind": "NODE_APP",
     "framework": "Next.js 16",
@@ -54,6 +54,6 @@
     "docs/HANDOFF.md",
     "contracts/BACKEND-BOUNDARIES.md",
     ".github/workflows/backend-check.yml",
-    "GitHub Actions run 35437615280: npm ci + typecheck + test + build PASS at f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc"
+    "GitHub Actions run 35437766677: npm ci + typecheck + test + build PASS at 3f1812c6968f57494c1e8204e7a67d54e1c1f3ea"
   ]
 }

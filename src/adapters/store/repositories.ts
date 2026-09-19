@@ -20,21 +20,6 @@ export class FileApplicationRepository implements ApplicationRepository {
     this.store = new JsonFileStore<Application>(dir, 'applications');
   }
 
-  /**
-   * ★중복 저장을 여기서 막는다. «읽고-보고-쓰기»가 한 덩어리로 돌아야 한다 —
-   *   따로 하면 두 요청이 사이를 파고들어 같은 submissionId 로 두 건이 들어간다.
-   */
-  async create(application: Application): Promise<{ application: Application; created: boolean }> {
-    type R = { application: Application; created: boolean };
-    return this.store.mutate<R>((rows) => {
-      const existing = rows.find((row) => row.submissionId === application.submissionId);
-      const result: R = existing
-        ? { application: existing, created: false }
-        : { application, created: true };
-      return { rows: existing ? rows : [application, ...rows], result };
-    });
-  }
-
   async createSequenced(
     datePrefix: string,
     submissionId: string,
@@ -86,17 +71,6 @@ export class FileApplicationRepository implements ApplicationRepository {
       const next = [...rows];
       next[index] = updated;
       return { rows: next, result: updated };
-    });
-  }
-
-  async update(application: Application): Promise<Application> {
-    return this.store.mutate((rows) => {
-      const index = rows.findIndex((row) => row.id === application.id);
-      // 없는 것을 조용히 만들어 내지 않는다 — 그러면 잘못된 id 로 온 수정이 새 건으로 남는다.
-      if (index < 0) throw new Error(`Application not found: ${application.id}`);
-      const next = [...rows];
-      next[index] = application;
-      return { rows: next, result: application };
     });
   }
 

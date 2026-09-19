@@ -2,6 +2,7 @@ import type { Offer, PolicyValue, VehicleMasterRef, VehicleSpecs } from '../prod
 import type { ActorRef } from '../security/actor';
 
 export type ApplicationStatus = 'RECEIVED' | 'CONTRACTED' | 'DELIVERED' | 'CANCELLED';
+export type ApplicationSource = 'ADMIN' | 'SALES' | 'WHITE_LABEL';
 
 /**
  * 진행은 «상태» 가 아니라 «사실» 이다 — 계약서 · 필수서류 · 잔금 · 인도 완료 여부다.
@@ -20,7 +21,7 @@ export type ApplicationHistoryEvent =
       type: 'APPLICATION_CREATED';
       occurredAt: string;
       actor: ActorRef;
-      source: Application['source'];
+      source: ApplicationSource;
     }
   | {
       type: 'APPLICATION_PROGRESS_CHANGED';
@@ -75,7 +76,7 @@ export interface Application {
    */
   applicantPhone?: string;
 
-  source: 'ADMIN' | 'SALES' | 'WHITE_LABEL';
+  source: ApplicationSource;
   status: ApplicationStatus;
   progress: ApplicationProgress;
   snapshot: ApplicationProductSnapshot;

@@ -67,7 +67,7 @@ export async function createEsignContractAction(_: EsignActionState, f: FormData
       insuranceSide: (S(f, 'insuranceSide') || '회사포함') as '회사포함' | '고객직접',
     }, await actor());
     revalidatePath('/esign');
-    redirect('/esign?id=' + encodeURIComponent(r.id) + '&v=detail');
+    redirect('/esign?saved=' + encodeURIComponent(r.id) + '&v=list');
   } catch (e) {
     if ((e as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw e;
     return { error: (e as Error).message };

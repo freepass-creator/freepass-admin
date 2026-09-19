@@ -3,7 +3,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { settlements, today } from '../../server/erp5';
-import { requireAdmin } from '../../server/require-admin';
+import { esign } from '../../server/esign';
+import { currentAdmin, requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
 import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
@@ -66,6 +67,19 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
    *   오른쪽 판만 방금 만든 접수로 바뀐다 (/intake?ic=… — 디자인 세션과 맞춘 주소)
    */
   redirect(`/intake?v=work&saved=${encodeURIComponent(res.code)}&${res.created ? 'created=1' : 'exists=1'}`);
+}
+
+export async function issueIntakeEsignAction(f: FormData): Promise<void> {
+  const gate = await requireAdmin();
+  if (gate) throw new Error(gate);
+  const contractId = S(f, 'contractId');
+  const code = S(f, 'code');
+  if (!contractId || !code) throw new Error('접수와 계약 연결정보가 없습니다.');
+  const actor = (await currentAdmin())?.name ?? 'admin';
+  await esign.issue(contractId, actor);
+  revalidatePath('/esign');
+  revalidatePath('/intake');
+  redirect('/intake?ic=' + encodeURIComponent(code) + '&v=work');
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {

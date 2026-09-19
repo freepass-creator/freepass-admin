@@ -4,7 +4,7 @@ import { bucketOf, paidRoundsOf, roundsOf } from '../../domain/settlement/stage'
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
-import { EmptyState, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import { IntakeDetailPanel } from '../intake/panels';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,7 @@ export default async function PerformancePage({ searchParams }: {
     .sort((a, b) => String(b.progress.deliveredAt || b.receivedAt).localeCompare(String(a.progress.deliveredAt || a.receivedAt)));
 
   const selected = shown.find((r) => r.id === id) ?? shown[0] ?? null;
-  const view = (id || sp(q.v) === 'detail') && selected ? 'detail' : 'list';
+  const view = (id || sp(q.v) === 'work') && selected ? 'work' : 'list';
 
   const keep = (extra: Record<string, string>) => {
     const u = new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])));
@@ -82,7 +82,7 @@ export default async function PerformancePage({ searchParams }: {
             const pay = payAmountOf(r);
             return (
               <ListRow key={r.id}
-                href={keep({ id:r.id, v:'detail' })}
+                href={keep({ id:r.id, v:'work' })}
                 selected={r.id === selected?.id}
                 status={상태(bucket, paid, rounds)}
                 title={txt(r.customer)}
@@ -98,24 +98,13 @@ export default async function PerformancePage({ searchParams }: {
         </div>
       </section>
 
-      <section className="panel detail-panel">
-        {selected ? (
-          <>
-            <PanelHeader title="실적 상세" backHref={keep({ id:'', v:'list' })} backLabel="실적 목록으로" />
-            <SummaryGrid>
-              <SummaryItem label="구분">{bucketOf(selected)}</SummaryItem>
-              <SummaryItem label="분납">{roundsOf(selected.payKind) > 1 ? `${paidRoundsOf(selected)}/${roundsOf(selected.payKind)}회` : '일시납'}</SummaryItem>
-              <SummaryItem label="인도일">{txt(selected.progress.deliveredAt)}</SummaryItem>
-              <SummaryItem label="청구월">{txt(selected.progress.billMonth)}</SummaryItem>
-            </SummaryGrid>
-            <IntakeDetailPanel code={selected.id} back={keep({ id:'', v:'list' })} />
-          </>
-        ) : (
-          <>
-            <PanelHeader title="실적 상세" />
-            <EmptyState>왼쪽에서 실적을 고르면 상세가 여기 섭니다.</EmptyState>
-          </>
-        )}
+      <section className="panel work-panel">
+        {selected
+          ? <IntakeDetailPanel code={selected.id} back={keep({ id:'', v:'list' })} />
+          : <>
+              <PanelHeader title="실적 상세" />
+              <EmptyState>왼쪽에서 실적을 고르면 상세가 여기 섭니다.</EmptyState>
+            </>}
       </section>
     </section>
   );

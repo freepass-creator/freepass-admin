@@ -28,7 +28,10 @@ UI/UX는 AI Core/DevCenter 공통 규격 확정 전까지 HOLD다. 현재 기능
 - 서로 다른 20건 동시 접수번호 중복 0 회귀테스트 추가
 - 서로 다른 진행 사실 동시 변경 시 lost update 방지 회귀테스트 추가
 - GitHub Actions backend gate 추가
-- revision `f8eb1bfd8337aad4a12948f18e668e3ee19ad3fc`: npm ci / typecheck / test / build PASS (run 35437615280)
+- typed `AppError` code 도입 — Service가 문자열 message 비교로 분기하지 않음
+- Application mutation 불변식 추가 — id/applicationNumber/submissionId/createdAt/Snapshot 불변, history append-only
+- 불변식 회귀테스트 추가
+- revision `3f1812c6968f57494c1e8204e7a67d54e1c1f3ea`: npm ci / typecheck / test / build PASS (run 35437766677)
 
 ## Current gaps
 

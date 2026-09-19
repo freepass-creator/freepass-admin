@@ -27,6 +27,9 @@ function makeDeps(box: string): Deps {
     applications: new FileApplicationRepository(at),
     now: () => new Date('2026-09-16T05:22:00.000Z'),
     newId: () => `app-${++seq}`,
+    actors: {
+      requireActor: async () => ({ id: 'staff-park', type: 'ADMIN' as const }),
+    },
   };
 }
 
@@ -71,6 +74,8 @@ describe('접수 저장', () => {
     assert.equal(snap.productVersion, 1);
     assert.equal(snap.offer.id, 'offer-36');
     assert.equal(snap.offer.termMonths, 36);
+    assert.equal(rows[0].history[0].type, 'APPLICATION_CREATED');
+    assert.equal(rows[0].history[0].actor.id, 'staff-park');
   });
 
   it('전화번호는 필수가 아니다 — 없으면 아예 «안 적는다»', async () => {
@@ -108,6 +113,32 @@ describe('중복 저장 방지 — 서버가 막는다', () => {
     await submitApplication(deps, input({ submissionId: 'other', applicantName: '이서진' }));
     const rows = await deps.applications.list();
     assert.equal(rows.filter((a) => a.applicantName === '이서진').length, 1);
+  });
+});
+
+describe('서로 다른 동시 접수의 번호', () => {
+  it('20건을 동시에 받아도 applicationNumber가 겹치지 않는다', async () => {
+    const local = makeDeps('box-sequence-race');
+    await local.products.save(product({ id: 'product-1', offers: [offer({ id: 'offer-36' })] }));
+
+    const results = await Promise.all(
+      Array.from({ length: 20 }, (_, index) =>
+        submitApplication(
+          local,
+          input({
+            submissionId: `parallel-${index}`,
+            applicantName: `고객-${index}`,
+          }),
+        ),
+      ),
+    );
+
+    assert.equal(results.filter((result) => result.ok && result.created).length, 20);
+    const rows = await local.applications.list();
+    const numbers = rows.map((row) => row.applicationNumber);
+    assert.equal(new Set(numbers).size, 20);
+    assert.ok(numbers.includes('A-260916-001'));
+    assert.ok(numbers.includes('A-260916-020'));
   });
 });
 
@@ -161,10 +192,24 @@ describe('진행과 취소', () => {
     assert.equal(r.ok && r.application.status, 'CONTRACTED');
   });
 
-  it('서류는 «상태»를 바꾸지 않는다 — 셋은 서로 독립인 사실이다', async () => {
+  it('서류는 «상태»를 바꾸지 않는다 — 네 진행 사실은 서로 독립이다', async () => {
     const r = await markProgress(deps, id, 'documentsCompleted', true);
     assert.equal(r.ok && r.application.status, 'CONTRACTED');
     assert.equal(r.ok && r.application.progress.documentsCompleted, true);
+  });
+
+  it('잔금도 별도 사실로 남고 계약 상태는 유지한다', async () => {
+    const r = await markProgress(deps, id, 'balanceCompleted', true);
+    assert.equal(r.ok && r.application.status, 'CONTRACTED');
+    assert.equal(r.ok && r.application.progress.balanceCompleted, true);
+  });
+
+  it('같은 진행값을 다시 저장하면 history를 중복 추가하지 않는다', async () => {
+    const before = await deps.applications.get(id);
+    assert.ok(before);
+    const r = await markProgress(deps, id, 'balanceCompleted', true);
+    assert.equal(r.ok, true);
+    assert.equal(r.ok && r.application.history.length, before.history.length);
   });
 
   it('인도가 찍히면 DELIVERED — 여기서 실적 후보가 된다', async () => {
@@ -182,6 +227,8 @@ describe('진행과 취소', () => {
     const r = await cancel(deps, id, '고객 변심 — 타사 계약');
     assert.equal(r.ok && r.application.status, 'CANCELLED');
     assert.equal(r.ok && r.application.cancellationReason, '고객 변심 — 타사 계약');
+    assert.equal(r.ok && r.application.history.at(-1)?.type, 'APPLICATION_CANCELLED');
+    assert.equal(r.ok && r.application.history.at(-1)?.actor.id, 'staff-park');
 
     const after = await markProgress(deps, id, 'contractCompleted', false);
     assert.equal(after.ok, false);

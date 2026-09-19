@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { settlements, today } from '../../server/erp5';
+import { contracts, settlements, today } from '../../server/erp5';
+import { esign } from '../../server/esign';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
@@ -14,6 +15,7 @@ import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
+import { issueIntakeEsignAction } from './actions';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, nextHref, nextLabel, title = '접수 상세', life }: {
@@ -48,6 +50,39 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
   const { row: r, raw, warnings } = hit;
+  const workflow = !life && title === '접수 상세';
+  const linkedContract = workflow ? await contracts.getBySettlementRowId(r.id) : null;
+  const linkedAdmin = linkedContract ? await esign.adminState(linkedContract.id) : null;
+  const linkedSession = linkedAdmin?.session ?? null;
+
+  if (workflow && !r.progress.cancelled) {
+    let primary: React.ReactNode;
+    if (!linkedContract) {
+      primary = <Link className="primary" href={`/esign/new?intake=${encodeURIComponent(r.id)}`}>계약 만들기</Link>;
+    } else if (linkedSession?.status === 'signed' || linkedContract.signStatus === '서명완료') {
+      primary = r.progress.delivered
+        ? <Link className="primary" href={`/performance?id=${encodeURIComponent(r.id)}&v=work`}>실적 보기</Link>
+        : <a className="primary" href="#intake-progress">인도 처리</a>;
+    } else if (!linkedSession && !linkedContract.signStatus) {
+      primary = (
+        <form action={issueIntakeEsignAction} className="dz-action-form">
+          <input type="hidden" name="contractId" value={linkedContract.id} />
+          <input type="hidden" name="code" value={r.id} />
+          <button className="primary" type="submit">전자계약 발행</button>
+        </form>
+      );
+    } else {
+      const status = linkedSession?.status ?? linkedContract.signStatus;
+      const label = status === 'pending_review' || linkedContract.signStatus === '검토대기'
+        ? '계약 검토하기'
+        : status === 'rejected' || linkedContract.signStatus === '반려'
+          ? '보완 진행 보기'
+          : '계약 진행 보기';
+      primary = <Link className="primary" href={`/esign?id=${encodeURIComponent(linkedContract.id)}&v=detail`}>{label}</Link>;
+    }
+    바 = <ActionBar><Link className="dz-bar-sub" href={back}>목록</Link>{primary}</ActionBar>;
+  }
+
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
@@ -122,6 +157,31 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
       {걸음}
 
+      {workflow && <>
+        <h3 className="dz-sub">계약</h3>
+        <SummaryGrid>
+          <SummaryItem label="계약번호">{linkedContract?.code || '아직 없음'}</SummaryItem>
+          <SummaryItem label="계약상태">{linkedContract?.status || '계약 전'}</SummaryItem>
+          <SummaryItem label="전자계약">{linkedSession
+            ? (linkedSession.status === 'pending_review' ? '검토대기'
+              : linkedSession.status === 'rejected' ? '보완요청'
+                : linkedSession.status === 'signed' ? '서명완료'
+                  : linkedSession.status === 'opened' ? '고객 열람'
+                    : linkedSession.status === 'in_progress' ? '고객 작성중'
+                      : linkedSession.status === 'sent' ? '발행'
+                        : linkedSession.status)
+            : linkedContract?.signStatus || '미발행'}</SummaryItem>
+          <SummaryItem label="다음 업무">{!linkedContract ? '계약 만들기'
+            : linkedSession?.status === 'signed' || linkedContract.signStatus === '서명완료'
+              ? (r.progress.delivered ? '실적 확인' : '인도 처리')
+              : !linkedSession && !linkedContract.signStatus ? '전자계약 발행'
+                : linkedSession?.status === 'pending_review' || linkedContract.signStatus === '검토대기' ? '계약 검토'
+                  : linkedSession?.status === 'rejected' || linkedContract.signStatus === '반려' ? '보완 확인'
+                    : '계약 진행 확인'}</SummaryItem>
+        </SummaryGrid>
+      </>}
+
+      <div id="intake-progress" />
       <h3 className="dz-sub">진행</h3>
       {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</Notice>}
       <Progress code={r.id} paper={r.progress.paper} delivered={r.progress.delivered}

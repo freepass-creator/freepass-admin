@@ -35,6 +35,7 @@ export default async function EsignPage({ searchParams }: {
   const sign = SIGN_FILTERS.includes(sp(q.sign) as (typeof SIGN_FILTERS)[number]) ? sp(q.sign) : '';
   const status = sp(q.status);
   const id = sp(q.id);
+  const saved = sp(q.saved);
 
   let all: Awaited<ReturnType<typeof contracts.list>>;
   try {
@@ -54,7 +55,7 @@ export default async function EsignPage({ searchParams }: {
     return c.signStatus === sign;
   });
 
-  const selected = shown.find((c) => c.id === id) ?? shown[0] ?? null;
+  const selected = shown.find((c) => c.id === id) ?? shown.find((c) => c.id === saved) ?? shown[0] ?? null;
   const admin = selected ? await esign.adminState(selected.id) : null;
   const stage = admin?.session ? esignStage(admin.session) : null;
   const view = (sp(q.v) === 'detail' || id) && selected ? 'detail' : 'list';
@@ -115,6 +116,8 @@ export default async function EsignPage({ searchParams }: {
             </div>
           )}
 
+          {saved && <Notice tone="ok">새 계약을 만들었습니다. 방금 만든 계약을 목록에서 표시합니다.</Notice>}
+
           {duplicateCodes.length > 0 && (
             <Notice tone="warn">
               같은 계약코드가 둘 이상인 항목 {duplicateCodes.length}개 — ERP5 정리 대상이며 화면에서는 합치지 않습니다.
@@ -125,7 +128,7 @@ export default async function EsignPage({ searchParams }: {
         <div className="list">
           {shown.map((c) => (
             <ListRow key={c.id}
-              href={keep({ id: c.id, v: 'detail' })}
+              href={keep({ id: c.id, v: 'detail', saved: '' })}
               selected={c.id === selected?.id}
               status={서명상태(c)}
               title={txt(c.customer)}

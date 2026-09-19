@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-18",
+  "version": "2026-09-19",
   "status": "NORMATIVE",
   "authority": [
     "latest-user-decision",
@@ -98,7 +98,8 @@
       "products": "2/3 list + 1/3 detail",
       "intake": "product list + product detail + intake/work",
       "settlement": "group + performance lines + intake detail",
-      "esign": "2/3 list + 1/3 detail"
+      "esign": "2/3 list + 1/3 detail",
+      "performance": "2/3 performance list + 1/3 work detail"
     }
   },
   "listRow": {
@@ -127,10 +128,10 @@
       "상품",
       "접수",
       "계약",
-      "청구",
-      "지급"
+      "실적",
+      "정산"
     ],
-    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar"
+    "mobileDepthRule": "depth0 global tabs; depth1/2 hide global tabs and use panel ActionBar (secondary 3 : primary 7)"
   },
   "components": {
     "canonical": [
@@ -200,7 +201,9 @@
     "global focus-visible treatment is standardized",
     "stable inline visual styles moved to shared CSS classes",
     "badge/list/section icon names are partially compile-time constrained with IconName",
-    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT"
+    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT",
+    "mobile primary navigation changed to 상품/접수/계약/실적/정산; settlement owns claim/pay internally",
+    "performance route separates 완납실적/분납실적 without creating a new data SSOT"
   ],
   "automation": {
     "command": "npm run ui:check",

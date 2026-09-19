@@ -3,8 +3,8 @@
   "project_id": "freepass-admin",
   "repository": "freepass-creator/freepass-admin",
   "default_branch": "main",
-  "subject_revision": "b603005a53a58aaaa1fb597b5e6b9c15812ee6d9",
-  "observed_at": "2026-09-19T10:18:12Z",
+  "subject_revision": "1e257a3f0bcd857dfccceb89d6e25f2010ef9662",
+  "observed_at": "2026-09-19T10:18:39Z",
   "classification": {
     "kind": "NODE_APP",
     "framework": "Next.js 16",

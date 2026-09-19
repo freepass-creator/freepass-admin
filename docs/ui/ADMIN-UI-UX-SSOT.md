@@ -442,7 +442,9 @@ Summary box는 `summary-grid` 규격을 사용한다.
 ## Depth rule
 - depth 0: global bottom tabs
 - depth 1/2: global tabs를 숨기고 해당 Panel action bar
-- back은 PanelHeader에 둔다.
+- **Mobile 상단에는 이동·뒤로·설정·로그아웃 등 버튼을 두지 않는다.**
+- Mobile 상단은 CI/제목 정보만 허용한다.
+- 목록 복귀·취소·저장·다음업무는 하단 ActionBar가 담당한다.
 
 ---
 
@@ -571,8 +573,9 @@ depth 0 목록
 - **body = 64**
 - **rendered row ≈ 88**
 
-## D. Mobile back hit-area
-처리 완료: visual 32px는 유지하면서 pseudo hit-area를 **44px**로 확장했다.
+## D. Mobile top actions
+최신 결정으로 Mobile 상단의 뒤로가기 버튼을 포함한 페이지 버튼은 사용하지 않는다.
+목록 복귀·취소는 하단 ActionBar에서 처리한다.
 
 ## E. 2개의 secondary surface
 `--박스`, `--카드`가 둘 다 존재한다.
@@ -640,7 +643,7 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 - 핵심 화면 `products / intake / settlement / esign`의 반복 마크업을 공통 primitive로 교체
 - `DetailTabs`와 `OfferPicker`도 공통 ActionBar / EmptyState 사용
 - `--ui-*` 토큰으로 공통 치수 연결
-- 모바일 뒤로가기 visual 32px 유지 + 실제 hit-area 44px
+- 모바일 상단 페이지 버튼 제거 · 목록/취소/다음업무를 하단 ActionBar로 일원화
 - 세부검색: 닫힌 뒤 trigger로 focus 복귀 · unique dialog id · busy 상태 노출
 - 상품 상세 tab에 `tablist/tab/tabpanel` 의미 추가
 - ListRow 선택 상태를 접근성 트리에 노출

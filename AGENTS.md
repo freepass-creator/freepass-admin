@@ -50,7 +50,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 `freepasserp.com` 도메인은 **운영 중인 `freepasserp4` 저장소가 갖고 있다**(`lib/brand.ts`의 `BRAND`). 이 저장소를 그 도메인 이름으로 부르지 않는다.
 
 ## 4. Current priority — ADMIN vertical slice
-현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/서류/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
+현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/필수서류/잔금/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
 
 ## 5. Search first
 검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다.
@@ -65,7 +65,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 대여기간은 고정 컬럼이 아니라 반복 가능한 Offer다. Policy는 확장 가능하게 정의하되 이름 난립을 허용하지 않는다. FreePass Policy Definition에 매핑한다. 새 정책 때문에 Product 테이블에 임의 컬럼을 계속 추가하지 않는다.
 
 ## 9. Applications
-접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
+접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline
 - UI/UX는 AI Core/DevCenter 공통 규격 확정 전 독자 재설계를 보류한다.

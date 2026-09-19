@@ -108,7 +108,7 @@ export async function markProgress(
   key: ProgressKey,
   completed: boolean,
 ): Promise<ProgressResult> {
-  const actor = await (deps as Pick<Deps, 'actors'>).actors.requireActor();
+  const actor = await deps.actors.requireActor();
   const application = await deps.applications.get(id);
   if (!application) return { ok: false, reason: 'NOT_FOUND' };
   if (application.status === 'CANCELLED') return { ok: false, reason: 'CANCELLED' };
@@ -124,7 +124,7 @@ export type CancelResult =
 
 /** ★취소는 지우는 것이 아니다. 이유를 받아 남긴다 — 목록에서 사라지지 않는다. */
 export async function cancel(
-  deps: Pick<Deps, 'applications' | 'now'>,
+  deps: Pick<Deps, 'applications' | 'now' | 'actors'>,
   id: string,
   reason: string,
 ): Promise<CancelResult> {

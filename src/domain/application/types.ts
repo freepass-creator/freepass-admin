@@ -1,17 +1,41 @@
 import type { Offer, PolicyValue, VehicleMasterRef, VehicleSpecs } from '../product/types';
+import type { ActorRef } from '../security/actor';
 
 export type ApplicationStatus = 'RECEIVED' | 'CONTRACTED' | 'DELIVERED' | 'CANCELLED';
 
 /**
- * 진행은 «상태» 가 아니라 «사실» 이다 — 계약서를 썼나 · 서류가 다 왔나 · 차를 넘겼나.
- * 셋은 서로 독립이다. 서류가 늦어도 계약서는 이미 있을 수 있다.
+ * 진행은 «상태» 가 아니라 «사실» 이다 — 계약서 · 필수서류 · 잔금 · 인도 완료 여부다.
+ * 네 사실은 서로 독립적으로 기록한다. 파생 상태는 별도 함수가 계산한다.
  * `차량준비` 는 FreePass 업무가 아니므로 만들지 않는다 (AGENTS.md §9).
  */
 export interface ApplicationProgress {
   contractCompleted: boolean;
   documentsCompleted: boolean;
+  balanceCompleted: boolean;
   deliveryCompleted: boolean;
 }
+
+export type ApplicationHistoryEvent =
+  | {
+      type: 'APPLICATION_CREATED';
+      occurredAt: string;
+      actor: ActorRef;
+      source: Application['source'];
+    }
+  | {
+      type: 'APPLICATION_PROGRESS_CHANGED';
+      occurredAt: string;
+      actor: ActorRef;
+      key: keyof ApplicationProgress;
+      from: boolean;
+      to: boolean;
+    }
+  | {
+      type: 'APPLICATION_CANCELLED';
+      occurredAt: string;
+      actor: ActorRef;
+      reason: string;
+    };
 
 /**
  * 접수 당시의 상품을 통째로 굳힌 것. 지금 상품이 바뀌어도 **이것은 안 바뀐다**.
@@ -62,6 +86,9 @@ export interface Application {
    *   같은 `submissionId` 로 다시 들어오면 새로 만들지 않고 «이미 만든 것» 을 돌려준다.
    */
   submissionId: string;
+
+  /** 같은 aggregate 저장 안에서 상태 변경과 함께 보존하는 최소 감사 이력. */
+  history: ApplicationHistoryEvent[];
 
   createdAt: string;
   updatedAt: string;

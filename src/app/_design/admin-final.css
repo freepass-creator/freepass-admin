@@ -472,3 +472,50 @@ body > nav.fn-top :where(a, button):focus-visible,
 .dz-action-form{margin:0;min-width:0}
 .dz-action-form>.primary{width:100%}
 #intake-progress{scroll-margin-top:72px}
+
+
+/* ══ 모바일 상·하단 최종 규격 2026-09-19 ══
+   상단: 버튼/이동 0개. CI만 남긴다.
+   depth0 하단: 아이콘 + 12px 라벨의 5개 전역 메뉴.
+   depth1+: 전역 메뉴는 숨고 기존 하단 ActionBar만 사용한다. */
+@media (max-width: 900px) {
+  body > nav.fn-top {
+    height: 52px;
+    padding: 0 16px;
+    flex-wrap: nowrap;
+    row-gap: 0;
+  }
+  body > nav.fn-top .dz-menu,
+  body > nav.fn-top .fn-state,
+  body > nav.fn-top .dz-me,
+  body > nav.fn-top .dz-logout {
+    display: none !important;
+  }
+  /* 상단에는 뒤로가기 포함 어떤 페이지 버튼도 두지 않는다. 복귀는 하단 ActionBar의 목록/취소가 담당. */
+  .fn-main .workspace .panel-head .dz-phone-back {
+    display: none !important;
+  }
+
+  .dz-tabbar {
+    height: calc(58px + env(safe-area-inset-bottom));
+    padding: 0 0 env(safe-area-inset-bottom);
+    background: var(--ci남색);
+  }
+  .dz-tabbar a {
+    min-width: 0;
+    padding: 5px 0 4px;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 13px;
+    font-weight: 400;
+  }
+  .dz-tabbar a svg {
+    width: 21px;
+    height: 21px;
+    flex: none;
+  }
+  .dz-tabbar a.on {
+    color: var(--ci스카이);
+    font-weight: 600;
+  }
+}

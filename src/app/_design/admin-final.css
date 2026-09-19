@@ -467,3 +467,8 @@ body > nav.fn-top :where(a, button):focus-visible,
     bottom: calc(var(--아래띠) + 8px);
   }
 }
+
+/* 접수 상세의 상태기반 하단 주행동 — ActionBar 3:7 칸 안에서 form도 버튼과 같은 폭. */
+.dz-action-form{margin:0;min-width:0}
+.dz-action-form>.primary{width:100%}
+#intake-progress{scroll-margin-top:72px}

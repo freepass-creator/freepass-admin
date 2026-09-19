@@ -444,3 +444,26 @@ body > nav.fn-top :where(a, button):focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ══ 모바일 업무동선 r1 — 상품 · 접수 · 계약 · 실적 · 정산 ══ */
+.workspace[data-mode="performance"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workspace[data-mode="performance"] > .product-panel { grid-column: span 2; }
+
+@media (max-width: 900px) {
+  /* depth 1 이상에서는 전역 5탭 대신 해당 판의 ActionBar만 선다. */
+  body:has(.workspace[data-mode="esign-new"]),
+  body:has(.workspace[data-mode="performance"][data-phone="work"]) {
+    --아래띠: env(safe-area-inset-bottom);
+  }
+
+  body:has(.workspace[data-mode="esign-new"]) .dz-tabbar,
+  body:has(.workspace[data-mode="performance"][data-phone="work"]) .dz-tabbar {
+    display: none;
+  }
+
+  /* 계약 목록의 + 신규계약 바는 전역 5탭 바로 위에 선다. */
+  .workspace[data-mode="esign"][data-phone="list"] > .product-panel > .dz-bar {
+    bottom: calc(var(--아래띠) + 8px);
+  }
+}

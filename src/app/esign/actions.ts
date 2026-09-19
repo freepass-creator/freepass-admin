@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { esign } from '../../server/esign';
+import { settlements } from '../../server/erp5';
 import { currentAdmin, requireAdmin } from '../../server/require-admin';
 
 export type EsignActionState = { error?: string; ok?: string; url?: string };
@@ -44,6 +45,11 @@ export async function rejectEsignAction(_: EsignActionState, f: FormData): Promi
 export async function approveEsignAction(_: EsignActionState, f: FormData): Promise<EsignActionState> {
   try {
     const r = await esign.approve(S(f, 'contractId'), await actor());
+    if (r.settlementRowId) {
+      await settlements.setProgress(r.settlementRowId, { kind: 'paper', on: true });
+      revalidatePath('/intake');
+      revalidatePath('/performance');
+    }
     revalidatePath('/esign');
     return { ok: '승인·봉인했습니다.', url: r.documentUrl };
   } catch (e) { return { error: (e as Error).message }; }
@@ -65,8 +71,11 @@ export async function createEsignContractAction(_: EsignActionState, f: FormData
       contractDate: S(f, 'contractDate'),
       contractKind: S(f, 'contractKind'),
       insuranceSide: (S(f, 'insuranceSide') || '회사포함') as '회사포함' | '고객직접',
+      settlementRowId: S(f, 'settlementRowId') || undefined,
     }, await actor());
     revalidatePath('/esign');
+    const returnTo = S(f, 'returnTo');
+    if (returnTo.startsWith('/intake?')) redirect(returnTo);
     redirect('/esign?saved=' + encodeURIComponent(r.id) + '&v=list');
   } catch (e) {
     if ((e as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw e;

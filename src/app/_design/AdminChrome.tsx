@@ -30,13 +30,13 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <Brand />
         <TopMenu items={MENU} />
         <span className="fn-state">ERP5 freepasserp5 · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</span>
-        {/* 로그아웃 — 기능 쪽 logoutAction(쿠키 지우고 /login 으로). 폰에서도 작게 그대로 선다(이동 버튼이 아니라 계정 동작) */}
+        {/* 로그아웃 — Desktop 전용. Mobile 상단은 CI만 남기고 모든 버튼/이동을 숨긴다. */}
         {나 && <span className="dz-me">{나.name}</span>}
         <form action={logoutAction} className="dz-logout"><button type="submit">로그아웃</button></form>
       </nav>
       <main className="fn-main">{children}</main>
       {/*
-        ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
+        ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 실적 · 정산). 위 띠에는 어떤 버튼도 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
         depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
       */}

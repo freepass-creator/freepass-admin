@@ -35,6 +35,34 @@ export class FileApplicationRepository implements ApplicationRepository {
     });
   }
 
+  async createSequenced(
+    datePrefix: string,
+    submissionId: string,
+    build: (sequence: number) => Application,
+  ): Promise<{ application: Application; created: boolean }> {
+    type R = { application: Application; created: boolean };
+    return this.store.mutate<R>((rows) => {
+      const existing = rows.find((row) => row.submissionId === submissionId);
+      if (existing) return { rows, result: { application: existing, created: false } };
+
+      const sequence = rows.filter((row) => row.applicationNumber.startsWith(datePrefix)).length + 1;
+      const application = build(sequence);
+
+      if (application.submissionId !== submissionId) {
+        throw new Error('Application submissionId does not match the repository transaction key.');
+      }
+
+      if (rows.some((row) => row.applicationNumber === application.applicationNumber)) {
+        throw new Error(`Duplicate application number: ${application.applicationNumber}`);
+      }
+
+      return {
+        rows: [application, ...rows],
+        result: { application, created: true },
+      };
+    });
+  }
+
   async get(id: string): Promise<Application | null> {
     return (await this.store.all()).find((row) => row.id === id) ?? null;
   }

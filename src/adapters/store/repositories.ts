@@ -77,6 +77,18 @@ export class FileApplicationRepository implements ApplicationRepository {
     return [...rows].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
+  async mutate(id: string, change: (current: Application) => Application): Promise<Application> {
+    return this.store.mutate((rows) => {
+      const index = rows.findIndex((row) => row.id === id);
+      if (index < 0) throw new Error(`Application not found: ${id}`);
+      const updated = change(rows[index]);
+      if (updated.id !== id) throw new Error('Application mutation cannot change id.');
+      const next = [...rows];
+      next[index] = updated;
+      return { rows: next, result: updated };
+    });
+  }
+
   async update(application: Application): Promise<Application> {
     return this.store.mutate((rows) => {
       const index = rows.findIndex((row) => row.id === application.id);

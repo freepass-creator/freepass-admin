@@ -217,6 +217,23 @@ describe('진행과 취소', () => {
     assert.equal(r.ok && r.application.status, 'DELIVERED');
   });
 
+  it('서로 다른 진행 변경이 동시에 들어와도 한쪽이 사라지지 않는다', async () => {
+    const local = makeDeps('box-progress-race');
+    await local.products.save(product({ id: 'product-1', offers: [offer({ id: 'offer-36' })] }));
+    const submitted = await submitApplication(local, input({ submissionId: 'progress-race' }));
+    const localId = submitted.ok ? submitted.application.id : '';
+
+    await Promise.all([
+      markProgress(local, localId, 'documentsCompleted', true),
+      markProgress(local, localId, 'balanceCompleted', true),
+    ]);
+
+    const saved = await local.applications.get(localId);
+    assert.ok(saved);
+    assert.equal(saved.progress.documentsCompleted, true);
+    assert.equal(saved.progress.balanceCompleted, true);
+  });
+
   it('취소는 이유가 있어야 한다', async () => {
     const r = await cancel(deps, id, '   ');
     assert.equal(r.ok, false);

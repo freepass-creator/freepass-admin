@@ -1,3 +1,4 @@
+import { AppError } from '../errors';
 import { assertActor, type ActorRef } from '../security/actor';
 import type { Application, ApplicationProgress, ApplicationStatus } from './types';
 
@@ -18,7 +19,7 @@ export function updateApplicationProgress(
   actor: ActorRef,
 ): Application {
   if (application.status === 'CANCELLED') {
-    throw new Error('Cancelled applications cannot change progress.');
+    throw new AppError('CANCELLED', 'Cancelled applications cannot change progress.');
   }
 
   const before = application.progress[key];
@@ -52,7 +53,7 @@ export function cancelApplication(
   now: string,
   actor: ActorRef,
 ): Application {
-  if (!reason.trim()) throw new Error('Cancellation reason is required.');
+  if (!reason.trim()) throw new AppError('VALIDATION', 'Cancellation reason is required.');
   if (application.status === 'CANCELLED') return application;
   const safeActor = assertActor(actor);
   return {

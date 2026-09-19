@@ -131,7 +131,9 @@
       "실적",
       "정산"
     ],
-    "mobileDepthRule": "depth0 global tabs; depth1/2 hide global tabs and use panel ActionBar (secondary 3 : primary 7)"
+    "mobileDepthRule": "depth0 global icon+label bottom tabs; depth1/2 hide global tabs and use panel ActionBar; no top page buttons",
+    "mobileTop": "CI/title information only; no navigation/action/back/logout buttons",
+    "mobileBottom": "icon + 12px label; 상품/접수/계약/실적/정산"
   },
   "components": {
     "canonical": [
@@ -187,7 +189,6 @@
     "CSS exposes shared --ui-* aliases without changing current visual values",
     "ListRow dimensions route through shared UI tokens",
     "support text outliers in status/internal/article labels normalized to 12px",
-    "mobile back visual remains 32px but hit area is expanded to 44px",
     "core products/intake/settlement/esign routes use shared visual primitives",
     "CI runs typecheck, tests, and UI SSOT regression check",
     "globals.css legacy base layer is explicitly marked as non-authoritative",
@@ -203,7 +204,8 @@
     "badge/list/section icon names are partially compile-time constrained with IconName",
     "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT",
     "mobile primary navigation changed to 상품/접수/계약/실적/정산; settlement owns claim/pay internally",
-    "performance route separates 완납실적/분납실적 without creating a new data SSOT"
+    "performance route separates 완납실적/분납실적 without creating a new data SSOT",
+    "mobile top page actions/back/logout are hidden; bottom navigation is the only global mobile navigation"
   ],
   "automation": {
     "command": "npm run ui:check",

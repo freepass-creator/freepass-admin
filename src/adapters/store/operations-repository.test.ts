@@ -13,6 +13,7 @@ import {
 } from '../../domain/performance/performance';
 import {
   createBilling,
+  createSettlementClawback,
   createSettlementFromPerformance,
   getSettlementBalance,
   recordBillingInvoiceEvidence,
@@ -88,7 +89,23 @@ test('operations repository persists atomic settlement state across instances',a
       },
     ));
 
+    const clawback=createSettlementClawback(settlement,[],{
+      id:'clawback-store-1',
+      supplierAmount:500000,
+      reason:'유지조건 미충족',
+      occurredAt:'2026-10-20T00:00:00.000Z',
+      createdAt:'2026-10-20T00:00:00.000Z',
+      createdBy:'admin-1',
+    });
+    assert.equal((await second.ensureClawback(settlement.id,clawback)).created,true);
+    assert.equal((await second.ensureClawback(settlement.id,clawback)).created,false);
+
     const third=new FileOperationsRepository(dir);
+    const persistedClawbacks=await third.listClawbacks(settlement.id);
+    assert.equal(persistedClawbacks.length,1);
+    assert.equal(persistedClawbacks[0]?.supplierAmount,500000);
+    assert.equal(persistedClawbacks[0]?.channelAmount,350000);
+
     const ledger=await third.listLedger(settlement.id);
     assert.equal(getSettlementBalance(settlement,evidenced,ledger).collectionOutstanding,600000);
   }finally{

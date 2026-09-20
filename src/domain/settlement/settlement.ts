@@ -146,6 +146,7 @@ export function registerCollection(
   entry: LedgerEntry,
 ): LedgerEntry[] {
   if (!billing || billing.settlementId !== settlement.id) throw new Error('Billing must be created first.');
+  if (billing.status !== 'EVIDENCE_COMPLETE') throw new Error('Billing invoice evidence must be complete before collection.');
   if (entry.settlementId !== settlement.id || entry.account !== 'SUPPLIER_COLLECTION' || entry.kind !== 'CASH') {
     throw new Error('Invalid collection entry.');
   }

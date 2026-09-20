@@ -14,6 +14,7 @@ export const ADMIN_ACTION_BAR_LABELS={
     balance:'잔금 완료로 표시',
     delivery:'인도 완료로 표시',
     delivered:'실적·정산 열기',
+    deliveredCreate:'실적 생성 후 정산 열기',
   },
   performance:{
     salespersonSecondary:'이견 있음',

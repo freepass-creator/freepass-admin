@@ -3,6 +3,9 @@ import type { Performance } from '../performance/types';
 import type {
   BillingRecord,
   BillingInvoiceEvidence,
+  ClawbackItem,
+  ClawbackMoneyImpact,
+  ClawbackSummary,
   LedgerEntry,
   PayoutPolicy,
   SettlementBalance,
@@ -221,4 +224,110 @@ export function reverseLedgerEntry(
     throw new Error('Ledger entry is already reversed.');
   }
   return appendIdempotently(entries, reversal);
+}
+
+
+const VAT_RATE=0.1;
+
+function clawbackImpact(
+  amount:number,
+  vatMode:SettlementItem['vatMode'],
+):ClawbackMoneyImpact{
+  if(!Number.isSafeInteger(amount)||amount<=0){
+    throw new Error('Clawback amount must be a positive integer.');
+  }
+  if(vatMode==='INCLUDED'){
+    const net=Math.round(amount/(1+VAT_RATE));
+    return{net,vat:amount-net,total:amount};
+  }
+  const vat=Math.round(amount*VAT_RATE);
+  return{net:amount,vat,total:amount+vat};
+}
+
+export function getClawbackSummary(
+  settlement:SettlementItem,
+  clawbacks:ClawbackItem[],
+):ClawbackSummary{
+  const relevant=clawbacks.filter((item)=>item.settlementId===settlement.id);
+  const supplierClawback=relevant.reduce((sum,item)=>sum+item.supplierAmount,0);
+  const channelClawback=relevant.reduce((sum,item)=>sum+item.channelAmount,0);
+  return{
+    supplierClawback,
+    channelClawback,
+    supplierRemainingClawbackable:Math.max(0,settlement.supplierReceivable-supplierClawback),
+    channelRemainingClawbackable:Math.max(0,settlement.channelPayable-channelClawback),
+  };
+}
+
+export function createSettlementClawback(
+  settlement:SettlementItem,
+  existing:ClawbackItem[],
+  input:{
+    id:string;
+    supplierAmount:number;
+    channelAmount?:number;
+    reason:string;
+    occurredAt:string;
+    createdAt:string;
+    createdBy:string;
+  },
+):ClawbackItem{
+  const id=input.id.trim();
+  const reason=input.reason.trim();
+  const createdBy=input.createdBy.trim();
+  if(!id)throw new Error('Clawback id is required.');
+  if(!reason)throw new Error('Clawback reason is required.');
+  if(!createdBy)throw new Error('Clawback actor is required.');
+  if(Number.isNaN(Date.parse(input.occurredAt)))throw new Error('Clawback occurredAt must be an ISO date-time.');
+  if(Number.isNaN(Date.parse(input.createdAt)))throw new Error('Clawback createdAt must be an ISO date-time.');
+
+  const existingById=existing.find((item)=>item.id===id);
+  const summary=getClawbackSummary(settlement,existing);
+
+  if(!Number.isSafeInteger(input.supplierAmount)||input.supplierAmount<=0){
+    throw new Error('Supplier clawback amount must be a positive integer.');
+  }
+  if(input.supplierAmount>summary.supplierRemainingClawbackable){
+    throw new Error('Supplier clawback exceeds the remaining settlement amount.');
+  }
+
+  let channelAmount:number;
+  if(input.channelAmount!==undefined){
+    if(!Number.isSafeInteger(input.channelAmount)||input.channelAmount<0){
+      throw new Error('Channel clawback amount must be a non-negative integer.');
+    }
+    channelAmount=input.channelAmount;
+  }else{
+    const ratio=settlement.supplierReceivable>0
+      ?settlement.channelPayable/settlement.supplierReceivable
+      :0;
+    channelAmount=Math.round(input.supplierAmount*ratio);
+  }
+  if(channelAmount>summary.channelRemainingClawbackable){
+    throw new Error('Channel clawback exceeds the remaining settlement amount.');
+  }
+
+  const built:ClawbackItem={
+    id,
+    settlementId:settlement.id,
+    performanceId:settlement.performanceId,
+    applicationId:settlement.applicationId,
+    supplierAmount:input.supplierAmount,
+    channelAmount,
+    vatMode:settlement.vatMode,
+    supplierImpact:clawbackImpact(input.supplierAmount,settlement.vatMode),
+    channelImpact:channelAmount>0
+      ?clawbackImpact(channelAmount,settlement.vatMode)
+      :{net:0,vat:0,total:0},
+    reason,
+    occurredAt:input.occurredAt,
+    createdAt:input.createdAt,
+    createdBy,
+  };
+
+  if(existingById){
+    if(JSON.stringify(existingById)===JSON.stringify(built))return existingById;
+    throw new Error('IDEMPOTENCY_KEY_REUSE');
+  }
+  return built;
 }

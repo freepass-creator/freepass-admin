@@ -3,6 +3,7 @@ import type { Performance } from '../performance/types';
 import type {
   BillingRecord,
   BillingInvoiceEvidence,
+  ClawbackBillingAdjustment,
   ClawbackCashBalance,
   ClawbackItem,
   ClawbackMoneyImpact,
@@ -65,10 +66,9 @@ export function createBilling(settlement: SettlementItem, now: string): BillingR
   };
 }
 
-export function recordBillingInvoiceEvidence(
-  billing: BillingRecord,
+function normalizeBillingInvoiceEvidence(
   evidence: BillingInvoiceEvidence,
-): BillingRecord {
+): BillingInvoiceEvidence {
   const reference = evidence.reference.trim();
   const recordedBy = evidence.recordedBy.trim();
   const note = evidence.note?.trim();
@@ -82,13 +82,20 @@ export function recordBillingInvoiceEvidence(
     throw new Error('Billing invoice recordedAt must be an ISO date-time.');
   }
 
-  const normalized: BillingInvoiceEvidence = {
+  return {
     reference,
     issuedAt: evidence.issuedAt,
     recordedAt: evidence.recordedAt,
     recordedBy,
     ...(note ? { note } : {}),
   };
+}
+
+export function recordBillingInvoiceEvidence(
+  billing: BillingRecord,
+  evidence: BillingInvoiceEvidence,
+): BillingRecord {
+  const normalized=normalizeBillingInvoiceEvidence(evidence);
 
   if (billing.status === 'EVIDENCE_COMPLETE') {
     if (JSON.stringify(billing.invoiceEvidence) === JSON.stringify(normalized)) return billing;
@@ -452,4 +459,43 @@ export function createSettlementClawback(
     throw new Error('IDEMPOTENCY_KEY_REUSE');
   }
   return built;
+}
+
+
+export function createClawbackBillingAdjustment(
+  settlement:SettlementItem,
+  clawback:ClawbackItem,
+  now:string,
+):ClawbackBillingAdjustment{
+  if(clawback.settlementId!==settlement.id)throw new Error('CLAWBACK_SETTLEMENT_IDENTITY_MISMATCH');
+  return{
+    id:'clawback-billing:'+clawback.id,
+    settlementId:settlement.id,
+    clawbackId:clawback.id,
+    supplierId:settlement.supplierId,
+    direction:'CREDIT',
+    settlementAmount:clawback.supplierAmount,
+    netAmount:clawback.supplierImpact.net,
+    vatAmount:clawback.supplierImpact.vat,
+    totalAmount:clawback.supplierImpact.total,
+    status:'CREATED',
+    occurredAt:clawback.occurredAt,
+    createdAt:now,
+  };
+}
+
+export function recordClawbackBillingInvoiceEvidence(
+  adjustment:ClawbackBillingAdjustment,
+  evidence:BillingInvoiceEvidence,
+):ClawbackBillingAdjustment{
+  const normalized=normalizeBillingInvoiceEvidence(evidence);
+  if(adjustment.status==='EVIDENCE_COMPLETE'){
+    if(JSON.stringify(adjustment.invoiceEvidence)===JSON.stringify(normalized))return adjustment;
+    throw new Error('CLAWBACK_BILLING_EVIDENCE_ALREADY_RECORDED');
+  }
+  return{
+    ...adjustment,
+    status:'EVIDENCE_COMPLETE',
+    invoiceEvidence:normalized,
+  };
 }

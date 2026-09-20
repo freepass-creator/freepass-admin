@@ -282,7 +282,8 @@ export function createSettlementClawback(
   if(Number.isNaN(Date.parse(input.createdAt)))throw new Error('Clawback createdAt must be an ISO date-time.');
 
   const existingById=existing.find((item)=>item.id===id);
-  const summary=getClawbackSummary(settlement,existing);
+  const otherClawbacks=existing.filter((item)=>item.id!==id);
+  const summary=getClawbackSummary(settlement,otherClawbacks);
 
   if(!Number.isSafeInteger(input.supplierAmount)||input.supplierAmount<=0){
     throw new Error('Supplier clawback amount must be a positive integer.');

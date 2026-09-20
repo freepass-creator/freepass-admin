@@ -238,12 +238,12 @@ export async function reverseLedgerAction(formData:FormData){
   const id=s(formData.get('id'));
   const settlementId=s(formData.get('settlementId'));
   const account=s(formData.get('account'));
-  if(![
-    'SUPPLIER_COLLECTION',
-    'CHANNEL_PAYOUT',
-    'SUPPLIER_REFUND',
-    'CHANNEL_RECOVERY',
-  ].includes(account)){
+  if(
+    account!=='SUPPLIER_COLLECTION'
+    &&account!=='CHANNEL_PAYOUT'
+    &&account!=='SUPPLIER_REFUND'
+    &&account!=='CHANNEL_RECOVERY'
+  ){
     redirect(href(id,'INVALID_LEDGER_ACCOUNT'));
   }
   try{

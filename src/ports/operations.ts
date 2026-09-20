@@ -24,6 +24,10 @@ export interface OperationsRepository {
     create: () => BillingRecord,
   ): Promise<{ billing: BillingRecord; created: boolean }>;
   getBillingBySettlementId(settlementId: string): Promise<BillingRecord | null>;
+  mutateBilling(
+    settlementId: string,
+    change: (current: BillingRecord) => BillingRecord,
+  ): Promise<BillingRecord>;
 
   listLedger(settlementId: string): Promise<LedgerEntry[]>;
   mutateLedger(

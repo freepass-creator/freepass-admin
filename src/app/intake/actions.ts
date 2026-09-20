@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { cancel, markProgress, submitApplication } from '../../services/applications';
 import type { ProgressKey } from '../../domain/application/update-progress';
 import { adminActorProvider, adminRepositories } from '../../server/admin-runtime';
+import { adminOperations } from '../../server/admin-operations';
+import { ensurePerformanceForApplication } from '../../services/settlement-operations';
 
 const s=(value:FormDataEntryValue|null)=>String(value??'').trim();
 
@@ -58,7 +60,28 @@ export async function setIntakeProgress(formData:FormData){
   if(!['contractCompleted','documentsCompleted','balanceCompleted','deliveryCompleted'].includes(key)){
     throw new Error('Unknown application progress key.');
   }
-  await markProgress(deps(),id,key,completed);
+
+  const operations=adminOperations();
+  if(key==='deliveryCompleted'&&!completed){
+    const existing=await operations.getPerformance('performance:'+id);
+    if(existing){
+      redirect('/intake?id='+encodeURIComponent(id)+'&error='+encodeURIComponent('실적이 이미 생성된 접수는 인도 완료를 되돌릴 수 없습니다.'));
+    }
+  }
+
+  const d=deps();
+  const result=await markProgress(d,id,key,completed);
+
+  if(key==='deliveryCompleted'&&completed&&result.ok){
+    const performance=await ensurePerformanceForApplication({
+      applications:d.applications,
+      operations,
+      actors:d.actors,
+      now:d.now,
+    },id);
+    redirect('/settlement?id='+encodeURIComponent(performance.performance.id)+'&created='+(performance.created?'1':'replay'));
+  }
+
   redirect('/intake?id='+encodeURIComponent(id));
 }
 

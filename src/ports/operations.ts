@@ -1,5 +1,5 @@
 import type { Performance } from '../domain/performance/types';
-import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../domain/settlement/types';
+import type { BillingRecord, ClawbackBillingAdjustment, ClawbackItem, LedgerEntry, SettlementItem } from '../domain/settlement/types';
 
 export interface OperationsRepository {
   ensurePerformance(candidate: Performance): Promise<{ performance: Performance; created: boolean }>;
@@ -24,6 +24,16 @@ export interface OperationsRepository {
     candidate: ClawbackItem,
   ): Promise<{ clawback: ClawbackItem; created: boolean }>;
   listClawbacks(settlementId: string): Promise<ClawbackItem[]>;
+
+  ensureClawbackBilling(
+    clawbackId: string,
+    create: () => ClawbackBillingAdjustment,
+  ): Promise<{ adjustment: ClawbackBillingAdjustment; created: boolean }>;
+  getClawbackBillingByClawbackId(clawbackId: string): Promise<ClawbackBillingAdjustment | null>;
+  mutateClawbackBilling(
+    clawbackId: string,
+    change: (current: ClawbackBillingAdjustment) => ClawbackBillingAdjustment,
+  ): Promise<ClawbackBillingAdjustment>;
 
   ensureBilling(
     settlementId: string,

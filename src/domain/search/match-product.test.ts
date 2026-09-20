@@ -105,3 +105,25 @@ test('product and offer policy resolution is explicit and offer overrides same p
   assert.ok(matchProduct(overridden,{policies:[{policyId:'pay-time',anyOf:['POSTPAID']}]}));
   assert.equal(matchProduct(overridden,{policies:[{policyId:'pay-time',anyOf:['PREPAID']}]}),null);
 });
+
+
+test('supplier filtering follows the same selected Offer when one product has multiple suppliers',()=>{
+  const multi=product({
+    id:'multi-supplier',
+    vehicle:dn8.vehicle,
+    supplierId:'',
+    offers:[
+      offer({id:'s1-36',supplierId:'supplier-a',termMonths:36,monthlyRent:650000,deposit:0}),
+      offer({id:'s2-36',supplierId:'supplier-b',termMonths:36,monthlyRent:640000,deposit:0}),
+    ],
+  });
+
+  assert.deepEqual(
+    matchProduct(multi,{supplierIds:['supplier-b'],termMonths:[36]})?.matchedOfferIds,
+    ['s2-36'],
+  );
+  assert.equal(
+    matchProduct(multi,{supplierIds:['supplier-c'],termMonths:[36]}),
+    null,
+  );
+});

@@ -99,7 +99,7 @@ test('인도→실적→금액확정→영업채널확인→공급사확인→�
     channelPayable:1100000,
     vatMode:'EXCLUDED',
   },t1);
-  performance=confirmBySalesperson(performance,'channel-1','admin-1',t1);
+  performance=confirmBySalesperson(performance,'online','admin-1',t1);
   performance=confirmBySupplier(performance,'supplier-1','admin-1',t1);
 
   const finalized=createSettlementFromPerformance(performance,t1);
@@ -137,7 +137,7 @@ test('수금/지급 원장은 같은 id 다른 금액 재사용을 막고 revers
   performance=confirmBySupplier(
     confirmBySalesperson(
       setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1),
-      'channel-1','admin-1',t1,
+      'online','admin-1',t1,
     ),
     'supplier-1','admin-1',t1,
   );
@@ -168,7 +168,7 @@ test('완납 후 지급정책에서는 지급을 먼저 되돌려야 수금 reve
   performance=confirmBySupplier(
     confirmBySalesperson(
       setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1),
-      'channel-1','admin-1',t1,
+      'online','admin-1',t1,
     ),
     'supplier-1','admin-1',t1,
   );
@@ -201,22 +201,30 @@ test('완납 후 지급정책에서는 지급을 먼저 되돌려야 수금 reve
   assert.equal(balance.paid,0);
 });
 
+test('영업채널·공급사 검토 주체는 접수 snapshot과 다르면 거부한다',()=>{
+  let performance=createPerformanceFromDelivery(deliveredApplication());
+  performance=setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1);
+  assert.throws(()=>confirmBySalesperson(performance,'other-channel','admin-1',t1),/SALESPERSON_PARTY_MISMATCH/);
+  performance=confirmBySalesperson(performance,'online','admin-1',t1);
+  assert.throws(()=>confirmBySupplier(performance,'other-supplier','admin-1',t1),/SUPPLIER_PARTY_MISMATCH/);
+});
+
 test('금액 이견은 자동 확정하지 않고 재확인 또는 명시적 해결을 요구한다',()=>{
   let performance=createPerformanceFromDelivery(deliveredApplication());
   performance=setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1);
-  performance=confirmBySalesperson(performance,'channel-1','admin-1',t1);
+  performance=confirmBySalesperson(performance,'online','admin-1',t1);
   performance=registerSupplierIssue(
     performance,'supplier-1','admin-1','공급사 정산표와 다름',
     {supplierReceivable:950000,channelPayable:650000,vatMode:'INCLUDED'},t1,
   );
   assert.equal(performance.status,'AWAITING_SALESPERSON_RECONFIRMATION');
   assert.throws(()=>createSettlementFromPerformance(performance,t1),/not complete/);
-  performance=reconfirmBySalesperson(performance,'channel-1','admin-1',t1);
+  performance=reconfirmBySalesperson(performance,'online','admin-1',t1);
   assert.equal(performance.status,'READY_TO_FINALIZE');
 
   let disputed=createPerformanceFromDelivery(deliveredApplication());
   disputed=setSettlementAmounts(disputed,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1);
-  disputed=disputeBySalesperson(disputed,'channel-1','admin-1','채널 금액 이견',t1);
+  disputed=disputeBySalesperson(disputed,'online','admin-1','채널 금액 이견',t1);
   disputed=confirmBySupplier(disputed,'supplier-1','admin-1',t1);
   assert.equal(disputed.status,'SUPPLIER_ISSUE');
   disputed=resolveOpenIssue(disputed,'admin-1','증빙 대조 후 합의',t1);
@@ -229,7 +237,7 @@ test('청구 생성만으로는 수금할 수 없고 계산서 증빙 완료 후
   performance=confirmBySupplier(
     confirmBySalesperson(
       setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'EXCLUDED'},t1),
-      'channel-1','admin-1',t1,
+      'online','admin-1',t1,
     ),
     'supplier-1','admin-1',t1,
   );
@@ -267,7 +275,7 @@ test('자동추천 산출근거는 정산확정까지 고정되고 수동 수정
   );
   assert.equal(performance.pricingEvidence?.ruleId,'웰릭스|재렌트|ANY|36|대여료×기간');
 
-  performance=confirmBySalesperson(performance,'channel-1','admin-1',t1);
+  performance=confirmBySalesperson(performance,'online','admin-1',t1);
   performance=confirmBySupplier(performance,'supplier-1','admin-1',t1);
   const finalized=createSettlementFromPerformance(performance,t1);
   assert.equal(

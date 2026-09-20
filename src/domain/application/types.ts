@@ -1,4 +1,4 @@
-import type { Offer, PolicyValue, VehicleMasterRef, VehicleSpecs } from '../product/types';
+import type { Offer, PolicyValue, RegistrationInfo, VehicleMasterRef, VehicleSpecs } from '../product/types';
 import type { ActorRef } from '../security/actor';
 
 export type ApplicationStatus = 'RECEIVED' | 'CONTRACTED' | 'DELIVERED' | 'CANCELLED';
@@ -43,6 +43,9 @@ export type ApplicationHistoryEvent =
  *
  * ★`productVersion` 이 핵심이다 — 이게 없으면 나중에 상품과 어긋났을 때
  *   「지금과 다르다」는 것만 알고 «어느 판을 보고 받았는지» 를 모른다.
+ *
+ * ★정산까지 이어지므로 차량번호/VIN 같은 등록 식별자도 접수 당시 값으로 보존한다.
+ *   차량번호는 검색·대조용이고 applicationId/performanceId/settlementCode가 시스템 키다.
  */
 export interface ApplicationProductSnapshot {
   productId: string;
@@ -50,6 +53,7 @@ export interface ApplicationProductSnapshot {
   supplierId: string;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;
+  registration?: RegistrationInfo;
   /** 검색에서 «고른 그 Offer» 하나. 다른 Offer 의 값을 섞지 않는다. */
   offer: Offer;
   productPolicies: PolicyValue[];

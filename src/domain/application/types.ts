@@ -1,4 +1,4 @@
-import type { Offer, PolicyValue, VehicleMasterRef, VehicleSpecs } from '../product/types';
+import type { Offer, PolicyValue, RegistrationInfo, VehicleMasterRef, VehicleSpecs } from '../product/types';
 import type { ActorRef } from '../security/actor';
 
 export type ApplicationStatus = 'RECEIVED' | 'CONTRACTED' | 'DELIVERED' | 'CANCELLED';
@@ -50,6 +50,8 @@ export interface ApplicationProductSnapshot {
   supplierId: string;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;
+  /** 접수 당시 실차 등록정보. 과거 접수에는 없을 수 있다. */
+  registration?: RegistrationInfo;
   /** 검색에서 «고른 그 Offer» 하나. 다른 Offer 의 값을 섞지 않는다. */
   offer: Offer;
   productPolicies: PolicyValue[];

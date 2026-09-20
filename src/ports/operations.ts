@@ -1,5 +1,5 @@
 import type { Performance } from '../domain/performance/types';
-import type { BillingRecord, LedgerEntry, SettlementItem } from '../domain/settlement/types';
+import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../domain/settlement/types';
 
 export interface OperationsRepository {
   ensurePerformance(candidate: Performance): Promise<{ performance: Performance; created: boolean }>;
@@ -18,6 +18,12 @@ export interface OperationsRepository {
   getSettlement(id: string): Promise<SettlementItem | null>;
   findSettlementByPerformanceId(performanceId: string): Promise<SettlementItem | null>;
   listSettlements(): Promise<SettlementItem[]>;
+
+  ensureClawback(
+    settlementId: string,
+    candidate: ClawbackItem,
+  ): Promise<{ clawback: ClawbackItem; created: boolean }>;
+  listClawbacks(settlementId: string): Promise<ClawbackItem[]>;
 
   ensureBilling(
     settlementId: string,

@@ -17,7 +17,7 @@ function clonePolicyValue(policy: PolicyValue): PolicyValue {
     : { ...policy };
 }
 
-function cloneSnapshot(snapshot: ApplicationProductSnapshot): ApplicationProductSnapshot {
+export function cloneApplicationProductSnapshot(snapshot: ApplicationProductSnapshot): ApplicationProductSnapshot {
   return {
     ...snapshot,
     vehicle: { ...snapshot.vehicle },
@@ -68,7 +68,7 @@ export function createNormalPerformance(input: CreateNormalPerformanceInput): Pe
     applicantName: input.application.applicantName,
     salesChannelId: input.application.salesChannelId,
     assigneeId: input.application.assigneeId,
-    snapshot: cloneSnapshot(input.application.snapshot),
+    snapshot: cloneApplicationProductSnapshot(input.application.snapshot),
     occurredAt: deliveredAt(input.application),
     createdAt: input.now,
   };

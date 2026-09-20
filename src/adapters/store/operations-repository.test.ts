@@ -15,6 +15,7 @@ import {
   createBilling,
   createSettlementFromPerformance,
   getSettlementBalance,
+  recordBillingInvoiceEvidence,
   registerCollection,
 } from '../../domain/settlement/settlement';
 import type { CanonicalProduct } from '../../domain/product/types';
@@ -73,8 +74,15 @@ test('operations repository persists atomic settlement state across instances',a
 
     if(!settlement)throw new Error('fixture');
     const billing=(await second.ensureBilling(settlement.id,()=>createBilling(settlement,t1))).billing;
+    const evidenced=await second.mutateBilling(settlement.id,(current)=>recordBillingInvoiceEvidence(current,{
+      reference:'INV-STORE-001',
+      issuedAt:'2026-09-20',
+      recordedAt:t1,
+      recordedBy:'admin-1',
+    }));
+    assert.equal(evidenced.status,'EVIDENCE_COMPLETE');
     await second.mutateLedger(settlement.id,(entries)=>registerCollection(
-      settlement,billing,entries,{
+      settlement,evidenced,entries,{
         id:'c1',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',kind:'CASH',
         amount:400000,occurredAt:t1,actorId:'admin-1',
       },
@@ -82,7 +90,7 @@ test('operations repository persists atomic settlement state across instances',a
 
     const third=new FileOperationsRepository(dir);
     const ledger=await third.listLedger(settlement.id);
-    assert.equal(getSettlementBalance(settlement,billing,ledger).collectionOutstanding,600000);
+    assert.equal(getSettlementBalance(settlement,evidenced,ledger).collectionOutstanding,600000);
   }finally{
     await rm(dir,{recursive:true,force:true});
   }

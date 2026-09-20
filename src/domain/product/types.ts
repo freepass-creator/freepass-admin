@@ -29,13 +29,17 @@ export interface RegistrationInfo {
 
 export interface Offer {
   id: string;
+  /**
+   * 공급사가 실제 제공하는 계약 기간. 고정 enum이 아니다.
+   * 동일 termMonths에 주행거리/보증금/가격/정책이 다른 Offer를 여러 건 둘 수 있다.
+   */
+  termMonths: number;
   /** 선택한 Offer의 공급사. 없으면 legacy product.supplierId를 사용한다. */
   supplierId?: string;
   /** FreePass Data 등 upstream Offer/PriceTerm을 다시 가리키기 위한 provenance. */
   sourceOfferId?: string;
   sourceOfferRevision?: number;
   sourcePriceTermKey?: string;
-  termMonths: number;
   monthlyRent: number;
   deposit?: number;
   /** Data contract semantics. Legacy sources may omit it. */

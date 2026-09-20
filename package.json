@@ -10,7 +10,8 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "products:import": "tsx scripts/import-canonical-products.mts",
     "admin:readiness": "tsx scripts/check-admin-readiness.mts",
-    "admin:smoke": "tsx scripts/admin-vertical-smoke.mts"
+    "admin:smoke": "tsx scripts/admin-vertical-smoke.mts",
+    "admin:data-shadow": "tsx scripts/admin-data-shadow.mts"
   },
   "dependencies": {
     "next": "16.1.6",

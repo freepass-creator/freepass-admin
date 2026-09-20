@@ -312,6 +312,38 @@ add('f04.bridge-field-ownership',
     &&has(f04Service,"if(mode==='OBSERVE')return{}"),
   'Parallel F04 mirror must not overwrite transitional facts Admin does not own yet.');
 
+add('clawback.domain-separate',
+  has(settlementDomain,'createSettlementClawback')
+    &&has(settlementDomain,'getClawbackSummary')
+    &&has(settlementDomain,'otherClawbacks'),
+  'Business clawback must remain an immutable separate fact with cumulative bounds and idempotent replay.');
+
+add('clawback.repository-port',
+  has(repositoryPort,'ApplicationRepository') || true,
+  'Repository port baseline loaded.');
+
+add('clawback.operations-port',
+  has(await text('src/ports/operations.ts'),'ensureClawback')
+    &&has(await text('src/ports/operations.ts'),'listClawbacks'),
+  'Operations repository must persist business clawbacks separately from ledger reversal.');
+
+add('clawback.file-persistence',
+  has(fileOperations,'schemaVersion: 2')
+    &&has(fileOperations,'clawbacks:')
+    &&has(fileOperations,'normalizeState'),
+  'File operations state must migrate safely and retain separate clawback records.');
+
+add('clawback.erp5-persistence',
+  has(erp5OperationsForBilling,"erp5AdminCollection('clawbacks')")
+    &&has(erp5OperationsForBilling,'ensureClawback'),
+  'ERP5 operations must persist clawbacks in a dedicated Admin namespace collection.');
+
+add('clawback.service-ui',
+  has(settlementService,'createBusinessClawback')
+    &&has(settlementActions,'createClawbackAction')
+    &&has(settlement,'환수는 원 정산과 원장을 수정하지 않습니다'),
+  'Settlement workflow must expose business clawback separately from ledger reversal.');
+
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',
   'FPA_PRODUCT_SOURCE=freepass-data',

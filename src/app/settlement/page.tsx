@@ -16,12 +16,14 @@ import {
   confirmSupplierAction,
   createBillingAction,
   createClawbackAction,
+  createClawbackBillingAction,
   disputeSales,
   finalizeAction,
   payoutAction,
   channelRecoveryAction,
   reconfirmSales,
   recordBillingEvidenceAction,
+  recordClawbackBillingEvidenceAction,
   resolveIssue,
   reverseLedgerAction,
   saveAmounts,
@@ -94,6 +96,13 @@ export default async function SettlementPage({searchParams}:{
   const billing=settlement?await operations.getBillingBySettlementId(settlement.id):null;
   const ledger=settlement?await operations.listLedger(settlement.id):[];
   const clawbacks=settlement?await operations.listClawbacks(settlement.id):[];
+  const clawbackBillingRows=await Promise.all(
+    clawbacks.map(async(item)=>[
+      item.id,
+      await operations.getClawbackBillingByClawbackId(item.id),
+    ] as const),
+  );
+  const clawbackBillingById=new Map(clawbackBillingRows);
   const balance=settlement?getSettlementBalance(settlement,billing??undefined,ledger):null;
   const clawbackSummary=settlement?getClawbackSummary(settlement,clawbacks):null;
   const netBalance=settlement
@@ -269,10 +278,20 @@ export default async function SettlementPage({searchParams}:{
                 <div><dt>영업채널 누적 환수</dt><dd>-{won(clawbackSummary.channelClawback)}</dd></div>
                 <div><dt>영업채널 환수 후 순액</dt><dd>{won((settlement?.channelPayable??0)-clawbackSummary.channelClawback)}</dd></div>
               </dl>
-              {clawbacks.map((item)=><div key={item.id} className="work-hint">
-                <b>{item.occurredAt} · 공급사 -{won(item.supplierAmount)} · 영업채널 -{won(item.channelAmount)}</b>
-                <span>{item.reason} · {item.createdBy}</span>
-              </div>)}
+              {clawbacks.map((item)=>{
+                const adjustment=clawbackBillingById.get(item.id);
+                return <div key={item.id} className="work-hint">
+                  <b>{item.occurredAt} · 공급사 -{won(item.supplierAmount)} · 영업채널 -{won(item.channelAmount)}</b>
+                  <span>{item.reason} · {item.createdBy}</span>
+                  <span>
+                    계산서 조정 {adjustment
+                      ?adjustment.status==='EVIDENCE_COMPLETE'
+                        ?'증빙완료 · '+(adjustment.invoiceEvidence?.reference??'')
+                        :'생성됨 · 증빙대기'
+                      :'미생성'}
+                  </span>
+                </div>;
+              })}
             </>}
           </>:null}
         </>:<p>왼쪽에서 실적을 선택하세요.</p>}
@@ -399,8 +418,27 @@ export default async function SettlementPage({searchParams}:{
                 cash.channelRecoveryRemaining,
                 netBalance.channelRecoveryOutstanding,
               );
+              const adjustment=clawbackBillingById.get(item.id);
               return <div key={'cash:'+item.id} className="work-hint">
-                <b>환수 현금처리 · {item.reason}</b>
+                <b>환수 처리 · {item.reason}</b>
+                <span>
+                  조정 공급가 {won(item.supplierImpact.net)} · VAT {won(item.supplierImpact.vat)}
+                  {' · '}조정 합계 {won(item.supplierImpact.total)}
+                </span>
+                {!adjustment?<form action={createClawbackBillingAction} className="form-stack">
+                  <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="settlementId" value={settlement.id}/>
+                  <input type="hidden" name="clawbackId" value={item.id}/>
+                  <button type="submit">환수 계산서 조정 생성</button>
+                </form>:adjustment.status==='CREATED'?<form action={recordClawbackBillingEvidenceAction} className="form-stack">
+                  <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="settlementId" value={settlement.id}/>
+                  <input type="hidden" name="clawbackId" value={item.id}/>
+                  <label>조정 증빙번호<input name="reference" required/></label>
+                  <label>발행일<input name="issuedAt" required type="date"/></label>
+                  <label>메모<input name="note"/></label>
+                  <button type="submit">환수 계산서 증빙 완료</button>
+                </form>:<span>환수 계산서 증빙 완료 · {adjustment.invoiceEvidence?.reference}</span>}
                 <span>
                   공급사 환불 {won(cash.supplierRefunded)}/{won(cash.supplierTarget)}
                   {' · '}

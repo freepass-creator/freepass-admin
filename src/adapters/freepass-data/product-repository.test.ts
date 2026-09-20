@@ -15,6 +15,9 @@ const payload:FreePassDataAdminCatalogResponse={
     revision:17,
     generatedAt:'2026-09-21T00:00:00.000Z',
     activatedAt:'2026-09-21T00:01:00.000Z',
+    policyParity:'COMPLETE',
+    missingPolicyOfferIds:[],
+    invalidPolicyFactRefs:[],
   },
   data:[{
     productId:'product-1',
@@ -28,7 +31,8 @@ const payload:FreePassDataAdminCatalogResponse={
       origin:'KR',
       maker:'현대',
       model:'싼타페',
-      generation:'MX5',
+      generation:'5세대',
+      subModel:'MX5',
       trim:'캘리그래피',
       fuel:'하이브리드',
       drive:'AWD',
@@ -106,6 +110,7 @@ test('FreePass Data projection maps one Product with supplier-specific flattened
   assert.equal(product.registration?.vehicleNumber,'123하4567');
   assert.equal(product.registration?.vin,'KMH-DATA-VIN');
   assert.equal(product.vehicle.nodeId,'vm-santafe-mx5-calligraphy');
+  assert.equal(product.vehicle.generationId,'5세대');
   assert.equal(product.vehicle.subModelId,'MX5');
   assert.equal(product.vehicle.trimId,'캘리그래피');
   assert.equal(product.offers.length,3);
@@ -169,4 +174,33 @@ test('production Data source requires an explicit service credential',()=>{
     }),
     /FREEPASS_DATA_SERVICE_TOKEN_REQUIRED/,
   );
+});
+
+
+test('Data adapter blocks incomplete policy parity by default but allows explicit shadow mode',async()=>{
+  const incomplete={
+    ...payload,
+    meta:{
+      ...payload.meta,
+      policyParity:'INCOMPLETE' as const,
+      missingPolicyOfferIds:['offer-a'],
+    },
+  };
+  const incompleteFetcher=async()=>new Response(JSON.stringify(incomplete),{status:200});
+
+  const runtimeRepo=new FreePassDataProductRepository(
+    'https://data.example',
+    undefined,
+    incompleteFetcher,
+  );
+  await assert.rejects(()=>runtimeRepo.list(),/FREEPASS_DATA_POLICY_PARITY_INCOMPLETE/);
+
+  const shadowRepo=new FreePassDataProductRepository(
+    'https://data.example',
+    undefined,
+    incompleteFetcher,
+    '/v1/views/admin-catalog/products',
+    true,
+  );
+  assert.equal((await shadowRepo.list()).length,1);
 });

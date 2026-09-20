@@ -3,6 +3,7 @@ import type { Performance } from '../performance/types';
 import type {
   BillingRecord,
   BillingInvoiceEvidence,
+  ClawbackCashBalance,
   ClawbackItem,
   ClawbackMoneyImpact,
   ClawbackSummary,
@@ -10,6 +11,7 @@ import type {
   PayoutPolicy,
   SettlementBalance,
   SettlementItem,
+  SettlementNetBalance,
 } from './types';
 
 function money(value: number | null, label: string): number {
@@ -148,6 +150,7 @@ export function registerCollection(
   billing: BillingRecord | undefined,
   entries: LedgerEntry[],
   entry: LedgerEntry,
+  clawbacks: ClawbackItem[] = [],
 ): LedgerEntry[] {
   if (!billing || billing.settlementId !== settlement.id) throw new Error('Billing must be created first.');
   if (billing.status !== 'EVIDENCE_COMPLETE') throw new Error('Billing invoice evidence must be complete before collection.');
@@ -155,7 +158,7 @@ export function registerCollection(
     throw new Error('Invalid collection entry.');
   }
   if (entries.some((candidate) => candidate.id === entry.id)) return appendIdempotently(entries, entry);
-  assertAmount(entry.amount, getSettlementBalance(settlement, billing, entries).collectionOutstanding);
+  assertAmount(entry.amount, getSettlementNetBalance(settlement, billing, entries, clawbacks).collectionOutstanding);
   return appendIdempotently(entries, entry);
 }
 
@@ -165,14 +168,18 @@ export function registerPayout(
   entries: LedgerEntry[],
   entry: LedgerEntry,
   policy: PayoutPolicy,
+  clawbacks: ClawbackItem[] = [],
 ): LedgerEntry[] {
   if (entry.settlementId !== settlement.id || entry.account !== 'CHANNEL_PAYOUT' || entry.kind !== 'CASH') {
     throw new Error('Invalid payout entry.');
   }
   if (entries.some((candidate) => candidate.id === entry.id)) return appendIdempotently(entries, entry);
 
-  const balance = getSettlementBalance(settlement, billing, entries);
-  if (policy === 'AFTER_FULL_COLLECTION' && (!billing || balance.collectionOutstanding > 0)) {
+  const balance = getSettlementNetBalance(settlement, billing, entries, clawbacks);
+  if (
+    policy === 'AFTER_FULL_COLLECTION'
+    && (!billing || balance.collectionOutstanding > 0 || balance.supplierRefundOutstanding > 0)
+  ) {
     throw new Error('Payout is blocked until collection is complete.');
   }
   assertAmount(entry.amount, balance.payoutOutstanding);
@@ -203,6 +210,9 @@ export function reverseLedgerEntry(
     throw new Error('Original ledger entry was not found.');
   }
   if (reversal.amount !== original.amount) throw new Error('Reversal amount must match the original entry.');
+  if ((reversal.clawbackId ?? undefined) !== (original.clawbackId ?? undefined)) {
+    throw new Error('Reversal clawback identity must match the original entry.');
+  }
 
   if (payoutPolicy === 'AFTER_FULL_COLLECTION' && original.account === 'SUPPLIER_COLLECTION') {
     const reversed = new Set(
@@ -257,6 +267,117 @@ export function getClawbackSummary(
     supplierRemainingClawbackable:Math.max(0,settlement.supplierReceivable-supplierClawback),
     channelRemainingClawbackable:Math.max(0,settlement.channelPayable-channelClawback),
   };
+}
+
+export function getClawbackCashBalance(
+  clawback:ClawbackItem,
+  entries:LedgerEntry[],
+):ClawbackCashBalance{
+  const relevant=entries.filter((entry)=>
+    entry.settlementId===clawback.settlementId
+    &&entry.clawbackId===clawback.id,
+  );
+  const supplierRefunded=sum(relevant,'SUPPLIER_REFUND');
+  const channelRecovered=sum(relevant,'CHANNEL_RECOVERY');
+  return{
+    supplierTarget:clawback.supplierAmount,
+    supplierRefunded,
+    supplierRefundRemaining:Math.max(0,clawback.supplierAmount-supplierRefunded),
+    channelTarget:clawback.channelAmount,
+    channelRecovered,
+    channelRecoveryRemaining:Math.max(0,clawback.channelAmount-channelRecovered),
+  };
+}
+
+export function getSettlementNetBalance(
+  settlement:SettlementItem,
+  billing:BillingRecord|undefined,
+  entries:LedgerEntry[],
+  clawbacks:ClawbackItem[],
+):SettlementNetBalance{
+  const relevant=entries.filter((entry)=>entry.settlementId===settlement.id);
+  const summary=getClawbackSummary(settlement,clawbacks);
+  const collected=sum(relevant,'SUPPLIER_COLLECTION');
+  const supplierRefunded=sum(relevant,'SUPPLIER_REFUND');
+  const paid=sum(relevant,'CHANNEL_PAYOUT');
+  const channelRecovered=sum(relevant,'CHANNEL_RECOVERY');
+
+  const netReceivable=Math.max(0,settlement.supplierReceivable-summary.supplierClawback);
+  const netPayable=Math.max(0,settlement.channelPayable-summary.channelClawback);
+  const netCollected=collected-supplierRefunded;
+  const netPaid=paid-channelRecovered;
+
+  return{
+    originalReceivable:settlement.supplierReceivable,
+    supplierClawback:summary.supplierClawback,
+    netReceivable,
+    collected,
+    supplierRefunded,
+    netCollected,
+    collectionOutstanding:Math.max(0,netReceivable-netCollected),
+    supplierRefundOutstanding:Math.max(0,netCollected-netReceivable),
+
+    originalPayable:settlement.channelPayable,
+    channelClawback:summary.channelClawback,
+    netPayable,
+    paid,
+    channelRecovered,
+    netPaid,
+    payoutOutstanding:Math.max(0,netPayable-netPaid),
+    channelRecoveryOutstanding:Math.max(0,netPaid-netPayable),
+
+    netMargin:netReceivable-netPayable,
+  };
+}
+
+export function registerSupplierRefund(
+  settlement:SettlementItem,
+  billing:BillingRecord|undefined,
+  clawbacks:ClawbackItem[],
+  clawback:ClawbackItem,
+  entries:LedgerEntry[],
+  entry:LedgerEntry,
+):LedgerEntry[]{
+  if(
+    entry.settlementId!==settlement.id
+    ||entry.clawbackId!==clawback.id
+    ||entry.account!=='SUPPLIER_REFUND'
+    ||entry.kind!=='CASH'
+  ){
+    throw new Error('Invalid supplier refund entry.');
+  }
+  if(entries.some((candidate)=>candidate.id===entry.id))return appendIdempotently(entries,entry);
+
+  const specific=getClawbackCashBalance(clawback,entries);
+  const net=getSettlementNetBalance(settlement,billing,entries,clawbacks);
+  const allowed=Math.min(specific.supplierRefundRemaining,net.supplierRefundOutstanding);
+  assertAmount(entry.amount,allowed);
+  return appendIdempotently(entries,entry);
+}
+
+export function registerChannelRecovery(
+  settlement:SettlementItem,
+  billing:BillingRecord|undefined,
+  clawbacks:ClawbackItem[],
+  clawback:ClawbackItem,
+  entries:LedgerEntry[],
+  entry:LedgerEntry,
+):LedgerEntry[]{
+  if(
+    entry.settlementId!==settlement.id
+    ||entry.clawbackId!==clawback.id
+    ||entry.account!=='CHANNEL_RECOVERY'
+    ||entry.kind!=='CASH'
+  ){
+    throw new Error('Invalid channel recovery entry.');
+  }
+  if(entries.some((candidate)=>candidate.id===entry.id))return appendIdempotently(entries,entry);
+
+  const specific=getClawbackCashBalance(clawback,entries);
+  const net=getSettlementNetBalance(settlement,billing,entries,clawbacks);
+  const allowed=Math.min(specific.channelRecoveryRemaining,net.channelRecoveryOutstanding);
+  assertAmount(entry.amount,allowed);
+  return appendIdempotently(entries,entry);
 }
 
 export function createSettlementClawback(

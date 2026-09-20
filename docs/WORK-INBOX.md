@@ -450,7 +450,7 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 
 ### Data 쪽 계약
 - repo: `freepass-creator/freepass-data`
-- PR #9: Admin Catalog Consumer Contract V1
+- PR #12: Admin Catalog Projection V1
 - schema: `freepass-data.admin-catalog/v1`
 - endpoint target: `/v1/views/admin-catalog/products`
 - 현재 상태: CONTRACT LOCKED / ENDPOINT NOT ACTIVE
@@ -492,7 +492,7 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 
 ### Data
 - Catalog read source와 Admin writer 분리 유지
-- Data PR #9 consumer contract가 최신 main 위에서 mergeable 상태
+- Data PR #12 consumer contract가 최신 main 위에서 mergeable 상태
 - `commercialType`, `vehiclePrice`, Offer/PriceTerm provenance, depositState를 정산 입력까지 보존
 - `admin:data-shadow` parity에 commercial pricing facts 포함
 

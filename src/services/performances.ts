@@ -1,6 +1,5 @@
-import { datePrefix } from '../domain/application/application-number';
 import { createNormalPerformance } from '../domain/performance/create-performance';
-import { performanceNumber } from '../domain/performance/performance-number';
+import { performanceDatePrefix, performanceNumber } from '../domain/performance/performance-number';
 import type { Performance } from '../domain/performance/types';
 import type { ApplicationRepository, PerformanceRepository } from '../ports/repositories';
 
@@ -37,7 +36,7 @@ export async function ensureNormalPerformance(
   if (existing) return { ok: true, performance: existing, created: false };
 
   const now = deps.now();
-  const prefix = datePrefix(now);
+  const prefix = performanceDatePrefix(now);
   const stored = await deps.performances.createNormalSequenced(
     prefix,
     application.id,

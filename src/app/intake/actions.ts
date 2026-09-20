@@ -53,7 +53,9 @@ export async function submitIntake(formData:FormData){
           ? '활성 영업채널 Master에서 선택해야 합니다.'
           : result.reason==='ASSIGNEE_NOT_ACTIVE'
             ? '활성 담당자 Master에서 선택해야 합니다.'
-            : '선택한 계약조건을 찾을 수 없습니다.';
+            : result.reason==='IDEMPOTENCY_KEY_REUSE'
+              ? '같은 접수 키가 다른 내용으로 재사용되었습니다. 새 접수로 다시 시도해야 합니다.'
+              : '선택한 계약조건을 찾을 수 없습니다.';
     redirect('/intake/new?error='+encodeURIComponent(reason)+'&productId='+encodeURIComponent(productId)+'&offerId='+encodeURIComponent(offerId));
   }
   redirect('/intake?id='+encodeURIComponent(result.application.id)+'&saved='+(result.created?'1':'replay'));

@@ -143,7 +143,7 @@ export default async function ProductsPage({searchParams}:{
         {selected&&offer?<>
 
           <div className="vehicle-title"><div><h2>{selected.product.vehicle.modelId}</h2><p>{offer.supplierId??selected.product.supplierId} · product v{selected.product.version}</p></div><span className="status-dot">{selected.vehicleMatch.level}</span></div>
-          <nav className="term-picker" aria-label="계약기간 선택">
+          <nav className="ui-variant-selector term-picker" aria-label="계약기간 선택">
             {availableTerms.map((months)=>{
               const target=firstOfferForTerm(selected.matchedOffers,months);
               return <Link

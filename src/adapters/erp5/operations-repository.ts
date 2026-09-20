@@ -107,6 +107,22 @@ export class Erp5OperationsRepository implements OperationsRepository{
     return snap.empty?null:(snap.docs[0].data() as BillingRecord);
   }
 
+  async mutateBilling(settlementId:string,change:(current:BillingRecord)=>BillingRecord){
+    requireErp5Write();
+    const db=erp5();
+    const query=this.billings().where('settlementId','==',settlementId).limit(1);
+    return db.runTransaction(async(tx)=>{
+      const snap=await tx.get(query);
+      if(snap.empty)throw new Error('BILLING_NOT_FOUND');
+      const doc=snap.docs[0];
+      const current=doc.data() as BillingRecord;
+      const next=change(clone(current));
+      if(next.id!==current.id||next.settlementId!==current.settlementId)throw new Error('BILLING_IDENTITY_IMMUTABLE');
+      tx.set(doc.ref,next);
+      return next;
+    });
+  }
+
   async listLedger(settlementId:string){
     const snap=await this.ledger().where('settlementId','==',settlementId).get();
     return snap.docs.map((d)=>d.data() as LedgerEntry).sort((a,b)=>a.occurredAt.localeCompare(b.occurredAt));

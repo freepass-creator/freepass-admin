@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
-import { applicationFacets } from '../../../domain/application/search';
+import { adminReferenceMaster } from '../../../server/admin-masters';
 import { adminRepositories } from '../../../server/admin-runtime';
 import { requireAdminPageActor } from '../../../server/auth/page-guard';
 import { LogoutButton } from '../../_auth/LogoutButton';
@@ -21,21 +21,29 @@ export default async function NewIntakePage({searchParams}:{
   const error=first(q.error);
 
   const repos=adminRepositories();
+  const master=adminReferenceMaster();
+
   let product=null;
-  let facets={salesChannels:[] as string[],assignees:[] as string[]};
+  let salesChannels:{id:string;label:string}[]=[];
+  let assignees:{id:string;label:string}[]=[];
+  let masterError='';
 
   try{
-    const [found,applications]=await Promise.all([
+    const [found,channels,staff]=await Promise.all([
       productId?repos.products.get(productId):Promise.resolve(null),
-      repos.applications.list(),
+      master.listSalesChannels(),
+      master.listAssignees(),
     ]);
     product=found;
-    facets=applicationFacets(applications);
-  }catch{}
+    salesChannels=channels.filter((x)=>x.status==='ACTIVE');
+    assignees=staff.filter((x)=>x.status==='ACTIVE');
+  }catch(e){
+    masterError=e instanceof Error?e.message:String(e);
+  }
 
   const offer=product?.offers.find((x)=>x.id===offerId)??null;
   const version=product?.version??(Number.isFinite(expected)?expected:0);
-  const assignees=[actor.id,...facets.assignees.filter((value)=>value!==actor.id)];
+  const defaultAssignee=assignees.some((x)=>x.id===actor.id)?actor.id:(assignees[0]?.id??'');
 
   return <main className="admin-shell">
     <header className="topbar">
@@ -68,16 +76,17 @@ export default async function NewIntakePage({searchParams}:{
         </dl>:null}
 
         <div className="work-hint">
-          <b>접수 필수값</b>
-          <span>선택 Offer · 영업채널 · 담당자 · 고객명입니다. 연락처는 최초 접수에서 선택값입니다.</span>
+          <b>Reference Master</b>
+          <span>영업채널은 ERP5 Partner Master의 활성 영업채널, 담당자는 현재 Auth Master의 활성 UID만 저장할 수 있습니다.</span>
         </div>
       </section>
 
       <section className="panel work-panel">
         <div className="panel-head"><div><p className="eyebrow">NEW APPLICATION</p><h1>신규 접수</h1></div><Link className="icon-btn" href="/intake">목록</Link></div>
         {error&&<p>{error}</p>}
+        {masterError&&<p>{masterError}</p>}
 
-        {product&&offer?<form action={submitIntake} className="form-stack">
+        {product&&offer&&!masterError?<form action={submitIntake} className="form-stack">
           <input type="hidden" name="productId" value={product.id}/>
           <input type="hidden" name="offerId" value={offer.id}/>
           <input type="hidden" name="expectedProductVersion" value={version}/>
@@ -85,30 +94,28 @@ export default async function NewIntakePage({searchParams}:{
 
           <label>
             영업채널
-            <input name="salesChannelId" list="sales-channel-options" required placeholder="기존 채널 선택 또는 새 ID 입력"/>
-            <datalist id="sales-channel-options">
-              {facets.salesChannels.map((value)=><option key={value} value={value}/>)}
-            </datalist>
+            <select name="salesChannelId" required defaultValue="">
+              <option value="" disabled>영업채널 선택</option>
+              {salesChannels.map((value)=><option key={value.id} value={value.id}>{value.label} · {value.id}</option>)}
+            </select>
           </label>
 
           <label>
             담당자
-            <input name="assigneeId" list="assignee-options" required defaultValue={actor.id}/>
-            <datalist id="assignee-options">
-              {assignees.map((value)=><option key={value} value={value}/>)}
-            </datalist>
+            <select name="assigneeId" required defaultValue={defaultAssignee}>
+              {!defaultAssignee&&<option value="" disabled>담당자 선택</option>}
+              {assignees.map((value)=><option key={value.id} value={value.id}>{value.label}</option>)}
+            </select>
           </label>
 
           <label>고객명<input name="applicantName" required/></label>
           <label>연락처 (선택)<input name="applicantPhone" inputMode="tel"/></label>
 
-          <button className="primary" type="submit">접수 저장</button>
+          <button className="primary" type="submit" disabled={!salesChannels.length||!assignees.length}>접수 저장</button>
         </form>:null}
 
-        <div className="work-hint">
-          <b>후보값 원칙</b>
-          <span>채널/담당자 후보는 별도 Master를 추측하지 않고 현재 접수 원장에 이미 존재하는 값만 보여줍니다.</span>
-        </div>
+        {!masterError&&salesChannels.length===0&&<p>활성 영업채널 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
+        {!masterError&&assignees.length===0&&<p>활성 담당자 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
       </section>
     </section>
   </main>;

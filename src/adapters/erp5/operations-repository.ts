@@ -1,5 +1,5 @@
 import type { Performance } from '../../domain/performance/types';
-import type { BillingRecord, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
+import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
 import type { OperationsRepository } from '../../ports/operations';
 import { erp5, erp5AdminCollection, requireErp5Write } from './firestore';
 
@@ -8,6 +8,7 @@ const clone=<T>(value:T):T=>structuredClone(value);
 export class Erp5OperationsRepository implements OperationsRepository{
   private performances(){return erp5().collection(erp5AdminCollection('performances'));}
   private settlements(){return erp5().collection(erp5AdminCollection('settlements'));}
+  private clawbacks(){return erp5().collection(erp5AdminCollection('clawbacks'));}
   private billings(){return erp5().collection(erp5AdminCollection('billings'));}
   private ledger(){return erp5().collection(erp5AdminCollection('ledger'));}
 
@@ -84,6 +85,35 @@ export class Erp5OperationsRepository implements OperationsRepository{
   async listSettlements(){
     const snap=await this.settlements().get();
     return snap.docs.map((d)=>d.data() as SettlementItem).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async ensureClawback(settlementId:string,candidate:ClawbackItem){
+    requireErp5Write();
+    const db=erp5();
+    const settlementRef=this.settlements().doc(settlementId);
+    const clawbackRef=this.clawbacks().doc(candidate.id);
+    return db.runTransaction(async(tx)=>{
+      const [settlement,existing]=await Promise.all([
+        tx.get(settlementRef),
+        tx.get(clawbackRef),
+      ]);
+      if(!settlement.exists)throw new Error('SETTLEMENT_NOT_FOUND');
+      if(candidate.settlementId!==settlementId)throw new Error('CLAWBACK_SETTLEMENT_IDENTITY_MISMATCH');
+      if(existing.exists){
+        const current=existing.data() as ClawbackItem;
+        if(JSON.stringify(current)!==JSON.stringify(candidate))throw new Error('IDEMPOTENCY_KEY_REUSE');
+        return{clawback:current,created:false};
+      }
+      tx.create(clawbackRef,candidate);
+      return{clawback:clone(candidate),created:true};
+    });
+  }
+
+  async listClawbacks(settlementId:string){
+    const snap=await this.clawbacks().where('settlementId','==',settlementId).get();
+    return snap.docs
+      .map((d)=>d.data() as ClawbackItem)
+      .sort((a,b)=>a.occurredAt.localeCompare(b.occurredAt));
   }
 
   async ensureBilling(settlementId:string,create:()=>BillingRecord){

@@ -69,6 +69,7 @@ test('상품찾기에서 고른 같은 Offer가 접수 snapshot으로 이어지�
   assert.equal(performance.id,'performance:application-1');
   assert.equal(performance.snapshot.offer.id,'o36');
   assert.equal(performance.snapshot.productVersion,7);
+  assert.equal(performance.snapshot.registration?.vehicleNumber,application.snapshot.registration?.vehicleNumber);
   assert.equal(performance.snapshot.deliveredAt,t1);
 });
 

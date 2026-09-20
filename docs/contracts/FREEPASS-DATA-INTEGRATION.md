@@ -35,7 +35,7 @@ Target endpoint:
 `GET /v1/views/admin-catalog/products`
 
 Data-side contract PR:
-`freepass-creator/freepass-data#9`
+`freepass-creator/freepass-data#12`
 
 Admin adapter:
 `src/adapters/freepass-data/product-repository.ts`

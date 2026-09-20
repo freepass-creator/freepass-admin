@@ -27,6 +27,9 @@ const [
   authSession,
   erp5,
   erp5Product,
+  freepassDataProduct,
+  productSearch,
+  applicationCreate,
   erp5Application,
   erp5Operations,
   intakeActions,
@@ -54,6 +57,9 @@ const [
   text('src/server/auth/session.ts'),
   text('src/adapters/erp5/firestore.ts'),
   text('src/adapters/erp5/product-repository.ts'),
+  text('src/adapters/freepass-data/product-repository.ts'),
+  text('src/domain/search/match-product.ts'),
+  text('src/domain/application/create-application.ts'),
   text('src/adapters/erp5/application-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
   text('src/app/intake/actions.ts'),
@@ -115,6 +121,30 @@ add('erp5.write-gate',
 add('erp5.product-read-only',
   has(erp5Product,'ERP5_PRODUCT_WRITE_FORBIDDEN'),
   'Canonical Product adapter must remain read-only.');
+
+add('catalog.source-split',
+  has(runtime,'FPA_PRODUCT_SOURCE')&&has(runtime,'FREEPASS_DATA')&&has(runtime,'adminProductSourceMode'),
+  'Catalog read source must be independently switchable from Admin operational persistence.');
+
+add('catalog.data-contract',
+  has(freepassDataProduct,'freepass-data.admin-catalog/v1')
+    &&has(freepassDataProduct,'/v1/views/admin-catalog/products'),
+  'FreePass Data adapter must pin the versioned Admin Catalog consumer contract.');
+
+add('catalog.data-no-zero-guess',
+  has(freepassDataProduct,"term.depositState === 'ZERO'")
+    &&has(freepassDataProduct,"term.depositState === 'KNOWN'")
+    &&has(freepassDataProduct,'UNKNOWN and NOT_APPLICABLE must never be silently converted to zero'),
+  'FreePass Data deposit semantics must preserve unknown/not-applicable instead of coercing to zero.');
+
+add('catalog.data-read-only',
+  has(freepassDataProduct,'FREEPASS_DATA_PRODUCT_WRITE_FORBIDDEN'),
+  'FreePass Data catalog adapter must remain read-only until command cutover.');
+
+add('catalog.offer-supplier-authority',
+  has(productSearch,'offer.supplierId ?? product.supplierId')
+    &&has(applicationCreate,'offer.supplierId ?? input.product.supplierId'),
+  'Supplier authority must follow the selected Offer for multi-supplier Data products.');
 
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),
@@ -192,6 +222,9 @@ add('billing.evidence-smoke',
 
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',
+  'FPA_PRODUCT_SOURCE=freepass-data',
+  'FREEPASS_DATA_BASE_URL=https://data.internal.example',
+  'FREEPASS_DATA_SERVICE_TOKEN=<service-token>',
   'ERP5_ADMIN_NAMESPACE=freepass_admin_v1',
   'ERP5_WRITE=on',
   'FPA_AUTH_MODE=firebase',

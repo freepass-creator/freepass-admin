@@ -14,6 +14,7 @@ import {
   recordCollection,
   recordPayout,
   resolvePerformanceIssue,
+  reverseEntry,
   setPerformanceAmounts,
   supplierIssue,
 } from '../../services/settlement-operations';
@@ -150,6 +151,26 @@ export async function payoutAction(formData:FormData){
       amount:i(formData.get('amount')),
       note:s(formData.get('note'))||undefined,
       policy:'AFTER_FULL_COLLECTION',
+    });
+  }catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+
+export async function reverseLedgerAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const account=s(formData.get('account'));
+  if(account!=='SUPPLIER_COLLECTION'&&account!=='CHANNEL_PAYOUT'){
+    redirect(href(id,'INVALID_LEDGER_ACCOUNT'));
+  }
+  try{
+    await reverseEntry(deps(),settlementId,{
+      id:'reversal:'+crypto.randomUUID(),
+      originalId:s(formData.get('originalId')),
+      account,
+      amount:i(formData.get('amount')),
+      note:s(formData.get('reason'))||undefined,
     });
   }catch(e){redirect(href(id,e));}
   redirect(href(id));

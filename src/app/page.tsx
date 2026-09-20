@@ -3,13 +3,37 @@
 import { useMemo, useState } from 'react';
 
 type Product = {
-  id: string; name: string; sub: string; supplier: string; match: string;
-  offers: { id: string; term: number; rent: number; deposit: number; mileage: number; policies: string[] }[];
+  id: string;
+  name: string;
+  sub: string;
+  supplier: string;
+  match: string;
+  offers: {
+    id: string;
+    term: number;
+    rent: number;
+    deposit: number;
+    mileage: number;
+    policies: string[];
+  }[];
 };
+
 type AppItem = {
-  id: string; no: string; customer: string; phone: string; productId: string; vehicle: string;
-  offer: Product['offers'][number]; contract: boolean; docs: boolean; delivery: boolean; cancelled: boolean;
+  id: string;
+  no: string;
+  customer: string;
+  phone: string;
+  productId: string;
+  vehicle: string;
+  offer: Product['offers'][number];
+  contract: boolean;
+  docs: boolean;
+  delivery: boolean;
+  cancelled: boolean;
 };
+
+type MobileView = 'products' | 'detail' | 'work';
+type WorkView = 'list' | 'new' | 'detail';
 
 const PRODUCTS: Product[] = [
   { id:'p1', name:'쏘나타', sub:'세부모델 미확인', supplier:'A 렌터카', match:'모델', offers:[{id:'p1-36',term:36,rent:690000,deposit:0,mileage:20000,policies:['만 21세 가능','후불']}] },
@@ -30,58 +54,311 @@ export default function AdminHome(){
   const [query,setQuery]=useState('');
   const [selectedId,setSelectedId]=useState('p2');
   const [offerId,setOfferId]=useState('p2-36');
-  const [work,setWork]=useState<'list'|'new'|'detail'>('list');
+  const [work,setWork]=useState<WorkView>('list');
   const [apps,setApps]=useState<AppItem[]>(INITIAL_APPS);
   const [activeAppId,setActiveAppId]=useState<string|null>(null);
   const [customer,setCustomer]=useState('');
   const [phone,setPhone]=useState('');
+  const [mobileView,setMobileView]=useState<MobileView>('products');
 
-  const filtered=useMemo(()=>PRODUCTS.filter(p=>`${p.name} ${p.sub} ${p.supplier} ${p.offers.flatMap(o=>o.policies).join(' ')}`.toLowerCase().includes(query.toLowerCase())),[query]);
-  const selected=PRODUCTS.find(p=>p.id===selectedId)??PRODUCTS[0];
-  const selectedOffer=selected.offers.find(o=>o.id===offerId)??selected.offers[0];
-  const activeApp=apps.find(a=>a.id===activeAppId)??null;
+  const filtered=useMemo(
+    ()=>PRODUCTS.filter((p)=>`${p.name} ${p.sub} ${p.supplier} ${p.offers.flatMap((o)=>o.policies).join(' ')}`.toLowerCase().includes(query.toLowerCase())),
+    [query]
+  );
 
-  function selectProduct(p:Product){setSelectedId(p.id);setOfferId(p.offers[0].id)}
-  function openNew(){setCustomer('');setPhone('');setWork('new')}
+  const selected=PRODUCTS.find((p)=>p.id===selectedId)??PRODUCTS[0];
+  const selectedOffer=selected.offers.find((o)=>o.id===offerId)??selected.offers[0];
+  const activeApp=apps.find((a)=>a.id===activeAppId)??null;
+
+  function selectProduct(p:Product){
+    setSelectedId(p.id);
+    setOfferId(p.offers[0].id);
+    setMobileView('detail');
+  }
+
+  function openNew(){
+    setCustomer('');
+    setPhone('');
+    setWork('new');
+    setMobileView('work');
+  }
+
   function submitApplication(){
     if(!customer.trim()||!phone.trim()) return;
     const stamp=String(apps.length+15).padStart(3,'0');
-    const app:AppItem={id:`a-${Date.now()}`,no:`A-260913-${stamp}`,customer:customer.trim(),phone:phone.trim(),productId:selected.id,vehicle:selected.name,offer:{...selectedOffer,policies:[...selectedOffer.policies]},contract:false,docs:false,delivery:false,cancelled:false};
-    setApps(v=>[app,...v]); setActiveAppId(app.id); setWork('detail');
+    const app:AppItem={
+      id:`a-${Date.now()}`,
+      no:`A-260913-${stamp}`,
+      customer:customer.trim(),
+      phone:phone.trim(),
+      productId:selected.id,
+      vehicle:selected.name,
+      offer:{...selectedOffer,policies:[...selectedOffer.policies]},
+      contract:false,
+      docs:false,
+      delivery:false,
+      cancelled:false
+    };
+    setApps((v)=>[app,...v]);
+    setActiveAppId(app.id);
+    setWork('detail');
   }
-  function openApp(app:AppItem){setActiveAppId(app.id);setWork('detail')}
-  function patchApp(key:'contract'|'docs'|'delivery'){if(!activeApp||activeApp.cancelled)return;setApps(v=>v.map(a=>a.id===activeApp.id?{...a,[key]:!a[key]}:a))}
-  function cancelApp(){if(!activeApp)return;setApps(v=>v.map(a=>a.id===activeApp.id?{...a,cancelled:true}:a))}
 
-  return <main className="admin-shell">
-    <header className="topbar"><div><strong>freepasserp.com</strong><span>admin · v1</span></div><nav><button className="active">상품·접수</button><button>정산</button><button>설정</button></nav><div className="admin-user">관리자</div></header>
-    <section className="workspace">
-      <section className="panel product-panel">
-        <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 목록</h1></div><span className="count">{filtered.length}건</span></div>
-        <label className="searchbox">⌕<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="모델, 조건, 정책 검색"/></label>
-        <div className="quick-filters"><button onClick={()=>setQuery('')}>전체</button><button onClick={()=>setQuery('21세')}>21세</button><button onClick={()=>setQuery('후불')}>후불</button><button onClick={()=>setQuery('카드')}>카드</button><button>상세필터</button></div>
-        <div className="list">{filtered.map(p=>{const o=p.offers[0];return <article key={p.id} onClick={()=>selectProduct(p)} className={`product-row ${p.id===selected.id?'selected':''}`}><div className="thumb">CAR</div><div className="grow"><div className="row-title"><strong>{p.name}</strong><span>{p.match}</span></div><p>{p.sub}</p><div className="price"><b>월 {money(o.rent)}</b><small>{o.term}개월</small></div></div></article>})}</div>
+  function openApp(app:AppItem){
+    setActiveAppId(app.id);
+    setWork('detail');
+    setMobileView('work');
+  }
+
+  function patchApp(key:'contract'|'docs'|'delivery'){
+    if(!activeApp||activeApp.cancelled) return;
+    setApps((v)=>v.map((a)=>a.id===activeApp.id?{...a,[key]:!a[key]}:a));
+  }
+
+  function cancelApp(){
+    if(!activeApp) return;
+    setApps((v)=>v.map((a)=>a.id===activeApp.id?{...a,cancelled:true}:a));
+  }
+
+  function openApplications(){
+    setWork('list');
+    setMobileView('work');
+  }
+
+  return (
+    <main className="admin-shell">
+      <aside className="rail" aria-label="관리자 업무">
+        <div className="brand">
+          <strong>FREEPASS</strong>
+          <span>ADMIN</span>
+        </div>
+        <nav className="rail-nav">
+          <button className="active" onClick={()=>setMobileView('products')}>상품</button>
+          <button onClick={openApplications}>접수 <span>{apps.length}</span></button>
+          <button aria-disabled="true">실적</button>
+          <button aria-disabled="true">정산</button>
+        </nav>
+        <div className="rail-user">
+          <b>관리자</b>
+          <span>internal workspace</span>
+        </div>
+      </aside>
+
+      <section className="workspace">
+        <section className={`panel product-panel ${mobileView==='products'?'mobile-active':''}`}>
+          <header className="panel-head">
+            <div>
+              <p className="eyebrow">PRODUCT</p>
+              <h1>상품 찾기</h1>
+            </div>
+            <span className="count">{filtered.length}건</span>
+          </header>
+
+          <div className="searchline">
+            <label className="searchbox">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={query}
+                onChange={(e)=>setQuery(e.target.value)}
+                placeholder="차종·기간·보증금·연령 조건 검색"
+                aria-label="상품 검색"
+              />
+            </label>
+            <button className="secondary-control" type="button">세부필터</button>
+          </div>
+
+          {query && <div className="query-hint"><span>검색어</span><b>{query}</b></div>}
+
+          <div className="list" aria-label="상품 목록">
+            {filtered.map((p)=>{
+              const offer=p.offers[0];
+              return (
+                <button key={p.id} onClick={()=>selectProduct(p)} className={`product-row ${p.id===selected.id?'selected':''}`}>
+                  <div className="thumb"><span>사진 준비 중</span></div>
+                  <div className="grow">
+                    <div className="row-title">
+                      <strong>{p.name}</strong>
+                      <span>{p.match}</span>
+                    </div>
+                    <p>{p.sub}</p>
+                    <div className="price">
+                      <b>월 {money(offer.rent)}</b>
+                      <small>{offer.term}개월</small>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className={`panel detail-panel ${mobileView==='detail'?'mobile-active':''}`}>
+          <header className="panel-head">
+            <div>
+              <p className="eyebrow">DETAIL</p>
+              <h1>상품 상세</h1>
+            </div>
+            <span className="status">판매중</span>
+          </header>
+
+          <div className="hero-car">
+            <span>사진 준비 중</span>
+            <small>{selected.supplier}</small>
+          </div>
+
+          <div className="vehicle-title">
+            <div>
+              <h2>{selected.name}</h2>
+              <p>{selected.sub}</p>
+            </div>
+            <span className="match">{selected.match}</span>
+          </div>
+
+          <dl className="facts">
+            <dt>공급사</dt><dd>{selected.supplier}</dd>
+            <dt>차종 매칭</dt><dd>{selected.match}</dd>
+            <dt>선택 보증금</dt><dd>{money(selectedOffer.deposit)}</dd>
+            <dt>약정주행</dt><dd>연 {selectedOffer.mileage.toLocaleString()}km</dd>
+          </dl>
+
+          <div className="section-title">
+            <b>대여 조건</b>
+            <span>한 Offer의 조건을 함께 선택합니다.</span>
+          </div>
+
+          <div className="offer-list">
+            {selected.offers.map((o)=>(
+              <button
+                key={o.id}
+                onClick={()=>setOfferId(o.id)}
+                className={`offer-row ${o.id===selectedOffer.id?'active':''}`}
+              >
+                <div>
+                  <strong>{o.term}개월</strong>
+                  <span>월 {money(o.rent)}</span>
+                </div>
+                <dl>
+                  <div><dt>보증금</dt><dd>{money(o.deposit)}</dd></div>
+                  <div><dt>약정주행</dt><dd>연 {o.mileage.toLocaleString()}km</dd></div>
+                </dl>
+                <p>{o.policies.join(' · ')}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className="detail-actions">
+            <button className="secondary-control" type="button">공유</button>
+            <button className="primary" onClick={openNew}>이 상품 접수하기</button>
+          </div>
+        </section>
+
+        <section className={`panel work-panel ${mobileView==='work'?'mobile-active':''}`}>
+          {work==='list'&&(
+            <>
+              <header className="panel-head">
+                <div>
+                  <p className="eyebrow">APPLICATION</p>
+                  <h1>접수 목록</h1>
+                </div>
+                <button className="primary compact" onClick={openNew}>신규접수</button>
+              </header>
+
+              <div className="work-summary">
+                <span>전체 <b>{apps.length}</b></span>
+                <span>진행중 <b>{apps.filter((a)=>!a.delivery&&!a.cancelled).length}</b></span>
+                <span>인도완료 <b>{apps.filter((a)=>a.delivery).length}</b></span>
+              </div>
+
+              <div className="application-list">
+                {apps.map((app)=>(
+                  <button className="application-row" key={app.id} onClick={()=>openApp(app)}>
+                    <div>
+                      <strong>{app.customer}</strong>
+                      <span>{app.no}</span>
+                    </div>
+                    <b>{app.vehicle}</b>
+                    <p>{app.cancelled?'취소':app.delivery?'인도완료':app.contract?'진행중':'신규 접수'}</p>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {work==='new'&&(
+            <>
+              <header className="panel-head">
+                <div>
+                  <p className="eyebrow">NEW APPLICATION</p>
+                  <h1>신규 접수</h1>
+                </div>
+                <button className="secondary-control" onClick={()=>setWork('list')}>목록</button>
+              </header>
+
+              <div className="selected-offer-card">
+                <span>선택 상품</span>
+                <h2>{selected.name}</h2>
+                <p>{selected.sub}</p>
+                <b>{selectedOffer.term}개월 · 월 {money(selectedOffer.rent)}</b>
+                <small>저장 시 선택 Offer Snapshot을 보존합니다.</small>
+              </div>
+
+              <div className="form-stack">
+                <label>고객명<input value={customer} onChange={(e)=>setCustomer(e.target.value)} placeholder="고객명"/></label>
+                <label>연락처<input value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="010-0000-0000"/></label>
+              </div>
+
+              <div className="detail-actions">
+                <button className="secondary-control" onClick={()=>setWork('list')}>취소</button>
+                <button className="primary" onClick={submitApplication}>접수 저장</button>
+              </div>
+            </>
+          )}
+
+          {work==='detail'&&activeApp&&(
+            <>
+              <header className="panel-head">
+                <div>
+                  <p className="eyebrow">APPLICATION</p>
+                  <h1>접수 상세</h1>
+                </div>
+                <button className="secondary-control" onClick={()=>setWork('list')}>목록</button>
+              </header>
+
+              <div className="application-detail-head">
+                <span>{activeApp.no}</span>
+                <h2>{activeApp.customer}</h2>
+                <p>{activeApp.vehicle} · {activeApp.phone}</p>
+              </div>
+
+              <div className="snapshot-box">
+                <span>접수 당시 조건</span>
+                <b>{activeApp.offer.term}개월 · 월 {money(activeApp.offer.rent)}</b>
+                <p>보증금 {money(activeApp.offer.deposit)} · 연 {activeApp.offer.mileage.toLocaleString()}km</p>
+              </div>
+
+              <div className="progress-actions">
+                <button className={activeApp.contract?'done':''} onClick={()=>patchApp('contract')}>계약서 {activeApp.contract?'완료':'대기'}</button>
+                <button className={activeApp.docs?'done':''} onClick={()=>patchApp('docs')}>필수서류 {activeApp.docs?'완료':'대기'}</button>
+                <button className={activeApp.delivery?'done':''} onClick={()=>patchApp('delivery')}>인도 {activeApp.delivery?'완료':'대기'}</button>
+              </div>
+
+              <div className={`application-status ${activeApp.cancelled?'cancelled':''}`}>
+                {activeApp.cancelled?'취소':activeApp.delivery?'인도완료':activeApp.contract?'진행중':'접수완료'}
+              </div>
+
+              {!activeApp.cancelled&&(
+                <button className="danger-link" onClick={cancelApp}>접수 취소</button>
+              )}
+            </>
+          )}
+        </section>
       </section>
 
-      <section className="panel detail-panel">
-        <div className="panel-head"><div><p className="eyebrow">DETAIL</p><h1>상품 상세</h1></div><button className="icon-btn">공유</button></div>
-        <div className="tabs"><button className="active">요약</button><button>상세정보</button></div>
-        <div className="hero-car"><span>차량 이미지</span><small>SSOT</small></div>
-        <div className="vehicle-title"><div><h2>{selected.name}</h2><p>{selected.sub}</p></div><span className="status-dot">판매중</span></div>
-        <dl className="summary-grid"><div><dt>공급사</dt><dd>{selected.supplier}</dd></div><div><dt>차종 매칭</dt><dd>{selected.match}</dd></div><div><dt>보증금</dt><dd>{money(selectedOffer.deposit)}</dd></div><div><dt>약정주행</dt><dd>연 {selectedOffer.mileage.toLocaleString()}km</dd></div></dl>
-        <div className="offer-picker">{selected.offers.map(o=><button key={o.id} onClick={()=>setOfferId(o.id)} className={o.id===selectedOffer.id?'active':''}>{o.term}개월</button>)}</div>
-        <div className="offer-block"><div><span>선택 Offer</span><b>{selectedOffer.term}개월</b></div><strong>월 {money(selectedOffer.rent)}</strong><p>보증금 {money(selectedOffer.deposit)} · 연 {selectedOffer.mileage.toLocaleString()}km</p></div>
-        <div className="chips">{selectedOffer.policies.map(p=><span key={p}>{p}</span>)}</div>
-        <button className="primary" onClick={openNew}>이 상품 접수하기</button>
-      </section>
-
-      <section className="panel work-panel">
-        {work==='list'&&<><div className="panel-head"><div><p className="eyebrow">WORK</p><h1>접수 목록</h1></div><button className="new-app" onClick={openNew}>+ 신규접수</button></div><div className="work-tabs"><button className="active">전체 {apps.length}</button><button>진행중 {apps.filter(a=>!a.delivery&&!a.cancelled).length}</button><button>인도완료 {apps.filter(a=>a.delivery).length}</button><button>취소 {apps.filter(a=>a.cancelled).length}</button></div><div className="application-list">{apps.map(app=><article className="application-card" key={app.id} onDoubleClick={()=>openApp(app)}><div className="app-top"><div><b>{app.customer}</b><span>{app.no}</span></div><strong>{app.vehicle}</strong></div><div className="checks"><span className={app.contract?'done':''}>계약서</span><span className={app.docs?'done':''}>서류</span><span className={app.delivery?'done':''}>인도</span></div><p>{app.cancelled?'취소':app.delivery?'인도 완료':app.contract?'진행중 · 다음 확인 필요':'신규 접수 · 계약 확인 전'}</p></article>)}</div><div className="work-hint"><b>접수 상세</b><span>접수 건을 더블 클릭하면 진행상태를 확인합니다.</span></div></>}
-
-        {work==='new'&&<><div className="panel-head"><div><p className="eyebrow">NEW APPLICATION</p><h1>신규 접수</h1></div><button className="icon-btn" onClick={()=>setWork('list')}>목록</button></div><div className="selected-offer-card"><span>접수 상품</span><h2>{selected.name}</h2><p>{selected.sub}</p><b>{selectedOffer.term}개월 · 월 {money(selectedOffer.rent)}</b><small>이 조건은 접수 저장 시 Snapshot으로 보존됩니다.</small></div><div className="form-stack"><label>고객명<input value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="고객명"/></label><label>연락처<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="010-0000-0000"/></label></div><button className="primary" onClick={submitApplication}>접수 저장</button></>}
-
-        {work==='detail'&&activeApp&&<><div className="panel-head"><div><p className="eyebrow">APPLICATION</p><h1>접수 상세</h1></div><button className="icon-btn" onClick={()=>setWork('list')}>목록</button></div><div className="application-detail-head"><span>{activeApp.no}</span><h2>{activeApp.customer} · {activeApp.vehicle}</h2><p>{activeApp.phone}</p></div><div className="snapshot-box"><span>접수 당시 조건</span><b>{activeApp.offer.term}개월 · 월 {money(activeApp.offer.rent)}</b><p>보증금 {money(activeApp.offer.deposit)} · 연 {activeApp.offer.mileage.toLocaleString()}km</p></div><div className="progress-actions"><button className={activeApp.contract?'done':''} onClick={()=>patchApp('contract')}>계약서 {activeApp.contract?'✓':'-'}</button><button className={activeApp.docs?'done':''} onClick={()=>patchApp('docs')}>필수서류 {activeApp.docs?'✓':'-'}</button><button className={activeApp.delivery?'done':''} onClick={()=>patchApp('delivery')}>인도완료 {activeApp.delivery?'✓':'-'}</button></div><div className={`application-status ${activeApp.cancelled?'cancelled':''}`}>{activeApp.cancelled?'취소':activeApp.delivery?'인도완료':activeApp.contract?'계약완료 · 진행중':'접수완료'}</div>{!activeApp.cancelled&&<button className="danger-link" onClick={cancelApp}>접수 취소</button>}</>}
-      </section>
-    </section>
-  </main>
+      <nav className="mobile-nav" aria-label="모바일 화면 전환">
+        <button className={mobileView==='products'?'active':''} onClick={()=>setMobileView('products')}>상품</button>
+        <button className={mobileView==='detail'?'active':''} onClick={()=>setMobileView('detail')}>상세</button>
+        <button className={mobileView==='work'?'active':''} onClick={openApplications}>접수</button>
+      </nav>
+    </main>
+  );
 }

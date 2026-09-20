@@ -387,13 +387,17 @@ export default async function SettlementPage({searchParams}:{
               <button className="primary" type="submit">수금 기록</button>
             </form>}
 
-            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0&&<form action={payoutAction} className="form-stack">
-              <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
-              <label>지급액<input name="amount" required inputMode="numeric"/></label>
-              <label>메모<input name="note"/></label>
-              <button className="primary" type="submit">영업채널 지급 기록</button>
-              {(netBalance.collectionOutstanding>0||netBalance.supplierRefundOutstanding>0)&&<small>현재 정책은 공급사 순정산이 완료되기 전 지급을 차단합니다.</small>}
-            </form>}
+            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0
+              &&netBalance.collectionOutstanding===0&&netBalance.supplierRefundOutstanding===0
+              &&<form action={payoutAction} className="form-stack">
+                <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
+                <label>지급액<input name="amount" required inputMode="numeric"/></label>
+                <label>메모<input name="note"/></label>
+                <button className="primary" type="submit">영업채널 지급 기록</button>
+              </form>}
+            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0
+              &&(netBalance.collectionOutstanding>0||netBalance.supplierRefundOutstanding>0)
+              &&<small>현재 정책은 공급사 순정산이 완료되어야 영업채널 지급을 기록할 수 있습니다.</small>}
 
             <h3>환수 등록</h3>
             <form action={createClawbackAction} className="form-stack">

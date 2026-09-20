@@ -40,6 +40,8 @@ const APP_ERROR_MAP = Object.freeze({
 const SERVICE_REASON_MAP = Object.freeze({
   PRODUCT_NOT_FOUND: { code: 'NOT_FOUND', status: 404, category: 'USER', retryable: false },
   OFFER_NOT_FOUND: { code: 'NOT_FOUND', status: 404, category: 'USER', retryable: false },
+  SALES_CHANNEL_NOT_ACTIVE: { code: 'VALIDATION_ERROR', status: 400, category: 'USER', retryable: false },
+  ASSIGNEE_NOT_ACTIVE: { code: 'VALIDATION_ERROR', status: 400, category: 'USER', retryable: false },
   PRODUCT_CHANGED: { code: 'VERSION_MISMATCH', status: 409, category: 'USER', retryable: false },
   NOT_FOUND: { code: 'NOT_FOUND', status: 404, category: 'USER', retryable: false },
   CANCELLED: { code: 'CANCELLED', status: 409, category: 'USER', retryable: false },

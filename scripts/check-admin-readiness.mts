@@ -19,6 +19,8 @@ const [
   productFilterSheet,
   globalCss,
   productTypes,
+  bottomActionBar,
+  actionBarRegistry,
   intake,
   intakeNew,
   settlement,
@@ -68,6 +70,8 @@ const [
   text('src/app/products/ProductFilterSheet.tsx'),
   text('src/app/globals.css'),
   text('src/domain/product/types.ts'),
+  text('src/app/_ui/BottomActionBar.tsx'),
+  text('src/app/_ui/action-bar-registry.ts'),
   text('src/app/intake/page.tsx'),
   text('src/app/intake/new/page.tsx'),
   text('src/app/settlement/page.tsx'),
@@ -305,12 +309,32 @@ add('ui.photo-aware-product-card',
   'Product cards must branch on real image availability from ERP5/Data adapters and preserve the standard no-photo state.');
 
 add('ui.product-action-hierarchy',
-  has(products,'product-action-dock')
+  has(products,'<BottomActionBar')
     &&has(products,'<ShareButton')
-    &&has(products,'className="btn primary"')
+    &&has(products,'ADMIN_ACTION_BAR_LABELS.productDetail.primary')
     &&has(globalCss,'--fp-go:#1b3c63')
     &&has(globalCss,'.btn.primary'),
-  'Product detail must keep Share secondary and Intake primary in the approved bottom action hierarchy.');
+  'Product detail must keep Share secondary and Intake primary in the approved shared bottom action hierarchy.');
+
+add('ui.shared-bottom-action-bar',
+  has(bottomActionBar,'data-ui-bottom-action')
+    &&has(bottomActionBar,"secondary&&primary?'two-actions':'one-action'")
+    &&has(globalCss,'.shared-bottom-action-bar.two-actions')
+    &&has(globalCss,'grid-template-columns:minmax(0,3fr) minmax(0,7fr)')
+    &&has(products,'<BottomActionBar')
+    &&has(intakeNew,'<BottomActionBar')
+    &&has(intake,'<BottomActionBar')
+    &&has(settlement,'<BottomActionBar'),
+  'Product, intake and settlement must reuse one contextual bottom action component with the approved 3:7 two-action ratio.');
+
+add('ui.action-bar-registry',
+  has(actionBarRegistry,"productDetail:")
+    &&has(actionBarRegistry,"intakeNew:")
+    &&has(actionBarRegistry,"intakeProgress:")
+    &&has(actionBarRegistry,"performance:")
+    &&has(actionBarRegistry,"billing:")
+    &&has(actionBarRegistry,"payout:"),
+  'Contextual bottom-bar labels must come from the shared Admin action registry instead of per-page ad hoc copy.');
 
 add('catalog.dynamic-offer-terms',
   has(offerTermDomain,'offerTerms')

@@ -1,4 +1,5 @@
 import {
+  applySuggestedSettlementAmounts,
   confirmBySalesperson,
   confirmBySupplier,
   createPerformanceFromDelivery,
@@ -19,8 +20,10 @@ import {
 } from '../domain/settlement/settlement';
 import type { LedgerEntry, PayoutPolicy } from '../domain/settlement/types';
 import type { ActorProvider } from '../ports/auth';
+import type { SettlementOperationalFacts, SettlementPricingProvider } from '../ports/settlement-pricing';
 import type { OperationsRepository } from '../ports/operations';
 import type { ApplicationRepository } from '../ports/repositories';
+import { suggestSettlementPricing } from './settlement-pricing';
 
 export type SettlementDeps = {
   applications: ApplicationRepository;
@@ -43,6 +46,38 @@ export async function ensurePerformanceForApplication(deps:SettlementDeps,applic
   if(!application)throw new Error('APPLICATION_NOT_FOUND');
   const candidate=createPerformanceFromDelivery(application);
   return deps.operations.ensurePerformance(candidate);
+}
+
+
+export async function suggestPerformancePricing(
+  deps:SettlementDeps&{pricing:SettlementPricingProvider},
+  performanceId:string,
+  operational:SettlementOperationalFacts={},
+){
+  await adminId(deps.actors);
+  const performance=await deps.operations.getPerformance(performanceId);
+  if(!performance)throw new Error('PERFORMANCE_NOT_FOUND');
+
+  const quote=await suggestSettlementPricing(deps.pricing,performance,operational);
+  if(quote.status==='REVIEW_REQUIRED'){
+    return{quote,performance,applied:false as const};
+  }
+
+  const now=iso(deps.now);
+  const updated=await deps.operations.mutatePerformance(
+    performanceId,
+    current=>applySuggestedSettlementAmounts(
+      current,
+      {
+        supplierReceivable:quote.supplierReceivable,
+        channelPayable:quote.channelPayable,
+        vatMode:quote.vatMode,
+      },
+      quote.evidence,
+      now,
+    ),
+  );
+  return{quote,performance:updated,applied:true as const};
 }
 
 export async function setPerformanceAmounts(

@@ -99,7 +99,13 @@ test('explicit channel clawback is allowed but cannot exceed remaining payable',
 });
 
 test('VAT included clawback splits the written gross amount without adding VAT twice',()=>{
-  const included:{[K in keyof SettlementItem]:SettlementItem[K]}={...settlement,vatMode:'INCLUDED'};
+  const included:SettlementItem={
+    ...settlement,
+    supplierReceivable:1_100_000,
+    channelPayable:0,
+    margin:1_100_000,
+    vatMode:'INCLUDED',
+  };
   const item=createSettlementClawback(included,[],{
     id:'clawback-vat-included',
     supplierAmount:1_100_000,

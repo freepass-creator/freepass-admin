@@ -1,14 +1,15 @@
 import { join } from 'node:path';
 import type { Performance } from '../../domain/performance/types';
-import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
+import type { BillingRecord, ClawbackBillingAdjustment, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
 import type { OperationsRepository } from '../../ports/operations';
 import { JsonFileStore } from './json-file-store';
 
 type OperationsState = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   performances: Performance[];
   settlements: SettlementItem[];
   clawbacks: ClawbackItem[];
+  clawbackBillings: ClawbackBillingAdjustment[];
   billings: BillingRecord[];
   ledger: LedgerEntry[];
 };
@@ -16,15 +17,16 @@ type OperationsState = {
 const DATA_DIR = process.env.FPA_DATA_DIR ?? join(process.cwd(), '.data');
 
 function emptyState(): OperationsState {
-  return { schemaVersion: 2, performances: [], settlements: [], clawbacks: [], billings: [], ledger: [] };
+  return { schemaVersion: 3, performances: [], settlements: [], clawbacks: [], clawbackBillings: [], billings: [], ledger: [] };
 }
 
 function normalizeState(input:Partial<OperationsState>|undefined):OperationsState{
   return{
-    schemaVersion:2,
+    schemaVersion:3,
     performances:structuredClone(input?.performances??[]),
     settlements:structuredClone(input?.settlements??[]),
     clawbacks:structuredClone(input?.clawbacks??[]),
+    clawbackBillings:structuredClone(input?.clawbackBillings??[]),
     billings:structuredClone(input?.billings??[]),
     ledger:structuredClone(input?.ledger??[]),
   };
@@ -146,6 +148,46 @@ export class FileOperationsRepository implements OperationsRepository {
       .filter((x) => x.settlementId === settlementId)
       .slice()
       .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  }
+
+  async ensureClawbackBilling(clawbackId: string, create: () => ClawbackBillingAdjustment) {
+    return this.mutate((state) => {
+      const clawback = state.clawbacks.find((x) => x.id === clawbackId);
+      if (!clawback) throw new Error('CLAWBACK_NOT_FOUND');
+      const existing = state.clawbackBillings.find((x) => x.clawbackId === clawbackId);
+      if (existing) return { adjustment: structuredClone(existing), created: false };
+      const adjustment = create();
+      if (adjustment.clawbackId !== clawbackId || adjustment.settlementId !== clawback.settlementId) {
+        throw new Error('CLAWBACK_BILLING_IDENTITY_MISMATCH');
+      }
+      state.clawbackBillings.push(structuredClone(adjustment));
+      return { adjustment: structuredClone(adjustment), created: true };
+    });
+  }
+
+  async getClawbackBillingByClawbackId(clawbackId: string) {
+    return (await this.read()).clawbackBillings.find((x) => x.clawbackId === clawbackId) ?? null;
+  }
+
+  async mutateClawbackBilling(
+    clawbackId: string,
+    change: (current: ClawbackBillingAdjustment) => ClawbackBillingAdjustment,
+  ) {
+    return this.mutate((state) => {
+      const index = state.clawbackBillings.findIndex((x) => x.clawbackId === clawbackId);
+      if (index < 0) throw new Error('CLAWBACK_BILLING_NOT_FOUND');
+      const current = state.clawbackBillings[index];
+      const next = change(structuredClone(current));
+      if (
+        next.id !== current.id
+        || next.clawbackId !== current.clawbackId
+        || next.settlementId !== current.settlementId
+      ) {
+        throw new Error('CLAWBACK_BILLING_IDENTITY_IMMUTABLE');
+      }
+      state.clawbackBillings[index] = structuredClone(next);
+      return structuredClone(next);
+    });
   }
 
   async ensureBilling(settlementId: string, create: () => BillingRecord) {

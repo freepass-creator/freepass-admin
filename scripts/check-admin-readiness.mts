@@ -32,6 +32,11 @@ const [
   applicationCreate,
   settlementPricingPort,
   settlementPricingService,
+  settlementPricingRuntime,
+  settlementPricingProvider,
+  settlementFeeRules,
+  settlementSupplierResolver,
+  performanceDomain,
   erp5Application,
   erp5Operations,
   intakeActions,
@@ -65,6 +70,11 @@ const [
   text('src/domain/application/create-application.ts'),
   text('src/ports/settlement-pricing.ts'),
   text('src/services/settlement-pricing.ts'),
+  text('src/server/admin-settlement-pricing.ts'),
+  text('src/adapters/settlement-pricing/fp-settlement-provider.ts'),
+  text('src/adapters/settlement-pricing/fp-settlement-fee-table.ts'),
+  text('src/adapters/erp5/settlement-supplier-rule-key.ts'),
+  text('src/domain/performance/performance.ts'),
   text('src/adapters/erp5/application-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
   text('src/app/intake/actions.ts'),
@@ -174,6 +184,42 @@ add('settlement.pricing-provenance',
     &&has(settlementPricingService,'sourcePriceTermKey')
     &&has(settlementPricingService,'sourceSnapshotId'),
   'Settlement pricing input must retain Data release and Offer/PriceTerm provenance.');
+
+add('settlement.pricing-rule-provenance',
+  has(settlementFeeRules,'ccc8b5456c79a00f00c3795ee87b94061f96791f')
+    &&has(settlementPricingProvider,'ENGINE_REVISION')
+    &&has(settlementPricingProvider,'feeRuleFor'),
+  'Settlement auto-pricing must pin the reverse-imported proven fp-settlement fee-rule revision.');
+
+add('settlement.pricing-supplier-identity',
+  has(settlementSupplierResolver,'settlement_rule_key')
+    &&has(settlementSupplierResolver,"partnerTypeLabel(data.partner_type??data.type,id)!=='공급사'"),
+  'Stable supplier ids must resolve through a supplier master before fee-rule lookup.');
+
+add('settlement.pricing-runtime',
+  has(settlementPricingRuntime,'Erp5SettlementSupplierRuleKeyProvider')
+    &&has(settlementPricingRuntime,'EnvSettlementSupplierRuleKeyProvider')
+    &&has(settlementPricingRuntime,'FpSettlementPricingProvider'),
+  'Pricing provider must be bound by runtime mode without changing workflow Domain.');
+
+add('settlement.pricing-safe-review',
+  has(settlementPricingProvider,"status:'REVIEW_REQUIRED'")
+    &&has(settlementPricingProvider,'manualFeeDecision')
+    &&has(settlementPricingProvider,'commercialForm')
+    &&has(settlementPricingProvider,'vehiclePrice'),
+  'Unknown/manual settlement rules must fail to review instead of guessing.');
+
+add('settlement.pricing-ui-usecase',
+  has(settlementService,'suggestPerformancePricing')
+    &&has(settlementActions,'suggestPerformancePricing')
+    &&has(settlement,'suggestAmounts'),
+  'Existing settlement workflow must expose the pricing suggestion use case.');
+
+add('settlement.pricing-evidence',
+  has(performanceDomain,'applySuggestedSettlementAmounts')
+    &&has(performanceDomain,'pricingEvidence')
+    &&has(settlementDomain,'performance.pricingEvidence'),
+  'Auto-pricing evidence must survive Performance and freeze into finalized Settlement.');
 
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),

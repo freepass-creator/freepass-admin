@@ -15,12 +15,21 @@ export interface LedgerEntry {
   reversalOfEntryId?: string;
 }
 
+export interface BillingInvoiceEvidence {
+  reference: string;
+  issuedAt: string;
+  recordedAt: string;
+  recordedBy: string;
+  note?: string;
+}
+
 export interface BillingRecord {
   id: string;
   settlementId: string;
   supplierId: string;
   amount: number;
   status: 'CREATED' | 'EVIDENCE_COMPLETE';
+  invoiceEvidence?: BillingInvoiceEvidence;
   createdAt: string;
 }
 

@@ -18,6 +18,7 @@ import {
   createBilling,
   createSettlementFromPerformance,
   getSettlementBalance,
+  recordBillingInvoiceEvidence,
   registerCollection,
   registerPayout,
   reverseLedgerEntry,
@@ -26,6 +27,12 @@ import {
 const t0='2026-09-20T00:00:00.000Z';
 const t1='2026-09-20T01:00:00.000Z';
 const actor={id:'admin-1',type:'ADMIN' as const};
+const completeBilling=<T extends ReturnType<typeof createBilling>>(billing:T)=>recordBillingInvoiceEvidence(billing,{
+  reference:'INV-260920-001',
+  issuedAt:'2026-09-20',
+  recordedAt:t1,
+  recordedBy:'admin-1',
+});
 
 const product:CanonicalProduct={
   id:'product-1',version:7,supplierId:'supplier-1',supplierProductKey:'raw-1',
@@ -98,7 +105,7 @@ test('인도→실적→금액확정→영업채널확인→공급사확인→�
   assert.equal(finalized.performance.status,'FINALIZED');
   assert.equal(finalized.settlement.margin,400000);
 
-  const billing=createBilling(finalized.settlement,t1);
+  const billing=completeBilling(createBilling(finalized.settlement,t1));
   let ledger=registerCollection(finalized.settlement,billing,[],{
     id:'collection-1',settlementId:finalized.settlement.id,account:'SUPPLIER_COLLECTION',
     kind:'CASH',amount:700000,occurredAt:t1,actorId:'admin-1',
@@ -134,7 +141,7 @@ test('수금/지급 원장은 같은 id 다른 금액 재사용을 막고 revers
     'supplier-1','admin-1',t1,
   );
   const {settlement}=createSettlementFromPerformance(performance,t1);
-  const billing=createBilling(settlement,t1);
+  const billing=completeBilling(createBilling(settlement,t1));
   let ledger=registerCollection(settlement,billing,[],{
     id:'collection-x',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',
     kind:'CASH',amount:400000,occurredAt:t1,actorId:'admin-1',
@@ -165,7 +172,7 @@ test('완납 후 지급정책에서는 지급을 먼저 되돌려야 수금 reve
     'supplier-1','admin-1',t1,
   );
   const {settlement}=createSettlementFromPerformance(performance,t1);
-  const billing=createBilling(settlement,t1);
+  const billing=completeBilling(createBilling(settlement,t1));
   let ledger=registerCollection(settlement,billing,[],{
     id:'collection-full',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',
     kind:'CASH',amount:1000000,occurredAt:t1,actorId:'admin-1',
@@ -213,4 +220,31 @@ test('금액 이견은 자동 확정하지 않고 재확인 또는 명시적 해
   assert.equal(disputed.status,'SUPPLIER_ISSUE');
   disputed=resolveOpenIssue(disputed,'admin-1','증빙 대조 후 합의',t1);
   assert.equal(disputed.status,'READY_TO_FINALIZE');
+});
+
+
+test('청구 생성만으로는 수금할 수 없고 계산서 증빙 완료 후에만 열린다',()=>{
+  let performance=createPerformanceFromDelivery(deliveredApplication());
+  performance=confirmBySupplier(
+    confirmBySalesperson(
+      setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'EXCLUDED'},t1),
+      'channel-1','admin-1',t1,
+    ),
+    'supplier-1','admin-1',t1,
+  );
+  const {settlement}=createSettlementFromPerformance(performance,t1);
+  const draftBilling=createBilling(settlement,t1);
+  const entry={
+    id:'collection-evidence-gate',settlementId:settlement.id,account:'SUPPLIER_COLLECTION' as const,
+    kind:'CASH' as const,amount:1000000,occurredAt:t1,actorId:'admin-1',
+  };
+
+  assert.throws(
+    ()=>registerCollection(settlement,draftBilling,[],entry),
+    /invoice evidence/,
+  );
+
+  const billing=completeBilling(draftBilling);
+  const ledger=registerCollection(settlement,billing,[],entry);
+  assert.equal(getSettlementBalance(settlement,billing,ledger).collectionOutstanding,0);
 });

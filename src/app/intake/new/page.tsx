@@ -9,6 +9,12 @@ import { submitIntake } from '../actions';
 export const dynamic='force-dynamic';
 
 const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??'':value??'';
+const depositLabel=(offer:{deposit?:number;depositState?:string})=>{
+  if(offer.depositState==='NOT_APPLICABLE')return '해당없음';
+  if(offer.depositState==='UNKNOWN')return '미확인';
+  if(offer.depositState==='ZERO')return '0원';
+  return typeof offer.deposit==='number'?offer.deposit.toLocaleString('ko-KR')+'원':'미확인';
+};
 
 export default async function NewIntakePage({searchParams}:{
   searchParams:Promise<Record<string,string|string[]|undefined>>
@@ -59,7 +65,7 @@ export default async function NewIntakePage({searchParams}:{
           ?<div className="selected-offer-card">
             <span>Snapshot 대상</span>
             <h2>{product.vehicle.modelId}</h2>
-            <p>{product.supplierId} · product v{product.version}</p>
+            <p>{offer.supplierId??product.supplierId} · product v{product.version}</p>
             <b>{offer.termMonths}개월 · 월 {offer.monthlyRent.toLocaleString('ko-KR')}원</b>
             <small>접수 저장 시 이 상품판과 Offer가 Snapshot으로 고정됩니다.</small>
           </div>
@@ -71,7 +77,7 @@ export default async function NewIntakePage({searchParams}:{
         {offer?<dl className="summary-grid">
           <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
           <div><dt>월 대여료</dt><dd>{offer.monthlyRent.toLocaleString('ko-KR')}원</dd></div>
-          <div><dt>보증금</dt><dd>{typeof offer.deposit==='number'?offer.deposit.toLocaleString('ko-KR')+'원':'미확인'}</dd></div>
+          <div><dt>보증금</dt><dd>{depositLabel(offer)}</dd></div>
           <div><dt>주행거리</dt><dd>{offer.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
         </dl>:null}
 

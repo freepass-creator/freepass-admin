@@ -48,7 +48,7 @@ export interface ApplicationProductSnapshot {
   productId: string;
   productVersion: number;
   /** Exact upstream/catalog release identity seen at intake. */
-  sourceSnapshotId: string;
+  sourceSnapshotId?: string;
   supplierProductKey?: string;
   commercialType?: string;
   vehiclePrice?: number;

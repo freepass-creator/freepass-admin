@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { adminRepositories } from '../../server/admin-runtime';
 import { cancelIntake, setIntakeProgress } from './actions';
 
+import { requireAdminPageActor } from '../../server/auth/page-guard';
+import { LogoutButton } from '../_auth/LogoutButton';
 export const dynamic='force-dynamic';
 
 const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??'':value??'';
@@ -17,6 +19,7 @@ function statusLabel(status:string){
 export default async function IntakePage({searchParams}:{
   searchParams:Promise<Record<string,string|string[]|undefined>>
 }){
+  await requireAdminPageActor();
   const q=await searchParams;
   const selectedId=first(q.id);
   const saved=first(q.saved);
@@ -41,7 +44,7 @@ export default async function IntakePage({searchParams}:{
     <header className="topbar">
       <div><strong>freepasserp.com</strong><span>admin · 실제 Repository</span></div>
       <nav><Link href="/products">상품</Link><Link href="/intake">접수</Link><Link href="/settlement">정산</Link></nav>
-      <div className="admin-user">P1</div>
+      <div className="admin-user"><LogoutButton/></div>
     </header>
     <section className="workspace">
       <section className="panel product-panel">

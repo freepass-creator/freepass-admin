@@ -22,7 +22,7 @@ class Products implements ProductRepository{
 }
 class Applications implements ApplicationRepository{
   rows:Application[]=[];
-  async createSequenced(_prefix:string,submissionId:string,build:(sequence:number)=>Application){
+  async createSequenced(_prefix:string,submissionId:string,_fingerprint:string,build:(sequence:number)=>Application){
     const existing=this.rows.find(x=>x.submissionId===submissionId);
     if(existing)return{application:existing,created:false};
     const application=build(this.rows.length+1);
@@ -97,4 +97,18 @@ test('inactive or unknown reference master ids are rejected before save',async()
   });
   assert.deepEqual(badAssignee,{ok:false,reason:'ASSIGNEE_NOT_ACTIVE'});
   assert.equal(applications.rows.length,0);
+});
+
+
+test('same submissionId with a different semantic payload is rejected',async()=>{
+  const applications=new Applications();
+  const first=await submitApplication(deps(applications),input);
+  assert.equal(first.ok,true);
+
+  const reused=await submitApplication(deps(applications),{
+    ...input,
+    applicantName:'다른 고객',
+  });
+  assert.deepEqual(reused,{ok:false,reason:'IDEMPOTENCY_KEY_REUSE'});
+  assert.equal(applications.rows.length,1);
 });

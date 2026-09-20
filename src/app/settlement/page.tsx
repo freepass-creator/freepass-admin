@@ -14,6 +14,7 @@ import {
   finalizeAction,
   payoutAction,
   reconfirmSales,
+  recordBillingEvidenceAction,
   resolveIssue,
   reverseLedgerAction,
   saveAmounts,
@@ -289,16 +290,30 @@ export default async function SettlementPage({searchParams}:{
             {!billing?<form action={createBillingAction}>
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <button className="primary" type="submit">청구 생성</button>
-            </form>:<p>청구 생성됨 · {won(billing.amount)}</p>}
+            </form>:<>
+              <p>청구 생성됨 · {won(billing.amount)}</p>
+              {billing.status==='CREATED'?<form action={recordBillingEvidenceAction} className="form-stack">
+                <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
+                <label>계산서 증빙번호<input name="reference" required placeholder="계산서/세금계산서 식별번호"/></label>
+                <label>발행일<input name="issuedAt" required type="date"/></label>
+                <label>메모<input name="note"/></label>
+                <button className="primary" type="submit">계산서 처리 기록</button>
+              </form>:<div className="work-hint">
+                <b>계산서 처리 완료 · {billing.invoiceEvidence?.reference}</b>
+                <span>{billing.invoiceEvidence?.issuedAt} · {billing.invoiceEvidence?.recordedBy}</span>
+              </div>}
+            </>}
 
-            {billing&&balance&&balance.collectionOutstanding>0&&<form action={collectAction} className="form-stack">
+            {billing&&billing.status!=='EVIDENCE_COMPLETE'&&<small>계산서 처리 증빙이 완료되어야 수금을 기록할 수 있습니다.</small>}
+
+            {billing?.status==='EVIDENCE_COMPLETE'&&balance&&balance.collectionOutstanding>0&&<form action={collectAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <label>수금액<input name="amount" required inputMode="numeric"/></label>
               <label>메모<input name="note"/></label>
               <button className="primary" type="submit">수금 기록</button>
             </form>}
 
-            {billing&&balance&&balance.payoutOutstanding>0&&<form action={payoutAction} className="form-stack">
+            {billing?.status==='EVIDENCE_COMPLETE'&&balance&&balance.payoutOutstanding>0&&<form action={payoutAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <label>지급액<input name="amount" required inputMode="numeric"/></label>
               <label>메모<input name="note"/></label>

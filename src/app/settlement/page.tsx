@@ -16,6 +16,8 @@ import {
   syncDeliveredPerformances,
 } from './actions';
 
+import { requireAdminPageActor } from '../../server/auth/page-guard';
+import { LogoutButton } from '../_auth/LogoutButton';
 export const dynamic='force-dynamic';
 
 const first=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]??'':v??'';
@@ -34,6 +36,7 @@ const statusLabel:Record<string,string>={
 export default async function SettlementPage({searchParams}:{
   searchParams:Promise<Record<string,string|string[]|undefined>>
 }){
+  await requireAdminPageActor();
   const q=await searchParams;
   const selectedId=first(q.id);
   const error=first(q.error);
@@ -57,7 +60,7 @@ export default async function SettlementPage({searchParams}:{
     <header className="topbar">
       <div><strong>freepasserp.com</strong><span>admin · operations ledger</span></div>
       <nav><Link href="/products">상품</Link><Link href="/intake">접수</Link><Link href="/settlement">정산</Link></nav>
-      <div className="admin-user">P2</div>
+      <div className="admin-user"><LogoutButton/></div>
     </header>
 
     <section className="workspace">

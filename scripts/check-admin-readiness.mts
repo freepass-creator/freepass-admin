@@ -271,6 +271,7 @@ add('ui.search-composition',
 add('catalog.dynamic-offer-terms',
   has(offerTermDomain,'offerTerms')
     &&has(offerTermDomain,'offersForTerm')
+    &&has(products,'className="ui-variant-selector term-picker"')
     &&has(products,'availableTerms.map')
     &&has(products,'termOffers.map')
     &&has(products,'annualMileageKm')

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export type FilterOption={value:string;label:string;count:number};
@@ -23,7 +23,6 @@ export function ProductFilterSheet({
   const searchParams=useSearchParams();
   const [open,setOpen]=useState(false);
   const [axisKey,setAxisKey]=useState<FilterAxis['key']>(axes[0]?.key??'term');
-  const closeRef=useRef<HTMLButtonElement>(null);
   const axis=axes.find((item)=>item.key===axisKey)??axes[0];
 
   const current=(key:FilterAxis['key'])=>searchParams.get(key)??'';
@@ -61,7 +60,7 @@ export function ProductFilterSheet({
           <strong id="filter-title">세부필터</strong>
           <span/>
           {activeCount>0&&<button type="button" onClick={clearAll}>초기화</button>}
-          <button ref={closeRef} className="filter-close" type="button" aria-label="닫기" onClick={()=>setOpen(false)}>×</button>
+          <button className="filter-close" type="button" aria-label="닫기" onClick={()=>setOpen(false)}>×</button>
         </header>
         <div className="filter-sheet-body">
           <nav className="filter-axis-map" aria-label="필터 항목">

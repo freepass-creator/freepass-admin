@@ -2,8 +2,9 @@ import { join } from 'node:path';
 import { assertApplicationMutation } from '../../domain/application/invariants';
 import type { Application } from '../../domain/application/types';
 import { AppError } from '../../domain/errors';
+import type { Performance } from '../../domain/performance/types';
 import type { CanonicalProduct } from '../../domain/product/types';
-import type { ApplicationRepository, ProductRepository } from '../../ports/repositories';
+import type { ApplicationRepository, PerformanceRepository, ProductRepository } from '../../ports/repositories';
 import { JsonFileStore } from './json-file-store';
 
 /**
@@ -75,7 +76,60 @@ export class FileApplicationRepository implements ApplicationRepository {
       return { rows: next, result: updated };
     });
   }
+}
 
+export class FilePerformanceRepository implements PerformanceRepository {
+  private readonly store: JsonFileStore<Performance>;
+
+  constructor(dir: string = DATA_DIR) {
+    this.store = new JsonFileStore<Performance>(dir, 'performances');
+  }
+
+  async createNormalSequenced(
+    datePrefix: string,
+    applicationId: string,
+    build: (sequence: number) => Performance,
+  ): Promise<{ performance: Performance; created: boolean }> {
+    type R = { performance: Performance; created: boolean };
+    return this.store.mutate<R>((rows) => {
+      const existing = rows.find((row) => row.kind === 'NORMAL' && row.applicationId === applicationId);
+      if (existing) return { rows, result: { performance: existing, created: false } };
+
+      const numberPrefix = `P-${datePrefix}-`;
+      const sequence = rows.filter((row) => row.performanceNumber.startsWith(numberPrefix)).length + 1;
+      const performance = build(sequence);
+
+      if (performance.kind !== 'NORMAL' || performance.applicationId !== applicationId) {
+        throw new AppError('CONFLICT', 'Performance does not match the repository idempotency key.');
+      }
+      if (rows.some((row) => row.performanceNumber === performance.performanceNumber)) {
+        throw new AppError('CONFLICT', `Duplicate performance number: ${performance.performanceNumber}`);
+      }
+      if (rows.some((row) => row.settlementCode === performance.settlementCode)) {
+        throw new AppError('CONFLICT', `Duplicate settlement code: ${performance.settlementCode}`);
+      }
+
+      return {
+        rows: [performance, ...rows],
+        result: { performance, created: true },
+      };
+    });
+  }
+
+  async get(id: string): Promise<Performance | null> {
+    return (await this.store.all()).find((row) => row.id === id) ?? null;
+  }
+
+  async findNormalByApplicationId(applicationId: string): Promise<Performance | null> {
+    return (await this.store.all()).find(
+      (row) => row.kind === 'NORMAL' && row.applicationId === applicationId,
+    ) ?? null;
+  }
+
+  async list(): Promise<Performance[]> {
+    const rows = await this.store.all();
+    return [...rows].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  }
 }
 
 export class FileProductRepository implements ProductRepository {

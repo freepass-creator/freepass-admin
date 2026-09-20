@@ -189,6 +189,7 @@ export function toCanonicalProduct(
   const depositNote=S(d.deposit_note);
   if(depositNote)productPolicies.push({policyId:'deposit_note',type:'TEXT',value:depositNote});
   const productType=S(d.product_type);
+  const vehiclePrice=N(d.vehicle_price);
   if(productType)productPolicies.push({policyId:'product_type',type:'SINGLE_SELECT',value:productType});
 
   const version=sourceVersion(d);
@@ -200,6 +201,8 @@ export function toCanonicalProduct(
       version,
       supplierId:S(d.provider_company_code)??S(d.partner_code)??'',
       supplierProductKey:key,
+      ...(productType?{commercialType:productType}:{}),
+      ...(vehiclePrice!==undefined?{vehiclePrice}:{}),
       vehicle:vehicleRefOf(d,master),
       specs:specsOf(d),
       registration:registrationOf(d),

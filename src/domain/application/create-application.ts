@@ -79,6 +79,7 @@ export function createApplication(input: CreateApplicationInput): Application {
       supplierId: input.product.supplierId,
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
+      ...(input.product.registration ? { registration: { ...input.product.registration } } : {}),
       offer: snapshotOffer,
       productPolicies: input.product.productPolicies.map(clonePolicyValue),
       capturedAt: input.now,

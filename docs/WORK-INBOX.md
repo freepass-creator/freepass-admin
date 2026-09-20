@@ -469,3 +469,36 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 4. F04 Legacy Bridge stable-id mapping
 5. Business clawback Domain
 6. Data/F04/기존 정산엔진/Admin 4-way parity fixture
+
+---
+
+## 16. Settlement pricing + F04 bridge continuation — 2026-09-21
+
+### 구현
+- `SettlementPricingProvider` / CatalogFacts vs OperationalFacts 분리
+- `fp-settlement` proven fee table blob `ccc8b5456c79a00f00c3795ee87b94061f96791f` 역수입
+- 공급사 stable ID → fee-rule key Resolver
+- 웰릭스 재렌트/신차 차량가액/오토플러스 EV 등 자동추천 규칙 Provider
+- auto:false / 조건분기 / 식별 실패 → REVIEW_REQUIRED
+- 정산 화면 `기존 정산 규칙 자동추천` 추가
+- 자동 산출 Evidence를 Performance → finalized Settlement까지 보존
+- 수동 금액 수정/공급사 수정 시 stale auto Evidence 제거
+
+### F04
+- `OBSERVE → MIRROR_ADMIN_OWNED → ADMIN_SINGLE_WRITER` Bridge Mode
+- applicationId 기반 deterministic `stl_` code
+- 병행 단계에서 Admin-owned field만 patch
+- 분납여부/청구월/환수/요율/인센티브/가감은 Admin 정본화 전까지 미러에서 제외
+
+### Data
+- Catalog read source와 Admin writer 분리 유지
+- Data PR #9 consumer contract가 최신 main 위에서 mergeable 상태
+- `commercialType`, `vehiclePrice`, Offer/PriceTerm provenance, depositState를 정산 입력까지 보존
+- `admin:data-shadow` parity에 commercial pricing facts 포함
+
+### 다음
+1. 실제 typecheck/test/admin:smoke 실행 가능한 환경에서 P12+ 검증
+2. FreePass Data Admin Catalog Projection 구현 + Policy typed-value parity
+3. Business CLAWBACK Domain 구현 (Ledger REVERSAL과 분리)
+4. F04 row-link persistence/Sheets Adapter — 안정 row mapping 후 연결
+5. F04 / fp-settlement / Admin / Data 4-way parity fixture

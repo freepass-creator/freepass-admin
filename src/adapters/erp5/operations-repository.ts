@@ -1,5 +1,5 @@
 import type { Performance } from '../../domain/performance/types';
-import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
+import type { BillingRecord, ClawbackBillingAdjustment, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
 import type { OperationsRepository } from '../../ports/operations';
 import { erp5, erp5AdminCollection, requireErp5Write } from './firestore';
 
@@ -9,6 +9,7 @@ export class Erp5OperationsRepository implements OperationsRepository{
   private performances(){return erp5().collection(erp5AdminCollection('performances'));}
   private settlements(){return erp5().collection(erp5AdminCollection('settlements'));}
   private clawbacks(){return erp5().collection(erp5AdminCollection('clawbacks'));}
+  private clawbackBillings(){return erp5().collection(erp5AdminCollection('clawback_billings'));}
   private billings(){return erp5().collection(erp5AdminCollection('billings'));}
   private ledger(){return erp5().collection(erp5AdminCollection('ledger'));}
 
@@ -114,6 +115,53 @@ export class Erp5OperationsRepository implements OperationsRepository{
     return snap.docs
       .map((d)=>d.data() as ClawbackItem)
       .sort((a,b)=>a.occurredAt.localeCompare(b.occurredAt));
+  }
+
+  async ensureClawbackBilling(clawbackId:string,create:()=>ClawbackBillingAdjustment){
+    requireErp5Write();
+    const db=erp5();
+    const clawbackRef=this.clawbacks().doc(clawbackId);
+    const query=this.clawbackBillings().where('clawbackId','==',clawbackId).limit(1);
+    return db.runTransaction(async(tx)=>{
+      const [clawback,existing]=await Promise.all([tx.get(clawbackRef),tx.get(query)]);
+      if(!clawback.exists)throw new Error('CLAWBACK_NOT_FOUND');
+      if(!existing.empty)return{adjustment:existing.docs[0].data() as ClawbackBillingAdjustment,created:false};
+      const adjustment=create();
+      const source=clawback.data() as ClawbackItem;
+      if(adjustment.clawbackId!==clawbackId||adjustment.settlementId!==source.settlementId){
+        throw new Error('CLAWBACK_BILLING_IDENTITY_MISMATCH');
+      }
+      tx.create(this.clawbackBillings().doc(adjustment.id),adjustment);
+      return{adjustment:clone(adjustment),created:true};
+    });
+  }
+
+  async getClawbackBillingByClawbackId(clawbackId:string){
+    const snap=await this.clawbackBillings().where('clawbackId','==',clawbackId).limit(1).get();
+    return snap.empty?null:(snap.docs[0].data() as ClawbackBillingAdjustment);
+  }
+
+  async mutateClawbackBilling(
+    clawbackId:string,
+    change:(current:ClawbackBillingAdjustment)=>ClawbackBillingAdjustment,
+  ){
+    requireErp5Write();
+    const db=erp5();
+    const query=this.clawbackBillings().where('clawbackId','==',clawbackId).limit(1);
+    return db.runTransaction(async(tx)=>{
+      const snap=await tx.get(query);
+      if(snap.empty)throw new Error('CLAWBACK_BILLING_NOT_FOUND');
+      const doc=snap.docs[0];
+      const current=doc.data() as ClawbackBillingAdjustment;
+      const next=change(clone(current));
+      if(
+        next.id!==current.id
+        ||next.clawbackId!==current.clawbackId
+        ||next.settlementId!==current.settlementId
+      )throw new Error('CLAWBACK_BILLING_IDENTITY_IMMUTABLE');
+      tx.set(doc.ref,next);
+      return next;
+    });
   }
 
   async ensureBilling(settlementId:string,create:()=>BillingRecord){

@@ -3,7 +3,10 @@ import { freePassDataProductRepositoryFromEnv } from '../src/adapters/freepass-d
 import { compareProductSources, parityClean } from '../src/services/product-source-parity';
 
 const legacy=new Erp5ProductRepository();
-const data=freePassDataProductRepositoryFromEnv(process.env);
+const data=freePassDataProductRepositoryFromEnv({
+  ...process.env,
+  FPA_DATA_ALLOW_INCOMPLETE_POLICY_SHADOW:'on',
+});
 
 const [legacyProducts,dataProducts]=await Promise.all([
   legacy.list(),

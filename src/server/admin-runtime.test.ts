@@ -22,11 +22,23 @@ test('production persistence is fail-closed when repository mode is not explicit
   );
 });
 
-test('production actor boundary stays fail-closed even when ERP5 persistence is selected',()=>{
-  assert.throws(
-    ()=>adminActorProvider({NODE_ENV:'production',FPA_REPOSITORY_MODE:'erp5'}),
-    /ADMIN_PRODUCTION_ACTOR_ADAPTER_NOT_BOUND/,
+test('production actor boundary stays fail-closed unless firebase auth mode is explicitly bound',async()=>{
+  const provider=adminActorProvider({
+    NODE_ENV:'production',
+    FPA_REPOSITORY_MODE:'erp5',
+  });
+  await assert.rejects(
+    ()=>provider.requireActor(),
+    /ADMIN_PRODUCTION_AUTH_NOT_BOUND/,
   );
+});
+
+test('development actor remains available without production auth configuration',async()=>{
+  const provider=adminActorProvider({
+    NODE_ENV:'development',
+    FPA_DEV_ACTOR_ID:'dev-admin-test',
+  });
+  assert.deepEqual(await provider.requireActor(),{id:'dev-admin-test',type:'ADMIN'});
 });
 
 test('unknown repository modes are rejected',()=>{

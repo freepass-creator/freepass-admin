@@ -11,6 +11,7 @@ import {
   ensureSettlementBilling,
   finalizeSettlement,
   reconfirmSalesperson,
+  recordBillingEvidence,
   recordCollection,
   recordPayout,
   resolvePerformanceIssue,
@@ -126,6 +127,19 @@ export async function createBillingAction(formData:FormData){
   const settlementId=s(formData.get('settlementId'));
   try{await ensureSettlementBilling(deps(),settlementId);}
   catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+export async function recordBillingEvidenceAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  try{
+    await recordBillingEvidence(deps(),settlementId,{
+      reference:s(formData.get('reference')),
+      issuedAt:s(formData.get('issuedAt')),
+      note:s(formData.get('note'))||undefined,
+    });
+  }catch(e){redirect(href(id,e));}
   redirect(href(id));
 }
 

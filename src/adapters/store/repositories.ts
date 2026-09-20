@@ -94,6 +94,17 @@ export class FileProductRepository implements ProductRepository {
   }
 
   /**
+   * 개발/검증용 Canonical export 교체.
+   * 운영 동기화가 아니다. 전달받은 version을 그대로 보존하고 전체 파일 원장을 한 번에 교체한다.
+   */
+  async replaceAll(products: CanonicalProduct[]): Promise<void> {
+    await this.store.mutate(() => ({
+      rows: products.map((product) => structuredClone(product)),
+      result: undefined,
+    }));
+  }
+
+  /**
    * ★판(version)은 «저장소가» 올린다. 부르는 쪽이 올리면 올리는 것을 깜빡한 경로가 하나라도
    *   생기는 순간, 접수 Snapshot 이 가리키는 판과 실제 내용이 어긋난다.
    */

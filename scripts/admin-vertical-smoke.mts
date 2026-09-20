@@ -124,6 +124,26 @@ try{
   if(!replayed.ok)throw new Error('replay failed');
   assert.equal(replayed.created,false);
 
+  const reusedWithDifferentPayload=await submitApplication({
+    products,
+    applications,
+    actors,
+    masters,
+    now,
+    newId:()=> 'must-not-create',
+  },{
+    productId:savedProduct.id,
+    offerId:'smoke-offer-36',
+    salesChannelId:'smoke-channel',
+    assigneeId:'smoke-admin',
+    applicantName:'다른 고객',
+    applicantPhone:'010-0000-0000',
+    expectedProductVersion:savedProduct.version,
+    submissionId:'smoke-submission',
+    source:'ADMIN',
+  });
+  assert.deepEqual(reusedWithDifferentPayload,{ok:false,reason:'IDEMPOTENCY_KEY_REUSE'});
+
   for(const key of ['contractCompleted','documentsCompleted','balanceCompleted','deliveryCompleted'] as const){
     const progress=await markProgress({applications,actors,now},submitted.application.id,key,true);
     assert.equal(progress.ok,true);

@@ -12,9 +12,11 @@ import {
 import type { SettlementAmounts } from '../domain/performance/types';
 import {
   createBilling,
+  createClawbackBillingAdjustment,
   createSettlementClawback,
   createSettlementFromPerformance,
   recordBillingInvoiceEvidence,
+  recordClawbackBillingInvoiceEvidence,
   registerChannelRecovery,
   registerCollection,
   registerPayout,
@@ -204,6 +206,47 @@ export async function createBusinessClawback(
     createdBy:actorId,
   });
   return deps.operations.ensureClawback(settlementId,candidate);
+}
+
+export async function ensureClawbackBillingAdjustment(
+  deps:SettlementDeps,
+  settlementId:string,
+  clawbackId:string,
+){
+  await adminId(deps.actors);
+  const settlement=await deps.operations.getSettlement(settlementId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const clawbacks=await deps.operations.listClawbacks(settlementId);
+  const clawback=clawbacks.find((item)=>item.id===clawbackId);
+  if(!clawback)throw new Error('CLAWBACK_NOT_FOUND');
+  return deps.operations.ensureClawbackBilling(
+    clawbackId,
+    ()=>createClawbackBillingAdjustment(settlement,clawback,iso(deps.now)),
+  );
+}
+
+export async function recordClawbackBillingEvidence(
+  deps:SettlementDeps,
+  settlementId:string,
+  clawbackId:string,
+  input:{reference:string;issuedAt:string;note?:string},
+){
+  const actorId=await adminId(deps.actors);
+  const settlement=await deps.operations.getSettlement(settlementId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const adjustment=await deps.operations.getClawbackBillingByClawbackId(clawbackId);
+  if(!adjustment||adjustment.settlementId!==settlementId)throw new Error('CLAWBACK_BILLING_NOT_FOUND');
+  const recordedAt=iso(deps.now);
+  return deps.operations.mutateClawbackBilling(
+    clawbackId,
+    current=>recordClawbackBillingInvoiceEvidence(current,{
+      reference:input.reference,
+      issuedAt:input.issuedAt,
+      recordedAt,
+      recordedBy:actorId,
+      ...(input.note?{note:input.note}:{}),
+    }),
+  );
 }
 
 export async function ensureSettlementBilling(deps:SettlementDeps,settlementId:string){

@@ -9,7 +9,9 @@ test('ERP5 offer parser preserves unknown deposit instead of inventing zero',()=
     '60_2만':{rent:590000,deposit:0},
   },'p1');
   assert.equal(parsed.offers[0].deposit,undefined);
+  assert.equal(parsed.offers[0].depositState,'UNKNOWN');
   assert.equal(parsed.offers[1].deposit,0);
+  assert.equal(parsed.offers[1].depositState,'ZERO');
   assert.equal(parsed.offers[1].annualMileageKm,20000);
 });
 

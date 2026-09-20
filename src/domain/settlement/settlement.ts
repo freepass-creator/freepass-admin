@@ -140,6 +140,7 @@ export function reverseLedgerEntry(
   settlement: SettlementItem,
   entries: LedgerEntry[],
   reversal: LedgerEntry,
+  payoutPolicy: PayoutPolicy = 'AFTER_FULL_COLLECTION',
 ): LedgerEntry[] {
   if (
     reversal.settlementId !== settlement.id
@@ -159,6 +160,23 @@ export function reverseLedgerEntry(
     throw new Error('Original ledger entry was not found.');
   }
   if (reversal.amount !== original.amount) throw new Error('Reversal amount must match the original entry.');
+
+  if (payoutPolicy === 'AFTER_FULL_COLLECTION' && original.account === 'SUPPLIER_COLLECTION') {
+    const reversed = new Set(
+      entries
+        .filter((entry) => entry.kind === 'REVERSAL' && entry.reversalOfEntryId)
+        .map((entry) => entry.reversalOfEntryId),
+    );
+    const activePayoutExists = entries.some(
+      (entry) => entry.kind === 'CASH'
+        && entry.account === 'CHANNEL_PAYOUT'
+        && !reversed.has(entry.id),
+    );
+    if (activePayoutExists) {
+      throw new Error('Reverse channel payout entries before reversing supplier collection.');
+    }
+  }
+
   if (entries.some((entry) => entry.kind === 'REVERSAL' && entry.reversalOfEntryId === original.id)) {
     throw new Error('Ledger entry is already reversed.');
   }

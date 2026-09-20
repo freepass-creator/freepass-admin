@@ -76,6 +76,10 @@ export function createApplication(input: CreateApplicationInput): Application {
     snapshot: {
       productId: input.product.id,
       productVersion: input.product.version,
+      sourceSnapshotId: input.product.sourceSnapshotId,
+      supplierProductKey: input.product.supplierProductKey,
+      ...(input.product.commercialType ? { commercialType: input.product.commercialType } : {}),
+      ...(input.product.vehiclePrice !== undefined ? { vehiclePrice: input.product.vehiclePrice } : {}),
       supplierId: offer.supplierId ?? input.product.supplierId,
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },

@@ -129,13 +129,12 @@ export default async function NewIntakePage({searchParams}:{
 
         {!masterError&&salesChannels.length===0&&<p>활성 영업채널 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
         {!masterError&&assignees.length===0&&<p>활성 담당자 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
+        {product&&offer&&!masterError&&<BottomActionBar
+          ariaLabel="신규 접수 작업"
+          secondary={<Link className="btn" href={'/products?id='+encodeURIComponent(product.id)+'&offerId='+encodeURIComponent(offer.id)}>{ADMIN_ACTION_BAR_LABELS.intakeNew.secondary}</Link>}
+          primary={<button className="btn primary" type="submit" form="intake-create-form" disabled={!salesChannels.length||!assignees.length}>{ADMIN_ACTION_BAR_LABELS.intakeNew.primary}</button>}
+        />}
       </section>
     </section>
-
-    {product&&offer&&!masterError&&<BottomActionBar
-      ariaLabel="신규 접수 작업"
-      secondary={<Link className="btn" href={'/products?id='+encodeURIComponent(product.id)+'&offerId='+encodeURIComponent(offer.id)}>{ADMIN_ACTION_BAR_LABELS.intakeNew.secondary}</Link>}
-      primary={<button className="btn primary" type="submit" form="intake-create-form" disabled={!salesChannels.length||!assignees.length}>{ADMIN_ACTION_BAR_LABELS.intakeNew.primary}</button>}
-    />}
   </main>;
 }

@@ -153,6 +153,44 @@ test('수금/지급 원장은 같은 id 다른 금액 재사용을 막고 revers
   }),/already reversed/);
 });
 
+test('완납 후 지급정책에서는 지급을 먼저 되돌려야 수금 reversal이 가능하다',()=>{
+  let performance=createPerformanceFromDelivery(deliveredApplication());
+  performance=confirmBySupplier(
+    confirmBySalesperson(
+      setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1),
+      'channel-1','admin-1',t1,
+    ),
+    'supplier-1','admin-1',t1,
+  );
+  const {settlement}=createSettlementFromPerformance(performance,t1);
+  const billing=createBilling(settlement,t1);
+  let ledger=registerCollection(settlement,billing,[],{
+    id:'collection-full',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',
+    kind:'CASH',amount:1000000,occurredAt:t1,actorId:'admin-1',
+  });
+  ledger=registerPayout(settlement,billing,ledger,{
+    id:'payout-full',settlementId:settlement.id,account:'CHANNEL_PAYOUT',
+    kind:'CASH',amount:700000,occurredAt:t1,actorId:'admin-1',
+  },'AFTER_FULL_COLLECTION');
+
+  assert.throws(()=>reverseLedgerEntry(settlement,ledger,{
+    id:'reverse-collection-first',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',
+    kind:'REVERSAL',amount:1000000,occurredAt:t1,actorId:'admin-1',reversalOfEntryId:'collection-full',
+  }),/Reverse channel payout/);
+
+  ledger=reverseLedgerEntry(settlement,ledger,{
+    id:'reverse-payout',settlementId:settlement.id,account:'CHANNEL_PAYOUT',
+    kind:'REVERSAL',amount:700000,occurredAt:t1,actorId:'admin-1',reversalOfEntryId:'payout-full',
+  });
+  ledger=reverseLedgerEntry(settlement,ledger,{
+    id:'reverse-collection',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',
+    kind:'REVERSAL',amount:1000000,occurredAt:t1,actorId:'admin-1',reversalOfEntryId:'collection-full',
+  });
+  const balance=getSettlementBalance(settlement,billing,ledger);
+  assert.equal(balance.collected,0);
+  assert.equal(balance.paid,0);
+});
+
 test('금액 이견은 자동 확정하지 않고 재확인 또는 명시적 해결을 요구한다',()=>{
   let performance=createPerformanceFromDelivery(deliveredApplication());
   performance=setSettlementAmounts(performance,{supplierReceivable:1000000,channelPayable:700000,vatMode:'INCLUDED'},t1);

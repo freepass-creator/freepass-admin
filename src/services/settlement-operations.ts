@@ -12,6 +12,7 @@ import type { SettlementAmounts } from '../domain/performance/types';
 import {
   createBilling,
   createSettlementFromPerformance,
+  recordBillingInvoiceEvidence,
   registerCollection,
   registerPayout,
   reverseLedgerEntry,
@@ -144,6 +145,25 @@ export async function ensureSettlementBilling(deps:SettlementDeps,settlementId:s
   const settlement=await deps.operations.getSettlement(settlementId);
   if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
   return deps.operations.ensureBilling(settlementId,()=>createBilling(settlement,iso(deps.now)));
+}
+
+export async function recordBillingEvidence(
+  deps:SettlementDeps,
+  settlementId:string,
+  input:{reference:string;issuedAt:string;note?:string},
+){
+  const actorId=await adminId(deps.actors);
+  const recordedAt=iso(deps.now);
+  return deps.operations.mutateBilling(
+    settlementId,
+    current=>recordBillingInvoiceEvidence(current,{
+      reference:input.reference,
+      issuedAt:input.issuedAt,
+      recordedAt,
+      recordedBy:actorId,
+      ...(input.note?{note:input.note}:{}),
+    }),
+  );
 }
 
 export async function recordCollection(

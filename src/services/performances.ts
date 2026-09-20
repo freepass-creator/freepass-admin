@@ -1,6 +1,7 @@
 import { datePrefix } from '../domain/application/application-number';
 import { createNormalPerformance } from '../domain/performance/create-performance';
 import { performanceNumber } from '../domain/performance/performance-number';
+import type { Performance } from '../domain/performance/types';
 import type { ApplicationRepository, PerformanceRepository } from '../ports/repositories';
 
 export interface PerformanceDeps {
@@ -12,7 +13,7 @@ export interface PerformanceDeps {
 }
 
 export type EnsurePerformanceResult =
-  | { ok: true; performance: Awaited<ReturnType<PerformanceRepository['get']>> extends infer T ? Exclude<T, null> : never; created: boolean }
+  | { ok: true; performance: Performance; created: boolean }
   | { ok: false; reason: 'APPLICATION_NOT_FOUND' | 'NOT_DELIVERED' };
 
 /**

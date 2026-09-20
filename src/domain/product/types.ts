@@ -37,6 +37,8 @@ export interface Offer {
   termMonths: number;
   monthlyRent: number;
   deposit?: number;
+  /** Data contract semantics. Legacy sources may omit it. */
+  depositState?: 'KNOWN' | 'ZERO' | 'UNKNOWN' | 'NOT_APPLICABLE';
   prepayment?: number;
   annualMileageKm?: number;
   policyValues: PolicyValue[];

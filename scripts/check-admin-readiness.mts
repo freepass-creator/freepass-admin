@@ -258,6 +258,14 @@ add('catalog.offer-supplier-ui',
     &&has(intakeNew,'depositLabel(offer)'),
   'Multi-supplier Offer identity and deposit semantics must remain visible through Product selection and Intake.');
 
+add('ui.search-composition',
+  has(products,'className="ui-search-discovery"')
+    &&has(products,'data-ui-search-mode="search-filter"')
+    &&has(products,'data-ui-filter-trigger')
+    &&has(products,'data-ui-applied-filters')
+    &&!has(products,'COMMON_TERMS'),
+  'Product search must use AI Core SEARCH_FILTER composition without unproven persistent quick filters.');
+
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),
   'Application persistence must use namespaced collections and transaction-based sequencing.');

@@ -59,6 +59,13 @@ export type PolicyValue =
   | { policyId: string; type: 'TEXT'; value: string }
   | { policyId: string; type: 'DATE'; value: string };
 
+export interface ProductMedia {
+  /** Primary product/vehicle image when the upstream source provides one. */
+  primaryImageUrl?: string;
+  /** Additional images remain optional; UI must work when the array is empty or absent. */
+  imageUrls?: string[];
+}
+
 export interface CanonicalProduct {
   id: string;
   /**
@@ -75,6 +82,8 @@ export interface CanonicalProduct {
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;
   registration?: RegistrationInfo;
+  /** Image availability is data. Absence renders the standard "사진 준비 중" state. */
+  media?: ProductMedia;
   offers: Offer[];
   productPolicies: PolicyValue[];
   sourceSnapshotId: string;

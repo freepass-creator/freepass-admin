@@ -1,9 +1,10 @@
+import type { DocumentData } from 'firebase-admin/firestore';
 import { assertApplicationMutation } from '../../domain/application/invariants';
 import type { Application } from '../../domain/application/types';
 import type { ApplicationRepository } from '../../ports/repositories';
 import { erp5, erp5AdminCollection, requireErp5Write } from './firestore';
 
-function applicationOf(data:FirebaseFirestore.DocumentData,id:string):Application{
+function applicationOf(data:DocumentData,id:string):Application{
   const value={...data,id:data.id??id} as Application;
   if(!value.id||!value.applicationNumber||!value.submissionId||!value.snapshot){
     throw new Error('ERP5_APPLICATION_SHAPE_INVALID:'+id);

@@ -171,7 +171,7 @@ function mediaOf(d:Erp5Doc):CanonicalProduct['media']|undefined{
     .find((value)=>/^https?:\/\//i.test(value));
   const all=[...new Set([...(single?[single]:[]),...urls])];
   if(!all.length)return undefined;
-  return{primaryImageUrl:all[0],imageUrls:all};
+  return{primaryImageUrl:all[0]!,imageUrls:all};
 }
 
 function registrationOf(d:Erp5Doc):RegistrationInfo|undefined{

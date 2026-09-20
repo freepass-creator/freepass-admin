@@ -19,6 +19,9 @@ const [
   intake,
   intakeNew,
   settlement,
+  settlementActions,
+  settlementService,
+  settlementDomain,
   runtime,
   authConfig,
   authSession,
@@ -31,6 +34,9 @@ const [
   referenceMaster,
   repositoryPort,
   fileRepositories,
+  fileOperations,
+  erp5OperationsForBilling,
+  smoke,
   env,
   pkg,
   workflow,
@@ -40,6 +46,9 @@ const [
   text('src/app/intake/page.tsx'),
   text('src/app/intake/new/page.tsx'),
   text('src/app/settlement/page.tsx'),
+  text('src/app/settlement/actions.ts'),
+  text('src/services/settlement-operations.ts'),
+  text('src/domain/settlement/settlement.ts'),
   text('src/server/admin-runtime.ts'),
   text('src/server/auth/config.ts'),
   text('src/server/auth/session.ts'),
@@ -52,6 +61,9 @@ const [
   text('src/server/admin-masters.ts'),
   text('src/ports/repositories.ts'),
   text('src/adapters/store/repositories.ts'),
+  text('src/adapters/store/operations-repository.ts'),
+  text('src/adapters/erp5/operations-repository.ts'),
+  text('scripts/admin-vertical-smoke.mts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -153,6 +165,30 @@ add('smoke.script-registered',
 add('smoke.ci-enforced',
   has(workflow,'npm run admin:smoke'),
   'backend-check must execute the Admin vertical smoke before readiness/build.');
+
+add('billing.evidence-domain-gate',
+  has(settlementDomain,"billing.status !== 'EVIDENCE_COMPLETE'")&&has(settlementDomain,'Billing invoice evidence must be complete before collection.'),
+  'Collection must remain fail-closed until invoice evidence is complete.');
+
+add('billing.evidence-service',
+  has(settlementService,'recordBillingEvidence')&&has(settlementService,'recordBillingInvoiceEvidence'),
+  'Settlement service must expose actor-backed billing evidence recording.');
+
+add('billing.evidence-ui',
+  has(settlement,'recordBillingEvidenceAction')&&has(settlementActions,'recordBillingEvidence(deps()'),
+  'Settlement UI and Server Action must expose the invoice evidence step before collection.');
+
+add('billing.evidence-file-persistence',
+  has(fileOperations,'mutateBilling')&&has(fileOperations,'BILLING_IDENTITY_IMMUTABLE'),
+  'Development operations repository must persist billing evidence without changing billing identity.');
+
+add('billing.evidence-erp5-persistence',
+  has(erp5OperationsForBilling,'mutateBilling')&&has(erp5OperationsForBilling,'runTransaction'),
+  'ERP5 operations repository must persist billing evidence transactionally.');
+
+add('billing.evidence-smoke',
+  has(smoke,'SMOKE-INVOICE-001')&&has(smoke,"billingWithEvidence.status,'EVIDENCE_COMPLETE'"),
+  'Vertical smoke must prove invoice evidence survives before collection.');
 
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',

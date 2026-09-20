@@ -633,3 +633,30 @@ P13에서 이를 Domain invariant로 격상하고 회귀 테스트를 추가했�
 2. 실제 ERP5 환경에서 상품→접수→인도→정산→계산서→수금→지급 1건 persistence 재조회
 3. F04는 OBSERVE 기반 row-link 검증부터 진행
 4. FreePass Data Catalog ACTIVE 전까지 ERP5 direct read 유지
+
+
+---
+
+## 19. P14 AI Core UI Composition 적용 — 2026-09-21
+
+AI Core Search & Discovery Composition 정본 후보(PR ai-core #185)를 FreePass Admin 상품찾기에 최초 적용한다.
+
+### Product Search mode
+- `SEARCH_FILTER`
+- 검색창과 세부필터 trigger를 같은 row에 배치
+- 상시 1/6/12/24/36/60개월 quick filter 제거
+- 기간 / 월 대여료 상한 / 보증금 상한은 세부필터에 수용
+- 적용된 조건은 검색창 바로 아래에서 보이고 개별 해제 가능
+- 모바일에서 세부필터 panel은 bottom-sheet 형태로 전환
+- 검색/필터/결과수/목록은 동일 URL query를 SSOT로 사용
+
+### 같이 수정한 기능 결함
+기존 숫자 query parser는 빈 문자열을 Number('')=0으로 읽을 수 있었다.
+필터 미입력은 0이 아니라 `undefined`가 되도록 수정한다.
+
+### 금지
+- 운영 근거 없이 상품검색 quick filter를 다시 추가하지 않는다.
+- 같은 조건을 검색 parser / quick filter / detailed filter의 서로 다른 state로 중복 관리하지 않는다.
+
+최신 branch:
+`work/gpt/admin-p14-ui-composition-20260921`

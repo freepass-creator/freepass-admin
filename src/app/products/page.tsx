@@ -176,6 +176,10 @@ export default async function ProductsPage({searchParams}:{
         <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 찾기</h1></div><span className="count">{matches.length}건 · {page}/{totalPages}</span></div>
 
         <form className="ui-search-discovery" data-ui-search-mode="search-filter">
+          <input type="hidden" name="term" value={first(q.term)}/>
+          <input type="hidden" name="maxRent" value={first(q.maxRent)}/>
+          <input type="hidden" name="maxDeposit" value={first(q.maxDeposit)}/>
+          <input type="hidden" name="mileage" value={first(q.mileage)}/>
           <div data-ui-search-row>
             <input
               className="ui-search"

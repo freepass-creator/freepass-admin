@@ -161,7 +161,7 @@ export default async function IntakePage({searchParams}:{
               <span className={app.progress.deliveryCompleted?'done':''}>인도</span>
             </div>
             <p>{statusLabel(app.status)} · {app.salesChannelId} · {app.assigneeId}</p>
-            <p>{app.snapshot.offer.termMonths}개월 · 월 {won(app.snapshot.offer.monthlyRent)}</p>
+            <p>{app.snapshot.registration?.vehicleNumber||'차량번호 미입력'} · {app.snapshot.offer.termMonths}개월 · 월 {won(app.snapshot.offer.monthlyRent)}</p>
           </Link>)}
           {filtered.length===0&&<p>조건에 맞는 접수가 없습니다.</p>}
         </div>
@@ -184,6 +184,7 @@ export default async function IntakePage({searchParams}:{
             <div><dt>접수번호</dt><dd>{selected.applicationNumber}</dd></div>
             <div><dt>고객</dt><dd>{selected.applicantName}</dd></div>
             <div><dt>연락처</dt><dd>{selected.applicantPhone||'미입력'}</dd></div>
+            <div><dt>차량번호</dt><dd>{selected.snapshot.registration?.vehicleNumber||'미입력'}</dd></div>
             <div><dt>기간</dt><dd>{selected.snapshot.offer.termMonths}개월</dd></div>
             <div><dt>월 대여료</dt><dd>{won(selected.snapshot.offer.monthlyRent)}</dd></div>
             <div><dt>보증금</dt><dd>{won(selected.snapshot.offer.deposit)}</dd></div>

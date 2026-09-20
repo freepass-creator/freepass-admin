@@ -48,6 +48,8 @@ const [
   erp5OperationsForBilling,
   smoke,
   dataShadow,
+  f04Port,
+  f04Service,
   env,
   pkg,
   workflow,
@@ -86,6 +88,8 @@ const [
   text('src/adapters/erp5/operations-repository.ts'),
   text('scripts/admin-vertical-smoke.mts'),
   text('scripts/admin-data-shadow.mts'),
+  text('src/ports/legacy-f04.ts'),
+  text('src/services/f04-bridge.ts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -294,6 +298,19 @@ add('billing.evidence-erp5-persistence',
 add('billing.evidence-smoke',
   has(smoke,'SMOKE-INVOICE-001')&&has(smoke,"billingWithEvidence.status,'EVIDENCE_COMPLETE'"),
   'Vertical smoke must prove invoice evidence survives before collection.');
+
+add('f04.bridge-phases',
+  has(f04Port,"'OBSERVE'")&&has(f04Port,"'MIRROR_ADMIN_OWNED'")&&has(f04Port,"'ADMIN_SINGLE_WRITER'"),
+  'F04 compatibility must use explicit transition phases instead of an implicit dual-writer fallback.');
+
+add('f04.bridge-stable-id',
+  has(f04Service,"'freepass-admin|'")&&has(f04Service,"'stl_'")&&has(f04Service,'f04SettlementCode'),
+  'F04 bridge must use a deterministic Admin application identity mapping, not vehicle number as the system key.');
+
+add('f04.bridge-field-ownership',
+  has(f04Service,'분납여부 / 청구월 / 다음회차일 / 환수* / 요율 / 인센티브 / 가감')
+    &&has(f04Service,"if(mode==='OBSERVE')return{}"),
+  'Parallel F04 mirror must not overwrite transitional facts Admin does not own yet.');
 
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',

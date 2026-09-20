@@ -1,6 +1,10 @@
 import Link from 'next/link';
+import type { PerformanceStatus } from '../../domain/performance/types';
+import { filterPerformances, performanceFacets } from '../../domain/performance/search';
 import { getSettlementBalance } from '../../domain/settlement/settlement';
 import { adminOperations } from '../../server/admin-operations';
+import { requireAdminPageActor } from '../../server/auth/page-guard';
+import { LogoutButton } from '../_auth/LogoutButton';
 import {
   collectAction,
   confirmSales,
@@ -11,16 +15,17 @@ import {
   payoutAction,
   reconfirmSales,
   resolveIssue,
+  reverseLedgerAction,
   saveAmounts,
   supplierIssueAction,
   syncDeliveredPerformances,
 } from './actions';
 
-import { requireAdminPageActor } from '../../server/auth/page-guard';
-import { LogoutButton } from '../_auth/LogoutButton';
 export const dynamic='force-dynamic';
 
+const PAGE_SIZE=50;
 const first=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]??'':v??'';
+const positiveInt=(value:string,fallback=1)=>{const x=Number(value);return Number.isInteger(x)&&x>0?x:fallback;};
 const won=(v:number|null|undefined)=>typeof v==='number'?v.toLocaleString('ko-KR')+'원':'미확인';
 
 const statusLabel:Record<string,string>={
@@ -38,10 +43,28 @@ export default async function SettlementPage({searchParams}:{
 }){
   await requireAdminPageActor();
   const q=await searchParams;
+
   const selectedId=first(q.id);
   const error=first(q.error);
   const synced=first(q.synced);
   const created=first(q.created);
+  const text=first(q.q);
+  const rawStatus=first(q.status);
+  const allowedStatuses=[
+    'AWAITING_AMOUNTS',
+    'AWAITING_SALESPERSON_CONFIRMATION',
+    'AWAITING_SUPPLIER_REVIEW',
+    'AWAITING_SALESPERSON_RECONFIRMATION',
+    'SUPPLIER_ISSUE',
+    'READY_TO_FINALIZE',
+    'FINALIZED',
+    'OPEN',
+  ];
+  const status=(allowedStatuses.includes(rawStatus)?rawStatus:undefined) as PerformanceStatus|'OPEN'|undefined;
+  const supplierId=first(q.supplier)||undefined;
+  const salesChannelId=first(q.channel)||undefined;
+  const assigneeId=first(q.assignee)||undefined;
+  const requestedPage=positiveInt(first(q.page));
 
   let operations;
   try{operations=adminOperations();}
@@ -50,11 +73,46 @@ export default async function SettlementPage({searchParams}:{
   }
 
   const performances=await operations.listPerformances();
-  const selected=performances.find((x)=>x.id===selectedId)??performances[0]??null;
+  const facets=performanceFacets(performances);
+  const filtered=filterPerformances(performances,{text,status,supplierId,salesChannelId,assigneeId});
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  const page=Math.min(requestedPage,totalPages);
+  const visible=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
+  const selected=performances.find((x)=>x.id===selectedId)??visible[0]??null;
+
   const settlement=selected?await operations.findSettlementByPerformanceId(selected.id):null;
   const billing=settlement?await operations.getBillingBySettlementId(settlement.id):null;
   const ledger=settlement?await operations.listLedger(settlement.id):[];
   const balance=settlement?getSettlementBalance(settlement,billing??undefined,ledger):null;
+  const reversedIds=new Set(
+    ledger
+      .filter((entry)=>entry.kind==='REVERSAL'&&entry.reversalOfEntryId)
+      .map((entry)=>entry.reversalOfEntryId as string),
+  );
+
+  const href=(extra:Record<string,string>)=>{
+    const params=new URLSearchParams();
+    for(const [key,value] of Object.entries({
+      q:text,
+      status:rawStatus,
+      supplier:supplierId??'',
+      channel:salesChannelId??'',
+      assignee:assigneeId??'',
+      page:String(page),
+      ...extra,
+    })){
+      if(value)params.set(key,value);
+    }
+    return '/settlement?'+params.toString();
+  };
+
+  const tabs=[
+    ['','전체',facets.statusCounts.ALL],
+    ['OPEN','진행중',facets.statusCounts.OPEN],
+    ['READY_TO_FINALIZE','확정대기',facets.statusCounts.READY_TO_FINALIZE],
+    ['SUPPLIER_ISSUE','이슈',facets.statusCounts.SUPPLIER_ISSUE],
+    ['FINALIZED','정산확정',facets.statusCounts.FINALIZED],
+  ] as const;
 
   return <main className="admin-shell">
     <header className="topbar">
@@ -65,27 +123,88 @@ export default async function SettlementPage({searchParams}:{
 
     <section className="workspace">
       <section className="panel product-panel">
-        <div className="panel-head"><div><p className="eyebrow">PERFORMANCE</p><h1>실적 목록</h1></div><span className="count">{performances.length}건</span></div>
+        <div className="panel-head">
+          <div><p className="eyebrow">PERFORMANCE</p><h1>실적 목록</h1></div>
+          <span className="count">{filtered.length}/{performances.length}건 · {page}/{totalPages}</span>
+        </div>
+
         <form action={syncDeliveredPerformances}><button className="new-app" type="submit">인도완료 접수 동기화</button></form>
         {synced&&<p>인도완료 접수를 실적 원장과 대조했습니다.</p>}
         {created==='1'&&<p>인도완료에서 실적 1건을 생성했습니다.</p>}
         {created==='replay'&&<p>이미 존재하는 실적을 다시 열었습니다.</p>}
         {error&&<p>{error}</p>}
 
-        <div className="application-list">
-          {performances.map((p)=><Link key={p.id} href={'/settlement?id='+encodeURIComponent(p.id)} className="application-card">
-            <div className="app-top"><div><b>{p.snapshot.applicantName}</b><span>{p.snapshot.applicationNumber}</span></div><strong>{p.snapshot.vehicle.modelId}</strong></div>
-            <p>{statusLabel[p.status]??p.status} · {p.snapshot.supplierId} · {p.snapshot.salesChannelId}</p>
-          </Link>)}
-          {performances.length===0&&<p>실적이 없습니다. 접수에서 인도완료 처리 후 자동 생성되거나 위 동기화 버튼으로 기존 인도완료 건을 가져옵니다.</p>}
+        <div className="work-tabs">
+          {tabs.map(([value,label,count])=><Link
+            key={label}
+            href={href({status:value,page:'1',id:''})}
+            className={(rawStatus||'')===value?'active':''}
+          >{label} {count}</Link>)}
         </div>
+
+        <form className="intake-filter-grid">
+          <input name="q" defaultValue={text} placeholder="고객·접수번호·차량번호 검색"/>
+          <select name="status" defaultValue={rawStatus}>
+            <option value="">전체 상태</option>
+            <option value="OPEN">진행중 전체</option>
+            <option value="AWAITING_AMOUNTS">금액 입력 대기</option>
+            <option value="AWAITING_SALESPERSON_CONFIRMATION">영업채널 확인</option>
+            <option value="AWAITING_SUPPLIER_REVIEW">공급사 확인</option>
+            <option value="AWAITING_SALESPERSON_RECONFIRMATION">영업채널 재확인</option>
+            <option value="SUPPLIER_ISSUE">이슈 해결</option>
+            <option value="READY_TO_FINALIZE">정산확정 가능</option>
+            <option value="FINALIZED">정산확정</option>
+          </select>
+          <select name="supplier" defaultValue={supplierId??''}>
+            <option value="">전체 공급사</option>
+            {facets.suppliers.map((value)=><option key={value} value={value}>{value}</option>)}
+          </select>
+          <select name="channel" defaultValue={salesChannelId??''}>
+            <option value="">전체 영업채널</option>
+            {facets.salesChannels.map((value)=><option key={value} value={value}>{value}</option>)}
+          </select>
+          <select name="assignee" defaultValue={assigneeId??''}>
+            <option value="">전체 담당자</option>
+            {facets.assignees.map((value)=><option key={value} value={value}>{value}</option>)}
+          </select>
+          <button type="submit">적용</button>
+          <Link href="/settlement">초기화</Link>
+        </form>
+
+        <div className="application-list">
+          {visible.map((p)=><Link
+            key={p.id}
+            href={href({id:p.id})}
+            className={'application-card '+(p.id===selected?.id?'selected':'')}
+          >
+            <div className="app-top">
+              <div><b>{p.snapshot.applicantName}</b><span>{p.snapshot.applicationNumber}</span></div>
+              <strong>{p.snapshot.vehicle.modelId}</strong>
+            </div>
+            <p>{statusLabel[p.status]??p.status}</p>
+            <p>{p.snapshot.registration?.vehicleNumber||'차량번호 미입력'} · {p.snapshot.supplierId} · {p.snapshot.salesChannelId}</p>
+          </Link>)}
+          {filtered.length===0&&<p>조건에 맞는 실적이 없습니다.</p>}
+        </div>
+
+        {totalPages>1&&<div className="quick-filters">
+          {page>1&&<Link href={href({page:String(page-1),id:''})}>이전</Link>}
+          <span>{page} / {totalPages}</span>
+          {page<totalPages&&<Link href={href({page:String(page+1),id:''})}>다음</Link>}
+        </div>}
       </section>
 
       <section className="panel detail-panel">
         <div className="panel-head"><div><p className="eyebrow">PERFORMANCE DETAIL</p><h1>실적 상세</h1></div></div>
         {selected?<>
-          <div className="vehicle-title"><div><h2>{selected.snapshot.applicantName}</h2><p>{selected.snapshot.applicationNumber} · {selected.snapshot.vehicle.modelId}</p></div><span className="status-dot">{statusLabel[selected.status]??selected.status}</span></div>
+          <div className="vehicle-title">
+            <div><h2>{selected.snapshot.applicantName}</h2><p>{selected.snapshot.applicationNumber} · {selected.snapshot.vehicle.modelId}</p></div>
+            <span className="status-dot">{statusLabel[selected.status]??selected.status}</span>
+          </div>
+
           <dl className="summary-grid">
+            <div><dt>차량번호</dt><dd>{selected.snapshot.registration?.vehicleNumber||'미입력'}</dd></div>
+            <div><dt>담당자</dt><dd>{selected.snapshot.assigneeId}</dd></div>
             <div><dt>공급사 받을 돈</dt><dd>{won(selected.amounts.supplierReceivable)}</dd></div>
             <div><dt>영업채널 줄 돈</dt><dd>{won(selected.amounts.channelPayable)}</dd></div>
             <div><dt>VAT</dt><dd>{selected.amounts.vatMode}</dd></div>
@@ -112,6 +231,7 @@ export default async function SettlementPage({searchParams}:{
 
       <section className="panel work-panel">
         <div className="panel-head"><div><p className="eyebrow">ACTION</p><h1>다음 업무</h1></div></div>
+
         {selected?<>
           {selected.status==='AWAITING_AMOUNTS'&&<form action={saveAmounts} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/>
@@ -187,7 +307,25 @@ export default async function SettlementPage({searchParams}:{
             </form>}
 
             <h3>원장</h3>
-            {ledger.map((x)=><div key={x.id} className="work-hint"><b>{x.account} · {x.kind} · {won(x.amount)}</b><span>{x.occurredAt} · {x.actorId}{x.note?' · '+x.note:''}</span></div>)}
+            {ledger.map((entry)=>{
+              const reversed=entry.kind==='CASH'&&reversedIds.has(entry.id);
+              return <div key={entry.id} className="work-hint">
+                <b>{entry.account} · {entry.kind} · {won(entry.amount)}{reversed?' · 정정됨':''}</b>
+                <span>{entry.occurredAt} · {entry.actorId}{entry.note?' · '+entry.note:''}{entry.reversalOfEntryId?' · 원본 '+entry.reversalOfEntryId:''}</span>
+                {entry.kind==='CASH'&&!reversed&&<form action={reverseLedgerAction} className="ledger-reversal-form">
+                  <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="settlementId" value={settlement.id}/>
+                  <input type="hidden" name="originalId" value={entry.id}/>
+                  <input type="hidden" name="account" value={entry.account}/>
+                  <input type="hidden" name="amount" value={entry.amount}/>
+                  <input name="reason" required placeholder="정정 사유"/>
+                  <button type="submit">원장 정정</button>
+                </form>}
+              </div>;
+            })}
+            {ledger.some((entry)=>entry.kind==='CASH'&&entry.account==='SUPPLIER_COLLECTION'&&!reversedIds.has(entry.id))
+              &&ledger.some((entry)=>entry.kind==='CASH'&&entry.account==='CHANNEL_PAYOUT'&&!reversedIds.has(entry.id))
+              &&<small>완납 후 지급정책에서는 수금을 정정하기 전에 지급 원장을 먼저 정정해야 합니다.</small>}
           </>:null}
         </>:<p>실적을 선택하세요.</p>}
       </section>

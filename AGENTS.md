@@ -28,10 +28,13 @@ AI Core/DevCenter의 운영 규격을 이 프로젝트에 적용한다. 기능 �
 ## 1. Source of truth
 이 저장소가 freepass-admin(관리자 화면) 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
 
-## 2. Absolute isolation
-- 기존 FreePass ERP 저장소의 코드/DB/API/Firebase/시트/환경변수/인증을 자동 연결·복사·fallback하지 않는다.
-- 기존 시스템은 사용자가 명시적으로 요청한 범위에서 읽고 설계/UX 참고만 할 수 있다.
-- 신규 외부 연결은 명시적 승인 전에는 추가하지 않는다.
+## 2. Isolation + explicit legacy bridge
+- 기존 FreePass ERP 저장소의 코드/DB/API/Firebase/시트/환경변수/인증을 **자동** 연결·복사·fallback하지 않는다.
+- 기존 시스템은 사용자가 명시적으로 요청한 범위에서만 연결할 수 있다.
+- **2026-09-21 사용자 승인 예외:** `[F04 사용중] 프리패스 정산원장`은 Admin 단독 운영 전환까지 과도기 병행 대상으로 연결할 수 있다.
+- F04는 Canonical Product/Application/Performance/Settlement의 정본이나 숨은 fallback이 아니다. 연결 시 반드시 명시적 Legacy Bridge/Adapter 경계 뒤에 둔다.
+- 신규 접수·정산의 최종 목표는 FreePass Admin 단일 writer다. 전환 이후 F04는 조회/검증/내보내기/보관 역할로 내린다.
+- 그 외 신규 외부 연결은 명시적 승인 전에는 추가하지 않는다.
 
 ## 3. Repository scope — ADMIN only
 

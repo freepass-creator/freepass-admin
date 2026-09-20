@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { adminOperations } from '../../server/admin-operations';
+import { adminSettlementPricingProvider } from '../../server/admin-settlement-pricing';
 import { adminActorProvider, adminRepositories } from '../../server/admin-runtime';
 import {
   confirmSalesperson,
@@ -18,6 +19,7 @@ import {
   reverseEntry,
   setPerformanceAmounts,
   supplierIssue,
+  suggestPerformancePricing,
 } from '../../services/settlement-operations';
 
 const s=(v:FormDataEntryValue|null)=>String(v??'').trim();
@@ -51,6 +53,20 @@ export async function syncDeliveredPerformances(){
     }
   }
   redirect('/settlement?synced=1');
+}
+
+export async function suggestAmounts(formData:FormData){
+  const id=s(formData.get('id'));
+  try{
+    const result=await suggestPerformancePricing(
+      {...deps(),pricing:adminSettlementPricingProvider()},
+      id,
+    );
+    if(!result.applied){
+      redirect(href(id,result.quote.reason));
+    }
+  }catch(e){redirect(href(id,e));}
+  redirect(href(id));
 }
 
 export async function saveAmounts(formData:FormData){

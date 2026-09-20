@@ -131,6 +131,20 @@ export class FileOperationsRepository implements OperationsRepository {
     return (await this.read()).billings.find((x) => x.settlementId === settlementId) ?? null;
   }
 
+  async mutateBilling(settlementId: string, change: (current: BillingRecord) => BillingRecord) {
+    return this.mutate((state) => {
+      const index = state.billings.findIndex((x) => x.settlementId === settlementId);
+      if (index < 0) throw new Error('BILLING_NOT_FOUND');
+      const current = state.billings[index];
+      const next = change(structuredClone(current));
+      if (next.id !== current.id || next.settlementId !== current.settlementId) {
+        throw new Error('BILLING_IDENTITY_IMMUTABLE');
+      }
+      state.billings[index] = structuredClone(next);
+      return structuredClone(next);
+    });
+  }
+
   async listLedger(settlementId: string) {
     return (await this.read()).ledger
       .filter((x) => x.settlementId === settlementId)

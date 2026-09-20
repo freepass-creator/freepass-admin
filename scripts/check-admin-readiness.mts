@@ -30,6 +30,8 @@ const [
   freepassDataProduct,
   productSearch,
   applicationCreate,
+  settlementPricingPort,
+  settlementPricingService,
   erp5Application,
   erp5Operations,
   intakeActions,
@@ -61,6 +63,8 @@ const [
   text('src/adapters/freepass-data/product-repository.ts'),
   text('src/domain/search/match-product.ts'),
   text('src/domain/application/create-application.ts'),
+  text('src/ports/settlement-pricing.ts'),
+  text('src/services/settlement-pricing.ts'),
   text('src/adapters/erp5/application-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
   text('src/app/intake/actions.ts'),
@@ -152,6 +156,24 @@ add('catalog.data-shadow-command',
   has(pkg,'"admin:data-shadow"')&&has(dataShadow,'compareProductSources')
     &&has(dataShadow,'FPA_DATA_SHADOW_STRICT'),
   'Admin must provide an explicit ERP5-vs-FreePass-Data shadow parity command before read cutover.');
+
+add('catalog.provenance-to-intake',
+  has(applicationCreate,'sourceSnapshotId: input.product.sourceSnapshotId')
+    &&has(applicationCreate,'supplierProductKey: input.product.supplierProductKey'),
+  'Application Snapshot must preserve upstream catalog release/source provenance.');
+
+add('settlement.pricing-layer-boundary',
+  has(settlementPricingPort,'SettlementCatalogFacts')
+    &&has(settlementPricingPort,'SettlementOperationalFacts')
+    &&has(settlementPricingPort,'SettlementPricingProvider'),
+  'Settlement pricing contract must keep catalog facts separate from Admin operational facts.');
+
+add('settlement.pricing-provenance',
+  has(settlementPricingService,'sourceOfferId')
+    &&has(settlementPricingService,'sourceOfferRevision')
+    &&has(settlementPricingService,'sourcePriceTermKey')
+    &&has(settlementPricingService,'sourceSnapshotId'),
+  'Settlement pricing input must retain Data release and Offer/PriceTerm provenance.');
 
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),

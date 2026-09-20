@@ -1,0 +1,71 @@
+{
+  "schema_version": "freepass-admin-ai-core-workflow-binding/v1",
+  "binding_state": "SHADOW",
+  "runtime_authority": "FREEPASS_ADMIN_DOMAIN",
+  "core": {
+    "repository": "freepass-creator/ai-core",
+    "revision": "d47c25a596b7185f2dcb81cc2e88566fd4d7bd45",
+    "workflow_id": "freepass-admin.application-lifecycle",
+    "workflow_version": "0.1.0",
+    "projection_id": "freepass-admin.application.status",
+    "projection_version": "0.1.0",
+    "sources": [
+      {
+        "path": "registry/workflows.json",
+        "blob_sha": "fa360faecc8eea7c3efb23e0cd2207e010082fbc"
+      },
+      {
+        "path": "registry/workflow-projections.json",
+        "blob_sha": "653c654e838fc78d4311bc814074731c4625815f"
+      },
+      {
+        "path": "contracts/workflow-projection.schema.json",
+        "blob_sha": "f01b55f8fdf3d0d0310c9a8c6d5a01c523b2fe57"
+      }
+    ]
+  },
+  "local": {
+    "lifecycle_mapping": {
+      "non_cancelled": "ACTIVE",
+      "cancelled": "CANCELLED"
+    },
+    "fact_mapping": {
+      "application.contract-completed": "progress.contractCompleted",
+      "application.documents-completed": "progress.documentsCompleted",
+      "application.balance-completed": "progress.balanceCompleted",
+      "application.delivery-completed": "progress.deliveryCompleted",
+      "application.cancellation-reason": "cancellationReason"
+    },
+    "derived_status_precedence": [
+      "CANCELLED",
+      "DELIVERED",
+      "CONTRACTED",
+      "RECEIVED"
+    ],
+    "source_revision": "77f682af680528124096e4f7871504a3596c8990",
+    "source_files": [
+      {
+        "path": "src/domain/application/types.ts",
+        "blob_sha": "3a758e425ac4ad083c401f3aba012b0794a1c207"
+      },
+      {
+        "path": "src/domain/application/update-progress.ts",
+        "blob_sha": "0af6cc3679f0d5cd417c7f8abe69b8bb0766b594"
+      },
+      {
+        "path": "src/services/applications.ts",
+        "blob_sha": "8a8d18950ab273471a43c69853f902009413d210"
+      },
+      {
+        "path": "src/services/__tests__/applications.test.ts",
+        "blob_sha": "da229a328a4b49e3223b70ff68c0542013fc38f7"
+      }
+    ]
+  },
+  "enforcement": {
+    "writes_routed_through_ai_core_engine": false,
+    "projection_parity_checked_in_ci": true,
+    "source_status_remains_authoritative": true,
+    "promotion_requires_runtime_cutover": true
+  }
+}

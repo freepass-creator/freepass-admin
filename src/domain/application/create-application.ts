@@ -76,7 +76,7 @@ export function createApplication(input: CreateApplicationInput): Application {
     snapshot: {
       productId: input.product.id,
       productVersion: input.product.version,
-      supplierId: input.product.supplierId,
+      supplierId: offer.supplierId ?? input.product.supplierId,
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
       ...(input.product.registration ? { registration: { ...input.product.registration } } : {}),

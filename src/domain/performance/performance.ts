@@ -53,6 +53,7 @@ export function createPerformanceFromDelivery(application: Application): Perform
       productVersion: application.snapshot.productVersion,
       vehicle: { ...application.snapshot.vehicle },
       specs: { ...application.snapshot.specs },
+      ...(application.snapshot.registration ? { registration: { ...application.snapshot.registration } } : {}),
       offer: {
         ...application.snapshot.offer,
         policyValues: application.snapshot.offer.policyValues.map(clonePolicy),

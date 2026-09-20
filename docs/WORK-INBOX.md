@@ -761,3 +761,45 @@ AI Core Search & Discovery Composition 정본 후보(PR ai-core #185)를 FreePas
 
 최신 branch:
 `work/gpt/admin-p16-mobile-detail-photo-buttons-20260921`
+
+
+---
+
+## 22. P17 공용 하단 Action Bar — 2026-09-21
+
+사용자 재확정:
+하단바는 화면마다 새로 만드는 CTA 박스가 아니다.
+**공용 UI region 하나가 계속 유지되고, 현재 화면/업무 상태에 따라 안의 버튼 세트만 교체**된다.
+
+### 공통 규격
+- component: `src/app/_ui/BottomActionBar.tsx`
+- label registry: `src/app/_ui/action-bar-registry.ts`
+- machine marker: `data-ui-bottom-action`
+- 두 버튼 기본 비율: **보조 3 : 주행동 7**
+- primary는 한 boundary에 하나
+- 상단 header는 정보/상태 중심
+- 드문 위험/정정/환수 기능은 본문/보조 업무 영역에 남길 수 있으나 현재 주요 행동을 중복 CTA로 만들지 않는다.
+
+### 현재 연결
+- 상품 상세: `공유 | 이 조건으로 접수하기`
+- 신규접수: `그만두기 | 접수 저장`
+- 접수 진행: `접수 취소 | 계약서/서류/잔금/인도 다음 업무 완료`
+- 인도완료: `접수 취소 | 실적·정산 열기`
+- 실적 금액: `기존 정산 규칙 자동추천 | 금액 직접 저장`
+- 영업채널 확인: `이견 있음 | 확인`
+- 공급사 확인: `이슈 등록 | 공급사 확인 완료`
+- 재확인/이슈/확정: 해당 상태 primary 1개
+- 정산확정 후: `청구 생성 → 계산서 처리 → 수금 등록 → 지급 등록` 상태에 따라 primary 교체
+
+### 모바일 depth
+기존 결정은 depth 0의 글로벌 하단 네비와 depth 1/2의 contextual action이 같은 하단 영역을 공유하는 것이다.
+현재 repo에는 별도 계약/청구/지급 route가 아직 없으므로 없는 route를 임의로 만들지 않는다.
+독립 route가 생길 때 depth0 `상품 / 접수 / 계약 / 청구 / 지급`를 같은 bottom region에 연결한다.
+
+### 금지
+- 페이지마다 별도 `product-action-dock`, `intake-dock` 같은 로컬 CTA 표준 생성
+- 같은 action을 본문과 하단바에 중복 노출
+- 상단 header로 Save/Complete/Submit 이동
+
+최신 branch:
+`work/gpt/admin-p17-shared-bottom-action-bar-20260921`

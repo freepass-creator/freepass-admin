@@ -10,7 +10,7 @@ export const dynamic='force-dynamic';
 
 const PAGE_SIZE=50;
 const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??'':value??'';
-const n=(value:string)=>{const x=Number(value);return Number.isFinite(x)?x:undefined;};
+const n=(value:string)=>{if(!value.trim())return undefined;const x=Number(value);return Number.isFinite(x)?x:undefined;};
 const positiveInt=(value:string,fallback=1)=>{const x=Number(value);return Number.isInteger(x)&&x>0?x:fallback;};
 const won=(value:number|undefined)=>typeof value==='number'?value.toLocaleString('ko-KR')+'원':'미확인';
 
@@ -112,7 +112,7 @@ export default async function ProductsPage({searchParams}:{
               <div className="thumb">{m.vehicleMatch.level}</div>
               <div className="grow">
                 <div className="row-title"><strong>{m.product.vehicle.modelId}</strong><span>{m.product.vehicle.matchLevel}</span></div>
-                <p>{[m.product.vehicle.subModelId,m.product.vehicle.trimId,m.product.supplierId].filter(Boolean).join(' · ')}</p>
+                <p>{[m.product.vehicle.subModelId,m.product.vehicle.trimId,o?.supplierId??m.product.supplierId].filter(Boolean).join(' · ')}</p>
                 <div className="price"><b>월 {won(o?.monthlyRent)}</b><small>{o?.termMonths??'-'}개월</small></div>
               </div>
             </Link>;
@@ -130,7 +130,7 @@ export default async function ProductsPage({searchParams}:{
         <div className="panel-head"><div><p className="eyebrow">DETAIL</p><h1>상품 상세</h1></div></div>
         {selected&&offer?<>
 
-          <div className="vehicle-title"><div><h2>{selected.product.vehicle.modelId}</h2><p>{selected.product.supplierId} · product v{selected.product.version}</p></div><span className="status-dot">{selected.vehicleMatch.level}</span></div>
+          <div className="vehicle-title"><div><h2>{selected.product.vehicle.modelId}</h2><p>{offer.supplierId??selected.product.supplierId} · product v{selected.product.version}</p></div><span className="status-dot">{selected.vehicleMatch.level}</span></div>
           <dl className="summary-grid">
             <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
             <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}</dd></div>

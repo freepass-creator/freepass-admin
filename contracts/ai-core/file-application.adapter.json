@@ -1,0 +1,55 @@
+{
+  "schema_version": "core-adapter-contract/v1",
+  "adapter_id": "freepass-admin.file-application",
+  "adapter_version": "1.0.0",
+  "port_id": "application.repository",
+  "provider_scope": "local-json-file",
+  "project_scope": "freepass-admin",
+  "source": {
+    "locator": "src/adapters/store/repositories.ts",
+    "revision": "git:fb85037969a6c2f4596350b9c66303025be6f19d"
+  },
+  "compatibility": {
+    "port_versions": [
+      "v1"
+    ],
+    "engine_versions": []
+  },
+  "mapping": [
+    {
+      "canonical_field": "application",
+      "provider_field": "applications.json row",
+      "transformation": "JsonFileStore atomic mutate",
+      "unit_conversion": null
+    }
+  ],
+  "side_effects": true,
+  "idempotency": "REQUIRED",
+  "retry_policy": {
+    "max_attempts": 1,
+    "backoff": "NONE",
+    "retryable_error_codes": []
+  },
+  "timeout_ms": 5000,
+  "auth_boundary": "Actor is resolved by Application Service before repository mutation.",
+  "data_classification": [
+    "INTERNAL",
+    "PII"
+  ],
+  "failure_mapping": [
+    {
+      "provider_code": "ENOENT",
+      "core_code": "PERSISTENCE_ERROR"
+    },
+    {
+      "provider_code": "CONFLICT",
+      "core_code": "CONFLICT"
+    }
+  ],
+  "health_check": "service/repository contract tests",
+  "verification_profile": [
+    "repository-concurrency",
+    "idempotency-replay",
+    "aggregate-invariants"
+  ]
+}

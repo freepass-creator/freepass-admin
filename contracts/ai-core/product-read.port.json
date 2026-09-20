@@ -1,0 +1,14 @@
+{
+  "schema_version": "core-port-contract/v1",
+  "port_id": "product.read",
+  "port_version": "v1",
+  "semantics": "Read the current canonical product and version required by application submission.",
+  "direction": "READ",
+  "input_schema": null,
+  "output_schema": null,
+  "side_effects": false,
+  "idempotency": "NOT_APPLICABLE",
+  "error_codes": [
+    "NOT_FOUND"
+  ]
+}

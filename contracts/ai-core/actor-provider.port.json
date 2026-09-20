@@ -1,0 +1,15 @@
+{
+  "schema_version": "core-port-contract/v1",
+  "port_id": "actor.provider",
+  "port_version": "v1",
+  "semantics": "Resolve the authenticated current actor and fail closed when identity is unavailable.",
+  "direction": "QUERY",
+  "input_schema": null,
+  "output_schema": null,
+  "side_effects": false,
+  "idempotency": "NOT_APPLICABLE",
+  "error_codes": [
+    "AUTHENTICATION_REQUIRED",
+    "FORBIDDEN"
+  ]
+}

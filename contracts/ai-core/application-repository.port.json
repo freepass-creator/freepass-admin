@@ -1,0 +1,17 @@
+{
+  "schema_version": "core-port-contract/v1",
+  "port_id": "application.repository",
+  "port_version": "v1",
+  "semantics": "Atomic application lookup, idempotent creation and aggregate mutation.",
+  "direction": "MIXED",
+  "input_schema": null,
+  "output_schema": null,
+  "side_effects": true,
+  "idempotency": "REQUIRED",
+  "error_codes": [
+    "NOT_FOUND",
+    "CONFLICT",
+    "CANCELLED",
+    "PERSISTENCE_ERROR"
+  ]
+}

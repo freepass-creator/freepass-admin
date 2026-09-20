@@ -1,0 +1,79 @@
+{
+  "schema_version": "core-application-service-contract/v1",
+  "service_id": "freepass.application.service",
+  "version": "1.0.0",
+  "source": {
+    "locator": "src/services/applications.ts",
+    "revision": "git:fb85037969a6c2f4596350b9c66303025be6f19d"
+  },
+  "use_cases": [
+    {
+      "name": "submit_application",
+      "input_contract": "SubmitApplicationInput",
+      "output_contract": "SubmitResult",
+      "side_effects": true,
+      "idempotency": "REQUIRED",
+      "actor_requirement": "REQUIRED",
+      "transaction_boundary": "REPOSITORY_ATOMIC",
+      "error_codes": [
+        "VALIDATION_ERROR",
+        "NOT_FOUND",
+        "VERSION_MISMATCH",
+        "CONFLICT",
+        "AUTHENTICATION_REQUIRED",
+        "PERSISTENCE_ERROR"
+      ]
+    },
+    {
+      "name": "mark_progress",
+      "input_contract": "ProgressInput",
+      "output_contract": "ProgressResult",
+      "side_effects": true,
+      "idempotency": "SUPPORTED",
+      "actor_requirement": "REQUIRED",
+      "transaction_boundary": "REPOSITORY_ATOMIC",
+      "error_codes": [
+        "NOT_FOUND",
+        "CANCELLED",
+        "AUTHENTICATION_REQUIRED",
+        "PERSISTENCE_ERROR"
+      ]
+    },
+    {
+      "name": "cancel_application",
+      "input_contract": "CancelInput",
+      "output_contract": "CancelResult",
+      "side_effects": true,
+      "idempotency": "SUPPORTED",
+      "actor_requirement": "REQUIRED",
+      "transaction_boundary": "REPOSITORY_ATOMIC",
+      "error_codes": [
+        "VALIDATION_ERROR",
+        "NOT_FOUND",
+        "CANCELLED",
+        "AUTHENTICATION_REQUIRED",
+        "PERSISTENCE_ERROR"
+      ]
+    }
+  ],
+  "required_ports": [
+    {
+      "port_id": "application.repository",
+      "port_version": "v1"
+    },
+    {
+      "port_id": "product.read",
+      "port_version": "v1"
+    },
+    {
+      "port_id": "actor.provider",
+      "port_version": "v1"
+    }
+  ],
+  "verification_profile": [
+    "service-unit",
+    "repository-concurrency",
+    "snapshot-immutability",
+    "idempotency-replay"
+  ]
+}

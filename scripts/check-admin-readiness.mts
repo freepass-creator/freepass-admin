@@ -40,6 +40,7 @@ const [
   fileOperations,
   erp5OperationsForBilling,
   smoke,
+  dataShadow,
   env,
   pkg,
   workflow,
@@ -70,6 +71,7 @@ const [
   text('src/adapters/store/operations-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
   text('scripts/admin-vertical-smoke.mts'),
+  text('scripts/admin-data-shadow.mts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -145,6 +147,11 @@ add('catalog.offer-supplier-authority',
   has(productSearch,'offer.supplierId ?? product.supplierId')
     &&has(applicationCreate,'offer.supplierId ?? input.product.supplierId'),
   'Supplier authority must follow the selected Offer for multi-supplier Data products.');
+
+add('catalog.data-shadow-command',
+  has(pkg,'"admin:data-shadow"')&&has(dataShadow,'compareProductSources')
+    &&has(dataShadow,'FPA_DATA_SHADOW_STRICT'),
+  'Admin must provide an explicit ERP5-vs-FreePass-Data shadow parity command before read cutover.');
 
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),

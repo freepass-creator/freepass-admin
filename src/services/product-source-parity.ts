@@ -59,6 +59,10 @@ function offerSet(product: CanonicalProduct) {
 
 function comparable(product: CanonicalProduct) {
   return {
+    commercial:{
+      commercialType:product.commercialType??null,
+      vehiclePrice:product.vehiclePrice??null,
+    },
     vehicle: {
       originId: product.vehicle.originId,
       manufacturerId: product.vehicle.manufacturerId,
@@ -87,6 +91,7 @@ function comparable(product: CanonicalProduct) {
 
 function mismatchFields(left: ReturnType<typeof comparable>, right: ReturnType<typeof comparable>) {
   const fields:string[]=[];
+  if(JSON.stringify(left.commercial)!==JSON.stringify(right.commercial))fields.push('commercial');
   if(JSON.stringify(left.vehicle)!==JSON.stringify(right.vehicle))fields.push('vehicle');
   if(JSON.stringify(left.specs)!==JSON.stringify(right.specs))fields.push('specs');
   if(JSON.stringify(left.registration)!==JSON.stringify(right.registration))fields.push('registration');

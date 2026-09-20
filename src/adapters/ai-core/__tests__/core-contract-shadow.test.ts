@@ -176,6 +176,11 @@ describe('AI Core shadow — errors', () => {
     assert.equal(changed.status, 409);
     assert.deepEqual(changed.meta, { currentVersion: 2, seenVersion: 1 });
 
+    const reuse = serviceReasonToCore('IDEMPOTENCY_KEY_REUSE', 'corr-admin-idem');
+    assert.equal(reuse.code, 'CONFLICT');
+    assert.equal(reuse.status, 409);
+    assert.equal(reuse.retryable, false);
+
     const master = serviceReasonToCore('SALES_CHANNEL_NOT_ACTIVE', 'corr-admin-master');
     assert.equal(master.code, 'VALIDATION_ERROR');
     assert.equal(master.status, 400);

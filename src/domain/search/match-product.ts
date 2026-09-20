@@ -52,6 +52,8 @@ export function matchOffer(
   offer: Offer,
   query: ProductSearchQuery,
 ): boolean {
+  const supplierId = offer.supplierId ?? product.supplierId;
+  if (query.supplierIds?.length && !query.supplierIds.includes(supplierId)) return false;
   if (query.termMonths?.length && !query.termMonths.includes(offer.termMonths)) return false;
   if (!inRange(offer.monthlyRent, query.monthlyRent)) return false;
   if (!inRange(offer.deposit, query.deposit)) return false;
@@ -73,8 +75,6 @@ export function matchProduct(
   product: CanonicalProduct,
   query: ProductSearchQuery,
 ): ProductSearchMatch | null {
-  if (query.supplierIds?.length && !query.supplierIds.includes(product.supplierId)) return null;
-
   const vehicleMatch = matchVehicle(product.vehicle, query);
   if (!vehicleMatch) return null;
 

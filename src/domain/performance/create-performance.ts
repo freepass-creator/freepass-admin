@@ -31,6 +31,20 @@ function cloneSnapshot(snapshot: ApplicationProductSnapshot): ApplicationProduct
   };
 }
 
+function deliveredAt(application: Application): string {
+  for (let index = application.history.length - 1; index >= 0; index -= 1) {
+    const event = application.history[index];
+    if (
+      event.type === 'APPLICATION_PROGRESS_CHANGED'
+      && event.key === 'deliveryCompleted'
+      && event.to === true
+    ) {
+      return event.occurredAt;
+    }
+  }
+  throw new AppError('CONFLICT', 'Delivered application has no delivery completion event.');
+}
+
 /**
  * 인도 완료된 접수에서 정상 실적을 만든다.
  * 현재 상품은 절대 다시 읽지 않는다 — 접수 Snapshot만 사용한다.
@@ -55,7 +69,7 @@ export function createNormalPerformance(input: CreateNormalPerformanceInput): Pe
     salesChannelId: input.application.salesChannelId,
     assigneeId: input.application.assigneeId,
     snapshot: cloneSnapshot(input.application.snapshot),
-    occurredAt: input.application.updatedAt,
+    occurredAt: deliveredAt(input.application),
     createdAt: input.now,
   };
 }

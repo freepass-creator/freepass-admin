@@ -116,13 +116,16 @@ test('FreePass Data projection maps one Product with supplier-specific flattened
   assert.equal(a36?.sourceOfferRevision,3);
   assert.equal(a36?.sourcePriceTermKey,'36_2만');
   assert.equal(a36?.deposit,0);
+  assert.equal(a36?.depositState,'ZERO');
 
   const a48=product.offers.find((offer)=>offer.id==='offer-a#48_2만');
   assert.equal(a48?.deposit,undefined,'UNKNOWN deposit must not become zero');
+  assert.equal(a48?.depositState,'UNKNOWN');
 
   const b36=product.offers.find((offer)=>offer.id==='offer-b#36_3만');
   assert.equal(b36?.supplierId,'supplier-b');
   assert.equal(b36?.deposit,1000000);
+  assert.equal(b36?.depositState,'KNOWN');
 });
 
 test('same-Offer search keeps supplier, term, deposit, mileage and policy on one Data Offer term',async()=>{

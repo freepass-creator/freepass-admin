@@ -83,3 +83,24 @@ Firebase, Google, GitHub, Vercel, HTTP/DB transport 등.
 - USER APPROVED
 
 문서 또는 화면이 존재한다는 이유만으로 운영 완료 처리하지 않는다.
+
+---
+
+## DEC-2026-09-21-01 — F04는 과도기 병행, 최종 writer는 FreePass Admin
+상태: USER CONFIRMED
+
+### 결정
+당분간 `[F04 사용중] 프리패스 정산원장`과 FreePass Admin을 병행한다.
+최종적으로 신규 접수·실적·정산·청구·수금·지급은 FreePass Admin에서만 처리한다.
+
+### 경계
+- F04를 신규 Domain/Collection 구조로 복제하지 않는다.
+- F04를 숨은 fallback SSOT로 사용하지 않는다.
+- 연결은 명시적 Legacy Bridge/Adapter로 격리한다.
+- 동일 건을 Admin과 F04가 동시에 수정하는 dual-writer 상태를 최종 구조로 허용하지 않는다.
+- 전환기에는 stable id를 통해 양쪽 레코드를 대조한다.
+- Admin 단독 전환 후 F04는 조회/검증/내보내기/보관 역할로 축소한다.
+
+### 이유
+현재 F04에 실제 접수·분납실적·완납실적·청구/지급 규칙과 과거 데이터가 있으므로 운영을 끊지 않고 이관해야 한다.
+그러나 신규 Admin이 F04 탭 구조에 종속되면 F04 제거 시 다시 시스템을 만들어야 하므로 Domain 정본은 Admin 쪽에 둔다.

@@ -1,0 +1,122 @@
+import { readFile } from 'node:fs/promises';
+
+type Check={id:string;ok:boolean;detail:string};
+const checks:Check[]=[];
+
+async function text(path:string){
+  return readFile(path,'utf8');
+}
+function add(id:string,ok:boolean,detail:string){
+  checks.push({id,ok,detail});
+}
+function has(source:string,needle:string){
+  return source.includes(needle);
+}
+
+const [
+  root,
+  products,
+  intake,
+  intakeNew,
+  settlement,
+  runtime,
+  authConfig,
+  authSession,
+  erp5,
+  erp5Product,
+  erp5Application,
+  erp5Operations,
+  env,
+]=await Promise.all([
+  text('src/app/page.tsx'),
+  text('src/app/products/page.tsx'),
+  text('src/app/intake/page.tsx'),
+  text('src/app/intake/new/page.tsx'),
+  text('src/app/settlement/page.tsx'),
+  text('src/server/admin-runtime.ts'),
+  text('src/server/auth/config.ts'),
+  text('src/server/auth/session.ts'),
+  text('src/adapters/erp5/firestore.ts'),
+  text('src/adapters/erp5/product-repository.ts'),
+  text('src/adapters/erp5/application-repository.ts'),
+  text('src/adapters/erp5/operations-repository.ts'),
+  text('.env.example'),
+]);
+
+add('root.real-entry',
+  has(root,"redirect('/products')")&&!has(root,'const PRODUCTS'),
+  'Root must redirect to real product search and must not contain the old hardcoded catalog.');
+
+for(const [id,source] of [
+  ['products',products],
+  ['intake',intake],
+  ['intake-new',intakeNew],
+  ['settlement',settlement],
+] as const){
+  add('page.auth.'+id,
+    has(source,'requireAdminPageActor')&&has(source,'await requireAdminPageActor()'),
+    id+' must require a verified server-side Admin actor before reading operational data.');
+}
+
+add('actor.session-bound',
+  has(runtime,'sessionActorProvider')&&!/freepasserp3|freepasserp4/i.test(runtime),
+  'Runtime ActorProvider must come from the Admin session boundary and must not fall back to ERP4 authentication.');
+
+add('auth.explicit-project',
+  has(authConfig,'FPA_AUTH_PROJECT_ID_REQUIRED')&&has(authConfig,'FPA_AUTH_PROJECT_ID_MISMATCH'),
+  'Auth project must be explicit and service-account project_id must match.');
+
+add('auth.uid-authority',
+  has(authConfig,'FPA_ADMIN_UIDS_REQUIRED')&&has(authConfig,'ADMIN_UID_NOT_ALLOWED')&&!has(authConfig,'FPA_ADMIN_EMAILS'),
+  'Admin authorization must be UID based; email alone must not grant ADMIN.');
+
+add('auth.production-no-dev-fallback',
+  has(authConfig,"return'UNBOUND_PRODUCTION'")&&has(authSession,'ADMIN_PRODUCTION_AUTH_NOT_BOUND'),
+  'Production must fail closed when Firebase Auth is not explicitly selected.');
+
+add('erp5.exact-project',
+  has(erp5,"ERP5_PROJECT_ID='freepasserp5'")&&has(erp5,'ERP5_PROJECT_ID_MISMATCH'),
+  'ERP5 persistence must bind only to the exact freepasserp5 project.');
+
+add('erp5.namespace-required',
+  has(erp5,'ERP5_ADMIN_NAMESPACE_REQUIRED')&&has(erp5,'ERP5_ADMIN_NAMESPACE'),
+  'Admin-owned write collections must require an explicit namespace.');
+
+add('erp5.write-gate',
+  has(erp5,'ERP5_WRITE_DISABLED')&&has(erp5,"==='on'"),
+  'ERP5 mutation must remain closed unless ERP5_WRITE=on.');
+
+add('erp5.product-read-only',
+  has(erp5Product,'ERP5_PRODUCT_WRITE_FORBIDDEN'),
+  'Canonical Product adapter must remain read-only.');
+
+add('erp5.application-transaction',
+  has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),
+  'Application persistence must use namespaced collections and transaction-based sequencing.');
+
+add('erp5.operations-transaction',
+  has(erp5Operations,'runTransaction')&&has(erp5Operations,"erp5AdminCollection('performances')")&&has(erp5Operations,"erp5AdminCollection('settlements')"),
+  'Performance/Settlement persistence must preserve transactional boundaries.');
+
+for(const key of [
+  'FPA_REPOSITORY_MODE=erp5',
+  'ERP5_ADMIN_NAMESPACE=freepass_admin_v1',
+  'ERP5_WRITE=on',
+  'FPA_AUTH_MODE=firebase',
+  'FPA_AUTH_PROJECT_ID=<independent-auth-project-id>',
+  'FPA_ADMIN_UIDS=uid-1,uid-2',
+]){
+  add('env.'+key.split('=')[0].toLowerCase(),
+    has(env,key),
+    '.env.example must document '+key+'.');
+}
+
+const failed=checks.filter((x)=>!x.ok);
+console.log(JSON.stringify({
+  schema:'freepass-admin-readiness/v1',
+  status:failed.length?'FAIL':'PASS',
+  totals:{checks:checks.length,pass:checks.length-failed.length,fail:failed.length},
+  checks,
+},null,2));
+
+if(failed.length)process.exitCode=1;

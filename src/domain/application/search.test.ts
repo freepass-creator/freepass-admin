@@ -18,6 +18,7 @@ function app(over:Partial<Application>={}):Application{
       productId:'p1',productVersion:1,supplierId:'supplier-a',
       vehicle:{nodeId:'n1',originId:'kr',manufacturerId:'kia',modelId:'k5',matchLevel:'MODEL'},
       specs:{},
+      registration:{vehicleNumber:'12가3456'},
       offer:{id:'o1',termMonths:36,monthlyRent:700000,policyValues:[]},
       productPolicies:[],capturedAt:'2026-09-20T00:00:00.000Z',
     },
@@ -41,6 +42,7 @@ test('text search covers customer, application number, phone and vehicle facts',
   assert.equal(filterApplications(rows,{text:'260920-002'})[0]?.applicantName,'김철수');
   assert.equal(filterApplications(rows,{text:'010-1111'})[0]?.id,'a1');
   assert.equal(filterApplications(rows,{text:'k5'}).length,4);
+  assert.equal(filterApplications(rows,{text:'12가3456'}).length,4);
 });
 
 test('ACTIVE means received or contracted only',()=>{

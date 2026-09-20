@@ -15,8 +15,10 @@ import {
   createSettlementClawback,
   createSettlementFromPerformance,
   recordBillingInvoiceEvidence,
+  registerChannelRecovery,
   registerCollection,
   registerPayout,
+  registerSupplierRefund,
   reverseLedgerEntry,
 } from '../domain/settlement/settlement';
 import type { LedgerEntry, PayoutPolicy } from '../domain/settlement/types';
@@ -238,7 +240,10 @@ export async function recordCollection(
   const actorId=await adminId(deps.actors);
   const settlement=await deps.operations.getSettlement(settlementId);
   if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
-  const billing=await deps.operations.getBillingBySettlementId(settlementId);
+  const [billing,clawbacks]=await Promise.all([
+    deps.operations.getBillingBySettlementId(settlementId),
+    deps.operations.listClawbacks(settlementId),
+  ]);
   const entry:LedgerEntry={
     id:input.id,settlementId,account:'SUPPLIER_COLLECTION',kind:'CASH',
     amount:input.amount,occurredAt:iso(deps.now),actorId,
@@ -246,7 +251,7 @@ export async function recordCollection(
   };
   return deps.operations.mutateLedger(
     settlementId,
-    entries=>registerCollection(settlement,billing??undefined,entries,entry),
+    entries=>registerCollection(settlement,billing??undefined,entries,entry,clawbacks),
   );
 }
 
@@ -258,7 +263,10 @@ export async function recordPayout(
   const actorId=await adminId(deps.actors);
   const settlement=await deps.operations.getSettlement(settlementId);
   if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
-  const billing=await deps.operations.getBillingBySettlementId(settlementId);
+  const [billing,clawbacks]=await Promise.all([
+    deps.operations.getBillingBySettlementId(settlementId),
+    deps.operations.listClawbacks(settlementId),
+  ]);
   const entry:LedgerEntry={
     id:input.id,settlementId,account:'CHANNEL_PAYOUT',kind:'CASH',
     amount:input.amount,occurredAt:iso(deps.now),actorId,
@@ -266,14 +274,82 @@ export async function recordPayout(
   };
   return deps.operations.mutateLedger(
     settlementId,
-    entries=>registerPayout(settlement,billing??undefined,entries,entry,input.policy),
+    entries=>registerPayout(settlement,billing??undefined,entries,entry,input.policy,clawbacks),
+  );
+}
+
+export async function recordSupplierRefund(
+  deps:SettlementDeps,
+  settlementId:string,
+  clawbackId:string,
+  input:{id:string;amount:number;note?:string},
+){
+  const actorId=await adminId(deps.actors);
+  const settlement=await deps.operations.getSettlement(settlementId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const [billing,clawbacks]=await Promise.all([
+    deps.operations.getBillingBySettlementId(settlementId),
+    deps.operations.listClawbacks(settlementId),
+  ]);
+  const clawback=clawbacks.find((item)=>item.id===clawbackId);
+  if(!clawback)throw new Error('CLAWBACK_NOT_FOUND');
+  const entry:LedgerEntry={
+    id:input.id,
+    settlementId,
+    clawbackId,
+    account:'SUPPLIER_REFUND',
+    kind:'CASH',
+    amount:input.amount,
+    occurredAt:iso(deps.now),
+    actorId,
+    ...(input.note?{note:input.note}:{}),
+  };
+  return deps.operations.mutateLedger(
+    settlementId,
+    entries=>registerSupplierRefund(
+      settlement,billing??undefined,clawbacks,clawback,entries,entry,
+    ),
+  );
+}
+
+export async function recordChannelRecovery(
+  deps:SettlementDeps,
+  settlementId:string,
+  clawbackId:string,
+  input:{id:string;amount:number;note?:string},
+){
+  const actorId=await adminId(deps.actors);
+  const settlement=await deps.operations.getSettlement(settlementId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const [billing,clawbacks]=await Promise.all([
+    deps.operations.getBillingBySettlementId(settlementId),
+    deps.operations.listClawbacks(settlementId),
+  ]);
+  const clawback=clawbacks.find((item)=>item.id===clawbackId);
+  if(!clawback)throw new Error('CLAWBACK_NOT_FOUND');
+  const entry:LedgerEntry={
+    id:input.id,
+    settlementId,
+    clawbackId,
+    account:'CHANNEL_RECOVERY',
+    kind:'CASH',
+    amount:input.amount,
+    occurredAt:iso(deps.now),
+    actorId,
+    ...(input.note?{note:input.note}:{}),
+  };
+  return deps.operations.mutateLedger(
+    settlementId,
+    entries=>registerChannelRecovery(
+      settlement,billing??undefined,clawbacks,clawback,entries,entry,
+    ),
   );
 }
 
 export async function reverseEntry(
   deps:SettlementDeps,
   settlementId:string,
-  input:{id:string;originalId:string;account:LedgerEntry['account'];amount:number;note?:string},
+  input:{id:string;originalId:string;account:LedgerEntry['account'];amount:number;clawbackId?:string;note?:string},
 ){
   const actorId=await adminId(deps.actors);
   const settlement=await deps.operations.getSettlement(settlementId);
@@ -281,6 +357,7 @@ export async function reverseEntry(
   const entry:LedgerEntry={
     id:input.id,settlementId,account:input.account,kind:'REVERSAL',
     amount:input.amount,occurredAt:iso(deps.now),actorId,reversalOfEntryId:input.originalId,
+    ...(input.clawbackId?{clawbackId:input.clawbackId}:{}),
     ...(input.note?{note:input.note}:{}),
   };
   return deps.operations.mutateLedger(

@@ -14,8 +14,10 @@ import {
   finalizeSettlement,
   reconfirmSalesperson,
   recordBillingEvidence,
+  recordChannelRecovery,
   recordCollection,
   recordPayout,
+  recordSupplierRefund,
   resolvePerformanceIssue,
   reverseEntry,
   setPerformanceAmounts,
@@ -204,11 +206,44 @@ export async function payoutAction(formData:FormData){
 }
 
 
+export async function supplierRefundAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const clawbackId=s(formData.get('clawbackId'));
+  try{
+    await recordSupplierRefund(deps(),settlementId,clawbackId,{
+      id:'supplier-refund:'+crypto.randomUUID(),
+      amount:i(formData.get('amount')),
+      note:s(formData.get('note'))||undefined,
+    });
+  }catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+export async function channelRecoveryAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const clawbackId=s(formData.get('clawbackId'));
+  try{
+    await recordChannelRecovery(deps(),settlementId,clawbackId,{
+      id:'channel-recovery:'+crypto.randomUUID(),
+      amount:i(formData.get('amount')),
+      note:s(formData.get('note'))||undefined,
+    });
+  }catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
 export async function reverseLedgerAction(formData:FormData){
   const id=s(formData.get('id'));
   const settlementId=s(formData.get('settlementId'));
   const account=s(formData.get('account'));
-  if(account!=='SUPPLIER_COLLECTION'&&account!=='CHANNEL_PAYOUT'){
+  if(![
+    'SUPPLIER_COLLECTION',
+    'CHANNEL_PAYOUT',
+    'SUPPLIER_REFUND',
+    'CHANNEL_RECOVERY',
+  ].includes(account)){
     redirect(href(id,'INVALID_LEDGER_ACCOUNT'));
   }
   try{
@@ -217,6 +252,7 @@ export async function reverseLedgerAction(formData:FormData){
       originalId:s(formData.get('originalId')),
       account,
       amount:i(formData.get('amount')),
+      clawbackId:s(formData.get('clawbackId'))||undefined,
       note:s(formData.get('reason'))||undefined,
     });
   }catch(e){redirect(href(id,e));}

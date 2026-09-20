@@ -68,7 +68,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline
-- UI/UX는 AI Core/DevCenter 공통 규격 확정 전 독자 재설계를 보류한다.
+- UI/UX는 AI Core/DevCenter 공통 규격과 `.ai-core/ui-ux.consumer.json`을 따른다. 공통 규격 대기 HOLD는 해제됐지만, 승인 rev 5와 다른 새 디자인 방향을 독자 발명하지 않는다. 구현 후 Design Hub Visual QA/Quality Receipt 없이는 PILOT/CONFORMANT를 주장하지 않는다.
 - backend write는 가능하면 `UI → Service → Domain → Port → Adapter/Repository` 경계를 통과한다.
 - 운영 저장소 연결 전 transaction, concurrency, idempotency, unique number, retry/failure semantics를 계약과 테스트로 먼저 고정한다.
 - 상태 변경/취소/정산 같은 민감 작업은 actor와 audit evidence를 남길 수 있는 경계를 마련한다.

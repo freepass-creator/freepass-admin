@@ -78,3 +78,26 @@ export interface F04Bridge {
     operationId:string,
   ):Promise<F04BridgeReceipt>;
 }
+
+
+export type F04LinkMethod =
+  | 'ADMIN_CREATED'
+  | 'EXISTING_CODE'
+  | 'MIGRATION_EXACT_MATCH';
+
+export type F04RowLink = {
+  applicationId: string;
+  f04SettlementCode: string;
+  sheetName: string;
+  legacyRowRef: string;
+  method: F04LinkMethod;
+  linkedAt: string;
+  linkedBy: string;
+};
+
+export interface F04RowLinkRepository {
+  getByApplicationId(applicationId:string):Promise<F04RowLink|null>;
+  getBySettlementCode(f04SettlementCode:string):Promise<F04RowLink|null>;
+  bind(link:F04RowLink):Promise<{link:F04RowLink;created:boolean}>;
+  list():Promise<F04RowLink[]>;
+}

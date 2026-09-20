@@ -379,3 +379,54 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 3. 화면 — 승인된 rev 5 대로 ADMIN 수직 한 줄을 실제 데이터로 잇는다
 4. 실적 → 청구 → 수금 → 지급 (§7 순서 그대로)
 5. 승인 공급사 1곳 RAW → Canonical → 검색 → 접수 수직연결
+
+---
+
+## 14. 2026-09-21 continuation baseline — P0~P12 복원 완료
+
+이 절은 §8·§11의 과거 gap 목록보다 최신이다. 과거 항목을 삭제하지 않고 진행 이력을 보존하되, 현재 작업 시작점은 아래를 사용한다.
+
+### 기존 구현 체인
+- P0 (#19): Product/Search/Application/Performance/Settlement 핵심 Domain
+- P1 (#20): 실제 `/products` · `/intake` 화면/Repository 연결, 하드코딩 데모 제거
+- P2 (#21): Performance → Settlement → Billing → Collection/Payout durable operations
+- P3 (#22): ERP5 Firestore Product read + namespaced Admin transaction adapter
+- P4 (#23): Firebase 관리자 세션/ActorProvider/페이지 보호
+- P5 (#24): `admin:readiness` machine gate
+- P6 (#25): ERP5 product cache + 50건 paging + 기간 필터
+- P7 (#26): 접수 운영검색/필터, Registration Snapshot, 인도→정산 handoff
+- P8 (#27): 정산 운영검색/필터 + append-only ledger reversal
+- P9 (#28): 상품→접수→인도→실적→정산→청구→수금→지급 vertical smoke
+- P10 (#29): ERP5 Partner/관리자 UID Reference Master
+- P11 (#30): semantic submission fingerprint + storage atomic idempotency
+- P12: Billing invoice evidence Domain 및 실제 저장/Service/UI/Smoke 연결
+
+최신 continuation branch:
+`work/gpt/admin-p12-continuation-20260921`
+
+### 지금 이미 된 것으로 취급할 것
+- same-Offer 검색과 선택 Offer 연속성
+- 실제 Repository 기반 상품찾기 화면
+- Application Snapshot + registration continuity
+- File/ERP5 transaction persistence 경계
+- verified Admin Actor/Auth 경계
+- 실적 검토 → 정산확정 → Billing → 부분수금 → 지급
+- append-only ledger reversal
+- 50건 paging/검색/필터
+- Reference Master 검증
+- semantic idempotency
+- 계산서 증빙이 완료되기 전 수금 차단
+
+### 최신 사용자 결정 — F04
+- 당분간 `[F04 사용중] 프리패스 정산원장`과 병행한다.
+- 최종 목표는 FreePass Admin에서만 접수·실적·정산을 처리하는 단일 writer 구조다.
+- F04는 명시적 Legacy Bridge로만 연결하고 Domain 정본이나 fallback으로 사용하지 않는다.
+- Admin/F04 동시 수정(dual writer)을 최종 구조로 허용하지 않는다.
+
+### 다음 순서
+1. P12 계산서 증빙 경로 typecheck/test/smoke 검증
+2. F04 Legacy Bridge 계약과 stable-id 매핑 설계
+3. 기존 F04 접수/분납실적/완납실적/월청구 데이터를 Admin Projection과 대조
+4. 신규 Admin writer → F04 mirror 경로를 병행 단계로 구현
+5. 환수(사업 clawback)와 ledger reversal을 명확히 분리해 Domain에 반영
+6. 기준일 이후 Admin 단일 writer 전환 Gate 설계

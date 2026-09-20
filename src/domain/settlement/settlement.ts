@@ -43,6 +43,7 @@ export function createSettlementFromPerformance(
       channelPayable,
       margin: supplierReceivable - channelPayable,
       vatMode: performance.amounts.vatMode,
+      ...(performance.pricingEvidence ? { pricingEvidence: { ...performance.pricingEvidence } } : {}),
       createdAt: now,
     },
   };

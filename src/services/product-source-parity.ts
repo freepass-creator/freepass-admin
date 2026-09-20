@@ -67,6 +67,7 @@ function comparable(product: CanonicalProduct) {
       originId: product.vehicle.originId,
       manufacturerId: product.vehicle.manufacturerId,
       modelId: product.vehicle.modelId,
+      generationId: product.vehicle.generationId ?? null,
       subModelId: product.vehicle.subModelId ?? null,
       trimId: product.vehicle.trimId ?? null,
       matchLevel: product.vehicle.matchLevel,

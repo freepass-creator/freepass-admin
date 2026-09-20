@@ -49,6 +49,17 @@ function href(id:string,error?:unknown){
   return '/settlement?'+p.toString();
 }
 
+async function settlementActionContext(formData:FormData){
+  const performanceId=s(formData.get('id'));
+  if(!performanceId)throw new Error('PERFORMANCE_ID_REQUIRED');
+  const d=deps();
+  const settlement=await d.operations.findSettlementByPerformanceId(performanceId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const candidate=s(formData.get('settlementId'));
+  if(candidate&&candidate!==settlement.id)throw new Error('SETTLEMENT_SELECTION_MISMATCH');
+  return{performanceId,d,settlementId:settlement.id};
+}
+
 export async function syncDeliveredPerformances(){
   const d=deps();
   const applications=await d.applications.list();
@@ -145,10 +156,10 @@ export async function finalizeAction(formData:FormData){
 
 export async function createClawbackAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const channelRaw=s(formData.get('channelAmount'));
   try{
-    await createBusinessClawback(deps(),settlementId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await createBusinessClawback(d,settlementId,{
       id:'clawback:'+crypto.randomUUID(),
       supplierAmount:i(formData.get('supplierAmount')),
       ...(channelRaw?{channelAmount:i(formData.get('channelAmount'))}:{}),
@@ -161,19 +172,21 @@ export async function createClawbackAction(formData:FormData){
 
 export async function createClawbackBillingAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const clawbackId=s(formData.get('clawbackId'));
-  try{await ensureClawbackBillingAdjustment(deps(),settlementId,clawbackId);}
+  try{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await ensureClawbackBillingAdjustment(d,settlementId,clawbackId);
+  }
   catch(e){redirect(href(id,e));}
   redirect(href(id));
 }
 
 export async function recordClawbackBillingEvidenceAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const clawbackId=s(formData.get('clawbackId'));
   try{
-    await recordClawbackBillingEvidence(deps(),settlementId,clawbackId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordClawbackBillingEvidence(d,settlementId,clawbackId,{
       reference:s(formData.get('reference')),
       issuedAt:s(formData.get('issuedAt')),
       note:s(formData.get('note'))||undefined,
@@ -184,17 +197,19 @@ export async function recordClawbackBillingEvidenceAction(formData:FormData){
 
 export async function createBillingAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
-  try{await ensureSettlementBilling(deps(),settlementId);}
+  try{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await ensureSettlementBilling(d,settlementId);
+  }
   catch(e){redirect(href(id,e));}
   redirect(href(id));
 }
 
 export async function recordBillingEvidenceAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   try{
-    await recordBillingEvidence(deps(),settlementId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordBillingEvidence(d,settlementId,{
       reference:s(formData.get('reference')),
       issuedAt:s(formData.get('issuedAt')),
       note:s(formData.get('note'))||undefined,
@@ -205,9 +220,9 @@ export async function recordBillingEvidenceAction(formData:FormData){
 
 export async function collectAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   try{
-    await recordCollection(deps(),settlementId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordCollection(d,settlementId,{
       id:'collection:'+crypto.randomUUID(),
       amount:i(formData.get('amount')),
       note:s(formData.get('note'))||undefined,
@@ -218,9 +233,9 @@ export async function collectAction(formData:FormData){
 
 export async function payoutAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   try{
-    await recordPayout(deps(),settlementId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordPayout(d,settlementId,{
       id:'payout:'+crypto.randomUUID(),
       amount:i(formData.get('amount')),
       note:s(formData.get('note'))||undefined,
@@ -233,10 +248,10 @@ export async function payoutAction(formData:FormData){
 
 export async function supplierRefundAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const clawbackId=s(formData.get('clawbackId'));
   try{
-    await recordSupplierRefund(deps(),settlementId,clawbackId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordSupplierRefund(d,settlementId,clawbackId,{
       id:'supplier-refund:'+crypto.randomUUID(),
       amount:i(formData.get('amount')),
       note:s(formData.get('note'))||undefined,
@@ -247,10 +262,10 @@ export async function supplierRefundAction(formData:FormData){
 
 export async function channelRecoveryAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const clawbackId=s(formData.get('clawbackId'));
   try{
-    await recordChannelRecovery(deps(),settlementId,clawbackId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await recordChannelRecovery(d,settlementId,clawbackId,{
       id:'channel-recovery:'+crypto.randomUUID(),
       amount:i(formData.get('amount')),
       note:s(formData.get('note'))||undefined,
@@ -261,7 +276,6 @@ export async function channelRecoveryAction(formData:FormData){
 
 export async function reverseLedgerAction(formData:FormData){
   const id=s(formData.get('id'));
-  const settlementId=s(formData.get('settlementId'));
   const account=s(formData.get('account'));
   if(
     account!=='SUPPLIER_COLLECTION'
@@ -272,7 +286,8 @@ export async function reverseLedgerAction(formData:FormData){
     redirect(href(id,'INVALID_LEDGER_ACCOUNT'));
   }
   try{
-    await reverseEntry(deps(),settlementId,{
+    const {d,settlementId}=await settlementActionContext(formData);
+    await reverseEntry(d,settlementId,{
       id:'reversal:'+crypto.randomUUID(),
       originalId:s(formData.get('originalId')),
       account,

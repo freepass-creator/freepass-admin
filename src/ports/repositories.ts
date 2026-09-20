@@ -1,6 +1,7 @@
 import type { Application } from '../domain/application/types';
 import type { Performance } from '../domain/performance/types';
 import type { CanonicalProduct } from '../domain/product/types';
+import type { Settlement } from '../domain/settlement/types';
 
 /**
  * 저장소 «문»(port). 도메인은 이 문만 알고, 문 뒤가 파일인지 Firestore 인지 모른다.
@@ -53,6 +54,19 @@ export interface PerformanceRepository {
   get(id: string): Promise<Performance | null>;
   findNormalByApplicationId(applicationId: string): Promise<Performance | null>;
   list(): Promise<Performance[]>;
+}
+
+export interface SettlementRepository {
+  /** Performance 하나당 정산 하나. performanceId가 멱등키다. */
+  createForPerformance(
+    performanceId: string,
+    build: () => Settlement,
+  ): Promise<{ settlement: Settlement; created: boolean }>;
+
+  get(id: string): Promise<Settlement | null>;
+  findByPerformanceId(performanceId: string): Promise<Settlement | null>;
+  list(): Promise<Settlement[]>;
+  mutate(id: string, change: (current: Settlement) => Settlement): Promise<Settlement>;
 }
 
 export interface ProductRepository {

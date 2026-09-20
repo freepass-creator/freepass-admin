@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { PerformanceStatus } from '../../domain/performance/types';
 import { filterPerformances, performanceFacets } from '../../domain/performance/search';
-import { getSettlementBalance } from '../../domain/settlement/settlement';
+import { getClawbackSummary, getSettlementBalance } from '../../domain/settlement/settlement';
 import { adminOperations } from '../../server/admin-operations';
 import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
@@ -10,6 +10,7 @@ import {
   confirmSales,
   confirmSupplierAction,
   createBillingAction,
+  createClawbackAction,
   disputeSales,
   finalizeAction,
   payoutAction,
@@ -85,7 +86,9 @@ export default async function SettlementPage({searchParams}:{
   const settlement=selected?await operations.findSettlementByPerformanceId(selected.id):null;
   const billing=settlement?await operations.getBillingBySettlementId(settlement.id):null;
   const ledger=settlement?await operations.listLedger(settlement.id):[];
+  const clawbacks=settlement?await operations.listClawbacks(settlement.id):[];
   const balance=settlement?getSettlementBalance(settlement,billing??undefined,ledger):null;
+  const clawbackSummary=settlement?getClawbackSummary(settlement,clawbacks):null;
   const reversedIds=new Set(
     ledger
       .filter((entry)=>entry.kind==='REVERSAL'&&entry.reversalOfEntryId)
@@ -231,6 +234,19 @@ export default async function SettlementPage({searchParams}:{
               <div><dt>미지급</dt><dd>{won(balance.payoutOutstanding)}</dd></div>
               <div><dt>마진</dt><dd>{won(balance.margin)}</dd></div>
             </dl>
+            {clawbackSummary&&clawbacks.length>0&&<>
+              <h3>환수</h3>
+              <dl className="summary-grid">
+                <div><dt>공급사 누적 환수</dt><dd>-{won(clawbackSummary.supplierClawback)}</dd></div>
+                <div><dt>공급사 환수 후 순액</dt><dd>{won((settlement?.supplierReceivable??0)-clawbackSummary.supplierClawback)}</dd></div>
+                <div><dt>영업채널 누적 환수</dt><dd>-{won(clawbackSummary.channelClawback)}</dd></div>
+                <div><dt>영업채널 환수 후 순액</dt><dd>{won((settlement?.channelPayable??0)-clawbackSummary.channelClawback)}</dd></div>
+              </dl>
+              {clawbacks.map((item)=><div key={item.id} className="work-hint">
+                <b>{item.occurredAt} · 공급사 -{won(item.supplierAmount)} · 영업채널 -{won(item.channelAmount)}</b>
+                <span>{item.reason} · {item.createdBy}</span>
+              </div>)}
+            </>}
           </>:null}
         </>:<p>왼쪽에서 실적을 선택하세요.</p>}
       </section>
@@ -332,6 +348,18 @@ export default async function SettlementPage({searchParams}:{
               <button className="primary" type="submit">영업채널 지급 기록</button>
               {balance.collectionOutstanding>0&&<small>현재 정책은 공급사 완납 전 지급을 차단합니다.</small>}
             </form>}
+
+            <h3>환수 등록</h3>
+            <form action={createClawbackAction} className="form-stack">
+              <input type="hidden" name="id" value={selected.id}/>
+              <input type="hidden" name="settlementId" value={settlement.id}/>
+              <label>공급사 환수액<input name="supplierAmount" required inputMode="numeric"/></label>
+              <label>영업채널 환수액<input name="channelAmount" inputMode="numeric" placeholder="비우면 기존 지급/청구 비율로 계산"/></label>
+              <label>환수 발생일<input name="occurredAt" type="date"/></label>
+              <label>환수 사유<input name="reason" required placeholder="중도해지·유지조건 미충족 등"/></label>
+              <button className="danger-link" type="submit">환수 사건 등록</button>
+              <small>환수는 원 정산과 원장을 수정하지 않습니다. 잘못 입력한 수금/지급의 정정은 아래 원장 정정을 사용합니다.</small>
+            </form>
 
             <h3>원장</h3>
             {ledger.map((entry)=>{

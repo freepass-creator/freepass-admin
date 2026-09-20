@@ -61,6 +61,24 @@ describe('S-03 일치한 Offer 는 끝까지 따라간다', () => {
   });
 });
 
+describe('S-03A 공급사 기간은 고정 enum이 아니다', () => {
+  it('13·27개월 같은 비정형 기간도 그대로 검색하고 같은 기간의 주행거리 variant를 구분한다', () => {
+    const p = product({
+      offers: [
+        offer({ id: 'o-13', termMonths: 13, annualMileageKm: 10_000 }),
+        offer({ id: 'o-27-20k', termMonths: 27, annualMileageKm: 20_000 }),
+        offer({ id: 'o-27-30k', termMonths: 27, annualMileageKm: 30_000 }),
+      ],
+    });
+
+    assert.deepEqual(matchProduct(p, { termMonths: [13] })?.matchedOfferIds, ['o-13']);
+    assert.deepEqual(
+      matchProduct(p, { termMonths: [27], annualMileageKm: { min: 30_000, max: 30_000 } })?.matchedOfferIds,
+      ['o-27-30k'],
+    );
+  });
+});
+
 describe('S-04 확정된 깊이까지만 믿는다', () => {
   it('matchLevel 이 MODEL 이면 데이터에 남은 세부모델 id 는 쓰지 않는다', () => {
     const p = product({

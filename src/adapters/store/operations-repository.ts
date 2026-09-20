@@ -1,13 +1,14 @@
 import { join } from 'node:path';
 import type { Performance } from '../../domain/performance/types';
-import type { BillingRecord, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
+import type { BillingRecord, ClawbackItem, LedgerEntry, SettlementItem } from '../../domain/settlement/types';
 import type { OperationsRepository } from '../../ports/operations';
 import { JsonFileStore } from './json-file-store';
 
 type OperationsState = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   performances: Performance[];
   settlements: SettlementItem[];
+  clawbacks: ClawbackItem[];
   billings: BillingRecord[];
   ledger: LedgerEntry[];
 };
@@ -15,7 +16,18 @@ type OperationsState = {
 const DATA_DIR = process.env.FPA_DATA_DIR ?? join(process.cwd(), '.data');
 
 function emptyState(): OperationsState {
-  return { schemaVersion: 1, performances: [], settlements: [], billings: [], ledger: [] };
+  return { schemaVersion: 2, performances: [], settlements: [], clawbacks: [], billings: [], ledger: [] };
+}
+
+function normalizeState(input:Partial<OperationsState>|undefined):OperationsState{
+  return{
+    schemaVersion:2,
+    performances:structuredClone(input?.performances??[]),
+    settlements:structuredClone(input?.settlements??[]),
+    clawbacks:structuredClone(input?.clawbacks??[]),
+    billings:structuredClone(input?.billings??[]),
+    ledger:structuredClone(input?.ledger??[]),
+  };
 }
 
 export class FileOperationsRepository implements OperationsRepository {
@@ -27,12 +39,12 @@ export class FileOperationsRepository implements OperationsRepository {
 
   private async read(): Promise<OperationsState> {
     const rows = await this.store.all();
-    return rows[0] ? structuredClone(rows[0]) : emptyState();
+    return rows[0] ? normalizeState(rows[0]) : emptyState();
   }
 
   private async mutate<R>(fn: (state: OperationsState) => R): Promise<R> {
     return this.store.mutate((rows) => {
-      const state = rows[0] ? structuredClone(rows[0]) : emptyState();
+      const state = rows[0] ? normalizeState(rows[0]) : emptyState();
       const result = fn(state);
       return { rows: [state], result };
     });
@@ -113,6 +125,27 @@ export class FileOperationsRepository implements OperationsRepository {
     return (await this.read()).settlements
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async ensureClawback(settlementId: string, candidate: ClawbackItem) {
+    return this.mutate((state) => {
+      if (!state.settlements.some((x) => x.id === settlementId)) throw new Error('SETTLEMENT_NOT_FOUND');
+      if (candidate.settlementId !== settlementId) throw new Error('CLAWBACK_SETTLEMENT_IDENTITY_MISMATCH');
+      const existing = state.clawbacks.find((x) => x.id === candidate.id);
+      if (existing) {
+        if (JSON.stringify(existing) !== JSON.stringify(candidate)) throw new Error('IDEMPOTENCY_KEY_REUSE');
+        return { clawback: structuredClone(existing), created: false };
+      }
+      state.clawbacks.push(structuredClone(candidate));
+      return { clawback: structuredClone(candidate), created: true };
+    });
+  }
+
+  async listClawbacks(settlementId: string) {
+    return (await this.read()).clawbacks
+      .filter((x) => x.settlementId === settlementId)
+      .slice()
+      .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
   }
 
   async ensureBilling(settlementId: string, create: () => BillingRecord) {

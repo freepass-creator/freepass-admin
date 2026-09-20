@@ -1,3 +1,4 @@
+import { createClawbackPerformance } from '../domain/performance/create-clawback';
 import { createNormalPerformance } from '../domain/performance/create-performance';
 import { performanceDatePrefix, performanceNumber } from '../domain/performance/performance-number';
 import type { Performance } from '../domain/performance/types';
@@ -46,6 +47,43 @@ export async function ensureNormalPerformance(
         performanceNumber: performanceNumber(prefix, sequence),
         settlementCode: deps.newSettlementCode(),
         application,
+        now: now.toISOString(),
+      }),
+  );
+
+  return { ok: true, ...stored };
+}
+
+
+export type CreateClawbackResult =
+  | { ok: true; performance: Performance; created: boolean }
+  | { ok: false; reason: 'ORIGIN_NOT_FOUND' | 'INVALID_ORIGIN' | 'REASON_REQUIRED' };
+
+export async function createClawback(
+  deps: PerformanceDeps,
+  originPerformanceId: string,
+  reason: string,
+): Promise<CreateClawbackResult> {
+  const origin = await deps.performances.get(originPerformanceId);
+  if (!origin) return { ok: false, reason: 'ORIGIN_NOT_FOUND' };
+  if (origin.kind !== 'NORMAL') return { ok: false, reason: 'INVALID_ORIGIN' };
+  if (!reason.trim()) return { ok: false, reason: 'REASON_REQUIRED' };
+
+  const existing = await deps.performances.findClawbackByOriginPerformanceId(originPerformanceId);
+  if (existing) return { ok: true, performance: existing, created: false };
+
+  const now = deps.now();
+  const prefix = performanceDatePrefix(now);
+  const stored = await deps.performances.createClawbackSequenced(
+    prefix,
+    origin.id,
+    (sequence) =>
+      createClawbackPerformance({
+        id: deps.newId(),
+        performanceNumber: performanceNumber(prefix, sequence),
+        settlementCode: deps.newSettlementCode(),
+        origin,
+        reason,
         now: now.toISOString(),
       }),
   );

@@ -4,7 +4,8 @@ import type { Application } from '../../domain/application/types';
 import { AppError } from '../../domain/errors';
 import type { Performance } from '../../domain/performance/types';
 import type { CanonicalProduct } from '../../domain/product/types';
-import type { ApplicationRepository, PerformanceRepository, ProductRepository } from '../../ports/repositories';
+import type { Settlement } from '../../domain/settlement/types';
+import type { ApplicationRepository, PerformanceRepository, ProductRepository, SettlementRepository } from '../../ports/repositories';
 import { JsonFileStore } from './json-file-store';
 
 /**
@@ -128,6 +129,66 @@ export class FilePerformanceRepository implements PerformanceRepository {
   async list(): Promise<Performance[]> {
     const rows = await this.store.all();
     return [...rows].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  }
+}
+
+
+export class FileSettlementRepository implements SettlementRepository {
+  private readonly store: JsonFileStore<Settlement>;
+
+  constructor(dir: string = DATA_DIR) {
+    this.store = new JsonFileStore<Settlement>(dir, 'settlements');
+  }
+
+  async createForPerformance(
+    performanceId: string,
+    build: () => Settlement,
+  ): Promise<{ settlement: Settlement; created: boolean }> {
+    type R = { settlement: Settlement; created: boolean };
+    return this.store.mutate<R>((rows) => {
+      const existing = rows.find((row) => row.performanceId === performanceId);
+      if (existing) return { rows, result: { settlement: existing, created: false } };
+
+      const settlement = build();
+      if (settlement.performanceId !== performanceId) {
+        throw new AppError('CONFLICT', 'Settlement does not match the repository idempotency key.');
+      }
+      if (rows.some((row) => row.settlementCode === settlement.settlementCode)) {
+        throw new AppError('CONFLICT', `Duplicate settlement code: ${settlement.settlementCode}`);
+      }
+
+      return {
+        rows: [settlement, ...rows],
+        result: { settlement, created: true },
+      };
+    });
+  }
+
+  async get(id: string): Promise<Settlement | null> {
+    return (await this.store.all()).find((row) => row.id === id) ?? null;
+  }
+
+  async findByPerformanceId(performanceId: string): Promise<Settlement | null> {
+    return (await this.store.all()).find((row) => row.performanceId === performanceId) ?? null;
+  }
+
+  async list(): Promise<Settlement[]> {
+    const rows = await this.store.all();
+    return [...rows].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  async mutate(id: string, change: (current: Settlement) => Settlement): Promise<Settlement> {
+    return this.store.mutate((rows) => {
+      const index = rows.findIndex((row) => row.id === id);
+      if (index < 0) throw new AppError('NOT_FOUND', `Settlement not found: ${id}`);
+      const updated = change(rows[index]);
+      if (updated.id !== rows[index].id || updated.performanceId !== rows[index].performanceId) {
+        throw new AppError('CONFLICT', 'Settlement identity fields are immutable.');
+      }
+      const next = [...rows];
+      next[index] = updated;
+      return { rows: next, result: updated };
+    });
   }
 }
 

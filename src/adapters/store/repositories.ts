@@ -95,8 +95,7 @@ export class FilePerformanceRepository implements PerformanceRepository {
       const existing = rows.find((row) => row.kind === 'NORMAL' && row.applicationId === applicationId);
       if (existing) return { rows, result: { performance: existing, created: false } };
 
-      const numberPrefix = `P-${datePrefix}-`;
-      const sequence = rows.filter((row) => row.performanceNumber.startsWith(numberPrefix)).length + 1;
+      const sequence = rows.filter((row) => row.performanceNumber.startsWith(datePrefix)).length + 1;
       const performance = build(sequence);
 
       if (performance.kind !== 'NORMAL' || performance.applicationId !== applicationId) {

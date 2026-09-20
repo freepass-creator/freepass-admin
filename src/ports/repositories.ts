@@ -51,8 +51,15 @@ export interface PerformanceRepository {
     build: (sequence: number) => Performance,
   ): Promise<{ performance: Performance; created: boolean }>;
 
+  createClawbackSequenced(
+    datePrefix: string,
+    originPerformanceId: string,
+    build: (sequence: number) => Performance,
+  ): Promise<{ performance: Performance; created: boolean }>;
+
   get(id: string): Promise<Performance | null>;
   findNormalByApplicationId(applicationId: string): Promise<Performance | null>;
+  findClawbackByOriginPerformanceId(originPerformanceId: string): Promise<Performance | null>;
   list(): Promise<Performance[]>;
 }
 

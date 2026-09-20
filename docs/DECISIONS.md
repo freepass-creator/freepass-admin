@@ -132,3 +132,26 @@ FreePass Admin은 향후 FreePass Data를 중앙 Catalog SSOT consumer로 사용
 - Admin이 FreePass Data internal Firestore collection을 직접 읽지 않는다.
 - Data read cutover를 이유로 운영 writer를 자동 전환하지 않는다.
 - Policy parity 없이 Data Catalog를 운영 read source로 승격하지 않는다.
+
+---
+
+## DEC-2026-09-21-03 — Data는 정산 입력 사실, Admin은 정산 계산·업무 소유
+상태: ADOPTED
+
+### 결정
+FreePass Data는 Product/Offer/PriceTerm/Policy/VehiclePrice 등 버전된 사실을 공급한다.
+FreePass Admin은 그 사실을 접수 Snapshot으로 고정하고 Performance/Settlement/Billing/Collection/Payout 업무와 정산 계산 경계를 소유한다.
+
+### 기존 정산 엔진 활용
+`fp-settlement`에서 운영 검증된 순수 수수료 규칙표와 계산 의미를 Admin의 `SettlementPricingProvider` 뒤로 역수입한다.
+UI/Auth/Firestore/RTDB shim은 역수입하지 않는다.
+
+### 공급사 식별
+정산 규칙 조회는 supplierId를 사람 이름으로 가정하지 않는다.
+`SettlementSupplierRuleKeyProvider`를 통해 안정 ID를 검증된 fee-rule key로 해소한다.
+
+### 자동화 안전
+- 숫자로 확정되는 기존 auto 규칙만 자동추천한다.
+- 신차 형태 미확정, 차량가액 누락, 수동/조건분기 규칙은 REVIEW_REQUIRED.
+- 자동추천 산출근거(engine revision/rule/source revision)를 Performance와 최종 Settlement에 보존한다.
+- 수동 금액 수정/공급사 이슈로 금액이 바뀌면 이전 자동 산출근거를 유효한 근거로 유지하지 않는다.

@@ -197,3 +197,69 @@ export function f04ProgressPatch(projection:F04CaseProjection):F04SheetPatch{
   else patch.청구상태=projection.deliveryCompleted?'인도완료':'인도대기';
   return patch;
 }
+
+
+export type F04LegacyRowCandidate={
+  sheetName:string;
+  legacyRowRef:string;
+  vehicleNumber?:string;
+  customerName:string;
+  receivedAt:string;
+  supplierLabel?:string;
+};
+
+export type F04LegacyMatchResult=
+  |{status:'MATCHED';candidate:F04LegacyRowCandidate}
+  |{status:'NONE'}
+  |{status:'AMBIGUOUS';candidates:F04LegacyRowCandidate[]};
+
+const plateKey=(value:unknown)=>String(value??'').replace(/\s/g,'').trim();
+const nameKey=(value:unknown)=>String(value??'').replace(/\s+/g,' ').trim();
+const dayKey=(value:unknown)=>{
+  const text=String(value??'').trim();
+  const ms=Date.parse(text);
+  return Number.isFinite(ms)?new Date(ms).toISOString().slice(0,10):text.slice(0,10);
+};
+
+export function matchExistingF04Row(
+  projection:F04CaseProjection,
+  rows:F04LegacyRowCandidate[],
+):F04LegacyMatchResult{
+  const plate=plateKey(projection.vehicleNumber);
+  if(!plate)return{status:'NONE'};
+  const customer=nameKey(projection.customerName);
+  const received=dayKey(projection.receivedAt);
+  const supplier=nameKey(projection.supplierLabel);
+
+  const matches=rows.filter((row)=>{
+    if(plateKey(row.vehicleNumber)!==plate)return false;
+    if(nameKey(row.customerName)!==customer)return false;
+    if(dayKey(row.receivedAt)!==received)return false;
+    const rowSupplier=nameKey(row.supplierLabel);
+    if(supplier&&rowSupplier&&supplier!==rowSupplier)return false;
+    return true;
+  });
+
+  if(matches.length===0)return{status:'NONE'};
+  if(matches.length>1)return{status:'AMBIGUOUS',candidates:matches};
+  return{status:'MATCHED',candidate:matches[0]};
+}
+
+export function makeF04RowLink(
+  projection:F04CaseProjection,
+  candidate:F04LegacyRowCandidate,
+  input:{linkedAt:string;linkedBy:string},
+){
+  if(!candidate.sheetName.trim()||!candidate.legacyRowRef.trim())throw new Error('F04_ROW_REFERENCE_REQUIRED');
+  if(!input.linkedBy.trim())throw new Error('F04_LINK_ACTOR_REQUIRED');
+  if(Number.isNaN(Date.parse(input.linkedAt)))throw new Error('F04_LINK_TIME_INVALID');
+  return{
+    applicationId:projection.applicationId,
+    f04SettlementCode:projection.f04SettlementCode,
+    sheetName:candidate.sheetName.trim(),
+    legacyRowRef:candidate.legacyRowRef.trim(),
+    method:'MIGRATION_EXACT_MATCH' as const,
+    linkedAt:input.linkedAt,
+    linkedBy:input.linkedBy.trim(),
+  };
+}

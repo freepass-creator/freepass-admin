@@ -11,6 +11,15 @@ export type PerformanceStatus =
   | 'READY_TO_FINALIZE'
   | 'FINALIZED';
 
+export interface PerformancePricingEvidence {
+  engineId: string;
+  engineRevision: string;
+  ruleId?: string;
+  sourceRevision?: string;
+  explanation: string;
+  appliedAt: string;
+}
+
 export interface SettlementAmounts {
   supplierReceivable: number | null;
   channelPayable: number | null;
@@ -52,6 +61,7 @@ export interface Performance {
     deliveredAt: string;
   };
   amounts: SettlementAmounts;
+  pricingEvidence?: PerformancePricingEvidence;
   salespersonReview: ReviewDecision;
   supplierReview: ReviewDecision;
   reconfirmation: Reconfirmation;

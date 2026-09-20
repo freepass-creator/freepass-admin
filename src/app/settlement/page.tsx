@@ -142,7 +142,7 @@ export default async function SettlementPage({searchParams}:{
           >{label} {count}</Link>)}
         </div>
 
-        <form className="intake-filter-grid">
+        <form className="settlement-filter-grid">
           <input name="q" defaultValue={text} placeholder="고객·접수번호·차량번호 검색"/>
           <select name="status" defaultValue={rawStatus}>
             <option value="">전체 상태</option>

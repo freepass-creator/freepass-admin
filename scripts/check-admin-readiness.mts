@@ -51,6 +51,9 @@ const [
   dataShadow,
   f04Port,
   f04Service,
+  f04LinkFile,
+  f04LinkErp5,
+  f04Runtime,
   env,
   pkg,
   workflow,
@@ -92,6 +95,9 @@ const [
   text('scripts/admin-data-shadow.mts'),
   text('src/ports/legacy-f04.ts'),
   text('src/services/f04-bridge.ts'),
+  text('src/adapters/store/f04-row-link-repository.ts'),
+  text('src/adapters/erp5/f04-row-link-repository.ts'),
+  text('src/server/admin-f04.ts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -313,6 +319,35 @@ add('f04.bridge-field-ownership',
   has(f04Service,'분납여부 / 청구월 / 다음회차일 / 환수* / 요율 / 인센티브 / 가감')
     &&has(f04Service,"if(mode==='OBSERVE')return{}"),
   'Parallel F04 mirror must not overwrite transitional facts Admin does not own yet.');
+
+add('f04.link-contract',
+  has(f04Port,'F04RowLinkRepository')
+    &&has(f04Port,'getByApplicationId')
+    &&has(f04Port,'getBySettlementCode'),
+  'F04 mirror must persist stable application/settlement-code row links.');
+
+add('f04.link-file',
+  has(f04LinkFile,'F04_APPLICATION_LINK_CONFLICT')
+    &&has(f04LinkFile,'F04_SETTLEMENT_CODE_LINK_CONFLICT'),
+  'Development F04 row links must reject remap and code collisions.');
+
+add('f04.link-erp5',
+  has(f04LinkErp5,"erp5AdminCollection('f04_links')")
+    &&has(f04LinkErp5,'runTransaction'),
+  'ERP5 F04 row links must live in a dedicated Admin namespace and bind transactionally.');
+
+add('f04.link-runtime',
+  has(f04Runtime,'Erp5F04RowLinkRepository')
+    &&has(f04Runtime,'FileF04RowLinkRepository'),
+  'F04 row-link persistence must follow Admin runtime mode.');
+
+add('f04.link-exact-match-only',
+  has(f04Service,'matchExistingF04Row')
+    &&has(f04Service,"status:'AMBIGUOUS'")
+    &&has(f04Service,'plateKey')
+    &&has(f04Service,'customerName')
+    &&has(f04Service,'receivedAt'),
+  'Legacy F04 rows may auto-link only through one exact composite match; ambiguity must fail closed.');
 
 add('clawback.domain-separate',
   has(settlementDomain,'createSettlementClawback')

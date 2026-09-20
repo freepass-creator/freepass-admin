@@ -26,6 +26,10 @@ const payload:FreePassDataAdminCatalogResponse={
     updatedAt:'2026-09-20T23:59:00.000Z',
     displayName:'싼타페 MX5 캘리그래피',
     commercialType:'USED_RENT',
+    media:{
+      primaryImageUrl:'https://img.example/data-santafe.jpg',
+      imageUrls:['https://img.example/data-santafe.jpg'],
+    },
     vehicleModel:{
       id:'vm-santafe-mx5-calligraphy',
       origin:'KR',
@@ -108,6 +112,7 @@ test('FreePass Data projection maps one Product with supplier-specific flattened
   assert.equal(product.version,7);
   assert.equal(product.supplierId,'','multi-supplier products must not invent one product supplier');
   assert.equal(product.registration?.vehicleNumber,'123하4567');
+  assert.equal(product.media?.primaryImageUrl,'https://img.example/data-santafe.jpg');
   assert.equal(product.registration?.vin,'KMH-DATA-VIN');
   assert.equal(product.vehicle.nodeId,'vm-santafe-mx5-calligraphy');
   assert.equal(product.vehicle.generationId,'5세대');

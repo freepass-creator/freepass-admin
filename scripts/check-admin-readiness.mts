@@ -27,6 +27,8 @@ const [
   erp5Application,
   erp5Operations,
   env,
+  pkg,
+  workflow,
 ]=await Promise.all([
   text('src/app/page.tsx'),
   text('src/app/products/page.tsx'),
@@ -41,6 +43,8 @@ const [
   text('src/adapters/erp5/application-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
   text('.env.example'),
+  text('package.json'),
+  text('.github/workflows/backend-check.yml'),
 ]);
 
 add('root.real-entry',
@@ -97,6 +101,14 @@ add('erp5.application-transaction',
 add('erp5.operations-transaction',
   has(erp5Operations,'runTransaction')&&has(erp5Operations,"erp5AdminCollection('performances')")&&has(erp5Operations,"erp5AdminCollection('settlements')"),
   'Performance/Settlement persistence must preserve transactional boundaries.');
+
+add('smoke.script-registered',
+  has(pkg,'"admin:smoke"')&&has(pkg,'scripts/admin-vertical-smoke.mts'),
+  'package.json must expose the full vertical smoke command.');
+
+add('smoke.ci-enforced',
+  has(workflow,'npm run admin:smoke'),
+  'backend-check must execute the Admin vertical smoke before readiness/build.');
 
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',

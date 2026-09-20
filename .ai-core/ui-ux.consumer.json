@@ -5,7 +5,7 @@
     "id": "freepass-admin",
     "repository": "freepass-creator/freepass-admin",
     "profile": "FREEPASS_ADMIN_INTERNAL_ERP",
-    "mapping_base_revision": "2747ef32e96c550d7dea05c58ee012880cb42dd3"
+    "mapping_base_revision": "92e2838b6da2df5f0b8733db494e879bd25d2e74"
   },
   "ai_core": {
     "repository": "freepass-creator/ai-core",
@@ -148,12 +148,10 @@
       "ar-SA"
     ],
     "pending_conformance": [
-      "current Next UI still differs materially from approved rev 5 visual authority",
-      "remove admin quick-filter row; approved direction is search plus detailed filter",
-      "replace mobile stacked panels with page/view navigation",
-      "bind actual Next UI to approved floating-panel/admin-rail visual structure",
-      "capture browser evidence for required viewports/locales/input modes",
-      "produce Design Visual Receipt and Quality Receipt on exact project revision"
+      "browser visual proof is still required for the newly implemented approved-direction shell",
+      "verify desktop rail/floating panels and mobile view navigation at 360/390/412/1280/1440",
+      "verify locale/input/zoom/reflow/focus behavior through Design Hub visual/runtime evidence",
+      "produce Design Visual Receipt and Quality Receipt on the exact merged revision"
     ]
   },
   "exceptions": [],

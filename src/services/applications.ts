@@ -1,6 +1,7 @@
 import { applicationNumber, datePrefix } from '../domain/application/application-number';
 import { isAppError } from '../domain/errors';
 import { createApplication } from '../domain/application/create-application';
+import { storedSubmissionFingerprint, submissionFingerprint } from '../domain/application/submission-fingerprint';
 import type { Application } from '../domain/application/types';
 import { cancelApplication, updateApplicationProgress, type ProgressKey } from '../domain/application/update-progress';
 import type { ActorProvider } from '../ports/auth';
@@ -36,6 +37,7 @@ export type SubmitResult =
   | { ok: false; reason: 'OFFER_NOT_FOUND' }
   | { ok: false; reason: 'SALES_CHANNEL_NOT_ACTIVE' }
   | { ok: false; reason: 'ASSIGNEE_NOT_ACTIVE' }
+  | { ok: false; reason: 'IDEMPOTENCY_KEY_REUSE' }
   | { ok: false; reason: 'PRODUCT_CHANGED'; currentVersion: number; seenVersion: number };
 
 export interface Deps {
@@ -57,8 +59,14 @@ export interface Deps {
  */
 export async function submitApplication(deps: Deps, input: SubmitApplicationInput): Promise<SubmitResult> {
   const actor = await deps.actors.requireActor();
+  const fingerprint = submissionFingerprint(input);
   const already = await deps.applications.findBySubmissionId(input.submissionId);
-  if (already) return { ok: true, application: already, created: false };
+  if (already) {
+    if (storedSubmissionFingerprint(already) !== fingerprint) {
+      return { ok: false, reason: 'IDEMPOTENCY_KEY_REUSE' };
+    }
+    return { ok: true, application: already, created: false };
+  }
 
   const product = await deps.products.get(input.productId);
   if (!product) return { ok: false, reason: 'PRODUCT_NOT_FOUND' };
@@ -90,10 +98,13 @@ export async function submitApplication(deps: Deps, input: SubmitApplicationInpu
   const now = deps.now();
   const prefix = datePrefix(now);
 
-  const stored = await deps.applications.createSequenced(
-    prefix,
-    input.submissionId,
-    (sequence) =>
+  let stored;
+  try {
+    stored = await deps.applications.createSequenced(
+      prefix,
+      input.submissionId,
+      fingerprint,
+      (sequence) =>
       createApplication({
         id: deps.newId(),
         applicationNumber: applicationNumber(prefix, sequence),
@@ -108,7 +119,13 @@ export async function submitApplication(deps: Deps, input: SubmitApplicationInpu
         actor,
         now: now.toISOString(),
       }),
-  );
+    );
+  } catch (error) {
+    if (isAppError(error, 'CONFLICT') && error.message === 'IDEMPOTENCY_KEY_REUSE') {
+      return { ok: false, reason: 'IDEMPOTENCY_KEY_REUSE' };
+    }
+    throw error;
+  }
 
   return { ok: true, ...stored };
 }

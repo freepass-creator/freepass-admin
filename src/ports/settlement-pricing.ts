@@ -22,7 +22,7 @@ export type SettlementOperationalFacts = {
 export type SettlementCatalogFacts = {
   productId: string;
   productVersion: number;
-  sourceSnapshotId: string;
+  sourceSnapshotId?: string;
   supplierProductKey?: string;
   commercialType?: string;
   vehiclePrice?: number;

@@ -7,6 +7,8 @@ import type { ProductSearchQuery } from '../../domain/search/types';
 import { adminRepositories } from '../../server/admin-runtime';
 import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
+import { BottomActionBar } from '../_ui/BottomActionBar';
+import { ADMIN_ACTION_BAR_LABELS } from '../_ui/action-bar-registry';
 import { ProductFilterSheet, type FilterAxis } from './ProductFilterSheet';
 import { ShareButton } from './ShareButton';
 
@@ -292,10 +294,11 @@ export default async function ProductsPage({searchParams}:{
             {resolveOfferPolicies(selected.product,offer).map((p)=><span key={p.policyId}>{p.policyId}: {Array.isArray(p.value)?p.value.join(', '):String(p.value)}</span>)}
           </div>
 
-          <div className="product-action-dock">
-            <ShareButton title={selected.product.vehicle.modelId+' 상품'}/>
-            <Link className="btn primary" href={'/intake/new?productId='+encodeURIComponent(selected.product.id)+'&offerId='+encodeURIComponent(offer.id)+'&version='+selected.product.version}>이 조건으로 접수하기</Link>
-          </div>
+          <BottomActionBar
+            ariaLabel="상품 상세 작업"
+            secondary={<ShareButton title={selected.product.vehicle.modelId+' 상품'}/>}
+            primary={<Link className="btn primary" href={'/intake/new?productId='+encodeURIComponent(selected.product.id)+'&offerId='+encodeURIComponent(offer.id)+'&version='+selected.product.version}>{ADMIN_ACTION_BAR_LABELS.productDetail.primary}</Link>}
+          />
         </>:<p>상품을 선택하세요.</p>}
       </section>
 

@@ -2,6 +2,7 @@ import { markPerformanceFinalized } from '../performance/performance';
 import type { Performance } from '../performance/types';
 import type {
   BillingRecord,
+  BillingInvoiceEvidence,
   LedgerEntry,
   PayoutPolicy,
   SettlementBalance,
@@ -55,6 +56,43 @@ export function createBilling(settlement: SettlementItem, now: string): BillingR
     amount: settlement.supplierReceivable,
     status: 'CREATED',
     createdAt: now,
+  };
+}
+
+export function recordBillingInvoiceEvidence(
+  billing: BillingRecord,
+  evidence: BillingInvoiceEvidence,
+): BillingRecord {
+  const reference = evidence.reference.trim();
+  const recordedBy = evidence.recordedBy.trim();
+  const note = evidence.note?.trim();
+
+  if (!reference) throw new Error('Billing invoice evidence reference is required.');
+  if (!recordedBy) throw new Error('Billing invoice evidence recorder is required.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(evidence.issuedAt) || Number.isNaN(Date.parse(evidence.issuedAt + 'T00:00:00Z'))) {
+    throw new Error('Billing invoice issuedAt must be YYYY-MM-DD.');
+  }
+  if (Number.isNaN(Date.parse(evidence.recordedAt))) {
+    throw new Error('Billing invoice recordedAt must be an ISO date-time.');
+  }
+
+  const normalized: BillingInvoiceEvidence = {
+    reference,
+    issuedAt: evidence.issuedAt,
+    recordedAt: evidence.recordedAt,
+    recordedBy,
+    ...(note ? { note } : {}),
+  };
+
+  if (billing.status === 'EVIDENCE_COMPLETE') {
+    if (JSON.stringify(billing.invoiceEvidence) === JSON.stringify(normalized)) return billing;
+    throw new Error('BILLING_EVIDENCE_ALREADY_RECORDED');
+  }
+
+  return {
+    ...billing,
+    status: 'EVIDENCE_COMPLETE',
+    invoiceEvidence: normalized,
   };
 }
 

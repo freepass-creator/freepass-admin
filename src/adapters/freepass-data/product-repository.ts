@@ -37,6 +37,10 @@ export type FreePassDataAdminCatalogProduct = {
     displacementCc?: number | null;
     batteryKwh?: number | null;
   };
+  media?: {
+    primaryImageUrl?: string | null;
+    imageUrls?: string[];
+  } | null;
   vehicleAsset?: {
     id: string;
     status: string;
@@ -173,6 +177,12 @@ export function toAdminCanonicalProduct(
 
   if (!offers.length) throw new Error('FREEPASS_DATA_CONTRACT_INVALID:no-price-terms');
 
+  const mediaUrls=[
+    ...(source.media?.primaryImageUrl?[source.media.primaryImageUrl]:[]),
+    ...(source.media?.imageUrls??[]),
+  ].map((value)=>String(value??'').trim()).filter((value)=>/^https?:\/\//i.test(value));
+  const uniqueMedia=[...new Set(mediaUrls)];
+
   const uniqueSuppliers = [...new Set(offers.map((offer) => offer.supplierId).filter(Boolean))];
   const asset = source.vehicleAsset ?? undefined;
   const registration = asset && (asset.plateNumber || asset.vin || asset.firstRegistrationDate)
@@ -211,6 +221,7 @@ export function toAdminCanonicalProduct(
       ...(model.batteryKwh != null ? { batteryKwh: int(model.batteryKwh, 'vehicleModel.batteryKwh') } : {}),
     },
     ...(registration ? { registration } : {}),
+    ...(uniqueMedia.length?{media:{primaryImageUrl:uniqueMedia[0],imageUrls:uniqueMedia}}:{}),
     offers,
     productPolicies: [
       { policyId: 'commercial_type', type: 'SINGLE_SELECT', value: nonEmpty(source.commercialType, 'commercialType') },

@@ -60,3 +60,35 @@ export interface SettlementBalance {
   payoutOutstanding: number;
   margin: number;
 }
+
+
+export interface ClawbackMoneyImpact {
+  net: number;
+  vat: number;
+  total: number;
+}
+
+export interface ClawbackItem {
+  id: string;
+  settlementId: string;
+  performanceId: string;
+  applicationId: string;
+  /** Positive magnitude to subtract from the original supplier settlement. */
+  supplierAmount: number;
+  /** Positive magnitude to recover from the sales channel. */
+  channelAmount: number;
+  vatMode: Exclude<VatMode, 'UNDECIDED'>;
+  supplierImpact: ClawbackMoneyImpact;
+  channelImpact: ClawbackMoneyImpact;
+  reason: string;
+  occurredAt: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface ClawbackSummary {
+  supplierClawback: number;
+  channelClawback: number;
+  supplierRemainingClawbackable: number;
+  channelRemainingClawbackable: number;
+}

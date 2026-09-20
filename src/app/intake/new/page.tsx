@@ -5,6 +5,8 @@ import { adminReferenceMaster } from '../../../server/admin-masters';
 import { adminRepositories } from '../../../server/admin-runtime';
 import { requireAdminPageActor } from '../../../server/auth/page-guard';
 import { LogoutButton } from '../../_auth/LogoutButton';
+import { BottomActionBar } from '../../_ui/BottomActionBar';
+import { ADMIN_ACTION_BAR_LABELS } from '../../_ui/action-bar-registry';
 import { submitIntake } from '../actions';
 
 export const dynamic='force-dynamic';
@@ -98,7 +100,7 @@ export default async function NewIntakePage({searchParams}:{
         {error&&<p>{error}</p>}
         {masterError&&<p>{masterError}</p>}
 
-        {product&&offer&&!masterError?<form action={submitIntake} className="form-stack">
+        {product&&offer&&!masterError?<form id="intake-create-form" action={submitIntake} className="form-stack">
           <input type="hidden" name="productId" value={product.id}/>
           <input type="hidden" name="offerId" value={offer.id}/>
           <input type="hidden" name="expectedProductVersion" value={version}/>
@@ -123,12 +125,17 @@ export default async function NewIntakePage({searchParams}:{
           <label>고객명<input name="applicantName" required/></label>
           <label>연락처 (선택)<input name="applicantPhone" inputMode="tel"/></label>
 
-          <button className="primary" type="submit" disabled={!salesChannels.length||!assignees.length}>접수 저장</button>
         </form>:null}
 
         {!masterError&&salesChannels.length===0&&<p>활성 영업채널 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
         {!masterError&&assignees.length===0&&<p>활성 담당자 Master가 없습니다. 접수를 저장하지 않습니다.</p>}
       </section>
     </section>
+
+    {product&&offer&&!masterError&&<BottomActionBar
+      ariaLabel="신규 접수 작업"
+      secondary={<Link className="btn" href={'/products?id='+encodeURIComponent(product.id)+'&offerId='+encodeURIComponent(offer.id)}>{ADMIN_ACTION_BAR_LABELS.intakeNew.secondary}</Link>}
+      primary={<button className="btn primary" type="submit" form="intake-create-form" disabled={!salesChannels.length||!assignees.length}>{ADMIN_ACTION_BAR_LABELS.intakeNew.primary}</button>}
+    />}
   </main>;
 }

@@ -14,6 +14,12 @@ const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??''
 const n=(value:string)=>{if(!value.trim())return undefined;const x=Number(value);return Number.isFinite(x)?x:undefined;};
 const positiveInt=(value:string,fallback=1)=>{const x=Number(value);return Number.isInteger(x)&&x>0?x:fallback;};
 const won=(value:number|undefined)=>typeof value==='number'?value.toLocaleString('ko-KR')+'원':'미확인';
+const depositLabel=(offer:{deposit?:number;depositState?:string})=>{
+  if(offer.depositState==='NOT_APPLICABLE')return '해당없음';
+  if(offer.depositState==='UNKNOWN')return '미확인';
+  if(offer.depositState==='ZERO')return '0원';
+  return won(offer.deposit);
+};
 
 export default async function ProductsPage({searchParams}:{
   searchParams:Promise<Record<string,string|string[]|undefined>>
@@ -163,7 +169,8 @@ export default async function ProductsPage({searchParams}:{
                 </div>
                 <dl>
                   <div><dt>주행거리</dt><dd>{x.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
-                  <div><dt>보증금</dt><dd>{won(x.deposit)}</dd></div>
+                  <div><dt>보증금</dt><dd>{depositLabel(x)}</dd></div>
+                  <div><dt>선납금</dt><dd>{won(x.prepayment)}</dd></div>
                 </dl>
                 {policies.length>0&&<p>{policies.map((p)=>p.policyId+': '+(Array.isArray(p.value)?p.value.join(', '):String(p.value))).join(' · ')}</p>}
               </Link>;
@@ -173,7 +180,7 @@ export default async function ProductsPage({searchParams}:{
           <dl className="summary-grid">
             <div><dt>선택 기간</dt><dd>{offer.termMonths}개월</dd></div>
             <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}</dd></div>
-            <div><dt>보증금</dt><dd>{won(offer.deposit)}</dd></div>
+            <div><dt>보증금</dt><dd>{depositLabel(offer)}</dd></div>
             <div><dt>약정주행</dt><dd>{offer.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
           </dl>
           <div className="chips">

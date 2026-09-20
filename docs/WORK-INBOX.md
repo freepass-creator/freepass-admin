@@ -660,3 +660,50 @@ AI Core Search & Discovery Composition 정본 후보(PR ai-core #185)를 FreePas
 
 최신 branch:
 `work/gpt/admin-p14-ui-composition-20260921`
+
+
+---
+
+## 20. P15 공급사 동적 기간 · 기간별 Offer 조건 — 2026-09-21
+
+### 결정
+기간은 1/6/12/24/36/60 같은 고정 enum이 아니다.
+`Offer.termMonths`는 공급사가 실제 제공하는 양의 정수 기간을 그대로 수용한다.
+
+예:
+- 13개월
+- 27개월
+- 48개월
+- 기타 공급사 제공 기간
+
+### 동일 기간의 복수 조건
+동일 `termMonths`에 다음 조건이 다르면 별도 Offer로 유지한다.
+
+- annualMileageKm
+- monthlyRent
+- deposit / depositState
+- prepayment
+- supplierId
+- policyValues
+
+따라서 36개월 2만km와 36개월 3만km는 합치지 않는다.
+
+### UI
+상품 상세:
+1. 실제 matched Offer에서 기간을 unique + 정렬하여 가로 선택
+2. 선택 기간의 실제 Offer variant만 노출
+3. 각 variant에 월대여료 / 주행거리 / 보증금 / 선납금 / 공급사 / 정책조건 표시
+4. 최종 Offer를 선택한 뒤 그 Offer ID 그대로 접수
+5. 접수 직전 화면에서도 동일 조건을 재확인
+
+기간 row는 Search Quick Filter가 아니라 **상품 계약조건 direct selection**이다.
+
+### Domain
+- `offerTerms()`
+- `offersForTerm()`
+- `firstOfferForTerm()`
+
+고정 기간 배열을 Domain/UI에 만들지 않는다.
+
+최신 branch:
+`work/gpt/admin-p15-dynamic-offer-terms-20260921`

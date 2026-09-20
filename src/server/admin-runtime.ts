@@ -2,6 +2,7 @@ import { Erp5ApplicationRepository } from '../adapters/erp5/application-reposito
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
 import { FileApplicationRepository, FileProductRepository } from '../adapters/store/repositories';
 import type { ActorProvider } from '../ports/auth';
+import { sessionActorProvider } from './auth/session';
 import type { ApplicationRepository, ProductRepository } from '../ports/repositories';
 
 export type AdminRuntimeMode = 'FILE_DEV' | 'ERP5' | 'UNBOUND_PRODUCTION';
@@ -37,12 +38,5 @@ export function adminRepositories(env:NodeJS.ProcessEnv=process.env):{
 }
 
 export function adminActorProvider(env:NodeJS.ProcessEnv=process.env):ActorProvider{
-  if(env.NODE_ENV==='production'){
-    throw new Error(
-      'ADMIN_PRODUCTION_ACTOR_ADAPTER_NOT_BOUND: approved production authentication adapter is not connected yet.',
-    );
-  }
-  const id=String(env.FPA_DEV_ACTOR_ID||'dev-admin').trim();
-  if(!id)throw new Error('FPA_DEV_ACTOR_ID must not be empty.');
-  return{requireActor:async()=>({id,type:'ADMIN' as const})};
+  return sessionActorProvider(env);
 }

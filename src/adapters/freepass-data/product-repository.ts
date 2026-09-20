@@ -157,6 +157,7 @@ export function toAdminCanonicalProduct(
         termMonths,
         monthlyRent,
         deposit: depositOf(term),
+        depositState: term.depositState,
         ...(annualMileageKm !== undefined ? { annualMileageKm } : {}),
         policyValues: policyValues.map((value) =>
           value.type === 'MULTI_SELECT' ? { ...value, value: [...value.value] } : { ...value },

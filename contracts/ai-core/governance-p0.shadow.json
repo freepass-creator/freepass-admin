@@ -1,0 +1,28 @@
+{
+  "schema": "freepass-admin-ai-core-governance-shadow/v1",
+  "status": "SHADOW_HOLD",
+  "core_source": {
+    "repository": "freepass-creator/ai-core",
+    "pull_request": 154,
+    "revision": "8bd7fb26338b32abca914995fcd767c8e131ab03",
+    "contracts": [
+      "governance-build-manifest/v1",
+      "governance-release-proof/v1",
+      "governance-rollback-plan/v1"
+    ]
+  },
+  "project_source": {
+    "revision": "2aede7df82591470308f25bd3ccd4e5358aa7c3c",
+    "release_doc": "docs/RELEASE.md",
+    "ssot_doc": "docs/SSOT.md",
+    "ci_workflow": ".github/workflows/backend-check.yml"
+  },
+  "expected_result": "HOLD",
+  "expected_blockers": [
+    "RELEASE_EVIDENCE_STALE",
+    "PRODUCTION_TARGET_UNVERIFIED",
+    "PRODUCTION_AUTH_UNVERIFIED",
+    "PRODUCTION_PERSISTENCE_UNVERIFIED",
+    "PRODUCTION_RUNTIME_SMOKE_UNVERIFIED"
+  ]
+}

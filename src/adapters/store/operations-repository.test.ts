@@ -1,0 +1,89 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import { createApplication } from '../../domain/application/create-application';
+import { updateApplicationProgress } from '../../domain/application/update-progress';
+import {
+  confirmBySalesperson,
+  confirmBySupplier,
+  createPerformanceFromDelivery,
+  setSettlementAmounts,
+} from '../../domain/performance/performance';
+import {
+  createBilling,
+  createSettlementFromPerformance,
+  getSettlementBalance,
+  registerCollection,
+} from '../../domain/settlement/settlement';
+import type { CanonicalProduct } from '../../domain/product/types';
+import { FileOperationsRepository } from './operations-repository';
+
+const t0='2026-09-20T00:00:00.000Z';
+const t1='2026-09-20T01:00:00.000Z';
+const actor={id:'admin-1',type:'ADMIN' as const};
+
+const product:CanonicalProduct={
+  id:'p1',version:1,supplierId:'s1',supplierProductKey:'raw-1',
+  vehicle:{nodeId:'n1',originId:'kr',manufacturerId:'kia',modelId:'k5',matchLevel:'MODEL'},
+  specs:{},offers:[{id:'o1',termMonths:36,monthlyRent:700000,deposit:0,policyValues:[]}],
+  productPolicies:[],sourceSnapshotId:'source-1',updatedAt:t0,
+};
+
+function candidate(){
+  const app=createApplication({
+    id:'a1',applicationNumber:'A-260920-001',applicantName:'홍길동',salesChannelId:'channel-1',
+    assigneeId:'admin-1',source:'ADMIN',product,offerId:'o1',submissionId:'sub-1',actor,now:t0,
+  });
+  const delivered=updateApplicationProgress(app,'deliveryCompleted',true,t1,actor);
+  return createPerformanceFromDelivery(delivered);
+}
+
+test('operations repository persists atomic settlement state across instances',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'fpa-ops-'));
+  try{
+    const first=new FileOperationsRepository(dir);
+    const ensured=await first.ensurePerformance(candidate());
+    assert.equal(ensured.created,true);
+    assert.equal((await first.ensurePerformance(candidate())).created,false);
+
+    await first.mutatePerformance(ensured.performance.id,(p)=>
+      confirmBySupplier(
+        confirmBySalesperson(
+          setSettlementAmounts(p,{supplierReceivable:1000000,channelPayable:700000,vatMode:'EXCLUDED'},t1),
+          'channel-1','admin-1',t1,
+        ),
+        's1','admin-1',t1,
+      ),
+    );
+
+    const finalized=await first.finalizePerformance(
+      ensured.performance.id,
+      (p)=>createSettlementFromPerformance(p,t1),
+    );
+    assert.equal(finalized.created,true);
+    assert.equal(finalized.performance.status,'FINALIZED');
+
+    const second=new FileOperationsRepository(dir);
+    const persisted=await second.getPerformance(ensured.performance.id);
+    const settlement=await second.findSettlementByPerformanceId(ensured.performance.id);
+    assert.equal(persisted?.status,'FINALIZED');
+    assert.ok(settlement);
+
+    if(!settlement)throw new Error('fixture');
+    const billing=(await second.ensureBilling(settlement.id,()=>createBilling(settlement,t1))).billing;
+    await second.mutateLedger(settlement.id,(entries)=>registerCollection(
+      settlement,billing,entries,{
+        id:'c1',settlementId:settlement.id,account:'SUPPLIER_COLLECTION',kind:'CASH',
+        amount:400000,occurredAt:t1,actorId:'admin-1',
+      },
+    ));
+
+    const third=new FileOperationsRepository(dir);
+    const ledger=await third.listLedger(settlement.id);
+    assert.equal(getSettlementBalance(settlement,billing,ledger).collectionOutstanding,600000);
+  }finally{
+    await rm(dir,{recursive:true,force:true});
+  }
+});

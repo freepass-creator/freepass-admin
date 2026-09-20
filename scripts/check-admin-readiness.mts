@@ -29,6 +29,8 @@ const [
   intakeActions,
   applicationService,
   referenceMaster,
+  repositoryPort,
+  fileRepositories,
   env,
   pkg,
   workflow,
@@ -48,6 +50,8 @@ const [
   text('src/app/intake/actions.ts'),
   text('src/services/applications.ts'),
   text('src/server/admin-masters.ts'),
+  text('src/ports/repositories.ts'),
+  text('src/adapters/store/repositories.ts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -124,6 +128,23 @@ add('master.service-enforced',
 add('master.dev-explicit',
   has(env,'FPA_DEV_SALES_CHANNEL_IDS=channel-dev'),
   'Development channel master must be explicit in the environment contract.');
+
+add('idempotency.semantic-service',
+  has(applicationService,'submissionFingerprint(input)')&&has(applicationService,'storedSubmissionFingerprint(already)')
+    &&has(applicationService,'IDEMPOTENCY_KEY_REUSE'),
+  'Application Service must compare semantic fingerprints before replay.');
+
+add('idempotency.atomic-port',
+  has(repositoryPort,'submissionFingerprint: string'),
+  'Application repository atomic create contract must receive the semantic fingerprint.');
+
+add('idempotency.atomic-file',
+  has(fileRepositories,'storedSubmissionFingerprint(existing) !== submissionFingerprint'),
+  'File repository must reject different payloads inside the atomic create boundary.');
+
+add('idempotency.atomic-erp5',
+  has(erp5Application,'storedSubmissionFingerprint(application)!==submissionFingerprint'),
+  'ERP5 transaction must reject different payloads inside the atomic create boundary.');
 
 add('smoke.script-registered',
   has(pkg,'"admin:smoke"')&&has(pkg,'scripts/admin-vertical-smoke.mts'),

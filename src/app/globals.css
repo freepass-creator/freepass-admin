@@ -213,3 +213,83 @@
 @media(min-width:901px){
   .mobile-detail-back{display:none}
 }
+
+
+/* P17 — one shared contextual bottom action bar.
+   Same shell; only the screen/state action set changes. */
+.shared-bottom-action-bar{
+  position:sticky;
+  z-index:24;
+  bottom:0;
+  display:grid;
+  gap:8px;
+  margin:18px -22px -22px;
+  padding:12px 22px calc(12px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--fp-line);
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(10px);
+}
+.shared-bottom-action-bar.two-actions{
+  grid-template-columns:minmax(0,3fr) minmax(0,7fr);
+}
+.shared-bottom-action-bar.one-action{
+  grid-template-columns:minmax(0,1fr);
+}
+.shared-bottom-action-bar .btn,
+.shared-bottom-action-bar button,
+.shared-bottom-action-bar a{
+  width:100%;
+  min-width:0;
+}
+.shared-bottom-secondary,
+.shared-bottom-primary{
+  min-width:0;
+  display:flex;
+}
+.shared-bottom-secondary>*,
+.shared-bottom-primary>*{
+  flex:1;
+}
+.progress-status-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin:12px 0 16px;
+}
+.progress-status-list>div{
+  min-height:42px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  padding:8px 10px;
+  border-radius:9px;
+  background:var(--fp-sunken);
+  color:var(--fp-ink-2);
+  font-size:11px;
+}
+.progress-status-list>div.done{
+  background:var(--fp-accent-soft);
+  color:var(--fp-ink);
+}
+.progress-check{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:#fff;
+  color:var(--fp-accent);
+  font-weight:800;
+}
+.progress-status-list b{
+  font-size:10px;
+  color:var(--fp-ink-3);
+}
+
+@media(max-width:900px){
+  .shared-bottom-action-bar{
+    margin:18px -14px -16px;
+    padding-inline:14px;
+  }
+}

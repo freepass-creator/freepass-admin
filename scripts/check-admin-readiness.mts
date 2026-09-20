@@ -377,6 +377,32 @@ add('clawback.service-ui',
     &&has(settlement,'환수는 원 정산과 원장을 수정하지 않습니다'),
   'Settlement workflow must expose business clawback separately from ledger reversal.');
 
+add('clawback.net-position',
+  has(settlementDomain,'getSettlementNetBalance')
+    &&has(settlementDomain,'supplierRefundOutstanding')
+    &&has(settlementDomain,'channelRecoveryOutstanding'),
+  'Clawback must reduce future collection/payout limits and expose refund/recovery excess separately.');
+
+add('clawback.cash-domain',
+  has(settlementDomain,'registerSupplierRefund')
+    &&has(settlementDomain,'registerChannelRecovery')
+    &&has(settlementDomain,"'SUPPLIER_REFUND'")
+    &&has(settlementDomain,"'CHANNEL_RECOVERY'"),
+  'Supplier refund and channel recovery must be separate cash accounts, not business REVERSAL.');
+
+add('clawback.cash-service',
+  has(settlementService,'recordSupplierRefund')
+    &&has(settlementService,'recordChannelRecovery')
+    &&has(settlementService,'listClawbacks(settlementId)'),
+  'Clawback cash use cases must use the persisted business event and net settlement limits.');
+
+add('clawback.cash-ui',
+  has(settlement,'공급사 환불 필요')
+    &&has(settlement,'영업채널 회수 필요')
+    &&has(settlementActions,'supplierRefundAction')
+    &&has(settlementActions,'channelRecoveryAction'),
+  'Settlement UI must show and execute clawback refund/recovery separately from normal collection/payout.');
+
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',
   'FPA_PRODUCT_SOURCE=freepass-data',

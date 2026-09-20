@@ -16,6 +16,9 @@ function has(source:string,needle:string){
 const [
   root,
   products,
+  productFilterSheet,
+  globalCss,
+  productTypes,
   intake,
   intakeNew,
   settlement,
@@ -61,6 +64,9 @@ const [
 ]=await Promise.all([
   text('src/app/page.tsx'),
   text('src/app/products/page.tsx'),
+  text('src/app/products/ProductFilterSheet.tsx'),
+  text('src/app/globals.css'),
+  text('src/domain/product/types.ts'),
   text('src/app/intake/page.tsx'),
   text('src/app/intake/new/page.tsx'),
   text('src/app/settlement/page.tsx'),
@@ -263,10 +269,43 @@ add('catalog.offer-supplier-ui',
 add('ui.search-composition',
   has(products,'className="ui-search-discovery"')
     &&has(products,'data-ui-search-mode="search-filter"')
-    &&has(products,'data-ui-filter-trigger')
+    &&has(products,'ProductFilterSheet')
     &&has(products,'data-ui-applied-filters')
     &&!has(products,'COMMON_TERMS'),
   'Product search must use AI Core SEARCH_FILTER composition without unproven persistent quick filters.');
+
+add('ui.filter-sheet-approved',
+  has(productFilterSheet,'filter-axis-map')
+    &&has(productFilterSheet,'filter-axis-values')
+    &&has(productFilterSheet,"router.replace('/products?'")
+    &&has(productFilterSheet,'건 보기')
+    &&!has(productFilterSheet,'필터 적용'),
+  'Detailed filter must use the approved two-column immediate-apply sheet without an Apply/Cancel draft boundary.');
+
+add('ui.master-detail-mobile',
+  has(products,'className="workspace products-workspace ui-master-detail"')
+    &&has(products,'data-mobile-view={mobileView}')
+    &&has(products,'data-ui-master-detail-pane')
+    &&has(products,'mobile-detail-back')
+    &&has(globalCss,'products-workspace[data-mobile-view="list"]')
+    &&has(globalCss,'products-workspace[data-mobile-view="detail"]'),
+  'Desktop may use panes, but mobile Product browse must drill from list to one detail pane instead of stacking all panes.');
+
+add('ui.photo-aware-product-card',
+  has(productTypes,'primaryImageUrl?: string')
+    &&has(products,'product.media?.primaryImageUrl')
+    &&has(products,'사진 준비 중')
+    &&has(products,'photo-sig')
+    &&has(erp5Product,'ERP5_PRODUCT_WRITE_FORBIDDEN'),
+  'Product cards must branch on real image availability and preserve the standard no-photo state.');
+
+add('ui.product-action-hierarchy',
+  has(products,'product-action-dock')
+    &&has(products,'<ShareButton')
+    &&has(products,'className="btn primary"')
+    &&has(globalCss,'--fp-go:#1b3c63')
+    &&has(globalCss,'.btn.primary'),
+  'Product detail must keep Share secondary and Intake primary in the approved bottom action hierarchy.');
 
 add('catalog.dynamic-offer-terms',
   has(offerTermDomain,'offerTerms')

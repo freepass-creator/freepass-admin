@@ -18,6 +18,7 @@ export type FreePassDataAdminCatalogProduct = {
   updatedAt?: string;
   displayName: string;
   commercialType: string;
+  vehiclePrice?: number;
   vehicleModel: {
     id: string;
     origin?: string | null;
@@ -184,6 +185,8 @@ export function toAdminCanonicalProduct(
     // Legacy/default supplier only. The selected Offer supplier is authoritative.
     supplierId: uniqueSuppliers.length === 1 ? uniqueSuppliers[0] : '',
     supplierProductKey: source.sourceProductKey?.trim() || productId,
+    commercialType: nonEmpty(source.commercialType, 'commercialType'),
+    ...(source.vehiclePrice !== undefined ? { vehiclePrice: int(source.vehiclePrice, 'vehiclePrice') } : {}),
     vehicle: {
       nodeId: vehicleModelId,
       originId: String(model.origin ?? '').trim(),

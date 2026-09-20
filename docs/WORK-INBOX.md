@@ -803,3 +803,40 @@ AI Core Search & Discovery Composition 정본 후보(PR ai-core #185)를 FreePas
 
 최신 branch:
 `work/gpt/admin-p17-shared-bottom-action-bar-20260921`
+
+
+---
+
+## 23. P18 기존 UI 우선 · AI Core는 규격 매핑 — 2026-09-21
+
+사용자 재확정:
+**FreePass Admin은 이미 짜여 있는 UI/UX를 먼저 읽고 사용한다. AI Core 때문에 새 디자인을 만들지 않는다.**
+
+시각/동선 정본:
+- `docs/ui/UI-SPEC.md`
+- `docs/ui/PRODUCT-EXPERIENCE-PRINCIPLES.md`
+- `docs/ui/mockups/admin-shell.html`
+- `docs/ui/mockups/admin-shell.app.js`
+- `docs/ui/mockups/admin-shell.data.js`
+- `docs/ui/mockups/admin-shell.mobile.js`
+
+AI Core 적용:
+- 기존 selector/component/behavior를 canonical feature ID에 매핑
+- Search/Filter/Master-Detail/Variant/Bottom Action/Bottom Nav/Restore 계약만 맞춤
+- 기존 layout/density/button language/mobile navigation을 임의 교체하지 않음
+
+모바일 정본:
+- 하단 탭 = **상품 · 접수 · 실적 · 설정**
+- 페이지별 action이 있으면 `.mact`가 탭바 위에 붙음
+- 목록→상세→업무는 한 화면 한 목적
+- 기존 `M.tab / M.view / M.hist` 흐름 보존
+
+최신 business rule만 시각 변경 없이 반영:
+- 기간은 고정 enum이 아니라 실제 Offer에서 생성
+- 같은 기간의 조건 variant는 별도 Offer
+
+상세 mapping:
+`docs/ui/AI-CORE-ADOPTION-MAP.md`
+
+최신 branch:
+`work/gpt/admin-p18-existing-ui-ai-core-alignment-20260921`

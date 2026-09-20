@@ -19,6 +19,7 @@ import {
   reverseLedgerAction,
   saveAmounts,
   supplierIssueAction,
+  suggestAmounts,
   syncDeliveredPerformances,
 } from './actions';
 
@@ -213,6 +214,10 @@ export default async function SettlementPage({searchParams}:{
             <div><dt>영업채널 확인</dt><dd>{selected.salespersonReview.status}</dd></div>
             <div><dt>공급사 확인</dt><dd>{selected.supplierReview.status}</dd></div>
           </dl>
+          {selected.pricingEvidence&&<div className="work-hint">
+            <b>자동 산출 근거 · {selected.pricingEvidence.ruleId||selected.pricingEvidence.engineId}</b>
+            <span>{selected.pricingEvidence.explanation} · engine {selected.pricingEvidence.engineRevision}</span>
+          </div>}
 
           {settlement&&balance?<>
             <h3>확정 정산</h3>
@@ -234,13 +239,20 @@ export default async function SettlementPage({searchParams}:{
         <div className="panel-head"><div><p className="eyebrow">ACTION</p><h1>다음 업무</h1></div></div>
 
         {selected?<>
-          {selected.status==='AWAITING_AMOUNTS'&&<form action={saveAmounts} className="form-stack">
+          {selected.status==='AWAITING_AMOUNTS'&&<>
+            <form action={suggestAmounts} className="form-stack">
+              <input type="hidden" name="id" value={selected.id}/>
+              <button className="primary" type="submit">기존 정산 규칙 자동추천</button>
+              <small>확정 규칙만 자동으로 넣습니다. 공급사·상품형태·차량가액 등이 불명확하면 저장하지 않고 검토 사유를 표시합니다.</small>
+            </form>
+            <form action={saveAmounts} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/>
             <label>공급사 받을 금액<input name="supplierReceivable" required inputMode="numeric"/></label>
             <label>영업채널 지급 금액<input name="channelPayable" required inputMode="numeric"/></label>
             <label>VAT<select name="vatMode" defaultValue="EXCLUDED"><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></label>
-            <button className="primary" type="submit">금액 저장</button>
-          </form>}
+            <button className="primary" type="submit">금액 직접 저장</button>
+          </form>
+          </>}
 
           {selected.status==='AWAITING_SALESPERSON_CONFIRMATION'&&<>
             <form action={confirmSales} className="form-stack">

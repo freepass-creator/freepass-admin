@@ -3,6 +3,7 @@ import test from 'node:test';
 import { createApplication } from './application/create-application';
 import { updateApplicationProgress } from './application/update-progress';
 import {
+  applySuggestedSettlementAmounts,
   confirmBySalesperson,
   confirmBySupplier,
   createPerformanceFromDelivery,
@@ -247,4 +248,48 @@ test('청구 생성만으로는 수금할 수 없고 계산서 증빙 완료 후
   const billing=completeBilling(draftBilling);
   const ledger=registerCollection(settlement,billing,[],entry);
   assert.equal(getSettlementBalance(settlement,billing,ledger).collectionOutstanding,0);
+});
+
+
+test('자동추천 산출근거는 정산확정까지 고정되고 수동 수정 시 해제된다',()=>{
+  let performance=createPerformanceFromDelivery(deliveredApplication());
+  performance=applySuggestedSettlementAmounts(
+    performance,
+    {supplierReceivable:945000,channelPayable:756000,vatMode:'EXCLUDED'},
+    {
+      engineId:'fp-settlement-fee-rules',
+      engineRevision:'fee-table:test',
+      ruleId:'웰릭스|재렌트|ANY|36|대여료×기간',
+      sourceRevision:'freepass-data:rel-1',
+      explanation:'웰릭스 · 재렌트 · 36개월',
+    },
+    t1,
+  );
+  assert.equal(performance.pricingEvidence?.ruleId,'웰릭스|재렌트|ANY|36|대여료×기간');
+
+  performance=confirmBySalesperson(performance,'channel-1','admin-1',t1);
+  performance=confirmBySupplier(performance,'supplier-1','admin-1',t1);
+  const finalized=createSettlementFromPerformance(performance,t1);
+  assert.equal(
+    finalized.settlement.pricingEvidence?.engineRevision,
+    'fee-table:test',
+  );
+
+  let manual=createPerformanceFromDelivery(deliveredApplication());
+  manual=applySuggestedSettlementAmounts(
+    manual,
+    {supplierReceivable:945000,channelPayable:756000,vatMode:'EXCLUDED'},
+    {
+      engineId:'fp-settlement-fee-rules',
+      engineRevision:'fee-table:test',
+      explanation:'auto',
+    },
+    t1,
+  );
+  manual=setSettlementAmounts(
+    manual,
+    {supplierReceivable:950000,channelPayable:760000,vatMode:'EXCLUDED'},
+    t1,
+  );
+  assert.equal(manual.pricingEvidence,undefined);
 });

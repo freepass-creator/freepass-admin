@@ -63,6 +63,10 @@ export interface CanonicalProduct {
   version: number;
   supplierId: string;
   supplierProductKey: string;
+  /** Consumer-facing commercial classification; source-specific detail may also live in policies. */
+  commercialType?: string;
+  /** Supplier/catalog vehicle price used by settlement pricing when applicable. */
+  vehiclePrice?: number;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;
   registration?: RegistrationInfo;

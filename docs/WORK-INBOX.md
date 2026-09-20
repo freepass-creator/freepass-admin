@@ -430,3 +430,42 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 4. 신규 Admin writer → F04 mirror 경로를 병행 단계로 구현
 5. 환수(사업 clawback)와 ledger reversal을 명확히 분리해 Domain에 반영
 6. 기준일 이후 Admin 단일 writer 전환 Gate 설계
+
+---
+
+## 15. FreePass Data 연동 준비 — 2026-09-21
+
+사용자 최신 결정: 프리패스 어드민은 향후 프리패스 데이터를 연계할 것을 전제로 계속 개발한다.
+
+### 구현 완료
+- Admin Product source와 operational persistence 설정 분리
+- `FPA_PRODUCT_SOURCE=file|erp5|freepass-data`
+- FreePass Data `admin-catalog/v1` Adapter
+- Offer별 supplier authority
+- Offer/PriceTerm provenance (`sourceOfferId`, `sourceOfferRevision`, `sourcePriceTermKey`)
+- depositState 보존
+- ERP5 vs FreePass Data shadow parity service
+- `npm run admin:data-shadow` 수동 비교 명령
+- readiness에 Data consumer boundary/shadow tooling 검사 추가
+
+### Data 쪽 계약
+- repo: `freepass-creator/freepass-data`
+- PR #8: Admin Catalog Consumer Contract V1
+- schema: `freepass-data.admin-catalog/v1`
+- endpoint target: `/v1/views/admin-catalog/products`
+- 현재 상태: CONTRACT LOCKED / ENDPOINT NOT ACTIVE
+
+### Cutover 전 필수
+1. Admin Catalog ACTIVE Release
+2. service IAM/auth
+3. searchable Policy typed-value parity
+4. ERP5 direct vs Data shadow parity
+5. freshness/rollback evidence
+
+### 다음 개발
+1. P12 코드 검증(typecheck/test/smoke)
+2. fp-settlement 순수 정산엔진 reverse import 계약
+3. FreePass Data Admin projection 구현 준비와 policy normalization parity
+4. F04 Legacy Bridge stable-id mapping
+5. Business clawback Domain
+6. Data/F04/기존 정산엔진/Admin 4-way parity fixture

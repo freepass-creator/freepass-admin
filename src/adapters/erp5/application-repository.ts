@@ -1,5 +1,7 @@
 import type { DocumentData } from 'firebase-admin/firestore';
 import { assertApplicationMutation } from '../../domain/application/invariants';
+import { storedSubmissionFingerprint } from '../../domain/application/submission-fingerprint';
+import { AppError } from '../../domain/errors';
 import type { Application } from '../../domain/application/types';
 import type { ApplicationRepository } from '../../ports/repositories';
 import { erp5, erp5AdminCollection, requireErp5Write } from './firestore';
@@ -19,6 +21,7 @@ export class Erp5ApplicationRepository implements ApplicationRepository{
   async createSequenced(
     datePrefix:string,
     submissionId:string,
+    submissionFingerprint:string,
     build:(sequence:number)=>Application,
   ):Promise<{application:Application;created:boolean}>{
     requireErp5Write();
@@ -30,7 +33,11 @@ export class Erp5ApplicationRepository implements ApplicationRepository{
       const existing=await tx.get(collection.where('submissionId','==',submissionId).limit(1));
       if(!existing.empty){
         const doc=existing.docs[0];
-        return{application:applicationOf(doc.data(),doc.id),created:false};
+        const application=applicationOf(doc.data(),doc.id);
+        if(storedSubmissionFingerprint(application)!==submissionFingerprint){
+          throw new AppError('CONFLICT','IDEMPOTENCY_KEY_REUSE');
+        }
+        return{application,created:false};
       }
 
       const counter=await tx.get(counterRef);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { adminActorProvider, adminRepositories, adminRuntimeMode } from './admin-runtime';
+import { adminActorProvider, adminProductSourceMode, adminRepositories, adminRuntimeMode } from './admin-runtime';
 
 test('development defaults to durable file adapters',()=>{
   assert.equal(adminRuntimeMode({NODE_ENV:'development'}),'FILE_DEV');
@@ -45,5 +45,47 @@ test('unknown repository modes are rejected',()=>{
   assert.throws(
     ()=>adminRuntimeMode({NODE_ENV:'development',FPA_REPOSITORY_MODE:'legacy'}),
     /FPA_REPOSITORY_MODE_INVALID/,
+  );
+});
+
+
+test('catalog read source is independent from operational persistence',()=>{
+  assert.equal(
+    adminProductSourceMode({NODE_ENV:'development',FPA_REPOSITORY_MODE:'erp5'}),
+    'ERP5',
+  );
+  assert.equal(
+    adminProductSourceMode({
+      NODE_ENV:'production',
+      FPA_REPOSITORY_MODE:'erp5',
+      FPA_PRODUCT_SOURCE:'freepass-data',
+    }),
+    'FREEPASS_DATA',
+  );
+  assert.equal(
+    adminProductSourceMode({
+      NODE_ENV:'development',
+      FPA_REPOSITORY_MODE:'file',
+      FPA_PRODUCT_SOURCE:'erp5',
+    }),
+    'ERP5',
+  );
+});
+
+test('production file catalog source remains fail-closed',()=>{
+  assert.equal(
+    adminProductSourceMode({
+      NODE_ENV:'production',
+      FPA_REPOSITORY_MODE:'erp5',
+      FPA_PRODUCT_SOURCE:'file',
+    }),
+    'UNBOUND_PRODUCTION',
+  );
+});
+
+test('unknown catalog source modes are rejected',()=>{
+  assert.throws(
+    ()=>adminProductSourceMode({NODE_ENV:'development',FPA_PRODUCT_SOURCE:'legacy'}),
+    /FPA_PRODUCT_SOURCE_INVALID/,
   );
 });

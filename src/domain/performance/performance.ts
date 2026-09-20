@@ -111,6 +111,9 @@ export function confirmBySalesperson(
   now: string,
 ): Performance {
   assertDecisionActors(partyId, recordedByAdminId);
+  if (partyId !== performance.snapshot.salesChannelId) {
+    throw new Error('SALESPERSON_PARTY_MISMATCH');
+  }
   if (performance.status !== 'AWAITING_SALESPERSON_CONFIRMATION') {
     throw new Error('Salesperson confirmation is not available in the current state.');
   }
@@ -130,6 +133,9 @@ export function disputeBySalesperson(
   now: string,
 ): Performance {
   assertDecisionActors(partyId, recordedByAdminId);
+  if (partyId !== performance.snapshot.salesChannelId) {
+    throw new Error('SALESPERSON_PARTY_MISMATCH');
+  }
   if (performance.status !== 'AWAITING_SALESPERSON_CONFIRMATION') {
     throw new Error('Salesperson dispute is not available in the current state.');
   }
@@ -149,6 +155,9 @@ export function confirmBySupplier(
   now: string,
 ): Performance {
   assertDecisionActors(supplierPartyId, recordedByAdminId);
+  if (supplierPartyId !== performance.snapshot.supplierId) {
+    throw new Error('SUPPLIER_PARTY_MISMATCH');
+  }
   if (performance.status !== 'AWAITING_SUPPLIER_REVIEW') {
     throw new Error('Supplier review must follow salesperson review.');
   }
@@ -169,6 +178,9 @@ export function registerSupplierIssue(
   now: string,
 ): Performance {
   assertDecisionActors(supplierPartyId, recordedByAdminId);
+  if (supplierPartyId !== performance.snapshot.supplierId) {
+    throw new Error('SUPPLIER_PARTY_MISMATCH');
+  }
   if (performance.status !== 'AWAITING_SUPPLIER_REVIEW') {
     throw new Error('Supplier issue must follow salesperson review.');
   }
@@ -204,6 +216,9 @@ export function reconfirmBySalesperson(
   now: string,
 ): Performance {
   assertDecisionActors(partyId, recordedByAdminId);
+  if (partyId !== performance.snapshot.salesChannelId) {
+    throw new Error('SALESPERSON_PARTY_MISMATCH');
+  }
   if (performance.status !== 'AWAITING_SALESPERSON_RECONFIRMATION') {
     throw new Error('Salesperson reconfirmation is not available in the current state.');
   }

@@ -11,7 +11,7 @@ import {
 } from '../../adapters/store/repositories';
 import { offer, product } from '../../domain/search/__tests__/fixtures';
 import { markProgress, submitApplication, type Deps as ApplicationDeps } from '../applications';
-import { ensureNormalPerformance, type PerformanceDeps } from '../performances';
+import { createClawback, ensureNormalPerformance, type PerformanceDeps } from '../performances';
 
 let root: string;
 let idSeq = 0;
@@ -138,5 +138,82 @@ describe('인도 → 정상실적', () => {
 
     assert.equal(results.filter((result) => result.ok && result.created).length, 1);
     assert.equal((await d.perf.performances.list()).length, 1);
+  });
+});
+
+
+describe('환수 실적', () => {
+  it('원 NORMAL 실적을 수정하지 않고 별도 CLAWBACK 한 줄을 만든다', async () => {
+    const d = deps('clawback');
+    await d.app.products.save(product({
+      id: 'product-1',
+      registration: { vehicleNumber: '77하7777' },
+      offers: [offer({ id: 'offer-36', monthlyRent: 800_000 })],
+    }));
+
+    const submitted = await submitApplication(d.app, {
+      productId: 'product-1',
+      offerId: 'offer-36',
+      salesChannelId: 'channel-1',
+      assigneeId: 'staff-park',
+      applicantName: '환수고객',
+      expectedProductVersion: 1,
+      submissionId: 'sub-clawback',
+    });
+    assert.equal(submitted.ok, true);
+    if (!submitted.ok) return;
+
+    await markProgress(d.app, submitted.application.id, 'deliveryCompleted', true);
+    const normal = await ensureNormalPerformance(d.perf, submitted.application.id);
+    assert.equal(normal.ok, true);
+    if (!normal.ok) return;
+
+    const before = { ...normal.performance };
+    const first = await createClawback(d.perf, normal.performance.id, '중도 해지 환수');
+    assert.equal(first.ok, true);
+    if (!first.ok) return;
+
+    assert.equal(first.created, true);
+    assert.equal(first.performance.kind, 'CLAWBACK');
+    assert.equal(first.performance.originPerformanceId, normal.performance.id);
+    assert.equal(first.performance.reason, '중도 해지 환수');
+
+    const savedNormal = await d.perf.performances.get(normal.performance.id);
+    assert.deepEqual(savedNormal, before, '원실적은 그대로 남아야 한다');
+  });
+
+  it('같은 원실적 환수를 동시에 여러 번 요청해도 한 건이다', async () => {
+    const d = deps('clawback-idempotent');
+    await d.app.products.save(product({
+      id: 'product-1',
+      registration: { vehicleNumber: '88호8888' },
+      offers: [offer({ id: 'offer-36' })],
+    }));
+
+    const submitted = await submitApplication(d.app, {
+      productId: 'product-1',
+      offerId: 'offer-36',
+      salesChannelId: 'channel-1',
+      assigneeId: 'staff-park',
+      applicantName: '환수중복',
+      expectedProductVersion: 1,
+      submissionId: 'sub-clawback-idempotent',
+    });
+    assert.equal(submitted.ok, true);
+    if (!submitted.ok) return;
+
+    await markProgress(d.app, submitted.application.id, 'deliveryCompleted', true);
+    const normal = await ensureNormalPerformance(d.perf, submitted.application.id);
+    assert.equal(normal.ok, true);
+    if (!normal.ok) return;
+
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => createClawback(d.perf, normal.performance.id, '환수')),
+    );
+    assert.equal(results.filter((result) => result.ok && result.created).length, 1);
+    assert.equal(
+      (await d.perf.performances.list()).filter((row) => row.kind === 'CLAWBACK').length,
+      1,
+    );
   });
 });

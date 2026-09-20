@@ -8,8 +8,11 @@ import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
 export const dynamic='force-dynamic';
 
+const PAGE_SIZE=50;
+const COMMON_TERMS=[1,6,12,24,36,60] as const;
 const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??'':value??'';
 const n=(value:string)=>{const x=Number(value);return Number.isFinite(x)?x:undefined;};
+const positiveInt=(value:string,fallback=1)=>{const x=Number(value);return Number.isInteger(x)&&x>0?x:fallback;};
 const won=(value:number|undefined)=>typeof value==='number'?value.toLocaleString('ko-KR')+'원':'미확인';
 
 export default async function ProductsPage({searchParams}:{
@@ -21,6 +24,7 @@ export default async function ProductsPage({searchParams}:{
   const term=n(first(q.term));
   const maxRent=n(first(q.maxRent));
   const maxDeposit=n(first(q.maxDeposit));
+  const requestedPage=positiveInt(first(q.page));
   const selectedId=first(q.id);
   const selectedOfferId=first(q.offerId);
 
@@ -46,14 +50,18 @@ export default async function ProductsPage({searchParams}:{
     .map((product)=>matchProduct(product,query))
     .filter((x):x is NonNullable<typeof x>=>!!x);
 
-  const selected=matches.find((x)=>x.product.id===selectedId)??matches[0]??null;
+  const totalPages=Math.max(1,Math.ceil(matches.length/PAGE_SIZE));
+  const page=Math.min(requestedPage,totalPages);
+  const visible=matches.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
+
+  const selected=matches.find((x)=>x.product.id===selectedId)??visible[0]??null;
   const offer=selected
     ? selected.matchedOffers.find((x)=>x.id===selectedOfferId)??selected.matchedOffers[0]??null
     : null;
 
   const href=(extra:Record<string,string>)=>{
     const p=new URLSearchParams();
-    for(const [k,v] of Object.entries({q:first(q.q),term:first(q.term),maxRent:first(q.maxRent),maxDeposit:first(q.maxDeposit),...extra})){
+    for(const [k,v] of Object.entries({q:first(q.q),term:first(q.term),maxRent:first(q.maxRent),maxDeposit:first(q.maxDeposit),page:String(page),...extra})){
       if(v)p.set(k,v);
     }
     return '/products?'+p.toString();
@@ -67,7 +75,15 @@ export default async function ProductsPage({searchParams}:{
     </header>
     <section className="workspace">
       <section className="panel product-panel">
-        <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 찾기</h1></div><span className="count">{matches.length}건</span></div>
+        <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 찾기</h1></div><span className="count">{matches.length}건 · {page}/{totalPages}</span></div>
+        <div className="quick-filters">
+          <Link className={!term?'active':''} href={href({term:'',page:'1',id:'',offerId:''})}>전체기간</Link>
+          {COMMON_TERMS.map((month)=><Link
+            key={month}
+            className={term===month?'active':''}
+            href={href({term:String(month),page:'1',id:'',offerId:''})}
+          >{month}개월</Link>)}
+        </div>
         <form className="form-stack">
           <label>검색<input name="q" defaultValue={first(q.q)} placeholder="모델 ID · 공급사 · 상품키"/></label>
           <label>기간(개월)<input name="term" inputMode="numeric" defaultValue={first(q.term)} /></label>
@@ -76,7 +92,7 @@ export default async function ProductsPage({searchParams}:{
           <button className="primary" type="submit">검색</button>
         </form>
         <div className="list">
-          {matches.map((m)=>{
+          {visible.map((m)=>{
             const o=m.matchedOffers[0];
             return <Link key={m.product.id} href={href({id:m.product.id,offerId:o?.id??''})} className={'product-row '+(m.product.id===selected?.product.id?'selected':'')}>
               <div className="thumb">{m.vehicleMatch.level}</div>
@@ -87,8 +103,13 @@ export default async function ProductsPage({searchParams}:{
               </div>
             </Link>;
           })}
-          {matches.length===0&&<p>조건에 맞는 상품이 없습니다. 개발 File Repository에 Canonical Product가 들어와 있어야 합니다.</p>}
+          {matches.length===0&&<p>조건에 맞는 상품이 없습니다.</p>}
         </div>
+        {totalPages>1&&<div className="quick-filters">
+          {page>1&&<Link href={href({page:String(page-1),id:'',offerId:''})}>이전</Link>}
+          <span>{page} / {totalPages}</span>
+          {page<totalPages&&<Link href={href({page:String(page+1),id:'',offerId:''})}>다음</Link>}
+        </div>}
       </section>
 
       <section className="panel detail-panel">

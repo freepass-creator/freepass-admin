@@ -22,6 +22,7 @@ export interface ApplicationRepository {
   createSequenced(
     datePrefix: string,
     submissionId: string,
+    submissionFingerprint: string,
     build: (sequence: number) => Application,
   ): Promise<{ application: Application; created: boolean }>;
 

@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
-    "products:import": "tsx scripts/import-canonical-products.mts"
+    "products:import": "tsx scripts/import-canonical-products.mts",
+    "admin:readiness": "tsx scripts/check-admin-readiness.mts"
   },
   "dependencies": {
     "next": "16.1.6",

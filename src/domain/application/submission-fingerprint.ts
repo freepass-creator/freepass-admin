@@ -1,6 +1,16 @@
 import { createHash } from 'node:crypto';
 import type { Application } from './types';
-import type { SubmitApplicationInput } from '../../services/applications';
+
+export interface SubmissionSemanticInput{
+  productId:string;
+  offerId:string;
+  expectedProductVersion:number;
+  salesChannelId:string;
+  assigneeId:string;
+  applicantName:string;
+  applicantPhone?:string;
+  source?:Application['source'];
+}
 
 type SemanticSubmission={
   productId:string;
@@ -15,7 +25,7 @@ type SemanticSubmission={
 
 const clean=(value:string|undefined)=>String(value??'').trim();
 
-export function submissionSemanticPayload(input:SubmitApplicationInput):SemanticSubmission{
+export function submissionSemanticPayload(input:SubmissionSemanticInput):SemanticSubmission{
   return{
     productId:clean(input.productId),
     offerId:clean(input.offerId),
@@ -54,7 +64,7 @@ function canonical(value:SemanticSubmission){
   });
 }
 
-export function submissionFingerprint(input:SubmitApplicationInput):string{
+export function submissionFingerprint(input:SubmissionSemanticInput):string{
   return 'sha256:'+createHash('sha256').update(canonical(submissionSemanticPayload(input))).digest('hex');
 }
 

@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { Application } from '../domain/application/types';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { ApplicationRepository, ProductRepository } from '../ports/repositories';
+import type { ReferenceMaster } from '../domain/reference-master/types';
 import { submitApplication } from './applications';
 
 const now='2026-09-20T00:00:00.000Z';
@@ -37,6 +38,13 @@ class Applications implements ApplicationRepository{
   }
 }
 
+const masters:ReferenceMaster={
+  async listSalesChannels(){return[{id:'channel-1',label:'Channel 1',status:'ACTIVE'}];},
+  async listAssignees(){return[{id:'admin-1',label:'Admin 1',status:'ACTIVE'}];},
+  async getSalesChannel(id){return id==='channel-1'?{id,label:'Channel 1',status:'ACTIVE'}:null;},
+  async getAssignee(id){return id==='admin-1'?{id,label:'Admin 1',status:'ACTIVE'}:null;},
+};
+
 function deps(applications=new Applications()){
   return{
     applications,
@@ -44,6 +52,7 @@ function deps(applications=new Applications()){
     now:()=>new Date(now),
     newId:()=>`app-${applications.rows.length+1}`,
     actors:{requireActor:async()=>({id:'admin-1',type:'ADMIN' as const})},
+    masters,
   };
 }
 const input={
@@ -71,5 +80,21 @@ test('offer from another product is rejected',async()=>{
   const applications=new Applications();
   const result=await submitApplication(deps(applications),{...input,submissionId:'bad-offer',offerId:'nope'});
   assert.deepEqual(result,{ok:false,reason:'OFFER_NOT_FOUND'});
+  assert.equal(applications.rows.length,0);
+});
+
+
+test('inactive or unknown reference master ids are rejected before save',async()=>{
+  const applications=new Applications();
+  const badChannel=await submitApplication(deps(applications),{
+    ...input,submissionId:'bad-channel',salesChannelId:'free-text',
+  });
+  assert.deepEqual(badChannel,{ok:false,reason:'SALES_CHANNEL_NOT_ACTIVE'});
+  assert.equal(applications.rows.length,0);
+
+  const badAssignee=await submitApplication(deps(applications),{
+    ...input,submissionId:'bad-assignee',assigneeId:'unknown-admin',
+  });
+  assert.deepEqual(badAssignee,{ok:false,reason:'ASSIGNEE_NOT_ACTIVE'});
   assert.equal(applications.rows.length,0);
 });

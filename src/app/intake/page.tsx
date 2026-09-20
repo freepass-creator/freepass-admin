@@ -5,6 +5,8 @@ import { adminOperations } from '../../server/admin-operations';
 import { adminRepositories } from '../../server/admin-runtime';
 import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
+import { BottomActionBar } from '../_ui/BottomActionBar';
+import { ADMIN_ACTION_BAR_LABELS } from '../_ui/action-bar-registry';
 import { cancelIntake, ensureIntakePerformance, setIntakeProgress } from './actions';
 
 export const dynamic='force-dynamic';
@@ -86,6 +88,8 @@ export default async function IntakePage({searchParams}:{
     ['balanceCompleted','잔금',selected.progress.balanceCompleted],
     ['deliveryCompleted','인도',selected.progress.deliveryCompleted],
   ] as const:[];
+
+  const nextProgress=progressRows.find(([, ,done])=>!done)??null;
 
   const tabs=[
     ['','전체',facets.statusCounts.ALL],
@@ -205,31 +209,47 @@ export default async function IntakePage({searchParams}:{
         <div className="panel-head"><div><p className="eyebrow">WORK</p><h1>접수 상세</h1></div><Link className="new-app" href="/products">+ 신규접수</Link></div>
         {selected?<>
           <div className={'application-status '+(selected.status==='CANCELLED'?'cancelled':'')}>{statusLabel(selected.status)}</div>
-          <div className="progress-actions">
-            {progressRows.map(([key,label,done])=><form key={key} action={setIntakeProgress}>
-              <input type="hidden" name="id" value={selected.id}/>
-              <input type="hidden" name="key" value={key}/>
-              <input type="hidden" name="completed" value={done?'false':'true'}/>
-              <button type="submit" className={done?'done':''} disabled={selected.status==='CANCELLED'}>{label} {done?'✓':'-'}</button>
-            </form>)}
+          <div className="progress-status-list" aria-label="접수 진행 상태">
+            {progressRows.map(([key,label,done])=><div key={key} className={done?'done':''}>
+              <span className="progress-check">{done?'✓':'·'}</span>
+              <span>{label}</span>
+              <b>{done?'완료':'대기'}</b>
+            </div>)}
           </div>
 
-          {selected.status==='DELIVERED'&&(
-            performance
-              ?<Link className="primary" href={'/settlement?id='+encodeURIComponent(performance.id)}>실적·정산 열기</Link>
-              :<form action={ensureIntakePerformance}>
-                <input type="hidden" name="id" value={selected.id}/>
-                <button className="primary" type="submit">실적 생성 후 정산 열기</button>
-              </form>
-          )}
-
-          {selected.status!=='CANCELLED'&&<form action={cancelIntake} className="form-stack">
+          {selected.status!=='CANCELLED'&&<form id="intake-cancel-form" action={cancelIntake} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/>
             <label>취소 사유<input name="reason" required placeholder="삭제하지 않고 사유를 남깁니다."/></label>
-            <button className="danger-link" type="submit">접수 취소</button>
+          </form>}
+
+          {selected.status!=='CANCELLED'&&nextProgress&&<form id="intake-next-form" action={setIntakeProgress}>
+            <input type="hidden" name="id" value={selected.id}/>
+            <input type="hidden" name="key" value={nextProgress[0]}/>
+            <input type="hidden" name="completed" value="true"/>
+          </form>}
+
+          {selected.status==='DELIVERED'&&!performance&&<form id="intake-performance-form" action={ensureIntakePerformance}>
+            <input type="hidden" name="id" value={selected.id}/>
           </form>}
         </>:<p>왼쪽에서 접수를 선택하세요.</p>}
       </section>
     </section>
+
+    {selected&&selected.status!=='CANCELLED'&&<BottomActionBar
+      ariaLabel="접수 진행 작업"
+      secondary={<button className="btn danger" type="submit" form="intake-cancel-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.secondary}</button>}
+      primary={nextProgress
+        ?<button className="btn primary" type="submit" form="intake-next-form">{
+          nextProgress[0]==='contractCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.contract
+          :nextProgress[0]==='documentsCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.documents
+          :nextProgress[0]==='balanceCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.balance
+          :ADMIN_ACTION_BAR_LABELS.intakeProgress.delivery
+        }</button>
+        :selected.status==='DELIVERED'
+          ?performance
+            ?<Link className="btn primary" href={'/settlement?id='+encodeURIComponent(performance.id)}>{ADMIN_ACTION_BAR_LABELS.intakeProgress.delivered}</Link>
+            :<button className="btn primary" type="submit" form="intake-performance-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.deliveredCreate}</button>
+          :undefined}
+    />}
   </main>;
 }

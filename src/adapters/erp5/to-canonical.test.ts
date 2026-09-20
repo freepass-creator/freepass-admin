@@ -31,6 +31,7 @@ test('ERP5 mapper binds current master and source version into current Canonical
     provider_company_code:'supplier-1',
     maker:'현대',model:'쏘나타',sub_model:'DN8',trim_name:'인스퍼레이션',year:2026,
     updatedAt:'2026-09-20T10:00:00Z',
+    image_urls:['https://img.example/santafe-1.jpg','https://img.example/santafe-2.jpg'],
     price:{'36_2만':{rent:690000,deposit:0}},
   },'12가3456',undefined,master);
   assert.equal(result.ok,true);
@@ -39,4 +40,9 @@ test('ERP5 mapper binds current master and source version into current Canonical
   assert.equal(result.product.vehicle.nodeId,'hyundai-sonata-dn8');
   assert.equal(result.product.version,Date.parse('2026-09-20T10:00:00Z'));
   assert.equal(result.product.sourceSnapshotId,'erp5:12가3456:'+String(result.product.version));
+  assert.equal(result.product.media?.primaryImageUrl,'https://img.example/santafe-1.jpg');
+  assert.deepEqual(result.product.media?.imageUrls,[
+    'https://img.example/santafe-1.jpg',
+    'https://img.example/santafe-2.jpg',
+  ]);
 });

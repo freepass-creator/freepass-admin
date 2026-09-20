@@ -31,6 +31,7 @@ const product:CanonicalProduct={
   id:'product-1',version:7,supplierId:'supplier-1',supplierProductKey:'raw-1',
   vehicle:{nodeId:'trim-1',originId:'kr',manufacturerId:'kia',modelId:'carnival',subModelId:'ka4',trimId:'signature',matchLevel:'TRIM'},
   specs:{modelYear:2026,seats:9},
+  registration:{vehicleNumber:'12가3456',vin:'VIN-CORE-FLOW'},
   offers:[
     {id:'o24',termMonths:24,monthlyRent:810000,deposit:1000000,annualMileageKm:30000,policyValues:[]},
     {id:'o36',termMonths:36,monthlyRent:729000,deposit:0,annualMileageKm:20000,policyValues:[]},
@@ -69,7 +70,8 @@ test('상품찾기에서 고른 같은 Offer가 접수 snapshot으로 이어지�
   assert.equal(performance.id,'performance:application-1');
   assert.equal(performance.snapshot.offer.id,'o36');
   assert.equal(performance.snapshot.productVersion,7);
-  assert.equal(performance.snapshot.registration?.vehicleNumber,application.snapshot.registration?.vehicleNumber);
+  assert.equal(application.snapshot.registration?.vehicleNumber,'12가3456');
+  assert.equal(performance.snapshot.registration?.vehicleNumber,'12가3456');
   assert.equal(performance.snapshot.deliveredAt,t1);
 });
 

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
+import { resolveOfferPolicies } from '../../../domain/product/resolve-policies';
 import { adminReferenceMaster } from '../../../server/admin-masters';
 import { adminRepositories } from '../../../server/admin-runtime';
 import { requireAdminPageActor } from '../../../server/auth/page-guard';
@@ -74,12 +75,17 @@ export default async function NewIntakePage({searchParams}:{
 
       <section className="panel detail-panel">
         <div className="panel-head"><div><p className="eyebrow">CONDITION</p><h1>계약조건</h1></div></div>
-        {offer?<dl className="summary-grid">
+        {offer?<><dl className="summary-grid">
           <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
           <div><dt>월 대여료</dt><dd>{offer.monthlyRent.toLocaleString('ko-KR')}원</dd></div>
           <div><dt>보증금</dt><dd>{depositLabel(offer)}</dd></div>
           <div><dt>주행거리</dt><dd>{offer.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
-        </dl>:null}
+          <div><dt>선납금</dt><dd>{typeof offer.prepayment==='number'?offer.prepayment.toLocaleString('ko-KR')+'원':'미확인'}</dd></div>
+          <div><dt>공급사</dt><dd>{offer.supplierId??product?.supplierId??'미확인'}</dd></div>
+        </dl>
+        {product&&resolveOfferPolicies(product,offer).length>0&&<div className="chips">
+          {resolveOfferPolicies(product,offer).map((p)=><span key={p.policyId}>{p.policyId}: {Array.isArray(p.value)?p.value.join(', '):String(p.value)}</span>)}
+        </div>}</>:null}
 
         <div className="work-hint">
           <b>Reference Master</b>

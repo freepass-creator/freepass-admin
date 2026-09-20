@@ -17,6 +17,8 @@ export const ADMIN_ACTION_BAR_LABELS={
     deliveredCreate:'실적 생성 후 정산 열기',
   },
   performance:{
+    amountsSecondary:'기존 정산 규칙 자동추천',
+    amountsPrimary:'금액 직접 저장',
     salespersonSecondary:'이견 있음',
     salespersonPrimary:'확인',
     supplierSecondary:'이슈 등록',
@@ -27,6 +29,8 @@ export const ADMIN_ACTION_BAR_LABELS={
     finalizedPrimary:'정산 원장에서 보기',
   },
   billing:{
+    createPrimary:'청구 생성',
+    evidencePrimary:'계산서 처리',
     secondary:'계산서 처리',
     collectPrimary:'수금 등록',
     toPayoutPrimary:'지급 원장으로',

@@ -502,3 +502,105 @@ fp4 화이트라벨 실물(`components/shop/ShopFilterSheet.tsx`)의 확정 규�
 3. Business CLAWBACK Domain 구현 (Ledger REVERSAL과 분리)
 4. F04 row-link persistence/Sheets Adapter — 안정 row mapping 후 연결
 5. F04 / fp-settlement / Admin / Data 4-way parity fixture
+
+
+---
+
+## 17. 환수 현금·계산서 / F04 Row Link / Data Projection — 2026-09-21
+
+### Business CLAWBACK — 원장 REVERSAL과 분리 완료
+
+환수 한 건은 원 Settlement를 수정하지 않는 별도 불변 사건이다.
+
+```
+원 정산
+  ↓
+ClawbackItem
+  ├─ 공급사 환수액
+  ├─ 영업채널 환수액
+  ├─ VAT impact
+  ├─ 환수 사유/발생일
+  └─ 원 settlement/performance/application 연결
+```
+
+- 누적 환수는 원 정산 금액을 초과할 수 없다.
+- 채널 환수액 미입력 시 기존 지급/청구 비율로 계산한다.
+- 동일 clawback id exact replay만 멱등 허용한다.
+- 원 Settlement / Billing / 기존 수금·지급 원장은 수정하지 않는다.
+
+### 환수 후 Net Position
+
+환수가 생기면 신규 수금·지급 한도는 원 정산이 아니라 순액으로 계산한다.
+
+- netReceivable = supplierReceivable - supplierClawback
+- netPayable = channelPayable - channelClawback
+- 초과수금 → supplierRefundOutstanding
+- 초과지급 → channelRecoveryOutstanding
+- 이후 일반 수금/지급은 순액까지만 가능
+- AFTER_FULL_COLLECTION 정책은 미수뿐 아니라 공급사 환불 미완료도 차단한다.
+
+Ledger 계정:
+- SUPPLIER_COLLECTION
+- CHANNEL_PAYOUT
+- SUPPLIER_REFUND
+- CHANNEL_RECOVERY
+
+잘못 입력한 네 종류의 현금기록은 REVERSAL로 정정하되, clawback cash reversal은 clawbackId가 원본과 같아야 한다.
+
+### 환수 계산서 조정
+
+원 Billing을 고치지 않는다.
+
+각 Clawback마다 별도 `ClawbackBillingAdjustment(direction=CREDIT)`를 만든다.
+
+- settlementAmount
+- netAmount
+- vatAmount
+- totalAmount
+- CREATED / EVIDENCE_COMPLETE
+- 증빙번호 / 발행일 / 기록자 / 기록시각
+
+File operations state는 schemaVersion 3이며 v1/v2 누락 필드를 normalize하여 읽는다.
+ERP5는 Admin namespace의 `clawbacks` / `clawback_billings` 컬렉션을 사용한다.
+
+### F04 안정 Row Link
+
+F04 writer는 아직 활성화하지 않는다.
+
+먼저:
+- applicationId ↔ f04SettlementCode ↔ sheetName/legacyRowRef
+- File/ERP5 F04RowLinkRepository
+- ERP5 `f04_links` namespace
+- application remap / settlement-code collision 차단
+- migration auto-link는 차량번호 + 고객명 + 접수일 정확히 1건일 때만
+- 양쪽 공급사명이 있으면 공급사도 일치해야 함
+- 0건 = NONE / 2건 이상 = AMBIGUOUS, 자동 연결 금지
+
+실제 Sheets writer는 이 stable link를 사용해야 하며 매번 차량번호로 행을 다시 찾으면 안 된다.
+
+### FreePass Data
+
+최신 Data 작업 PR은 `freepass-creator/freepass-data#12`.
+
+구현 범위:
+- 실제 Admin Catalog Projection Release
+- `GET /v1/views/admin-catalog/products`
+- bearer-token fail-closed
+- policyParity COMPLETE/INCOMPLETE evidence
+- generation/subModel 분리
+- product policyCode → Canonical Offer.policyId lineage
+- Admin 운영 Data adapter는 COMPLETE만 허용
+- `admin:data-shadow`에서만 명시적으로 INCOMPLETE 비교 허용
+
+운영 cutover blocker:
+1. legacy Policy source → Canonical Policy facts
+2. full shadow parity
+3. service IAM/auth runtime evidence
+4. freshness/rollback evidence
+
+### 다음
+
+1. 실제 Sheets Adapter — F04RowLink 기반 OBSERVE부터
+2. legacy Policy 별도 Source/RAW/Canonical 경로
+3. F04 / fp-settlement / Admin / Data 4-way parity fixture
+4. 실제 typecheck/test/admin:smoke 실행 가능한 환경에서 검증

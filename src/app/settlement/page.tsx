@@ -10,6 +10,8 @@ import {
 import { adminOperations } from '../../server/admin-operations';
 import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
+import { BottomActionBar } from '../_ui/BottomActionBar';
+import { ADMIN_ACTION_BAR_LABELS } from '../_ui/action-bar-registry';
 import {
   collectAction,
   confirmSales,
@@ -302,76 +304,65 @@ export default async function SettlementPage({searchParams}:{
 
         {selected?<>
           {selected.status==='AWAITING_AMOUNTS'&&<>
-            <form action={suggestAmounts} className="form-stack">
+            <form id="settlement-suggest-form" action={suggestAmounts} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/>
-              <button className="primary" type="submit">기존 정산 규칙 자동추천</button>
               <small>확정 규칙만 자동으로 넣습니다. 공급사·상품형태·차량가액 등이 불명확하면 저장하지 않고 검토 사유를 표시합니다.</small>
             </form>
-            <form action={saveAmounts} className="form-stack">
+            <form id="settlement-save-amounts-form" action={saveAmounts} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/>
             <label>공급사 받을 금액<input name="supplierReceivable" required inputMode="numeric"/></label>
             <label>영업채널 지급 금액<input name="channelPayable" required inputMode="numeric"/></label>
             <label>VAT<select name="vatMode" defaultValue="EXCLUDED"><option value="EXCLUDED">VAT 별도</option><option value="INCLUDED">VAT 포함</option></select></label>
-            <button className="primary" type="submit">금액 직접 저장</button>
           </form>
           </>}
 
           {selected.status==='AWAITING_SALESPERSON_CONFIRMATION'&&<>
-            <form action={confirmSales} className="form-stack">
+            <form id="settlement-confirm-sales-form" action={confirmSales} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="partyId" value={selected.snapshot.salesChannelId}/>
-              <button className="primary" type="submit">영업채널 확인 완료</button>
             </form>
-            <form action={disputeSales} className="form-stack">
+            <form id="settlement-dispute-sales-form" action={disputeSales} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="partyId" value={selected.snapshot.salesChannelId}/>
               <label>이견 사유<input name="reason" required/></label>
-              <button className="danger-link" type="submit">영업채널 이견 기록</button>
             </form>
           </>}
 
           {selected.status==='AWAITING_SUPPLIER_REVIEW'&&<>
-            <form action={confirmSupplierAction} className="form-stack">
+            <form id="settlement-confirm-supplier-form" action={confirmSupplierAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="partyId" value={selected.snapshot.supplierId}/>
-              <button className="primary" type="submit">공급사 확인 완료</button>
             </form>
-            <form action={supplierIssueAction} className="form-stack">
+            <form id="settlement-supplier-issue-form" action={supplierIssueAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="partyId" value={selected.snapshot.supplierId}/>
               <input type="hidden" name="vatMode" value={selected.amounts.vatMode}/>
               <label>공급사 제시 받을 금액<input name="supplierReceivable" required defaultValue={selected.amounts.supplierReceivable??''}/></label>
               <label>공급사 제시 지급 금액<input name="channelPayable" required defaultValue={selected.amounts.channelPayable??''}/></label>
               <label>이슈 사유<input name="reason" required/></label>
-              <button className="danger-link" type="submit">공급사 이슈 기록</button>
             </form>
           </>}
 
-          {selected.status==='AWAITING_SALESPERSON_RECONFIRMATION'&&<form action={reconfirmSales} className="form-stack">
+          {selected.status==='AWAITING_SALESPERSON_RECONFIRMATION'&&<form id="settlement-reconfirm-form" action={reconfirmSales} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="partyId" value={selected.snapshot.salesChannelId}/>
             <p>공급사 변경 금액 때문에 영업채널 재확인이 필요합니다.</p>
-            <button className="primary" type="submit">변경금액 재확인 완료</button>
           </form>}
 
-          {selected.status==='SUPPLIER_ISSUE'&&<form action={resolveIssue} className="form-stack">
+          {selected.status==='SUPPLIER_ISSUE'&&<form id="settlement-resolve-form" action={resolveIssue} className="form-stack">
             <input type="hidden" name="id" value={selected.id}/>
             <label>해결 근거<input name="reason" required placeholder="양측 증빙 대조 결과"/></label>
-            <button className="primary" type="submit">이슈 해결 기록</button>
           </form>}
 
-          {selected.status==='READY_TO_FINALIZE'&&<form action={finalizeAction}>
+          {selected.status==='READY_TO_FINALIZE'&&<form id="settlement-finalize-form" action={finalizeAction}>
             <input type="hidden" name="id" value={selected.id}/>
-            <button className="primary" type="submit">정산 확정</button>
           </form>}
 
           {selected.status==='FINALIZED'&&settlement?<>
-            {!billing?<form action={createBillingAction}>
+            {!billing?<form id="settlement-create-billing-form" action={createBillingAction}>
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
-              <button className="primary" type="submit">청구 생성</button>
             </form>:<>
               <p>청구 생성됨 · {won(billing.amount)}</p>
-              {billing.status==='CREATED'?<form action={recordBillingEvidenceAction} className="form-stack">
+              {billing.status==='CREATED'?<form id="settlement-billing-evidence-form" action={recordBillingEvidenceAction} className="form-stack">
                 <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
                 <label>계산서 증빙번호<input name="reference" required placeholder="계산서/세금계산서 식별번호"/></label>
                 <label>발행일<input name="issuedAt" required type="date"/></label>
                 <label>메모<input name="note"/></label>
-                <button className="primary" type="submit">계산서 처리 기록</button>
               </form>:<div className="work-hint">
                 <b>계산서 처리 완료 · {billing.invoiceEvidence?.reference}</b>
                 <span>{billing.invoiceEvidence?.issuedAt} · {billing.invoiceEvidence?.recordedBy}</span>
@@ -380,20 +371,18 @@ export default async function SettlementPage({searchParams}:{
 
             {billing&&billing.status!=='EVIDENCE_COMPLETE'&&<small>계산서 처리 증빙이 완료되어야 수금을 기록할 수 있습니다.</small>}
 
-            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.collectionOutstanding>0&&<form action={collectAction} className="form-stack">
+            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.collectionOutstanding>0&&<form id="settlement-collect-form" action={collectAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <label>수금액<input name="amount" required inputMode="numeric"/></label>
               <label>메모<input name="note"/></label>
-              <button className="primary" type="submit">수금 기록</button>
             </form>}
 
             {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0
               &&netBalance.collectionOutstanding===0&&netBalance.supplierRefundOutstanding===0
-              &&<form action={payoutAction} className="form-stack">
+              &&<form id="settlement-payout-form" action={payoutAction} className="form-stack">
                 <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
                 <label>지급액<input name="amount" required inputMode="numeric"/></label>
                 <label>메모<input name="note"/></label>
-                <button className="primary" type="submit">영업채널 지급 기록</button>
               </form>}
             {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0
               &&(netBalance.collectionOutstanding>0||netBalance.supplierRefundOutstanding>0)
@@ -489,6 +478,42 @@ export default async function SettlementPage({searchParams}:{
               &&ledger.some((entry)=>entry.kind==='CASH'&&entry.account==='CHANNEL_PAYOUT'&&!reversedIds.has(entry.id))
               &&<small>완납 후 지급정책에서는 수금을 정정하기 전에 지급 원장을 먼저 정정해야 합니다.</small>}
           </>:null}
+
+          {selected&&<BottomActionBar
+            ariaLabel="실적·정산 작업"
+            secondary={
+              selected.status==='AWAITING_AMOUNTS'
+                ?<button className="btn" type="submit" form="settlement-suggest-form">{ADMIN_ACTION_BAR_LABELS.performance.amountsSecondary}</button>
+                :selected.status==='AWAITING_SALESPERSON_CONFIRMATION'
+                  ?<button className="btn" type="submit" form="settlement-dispute-sales-form">{ADMIN_ACTION_BAR_LABELS.performance.salespersonSecondary}</button>
+                  :selected.status==='AWAITING_SUPPLIER_REVIEW'
+                    ?<button className="btn" type="submit" form="settlement-supplier-issue-form">{ADMIN_ACTION_BAR_LABELS.performance.supplierSecondary}</button>
+                    :undefined
+            }
+            primary={
+              selected.status==='AWAITING_AMOUNTS'
+                ?<button className="btn primary" type="submit" form="settlement-save-amounts-form">{ADMIN_ACTION_BAR_LABELS.performance.amountsPrimary}</button>
+                :selected.status==='AWAITING_SALESPERSON_CONFIRMATION'
+                  ?<button className="btn primary" type="submit" form="settlement-confirm-sales-form">{ADMIN_ACTION_BAR_LABELS.performance.salespersonPrimary}</button>
+                  :selected.status==='AWAITING_SUPPLIER_REVIEW'
+                    ?<button className="btn primary" type="submit" form="settlement-confirm-supplier-form">{ADMIN_ACTION_BAR_LABELS.performance.supplierPrimary}</button>
+                    :selected.status==='AWAITING_SALESPERSON_RECONFIRMATION'
+                      ?<button className="btn primary" type="submit" form="settlement-reconfirm-form">{ADMIN_ACTION_BAR_LABELS.performance.reconfirmPrimary}</button>
+                      :selected.status==='SUPPLIER_ISSUE'
+                        ?<button className="btn primary" type="submit" form="settlement-resolve-form">{ADMIN_ACTION_BAR_LABELS.performance.resolvePrimary}</button>
+                        :selected.status==='READY_TO_FINALIZE'
+                          ?<button className="btn primary" type="submit" form="settlement-finalize-form">{ADMIN_ACTION_BAR_LABELS.performance.finalizePrimary}</button>
+                          :selected.status==='FINALIZED'&&settlement&&!billing
+                            ?<button className="btn primary" type="submit" form="settlement-create-billing-form">{ADMIN_ACTION_BAR_LABELS.billing.createPrimary}</button>
+                            :selected.status==='FINALIZED'&&settlement&&billing?.status==='CREATED'
+                              ?<button className="btn primary" type="submit" form="settlement-billing-evidence-form">{ADMIN_ACTION_BAR_LABELS.billing.evidencePrimary}</button>
+                              :selected.status==='FINALIZED'&&settlement&&billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.collectionOutstanding>0
+                                ?<button className="btn primary" type="submit" form="settlement-collect-form">{ADMIN_ACTION_BAR_LABELS.billing.collectPrimary}</button>
+                                :selected.status==='FINALIZED'&&settlement&&billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0&&netBalance.collectionOutstanding===0&&netBalance.supplierRefundOutstanding===0
+                                  ?<button className="btn primary" type="submit" form="settlement-payout-form">{ADMIN_ACTION_BAR_LABELS.payout.primary}</button>
+                                  :undefined
+            }
+          />}
         </>:<p>실적을 선택하세요.</p>}
       </section>
     </section>

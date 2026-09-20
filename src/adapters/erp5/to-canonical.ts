@@ -91,11 +91,13 @@ export function offersOf(price:unknown,productId:string):{offers:Offer[];warning
     const monthlyRent=N(cell.rent);
     if(parsed.termMonths===undefined){warnings.push('term unreadable: '+key);continue;}
     if(monthlyRent===undefined){warnings.push('rent missing: '+key);continue;}
+    const deposit=N(cell.deposit);
     offers.push({
       id:productId+'#'+key,
       termMonths:parsed.termMonths,
       monthlyRent,
-      deposit:N(cell.deposit),
+      deposit,
+      depositState:deposit===undefined?'UNKNOWN':deposit===0?'ZERO':'KNOWN',
       prepayment:N(cell.prepayment),
       annualMileageKm:parsed.annualMileageKm,
       policyValues:[],

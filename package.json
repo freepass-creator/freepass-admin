@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "products:import": "tsx scripts/import-canonical-products.mts",
-    "admin:readiness": "tsx scripts/check-admin-readiness.mts"
+    "admin:readiness": "tsx scripts/check-admin-readiness.mts",
+    "admin:smoke": "tsx scripts/admin-vertical-smoke.mts"
   },
   "dependencies": {
     "next": "16.1.6",

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { assertApplicationMutation } from '../../domain/application/invariants';
 import type { Application } from '../../domain/application/types';
+import { storedSubmissionFingerprint } from '../../domain/application/submission-fingerprint';
 import { AppError } from '../../domain/errors';
 import type { CanonicalProduct } from '../../domain/product/types';
 import type { ApplicationRepository, ProductRepository } from '../../ports/repositories';
@@ -25,12 +26,18 @@ export class FileApplicationRepository implements ApplicationRepository {
   async createSequenced(
     datePrefix: string,
     submissionId: string,
+    submissionFingerprint: string,
     build: (sequence: number) => Application,
   ): Promise<{ application: Application; created: boolean }> {
     type R = { application: Application; created: boolean };
     return this.store.mutate<R>((rows) => {
       const existing = rows.find((row) => row.submissionId === submissionId);
-      if (existing) return { rows, result: { application: existing, created: false } };
+      if (existing) {
+        if (storedSubmissionFingerprint(existing) !== submissionFingerprint) {
+          throw new AppError('CONFLICT', 'IDEMPOTENCY_KEY_REUSE');
+        }
+        return { rows, result: { application: existing, created: false } };
+      }
 
       const sequence = rows.filter((row) => row.applicationNumber.startsWith(datePrefix)).length + 1;
       const application = build(sequence);

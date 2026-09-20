@@ -4,6 +4,7 @@ import { createApplication } from '../domain/application/create-application';
 import type { Application } from '../domain/application/types';
 import { cancelApplication, updateApplicationProgress, type ProgressKey } from '../domain/application/update-progress';
 import type { ActorProvider } from '../ports/auth';
+import { requireActiveAssignee, requireActiveSalesChannel, type ReferenceMaster } from '../domain/reference-master/types';
 import type { ApplicationRepository, ProductRepository } from '../ports/repositories';
 
 export interface SubmitApplicationInput {
@@ -33,6 +34,8 @@ export type SubmitResult =
   | { ok: true; application: Application; created: boolean }
   | { ok: false; reason: 'PRODUCT_NOT_FOUND' }
   | { ok: false; reason: 'OFFER_NOT_FOUND' }
+  | { ok: false; reason: 'SALES_CHANNEL_NOT_ACTIVE' }
+  | { ok: false; reason: 'ASSIGNEE_NOT_ACTIVE' }
   | { ok: false; reason: 'PRODUCT_CHANGED'; currentVersion: number; seenVersion: number };
 
 export interface Deps {
@@ -41,6 +44,7 @@ export interface Deps {
   now: () => Date;
   newId: () => string;
   actors: ActorProvider;
+  masters: ReferenceMaster;
 }
 
 /**
@@ -70,6 +74,17 @@ export async function submitApplication(deps: Deps, input: SubmitApplicationInpu
 
   if (!product.offers.some((offer) => offer.id === input.offerId)) {
     return { ok: false, reason: 'OFFER_NOT_FOUND' };
+  }
+
+  try {
+    await requireActiveSalesChannel(deps.masters, input.salesChannelId);
+  } catch {
+    return { ok: false, reason: 'SALES_CHANNEL_NOT_ACTIVE' };
+  }
+  try {
+    await requireActiveAssignee(deps.masters, input.assigneeId);
+  } catch {
+    return { ok: false, reason: 'ASSIGNEE_NOT_ACTIVE' };
   }
 
   const now = deps.now();

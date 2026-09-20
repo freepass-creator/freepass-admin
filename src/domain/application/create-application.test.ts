@@ -11,6 +11,7 @@ const product:CanonicalProduct={
   supplierProductKey:'supplier-key-1',
   vehicle:{nodeId:'node-1',originId:'kr',manufacturerId:'hyundai',modelId:'sonata',matchLevel:'MODEL'},
   specs:{modelYear:2026,seats:5},
+  registration:{vehicleNumber:'12가3456',vin:'VIN-ORIGINAL'},
   offers:[{
     id:'offer-36',termMonths:36,monthlyRent:650000,deposit:0,annualMileageKm:20000,
     policyValues:[{policyId:'pay-method',type:'MULTI_SELECT',value:['CARD','TRANSFER']}],
@@ -60,6 +61,14 @@ test('intake snapshot pins product version and deep-clones mutable policy arrays
   sourcePolicy.value.push('CASH');
   assert.deepEqual(savedPolicy.value,['CARD','TRANSFER']);
   sourcePolicy.value.pop();
+});
+
+test('registration facts are snapshotted and isolated from later product changes',()=>{
+  const app=create();
+  assert.equal(app.snapshot.registration?.vehicleNumber,'12가3456');
+  product.registration!.vehicleNumber='99나9999';
+  assert.equal(app.snapshot.registration?.vehicleNumber,'12가3456');
+  product.registration!.vehicleNumber='12가3456';
 });
 
 test('selected offer must belong to the product',()=>{

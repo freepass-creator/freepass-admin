@@ -233,6 +233,31 @@ add('settlement.pricing-evidence',
     &&has(settlementDomain,'performance.pricingEvidence'),
   'Auto-pricing evidence must survive Performance and freeze into finalized Settlement.');
 
+add('review.party-snapshot-binding',
+  has(performanceDomain,'SALESPERSON_PARTY_MISMATCH')
+    &&has(performanceDomain,'SUPPLIER_PARTY_MISMATCH')
+    &&has(performanceDomain,'performance.snapshot.salesChannelId')
+    &&has(performanceDomain,'performance.snapshot.supplierId'),
+  'Sales channel and supplier review identities must match the frozen Performance Snapshot.');
+
+add('settlement.action-selection-binding',
+  has(settlementActions,'findSettlementByPerformanceId')
+    &&has(settlementActions,'SETTLEMENT_SELECTION_MISMATCH')
+    &&has(settlementActions,'settlementActionContext'),
+  'Billing, cash, clawback and reversal actions must re-bind the selected Performance to its Settlement on the server.');
+
+add('settlement.payout-ui-gate',
+  has(settlement,'netBalance.collectionOutstanding===0')
+    &&has(settlement,'netBalance.supplierRefundOutstanding===0')
+    &&has(settlement,'공급사 순정산이 완료되어야 영업채널 지급'),
+  'Payout UI must stay closed until the same AFTER_FULL_COLLECTION gate enforced by Domain is open.');
+
+add('catalog.offer-supplier-ui',
+  has(products,'x.supplierId??selected.product.supplierId')
+    &&has(intakeNew,'offer.supplierId??product.supplierId')
+    &&has(intakeNew,'depositLabel(offer)'),
+  'Multi-supplier Offer identity and deposit semantics must remain visible through Product selection and Intake.');
+
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),
   'Application persistence must use namespaced collections and transaction-based sequencing.');

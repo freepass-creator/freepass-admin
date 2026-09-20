@@ -9,7 +9,6 @@ import { LogoutButton } from '../_auth/LogoutButton';
 export const dynamic='force-dynamic';
 
 const PAGE_SIZE=50;
-const COMMON_TERMS=[1,6,12,24,36,60] as const;
 const first=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]??'':value??'';
 const n=(value:string)=>{const x=Number(value);return Number.isFinite(x)?x:undefined;};
 const positiveInt=(value:string,fallback=1)=>{const x=Number(value);return Number.isInteger(x)&&x>0?x:fallback;};
@@ -27,6 +26,7 @@ export default async function ProductsPage({searchParams}:{
   const requestedPage=positiveInt(first(q.page));
   const selectedId=first(q.id);
   const selectedOfferId=first(q.offerId);
+  const activeFilterCount=[term,maxRent,maxDeposit].filter((value)=>value!==undefined).length;
 
   let all;
   try{
@@ -77,20 +77,33 @@ export default async function ProductsPage({searchParams}:{
     <section className="workspace">
       <section className="panel product-panel">
         <div className="panel-head"><div><p className="eyebrow">PRODUCT</p><h1>상품 찾기</h1></div><span className="count">{matches.length}건 · {page}/{totalPages}</span></div>
-        <div className="quick-filters">
-          <Link className={!term?'active':''} href={href({term:'',page:'1',id:'',offerId:''})}>전체기간</Link>
-          {COMMON_TERMS.map((month)=><Link
-            key={month}
-            className={term===month?'active':''}
-            href={href({term:String(month),page:'1',id:'',offerId:''})}
-          >{month}개월</Link>)}
-        </div>
-        <form className="form-stack">
-          <label>검색<input name="q" defaultValue={first(q.q)} placeholder="모델 ID · 공급사 · 상품키"/></label>
-          <label>기간(개월)<input name="term" inputMode="numeric" defaultValue={first(q.term)} /></label>
-          <label>월 대여료 상한<input name="maxRent" inputMode="numeric" defaultValue={first(q.maxRent)} /></label>
-          <label>보증금 상한<input name="maxDeposit" inputMode="numeric" defaultValue={first(q.maxDeposit)} /></label>
-          <button className="primary" type="submit">검색</button>
+        <form className="ui-search-discovery" data-ui-search-mode="search-filter">
+          <div data-ui-search-row>
+            <input
+              className="ui-search"
+              name="q"
+              defaultValue={first(q.q)}
+              aria-label="상품 검색"
+              placeholder="차량 · 공급사 · 상품키 검색"
+            />
+            <details className="product-filter">
+              <summary data-ui-filter-trigger>세부필터{activeFilterCount>0?` ${activeFilterCount}`:''}</summary>
+              <div className="product-filter-panel">
+                <label>기간(개월)<input name="term" inputMode="numeric" defaultValue={first(q.term)} /></label>
+                <label>월 대여료 상한<input name="maxRent" inputMode="numeric" defaultValue={first(q.maxRent)} /></label>
+                <label>보증금 상한<input name="maxDeposit" inputMode="numeric" defaultValue={first(q.maxDeposit)} /></label>
+                <div className="product-filter-actions">
+                  <Link href={href({term:'',maxRent:'',maxDeposit:'',page:'1',id:'',offerId:''})}>초기화</Link>
+                  <button className="primary" type="submit">필터 적용</button>
+                </div>
+              </div>
+            </details>
+          </div>
+          {activeFilterCount>0&&<div data-ui-applied-filters aria-label="적용된 세부필터">
+            {term!==undefined&&<Link href={href({term:'',page:'1',id:'',offerId:''})}>기간 {term}개월 ×</Link>}
+            {maxRent!==undefined&&<Link href={href({maxRent:'',page:'1',id:'',offerId:''})}>월 {won(maxRent)} 이하 ×</Link>}
+            {maxDeposit!==undefined&&<Link href={href({maxDeposit:'',page:'1',id:'',offerId:''})}>보증금 {won(maxDeposit)} 이하 ×</Link>}
+          </div>}
         </form>
         <div className="list">
           {visible.map((m)=>{

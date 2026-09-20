@@ -1,4 +1,5 @@
 import type { Application } from '../domain/application/types';
+import type { Performance } from '../domain/performance/types';
 import type { CanonicalProduct } from '../domain/product/types';
 
 /**
@@ -26,7 +27,6 @@ export interface ApplicationRepository {
   ): Promise<{ application: Application; created: boolean }>;
 
   get(id: string): Promise<Application | null>;
-
   findBySubmissionId(submissionId: string): Promise<Application | null>;
 
   /** 최신 접수가 앞. 접수목록 화면이 이걸 그대로 쓴다. */
@@ -37,8 +37,22 @@ export interface ApplicationRepository {
    * 운영 Adapter는 transaction/compare-and-set 등 실제 원자성을 보장해야 한다.
    */
   mutate(id: string, change: (current: Application) => Application): Promise<Application>;
+}
 
+export interface PerformanceRepository {
+  /**
+   * 하나의 접수에는 NORMAL 실적을 정확히 하나만 만든다.
+   * applicationId가 멱등키다. 운영 Firestore Adapter는 발번+중복확인+저장을 transaction으로 묶는다.
+   */
+  createNormalSequenced(
+    datePrefix: string,
+    applicationId: string,
+    build: (sequence: number) => Performance,
+  ): Promise<{ performance: Performance; created: boolean }>;
 
+  get(id: string): Promise<Performance | null>;
+  findNormalByApplicationId(applicationId: string): Promise<Performance | null>;
+  list(): Promise<Performance[]>;
 }
 
 export interface ProductRepository {

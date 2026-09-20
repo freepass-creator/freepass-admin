@@ -29,6 +29,7 @@ const [
   erp5Product,
   freepassDataProduct,
   productSearch,
+  offerTermDomain,
   applicationCreate,
   settlementPricingPort,
   settlementPricingService,
@@ -73,6 +74,7 @@ const [
   text('src/adapters/erp5/product-repository.ts'),
   text('src/adapters/freepass-data/product-repository.ts'),
   text('src/domain/search/match-product.ts'),
+  text('src/domain/product/offer-terms.ts'),
   text('src/domain/application/create-application.ts'),
   text('src/ports/settlement-pricing.ts'),
   text('src/services/settlement-pricing.ts'),
@@ -265,6 +267,22 @@ add('ui.search-composition',
     &&has(products,'data-ui-applied-filters')
     &&!has(products,'COMMON_TERMS'),
   'Product search must use AI Core SEARCH_FILTER composition without unproven persistent quick filters.');
+
+add('catalog.dynamic-offer-terms',
+  has(offerTermDomain,'offerTerms')
+    &&has(offerTermDomain,'offersForTerm')
+    &&has(products,'availableTerms.map')
+    &&has(products,'termOffers.map')
+    &&has(products,'annualMileageKm')
+    &&!has(products,'COMMON_TERMS'),
+  'Offer periods must come from supplier data and same-term condition variants must remain selectable.');
+
+add('catalog.offer-condition-intake',
+  has(intakeNew,'resolveOfferPolicies(product,offer)')
+    &&has(intakeNew,'offer.annualMileageKm')
+    &&has(intakeNew,'offer.prepayment')
+    &&has(intakeNew,'depositLabel(offer)'),
+  'Selected term-specific Offer conditions must remain visible immediately before intake snapshot.');
 
 add('erp5.application-transaction',
   has(erp5Application,'runTransaction')&&has(erp5Application,"erp5AdminCollection('applications')")&&has(erp5Application,"erp5AdminCollection('counters')"),

@@ -116,6 +116,37 @@ export class FilePerformanceRepository implements PerformanceRepository {
     });
   }
 
+  async createClawbackSequenced(
+    datePrefix: string,
+    originPerformanceId: string,
+    build: (sequence: number) => Performance,
+  ): Promise<{ performance: Performance; created: boolean }> {
+    type R = { performance: Performance; created: boolean };
+    return this.store.mutate<R>((rows) => {
+      const existing = rows.find(
+        (row) => row.kind === 'CLAWBACK' && row.originPerformanceId === originPerformanceId,
+      );
+      if (existing) return { rows, result: { performance: existing, created: false } };
+
+      const sequence = rows.filter((row) => row.performanceNumber.startsWith(datePrefix)).length + 1;
+      const performance = build(sequence);
+      if (performance.kind !== 'CLAWBACK' || performance.originPerformanceId !== originPerformanceId) {
+        throw new AppError('CONFLICT', 'Clawback does not match the repository idempotency key.');
+      }
+      if (rows.some((row) => row.performanceNumber === performance.performanceNumber)) {
+        throw new AppError('CONFLICT', `Duplicate performance number: ${performance.performanceNumber}`);
+      }
+      if (rows.some((row) => row.settlementCode === performance.settlementCode)) {
+        throw new AppError('CONFLICT', `Duplicate settlement code: ${performance.settlementCode}`);
+      }
+
+      return {
+        rows: [performance, ...rows],
+        result: { performance, created: true },
+      };
+    });
+  }
+
   async get(id: string): Promise<Performance | null> {
     return (await this.store.all()).find((row) => row.id === id) ?? null;
   }
@@ -123,6 +154,12 @@ export class FilePerformanceRepository implements PerformanceRepository {
   async findNormalByApplicationId(applicationId: string): Promise<Performance | null> {
     return (await this.store.all()).find(
       (row) => row.kind === 'NORMAL' && row.applicationId === applicationId,
+    ) ?? null;
+  }
+
+  async findClawbackByOriginPerformanceId(originPerformanceId: string): Promise<Performance | null> {
+    return (await this.store.all()).find(
+      (row) => row.kind === 'CLAWBACK' && row.originPerformanceId === originPerformanceId,
     ) ?? null;
   }
 

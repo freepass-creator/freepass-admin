@@ -15,6 +15,7 @@ import {
   ensurePerformanceForApplication,
   ensureSettlementBilling,
   finalizeSettlement,
+  recordBillingEvidence,
   recordCollection,
   recordPayout,
   setPerformanceAmounts,
@@ -189,6 +190,14 @@ try{
     false,
   );
 
+  const billingWithEvidence=await recordBillingEvidence(settlementDeps,finalized.settlement.id,{
+    reference:'SMOKE-INVOICE-001',
+    issuedAt:'2026-09-20',
+    note:'vertical smoke invoice evidence',
+  });
+  assert.equal(billingWithEvidence.status,'EVIDENCE_COMPLETE');
+  assert.equal(billingWithEvidence.invoiceEvidence?.reference,'SMOKE-INVOICE-001');
+
   await recordCollection(settlementDeps,finalized.settlement.id,{
     id:'smoke-collection-1',
     amount:700000,
@@ -235,6 +244,8 @@ try{
   assert.equal(persistedPerformance?.status,'FINALIZED');
   assert.ok(persistedSettlement);
   assert.ok(persistedBilling);
+  assert.equal(persistedBilling?.status,'EVIDENCE_COMPLETE');
+  assert.equal(persistedBilling?.invoiceEvidence?.reference,'SMOKE-INVOICE-001');
   if(!persistedSettlement||!persistedBilling)throw new Error('persisted finance records missing');
 
   balance=getSettlementBalance(persistedSettlement,persistedBilling,ledger);
@@ -255,6 +266,8 @@ try{
       performanceStatus:persistedPerformance?.status,
       settlementId:persistedSettlement.id,
       billingId:persistedBilling.id,
+      billingStatus:persistedBilling.status,
+      invoiceEvidenceReference:persistedBilling.invoiceEvidence?.reference,
       ledgerEntries:ledger.length,
       collectionOutstanding:balance.collectionOutstanding,
       payoutOutstanding:balance.payoutOutstanding,

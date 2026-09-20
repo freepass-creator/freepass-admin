@@ -85,6 +85,22 @@ export async function setIntakeProgress(formData:FormData){
   redirect('/intake?id='+encodeURIComponent(id));
 }
 
+export async function ensureIntakePerformance(formData:FormData){
+  const id=s(formData.get('id'));
+  const d=deps();
+  try{
+    const performance=await ensurePerformanceForApplication({
+      applications:d.applications,
+      operations:adminOperations(),
+      actors:d.actors,
+      now:d.now,
+    },id);
+    redirect('/settlement?id='+encodeURIComponent(performance.performance.id)+'&created='+(performance.created?'1':'replay'));
+  }catch(error){
+    redirect('/intake?id='+encodeURIComponent(id)+'&error='+encodeURIComponent(error instanceof Error?error.message:String(error)));
+  }
+}
+
 export async function cancelIntake(formData:FormData){
   const id=s(formData.get('id'));
   const reason=s(formData.get('reason'));

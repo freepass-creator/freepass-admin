@@ -157,6 +157,23 @@ function specsOf(d:Erp5Doc):VehicleSpecs{
   };
 }
 
+function mediaOf(d:Erp5Doc):CanonicalProduct['media']|undefined{
+  const rawList=Array.isArray(d.image_urls)
+    ?d.image_urls
+    :Array.isArray(d.photo_urls)
+      ?d.photo_urls
+      :[];
+  const urls=rawList
+    .map((value)=>String(value??'').trim())
+    .filter((value)=>/^https?:\/\//i.test(value));
+  const single=[d.image_url,d.photo_url]
+    .map((value)=>String(value??'').trim())
+    .find((value)=>/^https?:\/\//i.test(value));
+  const all=[...new Set([...(single?[single]:[]),...urls])];
+  if(!all.length)return undefined;
+  return{primaryImageUrl:all[0],imageUrls:all};
+}
+
 function registrationOf(d:Erp5Doc):RegistrationInfo|undefined{
   const r:RegistrationInfo={
     vehicleNumber:S(d.car_number),
@@ -206,6 +223,7 @@ export function toCanonicalProduct(
       vehicle:vehicleRefOf(d,master),
       specs:specsOf(d),
       registration:registrationOf(d),
+      ...(mediaOf(d)?{media:mediaOf(d)}:{}),
       offers,
       productPolicies,
       sourceSnapshotId:'erp5:'+docId+':'+String(version),

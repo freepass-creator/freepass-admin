@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import type { PerformanceStatus } from '../../domain/performance/types';
 import { filterPerformances, performanceFacets } from '../../domain/performance/search';
-import { getClawbackSummary, getSettlementBalance } from '../../domain/settlement/settlement';
+import {
+  getClawbackCashBalance,
+  getClawbackSummary,
+  getSettlementBalance,
+  getSettlementNetBalance,
+} from '../../domain/settlement/settlement';
 import { adminOperations } from '../../server/admin-operations';
 import { requireAdminPageActor } from '../../server/auth/page-guard';
 import { LogoutButton } from '../_auth/LogoutButton';
@@ -14,12 +19,14 @@ import {
   disputeSales,
   finalizeAction,
   payoutAction,
+  channelRecoveryAction,
   reconfirmSales,
   recordBillingEvidenceAction,
   resolveIssue,
   reverseLedgerAction,
   saveAmounts,
   supplierIssueAction,
+  supplierRefundAction,
   suggestAmounts,
   syncDeliveredPerformances,
 } from './actions';
@@ -89,6 +96,12 @@ export default async function SettlementPage({searchParams}:{
   const clawbacks=settlement?await operations.listClawbacks(settlement.id):[];
   const balance=settlement?getSettlementBalance(settlement,billing??undefined,ledger):null;
   const clawbackSummary=settlement?getClawbackSummary(settlement,clawbacks):null;
+  const netBalance=settlement
+    ?getSettlementNetBalance(settlement,billing??undefined,ledger,clawbacks)
+    :null;
+  const clawbackCashById=new Map(
+    clawbacks.map((item)=>[item.id,getClawbackCashBalance(item,ledger)]),
+  );
   const reversedIds=new Set(
     ledger
       .filter((entry)=>entry.kind==='REVERSAL'&&entry.reversalOfEntryId)
@@ -234,6 +247,20 @@ export default async function SettlementPage({searchParams}:{
               <div><dt>미지급</dt><dd>{won(balance.payoutOutstanding)}</dd></div>
               <div><dt>마진</dt><dd>{won(balance.margin)}</dd></div>
             </dl>
+            {netBalance&&clawbacks.length>0&&<>
+              <h3>환수 반영 현재 포지션</h3>
+              <dl className="summary-grid">
+                <div><dt>순 받을 돈</dt><dd>{won(netBalance.netReceivable)}</dd></div>
+                <div><dt>순 수금</dt><dd>{won(netBalance.netCollected)}</dd></div>
+                <div><dt>추가 수금 가능</dt><dd>{won(netBalance.collectionOutstanding)}</dd></div>
+                <div><dt>공급사 환불 필요</dt><dd>{won(netBalance.supplierRefundOutstanding)}</dd></div>
+                <div><dt>순 줄 돈</dt><dd>{won(netBalance.netPayable)}</dd></div>
+                <div><dt>순 지급</dt><dd>{won(netBalance.netPaid)}</dd></div>
+                <div><dt>추가 지급 가능</dt><dd>{won(netBalance.payoutOutstanding)}</dd></div>
+                <div><dt>영업채널 회수 필요</dt><dd>{won(netBalance.channelRecoveryOutstanding)}</dd></div>
+                <div><dt>환수 후 마진</dt><dd>{won(netBalance.netMargin)}</dd></div>
+              </dl>
+            </>}
             {clawbackSummary&&clawbacks.length>0&&<>
               <h3>환수</h3>
               <dl className="summary-grid">
@@ -334,19 +361,19 @@ export default async function SettlementPage({searchParams}:{
 
             {billing&&billing.status!=='EVIDENCE_COMPLETE'&&<small>계산서 처리 증빙이 완료되어야 수금을 기록할 수 있습니다.</small>}
 
-            {billing?.status==='EVIDENCE_COMPLETE'&&balance&&balance.collectionOutstanding>0&&<form action={collectAction} className="form-stack">
+            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.collectionOutstanding>0&&<form action={collectAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <label>수금액<input name="amount" required inputMode="numeric"/></label>
               <label>메모<input name="note"/></label>
               <button className="primary" type="submit">수금 기록</button>
             </form>}
 
-            {billing?.status==='EVIDENCE_COMPLETE'&&balance&&balance.payoutOutstanding>0&&<form action={payoutAction} className="form-stack">
+            {billing?.status==='EVIDENCE_COMPLETE'&&netBalance&&netBalance.payoutOutstanding>0&&<form action={payoutAction} className="form-stack">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="settlementId" value={settlement.id}/>
               <label>지급액<input name="amount" required inputMode="numeric"/></label>
               <label>메모<input name="note"/></label>
               <button className="primary" type="submit">영업채널 지급 기록</button>
-              {balance.collectionOutstanding>0&&<small>현재 정책은 공급사 완납 전 지급을 차단합니다.</small>}
+              {(netBalance.collectionOutstanding>0||netBalance.supplierRefundOutstanding>0)&&<small>현재 정책은 공급사 순정산이 완료되기 전 지급을 차단합니다.</small>}
             </form>}
 
             <h3>환수 등록</h3>
@@ -361,18 +388,56 @@ export default async function SettlementPage({searchParams}:{
               <small>환수는 원 정산과 원장을 수정하지 않습니다. 잘못 입력한 수금/지급의 정정은 아래 원장 정정을 사용합니다.</small>
             </form>
 
+            {netBalance&&clawbacks.map((item)=>{
+              const cash=clawbackCashById.get(item.id);
+              if(!cash)return null;
+              const refundAllowed=Math.min(
+                cash.supplierRefundRemaining,
+                netBalance.supplierRefundOutstanding,
+              );
+              const recoveryAllowed=Math.min(
+                cash.channelRecoveryRemaining,
+                netBalance.channelRecoveryOutstanding,
+              );
+              return <div key={'cash:'+item.id} className="work-hint">
+                <b>환수 현금처리 · {item.reason}</b>
+                <span>
+                  공급사 환불 {won(cash.supplierRefunded)}/{won(cash.supplierTarget)}
+                  {' · '}
+                  영업채널 회수 {won(cash.channelRecovered)}/{won(cash.channelTarget)}
+                </span>
+                {refundAllowed>0&&<form action={supplierRefundAction} className="form-stack">
+                  <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="settlementId" value={settlement.id}/>
+                  <input type="hidden" name="clawbackId" value={item.id}/>
+                  <label>공급사 환불액<input name="amount" required inputMode="numeric" max={refundAllowed}/></label>
+                  <label>메모<input name="note"/></label>
+                  <button type="submit">공급사 환불 기록</button>
+                </form>}
+                {recoveryAllowed>0&&<form action={channelRecoveryAction} className="form-stack">
+                  <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="settlementId" value={settlement.id}/>
+                  <input type="hidden" name="clawbackId" value={item.id}/>
+                  <label>영업채널 회수액<input name="amount" required inputMode="numeric" max={recoveryAllowed}/></label>
+                  <label>메모<input name="note"/></label>
+                  <button type="submit">영업채널 회수 기록</button>
+                </form>}
+              </div>;
+            })}
+
             <h3>원장</h3>
             {ledger.map((entry)=>{
               const reversed=entry.kind==='CASH'&&reversedIds.has(entry.id);
               return <div key={entry.id} className="work-hint">
                 <b>{entry.account} · {entry.kind} · {won(entry.amount)}{reversed?' · 정정됨':''}</b>
-                <span>{entry.occurredAt} · {entry.actorId}{entry.note?' · '+entry.note:''}{entry.reversalOfEntryId?' · 원본 '+entry.reversalOfEntryId:''}</span>
+                <span>{entry.occurredAt} · {entry.actorId}{entry.clawbackId?' · 환수 '+entry.clawbackId:''}{entry.note?' · '+entry.note:''}{entry.reversalOfEntryId?' · 원본 '+entry.reversalOfEntryId:''}</span>
                 {entry.kind==='CASH'&&!reversed&&<form action={reverseLedgerAction} className="ledger-reversal-form">
                   <input type="hidden" name="id" value={selected.id}/>
                   <input type="hidden" name="settlementId" value={settlement.id}/>
                   <input type="hidden" name="originalId" value={entry.id}/>
                   <input type="hidden" name="account" value={entry.account}/>
                   <input type="hidden" name="amount" value={entry.amount}/>
+                  {entry.clawbackId&&<input type="hidden" name="clawbackId" value={entry.clawbackId}/>}
                   <input name="reason" required placeholder="정정 사유"/>
                   <button type="submit">원장 정정</button>
                 </form>}

@@ -5,6 +5,7 @@ export interface VehicleMasterRef {
   originId: string;
   manufacturerId: string;
   modelId: string;
+  generationId?: string;
   subModelId?: string;
   trimId?: string;
   matchLevel: VehicleMatchLevel;

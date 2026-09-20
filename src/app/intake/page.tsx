@@ -232,24 +232,23 @@ export default async function IntakePage({searchParams}:{
             <input type="hidden" name="id" value={selected.id}/>
           </form>}
         </>:<p>왼쪽에서 접수를 선택하세요.</p>}
+        {selected&&selected.status!=='CANCELLED'&&<BottomActionBar
+          ariaLabel="접수 진행 작업"
+          secondary={<button className="btn danger" type="submit" form="intake-cancel-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.secondary}</button>}
+          primary={nextProgress
+            ?<button className="btn primary" type="submit" form="intake-next-form">{
+              nextProgress[0]==='contractCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.contract
+              :nextProgress[0]==='documentsCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.documents
+              :nextProgress[0]==='balanceCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.balance
+              :ADMIN_ACTION_BAR_LABELS.intakeProgress.delivery
+            }</button>
+            :selected.status==='DELIVERED'
+              ?performance
+                ?<Link className="btn primary" href={'/settlement?id='+encodeURIComponent(performance.id)}>{ADMIN_ACTION_BAR_LABELS.intakeProgress.delivered}</Link>
+                :<button className="btn primary" type="submit" form="intake-performance-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.deliveredCreate}</button>
+              :undefined}
+        />}
       </section>
     </section>
-
-    {selected&&selected.status!=='CANCELLED'&&<BottomActionBar
-      ariaLabel="접수 진행 작업"
-      secondary={<button className="btn danger" type="submit" form="intake-cancel-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.secondary}</button>}
-      primary={nextProgress
-        ?<button className="btn primary" type="submit" form="intake-next-form">{
-          nextProgress[0]==='contractCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.contract
-          :nextProgress[0]==='documentsCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.documents
-          :nextProgress[0]==='balanceCompleted'?ADMIN_ACTION_BAR_LABELS.intakeProgress.balance
-          :ADMIN_ACTION_BAR_LABELS.intakeProgress.delivery
-        }</button>
-        :selected.status==='DELIVERED'
-          ?performance
-            ?<Link className="btn primary" href={'/settlement?id='+encodeURIComponent(performance.id)}>{ADMIN_ACTION_BAR_LABELS.intakeProgress.delivered}</Link>
-            :<button className="btn primary" type="submit" form="intake-performance-form">{ADMIN_ACTION_BAR_LABELS.intakeProgress.deliveredCreate}</button>
-          :undefined}
-    />}
   </main>;
 }

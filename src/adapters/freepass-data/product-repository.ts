@@ -221,7 +221,7 @@ export function toAdminCanonicalProduct(
       ...(model.batteryKwh != null ? { batteryKwh: int(model.batteryKwh, 'vehicleModel.batteryKwh') } : {}),
     },
     ...(registration ? { registration } : {}),
-    ...(uniqueMedia.length?{media:{primaryImageUrl:uniqueMedia[0],imageUrls:uniqueMedia}}:{}),
+    ...(uniqueMedia.length?{media:{primaryImageUrl:uniqueMedia[0]!,imageUrls:uniqueMedia}}:{}),
     offers,
     productPolicies: [
       { policyId: 'commercial_type', type: 'SINGLE_SELECT', value: nonEmpty(source.commercialType, 'commercialType') },

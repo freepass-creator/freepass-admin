@@ -1,0 +1,20 @@
+{
+  "contract": "devcenter-design-authority/v1",
+  "product": "freepass-admin",
+  "approved_visual": {
+    "path": "docs/ui/mockups/admin-product-to-application.html",
+    "sha256": "6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d",
+    "status": "USER_APPROVED",
+    "approved_on": "2026-09-16",
+    "source": "docs/WORK-INBOX.md#13"
+  },
+  "design_hub": {
+    "repository": "freepass-creator/devcenter",
+    "revision": "2d23a6b0dd57474fe9799d1253eefb6b78bad923"
+  },
+  "ai_core": {
+    "repository": "freepass-creator/ai-core",
+    "revision": "76b4c05f0b99a80033aa9d65030ac97df0f649e9",
+    "feature_registry_version": "1.3.0"
+  }
+}

@@ -1,7 +1,7 @@
 # FreePass Admin → Development Center Design Hub Mapping
 
 Status: **MAPPED / NOT PILOT / NOT CONFORMANT**  
-Mapping base revision: `2747ef32e96c550d7dea05c58ee012880cb42dd3`
+Mapping base revision: `92e2838b6da2df5f0b8733db494e879bd25d2e74`
 
 ## Authorities
 
@@ -32,7 +32,7 @@ npm run uiux:map
 
 ## Why this is only MAPPED
 
-The current Next UI is not the approved rev 5 design.
+The current Next UI now implements the first approved rev 5 shell migration slice, but visual conformance has not yet been proven.
 
 Confirmed deltas already documented in `docs/reviews/ADMIN-DESIGN-FUNCTION-AUDIT-2026-09-18.md`:
 
@@ -60,3 +60,21 @@ Therefore:
 9. only then evaluate PILOT promotion
 
 Production deployment remains separately gated by `docs/RELEASE.md`.
+
+
+## 2026-09-21 shell migration delta
+
+Merged revision:
+`92e2838b6da2df5f0b8733db494e879bd25d2e74`
+
+Source-level changes now present:
+- legacy heavy topbar removed
+- left business rail added
+- three floating desktop panels added
+- admin quick-filter row removed
+- search + detailed-filter entry retained
+- Offer choices rendered as vertical whole-Offer rows
+- mobile panel stacking replaced with explicit view navigation
+- shell regression test added
+
+This closes source-level gaps only. Browser/interaction evidence is still required before PILOT.

@@ -3,7 +3,7 @@
   "target": {
     "project_id": "freepass-admin",
     "repository": "freepass-creator/freepass-admin",
-    "revision": "2747ef32e96c550d7dea05c58ee012880cb42dd3"
+    "revision": "92e2838b6da2df5f0b8733db494e879bd25d2e74"
   },
   "surface": {
     "id": "admin-product-application",

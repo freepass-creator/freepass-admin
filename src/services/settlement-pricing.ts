@@ -17,7 +17,7 @@ export function settlementPricingInput(
     catalog:{
       productId:performance.snapshot.productId,
       productVersion:performance.snapshot.productVersion,
-      sourceSnapshotId:performance.snapshot.sourceSnapshotId,
+      ...(performance.snapshot.sourceSnapshotId ? {sourceSnapshotId:performance.snapshot.sourceSnapshotId} : {}),
       ...(performance.snapshot.supplierProductKey
         ? {supplierProductKey:performance.snapshot.supplierProductKey}
         : {}),

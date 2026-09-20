@@ -1,7 +1,11 @@
 import type { PerformancePricingEvidence, VatMode } from '../performance/types';
 
 export type PayoutPolicy = 'AFTER_FULL_COLLECTION' | 'INDEPENDENT';
-export type LedgerAccount = 'SUPPLIER_COLLECTION' | 'CHANNEL_PAYOUT';
+export type LedgerAccount =
+  | 'SUPPLIER_COLLECTION'
+  | 'CHANNEL_PAYOUT'
+  | 'SUPPLIER_REFUND'
+  | 'CHANNEL_RECOVERY';
 
 export interface LedgerEntry {
   id: string;
@@ -12,6 +16,7 @@ export interface LedgerEntry {
   occurredAt: string;
   actorId: string;
   note?: string;
+  clawbackId?: string;
   reversalOfEntryId?: string;
 }
 
@@ -91,4 +96,36 @@ export interface ClawbackSummary {
   channelClawback: number;
   supplierRemainingClawbackable: number;
   channelRemainingClawbackable: number;
+}
+
+
+export interface SettlementNetBalance {
+  originalReceivable: number;
+  supplierClawback: number;
+  netReceivable: number;
+  collected: number;
+  supplierRefunded: number;
+  netCollected: number;
+  collectionOutstanding: number;
+  supplierRefundOutstanding: number;
+
+  originalPayable: number;
+  channelClawback: number;
+  netPayable: number;
+  paid: number;
+  channelRecovered: number;
+  netPaid: number;
+  payoutOutstanding: number;
+  channelRecoveryOutstanding: number;
+
+  netMargin: number;
+}
+
+export interface ClawbackCashBalance {
+  supplierTarget: number;
+  supplierRefunded: number;
+  supplierRefundRemaining: number;
+  channelTarget: number;
+  channelRecovered: number;
+  channelRecoveryRemaining: number;
 }

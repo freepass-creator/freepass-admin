@@ -129,3 +129,20 @@ export interface ClawbackCashBalance {
   channelRecovered: number;
   channelRecoveryRemaining: number;
 }
+
+
+export interface ClawbackBillingAdjustment {
+  id: string;
+  settlementId: string;
+  clawbackId: string;
+  supplierId: string;
+  direction: 'CREDIT';
+  settlementAmount: number;
+  netAmount: number;
+  vatAmount: number;
+  totalAmount: number;
+  status: 'CREATED' | 'EVIDENCE_COMPLETE';
+  invoiceEvidence?: BillingInvoiceEvidence;
+  occurredAt: string;
+  createdAt: string;
+}

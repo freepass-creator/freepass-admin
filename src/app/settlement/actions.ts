@@ -9,12 +9,14 @@ import {
   confirmSupplier,
   createBusinessClawback,
   disputeSalesperson,
+  ensureClawbackBillingAdjustment,
   ensurePerformanceForApplication,
   ensureSettlementBilling,
   finalizeSettlement,
   reconfirmSalesperson,
   recordBillingEvidence,
   recordChannelRecovery,
+  recordClawbackBillingEvidence,
   recordCollection,
   recordPayout,
   recordSupplierRefund,
@@ -152,6 +154,29 @@ export async function createClawbackAction(formData:FormData){
       ...(channelRaw?{channelAmount:i(formData.get('channelAmount'))}:{}),
       reason:s(formData.get('reason')),
       occurredAt:s(formData.get('occurredAt'))||undefined,
+    });
+  }catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+export async function createClawbackBillingAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const clawbackId=s(formData.get('clawbackId'));
+  try{await ensureClawbackBillingAdjustment(deps(),settlementId,clawbackId);}
+  catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+export async function recordClawbackBillingEvidenceAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const clawbackId=s(formData.get('clawbackId'));
+  try{
+    await recordClawbackBillingEvidence(deps(),settlementId,clawbackId,{
+      reference:s(formData.get('reference')),
+      issuedAt:s(formData.get('issuedAt')),
+      note:s(formData.get('note'))||undefined,
     });
   }catch(e){redirect(href(id,e));}
   redirect(href(id));

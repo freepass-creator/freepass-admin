@@ -4,6 +4,7 @@ import { FileApplicationRepository, FileProductRepository } from '../adapters/st
 import type { ActorProvider } from '../ports/auth';
 import { sessionActorProvider } from './auth/session';
 import type { ApplicationRepository, ProductRepository } from '../ports/repositories';
+import { CachedProductRepository } from '../services/cached-product-repository';
 
 export type AdminRuntimeMode = 'FILE_DEV' | 'ERP5' | 'UNBOUND_PRODUCTION';
 
@@ -15,6 +16,15 @@ export function adminRuntimeMode(env:NodeJS.ProcessEnv=process.env):AdminRuntime
   return'FILE_DEV';
 }
 
+const globalRuntime=globalThis as unknown as{__fpaErp5Products?:ProductRepository};
+
+function erp5Products():ProductRepository{
+  if(!globalRuntime.__fpaErp5Products){
+    globalRuntime.__fpaErp5Products=new CachedProductRepository(new Erp5ProductRepository(),60_000);
+  }
+  return globalRuntime.__fpaErp5Products;
+}
+
 export function adminRepositories(env:NodeJS.ProcessEnv=process.env):{
   products:ProductRepository;
   applications:ApplicationRepository;
@@ -22,7 +32,7 @@ export function adminRepositories(env:NodeJS.ProcessEnv=process.env):{
   const mode=adminRuntimeMode(env);
   if(mode==='ERP5'){
     return{
-      products:new Erp5ProductRepository(),
+      products:erp5Products(),
       applications:new Erp5ApplicationRepository(),
     };
   }

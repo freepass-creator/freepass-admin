@@ -1,4 +1,4 @@
-import type { VatMode } from '../performance/types';
+import type { PerformancePricingEvidence, VatMode } from '../performance/types';
 
 export type PayoutPolicy = 'AFTER_FULL_COLLECTION' | 'INDEPENDENT';
 export type LedgerAccount = 'SUPPLIER_COLLECTION' | 'CHANNEL_PAYOUT';
@@ -46,6 +46,7 @@ export interface SettlementItem {
   channelPayable: number;
   margin: number;
   vatMode: Exclude<VatMode, 'UNDECIDED'>;
+  pricingEvidence?: PerformancePricingEvidence;
   createdAt: string;
 }
 

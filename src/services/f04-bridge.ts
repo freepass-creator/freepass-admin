@@ -216,9 +216,17 @@ export type F04LegacyMatchResult=
 const plateKey=(value:unknown)=>String(value??'').replace(/\s/g,'').trim();
 const nameKey=(value:unknown)=>String(value??'').replace(/\s+/g,' ').trim();
 const dayKey=(value:unknown)=>{
-  const text=String(value??'').trim();
-  const ms=Date.parse(text);
-  return Number.isFinite(ms)?new Date(ms).toISOString().slice(0,10):text.slice(0,10);
+  const raw=String(value??'').trim().replace(/[./]/g,'-');
+  const short=/^(\d{2})-(\d{1,2})-(\d{1,2})$/.exec(raw);
+  if(short){
+    return `20${short[1]}-${String(Number(short[2])).padStart(2,'0')}-${String(Number(short[3])).padStart(2,'0')}`;
+  }
+  const full=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(raw);
+  if(full){
+    return `${full[1]}-${String(Number(full[2])).padStart(2,'0')}-${String(Number(full[3])).padStart(2,'0')}`;
+  }
+  const ms=Date.parse(raw);
+  return Number.isFinite(ms)?new Date(ms).toISOString().slice(0,10):raw.slice(0,10);
 };
 
 export function matchExistingF04Row(

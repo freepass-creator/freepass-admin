@@ -12,6 +12,7 @@ import {
 import type { SettlementAmounts } from '../domain/performance/types';
 import {
   createBilling,
+  createSettlementClawback,
   createSettlementFromPerformance,
   recordBillingInvoiceEvidence,
   registerCollection,
@@ -173,6 +174,34 @@ export async function finalizeSettlement(deps:SettlementDeps,performanceId:strin
     performanceId,
     current=>createSettlementFromPerformance(current,iso(deps.now)),
   );
+}
+
+export async function createBusinessClawback(
+  deps:SettlementDeps,
+  settlementId:string,
+  input:{
+    id:string;
+    supplierAmount:number;
+    channelAmount?:number;
+    reason:string;
+    occurredAt?:string;
+  },
+){
+  const actorId=await adminId(deps.actors);
+  const settlement=await deps.operations.getSettlement(settlementId);
+  if(!settlement)throw new Error('SETTLEMENT_NOT_FOUND');
+  const existing=await deps.operations.listClawbacks(settlementId);
+  const now=iso(deps.now);
+  const candidate=createSettlementClawback(settlement,existing,{
+    id:input.id,
+    supplierAmount:input.supplierAmount,
+    ...(input.channelAmount!==undefined?{channelAmount:input.channelAmount}:{}),
+    reason:input.reason,
+    occurredAt:input.occurredAt??now,
+    createdAt:now,
+    createdBy:actorId,
+  });
+  return deps.operations.ensureClawback(settlementId,candidate);
 }
 
 export async function ensureSettlementBilling(deps:SettlementDeps,settlementId:string){

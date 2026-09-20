@@ -44,6 +44,7 @@ export default async function ProductsPage({searchParams}:{
   const matches=all
     .filter((product)=>!text || [
       product.id,product.supplierId,product.supplierProductKey,
+      ...product.offers.map((offer)=>offer.supplierId),
       product.vehicle.manufacturerId,product.vehicle.modelId,
       product.vehicle.subModelId,product.vehicle.trimId,
     ].filter(Boolean).join(' ').toLowerCase().includes(text))
@@ -124,7 +125,9 @@ export default async function ProductsPage({searchParams}:{
             <div><dt>약정주행</dt><dd>{offer.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
           </dl>
           <div className="offer-picker">
-            {selected.matchedOffers.map((x)=><Link key={x.id} href={href({id:selected.product.id,offerId:x.id})} className={x.id===offer.id?'active':''}>{x.termMonths}개월</Link>)}
+            {selected.matchedOffers.map((x)=><Link key={x.id} href={href({id:selected.product.id,offerId:x.id})} className={x.id===offer.id?'active':''}>
+              {[x.supplierId??selected.product.supplierId,x.termMonths+'개월','월 '+won(x.monthlyRent)].filter(Boolean).join(' · ')}
+            </Link>)}
           </div>
           <div className="chips">
             {resolveOfferPolicies(selected.product,offer).map((p)=><span key={p.policyId}>{p.policyId}: {Array.isArray(p.value)?p.value.join(', '):String(p.value)}</span>)}

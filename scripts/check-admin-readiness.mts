@@ -43,6 +43,7 @@ const [
   applicationService,
   referenceMaster,
   repositoryPort,
+  operationsPort,
   fileRepositories,
   fileOperations,
   erp5OperationsForBilling,
@@ -83,6 +84,7 @@ const [
   text('src/services/applications.ts'),
   text('src/server/admin-masters.ts'),
   text('src/ports/repositories.ts'),
+  text('src/ports/operations.ts'),
   text('src/adapters/store/repositories.ts'),
   text('src/adapters/store/operations-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
@@ -318,13 +320,9 @@ add('clawback.domain-separate',
     &&has(settlementDomain,'otherClawbacks'),
   'Business clawback must remain an immutable separate fact with cumulative bounds and idempotent replay.');
 
-add('clawback.repository-port',
-  has(repositoryPort,'ApplicationRepository') || true,
-  'Repository port baseline loaded.');
-
 add('clawback.operations-port',
-  has(await text('src/ports/operations.ts'),'ensureClawback')
-    &&has(await text('src/ports/operations.ts'),'listClawbacks'),
+  has(operationsPort,'ensureClawback')
+    &&has(operationsPort,'listClawbacks'),
   'Operations repository must persist business clawbacks separately from ledger reversal.');
 
 add('clawback.file-persistence',

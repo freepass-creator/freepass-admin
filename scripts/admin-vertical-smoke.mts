@@ -111,7 +111,9 @@ try{
     submissionId:'smoke-submission',
     source:'ADMIN',
   });
-  assert.equal(replayed.ok&&replayed.created,false);
+  assert.equal(replayed.ok,true);
+  if(!replayed.ok)throw new Error('replay failed');
+  assert.equal(replayed.created,false);
 
   for(const key of ['contractCompleted','documentsCompleted','balanceCompleted','deliveryCompleted'] as const){
     const progress=await markProgress({applications,actors,now},submitted.application.id,key,true);

@@ -604,3 +604,32 @@ F04 writer는 아직 활성화하지 않는다.
 2. legacy Policy 별도 Source/RAW/Canonical 경로
 3. F04 / fp-settlement / Admin / Data 4-way parity fixture
 4. 실제 typecheck/test/admin:smoke 실행 가능한 환경에서 검증
+
+
+---
+
+## 18. P13 운영 안전 마감 — 2026-09-21
+
+최신 작업 branch:
+`work/gpt/admin-p13-operational-safety-20260921`
+
+### 이번 마감 범위
+- 영업채널 확인/이견/재확인은 Performance Snapshot의 `salesChannelId`와 동일한 party만 허용
+- 공급사 확인/이슈는 Performance Snapshot의 `supplierId`와 동일한 party만 허용
+- 모든 Billing / Collection / Payout / Clawback / Refund / Recovery / Reversal Server Action은 선택한 Performance에서 Settlement를 서버 재조회
+- hidden `settlementId`가 실제 연결과 다르면 `SETTLEMENT_SELECTION_MISMATCH`로 fail-closed
+- AFTER_FULL_COLLECTION 조건이 열리기 전에는 지급 폼 자체를 노출하지 않음
+- 멀티 공급사 Offer의 공급사 ID를 상품 상세·Offer 선택·신규접수 Snapshot 직전까지 명시적으로 표시
+- 보증금 `KNOWN / ZERO / UNKNOWN / NOT_APPLICABLE` 의미를 신규접수 화면에서 숫자 0으로 뭉개지 않음
+- `admin:readiness`에 위 P13 가드를 추가해 회귀 차단
+
+### 확인된 결함과 수정
+기존 Domain은 영업채널/공급사 review의 `partyId`가 Snapshot 당사자인지 검증하지 않았다.
+따라서 접수 채널이 `online`이어도 다른 ID로 확인 기록이 가능했다.
+P13에서 이를 Domain invariant로 격상하고 회귀 테스트를 추가했다.
+
+### 현재 우선순위
+1. P13 typecheck / test / admin:smoke 실행 증거 확보
+2. 실제 ERP5 환경에서 상품→접수→인도→정산→계산서→수금→지급 1건 persistence 재조회
+3. F04는 OBSERVE 기반 row-link 검증부터 진행
+4. FreePass Data Catalog ACTIVE 전까지 ERP5 direct read 유지

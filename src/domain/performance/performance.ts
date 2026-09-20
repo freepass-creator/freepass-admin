@@ -1,6 +1,6 @@
 import type { Application } from '../application/types';
 import type { PolicyValue } from '../product/types';
-import type { Performance, SettlementAmounts } from './types';
+import type { Performance, PerformancePricingEvidence, SettlementAmounts } from './types';
 
 function clonePolicy<T extends PolicyValue>(policy: T): T {
   return {
@@ -94,6 +94,7 @@ export function setSettlementAmounts(
   return {
     ...performance,
     amounts: { ...amounts },
+    pricingEvidence: undefined,
     status: 'AWAITING_SALESPERSON_CONFIRMATION',
     salespersonReview: { status: 'PENDING' },
     supplierReview: { status: 'PENDING' },
@@ -180,6 +181,7 @@ export function registerSupplierIssue(
   return {
     ...performance,
     amounts: { ...proposedAmounts },
+    pricingEvidence: undefined,
     supplierReview: {
       status: 'DISPUTED',
       partyId: supplierPartyId,
@@ -236,4 +238,18 @@ export function markPerformanceFinalized(performance: Performance, now: string):
     throw new Error('Performance review is not complete.');
   }
   return { ...performance, status: 'FINALIZED', updatedAt: now };
+}
+
+
+export function applySuggestedSettlementAmounts(
+  performance: Performance,
+  amounts: SettlementAmounts,
+  evidence: Omit<PerformancePricingEvidence,'appliedAt'>,
+  now: string,
+): Performance {
+  const next=setSettlementAmounts(performance,amounts,now);
+  return {
+    ...next,
+    pricingEvidence:{...evidence,appliedAt:now},
+  };
 }

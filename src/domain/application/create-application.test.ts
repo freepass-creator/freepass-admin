@@ -74,3 +74,34 @@ test('registration facts are snapshotted and isolated from later product changes
 test('selected offer must belong to the product',()=>{
   assert.throws(()=>create({offerId:'other-offer'}),/Selected offer/);
 });
+
+
+test('application snapshot uses selected Offer supplier when present',()=>{
+  const withOfferSupplier:CanonicalProduct={
+    ...product,
+    supplierId:'legacy-supplier',
+    offers:[{
+      ...product.offers[0],
+      supplierId:'data-supplier',
+      sourceOfferId:'offer-canonical-1',
+      sourceOfferRevision:9,
+      sourcePriceTermKey:'36_2만',
+    }],
+  };
+  const app=createApplication({
+    id:'app-offer-supplier',
+    applicationNumber:'A-260920-002',
+    applicantName:'공급사확인',
+    salesChannelId:'channel-1',
+    assigneeId:'admin-1',
+    source:'ADMIN',
+    product:withOfferSupplier,
+    offerId:'offer-36',
+    submissionId:'submission-offer-supplier',
+    actor:{id:'admin-1',type:'ADMIN'},
+    now,
+  });
+  assert.equal(app.snapshot.supplierId,'data-supplier');
+  assert.equal(app.snapshot.offer.sourceOfferId,'offer-canonical-1');
+  assert.equal(app.snapshot.offer.sourcePriceTermKey,'36_2만');
+});

@@ -707,3 +707,57 @@ AI Core Search & Discovery Composition 정본 후보(PR ai-core #185)를 FreePas
 
 최신 branch:
 `work/gpt/admin-p15-dynamic-offer-terms-20260921`
+
+
+---
+
+## 21. P16 승인 UI 복원 — 모바일 상세 · 사진 · 버튼 · 세부필터 — 2026-09-21
+
+사용자 피드백으로 P15 정적 미리보기의 임기응변 UI를 폐기하고, 승인된 rev5/후속 모바일 결정을 다시 정본으로 적용한다.
+
+### 모바일 Master → Detail
+- PC: 목록 / 상세 / 업무 패널을 동시에 볼 수 있음
+- 모바일: PC 3패널을 세로로 쌓지 않음
+- 모바일 상품 목록에서 카드 터치 → 상세 화면 하나로 전환
+- 상세의 뒤로가기 → 목록 query/선택 문맥으로 복귀
+- 목록과 상세의 page-title typography/hierarchy 유지
+- AI Core `data.master-detail` 패턴 소비
+
+### 사진
+- Canonical Product에 optional `media.primaryImageUrl / imageUrls`
+- ERP5 `image_urls / photo_urls / image_url / photo_url` 계보를 Canonical media로 승격
+- FreePass Data Admin Catalog도 optional media contract 수용 준비
+- 사진 있으면 실제 사진
+- 사진 없으면 둥근 `사진 준비 중`
+- 사진 위 일반 텍스트 금지
+- 사진이 있을 때만 공급사/확정도 신원칩을 우하단 유리칩으로 표시
+- 사진 존재와 색상/기타 원자 존재를 동일시하지 않음
+
+### 상품 카드
+- 카드 외곽선 위주의 임의 박스 폐기
+- 사진만 둥글게
+- 글자는 사진 옆/아래 정보 위계로
+- 선택은 accent soft surface + 얇은 inset 경계
+- 실제 제공 기간은 한 줄 요약
+
+### 버튼
+- 승인 `btn` hierarchy 복원
+- 약 42~44px control
+- secondary: Share
+- primary: `이 조건으로 접수하기`
+- primary 실행색은 선택 accent와 분리된 `--fp-go`
+- 모바일 action dock 하단 고정
+- 임의 검정 full-width CTA를 상품 상세 규격으로 사용하지 않음
+
+### 세부필터
+- 승인된 두 칸 시트
+- 왼쪽 축 지도 / 오른쪽 값
+- 선택 즉시 URL query 반영
+- Apply / Cancel draft boundary 없음
+- header 초기화 허용
+- footer는 `N건 보기`
+- 0건 option은 노출하지 않음
+- 기간/대여료/보증금/주행거리는 실제 source-derived option 기준
+
+최신 branch:
+`work/gpt/admin-p16-mobile-detail-photo-buttons-20260921`

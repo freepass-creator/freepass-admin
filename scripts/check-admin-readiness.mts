@@ -26,6 +26,9 @@ const [
   erp5Product,
   erp5Application,
   erp5Operations,
+  intakeActions,
+  applicationService,
+  referenceMaster,
   env,
   pkg,
   workflow,
@@ -42,6 +45,9 @@ const [
   text('src/adapters/erp5/product-repository.ts'),
   text('src/adapters/erp5/application-repository.ts'),
   text('src/adapters/erp5/operations-repository.ts'),
+  text('src/app/intake/actions.ts'),
+  text('src/services/applications.ts'),
+  text('src/server/admin-masters.ts'),
   text('.env.example'),
   text('package.json'),
   text('.github/workflows/backend-check.yml'),
@@ -101,6 +107,23 @@ add('erp5.application-transaction',
 add('erp5.operations-transaction',
   has(erp5Operations,'runTransaction')&&has(erp5Operations,"erp5AdminCollection('performances')")&&has(erp5Operations,"erp5AdminCollection('settlements')"),
   'Performance/Settlement persistence must preserve transactional boundaries.');
+
+add('master.runtime-bound',
+  has(referenceMaster,'Erp5ReferenceMaster')&&has(referenceMaster,'EnvReferenceMaster'),
+  'Reference Master must be selected by runtime mode.');
+
+add('master.intake-action-bound',
+  has(intakeActions,'adminReferenceMaster()'),
+  'Intake Server Action must provide the runtime Reference Master.');
+
+add('master.service-enforced',
+  has(applicationService,'requireActiveSalesChannel')&&has(applicationService,'requireActiveAssignee')
+    &&has(applicationService,'SALES_CHANNEL_NOT_ACTIVE')&&has(applicationService,'ASSIGNEE_NOT_ACTIVE'),
+  'Application Service must fail closed on non-master channel or assignee ids.');
+
+add('master.dev-explicit',
+  has(env,'FPA_DEV_SALES_CHANNEL_IDS=channel-dev'),
+  'Development channel master must be explicit in the environment contract.');
 
 add('smoke.script-registered',
   has(pkg,'"admin:smoke"')&&has(pkg,'scripts/admin-vertical-smoke.mts'),

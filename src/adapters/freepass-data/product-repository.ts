@@ -7,6 +7,9 @@ export type FreePassDataAdminCatalogMeta = {
   revision: number;
   generatedAt: string;
   activatedAt?: string | null;
+  policyParity: 'COMPLETE' | 'INCOMPLETE';
+  missingPolicyOfferIds: string[];
+  invalidPolicyFactRefs: string[];
 };
 
 export type FreePassDataPolicyValue = PolicyValue;
@@ -25,6 +28,7 @@ export type FreePassDataAdminCatalogProduct = {
     maker: string;
     model: string;
     generation?: string | null;
+    subModel?: string | null;
     trim?: string | null;
     fuel?: string | null;
     drive?: string | null;
@@ -81,7 +85,7 @@ const int = (value: unknown, field: string, min = 0): number => {
 
 function matchLevel(vehicle: FreePassDataAdminCatalogProduct['vehicleModel']): VehicleMatchLevel {
   if (vehicle.trim) return 'TRIM';
-  if (vehicle.generation) return 'SUB_MODEL';
+  if (vehicle.subModel) return 'SUB_MODEL';
   return vehicle.model ? 'MODEL' : 'UNMATCHED';
 }
 
@@ -192,7 +196,8 @@ export function toAdminCanonicalProduct(
       originId: String(model.origin ?? '').trim(),
       manufacturerId: maker,
       modelId: modelName,
-      ...(model.generation ? { subModelId: model.generation } : {}),
+      ...(model.generation ? { generationId: model.generation } : {}),
+      ...(model.subModel ? { subModelId: model.subModel } : {}),
       ...(model.trim ? { trimId: model.trim } : {}),
       matchLevel: matchLevel(model),
     },
@@ -221,6 +226,7 @@ export class FreePassDataProductRepository implements ProductRepository {
     private readonly serviceToken?: string,
     private readonly fetcher: FetchLike = fetch,
     private readonly path = '/v1/views/admin-catalog/products',
+    private readonly allowIncompletePolicyParity = false,
   ) {}
 
   private async response(): Promise<FreePassDataAdminCatalogResponse> {
@@ -239,6 +245,15 @@ export class FreePassDataProductRepository implements ProductRepository {
     nonEmpty(body.meta.schemaVersion, 'meta.schemaVersion');
     int(body.meta.revision, 'meta.revision');
     nonEmpty(body.meta.generatedAt, 'meta.generatedAt');
+    if (!['COMPLETE','INCOMPLETE'].includes(String(body.meta.policyParity))) {
+      throw new Error('FREEPASS_DATA_CONTRACT_INVALID:meta.policyParity');
+    }
+    if (!Array.isArray(body.meta.missingPolicyOfferIds) || !Array.isArray(body.meta.invalidPolicyFactRefs)) {
+      throw new Error('FREEPASS_DATA_CONTRACT_INVALID:meta.policyParityEvidence');
+    }
+    if (!this.allowIncompletePolicyParity && body.meta.policyParity !== 'COMPLETE') {
+      throw new Error('FREEPASS_DATA_POLICY_PARITY_INCOMPLETE');
+    }
     return body as FreePassDataAdminCatalogResponse;
   }
 
@@ -263,8 +278,10 @@ export function freePassDataProductRepositoryFromEnv(
   const baseUrl = String(env.FREEPASS_DATA_BASE_URL ?? '').trim();
   if (!baseUrl) throw new Error('FREEPASS_DATA_BASE_URL_REQUIRED');
   const token = String(env.FREEPASS_DATA_SERVICE_TOKEN ?? '').trim() || undefined;
+  const allowIncompletePolicyParity =
+    String(env.FPA_DATA_ALLOW_INCOMPLETE_POLICY_SHADOW ?? '').trim().toLowerCase() === 'on';
   if (env.NODE_ENV === 'production' && !token) {
     throw new Error('FREEPASS_DATA_SERVICE_TOKEN_REQUIRED');
   }
-  return new FreePassDataProductRepository(baseUrl, token, fetcher);
+  return new FreePassDataProductRepository(baseUrl, token, fetcher, '/v1/views/admin-catalog/products', allowIncompletePolicyParity);
 }

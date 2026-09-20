@@ -361,8 +361,9 @@ add('clawback.operations-port',
   'Operations repository must persist business clawbacks separately from ledger reversal.');
 
 add('clawback.file-persistence',
-  has(fileOperations,'schemaVersion: 2')
+  has(fileOperations,'schemaVersion: 3')
     &&has(fileOperations,'clawbacks:')
+    &&has(fileOperations,'clawbackBillings:')
     &&has(fileOperations,'normalizeState'),
   'File operations state must migrate safely and retain separate clawback records.');
 
@@ -402,6 +403,36 @@ add('clawback.cash-ui',
     &&has(settlementActions,'supplierRefundAction')
     &&has(settlementActions,'channelRecoveryAction'),
   'Settlement UI must show and execute clawback refund/recovery separately from normal collection/payout.');
+
+add('clawback.billing-domain',
+  has(settlementDomain,'createClawbackBillingAdjustment')
+    &&has(settlementDomain,'recordClawbackBillingInvoiceEvidence')
+    &&has(settlementDomain,"direction:'CREDIT'"),
+  'Clawback billing must be a separate CREDIT record and must not mutate original Billing.');
+
+add('clawback.billing-port',
+  has(operationsPort,'ensureClawbackBilling')
+    &&has(operationsPort,'getClawbackBillingByClawbackId')
+    &&has(operationsPort,'mutateClawbackBilling'),
+  'Operations port must persist clawback billing credits independently.');
+
+add('clawback.billing-file',
+  has(fileOperations,'clawbackBillings')
+    &&has(fileOperations,'CLAWBACK_BILLING_IDENTITY_IMMUTABLE'),
+  'File repository must retain immutable clawback billing identity and evidence.');
+
+add('clawback.billing-erp5',
+  has(erp5OperationsForBilling,"erp5AdminCollection('clawback_billings')")
+    &&has(erp5OperationsForBilling,'CLAWBACK_BILLING_IDENTITY_IMMUTABLE'),
+  'ERP5 must store clawback billing credits in a dedicated Admin namespace.');
+
+add('clawback.billing-service-ui',
+  has(settlementService,'ensureClawbackBillingAdjustment')
+    &&has(settlementService,'recordClawbackBillingEvidence')
+    &&has(settlementActions,'createClawbackBillingAction')
+    &&has(settlementActions,'recordClawbackBillingEvidenceAction')
+    &&has(settlement,'환수 계산서 조정 생성'),
+  'Settlement workflow must manage clawback billing creation/evidence beside, not inside, original billing.');
 
 for(const key of [
   'FPA_REPOSITORY_MODE=erp5',

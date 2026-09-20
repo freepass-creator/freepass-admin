@@ -40,7 +40,7 @@ export interface Performance {
     assigneeId: string;
     productId: string;
     productVersion: number;
-    sourceSnapshotId: string;
+    sourceSnapshotId?: string;
     supplierProductKey?: string;
     commercialType?: string;
     vehiclePrice?: number;

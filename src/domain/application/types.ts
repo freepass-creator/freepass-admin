@@ -47,6 +47,11 @@ export type ApplicationHistoryEvent =
 export interface ApplicationProductSnapshot {
   productId: string;
   productVersion: number;
+  /** Exact upstream/catalog release identity seen at intake. */
+  sourceSnapshotId: string;
+  supplierProductKey?: string;
+  commercialType?: string;
+  vehiclePrice?: number;
   supplierId: string;
   vehicle: VehicleMasterRef;
   specs: VehicleSpecs;

@@ -7,6 +7,7 @@ import { adminActorProvider, adminRepositories } from '../../server/admin-runtim
 import {
   confirmSalesperson,
   confirmSupplier,
+  createBusinessClawback,
   disputeSalesperson,
   ensurePerformanceForApplication,
   ensureSettlementBilling,
@@ -135,6 +136,22 @@ export async function finalizeAction(formData:FormData){
   const id=s(formData.get('id'));
   try{await finalizeSettlement(deps(),id);}
   catch(e){redirect(href(id,e));}
+  redirect(href(id));
+}
+
+export async function createClawbackAction(formData:FormData){
+  const id=s(formData.get('id'));
+  const settlementId=s(formData.get('settlementId'));
+  const channelRaw=s(formData.get('channelAmount'));
+  try{
+    await createBusinessClawback(deps(),settlementId,{
+      id:'clawback:'+crypto.randomUUID(),
+      supplierAmount:i(formData.get('supplierAmount')),
+      ...(channelRaw?{channelAmount:i(formData.get('channelAmount'))}:{}),
+      reason:s(formData.get('reason')),
+      occurredAt:s(formData.get('occurredAt'))||undefined,
+    });
+  }catch(e){redirect(href(id,e));}
   redirect(href(id));
 }
 

@@ -5,6 +5,7 @@ import { cancel, markProgress, submitApplication } from '../../services/applicat
 import type { ProgressKey } from '../../domain/application/update-progress';
 import { adminActorProvider, adminRepositories } from '../../server/admin-runtime';
 import { adminOperations } from '../../server/admin-operations';
+import { adminReferenceMaster } from '../../server/admin-masters';
 import { ensurePerformanceForApplication } from '../../services/settlement-operations';
 
 const s=(value:FormDataEntryValue|null)=>String(value??'').trim();
@@ -15,6 +16,7 @@ function deps(){
     products,
     applications,
     actors:adminActorProvider(),
+    masters:adminReferenceMaster(),
     now:()=>new Date(),
     newId:()=>crypto.randomUUID(),
   };
@@ -47,7 +49,11 @@ export async function submitIntake(formData:FormData){
       ? `상품이 변경되었습니다. 현재판 ${result.currentVersion}, 화면판 ${result.seenVersion}`
       : result.reason==='PRODUCT_NOT_FOUND'
         ? '상품을 찾을 수 없습니다.'
-        : '선택한 계약조건을 찾을 수 없습니다.';
+        : result.reason==='SALES_CHANNEL_NOT_ACTIVE'
+          ? '활성 영업채널 Master에서 선택해야 합니다.'
+          : result.reason==='ASSIGNEE_NOT_ACTIVE'
+            ? '활성 담당자 Master에서 선택해야 합니다.'
+            : '선택한 계약조건을 찾을 수 없습니다.';
     redirect('/intake/new?error='+encodeURIComponent(reason)+'&productId='+encodeURIComponent(productId)+'&offerId='+encodeURIComponent(offerId));
   }
   redirect('/intake?id='+encodeURIComponent(result.application.id)+'&saved='+(result.created?'1':'replay'));

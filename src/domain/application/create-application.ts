@@ -40,6 +40,9 @@ function required(value: string | undefined, field: string): string {
  *
  * ★여기서 Snapshot 을 깊게 베낀다. 얕게 두면 나중에 상품 객체를 손대는 순간
  *   «이미 받은 접수의 계약조건» 이 조용히 따라 바뀐다. 그건 사고지 갱신이 아니다.
+ *
+ * ★정산 전환을 위해 registration도 같이 굳힌다. F04 병행 중 차량번호 대조에도 필요하지만,
+ *   최종 시스템의 정본 키는 applicationId/performanceId/settlementCode다.
  */
 export function createApplication(input: CreateApplicationInput): Application {
   const offer = input.product.offers.find((candidate) => candidate.id === input.offerId);
@@ -79,6 +82,7 @@ export function createApplication(input: CreateApplicationInput): Application {
       supplierId: input.product.supplierId,
       vehicle: { ...input.product.vehicle },
       specs: { ...input.product.specs },
+      ...(input.product.registration ? { registration: { ...input.product.registration } } : {}),
       offer: snapshotOffer,
       productPolicies: input.product.productPolicies.map(clonePolicyValue),
       capturedAt: input.now,

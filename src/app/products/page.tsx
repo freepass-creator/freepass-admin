@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { matchProduct } from '../../domain/search/match-product';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
+import { firstOfferForTerm, offerTerms, offersForTerm } from '../../domain/product/offer-terms';
 import { adminRepositories } from '../../server/admin-runtime';
 
 import { requireAdminPageActor } from '../../server/auth/page-guard';
@@ -59,6 +60,11 @@ export default async function ProductsPage({searchParams}:{
   const offer=selected
     ? selected.matchedOffers.find((x)=>x.id===selectedOfferId)??selected.matchedOffers[0]??null
     : null;
+  const availableTerms=selected?offerTerms(selected.matchedOffers):[];
+  const selectedTerm=offer?.termMonths;
+  const termOffers=selectedTerm!==undefined&&selected
+    ?offersForTerm(selected.matchedOffers,selectedTerm)
+    :[];
 
   const href=(extra:Record<string,string>)=>{
     const p=new URLSearchParams();
@@ -131,17 +137,45 @@ export default async function ProductsPage({searchParams}:{
         {selected&&offer?<>
 
           <div className="vehicle-title"><div><h2>{selected.product.vehicle.modelId}</h2><p>{offer.supplierId??selected.product.supplierId} · product v{selected.product.version}</p></div><span className="status-dot">{selected.vehicleMatch.level}</span></div>
+          <nav className="term-picker" aria-label="계약기간 선택">
+            {availableTerms.map((months)=>{
+              const target=firstOfferForTerm(selected.matchedOffers,months);
+              return <Link
+                key={months}
+                href={href({id:selected.product.id,offerId:target?.id??''})}
+                aria-current={months===selectedTerm?'true':undefined}
+                className={months===selectedTerm?'active':''}
+              >{months}개월</Link>;
+            })}
+          </nav>
+
+          <div className="term-offer-list">
+            {termOffers.map((x)=>{
+              const policies=resolveOfferPolicies(selected.product,x);
+              return <Link
+                key={x.id}
+                href={href({id:selected.product.id,offerId:x.id})}
+                className={'term-offer-row '+(x.id===offer.id?'selected':'')}
+              >
+                <div>
+                  <strong>월 {won(x.monthlyRent)}</strong>
+                  <span>{x.supplierId??selected.product.supplierId}</span>
+                </div>
+                <dl>
+                  <div><dt>주행거리</dt><dd>{x.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
+                  <div><dt>보증금</dt><dd>{won(x.deposit)}</dd></div>
+                </dl>
+                {policies.length>0&&<p>{policies.map((p)=>p.policyId+': '+(Array.isArray(p.value)?p.value.join(', '):String(p.value))).join(' · ')}</p>}
+              </Link>;
+            })}
+          </div>
+
           <dl className="summary-grid">
-            <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
+            <div><dt>선택 기간</dt><dd>{offer.termMonths}개월</dd></div>
             <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}</dd></div>
             <div><dt>보증금</dt><dd>{won(offer.deposit)}</dd></div>
             <div><dt>약정주행</dt><dd>{offer.annualMileageKm?.toLocaleString('ko-KR')??'미확인'} km/년</dd></div>
           </dl>
-          <div className="offer-picker">
-            {selected.matchedOffers.map((x)=><Link key={x.id} href={href({id:selected.product.id,offerId:x.id})} className={x.id===offer.id?'active':''}>
-              {[x.supplierId??selected.product.supplierId,x.termMonths+'개월','월 '+won(x.monthlyRent)].filter(Boolean).join(' · ')}
-            </Link>)}
-          </div>
           <div className="chips">
             {resolveOfferPolicies(selected.product,offer).map((p)=><span key={p.policyId}>{p.policyId}: {Array.isArray(p.value)?p.value.join(', '):String(p.value)}</span>)}
           </div>

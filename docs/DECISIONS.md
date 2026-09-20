@@ -104,3 +104,31 @@ Firebase, Google, GitHub, Vercel, HTTP/DB transport 등.
 ### 이유
 현재 F04에 실제 접수·분납실적·완납실적·청구/지급 규칙과 과거 데이터가 있으므로 운영을 끊지 않고 이관해야 한다.
 그러나 신규 Admin이 F04 탭 구조에 종속되면 F04 제거 시 다시 시스템을 만들어야 하므로 Domain 정본은 Admin 쪽에 둔다.
+
+---
+
+## DEC-2026-09-21-02 — FreePass Data 연동은 Catalog read와 Operational write를 분리
+상태: USER CONFIRMED / ADOPTED
+
+### 결정
+FreePass Admin은 향후 FreePass Data를 중앙 Catalog SSOT consumer로 사용한다.
+그러나 Product/Offer/Policy read cutover와 Application/Performance/Settlement write cutover를 같은 순간에 묶지 않는다.
+
+### 전환 구조
+1. 기존 ERP5 direct catalog read 유지
+2. FreePass Data Admin Catalog를 shadow read
+3. parity 검증
+4. Product/Offer/Policy read만 FreePass Data로 전환
+5. Application/Performance/Settlement writer는 Admin ERP5 namespace 유지
+6. FreePass Data command contract가 해당 도메인까지 승인·검증된 뒤 writer를 별도 전환
+
+### Domain 영향
+- 공급사 정본은 selected Offer에 둔다.
+- Data Offer/PriceTerm provenance를 Application Snapshot에 보존한다.
+- 보증금은 숫자뿐 아니라 KNOWN/ZERO/UNKNOWN/NOT_APPLICABLE 상태를 보존한다.
+- Product 하나에 여러 supplier Offer가 존재할 수 있음을 허용한다.
+
+### 금지
+- Admin이 FreePass Data internal Firestore collection을 직접 읽지 않는다.
+- Data read cutover를 이유로 운영 writer를 자동 전환하지 않는다.
+- Policy parity 없이 Data Catalog를 운영 read source로 승격하지 않는다.

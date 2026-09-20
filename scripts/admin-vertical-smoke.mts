@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { FileOperationsRepository } from '../src/adapters/store/operations-repository';
 import { FileApplicationRepository, FileProductRepository } from '../src/adapters/store/repositories';
 import type { CanonicalProduct } from '../src/domain/product/types';
+import type { ReferenceMaster } from '../src/domain/reference-master/types';
 import { getSettlementBalance } from '../src/domain/settlement/settlement';
 import { markProgress, submitApplication } from '../src/services/applications';
 import {
@@ -21,6 +22,12 @@ import {
 
 const actor={id:'smoke-admin',type:'ADMIN' as const};
 const actors={requireActor:async()=>actor};
+const masters:ReferenceMaster={
+  async listSalesChannels(){return[{id:'smoke-channel',label:'Smoke Channel',status:'ACTIVE'}];},
+  async listAssignees(){return[{id:'smoke-admin',label:'Smoke Admin',status:'ACTIVE'}];},
+  async getSalesChannel(id){return id==='smoke-channel'?{id,label:'Smoke Channel',status:'ACTIVE'}:null;},
+  async getAssignee(id){return id==='smoke-admin'?{id,label:'Smoke Admin',status:'ACTIVE'}:null;},
+};
 const nowValues=[
   '2026-09-20T09:00:00.000Z',
   '2026-09-20T09:01:00.000Z',
@@ -78,6 +85,7 @@ try{
     products,
     applications,
     actors,
+    masters,
     now,
     newId:()=> 'smoke-application',
   },{
@@ -98,6 +106,7 @@ try{
     products,
     applications,
     actors,
+    masters,
     now,
     newId:()=> 'should-not-be-used',
   },{

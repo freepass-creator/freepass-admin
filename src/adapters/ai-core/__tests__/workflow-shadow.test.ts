@@ -61,6 +61,8 @@ describe('AI Core D workflow SHADOW binding', () => {
     assert.equal(manifest.core.revision, CORE_WORKFLOW_REVISION);
     assert.equal(manifest.core.workflow_id, CORE_WORKFLOW_ID);
     assert.equal(manifest.core.projection_id, CORE_WORKFLOW_PROJECTION_ID);
+    assert.equal(manifest.local.source_revision, '77f682af680528124096e4f7871504a3596c8990');
+    assert.equal(manifest.local.source_files.length, 4);
     assert.equal(manifest.enforcement.writes_routed_through_ai_core_engine, false);
     assert.equal(manifest.enforcement.projection_parity_checked_in_ci, true);
   });

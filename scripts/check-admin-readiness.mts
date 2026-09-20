@@ -30,6 +30,7 @@ const [
   authSession,
   erp5,
   erp5Product,
+  erp5Canonical,
   freepassDataProduct,
   productSearch,
   offerTermDomain,
@@ -78,6 +79,7 @@ const [
   text('src/server/auth/session.ts'),
   text('src/adapters/erp5/firestore.ts'),
   text('src/adapters/erp5/product-repository.ts'),
+  text('src/adapters/erp5/to-canonical.ts'),
   text('src/adapters/freepass-data/product-repository.ts'),
   text('src/domain/search/match-product.ts'),
   text('src/domain/product/offer-terms.ts'),
@@ -296,8 +298,11 @@ add('ui.photo-aware-product-card',
     &&has(products,'product.media?.primaryImageUrl')
     &&has(products,'사진 준비 중')
     &&has(products,'photo-sig')
-    &&has(erp5Product,'ERP5_PRODUCT_WRITE_FORBIDDEN'),
-  'Product cards must branch on real image availability and preserve the standard no-photo state.');
+    &&has(erp5Canonical,'image_urls')
+    &&has(erp5Canonical,'photo_urls')
+    &&has(erp5Canonical,'mediaOf')
+    &&has(freepassDataProduct,'source.media?.primaryImageUrl'),
+  'Product cards must branch on real image availability from ERP5/Data adapters and preserve the standard no-photo state.');
 
 add('ui.product-action-hierarchy',
   has(products,'product-action-dock')

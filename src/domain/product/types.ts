@@ -28,6 +28,12 @@ export interface RegistrationInfo {
 
 export interface Offer {
   id: string;
+  /** 선택한 Offer의 공급사. 없으면 legacy product.supplierId를 사용한다. */
+  supplierId?: string;
+  /** FreePass Data 등 upstream Offer/PriceTerm을 다시 가리키기 위한 provenance. */
+  sourceOfferId?: string;
+  sourceOfferRevision?: number;
+  sourcePriceTermKey?: string;
   termMonths: number;
   monthlyRent: number;
   deposit?: number;

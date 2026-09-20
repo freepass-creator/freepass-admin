@@ -8,6 +8,8 @@ import {
   buildF04Projection,
   f04AdminOwnedPatch,
   f04ProgressPatch,
+  makeF04RowLink,
+  matchExistingF04Row,
   f04SettlementCode,
 } from './f04-bridge';
 
@@ -119,4 +121,78 @@ test('progress row uses stable settlement code and lifecycle facts',()=>{
   assert.equal(patch.정산코드,f04SettlementCode(application.id));
   assert.equal(patch.인도완료,'예');
   assert.equal(patch.청구상태,'실적 진행');
+});
+
+
+test('legacy F04 row auto-match requires one exact plate + customer + received-day match',()=>{
+  const projection=buildF04Projection({
+    application:delivered(),
+    labels:{supplierLabel:'웰릭스'},
+  });
+  const rows=[
+    {
+      sheetName:'접수',
+      legacyRowRef:'접수!A12:BB12',
+      vehicleNumber:'123하4567',
+      customerName:'홍길동',
+      receivedAt:'2026-09-21',
+      supplierLabel:'웰릭스',
+    },
+    {
+      sheetName:'접수',
+      legacyRowRef:'접수!A13:BB13',
+      vehicleNumber:'999호9999',
+      customerName:'홍길동',
+      receivedAt:'2026-09-21',
+      supplierLabel:'웰릭스',
+    },
+  ];
+
+  const result=matchExistingF04Row(projection,rows);
+  assert.equal(result.status,'MATCHED');
+  if(result.status!=='MATCHED')return;
+  assert.equal(result.candidate.legacyRowRef,'접수!A12:BB12');
+
+  const link=makeF04RowLink(projection,result.candidate,{
+    linkedAt:'2026-09-21T02:00:00.000Z',
+    linkedBy:'admin-1',
+  });
+  assert.equal(link.applicationId,projection.applicationId);
+  assert.equal(link.f04SettlementCode,projection.f04SettlementCode);
+  assert.equal(link.method,'MIGRATION_EXACT_MATCH');
+});
+
+test('ambiguous F04 rows never auto-link',()=>{
+  const projection=buildF04Projection({
+    application:delivered(),
+    labels:{supplierLabel:'웰릭스'},
+  });
+  const row={
+    sheetName:'접수',
+    vehicleNumber:'123하4567',
+    customerName:'홍길동',
+    receivedAt:'2026-09-21',
+    supplierLabel:'웰릭스',
+  };
+  const result=matchExistingF04Row(projection,[
+    {...row,legacyRowRef:'접수!A12:BB12'},
+    {...row,legacyRowRef:'접수!A99:BB99'},
+  ]);
+  assert.equal(result.status,'AMBIGUOUS');
+});
+
+test('supplier mismatch prevents automatic F04 row binding when both sides know supplier',()=>{
+  const projection=buildF04Projection({
+    application:delivered(),
+    labels:{supplierLabel:'웰릭스'},
+  });
+  const result=matchExistingF04Row(projection,[{
+    sheetName:'접수',
+    legacyRowRef:'접수!A12:BB12',
+    vehicleNumber:'123하4567',
+    customerName:'홍길동',
+    receivedAt:'2026-09-21',
+    supplierLabel:'오토플러스',
+  }]);
+  assert.equal(result.status,'NONE');
 });

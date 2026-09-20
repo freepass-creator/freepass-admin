@@ -1,4 +1,4 @@
-import type { Offer, PolicyValue, VehicleMasterRef, VehicleSpecs } from '../product/types';
+import type { Offer, PolicyValue, RegistrationInfo, VehicleMasterRef, VehicleSpecs } from '../product/types';
 
 export type VatMode = 'INCLUDED' | 'EXCLUDED' | 'UNDECIDED';
 
@@ -42,6 +42,7 @@ export interface Performance {
     productVersion: number;
     vehicle: VehicleMasterRef;
     specs: VehicleSpecs;
+    registration?: RegistrationInfo;
     offer: Offer;
     policies: PolicyValue[];
     deliveredAt: string;

@@ -1,3 +1,15 @@
+# 2026-09-21 superseding continuation note
+
+> 아래 2026-09-19 본문은 당시 상태 기록으로 보존한다. 현재 구현 상태는 이 note와 `docs/WORK-INBOX.md §14`를 우선한다.
+
+- P0~P11 기능 체인이 별도 연속 브랜치로 구현되어 있다.
+- 현재 기준 head: `work/gpt/admin-p12-continuation-20260921`.
+- 상품찾기/접수/ERP5 persistence/Auth/실적/정산/Billing/부분수금/지급/reversal/Reference Master/semantic idempotency가 코드에 존재한다.
+- P12는 계산서 증빙을 저장소·Service·UI·vertical smoke까지 연결한다.
+- F04는 사용자 승인에 따라 과도기 Legacy Bridge로만 병행하며 최종 writer는 FreePass Admin이다.
+- 기존 `Production persistence 미검증`, `Settlement mockup-heavy` 같은 아래 gap 문구는 2026-09-19 당시 기록이며 현재 코드 상태를 그대로 나타내지 않는다.
+
+---
 # FreePass Admin Handoff
 
 기준일: 2026-09-19  

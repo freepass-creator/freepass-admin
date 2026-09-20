@@ -13,10 +13,12 @@ import {
 } from '../../domain/performance/performance';
 import {
   createBilling,
+  createClawbackBillingAdjustment,
   createSettlementClawback,
   createSettlementFromPerformance,
   getSettlementBalance,
   recordBillingInvoiceEvidence,
+  recordClawbackBillingInvoiceEvidence,
   registerCollection,
 } from '../../domain/settlement/settlement';
 import type { CanonicalProduct } from '../../domain/product/types';
@@ -100,11 +102,34 @@ test('operations repository persists atomic settlement state across instances',a
     assert.equal((await second.ensureClawback(settlement.id,clawback)).created,true);
     assert.equal((await second.ensureClawback(settlement.id,clawback)).created,false);
 
+    const clawbackBilling=(await second.ensureClawbackBilling(
+      clawback.id,
+      ()=>createClawbackBillingAdjustment(
+        settlement,
+        clawback,
+        '2026-10-20T00:01:00.000Z',
+      ),
+    )).adjustment;
+    const clawbackBillingDone=await second.mutateClawbackBilling(
+      clawback.id,
+      (current)=>recordClawbackBillingInvoiceEvidence(current,{
+        reference:'CREDIT-STORE-001',
+        issuedAt:'2026-10-20',
+        recordedAt:'2026-10-20T00:02:00.000Z',
+        recordedBy:'admin-1',
+      }),
+    );
+    assert.equal(clawbackBilling.status,'CREATED');
+    assert.equal(clawbackBillingDone.status,'EVIDENCE_COMPLETE');
+
     const third=new FileOperationsRepository(dir);
     const persistedClawbacks=await third.listClawbacks(settlement.id);
     assert.equal(persistedClawbacks.length,1);
     assert.equal(persistedClawbacks[0]?.supplierAmount,500000);
     assert.equal(persistedClawbacks[0]?.channelAmount,350000);
+    const persistedCredit=await third.getClawbackBillingByClawbackId(clawback.id);
+    assert.equal(persistedCredit?.status,'EVIDENCE_COMPLETE');
+    assert.equal(persistedCredit?.invoiceEvidence?.reference,'CREDIT-STORE-001');
 
     const ledger=await third.listLedger(settlement.id);
     assert.equal(getSettlementBalance(settlement,evidenced,ledger).collectionOutstanding,600000);

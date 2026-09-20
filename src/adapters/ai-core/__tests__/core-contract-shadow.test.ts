@@ -6,6 +6,7 @@ import { after, before, describe, it } from 'node:test';
 
 import { FileApplicationRepository, FileProductRepository } from '../../store/repositories';
 import { AppError } from '../../../domain/errors';
+import type { ReferenceMaster } from '../../../domain/reference-master/types';
 import { offer, product } from '../../../domain/search/__tests__/fixtures';
 import { submitApplication, type Deps, type SubmitApplicationInput } from '../../../services/applications';
 import {
@@ -28,6 +29,13 @@ after(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+const masters:ReferenceMaster={
+  async listSalesChannels(){return[{id:'channel-1',label:'Channel 1',status:'ACTIVE'}];},
+  async listAssignees(){return[{id:'staff-park',label:'staff-park',status:'ACTIVE'}];},
+  async getSalesChannel(id){return id==='channel-1'?{id,label:'Channel 1',status:'ACTIVE'}:null;},
+  async getAssignee(id){return id==='staff-park'?{id,label:id,status:'ACTIVE'}:null;},
+};
+
 function deps(box: string): Deps {
   const root = join(dir, box);
   return {
@@ -38,6 +46,7 @@ function deps(box: string): Deps {
     actors: {
       requireActor: async () => ({ id: 'staff-park', type: 'ADMIN' as const }),
     },
+    masters,
   };
 }
 
@@ -166,6 +175,10 @@ describe('AI Core shadow — errors', () => {
     assert.equal(changed.code, 'VERSION_MISMATCH');
     assert.equal(changed.status, 409);
     assert.deepEqual(changed.meta, { currentVersion: 2, seenVersion: 1 });
+
+    const master = serviceReasonToCore('SALES_CHANNEL_NOT_ACTIVE', 'corr-admin-master');
+    assert.equal(master.code, 'VALIDATION_ERROR');
+    assert.equal(master.status, 400);
 
     const cancelled = serviceReasonToCore('CANCELLED', 'corr-admin-4');
     assert.equal(cancelled.code, 'CANCELLED');

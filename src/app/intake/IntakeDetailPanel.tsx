@@ -81,6 +81,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         label: '계산서 끊기',
         form: <SideStep id={fid} code={r.id} kind="invoice" label="계산서" on={false} day={today()} biz={life.invoiceBiz} externalSubmit />,
       };
+      보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
     } else if (primary === 'cash') {
       주 = {
         label: 누적현금 > 0 ? `${끝말} 추가` : `${끝말} 찍기`,

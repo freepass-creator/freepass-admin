@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
-import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, locateSettlementFocus, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
+import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
@@ -58,6 +58,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const groupCount = (mode: LedgerGroupFilter) =>
     mode === 'all' ? groups.length : groups.filter((g) => ledgerGroupAttention(g) === mode).length;
   const gSel = shownGroups.find((g) => g.party === (focus?.party ?? sp(q.g))) ?? shownGroups[0];
+  const nextGroupParty = gSel ? nextActionableLedgerParty(groups, gSel.party) : null;
   const ic = focus?.code ?? sp(q.ic);
 
   /* 실적 줄 찾기 — 판정은 domain/performance-filter 한 곳에서만 한다. */
@@ -255,7 +256,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         <section className="panel work-panel">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined }} />
+                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined }} />
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

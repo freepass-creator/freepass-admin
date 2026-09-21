@@ -1,0 +1,287 @@
+{
+  "version": "2026-09-21",
+  "status": "PRODUCT_PROFILE / AI_CORE_CONSUMER",
+  "authority": [
+    "latest-user-decision",
+    "docs/ui/ai-core-bindings.json",
+    "freepass-creator/ai-core UI/UX registry + interaction contracts",
+    "docs/ui/ADMIN-UI-UX-SSOT.md",
+    "src/app/_design/*",
+    "src/app/globals.css final rules",
+    "mockups-and-history"
+  ],
+  "typography": {
+    "title": {
+      "px": 18,
+      "token": "--글제목"
+    },
+    "main": {
+      "px": 14,
+      "token": "--글메인"
+    },
+    "support": {
+      "px": 12,
+      "token": "--글보조"
+    },
+    "approvedExceptions": {
+      "ciWordmark": "~20px",
+      "loginBrand": "24px",
+      "mobileTextInput": "16px",
+      "whiteLabelPerkDetail": "13px",
+      "whiteLabelPerkCompact": "12px"
+    }
+  },
+  "radii": {
+    "defaultPx": 4,
+    "whiteLabelIdentityBadgePx": 8
+  },
+  "surfaces": {
+    "ground": "#eef1f4",
+    "panel": "#ffffff",
+    "box": "--박스",
+    "listCard": "--카드",
+    "hover": [
+      "--박스손",
+      "--카드손"
+    ],
+    "selected": "--고름",
+    "brand": "#1B2A4A"
+  },
+  "controls": {
+    "standard": {
+      "heightPx": 44,
+      "fontPx": 14,
+      "token": "--ui-control-h"
+    },
+    "searchField": {
+      "heightPx": 44,
+      "fontPx": 14,
+      "token": "--ui-control-h"
+    },
+    "primary": {
+      "heightPx": 44,
+      "fontPx": 14,
+      "token": "--ui-action-h"
+    },
+    "mobileTouchMinimumPx": 44,
+    "whiteLabelIdentityBadge": {
+      "fontPx": 12,
+      "paddingY": 5,
+      "paddingX": 10,
+      "radiusPx": 8
+    },
+    "searchEmbeddedFacet": {
+      "visualHeightPx": 32,
+      "note": "inside 40px search box; not a standalone workspace control"
+    },
+    "desktopGlobalNavigation": {
+      "heightPx": 60,
+      "touchMinimumPx": 44,
+      "note": "Sales white icon/label tabs; no filled active background"
+    },
+    "radiusPx": 6,
+    "gapPx": 8
+  },
+  "panels": {
+    "desktop": {
+      "workspaceGapPx": 12,
+      "workspacePaddingPx": 12,
+      "panelPaddingPx": 22
+    },
+    "mobile": {
+      "workspaceGapPx": 8,
+      "workspacePaddingPx": 8,
+      "panelPaddingPx": 16
+    },
+    "roles": [
+      "LIST",
+      "DETAIL",
+      "WORK"
+    ],
+    "layouts": {
+      "products": "2/3 list + 1/3 detail",
+      "intake": "product list + product detail + intake/work",
+      "settlement": "group + performance lines + intake detail",
+      "esign": "2/3 list + 1/3 detail"
+    }
+  },
+  "listRow": {
+    "component": "src/app/_design/ListRow.tsx",
+    "outerPaddingPx": 12,
+    "bodyHeightPx": 64,
+    "renderedHeightApproxPx": 88,
+    "gapPx": 8,
+    "productThumb": {
+      "widthPx": 82,
+      "heightPx": 64
+    },
+    "statusTile": {
+      "widthPx": 64,
+      "heightPx": 64
+    }
+  },
+  "navigation": {
+    "desktop": [
+      "상품찾기",
+      "계약접수",
+      "정산관리",
+      "전자계약"
+    ],
+    "mobile": [
+      "상품",
+      "접수",
+      "계약",
+      "청구",
+      "지급"
+    ],
+    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar",
+    "desktopPosition": "bottom",
+    "header": {
+      "role": "status-only",
+      "brand": false,
+      "menu": false,
+      "actions": false,
+      "statusLink": "/system/data-status",
+      "logoutLocation": "data-status ActionBar"
+    },
+    "visualReference": {
+      "repository": "freepass-creator/freepass-sales",
+      "revision": "e2b7fb0077a23c9e9bb2db4635e80cd4ba175492",
+      "paths": [
+        "docs/UI-STANDARD.md",
+        "웹/app.css",
+        "웹/index.html"
+      ],
+      "headerSurface": "white",
+      "bottomSurface": "white",
+      "activeTab": "icon tint + label weight, no filled background",
+      "barHeightPx": 60
+    }
+  },
+  "components": {
+    "canonical": [
+      "AdminChrome",
+      "TopMenu",
+      "MobileTabBar",
+      "ListRow",
+      "StatusTile",
+      "Tag",
+      "PerkMarks",
+      "Icon",
+      "FilterSheet",
+      "OfferPicker",
+      "DetailTabs",
+      "PhotoGallery",
+      "PanelHeader",
+      "SearchField",
+      "ActionBar",
+      "EmptyState",
+      "SummaryGrid",
+      "SummaryItem",
+      "Notice"
+    ],
+    "extractionCandidates": [
+      "SearchBox",
+      "Notice"
+    ]
+  },
+  "colorSemantics": {
+    "selected": "navy",
+    "primary": "navy",
+    "success": "green",
+    "warning": "amber/red with text",
+    "destructive": "red with explicit text"
+  },
+  "rules": {
+    "onePrimaryPerPanel": true,
+    "bordersMostly": [
+      "panel",
+      "search"
+    ],
+    "listSelectionBySurface": true,
+    "mobileOnePanelAtATime": true,
+    "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true,
+    "salesAppIsVisualBaseline": true
+  },
+  "knownDebt": [
+    "globals.css contains legacy rules overridden later by final rules",
+    "UI-SPEC still contains historical specs below the current-baseline section",
+    "row body height 64 vs rendered row about 88 needs explicit terminology",
+    "--박스 and --카드 must keep separate roles: info box vs list row"
+  ],
+  "implementedFixes": [
+    "CSS exposes shared --ui-* aliases without changing current visual values",
+    "ListRow dimensions route through shared UI tokens",
+    "support text outliers in status/internal/article labels normalized to 12px",
+    "mobile back visual remains 32px but hit area is expanded to 44px",
+    "core products/intake/settlement/esign routes use shared visual primitives",
+    "CI runs typecheck, tests, and UI SSOT regression check",
+    "globals.css legacy base layer is explicitly marked as non-authoritative",
+    "shared primitives replace repeated markup across core routes",
+    "FilterSheet restores focus to trigger and uses per-instance dialog ids",
+    "DetailTabs exposes tab semantics",
+    "ListRow exposes selected state semantics",
+    "pending forms expose busy state and side-step buttons prevent duplicate submission",
+    "PhotoGallery arrow pointer event no longer opens lightbox accidentally",
+    "PhotoGallery and global CSS honor reduced motion",
+    "global focus-visible treatment is standardized",
+    "stable inline visual styles moved to shared CSS classes",
+    "badge/list/section icon names are partially compile-time constrained with IconName",
+    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT"
+  ],
+  "automation": {
+    "command": "npm run ui:check",
+    "workflow": ".github/workflows/ci.yml",
+    "checks": [
+      "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
+      "required --ui-* CSS tokens exist",
+      "machine SSOT baseline remains 18/14/12, control 40, primary/touch 44, radius 4",
+      "stable core UI files do not reintroduce inline visual styles",
+      "focus-visible and reduced-motion rules exist"
+    ]
+  },
+  "accessibility": {
+    "focusVisible": true,
+    "reducedMotion": true,
+    "filterSheetFocusReturn": true,
+    "uniqueDialogIds": true,
+    "tabSemantics": true,
+    "selectedRowSemantics": true,
+    "busyStates": true
+  },
+  "files": {
+    "baseCss": "src/app/globals.css",
+    "finalCss": "src/app/_design/admin-final.css",
+    "primitives": "src/app/_design/Primitives.tsx",
+    "productWorkspaceConfig": "src/app/products/workspace-config.ts",
+    "intakeOptions": "src/app/intake/intake-options.ts",
+    "cssImportOrder": [
+      "src/app/globals.css",
+      "src/app/_design/admin-final.css",
+      "src/app/_fn/fn.css"
+    ],
+    "intakePanelsBoundary": "src/app/intake/panels.tsx",
+    "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
+    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
+  },
+  "aiCore": {
+    "consumerBinding": "docs/ui/ai-core-bindings.json",
+    "upstreamRepository": "freepass-creator/ai-core",
+    "upstreamRevision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
+    "featureRegistryVersion": "1.8.0",
+    "semanticAuthority": true
+  },
+  "listPresentation": {
+    "authorityFeature": "data.list-presentation",
+    "modes": {
+      "productCatalog": "product-media-row",
+      "application": "business-row",
+      "performance": "business-row",
+      "billing": "business-row",
+      "payout": "business-row",
+      "offer": "variant-card",
+      "denseComparison": "data-table"
+    },
+    "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
+  }
+}

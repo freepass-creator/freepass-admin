@@ -1,0 +1,79 @@
+import { readFileSync } from 'node:fs';
+import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+
+/**
+ * **ERP5 SSOT 로 가는 문** — 대표 2026-09-18
+ *   「너는 erp5 ssot를 «직접» 읽는거야. 상품이랑 정산도 다 여기서 관리할거야」
+ *   「어드민이 «메인집»이야. 여기에 이제 프리패스어드민 «터를 잡는거야»」
+ *
+ * ★`src/ports/repositories.ts` 가 예고해 둔 그 순간이다 —
+ *   「독립 Firestore 자격증명이 아직 없다 … 자격증명이 오면 «문 뒤만» 갈아 끼운다」
+ *   문(포트)은 안 바뀐다. 파일 어댑터도 안 지운다(시험이 그걸 쓴다). 문 뒤가 하나 늘 뿐이다.
+ *
+ * ★★**틀리면 즉시 죽는다.** 자격증명이 freepasserp5 가 아니면 던진다.
+ *   상품·정산이 걸린 자리에서 「빈 화면」 보다 나쁜 것이 «다른 회사 값이 든 화면» 이다.
+ *   (같은 규율을 erp4 `lib/server/erp5-firestore-app.ts` 가 먼저 세웠다 — 그걸 따른다)
+ *
+ * ★RTDB 는 쓰지 않는다 (2026-09-14 폐기 확정). 여기는 Firestore 뿐이다.
+ */
+export const ERP5_PROJECT_ID = 'freepasserp5';
+const APP_NAME = 'freepass-admin-erp5';
+
+type Sa = { project_id: string; client_email: string; private_key: string };
+
+/**
+ * 자격증명을 찾는 차례 — 배포는 JSON 문자열, 개발은 파일 경로.
+ * ⚠ 둘 다 없으면 지어내지 않고 «무엇을 채워야 하는지 이름을 대고» 던진다.
+ */
+function credential(): Sa {
+  const raw = process.env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  const path = process.env.ERP5_SERVICE_ACCOUNT_PATH?.trim();
+  let parsed: Partial<Sa>;
+  if (raw) {
+    try { parsed = JSON.parse(raw) as Partial<Sa>; }
+    catch { throw new Error('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON 이 JSON 이 아니다.'); }
+  } else if (path) {
+    try { parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<Sa>; }
+    catch { throw new Error(`ERP5_SERVICE_ACCOUNT_PATH 를 못 읽었다: ${path}`); }
+  } else {
+    throw new Error(
+      'ERP5 자격증명이 없다 — ERP5_FIREBASE_SERVICE_ACCOUNT_JSON(배포) 또는 '
+      + 'ERP5_SERVICE_ACCOUNT_PATH(개발) 중 하나를 채워야 한다.',
+    );
+  }
+  const project_id = String(parsed.project_id ?? '').trim();
+  const client_email = String(parsed.client_email ?? '').trim();
+  const private_key = String(parsed.private_key ?? '');
+  if (!project_id || !client_email || !private_key) {
+    throw new Error('ERP5 자격증명에 project_id · client_email · private_key 가 다 있어야 한다.');
+  }
+  /** ★★안전장치 — 다른 프로젝트 키로 조용히 도는 일을 막는다. */
+  if (project_id !== ERP5_PROJECT_ID) {
+    throw new Error(`★ERP5 가 아니다: ${project_id} (${ERP5_PROJECT_ID} 라야 한다)`);
+  }
+  return { project_id, client_email, private_key };
+}
+
+let app: App | null = null;
+
+/** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
+export function erp5(): Firestore {
+  if (!app) {
+    app = getApps().find((a) => a.name === APP_NAME) ?? null;
+  }
+  if (!app) {
+    const sa = credential();
+    app = initializeApp({
+      credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
+      projectId: sa.project_id,
+    }, APP_NAME);
+  }
+  return getFirestore(app);
+}
+
+/** 붙었나 — 화면·상태줄이 「어디를 보고 있나」 를 말할 수 있게. */
+export function erp5Ready(): { ok: true; project: string } | { ok: false; project: string; why: string } {
+  try { erp5(); return { ok: true, project: ERP5_PROJECT_ID }; }
+  catch (e) { return { ok: false, project: ERP5_PROJECT_ID, why: (e as Error).message }; }
+}

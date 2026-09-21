@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>계약 접수 — 고전식</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  계약 접수 등록 — ★고전식(레트로) «그대로».
+
+  대표 2026-09-17
+    「각 패널있어야지... 레트로 만들어 놓은거 어디갔냐고」
+    「그냥 레트로로 가는데 그 레트로도 만들던거 어디갔나 싶다」
+    「얼른 접수 하게 만들어줘야하는데 레트로 만들던거 그대로 가져오면 되는데…」
+
+  ★맞는 말씀이다. 레트로는 이미 «다 만들어져» 있었다 —
+      C:\dev\teamjpkwork\app\erp-classic\classic.css   1,314줄 · 87KB
+    그런데 나는 그걸 안 쓰고 admin-shell.retro.css (9KB) 로 «흉내» 를 냈다.
+    그러니 「어디갔냐」 가 나온 것이다. 이 파일은 classic.css 를 «손대지 않고» 쓴다.
+
+  ★그리고 고전식에는 «등록창» 이 이미 있었다 (page.tsx 1118~1240).
+    자리 셋이 그대로다 —
+      자리 ① 대상      cl-filter   어느 건인가
+      자리 ② 무슨 일    cl-grid     갈래 단추 + 고르는 표
+      자리 ③ 받을 것    cl-detail   ※ 필수칸 + 등록 단추 + 그 자리의 결과말
+    ★같은 클래스라 눈금·결·격자가 «저절로» 따라온다. 새 규격을 만들지 않는다.
+
+  ⇒ 그 자리 셋을 «계약 접수» 로만 갈아 끼웠다 —
+      ① 누가            고객 · 연락처 · 차량번호
+      ② 무슨 상품       공급사 갈래 → 그 공급사의 상품표 (고르면 조건이 굳는다)
+      ③ 접수에 적을 것   기간·대여료·보증금(고른 것에서 옴) + 채널·영업자·프로모션…
+  ══════════════════════════════════════════════════════════════════
+-->
+<link rel="stylesheet" href="./classic.css?v=1">
+<style>
+  /* ★여기에는 «자리 잡기» 만 둔다. 결·색·눈금은 전부 classic.css 가 진다.
+     이 파일에서 색을 정하기 시작하면 또 「흉내」 가 된다. */
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  .cl { height: 100vh; display: flex; flex-direction: column; }
+  .cl-body { flex: 1; min-height: 0; display: flex; }
+  .cl-tree { flex: none; overflow: auto; }
+  .cl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  /* 표 자리만 굴린다 — 거름줄과 상세는 붙박이다 */
+  .cl-grid { flex: 1; min-height: 0; overflow: auto; }
+  .cl-detail { flex: none; max-height: 46%; overflow: auto; }
+</style>
+
+<div class="cl">
+
+  <!-- ══ 메뉴바 — 「어디에 있나 · 누구인가」 ══════════════════ -->
+  <div class="cl-menubar">
+    <span class="cl-logo">FREEPASS ERP</span>
+    <span class="cl-user">프리패스모빌리티 / 박지훈(jihoon)</span>
+  </div>
+
+  <!-- ══ 연장줄 — 「무엇을 한다」 ═══════════════════════════════
+       ★못 쓰는 것은 «흐린 채로» 둔다. 그 시절 연장줄이 그랬다 —
+         지우면 「원래 없는 것」 이 되고, 흐리게 두면 「아직 없는 것」 이 된다. -->
+  <div class="cl-toolbar">
+    <button class="cl-tb" id="tb-find" title="조건대로 다시 찾습니다"><span class="cl-tbi">⟳</span>조회</button>
+    <button class="cl-tb" id="tb-new" title="접수를 새로 넣습니다"><span class="cl-tbi">＋</span>신규</button>
+    <button class="cl-tb" id="tb-save" title="지금 적은 것을 원장에 남깁니다"><span class="cl-tbi">▤</span>저장</button>
+    <button class="cl-tb" disabled title="삭제는 아직 만들지 않았습니다"><span class="cl-tbi">✕</span>삭제</button>
+    <button class="cl-tb" disabled title="출력은 아직 만들지 않았습니다"><span class="cl-tbi">⎙</span>출력</button>
+    <button class="cl-tb" id="tb-csv" title="지금 고른 상품 목록을 CSV 로 내려받습니다"><span class="cl-tbi">⤓</span>엑셀</button>
+    <span class="cl-tbsep"></span>
+    <button class="cl-tb" disabled title="즐겨찾기는 아직 만들지 않았습니다"><span class="cl-tbi">★</span>즐겨찾기</button>
+    <button class="cl-tb" disabled title="도움말은 아직 만들지 않았습니다"><span class="cl-tbi">?</span>도움말</button>
+    <button class="cl-tb cl-setbtn" disabled title="설정은 아직 만들지 않았습니다"><span class="cl-tbi">⚙</span>설정</button>
+  </div>
+
+  <div class="cl-body">
+    <!-- ══ 왼쪽 나무 ══════════════════════════════════════════ -->
+    <nav class="cl-tree">
+      <div class="cl-quick">
+        <button class="cl-qbtn" type="button"><span class="cl-qi">▤</span>상품 찾기</button>
+        <button class="cl-qbtn on" type="button"><span class="cl-qi">＋</span>계약 접수</button>
+        <button class="cl-qbtn off" type="button" title="준비 중"><span class="cl-qi">₩</span>정산 관리</button>
+        <button class="cl-qbtn off" type="button" title="준비 중"><span class="cl-qi">✎</span>전자 계약</button>
+      </div>
+      <div class="cl-tree-head">업무 메뉴</div>
+      <div>
+        <button class="cl-tree-g on" type="button"><span class="cl-tw">−</span>계약<span class="cl-tcode">RG</span></button>
+        <button class="cl-tree-s on" type="button">계약 접수<span class="cl-tcode">RG-0110</span></button>
+        <button class="cl-tree-s off" type="button" title="준비 중">접수 조회<span class="cl-tcode">RG-0120</span></button>
+        <button class="cl-tree-s off" type="button" title="준비 중">인도 처리<span class="cl-tcode">RG-0130</span></button>
+      </div>
+      <div>
+        <button class="cl-tree-g" type="button"><span class="cl-tw">+</span>상품<span class="cl-tcode">PD</span></button>
+      </div>
+      <div>
+        <button class="cl-tree-g" type="button"><span class="cl-tw">+</span>정산<span class="cl-tcode">ST</span></button>
+      </div>
+    </nav>
+
+    <!-- ══ 일하는 자리 ════════════════════════════════════════ -->
+    <main class="cl-main">
+      <div class="cl-tabs">
+        <div class="cl-tab on">계약 접수<span class="cl-tabcode">RG-0110</span></div>
+      </div>
+      <div class="cl-crumb">
+        계약 &nbsp;›&nbsp; 계약 접수
+        <span class="cl-code">RG-0110</span>
+      </div>
+
+      <!-- ── 자리 ① 대상 — 누가 ──────────────────────────── -->
+      <div class="cl-filter">
+        <div class="cl-frow">
+          <label>※ 고객</label>
+          <input type="text" id="f-cust" placeholder="이름" autocomplete="off">
+          <label>연락처</label>
+          <input type="text" id="f-phone" placeholder="010-0000-0000" autocomplete="off">
+          <label>차량번호</label>
+          <input type="text" id="f-plate" placeholder="00가0000 · 미배정이면 비움" autocomplete="off">
+          <span class="cl-sp"></span>
+          <span class="cl-note">※ 는 반드시 채웁니다 · 나머지는 알면 적습니다</span>
+        </div>
+        <div class="cl-frow">
+          <label>상품 찾기</label>
+          <input type="text" id="f-q" placeholder="차종 · 차량번호" autocomplete="off" style="width:220px">
+          <label>공급사</label>
+          <select id="f-sup"></select>
+          <label>상태</label>
+          <select id="f-st">
+            <option value="">전부</option>
+            <option value="즉시출고">즉시출고</option>
+            <option value="출고가능">출고가능</option>
+            <option value="협의">협의</option>
+          </select>
+          <span class="cl-sp"></span>
+          <button class="cl-btn" type="button" id="f-clear">조건 지움</button>
+        </div>
+      </div>
+
+      <!-- ── 자리 ② 무슨 상품 ─────────────────────────────── -->
+      <div class="cl-grid cl-reg" id="grid"></div>
+
+      <div class="cl-count">
+        <span id="cnt">—</span>
+        <span class="cl-sp"></span>
+        <span class="cl-cnote" id="cnote">줄을 고르면 아래에 접수에 적을 칸이 나옵니다</span>
+      </div>
+
+      <!-- ── 자리 ③ 접수에 적을 것 ────────────────────────── -->
+      <div class="cl-detail">
+        <div class="cl-dtitle">
+          접수에 적을 것
+          <span class="cl-dcode" id="d-code">—</span>
+        </div>
+        <div id="form"></div>
+        <div class="cl-actions">
+          <button class="cl-btn cl-btn-p" type="button" id="go" disabled
+            title="먼저 위에서 상품을 고르세요">접수 등록</button>
+          <button class="cl-btn" type="button" id="reset">초기화</button>
+          <span class="cl-sp"></span>
+          <span class="cl-note" id="say">누르기 전에는 아무 일도 일어나지 않습니다</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ══ 상태줄 ═══════════════════════════════════════════════ -->
+  <div class="cl-status">
+    <span>준비</span>
+    <span id="s-find">조회 —</span>
+    <span id="s-pick">선택 —</span>
+    <span id="s-rent">월 대여료 —</span>
+    <span class="cl-sp"></span>
+    <span id="s-src">DB: —</span>
+    <span>SVR: was-01</span>
+    <span id="s-now"></span>
+  </div>
+</div>
+
+<script src="./admin-shell.data.js?v=63"></script>
+<script src="./erp5.data.js?v=63"></script>
+<script src="./erp5.bridge.js?v=63"></script>
+<script src="./retro-intake.js?v=1"></script>
+</html>

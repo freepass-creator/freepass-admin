@@ -25,36 +25,156 @@ function carSvg(body) {
 }
 
 /** 전자계약 — 보냈나 · 봤나 · 서명했나. 셋은 서로 다른 사실이다. */
+/**
+ * ★전자계약 표본 — freepasserp4 @595abae 의 실제 모델을 따른다.
+ *   stage  관리자 축 다섯 중 하나 (draft·ready·filling·review·done)
+ *   steps  손님 축 여덟 중 몇까지 갔나 — 관리자 축과 «다른 축» 이다
+ *   checks 보내기 전 검사. BLOCK 이 하나라도 있으면 링크를 못 만든다
+ *   expired·revoked·rejects  플래그. 단계가 아니다
+ */
 const ESIGNS = [
-  { no: 'E-2609-041', app: 'A-260916-015', cust: '김서연', veh: '싼타페 MX5', st: '서명 대기',
-    sent: '09-16 14:40', seen: '09-16 14:52', signed: null, to: '010-2841-0093', doc: '장기렌터카 이용계약서 v3' },
-  { no: 'E-2609-040', app: 'A-260915-031', cust: '이서진', veh: '싼타페 TM', st: '열람 전',
-    sent: '09-15 16:20', seen: null, signed: null, to: '', doc: '장기렌터카 이용계약서 v3' },
-  { no: 'E-2609-038', app: 'A-260915-022', cust: '최윤호', veh: '싼타페 MX5', st: '완료',
-    sent: '09-15 11:30', seen: '09-15 11:44', signed: '09-15 11:51', to: '010-3312-8890', doc: '장기렌터카 이용계약서 v3' },
+  { no:'E-2609-041', app:'A-260916-015', cust:'김서연', veh:'싼타페 MX5', plate:'서울 12가 3456',
+    sup:'대영렌터카', kind:'렌트·보험포함', stage:'review', steps:8, at:'09-16 15:10',
+    to:'010-2841-0093', linkAt:'09-16 14:40', seenAt:'09-16 14:52', expiresAt:'09-23 14:40',
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-16 15:02', sha:'9f2a41c8…' },
+          { t:'운전면허증', at:'09-16 15:03', sha:'c07be913…' },
+          { t:'재직증명서', at:'09-16 15:08', sha:'41d0aa57…' }],
+    rev:1, sha256:'e3b0c44298fc1c149afbf4c8996fb924', seal:'7d5a2f91c6b0e4a8',
+    verifyUrl:'https://verify.chakhandeal.com/7d5a2f91',
+    hist:[{ at:'09-16 15:10', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-16 14:52', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-16 14:40', t:'링크 만들기', who:'박지훈' },
+          { at:'09-16 14:31', t:'계약서 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-040', app:'A-260915-031', cust:'이서진', veh:'싼타페 TM', plate:'경기 78나 1204',
+    sup:'새턴렌탈', kind:'구독·보험포함', stage:'ready', steps:0, at:'09-15 16:20',
+    to:'', linkAt:null, seenAt:null, expiresAt:'09-22 16:20',
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    /* ★막는 조건은 «하나가 아니다». 연락처만 보면 나머지를 못 본다 */
+    checks:[{ level:'BLOCK', t:'받는 곳(연락처)이 없다', fix:'접수에서 입력' },
+            { level:'BLOCK', t:'공급사 「새턴렌탈」 사업자 정보가 비어 있다', fix:'파트너사관리 열기' },
+            { level:'WARNING', t:'운전연령 만 21세 — 정책 하한과 같다' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-15 16:20', t:'계약서 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-039', app:'A-260914-008', cust:'정하늘', veh:'그랜저 GN7', plate:'서울 34다 7781',
+    sup:'한빛모빌리티', kind:'구독·보험별도', stage:'filling', steps:5, at:'09-16 09:12',
+    to:'010-5520-7741', linkAt:'09-14 10:05', seenAt:'09-16 09:12', expiresAt:'09-21 10:05',
+    signedAt:null, expired:false, revoked:null,
+    rejects:[{ at:'09-15 17:40', items:['재직증명서'], why:'발급일이 3개월을 넘었다' }],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-15 11:20', sha:'2b81ff40…' }],
+    rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-16 09:12', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-15 17:40', t:'보완 요청 — 재직증명서', who:'박지훈' },
+          { at:'09-15 16:02', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-14 10:05', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-038', app:'A-260915-022', cust:'최윤호', veh:'싼타페 MX5', plate:'인천 05라 9920',
+    sup:'대영렌터카', kind:'렌트·보험포함', stage:'done', steps:8, at:'09-15 11:51',
+    to:'010-3312-8890', linkAt:'09-15 11:30', seenAt:'09-15 11:44', expiresAt:'09-22 11:30',
+    signedAt:'09-15 11:51', expired:false, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[{ t:'신분증', at:'09-15 11:46', sha:'55ac0e21…' },
+          { t:'운전면허증', at:'09-15 11:47', sha:'ba9f7730…' }],
+    rev:1, sha256:'a1f9d3e77b204c8e91355ccf0a2d64b8', seal:'3c8e07b1f4d29a56',
+    verifyUrl:'https://verify.chakhandeal.com/3c8e07b1',
+    hist:[{ at:'09-15 11:51', t:'승인 — 완료', who:'박지훈' },
+          { at:'09-15 11:49', t:'고객 제출 — 검토 대기', who:'고객' },
+          { at:'09-15 11:44', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-15 11:30', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-036', app:'A-260910-004', cust:'박도윤', veh:'카니발 KA4', plate:'서울 61마 3308',
+    sup:'새턴렌탈', kind:'렌트·보험포함', stage:'filling', steps:2, at:'09-10 09:40',
+    to:'010-7719-2245', linkAt:'09-08 09:40', seenAt:'09-10 09:40', expiresAt:'09-15 09:40',
+    signedAt:null, expired:true, revoked:null, rejects:[],
+    checks:[{ level:'PASS', t:'공급사 정보 · 정책 등급 확인' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-10 09:40', t:'고객이 링크를 열었다', who:'고객' },
+          { at:'09-08 09:40', t:'링크 만들기', who:'박지훈' }] },
+
+  { no:'E-2609-035', app:null, cust:'윤지호', veh:'셀토스 SP2', plate:null,
+    sup:'한빛모빌리티', kind:'구독·보험포함', stage:'draft', steps:0, at:'09-16 11:02',
+    to:'010-4402-1188', linkAt:null, seenAt:null, expiresAt:null,
+    signedAt:null, expired:false, revoked:null, rejects:[],
+    checks:[{ level:'BLOCK', t:'기간별 대여료를 아직 고르지 않았다', fix:'대여료 고르기' }],
+    docs:[], rev:0, sha256:null, seal:null, verifyUrl:null,
+    hist:[{ at:'09-16 11:02', t:'새 계약 만들기', who:'박지훈' }] },
 ];
 
 const PRODUCTS = [
   { id:'P-2411-0832', v:7, supplier:'대영렌터카', name:'싼타페 MX5', sub:'캘리그래피 2.5 터보 7인승',
     match:'TRIM', matchLabel:'세부트림 확정', year:2024, mileage:12400, fuel:'가솔린', seats:7,
-    color:'어비스 블랙 펄', body:'#20262c', maker:'현대', plate:'서울 12가 3456', offers:[
+    color:'어비스 블랙 펄', body:'#20262c', maker:'현대', plate:'서울 12가 3456', status:'즉시출고',
+    region:'전국',
+    /* ★표본에도 정책 원자를 둔다 — ERP5 를 안 물려도 상세 다섯 묶음이 비지 않게.
+       policyId·type 은 ERP5 `policy` 실측 이름 그대로다. 지어낸 이름이 없다. */
+    pols:[
+      { policyId:'annual_mileage', type:'NUMBER', value:20000 },
+      { policyId:'over_mileage_rate_per_km', type:'MONEY', value:200 },
+      { policyId:'mileage_upcharge_per_10000km', type:'MONEY', value:100000 },
+      { policyId:'deposit_note', type:'TEXT', value:'국산: 월 대여료×2' },
+      { policyId:'deposit_installment', type:'BOOLEAN', value:true },
+      { policyId:'deposit_return_days', type:'TEXT', value:'30일' },
+      { policyId:'payment_method', type:'TEXT', value:'카드' },
+      { policyId:'payment_timing', type:'TEXT', value:'후불' },
+      { policyId:'rental_card_payment', type:'TEXT', value:'무료' },
+      { policyId:'late_fee_rate', type:'PERCENTAGE', value:0.12 },
+      { policyId:'delivery_fee', type:'TEXT', value:'일부 지역 무료' },
+      { policyId:'insurance_included', type:'TEXT', value:'보험료 포함' },
+      { policyId:'injury_compensation_limit', type:'TEXT', value:'무한' },
+      { policyId:'injury_deductible', type:'MONEY', value:500000 },
+      { policyId:'property_compensation_limit', type:'TEXT', value:'1억원' },
+      { policyId:'property_deductible', type:'MONEY', value:500000 },
+      { policyId:'self_body_accident', type:'TEXT', value:'1억원' },
+      { policyId:'self_body_deductible', type:'MONEY', value:500000 },
+      { policyId:'own_damage_compensation', type:'TEXT', value:'차량가액' },
+      { policyId:'own_damage_min_deductible', type:'MONEY', value:500000 },
+      { policyId:'own_damage_max_deductible', type:'MONEY', value:1000000 },
+      { policyId:'own_damage_repair_ratio', type:'PERCENTAGE', value:0.2 },
+      { policyId:'uninsured_damage', type:'TEXT', value:'없음' },
+      { policyId:'annual_roadside_assistance', type:'TEXT', value:'연간 5회' },
+      { policyId:'basic_driver_age', type:'NUMBER', value:21 },
+      { policyId:'driver_age_lowering', type:'NUMBER', value:21 },
+      { policyId:'age_21_cost', type:'TEXT', value:'10만원' },
+      { policyId:'additional_driver_allowance_count', type:'TEXT', value:'1인까지' },
+      { policyId:'additional_driver_cost', type:'TEXT', value:'월 5만원' },
+      { policyId:'personal_driver_scope', type:'TEXT', value:'계약자 본인+직계가족' },
+      { policyId:'license_period', type:'TEXT', value:'1년 이상' },
+      { policyId:'screening_criteria', type:'TEXT', value:'무심사' },
+      { policyId:'rental_region', type:'TEXT', value:'전국' },
+      { policyId:'penalty_condition', type:'TEXT', value:'잔여기간 기준 차등적용' },
+      { policyId:'early_termination_rate_under1y', type:'PERCENTAGE', value:0.3 },
+      { policyId:'early_termination_rate_over1y', type:'PERCENTAGE', value:0.2 },
+      { policyId:'buyout_notice_days', type:'NUMBER', value:30 },
+      { policyId:'gps_installed', type:'TEXT', value:'장착' },
+      { policyId:'maintenance_service', type:'TEXT', value:'협의' },
+      { policyId:'auto_terminate_overdue_days', type:'TEXT', value:'10일' },
+      { policyId:'commission_clawback_condition', type:'TEXT', value:'보증금 완납시 정산' },
+      { policyId:'sales_notes', type:'TEXT', value:'21세 대여는 법인/사업자만 가능' },
+      /* ★묶음에 아직 자리 없는 원자 — 「그 밖에」 로 접히는지 보려고 일부러 둔다 */
+      { policyId:'vehicle_handover_place', type:'TEXT', value:'서울 강서 출고장' },
+    ],
+    offers:[
       { id:'O-36-A', term:36, rent:1090000, dep:0,       depRate:0,  mile:20000, pol:['만 21세 가능','카드결제','후불'] },
       { id:'O-24-A', term:24, rent:1180000, dep:1000000, depRate:10, mile:20000, pol:['카드결제'] },
       { id:'O-48-A', term:48, rent: 990000, dep:0,       depRate:0,  mile:30000, pol:['만 26세 이상','보증금 분납'] }]},
   { id:'P-2411-0790', v:3, supplier:'한빛모빌리티', name:'싼타페 MX5', sub:'익스클루시브 1.6 하이브리드',
     match:'TRIM', matchLabel:'세부트림 확정', year:2025, mileage:null, fuel:'하이브리드', seats:5,
-    color:'크리미 화이트 펄', body:'#e9e7e1', maker:'현대', plate:null, offers:[
+    color:'크리미 화이트 펄', body:'#e9e7e1', maker:'현대', plate:null, status:'출고가능', offers:[
       { id:'O-36-B', term:36, rent:1040000, dep:0, depRate:0, mile:20000, pol:['만 21세 가능','후불'] },
       { id:'O-60-B', term:60, rent: 880000, dep:0, depRate:0, mile:20000, pol:['만 26세 이상'] }]},
   { id:'P-2410-0641', v:11, supplier:'새턴렌탈', name:'싼타페 TM', sub:'세부트림 미확인',
     match:'SUB_MODEL', matchLabel:'세부모델까지만 확인됨', year:2021, mileage:58700, fuel:'디젤', seats:null,
     /* ★사진은 있는데 «색상 원자»는 없다 — 사진이 있다고 값이 있는 것이 아니다 */
-    color:null, body:'#a2aab0', maker:'현대', plate:'경기 78너 1204', offers:[
+    color:null, body:'#a2aab0', maker:'현대', plate:'경기 78너 1204', status:'협의', offers:[
       { id:'O-36-C', term:36, rent:690000, dep:0, depRate:0, mile:20000, pol:['만 21세 가능','후불'] }]},
   { id:'P-2409-0388', v:2, supplier:'대영렌터카', name:'싼타페', sub:'세부모델 미확인',
     match:'MODEL', matchLabel:'모델까지만 확인됨', year:null, mileage:null, fuel:null, seats:null,
     /* ★사진 없는 차가 실측 28% 다 — 네모 빈 상자 말고 둥근 「사진 준비 중」 */
-    color:null, body:null, maker:'현대', plate:null, offers:[
+    color:null, body:null, maker:'현대', plate:null, status:'출고불가', offers:[
       { id:'O-36-D', term:36, rent:760000, dep:0, depRate:null, mile:null, pol:[] }]},
 ];
 
@@ -139,27 +259,57 @@ const STEPS = [['contract','계약서'], ['docs','필수서류'], ['balance','�
 const CHANNELS = ['다이렉트 (본사)','유니오토','카링크모빌리티','한결오토리스'];
 const STAFF    = ['박지훈 · 운영지원','정수아 · 운영지원','최민석 · 영업지원'];
 
+/**
+ * 접수 한 줄.
+ *
+ * ★대표 2026-09-17 「구글 시트로 하던걸 erp화 하는거니까 항목이랑 이런것들을 니가 알아서 넣고」
+ *
+ *   그래서 칸을 «지어내지» 않았다. F04 정산원장 「접수」 탭이 실제로 들고 있던 열을
+ *   그대로 가져왔다 (scripts/f04-ssot.mts 가 읽은 실측 이름) —
+ *     product 상품 · rentKind 렌트구분 · contractType 계약형태 · payKind 납입 ·
+ *     region 출고지역 · agentCode 영업자코드 · billMonth 청구월 · upsell 프로모션
+ *
+ *   ★billMonth 는 «강지수팀장이 손으로 넣던 칸» 이다. 접수와 정산을 잇는 유일한 고리라
+ *     접수에 달아 둔다. 안 달면 「이번 달 얼마 청구하나」 를 접수에서 못 답한다.
+ *
+ *   왜 이 칸들인가 — 「이게 없으면 무엇이 안 되나」 는 docs/dev/LIST-ITEMS.md 에 적었다.
+ */
 let APPS = [
   { no:'A-260916-015', plate:'서울 12가 3456', cust:'김서연', phone:'010-2841-0093', veh:'싼타페 MX5', trim:'캘리그래피 2.5 터보',
     pid:'P-2411-0832', pv:7, sup:'대영렌터카', oid:'O-36-A', term:36, rent:1090000, dep:0, mile:20000,
-    ch:'유니오토', staff:'박지훈', at:'09-16 14:22', memoAgent:'고객이 주말 인도 희망', memoProvider:'', memoAdmin:'', memoAgent:'고객이 주말 인도 희망', memoProvider:'', memoAdmin:'', contract:false, docs:false, balance:false, deliv:false, cxl:false },
+    product:'장기렌트', rentKind:'신차', contractType:'전자약정', payKind:'일시납', region:'서울', billMonth:null, wantAt:'09-20',
+    ch:'유니오토', agentCode:'S0035', staff:'박지훈', at:'09-16 14:22',
+    memoAgent:'고객이 주말 인도 희망', memoProvider:'', memoAdmin:'',
+    contract:false, docs:false, balance:false, deliv:false, cxl:false },
   { no:'A-260916-014', plate:'인천 41버 7790', cust:'김도호', phone:'010-5520-7741', veh:'싼타페 MX5', trim:'익스클루시브 1.6 HEV',
     pid:'P-2411-0790', pv:3, sup:'한빛모빌리티', oid:'O-36-B', term:36, rent:1040000, dep:0, mile:20000,
-    ch:'다이렉트 (본사)', staff:'정수아', at:'09-16 09:40', contract:true, docs:true, balance:true, deliv:true, cxl:false },
+    product:'장기렌트', rentKind:'신차', contractType:'전자약정', payKind:'일시납', region:'인천', billMonth:'2026-09', wantAt:'09-16',
+    ch:'다이렉트 (본사)', agentCode:null, staff:'정수아', at:'09-16 09:40',
+    contract:true, docs:true, balance:true, deliv:true, cxl:false },
   { no:'A-260915-031', plate:'경기 78너 1204', cust:'이서진', phone:'', veh:'싼타페 TM', trim:'세부트림 미확인',
     pid:'P-2410-0641', pv:11, sup:'새턴렌탈', oid:'O-36-C', term:36, rent:690000, dep:0, mile:20000,
-    ch:'카링크모빌리티', staff:'박지훈', at:'09-15 16:05', memoAgent:'', memoProvider:'재직증명서 아직 안 옴', memoAdmin:'', memoAgent:'', memoProvider:'재직증명서 아직 안 옴', memoAdmin:'', contract:true, docs:false, balance:false, deliv:false, cxl:false },
+    product:'구독', rentKind:'재렌트', contractType:'전자약정', payKind:'2회분납', region:'경기', billMonth:null, wantAt:'09-22',
+    ch:'카링크모빌리티', agentCode:'S0112', staff:'박지훈', at:'09-15 16:05',
+    memoAgent:'', memoProvider:'재직증명서 아직 안 옴', memoAdmin:'',
+    contract:true, docs:false, balance:false, deliv:false, cxl:false },
   { no:'A-260915-022', plate:'서울 33다 9012', cust:'최윤호', phone:'010-3312-8890', veh:'싼타페 MX5', trim:'캘리그래피 2.5 터보',
     pid:'P-2411-0832', pv:6, sup:'대영렌터카', oid:'O-48-A', term:48, rent:990000, dep:0, mile:30000,
-    ch:'한결오토리스', staff:'최민석', at:'09-15 11:12', contract:true, docs:true, balance:true, deliv:true, cxl:false },
+    product:'장기렌트', rentKind:'신차', contractType:'전자약정', payKind:'일시납', region:'서울', billMonth:'2026-09', wantAt:'09-15',
+    ch:'한결오토리스', agentCode:'S0204', staff:'최민석', at:'09-15 11:12',
+    contract:true, docs:true, balance:true, deliv:true, cxl:false },
   { no:'A-260914-009', plate:'경기 05러 6621', cust:'한지우', phone:'010-7781-2043', veh:'싼타페 TM', trim:'세부트림 미확인',
     pid:'P-2410-0641', pv:10, sup:'새턴렌탈', oid:'O-36-C', term:36, rent:690000, dep:0, mile:20000,
-    ch:'카링크모빌리티', staff:'정수아', at:'09-14 13:38', contract:true, docs:true, balance:true, deliv:true, cxl:false },
+    product:'구독', rentKind:'재렌트', contractType:'종이', payKind:'2회분납', region:'경기', billMonth:'2026-09', wantAt:'09-14',
+    ch:'카링크모빌리티', agentCode:'S0112', staff:'정수아', at:'09-14 13:38',
+    contract:true, docs:true, balance:true, deliv:true, cxl:false },
   { no:'A-260912-008', plate:'서울 77머 3308', cust:'박민석', phone:'010-2204-6611', veh:'싼타페', trim:'세부모델 미확인',
     pid:'P-2409-0388', pv:2, sup:'대영렌터카', oid:'O-36-D', term:36, rent:760000, dep:0, mile:null,
-    ch:'유니오토', staff:'박지훈', at:'09-12 10:20', contract:false, docs:false, balance:false, deliv:false, cxl:true,
+    product:'장기렌트', rentKind:'중고', contractType:'전자약정', payKind:'일시납', region:'서울', billMonth:null, wantAt:null,
+    ch:'유니오토', agentCode:'S0035', staff:'박지훈', at:'09-12 10:20',
+    contract:false, docs:false, balance:false, deliv:false, cxl:true,
     cxlReason:'고객 변심 — 타사 계약' },
 ];
+
 /**
  * 실적 — «갈래» 가 둘이다 (대표 2026-09-16).
  *   NEW      인도완료가 올라온 정상 실적

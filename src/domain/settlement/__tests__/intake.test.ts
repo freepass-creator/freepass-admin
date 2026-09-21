@@ -50,6 +50,37 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
     assert.equal(row.money.claim, null);
   });
   it('인도 전이면 인도일을 안 박는다', () => assert.equal(r.deliveredAt, ''));
+  it('미확인 계약조건은 0으로 바꾸지 않는다', () => {
+    const raw = intakeRecord({ ...base, term: null, rent: null, deposit: null, price: null }, 1_790_000_000_000);
+    assert.equal(raw.term, null);
+    assert.equal(raw.rent, null);
+    assert.equal(raw.deposit, null);
+    assert.equal(raw.price, null);
+    const { row } = toSettlementRow(raw, String(raw.code));
+    assert.equal(row.term, null);
+    assert.equal(row.rent, null);
+    assert.equal(row.deposit, null);
+    assert.equal(row.price, null);
+  });
+  it('상품접수 provenance를 원장에 보존하고 다시 읽는다', () => {
+    const raw = intakeRecord({
+      ...base,
+      sourceProductId: 'P-1',
+      sourceProductVersion: 7,
+      sourceOfferId: 'O-36',
+      sourceSnapshotId: 'erp5-20260921',
+    }, 1_790_000_000_000);
+    assert.equal(raw.sourceProductId, 'P-1');
+    assert.equal(raw.sourceProductVersion, 7);
+    assert.equal(raw.sourceOfferId, 'O-36');
+    const { row } = toSettlementRow(raw, String(raw.code));
+    assert.deepEqual(row.catalogRef, {
+      productId: 'P-1',
+      productVersion: 7,
+      offerId: 'O-36',
+      sourceSnapshotId: 'erp5-20260921',
+    });
+  });
 });
 
 describe('progressPatch — 계약서 · 인도 · 취소', () => {

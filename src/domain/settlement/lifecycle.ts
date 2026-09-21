@@ -214,16 +214,18 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       return { ok: true, patch: back, events: [ev(`${c.axis} 정정 풂`, '정정', c.axis === '공급사' ? '청구' : '통보')] };
     }
     case 'invoice': {
+      const biz = String(c.biz ?? '').replace(/\D/g, '');
       if (c.on && !r.progress.billed) return { ok: false, error: '청구서가 나간 뒤에 계산서를 끊습니다' };
       if (c.on && r.claimStage === '정정') return { ok: false, error: '정정 중에는 계산서를 끊을 수 없습니다' };
       if (c.on && !r.progress.invoiceIssued && r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 계산서를 끊습니다' };
       if (!c.on && (r.progress.collected || (r.progress.collectedAmt ?? 0) > 0)) return { ok: false, error: '수금이 시작된 줄의 계산서는 되돌릴 수 없습니다' };
       if (c.on && c.day && !DAY.test(c.day)) return { ok: false, error: '계산서 날짜는 YYYY-MM-DD' };
+      if (c.on && biz.length !== 10) return { ok: false, error: '계산서 사업자번호는 숫자 10자리로 넣습니다' };
       if (r.progress.invoiceIssued === c.on) return { ok: true, patch: {}, events: [] };
       return {
         ok: true,
-        patch: c.on ? { invoiceIssued: true, invoiceAt: c.day ?? '', invoiceBiz: c.biz ?? '' } : { invoiceIssued: false },
-        events: [ev('계산서', r.progress.invoiceIssued, c.on ? `${c.day ?? ''} ${c.biz ?? ''}`.trim() || 'true' : 'false')],
+        patch: c.on ? { invoiceIssued: true, invoiceAt: c.day ?? '', invoiceBiz: biz } : { invoiceIssued: false },
+        events: [ev('계산서', r.progress.invoiceIssued, c.on ? `${c.day ?? ''} ${biz}`.trim() || 'true' : 'false')],
       };
     }
     case 'collected': {

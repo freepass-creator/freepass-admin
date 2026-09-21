@@ -385,16 +385,26 @@ export class Erp5SettlementRepository {
       const rowDocs = await Promise.all(target.map((c) => tx.get(db.collection(ROWS).doc(c))));
       if (rowDocs.some((rd) => !rd.exists)) return { ok: false as const, error: '발행 뒤 원장 줄이 사라졌습니다 — 관리자 확인이 필요합니다' };
       const who = `${inv.axis}-link:${inv.partyCode ?? inv.party}`;
+      const planned: {
+        rd: (typeof rowDocs)[number];
+        cur: Record<string, unknown>;
+        patch: Record<string, unknown>;
+        events: { field: string; from: string; to: string }[];
+      }[] = [];
+      /* ★모든 행을 먼저 검증한다. 하나라도 실패하면 아직 tx.write를 한 번도 호출하지 않은 상태로 끝낸다. */
       for (const rd of rowDocs) {
         const cur = rd.data()!;
         const { row } = toSettlementRow(cur, rd.id);
         const p = lifePatch(row, kind === '확인' ? { kind: 'confirm', axis: inv.axis } : { kind: 'correct', axis: inv.axis, amount: null, memo: memo.trim() });
         if (!p.ok) return { ok: false as const, error: p.error };
-        if (!p.events.length) continue;
-        tx.update(rd.ref, { ...p.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+        planned.push({ rd, cur, patch: p.patch, events: p.events });
+      }
+      for (const x of planned) {
+        if (!x.events.length) continue;
+        tx.update(x.rd.ref, { ...x.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
         const ev: Record<string, unknown> = {};
-        for (const e of p.events) ev[audId()] = { at: now, by: who, ...e };
-        tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
+        for (const e of x.events) ev[audId()] = { at: now, by: who, ...e };
+        tx.set(db.collection(EVENTS).doc(eventIdOf(x.cur)), ev, { merge: true });
       }
       tx.update(ref, { response: { state: kind, at: now, ...(memo.trim() ? { memo: memo.trim() } : {}), ...(kind === '이의' ? { codes: target } : {}) }, failCount: 0 });
       return { ok: true as const };

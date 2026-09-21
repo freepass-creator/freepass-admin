@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { settlements, today } from '../../server/erp5';
+import { productById, settlements, today } from '../../server/erp5';
 import { requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
@@ -35,7 +35,7 @@ const N = (f: FormData, k: string) => {
 
 export async function createIntakeAction(_: FormState, f: FormData): Promise<FormState> {
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
-  const input: IntakeInput = {
+  let input: IntakeInput = {
     receivedAt: S(f, 'receivedAt'), plate: S(f, 'plate'), model: S(f, 'model'),
     supplier: S(f, 'supplier'), supplierCode: S(f, 'supplierCode'),
     customer: S(f, 'customer'),
@@ -44,6 +44,10 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     product: S(f, 'product'), rentKind: S(f, 'rentKind'), contractType: S(f, 'contractType'),
     term: N(f, 'term'), rent: N(f, 'rent'), deposit: N(f, 'deposit'), price: N(f, 'price'),
     payKind: S(f, 'payKind'),
+    sourceProductId: S(f, 'sourceProductId') || undefined,
+    sourceProductVersion: N(f, 'sourceProductVersion'),
+    sourceOfferId: S(f, 'sourceOfferId') || undefined,
+    sourceSnapshotId: S(f, 'sourceSnapshotId') || undefined,
     paper: f.get('paper') === 'on', delivered: f.get('delivered') === 'on', deliveredAt: S(f, 'deliveredAt'),
     note: S(f, 'note'),
     /* 프로모션 — 금액 · 영업자 몫(%) · 사유. ★몫을 비우면 100% (대표 「기본 100%」) */
@@ -51,6 +55,38 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     /* 수수료 직접 입력 — 비우면 표대로 */
     ...((S(f, 'feeClaim') || S(f, 'feePay')) ? { feeManual: { claim: N(f, 'feeClaim'), pay: N(f, 'feePay'), reason: S(f, 'feeReason') } } : {}),
   };
+  /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
+   * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
+   * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
+  if (input.sourceProductId || input.sourceOfferId) {
+    if (!input.sourceProductId || !input.sourceOfferId) return { errors: ['상품 접수의 Product/Offer 원본 정보가 불완전합니다 — 상품을 다시 골라 주세요'] };
+    let product;
+    try { product = await productById(input.sourceProductId); }
+    catch (e) { return { errors: [`상품을 다시 확인하지 못했습니다 — ${(e as Error).message}`] }; }
+    if (!product) return { errors: ['선택한 상품이 더 이상 없습니다 — 상품을 다시 골라 주세요'] };
+    if (input.sourceProductVersion !== null && input.sourceProductVersion !== product.version) {
+      return { errors: [`상품이 변경되었습니다 (v${input.sourceProductVersion} → v${product.version}) — 조건을 다시 확인해 주세요`] };
+    }
+    if (input.sourceSnapshotId && input.sourceSnapshotId !== product.sourceSnapshotId) {
+      return { errors: ['상품 원천 Snapshot이 변경되었습니다 — 조건을 다시 확인해 주세요'] };
+    }
+    const offer = product.offers.find((x) => x.id === input.sourceOfferId);
+    if (!offer) return { errors: ['선택한 Offer가 더 이상 없습니다 — 기간/조건을 다시 골라 주세요'] };
+    input = {
+      ...input,
+      plate: product.registration?.vehicleNumber ?? '',
+      model: [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' '),
+      supplier: product.supplierName ?? product.supplierId,
+      supplierCode: product.supplierId,
+      term: offer.termMonths,
+      rent: offer.monthlyRent,
+      deposit: offer.deposit ?? null,
+      price: product.consumerPrice ?? null,
+      sourceProductVersion: product.version,
+      sourceSnapshotId: product.sourceSnapshotId,
+    };
+  }
+
   const errors = validateIntake(input, today());
   if (errors.length) return { errors };
 

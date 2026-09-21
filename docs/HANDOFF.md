@@ -109,29 +109,35 @@ FreePass Admin의 공식 운영 범위는 다음 네 단계다.
   → 정산(청구·지급·수금·환수)
 ```
 
-현재 구현 성숙도(코드 기준, production 배포 인증 점수와는 별도):
+### 2026-09-22 Codex 검수 판정
 
-| 영역 | 현재 판정 | 대략적 성숙도 |
-|---|---|---:|
-| 상품 찾기 / Offer 조건 | ERP5 live repository 연결 | 90 |
-| 접수 생성 / 조회 / 상세 | settlement_rows + events 실데이터 연결 | 92 |
-| 접수 → 정산 handoff | 동일 ledger context, unresolved 시 fail-closed | 92 |
-| 공급사 청구 / 영업채널 지급 | lifecycle 구현 | 92 |
-| 확정 / 정정 / 보류 | 구현 | 90 |
-| 세금계산서 / 청구서 / 지급명세 | 구현 | 88 |
-| 수금 / 지급 | cash lifecycle로 문서 완료와 분리 | 92 |
-| 환수 | 구현 | 88 |
-| 계약 목록 / 상세 | ERP5 `contract` 실데이터 연결 | 85 |
-| 전자계약 발행 / 고객 작성 / 서류 / 제출 | ERP5 + Storage runtime 연결, pending_review까지 | 80 |
-| 접수 → 계약 자동 handoff | SSOT 연결 증거 부족 | 50 |
-| 관리자 최종 승인 → signed | 미완결 | 45 |
-| 최종 서명 PDF 생성 / 보존 / hash | 미완결 | 35 |
+이 감사 메모 자체는 **84/100, 수정 후 반영**이다.
 
-현재 전체 평가는 약 **80/100**. 접수·정산만 보면 90점대, 계약까지 end-to-end로 보면 아직 70점대 후반 수준이다.
+| 평가축 | 점수 | 판정 |
+|---|---:|---|
+| 코드 근거와 범위 파악 | 26/30 | current main의 repository/service/domain 경계를 대체로 정확히 짚었다. |
+| 남은 핵심 gap 발견 | 28/30 | Intake→Contract provenance와 Esign finalization을 정확히 P0로 잡았다. |
+| 우선순위와 acceptance criteria | 19/20 | 동시성·멱등성·immutable snapshot·receipt 조건이 실행 가능하다. |
+| 검증 상태 표현 | 11/20 | 코드 경로와 CI를 확인했지만 production readback·배포·실사용 증거 없이 live/90점대로 표현했다. |
 
-## 2. 현재 실제 live runtime
+기능별 임의 성숙도 숫자는 근거가 재현되지 않아 채택하지 않는다. current main에서 확인된 상태는 아래처럼 분리한다.
 
-현재 핵심 화면은 mock fallback 없이 ERP5 repository를 사용한다.
+| 영역 | 확인된 상태 | 아직 확인되지 않은 상태 |
+|---|---|---|
+| 상품 찾기 / Offer 조건 | ERP5 repository 코드 연결, 테스트·정적 wiring 검사 | 운영 배포 revision, 실제 상품 readback, 사용자 승인 |
+| 접수 생성 / 조회 / 상세 | settlement repository와 event 경계 구현, 테스트 | production write/readback, 실제 사용자 journey |
+| 접수 → 정산 handoff | 동일 ledger context와 fail-closed 경로 구현, 테스트 | 운영 데이터 전체의 정합성 및 예외 행 검증 |
+| 청구·계산서·수금·지급·환수 | lifecycle와 cash event 경계 구현, 테스트 | production persistence 및 회계 대조 |
+| 계약 목록 / 상세 | ERP5 `contract` repository 코드 연결 | 운영 데이터 readback과 권한 검증 |
+| 전자계약 제출까지 | ERP5/Storage adapter와 `pending_review` 전이 구현, 테스트 | 실제 Storage·Firestore persistence, 배포, 고객 기기 journey |
+| 접수 → 계약 자동 handoff | 미완결 | provenance, revision/digest, idempotency 전부 |
+| 관리자 승인 → signed | 미완결 | 승인 전이, 최종 PDF, hash, receipt 전부 |
+
+따라서 전체 제품 점수는 현재 증거만으로 단일 숫자로 확정하지 않는다. `CODED / TESTED / PERSISTENCE VERIFIED / DEPLOYMENT VERIFIED / USER APPROVED`를 계속 분리한다.
+
+## 2. 현재 live repository 코드 경로
+
+현재 코드의 핵심 화면은 mock fallback 없이 ERP5 repository를 사용한다. 이 판정은 코드와 정적 wiring 기준이며, production 배포와 실제 readback 완료를 뜻하지 않는다.
 
 - `/intake`: Product + Intake/Settlement ledger
 - `/settlement`: Claim/Pay group + performance + intake detail
@@ -226,7 +232,7 @@ Acceptance:
 6. 같은 승인 요청 재시도는 같은 결과를 반환하고 PDF/이벤트를 중복 생성하지 않는다.
 7. signed 후 일반 edit/revoke가 불가능하다.
 
-## 5. Settlement는 현재 P0 병목이 아니다
+## 5. Settlement는 현재 신규 확장 P0 병목이 아니다
 
 2026-09-19 handoff의 "Settlement domain 상당 부분 Mockup"은 current main 기준으로 superseded다.
 
@@ -243,6 +249,8 @@ Acceptance:
 - intake detail → exact settlement ledger focus
 
 따라서 다음 큰 개발 자원은 Settlement 신규 기능 확장보다 **Intake→Contract handoff와 Esign finalization**에 먼저 투입한다.
+
+다만 Settlement를 완료로 닫지는 않는다. 현재 `performanceMatchesMode()`는 현금 완료를 이슈보다 우선하여 `broken`·`billHold`·`정정`과 완료가 동시에 기록된 모순 행을 이슈 목록에서 숨길 수 있다. 이 항목은 P1 정합성 결함으로 남기고, 이슈 우선 분류 및 회귀 테스트 후 운영 검증한다.
 
 ## 6. FreePass Data와의 경계
 

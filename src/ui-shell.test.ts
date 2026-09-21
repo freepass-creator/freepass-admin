@@ -11,6 +11,7 @@ const chrome=read('src/app/_design/AdminChrome.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
 const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
@@ -63,4 +64,11 @@ test('settlement guidance describes live actions instead of future placeholders'
   assert.equal(settlementPage.includes('업무 규칙이 굳으면'),false);
   assert.ok(settlementPage.includes('청구서·지급명세는 가운데 묶음에서 발행'));
   assert.ok(settlementPage.includes('확인·정정·계산서·수금·지급'));
+});
+
+
+test('intake settlement handoff carries focus and settlement resolves it',()=>{
+  assert.ok(intakeDetail.includes('focus=${encodeURIComponent(r.id)}'));
+  assert.ok(settlementPage.includes('locateSettlementFocus'));
+  assert.ok(settlementPage.includes("u.delete('focus')"));
 });

@@ -130,6 +130,20 @@ export function planInvoice(
   return { ok: true, invoice, patches };
 }
 
+/** 실제 통장 기준 목표/남은 금액 — 공급가가 아니라 부가세 포함 실제 현금 기준. */
+export function cashTargetOf(axis: Axis, r: SettlementRow): number | null {
+  const base = axis === '공급사' ? claimAmountOf(r) : payAmountOf(r);
+  if (base === null) return null;
+  return Math.max(0, invoiceMoneyOf(base, r.money.vatIncluded).total);
+}
+
+export function cashRemainingOf(axis: Axis, r: SettlementRow): number | null {
+  const target = cashTargetOf(axis, r);
+  if (target === null) return null;
+  const done = axis === '공급사' ? (r.progress.collectedAmt ?? 0) : (r.progress.paidAmt ?? 0);
+  return Math.max(0, target - Math.max(0, done));
+}
+
 /* ── 한 줄의 다음 걸음 ── */
 export type LifeChange =
   | { kind: 'confirm'; axis: Axis }                                         // 상대가 확인했다
@@ -195,20 +209,34 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       if (r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 수금을 찍습니다' };
       if (!r.progress.invoiceIssued) return { ok: false, error: '계산서를 끊은 뒤에 수금을 찍습니다' };
       if (!DAY.test(c.day)) return { ok: false, error: '받은 날은 YYYY-MM-DD' };
-      if (!Number.isFinite(c.amount) || c.amount <= 0) return { ok: false, error: '받은 금액을 넣어야 합니다' };
+      const target = cashTargetOf('공급사', r);
+      if (target === null) return { ok: false, error: '청구금액을 모르는 줄은 수금을 찍을 수 없습니다' };
+      const before = Math.max(0, r.progress.collectedAmt ?? 0);
+      if (!Number.isFinite(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 받은 금액을 넣어야 합니다' };
+      const amount = Math.round(c.amount);
+      const total = before + amount;
+      const done = total >= target;
       return {
-        ok: true, patch: { collected: true, collectedAt: c.day, collectedAmt: Math.round(c.amount), claimStage: '수금' },
-        events: [ev('수금', r.progress.collectedAmt ?? '', `${Math.round(c.amount)} (${c.day})`)],
+        ok: true,
+        patch: { collected: done, collectedAt: c.day, collectedAmt: total, claimStage: done ? '수금' : '확인' },
+        events: [ev(done ? '수금' : '부분수금', before, `${total}/${target} (+${amount}, ${c.day})`)],
       };
     }
     case 'paid': {
       if (r.payStage === '접수') return { ok: false, error: '통보 전입니다 — 지급명세를 먼저 냅니다' };
       if (r.payStage !== '확인') return { ok: false, error: '영업채널 확인이 끝난 뒤에 지급을 찍습니다' };
       if (!DAY.test(c.day)) return { ok: false, error: '준 날은 YYYY-MM-DD' };
-      if (!Number.isFinite(c.amount) || c.amount < 0) return { ok: false, error: '준 금액을 넣어야 합니다' };
+      const target = cashTargetOf('영업채널', r);
+      if (target === null) return { ok: false, error: '지급금액을 모르는 줄은 지급을 찍을 수 없습니다' };
+      const before = Math.max(0, r.progress.paidAmt ?? 0);
+      if (!Number.isFinite(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 준 금액을 넣어야 합니다' };
+      const amount = Math.round(c.amount);
+      const total = before + amount;
+      const done = total >= target;
       return {
-        ok: true, patch: { paid: true, paidAt: c.day, paidAmt: Math.round(c.amount), payStage: '지급' },
-        events: [ev('지급', r.progress.paidAmt ?? '', `${Math.round(c.amount)} (${c.day})`)],
+        ok: true,
+        patch: { paid: done, paidAt: c.day, paidAmt: total, payStage: done ? '지급' : '확인' },
+        events: [ev(done ? '지급' : '부분지급', before, `${total}/${target} (+${amount}, ${c.day})`)],
       };
     }
     case 'hold': {

@@ -244,8 +244,12 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
     case 'billMonth': change = { kind, month: S(f, 'month') }; break;
     default: return { errors: [`모르는 걸음: ${kind}`] };
   }
+  const operationId = S(f, 'operationId');
+  if ((kind === 'collected' || kind === 'paid') && !/^[A-Za-z0-9_-]{16,128}$/.test(operationId)) {
+    return { errors: ['수금·지급 요청 식별자가 없습니다 — 화면을 새로 열어 다시 처리합니다'] };
+  }
   try {
-    const r = await settlements.setLifecycle(S(f, 'code'), change);
+    const r = await settlements.setLifecycle(S(f, 'code'), change, operationId || undefined);
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };

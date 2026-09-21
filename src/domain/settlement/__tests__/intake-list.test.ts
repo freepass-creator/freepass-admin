@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sortIntakeRows } from '../intake-list';
+import { intakeAgeDays, sortIntakeRows } from '../intake-list';
 import type { SettlementRow } from '../types';
 
 const row = (id: string, receivedAt: string): SettlementRow => ({
@@ -75,4 +75,12 @@ test('일반 접수·실적·전체는 최신 건부터 보여준다', () => {
 test('같은 접수일은 id 순으로 고정해 화면 순서가 흔들리지 않는다', () => {
   const rows = [row('b', '2026-09-01'), row('a', '2026-09-01')];
   assert.deepEqual(sortIntakeRows(rows, '미완료').map((x) => x.id), ['a', 'b']);
+});
+
+
+test('지연일수는 달력 날짜 기준으로 계산하고 잘못된 날짜는 모른다고 둔다', () => {
+  assert.equal(intakeAgeDays(row('old', '2026-08-01'), '2026-09-21'), 51);
+  assert.equal(intakeAgeDays(row('future', '2026-09-30'), '2026-09-21'), 0);
+  assert.equal(intakeAgeDays(row('bad', '날짜없음'), '2026-09-21'), null);
+  assert.equal(intakeAgeDays(row('bad2', '2026-02-31'), '2026-09-21'), null);
 });

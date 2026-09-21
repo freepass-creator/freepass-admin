@@ -43,6 +43,12 @@ const audId = () => {
 
 export type RowWithRaw = { row: SettlementRow; raw: Record<string, unknown>; warnings: string[] };
 
+const clawbackFromRaw = (c: Record<string, unknown>): Clawback => ({
+  plate: S(c.plate), month: S(c.month), supplier: S(c.supplier), channel: S(c.channel),
+  supplierAmt: N(c.supplierAmt), agentAmt: N(c.agentAmt), reason: S(c.reason), at: S(c.at),
+  ...(S(c.code) ? { code: S(c.code) } : {}),
+});
+
 /** 상대에게 보이는 것 — ★굳힌 사본 · 그 축 금액만 · 링크 칸(해시·잠금)은 안 싣는다 */
 export interface ClaimView {
   invoiceNo: string; month: string; axis: Axis; party: string; partyName: string;
@@ -102,14 +108,7 @@ export class Erp5SettlementRepository {
   /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */
   async clawbacks(): Promise<Clawback[]> {
     const snap = await erp5().collection('settlement_clawbacks').get();
-    return snap.docs.map((d) => {
-      const c = d.data();
-      return {
-        plate: S(c.plate), month: S(c.month), supplier: S(c.supplier), channel: S(c.channel),
-        supplierAmt: N(c.supplierAmt), agentAmt: N(c.agentAmt), reason: S(c.reason), at: S(c.at),
-        ...(S(c.code) ? { code: S(c.code) } : {}),
-      };
-    });
+    return snap.docs.map((d) => clawbackFromRaw(d.data()));
   }
 
   async get(code: string): Promise<RowWithRaw | null> {
@@ -191,30 +190,52 @@ export class Erp5SettlementRepository {
     const groups = axis === '공급사' ? claimLedger(rows, month, claws) : payLedger(rows, month, claws);
     const g = groups.find((x) => x.party === party);
     if (!g) return { ok: false, error: `${month} · ${party} 에 실릴 줄이 없습니다` };
-    const stamp = new Map(all.map((x) => [x.row.id, String(x.raw.updatedAt ?? '')]));
     const key = invoiceKey(month, axis, party);
     const invRef = db.collection(INVOICES).doc(`inv_${createHash('sha256').update(key).digest('hex').slice(0, 16)}`);
+    const partyField = axis === '공급사' ? 'supplier' : 'channel';
+    const initialIds = g.lines.map((l) => l.row.id);
 
     return db.runTransaction(async (tx) => {
-      const [invDoc, sameMonth, ...fresh] = await Promise.all([
+      /*
+       * 화면에서 읽은 뒤 발행할 때까지 줄/환수가 바뀔 수 있다.
+       * 해당 거래처의 현재 줄 + 처음 본 줄(상대가 바뀐 경우까지) + 당월 환수를 트랜잭션 안에서 다시 읽어
+       * 같은 도메인 함수로 재계산한 결과만 발행한다.
+       */
+      const [invDoc, sameMonth, partyRows, clawRows, ...initialRows] = await Promise.all([
         tx.get(invRef),
         tx.get(db.collection(INVOICES).where('month', '==', month)),
-        ...g.lines.map((l) => tx.get(db.collection(ROWS).doc(l.row.id))),
+        tx.get(db.collection(ROWS).where(partyField, '==', party)),
+        tx.get(db.collection('settlement_clawbacks').where('month', '==', month)),
+        ...initialIds.map((id) => tx.get(db.collection(ROWS).doc(id))),
       ]);
-      for (const d of fresh) {
-        if (!d.exists || String(d.data()!.updatedAt ?? '') !== stamp.get(d.id)) {
-          return { ok: false as const, error: '그 사이 원장이 바뀌었습니다 — 다시 불러와 발행합니다' };
-        }
+
+      const replacement = new Map<string, RowWithRaw>();
+      for (const d of [...partyRows.docs, ...initialRows]) {
+        if (!d.exists) continue;
+        const raw = d.data()!;
+        const { row, warnings } = toSettlementRow(raw, d.id);
+        replacement.set(d.id, { row, raw, warnings });
       }
+      const replaceIds = new Set([...initialIds, ...partyRows.docs.map((d) => d.id)]);
+      const mergedRows = [
+        ...rows.filter((r) => !replaceIds.has(r.id)),
+        ...[...replacement.values()].map((x) => x.row),
+      ];
+      const freshClaws = clawRows.docs.map((d) => clawbackFromRaw(d.data()));
+      const freshGroups = axis === '공급사' ? claimLedger(mergedRows, month, freshClaws) : payLedger(mergedRows, month, freshClaws);
+      const freshG = freshGroups.find((x) => x.party === party);
+      if (!freshG) return { ok: false as const, error: '그 사이 발행 대상이 바뀌었습니다 — 다시 불러와 확인합니다' };
+
       const existing = invDoc.exists ? (invDoc.data() as IssuedInvoice) : null;
-      const party0 = await this.partyOf(axis, g.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)));
+      const party0 = await this.partyOf(axis, freshG.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)));
       const taken = sameMonth.docs.map((d) => String(d.data().invoiceNo ?? ''));
       const now = Date.now();
-      const plan = planInvoice(month, axis, party, g.lines, claws, existing, taken, now, BY);
+      const plan = planInvoice(month, axis, party, freshG.lines, freshClaws, existing, taken, now, BY);
       if (!plan.ok) return plan;
       for (const x of plan.patches) {
         if (!Object.keys(x.patch).length) continue;
-        const cur = fresh.find((d) => d.id === x.code)!.data()!;
+        const cur = replacement.get(x.code)?.raw;
+        if (!cur) return { ok: false as const, error: '그 사이 원장 줄을 다시 읽지 못했습니다 — 다시 불러와 발행합니다' };
         tx.update(db.collection(ROWS).doc(x.code), { ...x.patch, updatedAt: now, stateAt: new Date(now).toISOString(), [`invoiceNo${axis === '공급사' ? 'S' : 'P'}`]: plan.invoice.invoiceNo });
         const ev: Record<string, unknown> = {};
         for (const e of x.events) ev[audId()] = { at: now, by: BY, ...e };
@@ -222,7 +243,7 @@ export class Erp5SettlementRepository {
       }
       /* ★상대에게 보일 사본 — 발행한 줄(보류 뺀)만 · 그 축 금액만 */
       const live = new Set(plan.invoice.codes);
-      const snapshot = snapshotOf(axis, party, month, g.lines.filter((l) => live.has(l.row.id)), claws);
+      const snapshot = snapshotOf(axis, party, month, freshG.lines.filter((l) => live.has(l.row.id)), freshClaws);
       /* ★다시 발행이면 번호는 그대로 · 합계·줄은 새로 (옛 합계는 history 로 남긴다) · 링크는 그대로 둔다(같은 링크로 새 사본이 보인다) */
       tx.set(invRef, {
         ...(existing ?? {}),

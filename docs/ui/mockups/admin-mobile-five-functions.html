@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>FreePass Admin · 모바일 5기능 목업</title>
+  <title>FreePass Admin · 웹·모바일 5기능 목업</title>
   <style>
     :root {
       --navy:#1b2a4a; --sky:#9ec5f3; --ground:#eef1f4; --panel:#fff;
@@ -109,6 +109,40 @@
     .sheet-actions { display:grid; grid-template-columns:3fr 7fr; gap:8px; }
     .sheet-actions button { min-height:44px; border:0; border-radius:var(--radius); font-weight:800; }
     .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:13px; }
+    .desktop { display:none; }
+    @media (min-width:901px) {
+      html,body { height:100%; overflow:hidden; background:var(--ground); }
+      .phone { display:none; }
+      .desktop { display:grid; grid-template-rows:56px 1fr; height:100vh; }
+      .web-top { display:grid; grid-template-columns:220px 1fr auto; align-items:center; gap:20px; padding:0 20px; background:var(--navy); color:#fff; }
+      .web-brand { font-size:18px; font-weight:900; letter-spacing:-.3px; }
+      .web-brand small { margin-left:7px; color:#b8c4d8; font-size:11px; font-weight:600; }
+      .web-nav { height:100%; display:flex; align-items:center; justify-content:center; gap:2px; }
+      .web-nav button { height:40px; padding:0 18px; border:0; border-radius:var(--radius); background:transparent; color:#b8c4d8; font-size:13px; font-weight:700; }
+      .web-nav button.on { background:#fff; color:var(--navy); }
+      .web-sync { color:#b9f5ca; }
+      .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#dfe4e9; }
+      .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:#fff; }
+      .web-panel-head { flex:none; min-height:44px; display:flex; align-items:baseline; gap:6px; }
+      .web-panel-head h2 { margin:0; font-size:17px; }
+      .web-panel-head span,.web-panel-head small { color:var(--muted); font-size:12px; }
+      .web-panel-head small { margin-left:auto; }
+      .web-scroll { min-height:0; flex:1; overflow:auto; padding-right:2px; }
+      .web-panel .search { margin-bottom:8px; }
+      .web-panel .search-field,.web-panel .search>button { height:40px; }
+      .web-panel .chip { height:34px; }
+      .web-panel .row { min-height:78px; grid-template-columns:52px 1fr; padding:10px; }
+      .web-panel .thumb { width:52px; height:52px; }
+      .web-panel .thumb.car::before { width:42px; }
+      .web-panel .row.selected { background:var(--picked); box-shadow:inset 3px 0 0 var(--navy); }
+      .web-panel .identity { margin-top:0; }
+      .web-actions { flex:none; display:grid; grid-template-columns:3fr 7fr; gap:8px; padding-top:12px; background:#fff; }
+      .web-actions.three { grid-template-columns:3fr 3fr 4fr; }
+      .web-actions button { min-height:44px; border:0; border-radius:var(--radius); font-size:13px; font-weight:800; }
+      .web-placeholder { height:100%; min-height:220px; display:grid; place-items:center; padding:24px; background:var(--box); color:var(--muted); text-align:center; font-size:13px; line-height:1.6; }
+      .sheet { width:min(640px,calc(100% - 32px)); }
+      .filter-body { height:360px; grid-template-columns:140px 1fr; }
+    }
     :focus-visible { outline:2px solid var(--navy); outline-offset:2px; }
   </style>
 </head>
@@ -119,6 +153,29 @@
   <nav class="bottom-nav" id="nav" aria-label="주요 업무"></nav>
   <div class="actionbar" id="actions" hidden></div>
   <div class="sheet-wrap" id="filterSheet" hidden></div>
+</div>
+<div class="desktop">
+  <header class="web-top">
+    <div class="web-brand">FreePass Admin <small>업무 한 판</small></div>
+    <nav class="web-nav" id="webNav" aria-label="주요 업무"></nav>
+    <span class="sync web-sync">연결 정상</span>
+  </header>
+  <main class="web-workspace">
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webListTitle"></h2><span id="webCount"></span><small id="webListState"></small></header>
+      <div class="web-scroll" id="webList"></div>
+    </section>
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webDetailTitle">상세</h2><small id="webDetailState"></small></header>
+      <div class="web-scroll" id="webDetail"></div>
+      <div class="web-actions" id="webDetailActions"></div>
+    </section>
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webWorkTitle">현재 업무</h2><small id="webWorkState"></small></header>
+      <div class="web-scroll" id="webWork"></div>
+      <div class="web-actions" id="webWorkActions"></div>
+    </section>
+  </main>
 </div>
 <script>
 const ICONS={
@@ -170,10 +227,10 @@ function nav(){
   $('#nav').innerHTML=Object.keys(LABEL).map(k=>`<button data-k="${k}" class="${state.module===k?'on':''}">${icon(k)}<span>${LABEL[k]}</span></button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.module=b.dataset.k;state.depth=0;state.selected=null;render()});
 }
-function list(){
+function list(prefix=''){
  const placeholders={product:'차량·공급사·조건 검색',intake:'고객·차량·접수번호 검색',contract:'고객·계약번호 검색',performance:'고객·차량번호·공급사 검색',settlement:'공급사·채널·정산월 검색'};
  const chips={product:['전체','무보증','21세','즉시출고'],intake:['전체','할 일','진행 중','인도 완료'],contract:['전체','발송 대기','서명 대기','검토'],performance:['전체','할 일','이슈','완료'],settlement:['전체','청구','수금','지급']}[state.module];
- return `<div class="search"><label class="search-field">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"></label><button id="openFilter" aria-haspopup="dialog">세부필터</button></div>
+ return `<div class="search"><label class="search-field">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"></label><button class="openFilter" id="${prefix}openFilter" aria-haspopup="dialog">세부필터</button></div>
  <div class="chips">${chips.map(x=>`<button class="chip ${state.filter===x?'on':''}" data-filter="${x}">${x}</button>`).join('')}</div>
  <div class="list">${data[state.module].map(row).join('')}</div>`;
 }
@@ -185,6 +242,16 @@ function contractDetail(){const x=current();return `<div class="identity"><span 
 function performanceDetail(){const x=current();return `<div class="identity"><span class="tag warn">공급사 확인 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">마진 310,000원</div></div><div class="summary"><div><small>공급사 청구</small><b>1,240,000원</b></div><div><small>채널 지급</small><b>930,000원</b></div></div><div class="section"><h4>대조 단계</h4><div class="timeline"><div class="step done"><i>✓</i><b>영업자 확인</b><small>완료</small></div><div class="step"><i></i><b>공급사 Cross Check</b><small>진행 중</small></div><div class="step"><i></i><b>최종 확정</b><small>대기</small></div></div></div>`}
 function settlementDetail(){const x=current();return `<div class="identity"><span class="tag warn">수금 대기</span><h3>${x.title}</h3><p>${x.meta} · 확정금액 변경 금지</p><div class="money">미수 3,240,000원</div></div><div class="summary"><div><small>청구확정</small><b>8,760,000원</b></div><div><small>실제수금</small><b>5,520,000원</b></div></div><div class="section"><h4>처리 이력</h4><div class="timeline"><div class="step done"><i>✓</i><b>청구서 생성</b><small>9/20</small></div><div class="step done"><i>✓</i><b>계산서 증빙</b><small>9/21</small></div><div class="step"><i></i><b>잔여 수금</b><small>3,240,000원</small></div></div></div>`}
 function applicationForm(){return `<div class="identity"><span class="tag good">선택 조건</span><h3>싼타페 MX5 캘리그래피</h3><p>36개월 · 월 920,000원 · 무보증 · 연 20,000km</p></div><div class="form"><label>영업채널<select><option>오토채널</option><option>제휴영업</option><option>직영</option></select></label><label>담당자<select><option>박지훈</option><option>최유진</option></select></label><label>고객명<input id="customer" placeholder="고객명을 입력하세요"></label><label>연락처 · 선택<input placeholder="010-0000-0000"></label></div>`}
+function workPanel(){
+ if(state.module==='product') return applicationForm();
+ const work={
+  intake:['다음 업무','전자계약 발송','접수 사실과 선택 Offer Snapshot을 확인한 뒤 계약서를 생성합니다.'],
+  contract:['서명 상태','고객 서명 대기','서명 완료 후 관리자 검토와 봉인 상태를 확인합니다.'],
+  performance:['대조 업무','공급사 Cross Check','공급사 청구와 영업채널 지급 근거를 확인합니다.'],
+  settlement:['정산 업무','잔여 수금 등록','청구 → 확인 → 계산서 → 수금 순서로 증빙을 남깁니다.']
+ }[state.module];
+ return `<div class="identity"><span class="tag warn">${work[0]}</span><h3>${work[1]}</h3><p>${work[2]}</p></div><div class="section"><h4>처리 기준</h4><div class="timeline"><div class="step done"><i>✓</i><b>선행 단계 확인</b><small>완료</small></div><div class="step"><i></i><b>${work[1]}</b><small>대기</small></div></div></div>`;
+}
 function actions(){
  const el=$('#actions'); if(!state.depth){el.hidden=true;return} el.hidden=false; el.className='actionbar';
  if(state.depth===2){el.innerHTML='<button class="secondary" id="backAction">이전</button><button class="primary" id="save">접수 저장</button>';$('#backAction').onclick=()=>{state.depth=1;render()};$('#save').onclick=()=>{state.module='intake';state.depth=0;state.selected=null;render()};return}
@@ -211,7 +278,7 @@ function openFilter(){
  }[state.module];
  const sheet=$('#filterSheet'); sheet.hidden=false;
  sheet.innerHTML=`<button class="scrim" aria-label="세부필터 닫기"></button><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterTitle"><div class="sheet-head"><h3 id="filterTitle">상세 조건</h3><button id="closeFilter" aria-label="닫기">×</button></div><div class="filter-body"><nav class="filter-axes" aria-label="조건 항목">${facets.axes.map((x,i)=>`<button class="${i?'':'on'}">${x}</button>`).join('')}</nav><div class="filter-values"><strong>${facets.title}</strong>${facets.values.map(([x,n])=>`<label><input type="checkbox" ${state.filter===x?'checked':''}><span>${x}</span><small>${n}</small></label>`).join('')}</div></div><div class="sheet-actions"><button class="secondary" id="resetFilter">초기화</button><button class="primary" id="applyFilter">${data[state.module].length}${state.module==='product'?'대':'건'} 보기</button></div></section>`;
- const close=()=>{sheet.hidden=true;$('#openFilter')?.focus()};
+ const close=()=>{sheet.hidden=true;document.querySelector('.openFilter')?.focus()};
  sheet.querySelector('.scrim').onclick=close; $('#closeFilter').onclick=close; $('#resetFilter').onclick=()=>{state.filter='전체';close();render()}; $('#applyFilter').onclick=close;
  $('#closeFilter').focus();
 }
@@ -219,9 +286,26 @@ function bind(){
  document.querySelectorAll('.row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;state.depth=1;render()});
  document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
  document.querySelectorAll('.offer').forEach(b=>b.onclick=()=>{state.offer=b.dataset.offer;render()});
- if($('#openFilter')) $('#openFilter').onclick=openFilter;
+ document.querySelectorAll('.openFilter').forEach(b=>b.onclick=openFilter);
 }
-function render(){status();nav();$('#screen').innerHTML=state.depth===2?applicationForm():(state.depth?detail():list());actions();bind()}
+function renderWeb(){
+ const titles={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
+ const states={product:'판매 가능',intake:'할 일 2건',contract:'서명·검토 대기 2건',performance:'확인 필요 2건',settlement:'미수·미지급 2건'};
+ $('#webNav').innerHTML=Object.keys(LABEL).map(k=>`<button data-k="${k}" class="${state.module===k?'on':''}">${LABEL[k]}</button>`).join('');
+ $('#webNav').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.module=b.dataset.k;state.selected=null;state.depth=0;render()});
+ $('#webListTitle').textContent=titles[state.module]; $('#webCount').textContent=`${data[state.module].length}${state.module==='product'?'대':'건'}`; $('#webListState').textContent=states[state.module];
+ $('#webList').innerHTML=list('web');
+ const chosen=current(); document.querySelectorAll('#webList .row').forEach(b=>b.classList.toggle('selected',b.dataset.id===chosen.id));
+ $('#webDetailTitle').textContent=`${LABEL[state.module]} 상세`; $('#webDetailState').textContent=chosen.tag; $('#webDetail').innerHTML=detail();
+ $('#webWorkTitle').textContent=state.module==='product'?'신규 계약접수':'현재 업무'; $('#webWorkState').textContent=state.module==='product'?'Snapshot 저장 전':'다음 단계'; $('#webWork').innerHTML=workPanel();
+ const cfg={product:['공유','접수하기'],intake:['목록','전자계약'],contract:['다시 보내기','상태 확인'],performance:['이슈 등록','확인 완료'],settlement:['지급 보기','수금 등록']}[state.module];
+ $('#webDetailActions').innerHTML=`<button class="secondary">${cfg[0]}</button><button class="primary">${cfg[1]}</button>`;
+ $('#webWorkActions').innerHTML=`<button class="secondary">이전</button><button class="primary">${state.module==='product'?'접수 저장':cfg[1]}</button>`;
+ document.querySelectorAll('#webList .row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;render()});
+ document.querySelectorAll('#webList .chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
+ $('#webopenFilter').onclick=openFilter;
+}
+function render(){status();nav();$('#screen').innerHTML=state.depth===2?applicationForm():(state.depth?detail():list());actions();bind();renderWeb()}
 render();
 </script>
 </body>

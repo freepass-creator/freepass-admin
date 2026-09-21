@@ -159,9 +159,15 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
-  it('★인도를 되돌려도 인도일은 안 지운다', () => {
-    const r = progressPatch({ delivered: true, deliveredAt: '2026-09-01' }, { kind: 'delivered', on: false });
+  it('★정산 전 인도를 되돌려도 인도일은 안 지운다', () => {
+    const r = progressPatch({ delivered: true, deliveredAt: '2026-09-01', claimStage: '접수', payStage: '접수' }, { kind: 'delivered', on: false });
     assert.deepEqual(r.ok && r.patch, { delivered: false });
+  });
+  it('인도/정산 시작 뒤 차량번호·계약서·인도일·인도완료 핵심 사실을 되돌리지 않는다', () => {
+    assert.equal(progressPatch({ delivered: true, plate: '12가3456' }, { kind: 'plate', plate: '34나5678' }).ok, false);
+    assert.equal(progressPatch({ delivered: true, paper: true }, { kind: 'paper', on: false }).ok, false);
+    assert.equal(progressPatch({ delivered: true, deliveredAt: '2026-09-01', billed: true, claimStage: '청구', payStage: '통보', paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-02' }).ok, false);
+    assert.equal(progressPatch({ delivered: true, billed: true, claimStage: '청구', payStage: '통보' }, { kind: 'delivered', on: false }).ok, false);
   });
   it('취소는 사유가 있어야 · 사유는 메모에 덧붙인다', () => {
     assert.equal(progressPatch({}, { kind: 'cancelled', on: true }).ok, false);

@@ -5,6 +5,7 @@ const root=process.cwd();
 const read=(p:string)=>readFile(path.join(root,p),'utf8');
 const errors:string[]=[];
 
+const root=await read('src/app/page.tsx');
 const product=await read('src/app/products/workspace.tsx');
 const settlement=await read('src/app/settlement/page.tsx');
 const esign=await read('src/app/esign/page.tsx');
@@ -14,6 +15,9 @@ const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
 const status=await read('src/server/data-status.ts');
 
 const must=(ok:boolean,msg:string)=>{if(!ok)errors.push(msg)};
+
+must(/redirect\(['\"]\/intake['\"]\)/.test(root),'root route must enter the real /intake workspace');
+must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(root),'root route must not contain local fake runtime data');
 
 must(/productList\(\)/.test(product),'products workspace must read productList()');
 must(/settlements\.list\(\)/.test(product),'intake workspace must read settlements.list()');

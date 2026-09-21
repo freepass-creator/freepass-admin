@@ -1,3 +1,5 @@
+import type { PolicyValue } from '../product/types';
+
 /**
  * 실적 한 줄 — ERP5 `settlement_rows` 461줄을 실측해 세운 꼴.
  *
@@ -90,6 +92,41 @@ export interface SettlementMoney {
   vatIncluded: boolean;
 }
 
+export interface IntakeCatalogSnapshot {
+  capturedAt: string;
+  product: {
+    id: string;
+    version: number;
+    sourceSnapshotId: string;
+    supplierId: string;
+    supplierName: Maybe<string>;
+    productKind: Maybe<string>;
+    vehicle: {
+      nodeId: string;
+      originId: string;
+      manufacturerId: string;
+      modelId: string;
+      subModelId: Maybe<string>;
+      trimId: Maybe<string>;
+      matchLevel: string;
+    };
+    registration: {
+      vehicleNumber: Maybe<string>;
+      vin: Maybe<string>;
+      firstRegistrationDate: Maybe<string>;
+    };
+  };
+  offer: {
+    id: string;
+    termMonths: number;
+    monthlyRent: number;
+    deposit: Maybe<number>;
+    prepayment: Maybe<number>;
+    annualMileageKm: Maybe<number>;
+    policyValues: PolicyValue[];
+  };
+}
+
 export interface SettlementRow {
   /* ── 뼈대 — 이게 없으면 줄이 성립하지 않는다 ─────────────── */
   id: string;                    // ERP5 `code` — stl_16tsb6
@@ -126,6 +163,8 @@ export interface SettlementRow {
     offerId: Maybe<string>;
     sourceSnapshotId: Maybe<string>;
   };
+  /** 저장 순간의 계약상품 전체 조건. 현재 Catalog가 바뀌어도 이 사본은 변하지 않는다. */
+  catalogSnapshot?: Maybe<IntakeCatalogSnapshot>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

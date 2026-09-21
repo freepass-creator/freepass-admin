@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>FreePass Admin · 웹·모바일 5기능 목업</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap">
   <style>
     :root {
       --navy:#1b2a4a; --sky:#9ec5f3; --ground:#eef1f4; --panel:#fff;
@@ -116,10 +120,12 @@
       --sales-control-font:16px; --sales-control:44px; --sales-small:32px;
       --sales-space:14px; --sales-gap:8px; --sales-control-radius:6px;
       --sales-card-radius:12px; --sales-tag-radius:8px;
+      --sales-leading-head:1.25; --sales-leading-title:1.4;
+      --sales-leading-body:1.55; --sales-leading-support:1.5; --sales-leading-meta:1.45;
     }
-    html,body { font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Malgun Gothic",system-ui,sans-serif; font-size:15px; line-height:1.6; letter-spacing:-.012em; font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; }
+    html,body { font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:15px; line-height:1.6; letter-spacing:-.012em; font-variant-numeric:tabular-nums; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
     .statusbar { height:60px; padding:8px 16px 10px; }
-    .statusbar h1 { font-size:var(--sales-head); font-weight:650; line-height:1.25; letter-spacing:-.03em; }
+    .statusbar h1 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
     .statusbar h1 span { font-size:var(--sales-title); font-weight:650; }
     .statusbar small,.sync { font-size:var(--sales-meta); }
     main { padding:var(--sales-space) 16px calc(76px + env(safe-area-inset-bottom)); }
@@ -134,20 +140,20 @@
     .list { gap:var(--sales-gap); }
     .row { border:1px solid #eceef0; border-radius:var(--sales-card-radius); background:#fff; }
     .row:active { background:#f2f3f5; }
-    .row-title b,.offer strong,.summary b { font-size:var(--sales-title); font-weight:600; }
-    .meta,.sub,.offer small,.identity p,.fact,.notice { font-size:var(--sales-support); }
-    .value { font-size:var(--sales-body); font-weight:650; }
-    .tag { padding:0; border-radius:0; background:transparent; font-size:var(--sales-meta); font-weight:600; }
+    .row-title b,.offer strong,.summary b { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
+    .meta,.sub,.offer small,.identity p,.fact,.notice { font-size:var(--sales-support); line-height:var(--sales-leading-support); }
+    .value { font-size:var(--sales-body); font-weight:650; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
+    .tag { padding:0; border-radius:0; background:transparent; font-size:var(--sales-meta); font-weight:600; line-height:var(--sales-leading-meta); letter-spacing:0; }
     .tag.good,.tag.warn,.tag.bad { background:transparent; }
     .identity,.summary div,.offer,.step { border-radius:var(--sales-card-radius); }
     .offer.on { background:#f2f3f5; box-shadow:none; }
-    .identity h3 { font-size:var(--sales-head); font-weight:650; letter-spacing:-.03em; }
-    .money { font-size:19px; font-weight:650; letter-spacing:-.02em; }
-    .section h4 { font-size:var(--sales-title); font-weight:600; }
+    .identity h3 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
+    .money { font-size:19px; font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.02em; }
+    .section h4 { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
     .form { gap:var(--sales-gap); }
     .form label { gap:6px; font-size:var(--sales-support); font-weight:500; }
     .form input,.form select { height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); }
-    .step { min-height:var(--sales-control); font-size:var(--sales-body); }
+    .step { min-height:var(--sales-control); font-size:var(--sales-body); line-height:var(--sales-leading-body); }
     .bottom-nav button { font-size:var(--sales-tiny); font-weight:500; }
     .actionbar,.sheet-actions,.web-actions { gap:var(--sales-gap); }
     .actionbar button,.sheet-actions button,.web-actions button { min-height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); font-weight:650; }
@@ -160,7 +166,7 @@
       .phone { display:none; }
       .desktop { display:grid; grid-template-rows:56px 1fr; height:100vh; }
       .web-top { display:grid; grid-template-columns:220px 1fr auto; align-items:center; gap:20px; padding:0 20px; background:var(--navy); color:#fff; }
-      .web-brand { font-size:var(--sales-head); font-weight:650; letter-spacing:-.03em; }
+      .web-brand { font-family:"Exo 2","Pretendard Variable",sans-serif; font-size:var(--sales-head); font-weight:600; letter-spacing:-.02em; }
       .web-brand small { margin-left:7px; color:#b8c4d8; font-size:var(--sales-meta); font-weight:500; }
       .web-nav { height:100%; display:flex; align-items:center; justify-content:center; gap:2px; }
       .web-nav button { height:var(--sales-control); padding:0 18px; border:0; border-radius:var(--sales-control-radius); background:transparent; color:#b8c4d8; font-size:var(--sales-body); font-weight:600; }
@@ -169,7 +175,7 @@
       .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#dfe4e9; }
       .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:#fff; }
       .web-panel-head { flex:none; min-height:44px; display:flex; align-items:baseline; gap:6px; }
-      .web-panel-head h2 { margin:0; font-size:var(--sales-head); font-weight:650; letter-spacing:-.03em; }
+      .web-panel-head h2 { margin:0; font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
       .web-panel-head span { color:var(--navy); font-size:var(--sales-title); font-weight:650; }
       .web-panel-head small { color:var(--muted); font-size:var(--sales-meta); }
       .web-panel-head small { margin-left:auto; }

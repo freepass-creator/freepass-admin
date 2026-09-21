@@ -11,6 +11,9 @@ const intakeListPage=await read('src/app/intake/list/page.tsx');
 const product=await read('src/app/products/workspace.tsx');
 const settlement=await read('src/app/settlement/page.tsx');
 const esign=await read('src/app/esign/page.tsx');
+const esignRuntime=await read('src/server/esign.ts');
+const esignRepo=await read('src/adapters/erp5/esign-repository.ts');
+const esignService=await read('src/services/esign/service.ts');
 const server=await read('src/server/erp5.ts');
 const productRepo=await read('src/adapters/erp5/product-repository.ts');
 const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
@@ -31,6 +34,12 @@ must(/settlements\.list\(\)/.test(settlement),'settlement route must read settle
 must(/settlements\.clawbacks\(\)/.test(settlement),'settlement route must read clawbacks');
 must(/settlements\.invoices\(/.test(settlement),'settlement route must read issued invoices');
 must(/contracts\.list\(\)/.test(esign),'esign route must read contracts.list()');
+must(/new EsignService\(esignRepository, esignAssets\)/.test(esignRuntime),'esign runtime must compose EsignService with ERP5 ports');
+must(/const SESSIONS='esign_session'/.test(esignRepo),'esign repository must use esign_session');
+must(/const PRIVATE='esign_private'/.test(esignRepo),'esign repository must keep private submissions separate');
+must(/const EVENTS='esign_event'/.test(esignRepo),'esign repository must persist esign events');
+must(/writeEnabled/.test(esignRepo),'esign writes must use the shared ERP5 write gate');
+must(/PUBLIC_BASE_URL/.test(esignService) && /new URL\(raw\)/.test(esignService),'esign issue must require an absolute public base');
 must(/new Erp5ProductRepository\(\)/.test(server),'server must use Erp5ProductRepository');
 must(/new Erp5SettlementRepository\(\)/.test(server),'server must use Erp5SettlementRepository');
 must(/new Erp5ContractRepository\(\)/.test(server),'server must use Erp5ContractRepository');
@@ -58,6 +67,7 @@ if(errors.length){
   console.log('- products -> Erp5ProductRepository / products');
   console.log('- intake + settlement -> Erp5SettlementRepository / settlement_rows');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
-  console.log('- esign -> Erp5ContractRepository / contract');
+  console.log('- esign list -> Erp5ContractRepository / contract');
+  console.log('- esign runtime -> EsignService / esign_session + esign_private + Storage');
   console.log('- writes remain fail-closed unless ERP5_WRITE=on');
 }

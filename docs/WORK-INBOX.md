@@ -1,10 +1,49 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-16
+최종 갱신: 2026-09-22
 프로젝트: freepass-admin (구 freepasserp.com 저장소)
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
+
+
+## 0. 2026-09-22 최신 Chat → Work 인계 — 반드시 먼저 반영
+
+이 절이 이 문서 안의 오래된 9/16~9/19 상태보다 우선한다. 상세 근거는 `docs/HANDOFF.md`의 **2026-09-22 AI Core 재감사 — 상품 → 접수 → 계약 → 정산** 절을 본다.
+
+현재 판정:
+- FreePass Admin 공식 범위는 **상품 찾기 → 접수 → 계약 → 정산**까지다.
+- 접수/정산은 ERP5 live repository 기준으로 90점대 수준까지 올라왔다.
+- 과거의 "Settlement 상당 부분 Mockup" 판정은 current main 기준으로 폐기한다.
+- 전자계약은 ERP5 `contract / esign_session / esign_private / esign_event / Storage`에 연결되어 **고객 제출 → pending_review**까지 올라왔다.
+
+다음 Codex/Work P0는 정확히 두 개다.
+
+1. **Intake/Application → Contract handoff 고정**
+   - 접수 당시 Product/Offer/Policy Snapshot을 계약 생성의 원천으로 사용
+   - `application_id/intake_id`, `source_product_id`, `source_offer_id`, snapshot revision/digest, immutable contract snapshot 보존
+   - 동일 사실 재입력 최소화
+   - revision/source mismatch fail-closed
+   - idempotent contract create
+
+2. **Esign finalization 완성**
+   - `pending_review → admin approve/finalize → signed`
+   - 승인된 immutable snapshot으로 최종 PDF 생성
+   - Storage path + SHA-256 + template/agreement version 보존
+   - Contract/EsignSession 최종 상태와 audit/receipt 연결
+   - 중복 승인/PDF 생성 방지
+   - signed 후 일반 edit/revoke 차단
+
+그 다음:
+- handoff/finalization concurrency·idempotency·recovery tests
+- Offer 선택 → Intake → Contract → Esign → signed/PDF → Settlement 전체 journey integration test
+- Data Status에 contract/esign finalization readiness 추가
+
+**주의:** FreePass Data가 Admin의 workflow/settlement ledger를 흡수하지 않는다. FreePass Data는 Product/Offer/Policy 같은 공유 Canonical fact를 공급하고, Admin은 Intake/Contract/Esign/Settlement workflow를 소유한다.
+
+관련 최신 커밋:
+- Admin audit handoff: `45a90b18b3609dbb54f50dd3080aaa025baf6a3f`
+- Esign ERP5 runtime baseline: `da5bf6fc552706bfbc6338f5fad85fbe61b29d5e`
 
 ---
 

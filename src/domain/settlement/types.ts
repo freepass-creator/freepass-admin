@@ -119,6 +119,14 @@ export interface SettlementRow {
    */
   paidRounds: Maybe<number>;
 
+  /** 상품에서 생성된 접수라면 당시 Canonical Product/Offer 원본을 되짚는다. 직접접수는 전부 null. */
+  catalogRef: {
+    productId: Maybe<string>;
+    productVersion: Maybe<number>;
+    offerId: Maybe<string>;
+    sourceSnapshotId: Maybe<string>;
+  };
+
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;
   claimStage: ClaimStage;

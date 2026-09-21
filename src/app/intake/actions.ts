@@ -112,7 +112,8 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
   const kind = S(f, 'kind');
   const on = S(f, 'on') === '1';
   let change: ProgressChange;
-  if (kind === 'paidRounds') {
+  if (kind === 'plate') change = { kind, plate: S(f, 'plate') };
+  else if (kind === 'paidRounds') {
     const t = S(f, 'rounds');
     change = { kind, rounds: t ? Number(t) : null };
   } else if (kind === 'paper') change = { kind, on };

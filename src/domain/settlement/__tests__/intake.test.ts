@@ -5,6 +5,7 @@ import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '.
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
 import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
 import { claimAmountOf, payAmountOf } from '../money.js';
+import { blockOf } from '../types.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
@@ -172,6 +173,34 @@ const row = (o: Record<string, unknown>) => toSettlementRow({
   code: 'r', plate: '1가1', receivedAt: '2026-06-01', supplier: 'A', channel: 'X', delivered: true, deliveredAt: '2026-06-10',
   cancelled: false, billMonth: '', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납', ...o,
 }, 'r').row;
+
+describe('다음 할 일 — 정산대상별 축을 섞지 않는다', () => {
+  it('영업-only는 공급사가 없어도 되고 영업채널/지급만 본다', () => {
+    const salesOnly = row({
+      settleTarget: '영업', supplier: '', channel: 'X', paper: true,
+      payWritten: 800_000, paid: false,
+    });
+    assert.equal(blockOf(salesOnly), '지급');
+    assert.equal(blockOf(row({ settleTarget: '영업', supplier: '', channel: '', paper: true, payWritten: 800_000 })), '영업채널 없음');
+  });
+
+  it('공급-only는 영업채널이 없어도 되고 청구/계산서/수금만 본다', () => {
+    const supplyOnly = row({
+      settleTarget: '공급', supplier: 'A', channel: '', paper: true,
+      claimWritten: 1_000_000, billed: true, invoiceIssued: true, collected: false,
+    });
+    assert.equal(blockOf(supplyOnly), '수금');
+  });
+
+  it('양쪽은 공급 축을 끝낸 뒤 영업 축 누락을 드러낸다', () => {
+    const both = row({
+      settleTarget: '양쪽', supplier: 'A', channel: '', paper: true,
+      claimWritten: 1_000_000, billed: true, invoiceIssued: true, collected: true,
+      payWritten: 800_000, paid: false,
+    });
+    assert.equal(blockOf(both), '영업채널 없음');
+  });
+});
 
 describe('★완납·인도 기준 — 대표 「접수 -> 분납실적/완납실적 -> 완납인도기준으로 청구 및 지급」', () => {
   it('인도 전이면 청구월이 없다(아직) — 접수', () => {

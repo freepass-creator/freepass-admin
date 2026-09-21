@@ -203,19 +203,28 @@ export { marginOf as margin } from './money';
  *   상태 바구니가 아니라 «다음 손» 이다 — 누르기 전에 무엇을 할지 안다.
  */
 export type Block =
-  | '차량번호 없음' | '공급사 없음' | '계약서' | '인도'
-  | '청구금액 모름' | '청구' | '계산서' | '수금' | '지급';
+  | '차량번호 없음' | '공급사 없음' | '영업채널 없음' | '계약서' | '인도'
+  | '청구금액 모름' | '지급금액 모름' | '청구' | '계산서' | '수금' | '지급';
 
 export function blockOf(r: SettlementRow): Maybe<Block> {
   if (r.progress.cancelled) return null;
   if (!r.plate) return '차량번호 없음';
-  if (!r.supplier) return '공급사 없음';
+  /* 공급사도 원래 줄을 가르는 열쇠다. 다만 이미 수금된 축은 과거 필수정보 누락으로 다시 열지 않는다. */
+  if (r.settleTarget !== '영업' && !r.progress.collected && !r.supplier) return '공급사 없음';
   if (!r.progress.paper) return '계약서';
   if (!r.progress.delivered) return '인도';
-  if (r.money.claim === null) return '청구금액 모름';
-  if (!r.progress.billed) return '청구';
-  if (!r.progress.invoiceIssued) return '계산서';
-  if (!r.progress.collected) return '수금';
-  if (!r.progress.paid) return '지급';
+
+  /* 정산대상별 축을 따로 본다. 영업-only 줄에 공급사를 요구하거나 공급-only 줄에 영업채널을 요구하면 안 된다. */
+  if (r.settleTarget !== '영업' && !r.progress.collected) {
+    if (r.money.claim === null) return '청구금액 모름';
+    if (!r.progress.billed) return '청구';
+    if (!r.progress.invoiceIssued) return '계산서';
+    return '수금';
+  }
+  if (r.settleTarget !== '공급' && !r.progress.paid) {
+    if (!r.channel) return '영업채널 없음';
+    if (r.money.pay === null) return '지급금액 모름';
+    return '지급';
+  }
   return null;
 }

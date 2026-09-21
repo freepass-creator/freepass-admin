@@ -28,9 +28,12 @@ test('performance modes separate todo issue and done from authoritative ledger s
   const issue=line(row({progress:{...row().progress,billHold:true}}));
   const done=line(row({progress:{...row().progress,collected:true,paid:true}}));
   assert.equal(performanceMatchesMode(todo,'공급사','todo'),true);
+  assert.equal(performanceMatchesMode(todo,'공급사','issue'),false);
   assert.equal(performanceMatchesMode(issue,'공급사','issue'),true);
+  assert.equal(performanceMatchesMode(issue,'공급사','todo'),false);
   assert.equal(performanceMatchesMode(done,'공급사','done'),true);
   assert.equal(performanceMatchesMode(done,'공급사','todo'),false);
+  assert.equal(performanceMatchesMode(done,'공급사','issue'),false);
 });
 
 test('pay axis does not treat supplier bill hold as a pay issue',()=>{

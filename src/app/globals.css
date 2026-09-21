@@ -1,96 +1,1290 @@
-:root{
-  --ground:#eef2f7;
-  --surface:#ffffff;
-  --sunken:#f5f7fa;
-  --rail:#16233b;
-  --rail-2:#22334f;
-  --rail-text:#8d9ab0;
-  --ink:#111827;
-  --ink-2:#5b6778;
-  --ink-3:#8a96a8;
-  --line:#e5eaf0;
-  --line-2:#d5dde7;
-  --accent:#0d7d9e;
-  --accent-soft:#e7f3f7;
-  --good:#0a7350;
-  --good-soft:#e5f4ed;
-  --bad:#a43c35;
-  --bad-soft:#fbeceb;
-  --shadow:0 1px 3px rgba(15,23,42,.06),0 12px 28px -18px rgba(15,23,42,.28);
-  --radius:16px;
-  --control:44px;
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║ LEGACY BASE LAYER — DO NOT COPY VALUES FROM THIS TOP SECTION.   ║
+   ║ 현행 정본: docs/ui/ADMIN-UI-UX-SSOT.md + _design/admin-final.css ║
+   ║ 이 파일은 base/legacy 층이며 admin-final.css가 뒤에서 덮는다.      ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+*{box-sizing:border-box}html,body{margin:0;background:#f3f5f7;color:#15181c;font-family:Inter,Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}.admin-shell{min-height:100vh}.topbar{height:64px;background:#111418;color:#fff;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;border-bottom:1px solid #252a30}.topbar>div:first-child{display:flex;align-items:baseline;gap:10px}.topbar strong{font-size:17px;letter-spacing:-.4px}.topbar span{font-size:11px;color:#8f98a3}.topbar nav{display:flex;gap:4px}.topbar button{border:0;background:transparent;color:#89929d;padding:9px 14px;border-radius:8px}.topbar button.active{background:#242a31;color:#fff}.admin-user{justify-self:end;font-size:13px;color:#c9ced4}.workspace{height:calc(100vh - 64px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#dce1e6}.panel{min-width:0;background:#fff;padding:var(--ui-panel-pad,22px);overflow:auto}.panel-head{min-height:48px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.eyebrow{margin:0 0 3px;font-size:10px;letter-spacing:1.4px;color:#9aa2aa;font-weight:700}.panel h1{font-size:20px;margin:0;letter-spacing:-.7px}.count{padding:6px 9px;background:#f1f3f5;border-radius:7px;color:#4d555e!important}.searchbox{height:42px;border:1px solid #dce1e5;border-radius:10px;display:flex;align-items:center;gap:8px;padding:0 13px;color:#9aa2aa;font-size:13px;background:#fafbfc}.searchbox input{border:0;outline:0;background:transparent;width:100%;font-size:13px;color:#1d2329}.quick-filters,.chips,.work-tabs,.offer-picker{display:flex;gap:6px;overflow:auto}.quick-filters{padding:10px 0 13px}.quick-filters button,.work-tabs button,.offer-picker button{white-space:nowrap;border:1px solid #e0e4e8;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px;color:#555e67}.quick-filters button:first-child,.work-tabs button.active,.offer-picker button.active{background:#171a1e;color:#fff;border-color:#171a1e}.list,.application-list{display:flex;flex-direction:column;gap:8px}.product-row{display:flex;gap:12px;padding:11px;border:1px solid #e5e8eb;border-radius:12px;cursor:pointer}.product-row:hover,.application-card:hover{background:#fafbfc}.product-row.selected{border-color:#22272d;box-shadow:0 0 0 1px #22272d}.thumb{width:82px;height:64px;border-radius:9px;background:linear-gradient(135deg,#e8ebee,#f8f9fa);display:grid;place-items:center;color:#a2a9b0;font-size:10px}.grow{min-width:0;flex:1}.row-title{display:flex;justify-content:space-between;gap:8px}.row-title strong{font-size:14px}.row-title span{font-size:9px;padding:4px 6px;background:#f0f3f5;border-radius:5px;color:#5e6770}.product-row p{margin:5px 0 8px;font-size:11px;color:#858d95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{display:flex;justify-content:space-between;align-items:end}.price b{font-size:13px}.price small{font-size:10px;color:#7e8790}.icon-btn,.new-app{border:1px solid #dfe3e7;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px}.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e8eb;margin-bottom:14px}.tabs button{border:0;background:none;padding:10px;color:#969da5}.tabs button.active{color:#111;border-bottom:2px solid #111;font-weight:700}.hero-car{height:190px;border-radius:14px;background:linear-gradient(145deg,#e9ecef,#f8f9fa);display:flex;align-items:center;justify-content:center;position:relative;color:#a5acb3;font-size:12px}.hero-car small{position:absolute;right:10px;bottom:9px;background:#20252a;color:#fff;border-radius:10px;padding:4px 7px}.vehicle-title{display:flex;justify-content:space-between;align-items:start;padding:17px 0}.vehicle-title h2{font-size:20px;margin:0 0 5px}.vehicle-title p{margin:0;font-size:12px;color:#808891}.status-dot{font-size:10px!important;color:#303941!important;background:#edf1f3;padding:5px 8px;border-radius:7px}.summary-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e7eaed;border-radius:12px;overflow:hidden;margin:0}.summary-grid div{padding:11px 12px;border-bottom:1px solid #edf0f2}.summary-grid div:nth-child(odd){border-right:1px solid #edf0f2}.summary-grid div:nth-last-child(-n+2){border-bottom:0}.summary-grid dt{font-size:10px;color:#8e969e}.summary-grid dd{margin:4px 0 0;font-size:12px;font-weight:650}.offer-picker{padding-top:12px}.offer-block{margin-top:8px;background:#171a1e;color:#fff;border-radius:13px;padding:15px}.offer-block>div{display:flex;justify-content:space-between;color:#aeb5bc;font-size:11px}.offer-block strong{display:block;font-size:21px;margin-top:10px}.offer-block p{font-size:10px;color:#aeb5bc;margin:6px 0 0}.chips{padding:11px 0}.chips span{font-size:10px;background:#f0f3f5;border-radius:7px;padding:6px 8px;white-space:nowrap}.primary{width:100%;height:44px;border:0;border-radius:10px;background:#111418;color:#fff;font-weight:700}.new-app{background:#171a1e;color:#fff;border-color:#171a1e}.work-tabs{padding-bottom:13px}.application-card{border:1px solid #e5e8eb;border-radius:12px;padding:13px;cursor:pointer;user-select:none}.app-top{display:flex;justify-content:space-between;gap:10px}.app-top div{display:flex;flex-direction:column;gap:3px}.app-top b{font-size:13px}.app-top span{font-size:9px;color:#929aa2}.app-top strong{font-size:12px}.checks{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:12px 0 9px}.checks span{font-size:10px;text-align:center;padding:7px 4px;border-radius:6px;background:#f0f2f4;color:#9ba2a9}.checks span.done{background:#252a30;color:#fff}.application-card p{margin:0;font-size:10px;color:#78818a}.work-hint{margin-top:12px;border:1px dashed #d5dade;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:4px}.work-hint b{font-size:11px}.work-hint span{font-size:10px;color:#8b939b;line-height:1.5}.selected-offer-card,.snapshot-box{border:1px solid #e2e6e9;background:#f8f9fa;border-radius:14px;padding:16px;margin-bottom:16px}.selected-offer-card>span,.snapshot-box>span{display:block;font-size:10px;color:#8a929a;margin-bottom:7px}.selected-offer-card h2{margin:0 0 4px;font-size:20px}.selected-offer-card p{margin:0 0 14px;font-size:11px;color:#7d858d}.selected-offer-card b,.snapshot-box b{display:block;font-size:14px}.selected-offer-card small{display:block;margin-top:10px;color:#8a929a;line-height:1.5}.form-stack{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}.form-stack label{font-size:11px;font-weight:700;color:#535c64}.form-stack input{display:block;width:100%;height:42px;margin-top:6px;border:1px solid #dce1e5;border-radius:9px;padding:0 11px;outline:0}.form-stack input:focus{border-color:#20252a}.application-detail-head{padding:4px 0 18px}.application-detail-head span{font-size:10px;color:#90979f}.application-detail-head h2{margin:6px 0;font-size:20px}.application-detail-head p{margin:0;color:#7d858d;font-size:12px}.snapshot-box p{margin:6px 0 0;font-size:11px;color:#7d858d}.progress-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.progress-actions button{height:58px;border:1px solid #dfe3e6;background:#f5f7f8;color:#7e878f;border-radius:10px;font-size:11px}.progress-actions button.done{background:#171a1e;color:#fff;border-color:#171a1e}.application-status{margin-top:14px;padding:12px;border-radius:10px;background:#eef1f3;text-align:center;font-size:12px;font-weight:700}.application-status.cancelled{background:#f5eeee;color:#8a4747}.danger-link{width:100%;margin-top:10px;border:0;background:transparent;color:#a74f4f;font-size:11px;padding:10px}@media(max-width:900px){.topbar{grid-template-columns:1fr auto}.topbar nav{display:none}.workspace{display:block;height:auto}.panel{min-height:calc(100vh - 64px);border-bottom:8px solid #eef1f3}}
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 대표 확정 2026-09-18 — «박스에 담는다 · 선은 없다 · 라운드는 4»
+   「버튼은 라인 없이 그냥 텍스트로만」 「목록은 카드형으로 박스, 근데 이거도 라인 없이」
+   「다 카드형 카드버튼형으로 통일하고 표도 그렇게」 「라운드만 4로」 「패널 나눠 놓은 것도 카드형으로」
+   「박스에 담아 넣자」 「심플하게」
+
+   「이해했지? 모든 건 다 박스형으로. 근데 **라인 있는 건 패널 박스랑 검색 말고는** 다 없음.
+    **선택된 거나 강조해야 할 건 색깔로만 위계**를 주자」
+
+   규칙 다섯 — 이 덩이가 원본(위)을 덮는다. 되돌리려면 이 덩이만 지우면 된다.
+     ① 선은 딱 두 곳   판 박스 · 검색창. 나머지는 선 없는 박스 — 가르는 것은 «면의 밝기»와 «사이»다.
+     ② 라운드는 4     열 가지(5~14px)였던 것을 하나로.
+     ③ 단추는 글자    평소엔 글자만. 손을 대면 옅은 면이 깔린다.
+     ④ 켜진 것은 검은 면   탭·필터·완료·선택 — «켜짐»의 말은 하나다.
+     ⑤ 판·목록·표는 박스   바탕(회색) 위에 판(흰 박스), 판 위에 카드(옅은 회색 박스).
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --r: 4px;
+  --바닥: #eef1f4;   /* 판 뒤 바탕 */
+  --판: #ffffff;     /* 판 */
+  --박스: #f4f6f8;   /* 판 위의 카드·칸 */
+  --박스손: #eaeef2; /* 손을 댄 카드 */
+  --고름: #e6ecf5;   /* 고른 카드 — 선 대신 면이 짙어진다(남색 집안) */
+  /**
+   * ★켜짐 = **프리패스 네이비** — 대표 2026-09-18 「너무 쨍한 거 없애고 우리 고유 남색 제대로 활용하고」
+   *   정본 = freepasserp4 `app/globals.css:37` 「Brand — 프리패스 네이비」 `--brand:#1B2A4A`.
+   *   ⚠ `#14263F` 는 유니오토모빌(화이트라벨 손님사) 색이다 — 우리 색이 아니다.
+   *   ⚠ 앞서 켜짐이 #171a1e(거의 검정)였다. 흰 판 위 검정은 대비가 너무 세서 «쨍»하다.
+   */
+  --켜짐: #1B2A4A;
+  --켜짐깊이: #0F1B35;  /* 맨 위 띠 — 판보다 한 단 깊게 */
+  --남색옅음: #e6ecf5;  /* 고른 카드 — 남색 집안의 옅은 면 */
+  --글: #1d2733;       /* 본문 글자 — 순검정 대신 남색 기운 도는 먹색 */
+  --선: #dfe4e9;     /* ★선은 판 박스와 검색창에만 쓴다 */
 }
 
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--ground);color:var(--ink);font-family:Pretendard,Inter,"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button,input{font:inherit}
-button{cursor:pointer}
-button:focus-visible,input:focus-visible{outline:3px solid rgba(13,125,158,.22);outline-offset:2px}
+/* ⑤ 판 셋을 박스로 — 1px 틈으로 긋던 세로선을 걷고 사이를 준다 */
+.topbar { border-bottom: 0; }
+.workspace { gap: var(--ui-panel-gap, 12px); padding: var(--ui-panel-gap, 12px); background: var(--바닥); height: calc(100vh - 64px); }
+.panel { border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
 
-.admin-shell{min-height:100vh;display:grid;grid-template-columns:176px minmax(0,1fr);gap:12px;padding:12px}
-.rail{position:sticky;top:12px;height:calc(100vh - 24px);background:var(--rail);border-radius:var(--radius);padding:18px 10px 14px;display:flex;flex-direction:column;color:white;box-shadow:var(--shadow)}
-.brand{padding:0 10px 18px;display:flex;flex-direction:column;gap:2px}.brand strong{font-size:15px;letter-spacing:.02em}.brand span{font-size:10px;letter-spacing:.14em;color:var(--rail-text)}
-.rail-nav{display:flex;flex-direction:column;gap:3px}.rail-nav button{height:42px;border:0;border-radius:10px;background:transparent;color:var(--rail-text);text-align:left;padding:0 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center}.rail-nav button:hover{background:rgba(255,255,255,.05);color:#e8edf5}.rail-nav button.active{background:var(--rail-2);color:#fff}.rail-nav button[aria-disabled="true"]{opacity:.55;cursor:default}.rail-nav button span{font-size:10px;background:rgba(255,255,255,.1);padding:2px 7px;border-radius:999px}
-.rail-user{margin-top:auto;padding:14px 10px 2px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:3px}.rail-user b{font-size:12px}.rail-user span{font-size:10px;color:var(--rail-text)}
+/* ① 선 걷기 + ② 라운드 4 — 목록 카드 · 표 · 상자 */
+.product-row, .application-card, .selected-offer-card, .snapshot-box, .work-hint {
+  border: 0; border-radius: var(--r); background: var(--박스); box-shadow: none;
+}
+/**
+ * ★고른 기간의 값(「선택 Offer · 월 920,000원」)은 **검은 박스 그대로** — 그 판에서 가장 센 강조다.
+ *   ⚠ 한 번 옅은 회색으로 덮었다가 흰 글자가 회색 위에서 사라졌다(실측). 강조는 «색»으로 주는 것이라
+ *     검은 면이 곧 강조다. 라운드만 4로 맞춘다.
+ */
+.offer-block { border: 0; border-radius: var(--r); }
+.product-row:hover, .application-card:hover { background: var(--박스손); }
+.product-row.selected { border: 0; box-shadow: none; background: var(--고름); }
 
-.workspace{min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.panel{min-width:0;height:calc(100vh - 24px);overflow:auto;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
-.panel-head{min-height:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
-.eyebrow{margin:0 0 4px;font-size:10px;letter-spacing:.1em;color:var(--ink-3);font-weight:700}
-.panel h1{font-size:19px;letter-spacing:-.03em;margin:0}.panel h2{letter-spacing:-.03em}
-.count,.status,.match{font-size:10px;padding:5px 8px;border-radius:999px;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
-
-.searchline{display:flex;gap:8px;margin-bottom:8px}
-.searchbox{height:var(--control);flex:1;border:1px solid var(--line-2);border-radius:11px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#fff;color:var(--ink-3)}
-.searchbox input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font-size:13px}
-.secondary-control{min-height:var(--control);border:1px solid var(--line-2);border-radius:10px;background:#fff;color:var(--ink-2);padding:0 13px;white-space:nowrap}
-.secondary-control:hover{background:var(--sunken)}
-.query-hint{display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:7px 9px;background:var(--accent-soft);border-radius:9px;font-size:11px;color:var(--ink-2)}.query-hint b{color:var(--accent)}
-
-.list,.application-list,.offer-list{display:flex;flex-direction:column;gap:5px}
-.product-row,.application-row{width:100%;border:0;background:transparent;text-align:left;border-radius:12px;padding:9px;display:flex;gap:11px;color:inherit}
-.product-row:hover,.application-row:hover{background:var(--sunken)}
-.product-row.selected{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
-.thumb{width:90px;height:60px;flex:0 0 90px;border-radius:11px;background:linear-gradient(145deg,#e7edf3,#dce4ec);display:grid;place-items:center;color:var(--ink-3);font-size:10px}
-.grow{min-width:0;flex:1}.row-title{display:flex;justify-content:space-between;gap:8px}.row-title strong{font-size:14px}.row-title span{font-size:9px;color:var(--ink-3);background:var(--sunken);padding:3px 6px;border-radius:999px}
-.product-row p{margin:4px 0 8px;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{display:flex;justify-content:space-between;align-items:flex-end}.price b{font-size:13px}.price small{font-size:10px;color:var(--ink-3)}
-
-.hero-car{height:190px;border-radius:13px;background:linear-gradient(145deg,#e7edf3,#d6dfe8);display:flex;align-items:center;justify-content:center;position:relative;color:var(--ink-3);font-size:12px}.hero-car small{position:absolute;right:8px;bottom:8px;background:rgba(16,24,40,.68);color:white;padding:4px 8px;border-radius:999px}
-.vehicle-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 0}.vehicle-title h2{font-size:21px;margin:0 0 4px}.vehicle-title p{margin:0;color:var(--ink-2);font-size:12px}
-.facts{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0;font-size:12px}.facts dt{color:var(--ink-3)}.facts dd{margin:0;font-weight:600}
-.section-title{margin:20px 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}.section-title b{font-size:12px}.section-title span{font-size:10px;color:var(--ink-3)}
-.offer-row{width:100%;border:0;background:var(--sunken);border-radius:12px;padding:12px;text-align:left;color:inherit}.offer-row.active{background:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(13,125,158,.25)}.offer-row>div{display:flex;justify-content:space-between;align-items:baseline}.offer-row>div strong{font-size:13px}.offer-row>div span{font-size:14px;font-weight:700}.offer-row dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:9px 0}.offer-row dl div{display:flex;justify-content:space-between;gap:8px}.offer-row dt{font-size:10px;color:var(--ink-3)}.offer-row dd{margin:0;font-size:10px;font-weight:600}.offer-row p{margin:0;font-size:10px;color:var(--ink-2)}
-.detail-actions{position:sticky;bottom:-18px;margin:18px -18px -18px;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.96);display:grid;grid-template-columns:auto 1fr;gap:8px;border-top:1px solid var(--line)}
-.primary{min-height:var(--control);border:0;border-radius:10px;background:var(--rail);color:#fff;padding:0 15px;font-weight:700}.primary.compact{width:auto}.primary:hover{background:var(--rail-2)}
-
-.work-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--ink-2)}.work-summary span{background:var(--sunken);padding:6px 8px;border-radius:8px}.work-summary b{color:var(--ink)}
-.application-row{display:grid;grid-template-columns:1fr auto;align-items:start;border-bottom:1px solid var(--line);border-radius:10px}.application-row>div{display:flex;flex-direction:column;gap:3px}.application-row strong{font-size:13px}.application-row span{font-size:9px;color:var(--ink-3)}.application-row>b{font-size:11px}.application-row p{grid-column:1/-1;margin:6px 0 0;font-size:10px;color:var(--ink-2)}
-.selected-offer-card,.snapshot-box{background:var(--sunken);border-radius:13px;padding:15px;margin-bottom:14px}.selected-offer-card>span,.snapshot-box>span{display:block;font-size:10px;color:var(--ink-3);margin-bottom:7px}.selected-offer-card h2{font-size:20px;margin:0 0 4px}.selected-offer-card p,.snapshot-box p{margin:0 0 12px;color:var(--ink-2);font-size:11px}.selected-offer-card b,.snapshot-box b{display:block;font-size:13px}.selected-offer-card small{display:block;margin-top:8px;color:var(--ink-3);line-height:1.5}
-.form-stack{display:flex;flex-direction:column;gap:12px}.form-stack label{font-size:11px;font-weight:700}.form-stack input{display:block;width:100%;height:var(--control);margin-top:6px;border:1px solid var(--line-2);border-radius:10px;padding:0 11px}
-.application-detail-head{padding:2px 0 16px}.application-detail-head span{font-size:10px;color:var(--ink-3)}.application-detail-head h2{font-size:20px;margin:6px 0 3px}.application-detail-head p{margin:0;font-size:11px;color:var(--ink-2)}
-.progress-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.progress-actions button{min-height:58px;border:1px solid var(--line-2);background:var(--sunken);border-radius:10px;color:var(--ink-2);font-size:11px}.progress-actions button.done{background:var(--rail);color:white;border-color:var(--rail)}
-.application-status{margin-top:14px;padding:11px;border-radius:10px;background:var(--good-soft);color:var(--good);font-size:12px;font-weight:700;text-align:center}.application-status.cancelled{background:var(--bad-soft);color:var(--bad)}
-.danger-link{width:100%;border:0;background:transparent;color:var(--bad);padding:12px;font-size:11px}
-
-.mobile-nav{display:none}
-
-@media(max-width:1180px){
-  .admin-shell{grid-template-columns:156px minmax(0,1fr)}
-  .panel{padding:15px}
-  .workspace{gap:9px}
-  .detail-actions{bottom:-15px;margin-left:-15px;margin-right:-15px;margin-bottom:-15px;padding-left:15px;padding-right:15px}
+/* 표도 박스 — 줄·칸 선 대신 칸마다 작은 박스, 사이는 틈 */
+.summary-grid { border: 0; border-radius: 0; gap: 4px; background: none; overflow: visible; }
+.summary-grid div, .summary-grid div:nth-child(odd), .summary-grid div:nth-last-child(-n+2) {
+  border: 0; border-radius: var(--r); background: var(--박스);
 }
 
-@media(max-width:900px){
-  body{background:#f4f6f8}
-  .admin-shell{display:block;padding:0 0 70px}
-  .rail{display:none}
-  .workspace{display:block}
-  .panel{display:none;height:auto;min-height:calc(100vh - 70px);border-radius:0;box-shadow:none;padding:16px 14px 24px}
-  .panel.mobile-active{display:block}
-  .panel-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);padding-top:2px}
-  .hero-car{height:220px}
-  .detail-actions{bottom:54px;margin-left:-14px;margin-right:-14px;margin-bottom:-24px;padding-left:14px;padding-right:14px}
-  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;height:58px;padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(3,1fr);background:rgba(255,255,255,.98);border-top:1px solid var(--line)}
-  .mobile-nav button{border:0;background:transparent;color:var(--ink-3);font-size:11px;font-weight:700}.mobile-nav button.active{color:var(--accent)}
+/* 라운드 4 — 남은 것 전부 */
+.count, .thumb, .row-title span, .hero-car, .hero-car small, .status-dot, .chips span,
+.checks span, .application-status, .topbar button { border-radius: var(--r); }
+
+/* 입력칸 — 선 대신 면 */
+/* ★검색창은 선을 가진다 — 판 다음으로 «여기서 시작한다»는 자리라서. 접수 입력칸은 선 없는 박스. */
+.searchbox { border: 1px solid var(--선); border-radius: var(--r); background: var(--판); }
+.form-stack input { border: 0; border-radius: var(--r); background: var(--박스); }
+.form-stack input:focus { border: 0; background: var(--박스손); }
+
+/* ③ 단추는 글자만 — 평소엔 면도 선도 없다 */
+.quick-filters button, .work-tabs button, .offer-picker button, .icon-btn, .progress-actions button, .tabs button {
+  border: 0; border-radius: var(--r); background: transparent; color: #4f5862;
 }
+.quick-filters button:hover, .work-tabs button:hover, .offer-picker button:hover,
+.icon-btn:hover, .progress-actions button:hover, .tabs button:hover { background: var(--박스손); }
+.tabs { border-bottom: 0; gap: 4px; }
+/* 진행 단추(계약서·서류·인도)는 «상자 안의 칸»이라 옅은 면을 깐다 — 글자만이면 셋이 한 줄 글로 읽힌다 */
+.progress-actions button { background: var(--박스손); color: #7e878f; }
+
+/* ④ 켜진 것은 검은 면 — 탭·필터·기간·완료가 같은 말을 쓴다 */
+.quick-filters button:first-child, .work-tabs button.active, .offer-picker button.active,
+.progress-actions button.done, .tabs button.active {
+  border: 0; background: var(--켜짐); color: #fff;
+}
+
+/* 주 단추 — 검은 면 · 선 없음 · 라운드 4 */
+.primary, .new-app { border: 0; border-radius: var(--r); background: var(--켜짐); color: #fff; }
+
+/* 폰 — 판 사이 굵은 선 대신 같은 사이 */
+@media (max-width: 900px) {
+  .workspace { height: auto; display: flex; flex-direction: column; }
+  .panel { border-bottom: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 대표 2026-09-18 — 「너무 쨍한 거 없애고 우리 고유 남색」 · 「글씨 크기 통상적인 범위로」 · 「모바일 웹」
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 쨍함 걷기 — 검정 덩이들을 남색으로 */
+html, body { color: var(--글); }
+.topbar { background: var(--켜짐깊이); }
+.offer-block { background: var(--켜짐); }
+
+/**
+ * ★★★**글씨는 세 단뿐 — 제목 · 메인 · 보조** — 대표 2026-09-18
+ *   「글씨가 다 통일됐으면 좋겠어. 그냥 **제목글 메인글 보조글로만 3위계**로만 텍스트 하고」
+ *   (전에는 9·10·11·12·13·14·17·20·21 아홉 가지 — 대부분 10~11px 라 통상 범위 밑이었다)
+ *
+ *     제목 18   판 제목 · 차 이름 · 가장 큰 금액      «무엇을 보는가»
+ *     메인 14   본문 · 값 · 이름 · 단추 · 입력         «읽고 누르는 것»
+ *     보조 12   꼬리표 · 설명 · 뱃지 · 날짜·번호       «곁들이는 것»
+ *
+ *   ★큰 금액(월 920,000원)도 제목 단이다 — 네 번째 크기를 만들지 않는다. 강조는 «색»으로 한다(규칙 ④).
+ *   ★여기 없는 글자는 몸(`body`)의 메인 14 를 물려받는다 — 새 크기가 새어 들어올 자리를 막는다.
+ */
+:root { --글제목: 18px; --글메인: 14px; --글보조: 12px; }
+html, body { font-size: var(--글메인); }
+
+.panel h1, .vehicle-title h2, .selected-offer-card h2, .application-detail-head h2,
+.offer-block strong, .topbar strong
+  { font-size: var(--글제목); }
+
+.admin-user, .searchbox, .searchbox input, .form-stack input,
+.summary-grid dd, .price b, .app-top b, .app-top strong, .row-title strong,
+.selected-offer-card b, .snapshot-box b, .work-hint b, .hero-car,
+.topbar button, .quick-filters button, .work-tabs button, .offer-picker button, .tabs button,
+.icon-btn, .new-app, .progress-actions button, .danger-link, .primary
+  { font-size: var(--글메인); }
+
+.eyebrow, .thumb, .price small, .summary-grid dt, .product-row p, .vehicle-title p,
+.offer-block p, .offer-block>div, .application-card p, .application-detail-head p, .application-detail-head span,
+.selected-offer-card p, .selected-offer-card>span, .snapshot-box p, .snapshot-box>span,
+.work-hint span, .form-stack label, .topbar span, .app-top span,
+.row-title span, .chips span, .checks span, .status-dot, .application-status, .hero-car small, .count
+  { font-size: var(--글보조); }
+
+/**
+ * ★★**단추·뱃지도 규격이 둘뿐** — 대표 2026-09-18 「표는 크기에 맞춰서 버튼 뱃지 이렇게 했으면 좋겠고」
+ *   높이를 «정해» 두고 글자를 가운데에 세운다 — 줄 높이로 맞추면 글꼴마다 1px 씩 뜬다.
+ *     뱃지   22 높이 · 보조 12 · 좌우 8      (상태·세부트림·조건·완료 칩·SSOT·건수)
+ *     단추   33 높이 · 메인 14 · 좌우 12     (필터·탭·표 안 단추·진행 단추·위 띠 메뉴)
+ *     주 단추 44 높이 · 메인 14 굵게         (이 상품 접수하기) — 한 판에 하나
+ *
+ *   ★★**왜 33·줄높이 15 인가 — 잉크로 쟀다** (대표 「1미리 앞에서 재봐, 레이저로 쏴서 정확해야 함」)
+ *     글자 «획»의 높이가 홀수다 — 메인 14 한글은 13px, 보조 12 한글은 11px(캔버스 actualBoundingBox 로 실측).
+ *     ⚠ 처음엔 상자만 홀수(33)로 바꿨다 → 오히려 33곳이 반 픽셀 쏠렸다. 줄 높이가 14(짝수)라
+ *       줄 상자가 상자 안 «9.5px» 자리에 놓였기 때문이다. 반 픽셀은 상자가 아니라 줄에서 생겼다.
+ *     ⇒ 상자 높이 × 줄 높이 조합을 전부 셈해, 반 픽셀이 «한 번도» 안 생기고 획이 가운데 오는 것을 골랐다.
+ *       단추 33 · 줄 15 → 18곳 중 14곳이 위아래 같은 px. 남는 넷(「후불」「상세필터」「요약」「공유」)은
+ *       획이 짝수(14·12)라 1px 차이가 남는다 — 글자마다 획이 달라 더는 못 줄인다.
+ *     ⓘ 뱃지(보조 12)는 **어떤 조합으로도 1px 차이가 최소**다 — 획 11(홀수)을 반 픽셀 없는 자리에
+ *       놓으면 늘 한쪽이 1px 많다. 그래서 흔한 22 로 두었다. 모든 뱃지가 «같은 쪽으로» 같은 만큼이다.
+ *     ⓘ 주 단추는 굵은 획이 14px(짝수)라 44 가 맞다 — 그래서 그것만 짝수다.
+ */
+.row-title span, .chips span, .checks span, .status-dot, .application-status, .hero-car small, .count {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 22px; padding: 0 8px; line-height: 14px; border-radius: var(--r); white-space: nowrap;
+}
+.quick-filters button, .work-tabs button, .offer-picker button, .tabs button, .icon-btn, .new-app,
+.progress-actions button, .topbar nav button {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; padding: 0 12px; line-height: 15px; white-space: nowrap;
+}
+.primary { display: flex; align-items: center; justify-content: center; height: var(--ui-action-h,44px); line-height: 1; font-weight: 700; }
+
+/* ★남은 검정 셋 — 재 보니 선택자가 달랐다(완료 칩은 `.checks span.done`, 위 띠 켜짐은 `.topbar nav button.active`) */
+.checks span.done { background: var(--켜짐); color: #fff; }
+/** 위 띠(깊은 남색) 위의 켜진 메뉴 — 검은 알약 대신 «한 단 밝은 남색» 면. 띠와 같은 집안이라 쨍하지 않다. */
+.topbar nav button.active { background: var(--켜짐); color: #fff; }
+/** 사진 위 딱지(SSOT) — 사진 밝기와 무관하게 읽혀야 하므로 짙게 깔되, 검정이 아니라 남색으로. */
+.hero-car small { background: rgba(15, 27, 53, .86); color: #fff; }
+
+/** ★「판매중」 딱지만 원본이 `!important` 로 10px 에 못을 박아 두어 세 단 밖으로 샜다(실측). 같은 힘으로 되돌린다. */
+.status-dot { font-size: var(--글보조) !important; padding: 0 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 폰 — 판을 «한 장씩» (대표 2026-09-18 「모바일 웹 적용해봐」)
+   ⚠ 앞서는 판 셋을 세로로 이어 붙여 문서가 2,411px 였다 — 상세를 보려면 한참 내려야 했고,
+     위 메뉴도 폰에서 사라져 다른 판으로 가는 길이 스크롤뿐이었다.
+   ⇒ 아래 탭 셋(상품 · 상세 · 접수)으로 한 장씩. 차를 누르면 상세로, 「이 상품 접수하기」는 접수로 넘어간다.
+   ★옷은 그대로다 — 탭은 단추 규격(33·메인 14), 켜진 것은 남색 면, 탭 띠는 «판 박스»라 선을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+.phone-tabs { display: none; }
+@media (max-width: 900px) {
+  .workspace { padding: var(--ui-list-gap,8px) var(--ui-list-gap,8px) calc(var(--ui-list-gap,8px) + 49px + var(--ui-list-gap,8px) + env(safe-area-inset-bottom)); gap: var(--ui-list-gap,8px); }
+  .workspace[data-phone="product"] .detail-panel, .workspace[data-phone="product"] .work-panel,
+  .workspace[data-phone="detail"] .product-panel, .workspace[data-phone="detail"] .work-panel,
+  .workspace[data-phone="work"] .product-panel, .workspace[data-phone="work"] .detail-panel { display: none; }
+  .panel { min-height: calc(100dvh - 64px - 8px - 49px - 16px - env(safe-area-inset-bottom)); padding: var(--ui-panel-pad-mobile,16px); }
+  .phone-tabs {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    position: fixed; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 20;
+    padding: 7px; background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  }
+  .phone-tabs button {
+    display: flex; align-items: center; justify-content: center;
+    height: 33px; line-height: 15px; border: 0; border-radius: var(--r);
+    background: transparent; color: #4f5862; font-size: var(--글메인);
+  }
+  .phone-tabs button.active { background: var(--켜짐); color: #fff; }
+  /* ★폰 입력칸은 16 — 그 밑이면 iOS 가 칸을 누를 때 화면을 확 당긴다(세 단 규칙의 단 하나 예외, 폰에서만) */
+  .searchbox input, .form-stack input { font-size: 16px; }
+}
+
+/**
+ * ★단추 줄은 «넘긴다» — 가로로 굴리지 않는다.
+ *   ⚠ 글씨를 통상 크기(14)로 올리자 필터 줄·접수 탭 줄이 판 폭을 넘어 가로 스크롤바가 섰다(실측, 판 폭 ~250px).
+ *     원본이 `overflow:auto` 로 «굴려서» 버티고 있었다. 굴리면 끝 단추(「상세필터」「취소」)가 안 보인다.
+ *   ⇒ 줄을 넘겨 다 보이게 한다. 칩 줄도 같다.
+ */
+.quick-filters, .work-tabs, .offer-picker, .chips { flex-wrap: wrap; overflow: visible; row-gap: 4px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 위 띠 · CI/BI — 대표 2026-09-18
+   「freepass admin 은 우리 CI 규격에 맞춰서 BI 규격으로」 · 「상단바도 남색이랑 색깔 잘 활용합시다」
+   정본 = freepasserp4 — 색 `app/globals.css:4` (네이비 #1B2A4A · 스카이 #9EC5F3) · 마크 `public/icon.svg`
+   ⓘ 띠 자체는 기능 쪽 틀(`.fn-top`, `_fn/fn.css`)이다. 그 파일은 안 건드리고 여기서 한 단 센 선택자로 입힌다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --ci남색: #1B2A4A; --ci스카이: #9EC5F3; }
+/** ⚠ 띠가 다시 검정(#111418)이었다 — 「쨍한 것 없애고 남색」. 띠는 CI 남색 그 자체다. */
+body > nav.fn-top {
+  height: 56px; padding: 0 16px; gap: 16px;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인);
+}
+body > nav.fn-top .fn-state { font-size: var(--글보조); color: rgba(255, 255, 255, .6); }
+
+.dz-brand { display: inline-flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; flex: none; }
+.dz-mark { display: block; width: 24px; height: 24px; flex: none; }
+/** 워드마크 — 로고 레터링이라 Exo 2. 크기는 제목 단(18). 「freepass」 600 · 뒷말 300(명함 규격). */
+.dz-word { font-size: var(--글제목); line-height: 1; letter-spacing: -.2px; white-space: nowrap; }
+.dz-word b { font-weight: 600; }
+.dz-word i { font-style: normal; font-weight: 300; margin-left: 3px; color: rgba(255, 255, 255, .86); }
+
+/** 메뉴 — 글자만(규칙 ③). 지금 있는 곳 = 한 단 밝은 남색 면 + 스카이 글자(규칙 ④, CI 두 색). */
+.dz-menu { display: flex; gap: 4px; }
+body > nav.fn-top .dz-menu a {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r);
+  color: rgba(255, 255, 255, .72); text-decoration: none; font-size: var(--글메인);
+}
+body > nav.fn-top .dz-menu a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: var(--ci스카이); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 계약기간 — 카드 단추 · 폰에서는 좌우로 흐른다 (대표 2026-09-18)
+   「계약기간은 모바일에서는 좌우로 흐르게」 — ⑨(가로로 굴리지 않는다)의 «유일한 예외»다. 대표 지시.
+   고른 카드 = 옅은 남색 면(규칙 ④) · 접수 = 남색 주 단추. 고르기와 접수가 한 판에서 위아래로 선다.
+   ⚠ 선택자는 `.dz-terms .dz-term`(0,2,0) — 기능 쪽 `.fn-main button`(0,1,1)이 뒤에 불려서, 같은 힘이면
+     테두리·여백·바탕·글씨 크기까지 그쪽이 이겼다(실측: 카드에 회색 선). 그 파일은 안 건드리고 여기서 한 단 세게.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-offer { margin: 12px 0 20px; }
+.dz-terms { display: flex; flex-wrap: wrap; gap: 8px; }
+.dz-terms .dz-term {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-width: 136px; padding: 10px 12px; border: 0; border-radius: var(--r);
+  /* ★카드는 «바닥보다 밝은 면»이라야 박스로 읽힌다 — 이 화면은 판 없이 회색 바닥에 바로 서서,
+       옅은 회색(--박스)이면 안 고른 카드가 바닥에 묻혔다(실측). 회색 바닥 위 카드는 흰 면. */
+  background: var(--판); color: var(--글); text-align: left; font: inherit; cursor: pointer;
+}
+.dz-terms .dz-term b { font-size: var(--글메인); line-height: 15px; font-weight: 700; }
+.dz-terms .dz-term span { font-size: var(--글메인); line-height: 15px; }
+.dz-terms .dz-term small { font-size: var(--글보조); line-height: 14px; color: #6b7580; }
+.dz-terms .dz-term:hover { background: var(--박스손); }
+.dz-terms .dz-term.on { background: var(--고름); color: var(--ci남색); }
+.dz-go {
+  display: flex; align-items: center; justify-content: center; height: var(--ui-action-h); margin-top: 12px;
+  border-radius: var(--r); background: var(--ci남색); color: #fff; text-decoration: none;
+  font-size: var(--글메인); line-height: 14px; font-weight: 700;
+}
+.dz-empty { color: #6b7580; font-size: var(--글보조); }
+
+@media (max-width: 900px) {
+  /** 위 띠 — 두 줄. 얼굴이 위, 메뉴 넷이 아래에 같은 폭으로. 상태 글은 폰에서 접는다. */
+  body > nav.fn-top { height: auto; flex-wrap: wrap; padding: 10px 12px; row-gap: 8px; }
+  body > nav.fn-top .fn-state { display: none; }
+  .dz-menu { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  body > nav.fn-top .dz-menu a { padding: 0; }
+
+  /** 계약기간 — 화면 아래에 붙는다. 위로는 차를 훑고, 손가락 닿는 자리에서 기간을 넘겨 고르고 바로 접수. */
+  .dz-offer {
+    position: sticky; bottom: 0; z-index: 10;
+    margin: 12px -12px 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--바닥);
+  }
+  .dz-terms {
+    flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: 0 -12px; padding: 0 12px; scroll-padding: 0 12px;
+  }
+  .dz-terms::-webkit-scrollbar { display: none; }
+  /** 136 이면 375 폭에서 셋째 카드가 반쯤 보인다 — «옆에 더 있다»를 말없이 알린다. */
+  .dz-terms .dz-term { flex: 0 0 auto; scroll-snap-align: start; }
+  .dz-go { margin-top: 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 상품·접수 한 화면 — 확정 판 셋 위에 진짜 ERP5 (2026-09-18)
+   대표 「야 디자인 아까 그 형태 어디 갔어」 — 확정 모양을 진짜 데이터 화면(/products)에 다시 세웠다.
+   ⓘ 이 화면은 기능 쪽 틀(`.fn-main`, `_fn/fn.css`) 안에 선다. 그 규칙(맨 표·테두리 입력칸·11px 라벨)이
+     판 안까지 스며들지 않게 여기서 한 단 세게 걷는다 — 그 파일은 안 건드린다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main:has(> .workspace) { padding: 0; font-size: var(--글메인); }
+.fn-main .workspace { height: calc(100vh - 56px); }
+.fn-main .workspace .panel { display: flex; flex-direction: column; }
+/** ⚠ 판을 세로 줄로 세우자 사진 자리가 «눌려» 납작해졌다(실측) — 판 안의 덩이는 줄지 않는다. 넘치면 판이 구른다. */
+.fn-main .workspace .panel > * { flex-shrink: 0; }
+.fn-main .workspace h1 { margin: 0; font-size: var(--글제목); }
+.fn-main .workspace h2 { margin: 0; font-size: var(--글제목); }
+
+/* 판 안의 링크는 «단추·카드»다 — 밑줄·파란 글자를 걷는다 */
+.fn-main .workspace a { color: inherit; text-decoration: none; }
+.fn-main .workspace .application-card { display: block; }
+/** ★목록 카드는 확정 목업과 «같은 모양» — 썸네일 | 글 이 옆으로 나란하다(대표 「모든 페이지가 디자인은 동일해야」). */
+.fn-main .workspace .product-row { display: flex; gap: 12px; align-items: flex-start; }
+.fn-main .workspace .list, .fn-main .workspace .application-list { display: flex; flex-direction: column; gap: var(--ui-list-gap); }
+
+/* 찾기 — 검색창은 선을 가진다(규칙 ①). 거름 칸은 선 없는 박스 */
+.fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+.fn-main .workspace label.searchbox {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  height: var(--ui-control-h,40px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+}
+.fn-main .workspace label.searchbox input {
+  flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; outline: 0;
+  font-size: var(--글메인); color: var(--글);
+}
+.fn-main .workspace .dz-filters { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fn-main .workspace .dz-filters select, .fn-main .workspace .dz-filters input {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: var(--글); font-size: var(--글메인);
+}
+.fn-main .workspace .dz-filters input { width: 128px; }
+.fn-main .workspace .dz-filters button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); line-height: 15px;
+}
+.fn-main .workspace .dz-clear { display: inline-flex; align-items: center; height: 33px; padding: 0 8px; color: #6b7580; font-size: var(--글메인); }
+
+/* 목록 카드 — 썸네일은 목업 자리 그대로(대표 「상품목록 카드에 사진 썸네일 들어가야지」).
+   사진 주소는 기능 쪽 `photoUrl` — 칸이 생기면 바로 뜨고, 없으면 「사진 없음」(가짜 「CAR」 글자는 안 쓴다) */
+.fn-main .workspace .product-row .grow { min-width: 0; }
+.fn-main .workspace .product-row p { margin: 4px 0 6px; }
+.fn-main .workspace .dz-pager { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 0; font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .dz-pager a { color: var(--ci남색); font-weight: 600; }
+
+/* 상세 — 요약 표는 칸마다 박스(규칙 ⑤) */
+.fn-main .workspace dl.summary-grid { margin: 12px 0 0; }
+.fn-main .workspace .summary-grid dt { font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .summary-grid dd { margin: 2px 0 0; font-size: var(--글메인); }
+
+/* 머리 단추 셋(전부 보기 · 신규접수 · 접수 탭)이 이제 링크다 — 단추 규격(33) 그대로 */
+.fn-main .workspace .icon-btn, .fn-main .workspace .new-app, .fn-main .workspace .work-tabs a {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r); font-size: var(--글메인); white-space: nowrap;
+}
+.fn-main .workspace .new-app { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .work-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.fn-main .workspace .work-tabs a { color: #4f5862; }
+.fn-main .workspace .work-tabs a:hover { background: var(--박스손); }
+.fn-main .workspace .work-tabs a.active { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .application-card p { margin: 8px 0 0; }
+.fn-main .workspace .dz-more { display: block; padding: 8px 0; color: var(--ci남색); font-weight: 600; font-size: var(--글메인); }
+
+/* 폰 탭도 링크다 */
+.phone-tabs a {
+  display: flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; border-radius: var(--r);
+  color: #4f5862; font-size: var(--글메인); text-decoration: none;
+}
+.phone-tabs a.active { background: var(--ci남색); color: #fff; }
+@media (max-width: 900px) {
+  .fn-main .workspace { height: auto; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 덮개 — 기능 뼈대 화면 전부에 확정 옷을 입힌다 (대표 2026-09-18)
+   「디자인을 다시 덮고 기능은 기능만 손대라고 해」
+   계약접수 · 정산관리 · 전자계약 · 상품 「전부 보기」가 맨 표(테두리·11px·검정 탭) 그대로였다.
+   ⇒ 그 화면들이 공통으로 쓰는 몇 안 되는 이름(fn-box · fn-tabs · fn-filter · 표 · 입력칸)을
+     확정 규칙(§14)으로 한 겹 덮는다. 화면마다 따로 고치지 않는다 — 새 뼈대 화면도 태어나자마자 이 옷을 입는다.
+   범위 = 판 셋 화면(`.workspace`)이 «아닌» 기능 화면. 동작(폼·서버 액션·「—」 표기)은 안 건드린다.
+   ═══════════════════════════════════════════════════════════════════ */
+body { background: var(--바닥); }
+
+/* ⑤ 화면 한 장 = 판 박스 하나 — 선을 가진 두 곳 중 하나(규칙 ①) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) {
+  margin: 12px; padding: 20px 24px 32px;
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  font-size: var(--글메인); color: var(--글);
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) p { margin: 0 0 8px; }
+
+/* ⑥ 글씨 세 단 — 제목 18 · 메인 14 · 보조 12. 소제목은 크기를 안 늘리고 «색»으로 가른다(규칙 ④) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) h1 {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 12px; font-size: var(--글제목); font-weight: 700;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) h2 { margin: 24px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-muted { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-err { color: #b3261e; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-ok { color: #1f6b35; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) a { color: var(--ci남색); text-decoration: none; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) a:hover { text-decoration: underline; }
+/** 제목 옆 「+ 새 접수」 — 그 화면의 주 행동이라 남색 카드 단추. (뼈대가 인라인 13px 를 박아 두어 같은 힘으로 덮는다) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) h1 > a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); background: var(--ci남색); color: #fff !important;
+  font-size: var(--글메인) !important; font-weight: 600; margin-left: 0 !important; text-decoration: none !important;
+}
+
+/* 입력 — 선 없는 박스(규칙 ①) · 단추 규격 33(규칙 ⑦) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 15px;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) textarea { height: auto; min-height: 66px; padding: 8px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input:focus, .fn-main:not(:has(> .workspace, > .admin-shell)) select:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) textarea:focus { outline: 0; background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) input[type="checkbox"], .fn-main:not(:has(> .workspace, > .admin-shell)) input[type="radio"] {
+  width: 16px; height: 16px; padding: 0; accent-color: var(--ci남색);
+}
+/** ★찾기 칸은 선을 가진다 — 규칙 ①의 «검색창». 그 화면에서 «여기서 시작한다»는 자리다. */
+.fn-main:not(:has(> .workspace, > .admin-shell)) input[name="q"] { background: var(--판); border: 1px solid var(--선); min-width: 220px; }
+
+/* ③ 단추는 글자만 · ④ 이 폼의 주 행동(보내기)은 남색 면 */
+.fn-main:not(:has(> .workspace, > .admin-shell)) button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 15px; cursor: pointer;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) button:hover:not(:disabled) { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 탭 — 글자만, 켜진 것은 남색 면(검은 알약이던 것) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border: 0; border-radius: var(--r); background: transparent; color: #4f5862; text-decoration: none;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a:hover { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
+
+/* 상자·값 묶음 — 선 없는 박스(규칙 ⑤) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box { border: 0; border-radius: var(--r); background: var(--박스); padding: 12px 16px; margin: 8px 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dl { margin: 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dt { font-size: var(--글보조); color: #6b7580; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) dd { margin: 2px 0 8px; font-size: var(--글메인); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) details > summary { cursor: pointer; padding: 8px 0; color: var(--ci남색); font-weight: 600; }
+
+/* ★표도 박스 — 칸 선을 다 걷고 «줄마다 박스», 줄 사이는 틈(규칙 ① ⑤) */
+.fn-main:not(:has(> .workspace, > .admin-shell)) table { border-collapse: separate; border-spacing: 0 4px; background: transparent; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) th, .fn-main:not(:has(> .workspace, > .admin-shell)) td {
+  border: 0; padding: 8px 10px; white-space: nowrap; font-size: var(--글메인); text-align: left;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) th {
+  background: none; padding: 0 10px 2px; font-size: var(--글보조); font-weight: 600; color: #6b7580;
+}
+.fn-main:not(:has(> .workspace, > .admin-shell)) td { background: var(--박스); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tr > td:first-child { border-radius: var(--r) 0 0 var(--r); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tr > td:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) tbody tr:hover > td { background: var(--박스손); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) td.n { text-align: right; font-variant-numeric: tabular-nums; }
+/** 머리칸이 줄 머리(th)로 쓰인 표(정책 표) — 줄 이름표라 옅은 남색 면, 보조 글씨 */
+.fn-main:not(:has(> .workspace, > .admin-shell)) tbody th { background: var(--남색옅음); color: var(--ci남색); padding: 8px 10px; border-radius: var(--r) 0 0 var(--r); }
+
+@media (max-width: 900px) {
+  .fn-main:not(:has(> .workspace, > .admin-shell)) { margin: 8px; padding: 16px; }
+  .fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea { font-size: 16px; }
+}
+/**
+ * ★칸은 «담긴 곳보다 밝게» — 새 접수 폼은 칸들이 상자(.fn-box, 옅은 회색) 안에 있어,
+ *   칸도 옅은 회색이면 칸이 상자에 묻혀 «안 보였다»(실측: 날짜·고르기 칸만 겨우 보임).
+ *   흰 판 위의 칸 = 옅은 회색 박스, 회색 상자 안의 칸 = 흰 박스. 선 없이 면의 밝기로만 가른다(규칙 ①).
+ */
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box input:not([type="checkbox"]):not([type="radio"]),
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box select,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box textarea { background: var(--판); }
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box input:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box select:focus,
+.fn-main:not(:has(> .workspace, > .admin-shell)) .fn-box textarea:focus { background: var(--남색옅음); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상품찾기 — 판 둘: 상품 목록(판 두 개 폭) | 상품 상세 (대표 2026-09-18)
+   「상품찾기는 상품목록 패널 + 상품상세 패널만」 · 「상품목록 2개 패널 사이즈, 상품목록은 그대로」
+   ★목록 카드는 «그대로»다 — 폭이 두 배가 됐다고 카드를 늘이지 않는다. 같은 카드가 두 줄로 선다.
+   ═══════════════════════════════════════════════════════════════════ */
+/**
+ * ★★판 둘 폭 = «판 하나 × 2 + 사이 간격» — 대표 2026-09-18
+ *   「1개를 2개로 놨을 때 크기가 2개짜리 1개 패널이지. 그래야 옮겼을 때 똑같이 맞아 보이잖아 간격이」
+ *   ⚠ 앞서 2fr:1fr 로 나눴다 — 그러면 넓은 판이 (폭−간격)×2/3 이 되어 판 셋 화면보다 간격/3(4px) 넓었고,
+ *     메뉴를 옮길 때 오른쪽 판의 왼쪽 선이 4px 뛰었다.
+ *   ⇒ 판 셋과 «같은 3칸 격자»를 쓰고 목록이 두 칸을 차지한다. 어느 화면이든 선이 같은 자리에 선다.
+ */
+.workspace[data-mode="find"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workspace[data-mode="find"] > .product-panel { grid-column: span 2; }
+/**
+ * ★넓은 목록의 카드 = «판 하나 폭» — 한 줄에 둘. 메인(판 셋)의 목록 줄과 같은 폭이라 같은 차가 같은 모양으로 선다.
+ *   ⚠ 280px 칸이었을 때(한 줄에 셋, 325px) 혜택 칩이 하나밖에 안 들어가고 하나는 반쯤 잘렸다(실측).
+ */
+.fn-main .workspace[data-mode="find"] .list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 8px; align-content: start;
+}
+
+/**
+ * ★★**확정 목업(/design)은 «기준본»이다 — 덮개를 씌우지 않고 확정 때 모습 그대로 보인다** (대표 2026-09-18 「저 3단 배열 기본디자인 안 없어진 거지?」)
+ *   ⚠ 덮개가 목업에도 씌워져 켜진 탭·필터의 남색 면이 사라졌고, 새 위 띠 밑에 목업의 띠가 한 번 더 서서 띠가 둘이었다(실측).
+ *   ⇒ 덮개 범위에서 목업(`main.admin-shell`)을 뺀다. 그 화면에서는 새 위 띠를 접고 판 박스 틀도 걷는다.
+ */
+/**
+ * ★★위 띠는 «CI 띠 하나»다 — 대표 2026-09-18 「야 이 느낌 상단이었잖아」 · 「저렇게 상단 디자인했는데 갑자기 내용 페이지만 바뀐 거잖아」
+ *   ⚠ 한 번 거꾸로 했다 — 목업 화면에서 CI 띠를 접고 목업의 옛 띠를 살렸다. 위는 어느 화면이든 CI 띠이고, 바뀌는 것은 그 아래 내용이다.
+ *   ⇒ 목업의 옛 띠(.topbar)를 접는다. CI 띠 밑에 판 셋이 바로 선다.
+ */
+.admin-shell > .topbar { display: none; }
+.admin-shell { min-height: 0; }
+.fn-main:has(> .admin-shell) { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.admin-shell > .workspace { height: calc(100vh - 56px); }
+
+/* 사진 — 칸을 꽉 채우고(잘라서) 모서리는 라운드 4. 없으면 「사진 없음」을 보조 글씨로 */
+.thumb, .hero-car { overflow: hidden; }
+.thumb { flex: none; }
+.thumb img, .hero-car img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.thumb span, .hero-car > span { font-size: var(--글보조); color: #98a1ab; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상세 아래 절반 — 확정 목업 그대로 되돌림 (대표 2026-09-18 「기간은 버튼 눌러서 고르자 · 그대로 복구해봐」)
+   기간 단추 → 남색 선택 Offer 박스 → 「이 상품 접수하기」. 링크가 된 두 자리(상세정보 · 접수하기)만 단추 모양을 입힌다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .tabs a {
+  display: flex; align-items: center; justify-content: center;
+  height: 33px; line-height: 15px; border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
+}
+.fn-main .workspace .tabs a:hover { background: var(--박스손); }
+.fn-main .workspace a.primary {
+  display: flex; align-items: center; justify-content: center; margin-top: 12px;
+  color: #fff; text-decoration: none;
+}
+.fn-main .workspace .offer-block { margin-top: 12px; }
+.fn-main .workspace .summary-grid + .offer-picker { margin-top: 12px; }
+/** 폰 — 기간 단추 줄만 좌우로 흐른다(대표 「계약기간은 모바일에서는 좌우로 흐르게」, ⑨의 유일한 예외) */
+@media (max-width: 900px) {
+  .offer-picker { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .offer-picker::-webkit-scrollbar { display: none; }
+  .offer-picker button { flex: none; }
+}
+/** 사진은 칸에 «딱» 맞춘다 — 칸이 가운데 정렬(grid)이라 사진이 제 비율로 82×109 까지 커진 뒤 잘리고 있었다(실측). */
+.thumb, .hero-car { position: relative; }
+.thumb img, .hero-car img { position: absolute; inset: 0; }
+.hero-car small { z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 목록 한 줄 규격 — 모든 목록이 이것 하나 (대표 2026-09-18 「목록 규격 통일해야 할 듯」)
+   기준 = 확정 목업의 상품 카드. 사진 82×64 | 세 줄(제목·뱃지 / 곁 정보 / 값·곁값) · 높이 64 고정.
+   사진 없는 목록(접수·실적)은 사진 칸만 빠지고 높이는 같다 — 목록끼리 줄이 나란히 선다.
+     l1  제목 메인 14 굵게  ········  뱃지 22 · 보조 12  (tone act = 할 일 있음 → 옅은 남색 면)
+     l2  곁 정보 보조 12 회색 · 한 줄(넘치면 …)
+     l3  값 메인 14 굵게    ········  곁값 보조 12 회색
+   선 없음 · 라운드 4 · 바탕 --박스 · 손 대면 --박스손 · 고른 줄 --고름(옅은 남색)
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-row {
+  display: flex; gap: 12px; align-items: stretch;
+  padding: var(--ui-item-pad); border-radius: var(--ui-radius); background: var(--박스);
+  color: var(--글); text-decoration: none; cursor: pointer;
+}
+.dz-row:hover { background: var(--박스손); }
+.dz-row.on { background: var(--고름); }
+.dz-row-thumb {
+  position: relative; flex: none; width: var(--ui-thumb-w); height: var(--ui-thumb-h); overflow: hidden;
+  border-radius: var(--ui-radius); background: linear-gradient(135deg, #e8ebee, #f8f9fa);
+  display: flex; align-items: center; justify-content: center;
+}
+.dz-row-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.dz-row-thumb em { font-style: normal; font-size: var(--글보조); color: #98a1ab; }
+.dz-row-body { flex: 1; min-width: 0; height: var(--ui-row-body-h); display: flex; flex-direction: column; justify-content: space-between; }
+.dz-row-l1, .dz-row-l3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.dz-row-l1 b {
+  font-size: var(--글메인); font-weight: 700; line-height: 22px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dz-row-l2 {
+  font-size: var(--글보조); line-height: 14px; color: #6b7580;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dz-row-l3 strong { font-size: var(--글메인); font-weight: 700; line-height: 17px; white-space: nowrap; }
+.dz-row-l3 small { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-badge {
+  flex: none; display: inline-flex; align-items: center; height: 22px; line-height: 14px; padding: 0 8px;
+  border-radius: var(--r); font-style: normal; font-size: var(--글보조); white-space: nowrap;
+  background: var(--판); color: #4f5862;
+}
+.dz-badge.act { background: var(--남색옅음); color: var(--ci남색); font-weight: 600; }
+/* 판 안의 링크 규칙(.fn-main .workspace a)이 글자색을 물려받게 해 두어, 줄 글자색을 여기서 한 번 더 세운다 */
+.fn-main .workspace a.dz-row { color: var(--글); }
+/** 판 하나 너비 목록(정산관리 · 접수 전체) — 같은 줄이 «한 줄에 여럿» 선다. 상품찾기의 넓은 목록과 같은 칸 폭(280~). */
+.dz-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin: 0 0 12px; }
+/** 덮개의 링크 규칙(남색 글자·밑줄)이 줄 글자까지 물들이지 않게 — 줄은 링크지만 «글»이다 */
+.fn-main:not(:has(> .workspace, > .admin-shell)) a.dz-row { color: var(--글); text-decoration: none; }
+.fn-main:not(:has(> .workspace, > .admin-shell)) details .dz-list { margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 검색 — 창 하나 · 창 안의 세부검색 · 창 밑 퀵 단추 (대표 2026-09-18)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-searchbox {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  height: var(--ui-control-h,40px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+}
+.fn-main .workspace .dz-searchbox > input[name="q"] {
+  flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;
+  font-size: var(--글메인); color: var(--글);
+}
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 세부검색 = 화이트라벨 · 레트로의 «두 칸 조건판» (대표 2026-09-18)
+     원본 freepasserp4 ShopFilterSheet — 왼쪽 축 지도 · 오른쪽 값(네모 + 건수) · 바닥 「N대 보기」
+     우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만 · 글 셋(제목 18 · 메인 14 · 보조 12)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-find { position: relative; }
+/* 창 «안» 오른쪽 끝 — 창(40) 안에 단추(33)가 가운데로 선다 */
+.fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
+.dz-fs-open {
+  position: absolute; top: 3.5px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
+  height: 33px; line-height: 15px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
+}
+.dz-fs-open:hover, .dz-fs-open.on { background: var(--박스손); }
+/* 고른 개수 — 동그라미가 제 모양(원본) */
+.dz-fs-open i, .dz-fs-body nav i {
+  font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ci남색); color: #fff; font-size: var(--ui-text-support); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+/* 웹 — 뒤판 없이 창 바로 밑에 같은 폭으로 뜬다 */
+.dz-fs-back { display: contents; }
+.dz-fs-sheet {
+  /* 창(40) 바로 밑 4px — .dz-find 는 밑 여백까지 품어 100% 로 재면 12px 떨어졌다(실측) */
+  position: absolute; top: 44px; left: 0; right: 0; z-index: 30;
+  display: flex; flex-direction: column; height: min(520px, 62vh); overflow: hidden;
+  background: var(--판); border: 1px solid var(--선); border-radius: var(--r);
+  box-shadow: 0 8px 24px rgba(15, 27, 53, .12);
+}
+.dz-fs-head { flex: none; display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 16px; }
+.dz-fs-head b { flex: 1; font-size: var(--글메인); font-weight: 700; color: var(--글); }
+.dz-fs-head button, .dz-fs-axis button, .dz-fs-more {
+  height: 33px; line-height: 15px; padding: 0 10px; border: 0; border-radius: var(--r); background: transparent;
+  color: #6b7580; font-size: var(--글보조); cursor: pointer;
+}
+.dz-fs-head button:hover, .dz-fs-axis button:hover, .dz-fs-more:hover { background: var(--박스손); }
+.dz-fs-body { flex: 1; min-height: 0; display: flex; }
+/* ★두 칸은 따로 구른다 — 오른쪽을 내려도 왼쪽 지도는 제자리 */
+.dz-fs-body nav { flex: 0 0 112px; overflow-y: auto; background: var(--박스); padding: 4px 0; }
+.dz-fs-body nav button {
+  display: flex; align-items: center; gap: 6px; width: 100%; height: var(--ui-touch-min); padding: 0 10px 0 14px;
+  border: 0; background: transparent; text-align: left; cursor: pointer;
+  color: #6b7580; font-size: var(--글메인);
+}
+.dz-fs-body nav button span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-fs-body nav button:hover { color: var(--글); }
+/* 고른 축 — 흰 면으로 «떠올라» 오른쪽과 이어져 보인다(원본). 선 대신 면 */
+.dz-fs-body nav button.on { background: var(--판); color: var(--ci남색); font-weight: 700; }
+.dz-fs-vals { flex: 1; min-width: 0; overflow-y: auto; padding: 8px 16px 16px; transition: opacity .12s; }
+.dz-fs-vals.wait { opacity: .55; }
+.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; height: 33px; margin-bottom: 4px; }
+.dz-fs-axis b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
+/* 값 한 줄 — 네모 · 이름 · 건수(오른쪽 끝, 흐리게). 한 열(두 열이면 숫자가 옆 라벨에 붙어 읽힌다) */
+.dz-fs-check {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: var(--ui-control-h); padding: 0 4px;
+  border: 0; border-radius: var(--r); background: transparent; text-align: left; cursor: pointer;
+  color: #4f5862; font-size: var(--글메인);
+}
+.dz-fs-check:hover { background: var(--박스); }
+.dz-fs-check .box {
+  flex: none; width: 17px; height: 17px; border-radius: var(--r); display: inline-flex; align-items: center; justify-content: center;
+  background: var(--박스손); color: #fff; font-size: 12px; line-height: 1; font-weight: 700;
+}
+.dz-fs-check .lab { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-fs-check .n { flex: none; color: #9aa3ad; font-size: var(--글보조); font-variant-numeric: tabular-nums; }
+.dz-fs-check.on { color: var(--글); font-weight: 700; }
+.dz-fs-check.on .box { background: var(--ci남색); }
+/* 0 — 줄은 서 있고 흐리게만(대표 2026-09-10 「0이라고 해줘야지」) */
+.dz-fs-check.zero:not(.on) { color: #b3bac2; }
+.dz-fs-check.zero:not(.on) .n { color: #c6ccd2; }
+.dz-fs-more { margin-top: 4px; }
+.dz-fs-foot { flex: none; padding: 8px 12px 12px; }
+.dz-fs-foot .primary {
+  width: 100%; height: var(--ui-action-h); border: 0; border-radius: var(--ui-radius); cursor: pointer;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700;
+}
+/* 폰 — 아래에서 올라오는 시트(원본 82vh). 뒤판을 눌러 닫는다. 위를 조금 남겨 «어디로 돌아가는지» 보인다 */
+@media (max-width: 900px) {
+  .dz-fs-back {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    position: fixed; inset: 0; z-index: 60; background: rgba(15, 27, 53, .42);
+  }
+  .dz-fs-sheet {
+    position: static; height: 82vh; border: 0; border-radius: 12px 12px 0 0; box-shadow: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .dz-fs-head { padding: 12px 8px 12px 16px; }
+  .dz-fs-head b { font-size: var(--글제목); }
+  .dz-fs-body nav { flex-basis: 116px; }
+  .dz-fs-body nav button { height: 50px; }
+  .dz-fs-check { height: var(--ui-touch-min); }
+  .dz-fs-check .box { width: 20px; height: 20px; }
+  .dz-fs-foot .primary { height: 52px; }
+  /* ⚠ 틀고정 머리(.dz-listtop, sticky z 8)가 쌓임 맥락을 만들어 시트가 그 안에 갇힌다 — 폰 판 단추(z 20)가
+       시트 바닥 「N대 보기」를 덮었다(실측). 시트가 열린 동안만 머리를 위로 올린다. */
+  .fn-main .workspace > .panel > .dz-listtop:has(.dz-fs-back) { z-index: 70; }
+}
+/** 퀵 단추 — 목업의 퀵 필터 그대로(글자만 · 켜진 것 남색 면). 이제 링크라 모양을 한 번 더 세운다 */
+.fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; }
+.fn-main .workspace .quick-filters a {
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
+}
+.fn-main .workspace .quick-filters a:hover { background: var(--박스손); }
+.fn-main .workspace .quick-filters a.active { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .dz-find { margin: 0; }
+
+/* 상세정보 — 소제목은 크기 대신 남색(규칙 ④) */
+.dz-sub { margin: 16px 0 8px; font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 스크롤바 — 얇고 연하게, 통상 크기 (대표 2026-09-18 「스크롤로 직접 만질 필요는 거의 없을 것 같은데 · 연하게 · 웹 앱 둘 다」)
+   ⚠ 윈도우 기본 막대(굵은 회색 + 위아래 화살표)가 판마다 섰다. 사람은 휠·손가락으로 굴리지 막대를 잡지 않는다.
+   ═══════════════════════════════════════════════════════════════════ */
+* { scrollbar-width: thin; scrollbar-color: rgba(27, 42, 74, .18) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(27, 42, 74, .18); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(27, 42, 74, .32); }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+/** 차종 매칭이 확정 전일 때 «왜 멈췄나» — 보조 글씨, 칸 밑에 */
+.dz-note { display: block; margin-top: 2px; font-size: var(--글보조); font-weight: 400; color: #6b7580; line-height: 1.4; }
+
+/* 목록 줄 — 뱃지 여럿 · 살필 것 표시 · 혜택 칩 (대표 「한눈에 보이면 좋은데 — 자리가 부족한가?」 → 줄은 안 늘린다) */
+.dz-row-badges { display: inline-flex; gap: 4px; flex: none; }
+.dz-flag { font-style: normal; font-weight: 700; color: var(--ci남색); margin-right: 6px; }
+.dz-chips { display: inline-flex; gap: 4px; flex: none; overflow: hidden; }
+.dz-chips i {
+  font-style: normal; display: inline-flex; align-items: center; height: 20px; line-height: 14px; padding: 0 6px;
+  border-radius: var(--r); background: var(--남색옅음); color: var(--ci남색); font-size: var(--글보조); white-space: nowrap;
+}
+.dz-row.on .dz-chips i, .dz-row.on .dz-badge.plain { background: var(--판); }
+/**
+ * ★혜택 칩은 «받은 차례 그대로 다» 싣고, 자리가 모자라면 «뒤에서부터 통째로» 숨긴다.
+ *   (줄바꿈을 허락하되 높이를 한 줄로 묶으면 안 들어가는 칩은 보이지 않는 둘째 줄로 내려간다 — 반쯤 잘린 칩이 없다)
+ *   차례가 뜻이라(심사가 맨 앞) 앞의 것이 늘 먼저 보인다.
+ */
+.dz-row-l3 .dz-chips { flex: 0 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; height: 20px; overflow: hidden; }
+
+/* ★퀵 단추 줄 — 두 화면 같은 단추. 묶음(출고상태 | 상품구분 | 혜택) 사이는 한 칸 틈 */
+.dz-quick-gap { flex: none; width: 8px; }
+/** 계약접수(한 칸 폭)는 같은 줄을 좌우로 넘겨 본다 — 대표 「계약접수는 좌우로 스크롤해서 볼 수 있으면 되잖아」 */
+.fn-main .workspace[data-mode="intake"] .quick-filters { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; }
+.fn-main .workspace[data-mode="intake"] .quick-filters a { flex: none; }
+
+/* 상세정보 — 옵션 원문 · 원본 링크 · 정책 추정 표시 */
+.dz-para { margin: 0; padding: 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); line-height: 1.6; color: var(--글); }
+.dz-links { display: flex; gap: 12px; margin: 8px 0 0; font-size: var(--글메인); }
+.dz-links a { color: var(--ci남색); font-weight: 600; }
+/** 「정책 추정」「정책 없음」 — 혜택 칩과 같은 자리지만 남색이 아니라 회색(믿을 만한 것만 남색) */
+.chips .dz-chip-note { background: var(--박스) !important; color: #6b7580 !important; }
+/* 판 머리 오른쪽 — 행동 단추와 건수가 나란히(접수 판). 상품 판은 건수만. 건수 자리가 두 판에서 같다(맨 오른쪽) */
+.dz-head-right { display: flex; align-items: center; gap: 8px; }
+.fn-main .workspace .work-panel .list { display: flex; flex-direction: column; gap: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 뱃지 두 가지 — 화이트라벨 규격 (대표 2026-09-18 「뱃지 규격이 왜 다르지? 화이트라벨 거 갖고 와」)
+   ① 신원 딱지(Tag) — 상자 하나 규격: 22px · 라운드 4 · 보조 12 · 좌우 8. 뜻은 색으로만(plain 회색 / act 옅은 남색)
+   ② 조건 표시(PerkMarks) — 상자 없이 ✓ + 굵은 먹색 글자(색은 ✓ 에만). 신원 딱지와 한눈에 갈린다.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-badge, .fn-main .workspace .status-dot {
+  display: inline-flex; align-items: center; height: 22px; line-height: 14px; padding: 0 8px;
+  border-radius: var(--r); font-style: normal; font-size: var(--글보조) !important; font-weight: 500; white-space: nowrap;
+  background: var(--박스); color: #4f5862 !important;
+}
+.dz-row .dz-badge { background: var(--판); }          /* 줄 바탕(회색) 위에서는 흰 면 */
+.dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; font-weight: 600; }
+/* 신원 칩 — 아이콘 + 글자(erp4 「박스 뱃지 말고 아이콘 텍스트」). 좋은 소식(출고가능·즉시출고·끝)은 초록 — 화이트라벨 good */
+.dz-badge { gap: 4px; }
+.dz-badge .dz-ico { flex: none; opacity: .8; }
+.dz-badge.good, .dz-row .dz-badge.good { background: #e8f5ee; color: #1e7a45 !important; font-weight: 600; }
+
+.dz-perks { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 12px; row-gap: 4px; }
+.dz-perk { display: inline-flex; align-items: center; gap: 3px; font-size: var(--글메인); font-weight: 700; color: var(--글); white-space: nowrap; }
+/* 조건 표시 — 색은 아이콘에만: 혜택 남색 ✓ · 무심사 초록 방패 · 신용조회·소득확인 흐린 방패(손님이 «해야 할 일») */
+.dz-perk .dz-ico { flex: none; color: var(--ci남색); }
+.dz-perk.good .dz-ico { color: #1e8a4c; }
+.dz-perk.ask .dz-ico { color: #9aa3ad; }
+.dz-perk-note { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-perks.compact { column-gap: 8px; }
+.dz-perks.compact .dz-perk { font-size: var(--글보조); }
+/** 목록 3줄 — 표시는 «받은 차례 그대로 다» 싣고, 자리가 모자라면 뒤에서부터 통째로 숨는다(반쯤 잘린 것 없음) */
+.dz-row-l3 .dz-perks.compact { flex: 0 1 auto; min-width: 0; justify-content: flex-end; height: 17px; overflow: hidden; }
+.detail-panel .dz-perks { margin: 12px 0 0; }
+
+/* ★ 선택 Offer — «한 줄» (대표 「대여료 저렇게 공간 많이 두고 할 필요 없어, 한 줄로」)
+   월 값만 굵게, 보증금·선납·주행은 옆에 붙는다(제미나이: 월 값만 보이면 오접수 사고 — 빼지 않는다) */
+.dz-offer-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 12px 0 0;
+  padding: 10px 12px; border-radius: var(--r); background: var(--남색옅음);
+  font-size: var(--글메인); color: #4f5862;
+}
+.dz-offer-line b { font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.dz-offer-line span + span::before, .dz-offer-line b + span::before { content: '|'; margin-right: 12px; color: #b8c2cf; }
+.fn-main .workspace button.primary, .fn-main .workspace a.primary { margin-top: 12px; width: 100%; border: 0; cursor: pointer; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 오른쪽 판 — 신규 접수 · 접수 상세 (절대 법칙: 쪽을 안 옮기고 판만 바뀐다)
+   기능 쪽 폼·진행 체크 부품이 판 안에서 같은 옷(선 없는 박스 · 33 칸 · 남색 주 단추)을 입게 한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-picked { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--r); background: var(--박스); margin-bottom: 12px; }
+.dz-picked > span { font-size: var(--글보조); color: #6b7580; }
+.dz-picked > b { font-size: var(--글메인); font-weight: 700; }
+.dz-picked > p { margin: 0; font-size: var(--글보조); color: #6b7580; }
+.dz-picked > strong { font-size: var(--글메인); color: var(--ci남색); }
+.dz-warn { margin: 0 0 8px; font-size: var(--글보조); color: #b3261e; }
+.dz-ok { margin: 0 0 8px; font-size: var(--글보조); color: #1f6b35; }
+
+.fn-main .workspace .work-panel .fn-box {
+  border: 0; border-radius: var(--r); background: var(--박스); padding: 12px; margin: 8px 0;
+}
+.fn-main .workspace .work-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.fn-main .workspace .work-panel input:not([type="checkbox"]):not([type="radio"]),
+.fn-main .workspace .work-panel select, .fn-main .workspace .work-panel textarea {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  color: var(--글); font: inherit; font-size: var(--글메인);
+}
+.fn-main .workspace .work-panel textarea { height: auto; min-height: 66px; padding: 8px; }
+.fn-main .workspace .work-panel input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--ci남색); }
+.fn-main .workspace .work-panel form button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
+}
+.fn-main .workspace .work-panel form button[type="submit"]:not([name]) { background: var(--ci남색); color: #fff; font-weight: 600; }
+.fn-main .workspace .work-panel form button:disabled { opacity: .45; cursor: not-allowed; }
+.dz-event { display: flex; gap: 8px; align-items: baseline; padding: 8px 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글보조); }
+.dz-event b { font-size: var(--글보조); }
+.dz-event small { margin-left: auto; color: #6b7580; }
+.dz-list-plain { margin: 0; padding-left: 18px; font-size: var(--글보조); color: #6b7580; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 틀고정 — 무엇이 서 있고 무엇이 구르나 (대표 2026-09-18 「각 스크롤에 틀고정 될 것과 이런 것들 잘 챙겨 주시고 · 모바일까지」)
+   ─ PC ─  판 하나 = 제 스크롤. 판 머리는 늘 서 있다.
+     목록 판  : [머리 · 검색창 · 퀵 단추] 서 있음(.dz-listtop) → 목록만 구름 → 쪽 넘김 줄은 바닥에 서 있음
+     상세 판  : 판 전체가 구른다 — ★서 있는 것은 [기간 · 값 한 줄 · 공유 · 접수하기] 하나뿐(바닥에 붙음)
+                대표 2026-09-18 「세부 페이지에는 접수 버튼 빼고는 틀고정 필요 없지」 — 앞서 머리·탭까지 서 있었다
+     신규 접수·접수 상세 : 머리(「목록」)는 위에 붙고 몸통이 구름
+   ─ 폰 ─  쪽 전체가 구른다(판 한 장씩). 목록 머리·검색·퀵은 화면 위에 붙고, 접수하기 덩이는 아래 탭 바로 위에 붙는다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .fn-main .workspace > .panel { display: flex; flex-direction: column; overflow: hidden; }
+  .fn-main .workspace > .panel > .dz-listtop { flex: none; }
+  .fn-main .workspace > .panel > .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 2px; }
+  .fn-main .workspace > .panel > .dz-pager { flex: none; }
+  /* 상세 판 — 판 전체가 구른다(머리·탭도 같이). 접수 덩이만 바닥에 붙는다 */
+  .fn-main .workspace > .detail-panel { display: block; overflow-y: auto; }
+  /* 판 여백(22) 밑까지 흰 면으로 덮어 바닥에 딱 붙인다 */
+  .fn-main .workspace > .detail-panel .dz-apply { bottom: -22px; margin-bottom: -22px; padding-bottom: 22px; }
+  /* 신규 접수 · 접수 상세 — 판 전체가 구르되 머리는 붙는다 */
+  .fn-main .workspace > .work-panel:not(:has(> .list)) { display: block; overflow-y: auto; }
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head {
+    position: sticky; top: -22px; z-index: 6; margin: -22px -22px 12px; padding: 22px 22px 8px; background: var(--판);
+  }
+}
+/* 상세 요약의 접수 덩이 — 몸통 바닥에 붙는다(PC · 폰 공통). 밑 내용이 비치지 않게 흰 면 */
+.dz-apply { position: sticky; bottom: 0; z-index: 4; background: var(--판); padding-bottom: 2px; }
+.dz-apply .offer-picker { padding-top: 12px; }
+
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel { overflow: visible; }
+  /** 폰 — 목록 머리·검색·퀵이 화면 위에 붙는다. 판 여백(16)만큼 끌어올려 흰 면으로 덮는다 */
+  .fn-main .workspace > .panel > .dz-listtop {
+    position: sticky; top: 0; z-index: 8; margin: -16px -16px 8px; padding: 16px 16px 4px; background: var(--판);
+  }
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head {
+    position: sticky; top: 0; z-index: 8; margin: -16px -16px 12px; padding: 16px 16px 8px; background: var(--판);
+  }
+  /** 폰 — 접수하기 덩이는 아래 탭(49 + 사이 8·8) 바로 위에 붙는다 */
+  .dz-apply { bottom: calc(49px + 16px + env(safe-area-inset-bottom)); }
+  /** 폰 아래 탭은 계약접수·상품찾기 두 화면 모두에 선다(판 한 장씩) */
+  .fn-main .workspace { padding-bottom: calc(8px + 49px + 8px + env(safe-area-inset-bottom)); }
+}
+/**
+ * ★폰 — 판을 «한 장씩»(규칙 ⑧). ⚠ 옛 목업 규칙은 data-phone="product" 를 봤는데 새 화면은 list·detail·work 를 쓴다
+ *   — 이름이 어긋나 폰에서 판 셋이 한꺼번에 섰다(실측). 새 이름으로 다시 건다.
+ */
+@media (max-width: 900px) {
+  .fn-main .workspace[data-phone="list"] > .panel:not(.product-panel),
+  .fn-main .workspace[data-phone="detail"] > .panel:not(.detail-panel),
+  .fn-main .workspace[data-phone="work"] > .panel:not(.work-panel) { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 폰 위 띠 — 메뉴는 ☰ 시트로, 아래 띠(고정 메뉴 넷)는 걷었다 (대표 2026-09-18 「동선 좀 짜 봐」)
+     ⚠ 그 전에는 얼굴 띠 밑에 아래 메뉴 띠(56px, 아이콘 넷)가 늘 떠 있고, 그 «위»에 각 판의 하단바가
+     또 떠서 엄지 자리에 버튼 줄이 둘이었다. 메뉴 넷 · 로그아웃은 `_design/MobileMenu` 시트로 옮겼다
+     (위 띠 오른쪽 끝 ☰). 엄지 자리(화면 맨 아래 한 줄)는 «지금 판이 할 일»(§14-3 하단바)에게 전부 준다.
+     그 줄 왼쪽에 «홈»(계약접수로) 하나만 고정으로 겹쳐 선다(`_design/MobileMenu` PhoneHome) — 아래 이어지는 절.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root { --아래띠: env(safe-area-inset-bottom); --판탭: 49px; }
+  body > nav.fn-top { height: 52px; flex-wrap: nowrap; padding: 0 16px; }
+  /* 글자 메뉴 넷(웹 것)은 폰에서 아예 안 그린다 — ☰ 시트가 대신한다 */
+  body > nav.fn-top .dz-menu { display: none; }
+
+  /* 쪽 밑이 아래 띠에 안 가리게 */
+  /* ⚠ 덮개의 여백 규칙(.fn-main:not(:has(…)))이 더 세서 16 으로 남아 정산 끝줄이 아래 띠 밑에 깔렸다(실측) — 한 단 세게 */
+  body > main.fn-main:not(:has(> .workspace)) { padding-bottom: calc(var(--아래띠) + 16px); }
+  .fn-main:has(> .workspace) { display: flex; flex-direction: column; padding-bottom: 0; }
+
+  /* 판 탭(상품 · 상세 · 접수) — 얼굴 띠 밑에 붙어 선다. 흰 띠 한 줄, 켜진 것 남색 면 */
+  .phone-tabs {
+    order: -1; position: sticky; top: 0; left: auto; right: auto; bottom: auto; z-index: 12;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 4px;
+    height: var(--판탭); padding: 8px; margin: 0;
+    background: var(--판); border: 0; border-bottom: 1px solid var(--선); border-radius: 0;
+  }
+  .fn-main .workspace { padding-bottom: calc(var(--아래띠) + 8px); }
+  .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 16px); }
+  /* 틀고정 머리 — 판 탭 밑에 붙는다 */
+  .fn-main .workspace > .panel > .dz-listtop,
+  .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head { top: var(--판탭); }
+  /* 접수 덩이 — 아래 띠 바로 위 */
+  .dz-apply { bottom: calc(var(--아래띠) + 8px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 접수 상세 — 프로모션 · 가감 작은 폼 둘 (대표 2026-09-18 「수수료대로 계산하고 프로모션이나 가감」)
+     옷은 판 문법 그대로: 칸은 흰 입력(박스 안) · 저장은 남색 주 단추(33) · 에러는 받은 글 그대로
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-money { display: grid; gap: 8px; }
+.dz-money form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end;
+  padding: 12px; border-radius: var(--r); background: var(--박스);
+}
+.dz-money b { grid-column: 1 / -1; font-size: var(--글메인); color: var(--글); }
+.dz-money label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.dz-money label.wide { grid-column: 1 / -1; }
+.dz-money input {
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  color: var(--글); font-size: var(--글메인); font-family: inherit;
+}
+.dz-money button {
+  grid-column: 1 / -1; justify-self: end; height: 33px; line-height: 15px; padding: 0 16px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600; cursor: pointer;
+}
+.dz-money button:disabled { opacity: .5; cursor: default; }
+.dz-errs { grid-column: 1 / -1; margin: 0; padding: 0 0 0 16px; color: #b3261e; font-size: var(--글보조); }
+@media (max-width: 900px) { .dz-money input { font-size: 16px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 상세 사진 — 큰 사진 + 넘기기 (erp4 ProductDetail 사진 칸 · 대표 2026-09-18 ② 선택)
+     큰 사진 16:10 · ‹ › · 밀어 넘기기 · 「N / M」 · 누르면 크게 · 웹만 옆 세로 썸네일(큰 사진 높이만큼 · 안에서 구름)
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-gal { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.dz-gal.many { grid-template-columns: minmax(0, 1fr) 64px; }
+.dz-gal-main {
+  position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--r);
+  background: var(--박스); cursor: zoom-in; touch-action: pan-y; user-select: none;
+}
+.dz-gal-main img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.dz-gal-main.empty { display: flex; align-items: center; justify-content: center; cursor: default; font-size: var(--글보조); color: #98a1ab; }
+.dz-gal-main.empty a { color: var(--ci남색); font-weight: 600; }
+.dz-gal-step {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 27, 53, .55); color: #fff; cursor: pointer;
+}
+.dz-gal-step:hover { background: rgba(15, 27, 53, .8); }
+.dz-gal-step.l { left: 8px; } .dz-gal-step.r { right: 8px; }
+.dz-gal-main small, .dz-gal-big small {
+  position: absolute; right: 8px; bottom: 8px; z-index: 2; padding: 0 8px; line-height: 20px; border-radius: var(--r);
+  background: rgba(15, 27, 53, .86); color: #fff; font-size: var(--글보조); font-variant-numeric: tabular-nums; pointer-events: none;
+}
+/* 세로 썸네일 — 줄 높이(=큰 사진)만 받는다: height 0 + min-height 100% */
+.dz-gal-thumbs {
+  height: 0; min-height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 6px; scrollbar-width: none;
+}
+.dz-gal-thumbs::-webkit-scrollbar { display: none; }
+.dz-gal-thumbs button {
+  flex: none; width: 100%; aspect-ratio: 16 / 10; padding: 0; border: 0; border-radius: var(--r);
+  overflow: hidden; background: var(--박스); opacity: .55; cursor: pointer;
+}
+.dz-gal-thumbs button img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dz-gal-thumbs button:hover { opacity: .85; }
+/* 고른 썸네일 — 선 대신 «밝기»로(흐린 것 사이에서 혼자 선명) + 남색 테 */
+.dz-gal-thumbs button.on { opacity: 1; box-shadow: inset 0 0 0 2px var(--ci남색); }
+.dz-gal-big {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 16, 30, .94); cursor: zoom-out;
+}
+.dz-gal-big img { max-width: 94vw; max-height: 88vh; object-fit: contain; cursor: default; }
+.dz-gal-big .dz-gal-step { width: var(--ui-touch-min); height: var(--ui-touch-min); }
+.dz-gal-big small { right: 50%; transform: translateX(50%); bottom: 16px; }
+.dz-gal-close {
+  position: absolute; top: 12px; right: 12px; width: var(--ui-touch-min); height: var(--ui-touch-min); padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .12); color: #fff; cursor: pointer;
+}
+@media (max-width: 900px) {
+  .dz-gal.many { grid-template-columns: minmax(0, 1fr); }
+  .dz-gal-thumbs { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 성격별 구역 — 구역마다 제 자리 (대표 2026-09-18 「성격에 따라서 잘 만들어 … 막 뭉쳐놓지 말고」)
+     erp4 DetailTable 규격: 머리(아이콘 하나 + 이름 + 칸 수) → 같은 표(항목 │ 값). 칸 안에는 그림을 안 넣는다.
+     머리 무게 = 중요도: main 남색 면 · sub 회색 면 · trace 면 없음. 선은 없다 — 표는 옅은 박스, 줄은 사이로.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-secs { display: grid; gap: 12px; margin-top: 4px; }
+.dz-sec > summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 33px; cursor: pointer; user-select: none;
+}
+.dz-sec > summary::-webkit-details-marker { display: none; }
+.dz-sec-ico {
+  flex: none; width: 26px; height: 26px; border-radius: var(--r);
+  display: inline-flex; align-items: center; justify-content: center; background: var(--박스); color: #6b7580;
+}
+.dz-sec.main .dz-sec-ico { background: var(--ci남색); color: #fff; }
+.dz-sec.trace .dz-sec-ico { background: transparent; color: #9aa3ad; }
+.dz-sec > summary b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
+.dz-sec.trace > summary b { color: #6b7580; }
+.dz-sec > summary small { font-size: var(--글보조); color: #9aa3ad; font-variant-numeric: tabular-nums; }
+.dz-sec-fold { margin-left: auto; display: inline-flex; color: #9aa3ad; transition: transform .15s; }
+.dz-sec[open] .dz-sec-fold { transform: rotate(180deg); }
+.dz-sec > summary:hover .dz-sec-fold { color: var(--글); }
+.dz-sec-hint { margin: 2px 0 0 34px; font-size: var(--글보조); color: #6b7580; }
+.dz-sec-table { margin: 8px 0 0; padding: 4px 12px; background: var(--박스); border-radius: var(--r); }
+.dz-sec-table > div { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); gap: 12px; padding: 7px 0; }
+.dz-sec-table dt {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  font-size: var(--글보조); line-height: 18px; color: #6b7580;
+}
+.dz-sec-table dd { margin: 0; min-width: 0; font-size: var(--글메인); line-height: 18px; color: var(--글); overflow-wrap: anywhere; }
+.dz-sec-table dd a { color: var(--ci남색); font-weight: 600; }
+/* ⑤ 모르는 값 — 칸은 두고 흐리게(지우면 «없음»을 못 본다 · erp4 dimDashes) */
+.dz-sec-table .dz-none { color: #c3c9cf; }
+.dz-sec-table > div.none dt { color: #9aa3ad; }
+/* 내부 전용 — 손님·견적서에 절대 안 나가는 값(심사기준 · 신용등급 · 수수료 환수) */
+.dz-internal {
+  font-style: normal; font-size: var(--ui-text-support); line-height: 16px; padding: 0 5px; border-radius: var(--ui-radius);
+  background: #fbeedd; color: #94560f; font-weight: 600;
+}
+.dz-article { font-size: var(--ui-text-support); color: #9aa3ad; }
+.dz-sec-note { display: block; margin-top: 2px; font-size: var(--글보조); color: #6b7580; }
+.dz-sec-note.inline { display: inline; margin: 0 0 0 6px; }
+.dz-sec-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.dz-sec-list i { font-style: normal; font-size: var(--글보조); line-height: 22px; padding: 0 8px; border-radius: var(--r); background: var(--판); }
+/* 정정요청 걸린 칸 — 멈춘 자리. 선 없이 색으로만(옅은 붉은 면 + 진한 글자) */
+.dz-sec-table > div.stop { margin: 0 -8px; padding: 7px 8px; border-radius: var(--r); background: #fdecea; }
+.dz-sec-table > div.stop dt, .dz-sec-table > div.stop dd { color: #a8261d; font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 하단바 규격 — 하단바를 쓰는 곳은 모두 이것 하나 (대표 2026-09-18 「하단바 규격도 잡아서 하단바 쓰는 곳은 동일하게」)
+     쓰는 곳: 상품 상세 접수 덩이(공유 · 이 상품 접수하기) · 세부검색 판 바닥(초기화 · N대 보기) · 신규 접수 폼(접수 저장)
+     ┌────────────────────────────────────────────┐
+     │ [ 보조 3 ]  [          주 단추 7          ] │   높이 44 · 보조 = 회색 면(왼쪽) · 주 = 남색(오른쪽) · 폭 3 : 7
+     └────────────────────────────────────────────┘
+     · 판 바닥에 붙는다(sticky) · 흰 면 · 선 없음(규칙 ①) — 위와는 사이(12)로 가른다
+     · 폰은 아래 메뉴 띠 바로 위에 붙는다(.dz-apply 규칙) · 판이 제 스크롤인 곳은 판 여백까지 덮는다
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-bar { position: sticky; bottom: 0; z-index: 4; background: var(--판); padding-top: 12px; }
+/* ★주 7 : 보조 3 — 칸으로 나눈다(flex 는 안쪽 여백이 비율을 흐렸다: 140 : 270 실측) · 단추가 하나면 한 줄 다 */
+.dz-bar-go { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 8px; }
+.dz-bar-go:has(> .dz-bar-sub) { grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); }
+/* 단추가 보조 하나뿐이면(정산관리 접수 상세의 「목록」) 한 줄을 다 쓴다 */
+.dz-bar-go:has(> .dz-bar-sub):not(:has(> .primary)) { grid-template-columns: minmax(0, 1fr); }
+.fn-main .dz-bar-go .primary, .dz-bar-go .primary {
+  /* ★주는 오른쪽(대표 2026-09-18) — 칸 비율은 .dz-bar-go 가 정한다 */
+  min-width: 0; width: auto; height: var(--ui-action-h); margin: 0; border: 0; border-radius: var(--ui-radius);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.dz-bar-go .primary:disabled { opacity: .5; cursor: default; }
+.dz-bar-sub {
+  min-width: 0; justify-content: center; height: var(--ui-action-h); padding: 0 12px; border: 0; border-radius: var(--ui-radius);
+  background: var(--박스); color: #4f5862; font-size: var(--글메인); font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.dz-bar-sub:hover { background: var(--박스손); }
+.dz-fs-foot.dz-bar-go { padding: 12px; }
+@media (max-width: 900px) {
+  .dz-fs-foot.dz-bar-go .primary, .dz-fs-foot .dz-bar-sub { height: 52px; }
+}
+/* 신규 접수 폼 — 오른쪽 판(제 스크롤) 바닥에 붙는다. 판 여백(22)까지 덮는다 */
+@media (min-width: 901px) {
+  .fn-main .workspace > .work-panel .dz-bar { bottom: -22px; margin-bottom: -22px; padding-bottom: 22px; }
+}
+@media (max-width: 900px) {
+  .fn-main .workspace > .work-panel .dz-bar { bottom: calc(var(--아래띠) + 8px); }
+}
+/* 보조 단추가 링크일 때(목록 · 취소) — 단추와 같은 얼굴 */
+a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.fn-main .workspace a.dz-bar-sub { color: #4f5862; }
+/* 접수 목록 판(목록이 제 스크롤) — 바는 목록 밑에 서 있다(흐름 안 · 판 바닥) */
+@media (min-width: 901px) {
+  .fn-main .workspace > .work-panel:has(> .list) > .dz-bar { flex: none; position: static; margin: 0; padding: 12px 0 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상세정보 — erp4 읽는 차례(§14-5) · 여러 칸 표(대여료 · 보험) · 제목 옆 한 낱말 · 빈 칸 접기 · 영업 전용
+   ═══════════════════════════════════════════════════════════════════ */
+/* 여러 칸 표 — 머리 줄은 보조 회색, 첫 칸은 항목. 선 없이 옅은 박스(규칙 ①) */
+.dz-sec-grid {
+  width: 100%; margin: 8px 0 0; border-collapse: separate; border-spacing: 0;
+  background: var(--박스); border-radius: var(--r); font-size: var(--글메인);
+}
+.fn-main .dz-sec-grid th, .fn-main .dz-sec-grid td { border: 0; background: transparent; }
+.dz-sec-grid th, .dz-sec-grid td { padding: 7px 12px; text-align: left; font-weight: 400; line-height: 18px; vertical-align: top; }
+.dz-sec-grid thead th { padding-top: 10px; font-size: var(--글보조); color: #9aa3ad; }
+.dz-sec-grid tbody th { font-size: var(--글보조); color: #6b7580; white-space: nowrap; }
+.dz-sec-grid td { color: var(--글); font-variant-numeric: tabular-nums; }
+.dz-sec-grid td b { font-weight: 700; }
+.dz-sec-grid tbody tr:last-child > * { padding-bottom: 10px; }
+.dz-sec-grid .dz-none { color: #c3c9cf; }
+/* 표 밑에 이어지는 한 칸 표 — 사이를 붙인다 */
+.dz-sec-grid + .dz-sec-table { margin-top: 6px; }
+/* 제목 옆 한 낱말(보험료 포함 · 밖에 안 나감) — 읽을 값이 아니라 구역 전체의 성격 */
+.dz-sec-tag {
+  font-style: normal; font-size: var(--글보조); line-height: 20px; padding: 0 8px; border-radius: var(--r);
+  background: var(--남색옅음); color: var(--ci남색); font-weight: 600;
+}
+/* 영업 전용 — 내부 값만 모인 구역: 호박색 결(내부 딱지와 같은 말) */
+.dz-sec.inner .dz-sec-ico { background: #fbeedd; color: #94560f; }
+.dz-sec.inner .dz-sec-tag { background: #fbeedd; color: #94560f; }
+.dz-sec.inner .dz-sec-table { background: #fdf7ef; }
+/* 빈 칸 N개 — 구역 끝에 접혀 있다. 펼치면 흐린 칸들이 선다 */
+.dz-sec-empty { margin-top: 4px; }
+.dz-sec-empty > summary {
+  list-style: none; display: inline-flex; align-items: center; height: 28px; padding: 0 8px; border-radius: var(--r);
+  font-size: var(--글보조); color: #9aa3ad; cursor: pointer;
+}
+.dz-sec-empty > summary::-webkit-details-marker { display: none; }
+.dz-sec-empty > summary:hover { background: var(--박스); color: #6b7580; }
+.dz-sec-empty > .dz-sec-table { margin-top: 4px; }
+
+/* ★미완료 — 지난달 이전 접수인데 아직 인도 전. 오래 있을수록 위험(기능 stage.ts) — 붉은 결로 눈에 띄게(색으로만 · 규칙 ④) */
+.fn-main .workspace .quick-filters a small { margin-left: 4px; font-size: var(--글보조); opacity: .7; font-variant-numeric: tabular-nums; }
+.fn-main .workspace .quick-filters a.warn:not(.active) { color: #a8261d; font-weight: 700; }
+.fn-main .workspace .quick-filters a.warn.active { background: #a8261d; }
+.dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 정산관리 — 판 셋: 묶음 | 실적 줄 | 접수 상세 (§14-0 같은 판의 배열)
+   ═══════════════════════════════════════════════════════════════════ */
+/* 실적 줄 판은 «목록 판»이다 — 상세 판 이름(detail-panel)은 폰 한 장씩 규칙 때문에 빌렸을 뿐, 틀고정은 목록 판 그대로 */
+@media (min-width: 901px) {
+  .fn-main .workspace > .detail-panel.st-lines { display: flex; flex-direction: column; overflow: hidden; }
+}
+.st-lines .summary-grid { margin: 0 0 12px; }
+/* 달 넘기기 — ‹ 달 › · 합 */
+.dz-month { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; font-size: var(--글메인); }
+.dz-month > a, .dz-month > span:not(.dz-month-sum) {
+  display: inline-flex; align-items: center; justify-content: center; width: 33px; height: 33px; border-radius: var(--r);
+  color: #4f5862; font-size: 18px; text-decoration: none;
+}
+.dz-month > a:hover { background: var(--박스손); }
+.dz-month > b { min-width: 72px; text-align: center; font-variant-numeric: tabular-nums; }
+.dz-month-sum { margin-left: auto; color: #6b7580; font-size: var(--글보조); }
+.dz-month-sum b { color: var(--글); font-size: var(--글메인); }
+.dz-warn-txt { color: #a8261d; font-weight: 700; }
+/* 환수 줄 — 반대 부호의 한 줄: 금액은 붉게 */
+.dz-row-minus { cursor: default; }
+.dz-row-minus .dz-row-l3 strong { color: #a8261d; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★ 판 머리 — 당근 결 (대표 2026-09-18 「어정쩡한 영문 빠지니까 이제 패널 헤드 이쁘게 정리 좀 · 당근 느낌 나게끔, 색깔이 그렇다는 게 아니라」)
+     당근 앱 머리의 짜임: **굵은 제목 하나 + 바로 옆 흐린 숫자**. 숫자를 상자에 담아 오른쪽 끝으로 밀지 않는다 —
+     제목과 숫자는 «한 말»(상품 목록 675대)이라 붙어 있어야 한 번에 읽힌다. 머리에는 그 밖의 것을 두지 않는다
+     (단추는 하단바 §14-3). 높이 32 · 밑 사이 12 · 선 없음.
+   ⚠ 앞서: 영문 머리말 + 제목 + 오른쪽 끝 회색 상자 숫자(「675대」) — 머리가 셋으로 흩어져 보였다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head {
+  min-height: 32px; margin: 0 0 12px; display: flex; justify-content: flex-start; align-items: baseline; gap: 6px;
+}
+.fn-main .workspace .panel-head > div { min-width: 0; }
+.fn-main .workspace .panel-head h1 {
+  margin: 0; font-size: var(--글제목); line-height: 32px; font-weight: 800; letter-spacing: -.4px; color: var(--글);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fn-main .workspace .panel-head > .count {
+  height: auto; padding: 0; background: none; border-radius: 0;
+  font-size: var(--글메인) !important; line-height: 32px; font-weight: 700; color: #9aa3ad !important; font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 하단바 자리 — 모든 판이 «같은 줄» (대표 2026-09-18 「하단 고정 바는 동일하게 유지해 줘야지, 규격 좀 맞추고」 · §14-3)
+     PC: 하단바 = 판의 마지막 자식 · 판 안쪽 바닥(판 여백 22 위)에 44 단추가 선다 — 세 판이 같은 높이.
+         내용이 짧으면 margin-top:auto 로 바닥까지 밀리고, 길면 sticky 로 바닥에 붙는다.
+     폰: 아래 메뉴 띠 바로 위에 붙는다(판이 짧아도 판 바닥 = 화면 바닥 쪽).
+     ⚠ 앞서: 상세 판 바는 요약 본문 끝에 붙어 판 가운데에 떴고(옆 판 바와 높이가 달랐다), 상세정보 탭에서는 사라졌다.
+        기간 · 값 한 줄은 이제 본문(.dz-apply — 구른다).
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-apply, .fn-main .workspace > .detail-panel .dz-apply { position: static; margin-bottom: 0; padding-bottom: 0; background: none; }
+@media (min-width: 901px) {
+  .fn-main .workspace > .detail-panel,
+  .fn-main .workspace > .work-panel:not(:has(> .list)) { display: flex; flex-direction: column; overflow-y: auto; }
+  .fn-main .workspace > .detail-panel > .dz-tabbody { flex: 1 0 auto; }
+  .fn-main .workspace > .panel > .dz-bar {
+    flex: none; margin-top: auto; position: sticky; bottom: -22px; z-index: 5;
+    margin-bottom: -22px; padding: 12px 0 22px; background: var(--판);
+  }
+  /* 목록 판(목록이 제 스크롤) — 바는 흐름 안 판 바닥: 같은 줄에 선다 */
+  .fn-main .workspace > .work-panel:has(> .list) > .dz-bar { position: static; margin-bottom: 0; padding: 12px 0 0; }
+}
+@media (max-width: 900px) {
+  .fn-main .workspace > .detail-panel,
+  .fn-main .workspace > .work-panel { display: flex; flex-direction: column; }
+  .fn-main .workspace > .detail-panel > .dz-tabbody { flex: 1 0 auto; }
+  .fn-main .workspace > .panel > .dz-bar,
+  .fn-main .workspace > .work-panel .dz-bar {
+    margin-top: auto; position: sticky; bottom: var(--아래띠); z-index: 9;
+    margin-bottom: -16px; padding: 8px 0 16px; background: var(--판);
+  }
+}
+/* 옛 주 단추 규칙(.workspace a.primary margin-top 12)이 하단바 안까지 들어와 바가 56 이 됐다(실측) — 바 안 단추는 여백 없음 */
+.fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { margin: 0; }
+@media (max-width: 900px) {
+  /* 폰 — 판 바닥 = 아래 메뉴 띠 위(사이 0). 사이가 8 이면 짧은 판의 바가 긴 판의 바보다 8 높게 섰다(실측 732 ↔ 740) */
+  .fn-main .workspace { padding-bottom: var(--아래띠); }
+  .fn-main .workspace > .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 8px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 정산 걸음 · 발행 (기능 lifecycle — 대표 「기능은 SSOT·코딩으로, 배열은 디자인이 그 기준으로」)
+   ═══════════════════════════════════════════════════════════════════ */
+/* 실적 줄 판(목록 판) — 하단바는 흐름 안 판 바닥(옆 판들과 같은 줄) */
+@media (min-width: 901px) {
+  .fn-main .workspace > .st-lines > .dz-bar { position: static; margin: 0; padding: 12px 0 0; }
+}
+/* 발행 상자 — 번호 · 미리보기 · 경고 */
+.dz-issue { margin: 0 0 12px; padding: 10px 12px; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
+.dz-issue p { margin: 0; line-height: 22px; }
+.dz-issue .dz-issue-sum { color: #4f5862; font-size: var(--글보조); font-variant-numeric: tabular-nums; }
+.dz-issue .dz-issue-sum b { color: var(--글); font-size: var(--글메인); }
+.dz-issue .dz-warn, .dz-issue .dz-errs { margin-top: 6px; }
+.dz-muted { color: #9aa3ad; }
+/* 걸음 길 — 접수 → 청구 → 확인 → 수금. 지나온 곳 흐린 남색 글자 · 지금 남색 면 · 정정 붉은 면 */
+.dz-path { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; padding: 0; list-style: none; }
+.dz-path li {
+  display: inline-flex; align-items: center; height: 33px; padding: 0 12px; border-radius: var(--r);
+  background: var(--박스); color: #9aa3ad; font-size: var(--글메인);
+}
+.dz-path li.done { color: var(--ci남색); }
+.dz-path li.on { background: var(--ci남색); color: #fff; font-weight: 700; }
+.dz-path li.warn { background: #fdecea; color: #a8261d; font-weight: 700; }
+/* 주 걸음에 딸린 칸(금액 · 날 · 사유) — 하단바 단추가 이 폼을 보낸다 */
+.dz-life-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; padding: 12px; border-radius: var(--r); background: var(--박스); }
+.dz-life-form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
+.dz-life-form label.wide, .dz-life-form .dz-errs { grid-column: 1 / -1; }
+.dz-life-form input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판); font-size: var(--글메인); color: var(--글); }
+/* 곁 걸음 — 한 줄에 이름 · 칸 · 작은 단추(글자 단추 규칙 ③) */
+.dz-side-steps { display: grid; gap: 4px; margin: 0 0 12px; }
+.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 33px; }
+.dz-side-step b { min-width: 88px; font-size: var(--글보조); color: #6b7580; font-weight: 400; }
+.dz-side-step input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
+.dz-side-step button {
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  color: var(--ci남색); font-size: var(--글메인); font-weight: 600; cursor: pointer;
+}
+.dz-side-step button:hover { background: var(--박스손); }
+.dz-side-step .dz-errs { flex-basis: 100%; }
+@media (max-width: 900px) { .dz-life-form input, .dz-side-step input { font-size: 16px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 상태 칸 — 사진 없는 목록의 «사진 자리» (대표 2026-09-18 「썸네일 아이콘 하나 해서 그 목록의 상태값 · 직관적으로」)
+     64×64 · 라운드 4 · 그림 20 + 한 낱말(보조). 색은 면에만 — 남색 진행 · 초록 끝 · 붉음 멈춤 · 회색 대기 · 호박 보류.
+   ═══════════════════════════════════════════════════════════════════ */
+.dz-row-status {
+  flex: none; width: var(--ui-status-tile); height: var(--ui-status-tile); border-radius: var(--ui-radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.dz-row-status em { font-style: normal; font-size: var(--ui-text-support); line-height: 14px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dz-row-status.navy { background: var(--남색옅음); color: var(--ci남색); }
+.dz-row-status.green { background: #e8f5ee; color: #1e7a45; }
+.dz-row-status.red { background: #fdecea; color: #a8261d; }
+.dz-row-status.grey { background: var(--박스손); color: #6b7580; }
+.dz-row-status.amber { background: #fbeedd; color: #94560f; }
+/* 줄이 고른(옅은 남색) 면일 때 남색 칸이 묻히지 않게 한 단 짙게 */
+.dz-row.on .dz-row-status.navy { background: #d5deec; }
+
+/* 최종 ADMIN UI 덮개는 ./_design/admin-final.css 로 분리. import 순서를 바꾸지 않는다. */

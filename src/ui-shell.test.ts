@@ -3,37 +3,45 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const page=readFileSync(resolve(process.cwd(),'src/app/page.tsx'),'utf8');
-const css=readFileSync(resolve(process.cwd(),'src/app/globals.css'),'utf8');
+const read=(p:string)=>readFileSync(resolve(process.cwd(),p),'utf8');
+const root=read('src/app/page.tsx');
+const chrome=read('src/app/_design/AdminChrome.tsx');
+const workspace=read('src/app/products/workspace.tsx');
+const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
 
-test('admin approved shell removes legacy quick filter strip',()=>{
-  assert.equal(page.includes('quick-filters'),false);
-  assert.equal(css.includes('.quick-filters'),false);
-  assert.ok(page.includes('세부필터'));
+test('admin root enters the real intake workspace and contains no demo runtime',()=>{
+  assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
+  assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-test('desktop shell uses left work rail and floating workspace panels',()=>{
-  assert.ok(page.includes('className="rail"'));
-  assert.ok(page.includes('className="workspace"'));
-  assert.ok(css.includes('grid-template-columns:176px minmax(0,1fr)'));
-  assert.ok(css.includes('box-shadow:var(--shadow)'));
+test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
+  assert.ok(chrome.includes("['/products', '상품찾기']"));
+  assert.ok(chrome.includes("['/intake', '계약접수']"));
+  assert.ok(chrome.includes("['/settlement', '정산관리']"));
+  assert.ok(chrome.includes('<MobileTabBar />'));
+  assert.ok(chrome.includes('dz-desktop-bottom'));
+  assert.equal(chrome.includes('className="rail"'),false);
 });
 
-test('offer options are rendered as vertical whole-offer rows',()=>{
-  assert.ok(page.includes('className="offer-list"'));
-  assert.ok(page.includes('offer-row'));
-  assert.ok(page.includes('보증금'));
-  assert.ok(page.includes('약정주행'));
+test('product workspace is bound to real repositories and whole-offer selection',()=>{
+  assert.ok(workspace.includes('productList()'));
+  assert.ok(workspace.includes('settlements.list()'));
+  assert.ok(workspace.includes('<OfferPicker'));
+  assert.ok(workspace.includes('<FilterSheet'));
+  assert.ok(workspace.includes('quick-filters'));
+  assert.ok(workspace.includes('matchedOffers'));
 });
 
-test('mobile uses explicit view navigation instead of stacking every panel',()=>{
-  assert.ok(page.includes("type MobileView = 'products' | 'detail' | 'work'"));
-  assert.ok(page.includes('className="mobile-nav"'));
-  assert.ok(css.includes('.panel{display:none;'));
-  assert.ok(css.includes('.panel.mobile-active{display:block}'));
+test('mobile workspace uses explicit list detail work depth',()=>{
+  assert.ok(workspace.includes("['list', 'detail', 'work']"));
+  assert.ok(workspace.includes('data-phone={view}'));
+  assert.ok(css.includes('[data-phone='));
 });
 
-test('primary actions keep a bottom action boundary',()=>{
-  assert.ok(page.includes('className="detail-actions"'));
-  assert.ok(css.includes('.detail-actions{position:sticky'));
+test('primary intake actions keep the shared bottom action boundary',()=>{
+  assert.ok(intakeForm.includes('className="dz-bar"'));
+  assert.ok(intakeForm.includes('className="dz-bar-go"'));
+  assert.ok(css.includes('.dz-bar'));
+  assert.ok(css.includes('--ui-action-h'));
 });

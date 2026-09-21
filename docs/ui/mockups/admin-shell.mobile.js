@@ -24,7 +24,7 @@ function mBack() { M.view = M.hist.pop() || 'list'; renderMobile(); }
 function mbar(title, sub, opts = {}) {
   const back = M.view !== 'list';
   return `<header class="mbar">
-    ${back ? '<button class="mb-ic" id="mback" aria-label="이전">&#10094;</button>' : '<span class="mb-sp"></span>'}
+    ${back ? `<button class="mb-ic" id="mback" aria-label="이전">${ic('left')}</button>` : '<span class="mb-sp"></span>'}
     <div class="mb-t"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</div>
     ${opts.right || '<span class="mb-sp"></span>'}
   </header>`;
@@ -44,11 +44,8 @@ function mProducts() {
   syncProd();
   const { hits, drops, sel } = evaluate();
   const n = selCount(sel);
-  return mbar('상품 찾기', `${hits.length}건`, {
-    right: `<button class="mb-ic" id="mcond" aria-label="세부필터">&#9868;${n ? `<em>${n}</em>` : ''}</button>`,
-  }) + `<div class="mbody">
-    <div class="msearch"><span class="mg">&#9906;</span>
-      <input type="search" id="mq" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월"></div>
+  return mbar('상품 찾기', `${hits.length}건`) + `<div class="mbody">
+    <div class="msearch">${findbox('mq', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'mcond', n })}</div>
     ${n ? `<div class="mtoks">${tokens(sel)}</div>` : ''}
     <div class="mlist">${hits.length ? hits.map(({ p, ok }) => {
       const lead = ok[0], part = p.match !== 'TRIM';
@@ -56,7 +53,7 @@ function mProducts() {
         <span class="mth">${p.body ? glyph() : ''}</span>
         <span class="mtx"><span class="m1">${esc(p.name)} <i>${esc(p.sub)}</i></span>
           <span class="m2">${esc(p.supplier)} · ${lead.term}개월${part ? ' · <span class="st wait">확인 필요</span>' : ''}</span></span>
-        <span class="mr"><b class="n">${won(lead.rent)}</b></span><span class="mcv">&#10095;</span></button>`;
+        <span class="mr"><b class="n">${won(lead.rent)}</b></span><span class="mcv">${ic('right')}</span></button>`;
     }).join('') : `<div class="mempty"><b>이 조건에 맞는 상품이 없다</b><p>「없다」는 이 조건에 없다는 뜻이다.</p></div>`}</div>
     ${drops.length ? `<details class="why"><summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
       ${drops.map(({ p, why }) => `<div class="w"><b>${esc(p.name)}</b><br>${why.kind === 'p'
@@ -69,7 +66,7 @@ function mProductDetail() {
   const p = prod(), o = offer(), sel = effSel();
   if (!p) { M.view = 'list'; return mProducts(); }
   const fact = (k, v) => `<dt>${k}</dt><dd>${v == null ? '<span class="unk">미확인</span>' : v}</dd>`;
-  return mbar(p.name, p.sub, { right: '<button class="mb-ic" id="mshare" aria-label="공유">&#8599;</button>' })
+  return mbar(p.name, p.sub, { right: `<button class="mb-ic" id="mshare" aria-label="공유">${ic('share')}</button>` })
     + `<div class="mbody pad">
       ${shotBox(!!p.body, 'shot')}
       <div class="strip">${[0, 1, 2, 3].map(i => `<span>${p.body ? glyph() : ''}</span>`).join('')}<span class="more">+2</span></div>
@@ -107,7 +104,7 @@ function mApps() {
         <span class="mth">${p && p.body ? glyph() : ''}</span>
         <span class="mtx"><span class="m1">${esc(a.cust)} <i>${esc(a.no)}</i></span>
           <span class="m2">${esc(a.veh)} · ${esc(a.ch)} · <span class="st ${s.c}">${s.t}</span></span></span>
-        <span class="mr"><b class="n">${won(a.rent)}</b></span><span class="mcv">&#10095;</span></button>`;
+        <span class="mr"><b class="n">${won(a.rent)}</b></span><span class="mcv">${ic('right')}</span></button>`;
     }).join('') : '<div class="mempty"><b>이 칸에 걸린 접수가 없다</b></div>'}</div>
   </div>` + mtabs();
 }
@@ -118,14 +115,14 @@ function mAppDetail() {
   const p = PRODUCTS.find(x => x.id === a.pid), drift = p && p.v !== a.pv, s = appStatus(a);
   const steps = STEPS;
   const next = a.cxl ? null : steps.find(([k]) => !a[k]);
-  return mbar(a.cust, a.no, { right: `<button class="mb-ic" id="mmore" aria-label="더보기">&#8943;</button>` })
+  return mbar(a.cust, a.no, { right: `<button class="mb-ic" id="mmore" aria-label="더보기">${ic('more')}</button>` })
     + `<div class="mbody pad">
       <div class="dchips"><span class="tag">${esc(a.ch)}</span><span class="tag">${esc(a.sup)}</span><span class="st ${s.c}">${s.t}</span></div>
       <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월</div><div class="v">${won(a.rent)}</div></div>
         <span class="u">보증금 ${a.dep ? man(a.dep)+'원' : '무보증'} · VAT 포함</span></div>
       ${drift ? `<div class="note w"><span class="i">!</span><div><b>지금 상품은 v${p.v}, 이 접수는 v${a.pv}</b>
         <p>그 사이 상품이 바뀌었습니다. 접수 조건은 안 바뀝니다.</p></div></div>` : ''}
-      ${a.cxl ? `<div class="note e"><span class="i">&#10005;</span><div><b>취소된 접수</b><p>${esc(a.cxlReason)}</p></div></div>` : ''}
+      ${a.cxl ? `<div class="note e"><span class="i">${ic('close')}</span><div><b>취소된 접수</b><p>${esc(a.cxlReason)}</p></div></div>` : ''}
       <div class="sec"><h3>어디까지 왔나</h3>
         <ul class="tl"><li class="on"><div class="t">접수</div><div class="w">${esc(a.at)} · ${esc(a.staff)}</div></li>
         ${steps.map(([k, t], i) => {
@@ -175,7 +172,7 @@ function mPerfs() {
         <span class="m2"><span class="st ${isClaw(p) ? 'bad' : 'mut'}">${isClaw(p) ? '환수' : '정상'}</span>
           ${esc(a.veh)} · <span class="st ${st.c}">${st.t}</span></span></span>
       <span class="mr"><b class="n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${won2(p.bill - p.pay)}</b></span>
-      <span class="mcv">&#10095;</span></button>`;
+      <span class="mcv">${ic('right')}</span></button>`;
   }).join('')}</div></div>` + mtabs();
 }
 
@@ -202,12 +199,14 @@ function mPerfDetail() {
 function mSettings() {
   return mbar('설정', '박지훈 매니저') + `<div class="mbody">
     <div class="mlist">
-      <button class="mrow"><span class="mtx"><span class="m1">결</span><span class="m2">레트로 · 트렌디 두 벌</span></span>
-        <span class="mr" id="mskin">${SKINS[skin].t}</span><span class="mcv">&#10095;</span></button>
-      <button class="mrow"><span class="mtx"><span class="m1">정산관리</span><span class="m2">청구 · 수금 · 지급</span></span><span class="mcv">&#10095;</span></button>
+      <button class="mrow" id="m-skin"><span class="mtx"><span class="m1">결</span><span class="m2">${esc(SKINS[skin].d)}</span></span>
+        <span class="mr">${SKINS[skin].t}</span><span class="mcv">${ic('right')}</span></button>
+      <button class="mrow" id="m-light"><span class="mtx"><span class="m1">밝기</span><span class="m2">${esc(LIGHTS[light].d)}</span></span>
+        <span class="mr">${LIGHTS[light].t}</span><span class="mcv">${ic('right')}</span></button>
+      <button class="mrow"><span class="mtx"><span class="m1">정산관리</span><span class="m2">청구 · 수금 · 지급</span></span><span class="mcv">${ic('right')}</span></button>
       <button class="mrow"><span class="mtx"><span class="m1">전자계약</span><span class="m2">발송 · 열람 · 서명</span></span>
-        <span class="mr">${ESIGNS.filter(e => e.st !== '완료').length}</span><span class="mcv">&#10095;</span></button>
-      <button class="mrow"><span class="mtx"><span class="m1">내 정보</span><span class="m2">박지훈 · 운영지원팀</span></span><span class="mcv">&#10095;</span></button>
+        <span class="mr">${ESIGNS.filter(e => e.st !== '완료').length}</span><span class="mcv">${ic('right')}</span></button>
+      <button class="mrow"><span class="mtx"><span class="m1">내 정보</span><span class="m2">박지훈 · 운영지원팀</span></span><span class="mcv">${ic('right')}</span></button>
     </div>
     <p class="mfoot">폰에서는 «한 화면에 한 가지» 다. 목록에서 누르면 상세로 가고, 아래 탭으로 업무를 바꾼다.</p>
   </div>` + mtabs();
@@ -229,11 +228,14 @@ function renderMobile() {
     M.tab = b.dataset.k; M.view = 'list'; M.hist = []; renderMobile();
   });
   const back = root.querySelector('#mback'); if (back) back.onclick = mBack;
+  if (q1('#m-skin')) q1('#m-skin').onclick = () => { skin = (skin + 1) % SKINS.length; applyTheme(); renderMobile(); };
+  if (q1('#m-light')) q1('#m-light').onclick = () => { light = (light + 1) % LIGHTS.length; applyTheme(); renderMobile(); };
 
   if (M.tab === 'product' && V === 'list' && q1('#mq')) {
     const q = q1('#mq');
     q.oninput = () => { S.q = q.value; renderMobile(); const e = q1('#mq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
-    q1('#mcond').onclick = () => { S.sheet = true; renderSheet(); };
+    q1('#mcond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
+    if (q1('#mqx')) q1('#mqx').onclick = () => { S.q = ''; renderMobile(); };
     root.querySelectorAll('.mrow[data-id]').forEach(r => r.onclick = () => {
       S.pid = r.dataset.id; S.oid = null; S.shot = 0; syncProd(); mGo('detail');
     });

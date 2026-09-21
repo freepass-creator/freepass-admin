@@ -15,30 +15,126 @@ const S = {
   focus: 'app',
   mini: false, draft: null, saving: false, seq: 16,
   pick: null, pickQ: '',
+  ecTab: 'mk', ecQ: '', ecOpen: true,
+  stlTab: 'open', stlQ: '', stlMonth: '', feeQ: '',
+  /** ★머리를 눌러 고르는 차례. 목록마다 따로 기억한다 */
+  sort: { product: { k: null, d: 1 }, app: { k: 'at', d: -1 } },
+  /** ★상품은 «카드», 접수는 «표». 하는 일이 달라서다 — paneProducts 주석 참조 */
+  viewA: 'card',
 };
 
 const NAV = [
-  { k: 'product', t: '상품찾기', i: '▤' },
-  { k: 'intake', t: '계약접수', i: '≡', badge: () => APPS.filter(a => !a.cxl && !a.deliv).length },
-  { k: 'settle', t: '정산관리', i: '◑', badge: () => PERFS.filter(p => p.stage < 4).length + BILLS.filter(b => b.fixed > b.got).length + PAYS.filter(p => p.fixed > p.paid).length },
-  { k: 'esign', t: '전자계약', i: '✒', badge: () => ESIGNS.filter(e => e.st !== '완료').length },
+  { k: 'product', t: '상품찾기' },
+  { k: 'intake', t: '계약접수', badge: () => APPS.filter(a => !a.cxl && !a.deliv).length },
+  { k: 'settle', t: '정산관리', badge: () => PERFS.filter(p => p.stage < 4).length + BILLS.filter(b => b.fixed > b.got).length + PAYS.filter(p => p.fixed > p.paid).length },
+  { k: 'esign', t: '전자계약', badge: () => ESIGNS.filter(e => e.st !== '완료').length },
 ];
 
 const appStatus = a => a.cxl ? { t: '취소', c: 'mut' }
   : a.deliv ? { t: '인도완료', c: 'ok' }
-  : a.contract ? (a.docs ? { t: '인도 대기', c: 'key' } : { t: '서류 대기', c: 'wait' })
+  : stepDone(a, 'contract') ? (a.docs ? { t: '인도 대기', c: 'key' } : { t: '서류 대기', c: 'wait' })
   : { t: '계약서 대기', c: 'wait' };
 const STAGES = ['영업자 1차 확인', '공급사 Cross Check', '관리자 최종 확정', '정산 원장 편입'];
 const isClaw = p => p.kind === 'CLAWBACK';
+
+/* ── ★프로모션 (대표 2026-09-17) ───────────────────────────────
+     「프로모션 반영금액이 있고 영업자 지급 비율을 넣을수 있게끔.
+       추가 50인데 50 다 줄거면 100% 로 해놓으면 되고, 기본 100%로 세팅」
+
+   사람이 넣는 것은 «둘» — 금액과 비율. 나머지는 파생이다.
+     공급사에게 받는다 = 기본 + 프로모션
+     영업자에게 준다   = 기본 + 프로모션 × 비율
+     우리에게 남는다   = 기본차 + 프로모션 × (1 − 비율)
+
+   ★비율 칸은 «퍼센트만» 받는다. 「1 이하면 비율」 로 두면 사람이 1% 를 뜻하고
+     적은 「1」 을 기계가 100% 로 읽어 프로모션이 통째로 남의 주머니로 간다.
+   규칙 정본과 시험은 src/domain/settlement/promotion.ts. */
+const DEFAULT_AGENT_SHARE = 1;
+const parseSharePct = raw => {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const s = String(raw).replace(/[%\s,]/g, '');
+  if (!s) return null;
+  const n = Number(s);
+  if (!Number.isFinite(n) || n < 0 || n > 100) return null;   /* ★120% 는 안 받는다 */
+  return n / 100;
+};
+const promoAmount = raw => {
+  const n = Number(String(raw ?? '').replace(/[,\s원]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+/** 갈라 놓는다. ★비율을 «안 정했으면» 가르지 않고 기다린다 */
+function splitPromo(amount, share) {
+  if (!amount) return { claim: 0, pay: 0, ours: 0, pending: false };
+  if (share === null || share === undefined) return { claim: amount, pay: 0, ours: 0, pending: true };
+  const pay = Math.round(amount * share);
+  return { claim: amount, pay, ours: amount - pay, pending: false };
+}
+/** 사람이 읽는 한 줄 */
+function promoLine(amount, share) {
+  if (!amount) return null;
+  const s = splitPromo(amount, share);
+  if (s.pending) return `프로모션 ${won(s.claim)} — <b class="unk">영업자 지급 비율을 아직 안 정했다</b>`;
+  const pct = Math.round(share * 100);
+  const tail = s.ours === 0 ? '전부 넘긴다' : s.pay === 0 ? '전부 우리가 갖는다' : `우리 몫 <b>${won(s.ours)}</b>`;
+  return `프로모션 ${won(s.claim)} · 영업자 ${pct}% (${won(s.pay)}) — ${tail}`;
+}
+
+/**
+ * ★진행 한 칸이 끝났나 — «한 원장» 이라 계약서 칸은 파생값이다.
+ *
+ *   표본을 짜다가 바로 걸렸다. 이서진은 접수에 contract:true 인데 전자계약은
+ *   「발송 전」 이었다. 두 군데 적어 두면 «반드시» 어긋난다.
+ *   그래서 전자계약이 붙어 있으면 접수의 contract 를 «안 읽는다».
+ *   날리면 ecOf 가 null 이라 그냥 a.contract 를 읽는다 — 저장된 값이 그대로 산다.
+ */
+const stepDone = (a, k) => {
+  if (k === 'contract' && typeof ecOf === 'function') {
+    const e = ecOf(a);
+    if (e) return e.stage === 'done';
+  }
+  return !!a[k];
+};
+/**
+ * ★「할 일」 칸 — 상태가 아니라 «다음 손» 이다.
+ *   막힌 게 없으면 상태(인도완료·취소)를 그대로 말한다.
+ *   플래그(확인 필요·보완 n차)는 여기서도 «단계 옆» 에 붙지 단계를 대체하지 않는다.
+ */
+function todoCell(a) {
+  const b = blocked(a);
+  if (!b) { const s = appStatus(a); return `<span class="st ${s.c}">${s.t}</span>`; }
+  const f = b.e && typeof ecFlags === 'function' ? ecFlags(b.e) : null;
+  return `<span class="st ${b.k === 'contract' ? 'key' : 'wait'}">${esc(b.t)}</span>`
+    + (f ? ecFlagTags(f, b.e) : '');
+}
+
+/* ── ★판 규격 — 네 칸이고, 칸마다 «맡은 일» 이 하나다 ─────────
+   .ph 38  무엇을 보는가  제목 · 딸린 수 · (오른쪽) 이 판 전체에 거는 행동
+   .bar 38 무엇을 고르는가 찾는 칸 하나 + 걸린 조건 딱지. 없으면 띠도 없다
+   .pb  1fr 내용
+   .pf  30  무엇이 남았나  «셈» 만 — 라벨+숫자. 설명문·훈계는 안 넣는다
+   ★찾기·고르기는 .bar 로, 세는 일은 .pf 로. .ph 에 섞지 않는다 */
+const MG = '<span class="mg">' + ic('search', 14) + '</span>';
+/** 찾는 칸 하나 — 돋보기·친 말·지우기·(세부필터) 가 한 테두리 안에 산다.
+ *  ★type 은 text 다. search 로 두면 브라우저가 ✕ 를 «또» 그려 두 개가 된다. */
+const findbox = (id, ph, val, opt = {}) => `<div class="fd">${MG}
+  <input type="text" id="${id}" value="${esc(val || '')}" placeholder="${ph}" autocomplete="off" spellcheck="false">
+  ${val ? `<button class="x" id="${id}x" aria-label="지운다">${ic('close')}</button>` : ''}
+  ${opt.filter ? `<button class="fx${opt.n ? ' on' : ''}" id="${opt.filter}">${ic('filter', 14)}세부필터${opt.n ? `<span class="b">${opt.n}</span>` : ''}</button>` : ''}
+</div>`;
+/** 판 바닥의 셈 한 칸. ★0 이면 눌러 둔다 — 없는 것이 눈을 끌면 안 된다 */
+const tl = (t, v, c) => `<span class="t"><i>${t}</i><b class="${v === 0 ? 'z' : (c || '')}">${v}</b></span>`;
 /** ★보증금은 «비율» 이 먼저다 — 차가 물고 들어오는 조건이라 금액은 그 결과다.
  *  비율을 모르면(미확인) 금액만 쓴다. 0 을 「없음」 으로 쓰지 않는다. */
 const depText = o => o.dep ? `${o.depRate != null ? o.depRate + '% · ' : ''}${man(o.dep)}원`
   : (o.depRate === 0 ? '무보증 (0%)' : '<span class="unk">미확인</span>');
+/* 목록용 짧은 꼴 — 칸에 「무보증 (0%)」 를 쓰면 «(0%)» 가 열 하나를 더 먹는다.
+   비율은 상세에서 본다. 목록은 「얼마인가 / 없는가 / 모르는가」 셋만 답하면 된다. */
+const depShort = o => o.dep ? man(o.dep)
+  : (o.depRate === 0 || o.dep === 0 ? '<span class="mut">무보증</span>' : unk());
 /** ★대여료는 VAT «포함» 이다 (대표 2026-09-16). 안 적으면 영업이 별도로 읽는다. */
 const VAT = '<span class="mut" style="font-size:10.5px">VAT 포함</span>';
 /** 환수는 부호가 반대다 — 숫자 앞에 «−» 를 붙여 눈으로도 갈리게 한다 */
 const won2 = n => (n < 0 ? '−' + won(-n) : won(n));
-const esignSt = e => e.st === '완료' ? { t: '완료', c: 'ok' } : e.st === '서명 대기' ? { t: '서명 대기', c: 'wait' } : { t: '열람 전', c: 'bad' };
 
 /** 사진 자리 — 한 톤의 «윤곽»만. 색을 넣으면 그림이 되고, 그림이 되면 장난감으로 읽힌다. */
 function glyph() {
@@ -51,11 +147,16 @@ const shotBox = (has, cls) => has
   ? `<div class="${cls}">${glyph()}</div>`
   : `<div class="${cls}"><span class="none">사진 준비 중</span></div>`;
 
-const stepper = (names, at) => `<div class="steps">${names.map((n, i) => {
+/**
+ * 차례 표시 — ★`ol`/`li` 로 «차례» 라는 뜻을 준다. 지금 칸은 aria-current="step".
+ * 사이의 ❯ 는 뜻을 안 나르므로 보조기술에서 숨긴다. (AI Core 화면규격 §Navigation)
+ */
+const stepper = (names, at) => `<ol class="steps" aria-label="단계">${names.map((n, i) => {
   const k = i + 1 === at ? 'on' : i + 1 < at ? 'dn' : '';
-  return `<span class="stp ${k}"><span class="n2">${i + 1}</span>${esc(n)}</span>`
-    + (i < names.length - 1 ? '<span class="ar">&#10095;</span>' : '');
-}).join('')}</div>`;
+  return `<li class="stp ${k}"${i + 1 === at ? ' aria-current="step"' : ''}>`
+    + `<span class="n2">${i + 1}</span>${esc(n)}`
+    + (i < names.length - 1 ? `<span class="ar" aria-hidden="true">${ic('right')}</span>` : '') + '</li>';
+}).join('')}</ol>`;
 
 /**
  * 실행 띠 — 어느 상세든 «같은 꼴» 이다.
@@ -68,7 +169,7 @@ function actBar({ memo, more = [], subs = [], main }) {
   return `<div class="dact">
     ${memo ? `<div class="memo">${memo}</div>` : ''}
     <div class="row">
-      ${more.length ? `<div class="menuwrap"><button class="btn mbtn" id="moreBtn" aria-label="더보기" title="더보기">&#8943;</button>
+      ${more.length ? `<div class="menuwrap"><button class="btn mbtn" id="moreBtn" aria-label="더보기" title="더보기">${ic('more')}</button>
         <div class="menu" id="moreMenu">${more.map((m, i) => m === '-' ? '<div class="sep"></div>'
           : `<button data-m="${i}"${m.danger ? ' class="danger"' : ''}>${esc(m.t)}</button>`).join('')}</div></div>` : ''}
       ${subs.map((s, i) => `<button class="btn" data-sub="${i}"${s.off ? ' disabled' : ''}>${esc(s.t)}</button>`).join('')}
@@ -166,63 +267,360 @@ function syncProd() {
   if (!cur) { cur = hits[0]; S.pid = cur.p.id; S.oid = null; }
   if (!S.oid || !cur.ok.some(o => o.id === S.oid)) S.oid = cur.ok[0].id;
 }
+/* ★「—」와 「미확인」은 다른 말이다.
+     dash  = 원래 없는 칸 (다이렉트 건의 영업자 같은 것)
+     unk   = 있어야 하는데 «모르는» 칸 — 누군가 채워야 한다
+   색을 달리해 둔 이유다. unk 만 노란색으로 눈에 걸린다. */
+const dash = () => '<span class="dim">—</span>';
+/* ★실측 746 중 486 (65%) 이 sub 가 model 로 시작한다 —
+   「싼타페」 + 「싼타페 MX5 프레스티지」 = 「싼타페 싼타페 MX5 프레스티지」.
+   목록에서 같은 말을 두 번 읽히지 않는다. 상세에서는 원문 그대로 둔다. */
+const subTrim = (name, sub) => {
+  const s = String(sub || '');
+  return s.startsWith(name) ? s.slice(name.length).trim() : s;
+};
+const unk  = (t = '미확인') => `<span class="unk">${t}</span>`;
+
+/** 상품 상태 — ERP5 `vehicle_status` 실측 네 값. ★색«만»으로 말하지 않는다 */
+function statusChip(s) {
+  if (!s) return dash();
+  if (/즉시/.test(s))  return '<span class="st ok">즉시출고</span>';
+  if (/불가/.test(s))  return '<span class="st bad">출고불가</span>';
+  if (/협의/.test(s))  return '<span class="st wait">협의</span>';
+  return `<span class="st mut">${esc(s)}</span>`;
+}
+/** 주행거리를 짧게. ★1만 아래를 「0.0만」 으로 쓰면 거짓말이 된다 —
+    출고 직전 10km 짜리가 「0.0만km」 로 보이면 아무 말도 안 한 것이다. */
+function mileText(m, unit) {
+  if (m == null) return null;
+  if (m === 0) return '신차';
+  if (m < 10000) return m.toLocaleString('ko-KR') + (unit ? 'km' : '');
+  return (m / 10000).toFixed(1) + '만' + (unit ? 'km' : '');
+}
+const mileShort = m => { const t = mileText(m, false); return t === null ? unk() : t === '신차' ? '<span class="mut">신차</span>' : t; };
+/** 청구월 — 강지수팀장이 넣던 칸. 비면 「아직 안 정해짐」 이지 「0」 이 아니다 */
+const billCell = b => b ? `<span class="n">${esc(b.replace('-', '.'))}</span>` : unk('미정');
+
+/* ══ ★ERP 그리드의 «일하는» 머리줄 ═══════════════════════════════
+   대표 2026-09-17 「아 진짜 뭔가 딱 안나오나 원래 부터 있는 erp처럼?」
+
+   지금까지 머리줄은 «글자» 였다. 누를 수 없고, 어느 차례로 선 것인지도 안 보였다.
+   업무용 목록에서 머리줄은 «일하는 자리» 다 — 누르면 그 칸으로 줄이 선다.
+   그게 없으면 사람은 목록을 「읽고」 만 있고, 정렬하러 시트를 다시 연다.
+
+   ★모르는 값(null)은 «어느 차례로 서든 맨 뒤» 다.
+     오름차순이라고 null 을 0 자리에 세우면 「미확인」이 「가장 싼 것」 이 된다. */
+const SORT_NULL_LAST = (x, y) => (x == null) - (y == null);
+
+/** 머리 칸 하나 — t 이름 · k 정렬 열쇠(없으면 못 누른다) · r 오른쪽정렬 */
+function th(t, k, opt = {}) {
+  const cur = S.sort[opt.of] || {};
+  const on = k && cur.k === k;
+  const cls = [opt.r ? 'r' : '', opt.c || '', k ? 'srt' : ''].filter(Boolean).join(' ');
+  if (!k) return `<th scope="col"${cls ? ` class="${cls}"` : ''}>${t}</th>`;
+  return `<th scope="col" class="${cls}"${on ? ` aria-sort="${cur.d > 0 ? 'ascending' : 'descending'}"` : ''}>
+    <button type="button" data-srt="${opt.of}|${k}" title="${esc(t)} 차례로">
+      <span>${t}</span><i class="ca${on ? (cur.d > 0 ? ' up' : ' dn') : ''}" aria-hidden="true"></i></button></th>`;
+}
+
+/** 목록을 고른 차례로 세운다. 값 뽑는 법은 부르는 쪽이 준다 */
+function sortBy(list, of, pick) {
+  const s = S.sort[of];
+  if (!s || !s.k || !pick[s.k]) return list;
+  const f = pick[s.k];
+  return [...list].sort((A, B) => {
+    const x = f(A), y = f(B);
+    const nl = SORT_NULL_LAST(x, y);
+    if (nl) return nl;                       /* ★모르는 것은 늘 뒤 */
+    if (x === y) return 0;
+    const c = typeof x === 'number' && typeof y === 'number'
+      ? x - y : String(x).localeCompare(String(y), 'ko');
+    return c * s.d;
+  });
+}
+
+/** 머리 누르기 — 같은 칸을 또 누르면 차례가 뒤집힌다 */
+function bindSort(el) {
+  el.querySelectorAll('[data-srt]').forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const [of, k] = b.dataset.srt.split('|');
+    const s = S.sort[of];
+    S.sort[of] = { k, d: s.k === k ? -s.d : 1 };
+    render();
+  });
+}
+
+/** 합계줄 — ★ERP 목록에 «반드시» 있는 줄이다. 없으면 사람이 계산기를 켠다 */
+/** 「몇 건 중 몇 번째」 — ERP 바닥줄의 붙박이. 없으면 목록에서 길을 잃는다 */
+function pos(n, i) {
+  if (!n) return '';
+  return `<span class="pos n">${i >= 0 ? `${i + 1} / ` : ''}${n.toLocaleString('ko-KR')}</span>`;
+}
+
+/* ══ ★보이는 만큼만 그린다 ══════════════════════════════════════
+   대표 2026-09-17 「검색하고 이런거 느려서 빠릿빠릿해야함」
+
+   실측 — 조건을 지우면 746줄이 통째로 서고, 그때 «DOM 조각이 15,358개» 였다.
+     · 줄마다 sticky 칸이 둘씩 들어가 «1,492개» 가 붙어 있었다
+       (왼쪽 고정 + 오른쪽 고정). sticky 는 구를 때마다 다시 재는 값이다
+     · 줄마다 클릭 손잡이가 하나씩 «746개»
+     · 글자 하나 지울 때마다 이걸 다 부수고 다시 지었다
+
+   ⇒ 화면에 «보이는 만큼만» 그린다. 위아래 빈자리는 «빈 줄 하나» 로 메운다.
+     줄 높이가 --h-row 로 고정이라 자리를 정확히 셀 수 있다.
+     746줄이든 16,000줄이든 DOM 에 서는 줄은 늘 서른 남짓이다.
+
+   ★목록의 «길이» 는 안 속인다 — 굴림대는 746줄만큼 길고,
+     바닥줄의 「몇 건 중 몇 번째」 도 전체 수로 센다. 눈에만 안 그릴 뿐이다.
+   ══════════════════════════════════════════════════════════════ */
+const ROW_H = 34;   /* = --h-row. 눈금이 바뀌면 여기도 바꾼다 */
+const VBUF = 6;     /* 위아래 여유 줄 — 굴릴 때 빈칸이 안 비치게 */
+
+/* ★굴린 자리를 «판 밖에» 적어 둔다.
+   판을 다시 그리면 #pbA 가 통째로 새로 나므로 scrollTop 이 0 이 된다.
+   그대로 두면 「목록을 한참 내려가 한 줄을 누르는」 순간 맨 위로 튄다 —
+   업무 화면에서 이건 그냥 못 쓰는 것이다. */
+const VPOS = {};
+function vSlice(pb, n) {
+  const st = pb ? pb.scrollTop : 0;
+  const h = pb && pb.clientHeight ? pb.clientHeight : 640;
+  const first = Math.max(0, Math.floor(st / ROW_H) - VBUF);
+  const last = Math.min(n, first + Math.ceil(h / ROW_H) + VBUF * 2);
+  return { first, last, top: first * ROW_H, bot: Math.max(0, (n - last) * ROW_H) };
+}
+/** 안 그린 줄의 «자리» — 굴림대 길이를 그대로 지킨다 */
+const vpad = px => px > 0
+  ? `<tr class="vpad" style="height:${px}px" aria-hidden="true"><td colspan="99"></td></tr>` : '';
+
+/** 구를 때마다 다시 그리되, 한 프레임에 «한 번만» 그린다 */
+function bindVScroll(pb, key, fill) {
+  /* 다시 그려졌으면 «적어 둔 자리» 로 되돌린 뒤, 그 자리에 맞는 줄을 채운다 */
+  const want = VPOS[key] || 0;
+  if (want && Math.abs(pb.scrollTop - want) > 1) { pb.scrollTop = want; fill(); }
+  pb.onscroll = () => {
+    VPOS[key] = pb.scrollTop;
+    if (pb._raf) return;
+    pb._raf = requestAnimationFrame(() => { pb._raf = null; fill(); });
+  };
+}
+/** 갈래·조건이 바뀌면 «맨 위» 로 — 다른 목록을 보는 것이니 자리를 물려받으면 안 된다 */
+function vReset(key, sig) {
+  if (VPOS[key + ':sig'] === sig) return;
+  VPOS[key + ':sig'] = sig; VPOS[key] = 0;
+}
+/** ★줄 손잡이는 «하나» 다 — 줄마다 달면 746개가 된다 */
+function bindPick(pb, pick) {
+  pb.onclick = (e) => {
+    const tr = e.target.closest('[data-k]');
+    if (!tr || tr.classList.contains('vpad')) return;
+    pick(tr.dataset.k);
+  };
+}
+
+/* ══ ★카드 ══════════════════════════════════════════════════════
+   대표 2026-09-17 「목록 형태가 아니라 카드 형태로 만들면 좀 보기가 좋을거 같은데」
+
+   ★둘을 «가른다» — 같은 데이터라도 하는 일이 다르면 꼴이 달라야 한다.
+
+     상품 찾기  고객에게 «보여줄 차» 를 고른다 → 카드
+       · 사진이 34px 줄 안에서는 아무 일도 못 한다. 카드에서는 그게 첫 정보다
+       · 몇 대를 «나란히 견주는» 일이지, 700대를 숫자로 훑는 일이 아니다
+     접수 목록  «무엇이 막혔나 · 몇 월에 청구하나» → 표
+       · 청구월·할 일을 «열을 따라» 훑고, 합계를 내고, 차례로 세운다
+       · 464건을 카드로 깔면 훑는 속도가 반이 된다
+
+   ⇒ 그래서 상품에만 카드를 넣고, 표도 남겨 «고를 수 있게» 한다.
+     746대를 월 대여료로 세워 보고 싶을 때는 표라야 한다.
+
+   ★카드도 «보이는 만큼만» 그린다. 한 줄에 몇 장 서는지를 폭에서 재고,
+     안 그린 줄은 빈 칸 하나로 자리만 메운다 — 표와 같은 규칙이다.
+   ══════════════════════════════════════════════════════════════ */
+const CARD_MIN = 208;   /* 카드 최소 폭 */
+const CARD_GAP = 12;
+const CARD_H = 214;     /* 카드 한 장 높이(= 사진 112 + 속 90 + 테두리). 줄 높이를 세는 데 쓴다 */
+
+function cardCols(pb) {
+  const w = (pb && pb.clientWidth ? pb.clientWidth : 900) - CARD_GAP * 2;
+  return Math.max(1, Math.floor((w + CARD_GAP) / (CARD_MIN + CARD_GAP)));
+}
+/** 카드 «줄» 단위로 자른다 — 장 단위로 자르면 줄이 어긋난다 */
+function vSliceCards(pb, n, cols) {
+  const lines = Math.ceil(n / cols);
+  const lineH = CARD_H + CARD_GAP;
+  const st = pb ? pb.scrollTop : 0;
+  const h = pb && pb.clientHeight ? pb.clientHeight : 640;
+  const firstLine = Math.max(0, Math.floor(st / lineH) - 1);
+  const lastLine = Math.min(lines, firstLine + Math.ceil(h / lineH) + 2);
+  return { first: firstLine * cols, last: Math.min(n, lastLine * cols),
+           top: firstLine * lineH, bot: Math.max(0, (lines - lastLine) * lineH) };
+}
+
+/** 카드 한 장. ★누를 수 있는 것이라 «면 + 터치감» 이다 (표가 아니다) */
+function card(p, lead, on) {
+  const bits = [p.year ? p.year + '년' : null, mileText(p.mileage, true), p.fuel]
+    .filter(Boolean).join(' · ');
+  return `<button type="button" class="card${on ? ' on' : ''}" data-k="${p.id}">
+    <span class="cshot">${p.body ? glyph() : '<span class="none">사진 준비 중</span>'}
+      ${p.status ? `<span class="cst">${statusChip(p.status)}</span>` : ''}</span>
+    <span class="cbody">
+      <span class="cnm">${esc(p.name)}</span>
+      <span class="ctr">${esc(subTrim(p.name, p.sub)) || '<span class="unk">세부트림 미확인</span>'}</span>
+      <span class="camt"><b>${won(lead.rent)}</b><i>/월 ${lead.term}개월</i></span>
+      <span class="cmeta">${bits || '<span class="unk">제원 미확인</span>'}</span>
+      <span class="cfoot">${esc(p.supplier)}
+        <span class="cdep">${p.plate ? esc(p.plate) : '<span class="unk">미배정</span>'}</span></span>
+    </span></button>`;
+}
+
+function sumRow(cells) {
+  return `<tfoot><tr>${cells.map(c => c === null ? '<td></td>'
+    : `<td class="${c.r ? 'r n' : ''}">${c.v}</td>`).join('')}</tr></tfoot>`;
+}
+
 const prod = () => PRODUCTS.find(p => p.id === S.pid);
 const offer = () => { const p = prod(); return p && p.offers.find(o => o.id === S.oid); };
 
 /* ══ 판 ① 상품목록 ═════════════════════════════ */
 function paneProducts(el) {
   syncProd();
-  const { hits, drops, sel } = evaluate();
-  const n = selCount(sel);
+  const sel0 = effSel();
   el.innerHTML = `
-    <div class="ph"><h2>상품 목록</h2><span class="c">${hits.length}건</span><span class="sp"></span>
-      <button class="sb" id="cond">세부필터${n ? `<span class="b">${n}</span>` : ''}</button></div>
+    <div class="ph"><h2>상품 목록</h2><span class="c" id="cntA"></span><span class="sp"></span>
+      <span class="seg" role="group" aria-label="보는 꼴">
+        <button class="sb" data-v="card" aria-pressed="${S.viewA === 'card'}">카드</button>
+        <button class="sb" data-v="grid" aria-pressed="${S.viewA === 'grid'}">표</button>
+      </span></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span>
-        <input type="search" id="q" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월">
-        ${S.q ? '<button class="x" id="qx" aria-label="지우기">&#10005;</button>' : ''}</div>
-      ${tokens(sel)}
+      ${findbox('q', '차종 · 무보증 · 21세 · 36개월', S.q, { filter: 'cond', n: selCount(sel0) })}
+      <span id="toksA">${tokens(sel0)}</span>
     </div>
     <div class="pb" id="pbA"></div>
-    <div class="pf"><span>검색창이 조건을 먹는다 — 점선은 검색어에서 읽은 것</span></div>`;
+    <div class="pf" id="pfA"></div>`;
 
   const q = $('#q');
-  q.oninput = () => { S.q = q.value; paneProducts(el); const e = $('#q'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
-  if ($('#qx')) $('#qx').onclick = () => { S.q = ''; let _w = innerWidth;
-addEventListener('resize', () => { if ((innerWidth <= 1100) !== (_w <= 1100)) { _w = innerWidth; render(); } _w = innerWidth; });
+  /* ★대표 2026-09-17 「검색하고 이런거 느려서 빠릿빠릿해야함」
+     전에는 글자 하나마다 판을 «통째로» 다시 짓고, 사라진 입력칸을 다시 찾아
+     focus + setSelectionRange 로 커서를 되돌려 놓았다. 느린 것보다 이게 더 나빴다 —
+     ★한글은 «조합 중» 인 글자가 입력칸 «안에» 살아 있다. 그 칸을 부수면 조합이 끊긴다.
+       「싼」 을 치는 도중에 ㅆ·ㅏ·ㄴ 이 따로 떨어진다.
+     ⇒ 글자를 칠 때는 «그리드와 셈만» 갈아 끼운다. 입력칸은 손도 안 댄다. */
+  q.oninput = () => { S.q = q.value; softA(); };
+  if ($('#qx')) $('#qx').onclick = () => { S.q = ''; render(); };
+  $('#cond').onclick = () => { S.sheet = !S.sheet; renderSheet(); };
+  el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { S.viewA = b.dataset.v; render(); });
 
-render(); };
-  $('#cond').onclick = () => { S.sheet = true; renderSheet(); };
-  el.querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
-    const [a, k] = b.dataset.tok.split('|'); S.sel[a] = (S.sel[a] || []).filter(x => x !== k); render();
-  });
+  const pbA = $('#pbA');
+  const of = 'product';
+  let rows = [], hits = [], drops = [], lo = null, hi = null, avg = null;
 
-  $('#pbA').innerHTML = hits.length ? `<table class="g">
-    <thead><tr><th style="width:52px"></th><th>차량</th><th>공급사</th><th class="r">기간</th><th class="r">월 대여료</th><th>확정도</th></tr></thead>
-    <tbody>${hits.map(({ p, ok }) => {
-      const lead = ok[0], part = p.match !== 'TRIM';
-      return `<tr data-id="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
-        <td><span class="thumb">${p.body ? glyph() : ''}</span></td>
-        <td><span class="nm">${esc(p.name)}</span> <span class="mut">${esc(p.sub)}</span></td>
-        <td class="mut">${esc(p.supplier)}</td>
-        <td class="r n">${lead.term}개월</td>
-        <td class="r n" style="font-weight:650">${won(lead.rent)}</td>
-        <td><span class="st ${part ? 'wait' : 'mut'}">${part ? '확인 필요' : '트림'}</span></td></tr>`;
-    }).join('')}</tbody></table>`
-    : `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
+  /* ── ① 그리드만. «구를 때» 도는 것이 이것이다 (한 프레임에 한 번) ── */
+  const fillA = () => {
+    if (!hits.length) {
+      pbA.innerHTML = `<div class="empty"><b>이 조건을 다 만족하는 상품이 없다</b>
         <p>「없다」는 <b>이 조건에 없다</b>는 뜻이다. 상품이 사라진 것이 아니다.</p>
         <button class="btn sm" id="clrq">조건 지우고 다시 보기</button></div>`;
+      dropsBox();
+      if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
+      return;
+    }
+    if (S.viewA === 'card') {
+      const cols = cardCols(pbA);
+      const v = vSliceCards(pbA, rows.length, cols);
+      pbA.innerHTML = `<div class="cards" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
+        ${v.top ? `<div class="cpad" style="height:${v.top}px;grid-column:1/-1"></div>` : ''}
+        ${rows.slice(v.first, v.last).map(({ p, ok }) =>
+          card(p, ok[0], p.id === S.pid && S.focus === 'product')).join('')}
+        ${v.bot ? `<div class="cpad" style="height:${v.bot}px;grid-column:1/-1"></div>` : ''}
+      </div>`;
+      dropsBox();
+      return;
+    }
+    const v = vSlice(pbA, rows.length);
+    pbA.innerHTML = `<table class="g">
+    <caption class="sr">상품 목록 — 차량, 차량번호, 연식, 주행, 공급사, 상태, 기간, 보증금, 월 대여료</caption>
+    <thead><tr>${th('', null, { c: 'thc' })}${th('차량', 'veh', { of })}
+      ${th('차량번호', 'plate', { of })}${th('연식', 'year', { of, r: 1 })}${th('주행', 'mile', { of, r: 1 })}
+      ${th('공급사', 'sup', { of })}${th('상태', 'status', { of })}
+      ${th('기간', 'term', { of, r: 1 })}${th('보증금', 'dep', { of, r: 1 })}
+      ${th('월 대여료', 'rent', { of, r: 1 })}</tr></thead>
+    ${sumRow([null, { v: `<b>${rows.length}</b>대` }, null, null, null, null, null,
+      { v: '평균', r: 1 }, { v: lo === null ? '' : `<span class="mut">${man(lo)} ~ ${man(hi)}</span>`, r: 1 },
+      { v: avg === null ? '' : `<b>${won(avg)}</b>`, r: 1 }])}
+    <tbody>${vpad(v.top)}${rows.slice(v.first, v.last).map(({ p, ok }) => {
+      const lead = ok[0];
+      return `<tr data-k="${p.id}" class="${p.id === S.pid && S.focus === 'product' ? 'on' : ''}">
+        <td class="thc"><span class="thumb">${p.body ? glyph() : ''}</span></td>
+        <td class="wveh"><span class="nm">${esc(p.name)}</span> <span class="mut">${esc(subTrim(p.name, p.sub))}</span>${p.fuel ? `<span class="sfx">${esc(p.fuel)}</span>` : ''}${p.match === 'UNMATCHED' || p.match === 'MODEL' ? '<span class="flag w" title="차종마스터에 아직 못 붙였다">차종</span>' : ''}</td>
+        <td class="n">${p.plate ? esc(p.plate) : unk('미배정')}</td>
+        <td class="r n">${p.year ? p.year : unk()}</td>
+        <td class="r n">${mileShort(p.mileage)}</td>
+        <td class="mut">${esc(p.supplier)}</td>
+        <td>${statusChip(p.status)}</td>
+        <td class="r n">${lead.term}개월</td>
+        <td class="r n">${depShort(lead)}</td>
+        <td class="r n" style="font-weight:650">${won(lead.rent)}</td></tr>`;
+    }).join('')}${vpad(v.bot)}</tbody></table>`;
+    dropsBox();
+    bindSort(pbA);
+  };
 
-  if (drops.length) $('#pbA').insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
-    <summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
-    ${drops.map(({ p, why }) => `<div class="w"><b>${esc(p.name)} · ${esc(p.sub)}</b><br>${why.kind === 'p'
-      ? why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')
-      : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
-    </details>`);
+  /* ★왜 빠졌는지는 «접어» 둔다. 다만 869건을 다 그리면 그것만으로 다시 느려진다 —
+     까닭은 갈래가 몇 안 되므로 예순 줄이면 어느 갈래인지 다 보인다. */
+  const dropsBox = () => {
+    if (!drops.length) return;
+    pbA.insertAdjacentHTML('beforeend', `<details class="why"${hits.length ? '' : ' open'}>
+      <summary><b>${drops.length}건</b>이 조건에 걸려 빠졌다 — 왜 빠졌나</summary>
+      ${drops.slice(0, 60).map(({ p, why }) => `<div class="w"><b>${esc(p.name)} · ${esc(p.sub)}</b><br>${why.kind === 'p'
+        ? why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')
+        : `가장 가까운 것이 <code>${esc(why.o.id)}</code> 인데 ${why.miss.map(m => `<em>${esc(m)}</em>`).join(' · ')} 라 안 맞는다. 다른 Offer 에 맞는 값이 있어도 <b>같은 Offer 하나</b>가 다 만족해야 하므로 섞지 않는다.`}</div>`).join('')}
+      ${drops.length > 60 ? `<div class="w"><span class="mut">…그리고 ${drops.length - 60}건 더. 까닭은 위와 같은 갈래다.</span></div>` : ''}
+      </details>`);
+  };
 
-  $('#pbA').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.pid = r.dataset.id; S.oid = null; S.shot = 0; S.focus = 'product'; render(); });
-  if ($('#clrq')) $('#clrq').onclick = () => { S.q = ''; S.sel = {}; render(); };
+  /* ── ② 셈·칩·그리드. «글자를 칠 때» 도는 것이 이것이다 ── */
+  softA = () => {
+    syncProd();
+    const ev = evaluate();
+    hits = ev.hits; drops = ev.drops;
+    rows = sortBy(hits, of, {
+      veh:    x => x.p.maker + ' ' + x.p.name,
+      plate:  x => x.p.plate,
+      year:   x => x.p.year,
+      mile:   x => x.p.mileage,
+      sup:    x => x.p.supplier,
+      status: x => ({ 즉시출고: 0, 출고가능: 1, 협의: 2, 출고불가: 3 })[x.p.status] ?? 9,
+      term:   x => x.ok[0].term,
+      dep:    x => x.ok[0].dep,
+      rent:   x => x.ok[0].rent,
+    });
+    const rents = rows.map(x => x.ok[0].rent).filter(v => typeof v === 'number');
+    lo = rents.length ? Math.min(...rents) : null;
+    hi = rents.length ? Math.max(...rents) : null;
+    avg = rents.length ? Math.round(rents.reduce((s, v) => s + v, 0) / rents.length) : null;
+
+    /* ★「확인 필요」 는 세부트림이 안 잡힌 상품이다 — 0 이 아니라 «모른다» 다 */
+    const part = hits.filter(x => x.p.match !== 'TRIM').length;
+    $('#cntA').textContent = `${hits.length.toLocaleString('ko-KR')}건`;
+    $('#toksA').innerHTML = tokens(ev.sel);
+    $('#toksA').querySelectorAll('[data-tok]').forEach(b => b.onclick = () => {
+      const [ax, k] = b.dataset.tok.split('|');
+      S.sel[ax] = (S.sel[ax] || []).filter(x => x !== k); render();
+    });
+    $('#pfA').innerHTML = tl('조건 밖', drops.length) + tl('확인 필요', part, 'warn')
+      + '<span class="sp"></span>' + pos(hits.length, hits.findIndex(x => x.p.id === S.pid));
+
+    /* ★조건이 바뀌면 다른 목록이다 — 굴린 자리를 물려받지 않는다 */
+    vReset('A', S.viewA + '|' + S.q + '|' + JSON.stringify(S.sel) + '|' + JSON.stringify(S.sort.product));
+    fillA();
+  };
+
+  softA();
+  bindVScroll(pbA, 'A', fillA);
+  /* ★손잡이는 «하나» 다. 줄마다 달면 746개가 된다 */
+  bindPick(pbA, id => { S.pid = id; S.oid = null; S.shot = 0; S.focus = 'product'; render(); });
 }
+/** 글자를 칠 때 도는 자리 — 판이 서 있을 때만 값이 든다 */
+let softA = () => {};
 
 function tokens(sel) {
   const read = parseQ().read, out = [];
@@ -231,55 +629,148 @@ function tokens(sel) {
     for (const k of keys) {
       const o = optOf(ax, k), label = ax.tok ? ax.tok(o) : o.label;
       const fq = read.some(r => r.axis === a && r.key === k);
-      out.push(`<span class="tok${fq ? ' q' : ''}" title="${fq ? '검색어에서 읽음' : '세부필터에서 고름'}">${esc(label)}${fq ? '' : `<button data-tok="${a}|${k}" aria-label="떼기">&#10005;</button>`}</span>`);
+      out.push(`<span class="tok${fq ? ' q' : ''}" title="${fq ? '검색어에서 읽음' : '세부필터에서 고름'}">${esc(label)}${fq ? '' : `<button data-tok="${a}|${k}" aria-label="떼기">${ic('close')}</button>`}</span>`);
     }
   }
   return out.join('');
 }
 
 /* ══ 판 ② 접수목록 ═════════════════════════════ */
+
+/**
+ * ★한 줄 = 한 건 × «지금 막힌 칸».
+ *
+ *   묵은 갈래는 「칠 것 7」 처럼 «무엇이 있나» 만 말했다. 무엇을 해야 하는지는
+ *   줄을 열어봐야 알았다. 막힌 칸으로 가르면 «누르기 전에» 안다.
+ *
+ * ★계약서 칸은 «어떻게 받았는지» 를 모른다 — 전자계약이 붙어 있으면 그 단계를
+ *   빌려 보여줄 뿐이다. 전자계약을 날리면 이 함수는 그냥 「계약서」 라고 답한다.
+ *   접수가 전자계약을 아는 곳은 여기 «한 줄» 뿐이다.
+ */
+function blocked(a) {
+  if (a.cxl) return null;
+  const s = STEPS.find(([k]) => !stepDone(a, k));
+  if (!s) return null;
+  if (s[0] === 'contract' && typeof ecOf === 'function') {
+    const e = ecOf(a);
+    if (e) return { k: 'contract', t: ecStage(e).t, e };
+  }
+  return { k: s[0], t: s[1] };
+}
+const blockOf = a => blocked(a) || {};
+
+/* 「칠 것」 은 넷의 «합» 이다. 넷은 그 안을 가르는 것이지 따로 서는 바구니가 아니다 */
 const AF = [
-  { k: 'todo', t: '칠 것', f: a => !a.cxl && !a.deliv },
+  { k: 'todo', t: '칠 것', f: a => !!blocked(a) },
+  { k: 'contract', t: '계약', f: a => blockOf(a).k === 'contract' },
+  { k: 'docs', t: '서류', f: a => blockOf(a).k === 'docs' },
+  { k: 'balance', t: '잔금', f: a => blockOf(a).k === 'balance' },
+  { k: 'deliv', t: '인도', f: a => blockOf(a).k === 'deliv' },
   { k: 'all', t: '전체', f: () => true },
-  { k: 'done', t: '인도완료', f: a => a.deliv && !a.cxl },
   { k: 'cxl', t: '취소', f: a => a.cxl },
 ];
-function paneApps(el) {
+/** ★시트의 「상품」 + 「렌트구분」 두 열을 한 칸에 접는다.
+    둘은 «따로 쓰이지 않는다» — 늘 「장기렌트 신차」 처럼 붙어서 읽힌다. */
+function kindCell(a) {
+  if (!a.product) return dash();
+  const tone = a.product === '구독' ? 'key' : 'mut';
+  return `<span class="st ${tone}">${esc(a.product)}</span>`
+    + (a.rentKind ? `<span class="sfx">${esc(a.rentKind)}</span>` : '');
+}
+
+/** 지금 갈래·지금 검색어로 걸러 낸 접수 — 한곳에서만 거른다 */
+function appList() {
   const f = AF.find(x => x.k === S.appFilter) || AF[0];
-  const list = APPS.filter(f.f).filter(a => !S.appQ || (a.cust + a.no + a.veh + a.ch).toLowerCase().includes(S.appQ.toLowerCase()));
+  const needle = S.appQ.trim().toLowerCase();
+  return APPS.filter(f.f).filter(a => !needle
+    || (a.cust + a.no + a.veh + (a.plate || '') + a.ch + a.sup).toLowerCase().includes(needle));
+}
+
+function paneApps(el) {
+  let list = appList();
   if (!list.some(a => a.no === S.appNo) && list.length) S.appNo = list[0].no;
 
   el.innerHTML = `
-    <div class="ph"><h2>접수 목록</h2><span class="c">${list.length}건</span><span class="sp"></span>
+    <div class="ph"><h2>접수 목록</h2><span class="c" id="cntB"></span><span class="sp"></span>
       <button class="btn sm go" id="newapp">+ 신규접수</button></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span><input type="search" id="aq" value="${esc(S.appQ)}" placeholder="고객 · 접수번호 · 차량"></div>
+      ${findbox('aq', '고객 · 접수번호 · 차량번호 · 공급사', S.appQ)}
       ${AF.map(x => `<button class="sb" data-f="${x.k}" aria-pressed="${x.k === S.appFilter}">${x.t}<span class="b">${APPS.filter(x.f).length}</span></button>`).join('')}
     </div>
     <div class="pb" id="pbB"></div>
-    <div class="pf"><span>기본은 <b>칠 것</b> — 계약서·서류·인도 중 하나가 남은 건</span></div>`;
+    <div class="pf" id="pfB"></div>`;
 
   const aq = $('#aq');
-  aq.oninput = () => { S.appQ = aq.value; paneApps(el); const e = $('#aq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  /* ★상품 목록과 «같은 규칙» — 글자를 칠 때 입력칸을 안 부순다 (한글 조합이 끊긴다) */
+  aq.oninput = () => { S.appQ = aq.value; softB(); };
+  if ($('#aqx')) $('#aqx').onclick = () => { S.appQ = ''; render(); };
   el.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { S.appFilter = b.dataset.f; render(); });
   $('#newapp').onclick = () => { S.screen = 'product'; S.focus = 'product'; render(); };
 
-  $('#pbB').innerHTML = list.length ? `<table class="g">
-    <thead><tr><th style="width:52px"></th><th>고객</th><th>차량번호</th><th>차량</th><th>영업채널</th><th class="r">월 대여료</th><th>상태</th><th>접수일시</th></tr></thead>
-    <tbody>${list.map(a => {
-      const s = appStatus(a), p = PRODUCTS.find(x => x.id === a.pid);
-      return `<tr data-no="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
-        <td><span class="thumb">${p && p.body ? glyph() : ''}</span></td>
-        <td><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
-        <td class="n">${esc(a.plate || '—')}</td>
-        <td class="mut">${esc(a.veh)}</td><td class="mut">${esc(a.ch)}</td>
-        <td class="r n" style="font-weight:650">${won(a.rent)}</td>
-        <td><span class="st ${s.c}">${s.t}</span></td>
-        <td class="mut n">${esc(a.at)}</td></tr>`;
-    }).join('')}</tbody></table>`
+  const of = 'app';
+  const pbB = $('#pbB');
+  let rows = [], tot = 0, promo = 0;
+  const fillB = () => {
+  const v = vSlice(pbB, rows.length);
+  pbB.innerHTML = list.length ? `<table class="g wide">
+    <caption class="sr">접수 목록 — 접수일, 할 일, 고객, 차량번호, 차량, 공급사, 상품, 채널·담당, 기간, 월 대여료, 청구월</caption>
+    <thead><tr>${th('접수일', 'at', { of })}${th('할 일', 'todo', { of })}${th('고객', 'cust', { of })}
+      ${th('차량번호', 'plate', { of })}${th('차량', 'veh', { of })}
+      ${th('공급사', 'sup', { of })}${th('상품', 'product', { of })}${th('채널 · 담당', 'ch', { of })}
+      ${th('기간', 'term', { of, r: 1 })}${th('월 대여료', 'rent', { of, r: 1 })}
+      ${th('청구월', 'bill', { of, c: 'pin-r' })}</tr></thead>
+    ${sumRow([{ v: `<b>${rows.length}</b>건` }, null, null, null, null, null, null,
+      { v: '합계', r: 1 }, null,
+      { v: `<b>${won(tot)}</b>${promo ? `<span class="sfx">프로모 ${man(promo)}</span>` : ''}`, r: 1 },
+      null])}
+    <tbody>${vpad(v.top)}${rows.slice(v.first, v.last).map(a => {
+      const direct = /다이렉트/.test(a.ch || '');
+      return `<tr data-k="${a.no}" class="${a.no === S.appNo && S.focus === 'app' ? 'on' : ''}">
+        <td class="mut n">${esc((a.at || '').slice(0, 5))}</td>
+        <td>${todoCell(a)}</td>
+        <td class="wnm"><span class="nm">${esc(a.cust)}</span> <span class="mut n">${esc(a.no)}</span></td>
+        <td class="n">${a.plate ? esc(a.plate) : unk('미배정')}</td>
+        <td class="mut wveh">${esc(a.veh)}<span class="sfx">${esc(subTrim(a.veh, a.trim))}</span></td>
+        <td class="mut">${esc(a.sup)}</td>
+        <td>${kindCell(a)}</td>
+        <td class="mut wch">${direct ? '다이렉트' : esc(a.ch)}<span class="sfx">${esc(a.staff)}</span></td>
+        <td class="r mut n">${a.term}개월</td>
+        <td class="r n" style="font-weight:650">${won(a.rent)}${a.promo ? `<span class="flag w" title="${esc(promoLine(a.promo, a.promoShare).replace(/<[^>]+>/g, ''))}">＋${man(a.promo)}</span>` : ''}</td>
+        <td class="pin-r">${a.cxl ? dash() : billCell(a.billMonth)}</td></tr>`;
+    }).join('')}${vpad(v.bot)}</tbody></table>`
     : `<div class="empty"><b>이 칸에 걸린 접수가 없다</b><p>다른 칸을 보시라. 접수가 사라진 것이 아니다.</p></div>`;
-  $('#pbB').querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.appNo = r.dataset.no; S.focus = 'app'; render(); });
+  bindSort(pbB);
+  };
+
+  softB = () => {
+    list = appList();
+    if (!list.some(a => a.no === S.appNo) && list.length) S.appNo = list[0].no;
+    rows = sortBy(list, of, {
+      at: x => x.at, todo: x => blockOf(x).t || 'ㅎ',   /* ★끝난 건은 뒤로 */
+      cust: x => x.cust, plate: x => x.plate, veh: x => x.veh, sup: x => x.sup,
+      product: x => (x.product || '') + (x.rentKind || ''),
+      ch: x => x.ch, term: x => x.term, rent: x => x.rent,
+      bill: x => x.billMonth,
+    });
+    tot = rows.reduce((s, x) => s + (x.rent || 0), 0);
+    promo = rows.reduce((s, x) => s + (x.promo || 0), 0);
+
+    $('#cntB').textContent = `${list.length.toLocaleString('ko-KR')}건`;
+    $('#pfB').innerHTML = tl('칠 것', APPS.filter(x => blocked(x)).length, 'warn')
+      + tl('인도완료', APPS.filter(x => x.deliv && !x.cxl).length, 'ok')
+      + tl('취소', APPS.filter(x => x.cxl).length)
+      + `<span class="sp"></span><span class="t"><i>월 대여료 합계</i><b class="n">${won(tot)}</b></span>`
+      + pos(list.length, list.findIndex(x => x.no === S.appNo));
+
+    vReset('B', S.appQ + '|' + S.appFilter + '|' + JSON.stringify(S.sort.app));
+    fillB();
+  };
+
+  softB();
+  bindVScroll(pbB, 'B', fillB);
+  bindPick(pbB, no => { S.appNo = no; S.focus = 'app'; render(); });
 }
+let softB = () => {};
 
 /* ══ 판 ③ 상세 ════════════════════════════════ */
 
@@ -291,9 +782,9 @@ function detailProduct(el) {
   const fact = (k, v) => `<dt>${k}</dt><dd>${v == null ? '<span class="unk">미확인</span>' : v}</dd>`;
 
   el.innerHTML = `
-    <div class="ph"><h2>상품 상세</h2><span class="c n">${esc(p.id)} · v${p.v}</span>
-      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 2)}</div>
+    <div class="ph"><h2>상품 상세</h2><span class="c n">${esc(p.id)} · v${p.v}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 2)}
       <div class="dtop">
         <div>${shotBox(!!p.body, 'shot')}
           <div class="strip">${[0, 1, 2, 3].map(i => `<span data-s="${i}" aria-current="${i === S.shot}">${p.body ? glyph() : ''}</span>`).join('')}<span class="more">+2</span></div></div>
@@ -304,10 +795,11 @@ function detailProduct(el) {
           <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월 ${VAT}</div><div class="v">${won(o.rent)}</div></div>
             <span class="u">보증금 ${depText(o)} · ${yr(o.mile) || '약정 미확인'}</span></div>
           <dl class="kv">
+            ${fact('상태', p.status ? statusChip(p.status) : null)}${fact('차량번호', p.plate)}
             ${fact('연식', p.year ? p.year + '년형' : null)}${fact('주행거리', p.mileage != null ? km(p.mileage) : null)}
             ${fact('연료', p.fuel)}${fact('인승', p.seats ? p.seats + '인승' : null)}
-            ${fact('색상', p.color)}${fact('차량번호', p.plate)}
-            ${fact('선택 Offer', `<span class="n">${esc(o.id)}</span>`)}${fact('적용 정책', o.pol.length ? o.pol.join(' · ') : '없음')}
+            ${fact('색상', p.color)}${fact('대여 지역', p.region)}
+            ${fact('선택 Offer', `<span class="n">${esc(o.id)}</span>`)}${fact('공급사', esc(p.supplier))}
           </dl>
         </div>
       </div>
@@ -322,7 +814,10 @@ function detailProduct(el) {
             <td class="mut">${x.pol.join(' · ') || '—'}</td>
             <td>${pass && anyCond ? '<span class="st key">조건 충족</span>' : pass ? '' : `<span class="mut" style="font-size:11px">${miss.map(ax => esc(ax.t)).join(' · ')} 불일치</span>`}</td></tr>`;
         }).join('')}</tbody></table></div>
-      <div class="note"><span class="i">&#10003;</span><div><b>접수 가능한 상품입니다</b>
+      ${polSections(p.pols) || `<div class="sec"><h3>조건</h3>
+        <div class="empty sm"><b>이 상품에 매인 정책 원자가 없다</b>
+        <p>「조건이 없다」가 아니라 <b>아직 안 옮겼다</b>는 뜻이다. 공급사 정책을 확인해야 한다.</p></div></div>`}
+      <div class="note"><span class="i">${ic('check')}</span><div><b>접수 가능한 상품입니다</b>
         <p>고른 Offer(<span class="n">${esc(o.id)}</span>)가 그대로 접수 Snapshot 에 굳습니다. 지금 상품이 바뀌어도 받은 접수는 안 바뀝니다.</p></div></div>
     </div></div>
     ${actBar({
@@ -346,13 +841,16 @@ function detailApp(el) {
   if (!a) { el.innerHTML = `<div class="ph"><h2>접수 상세</h2></div><div class="pb"><div class="empty"><b>고른 접수가 없다</b></div></div>`; return; }
   const p = PRODUCTS.find(x => x.id === a.pid), drift = p && p.v !== a.pv, s = appStatus(a);
   const steps = STEPS;
+  /* ★막힌 칸이 계약서이고 전자계약이 붙어 있으면 실행 띠를 «그쪽» 이 든다.
+     전자계약을 날리면 ecOf 가 null 이라 이 줄이 통째로 안 돈다. */
+  const _b = blocked(a), ecAct = _b && _b.k === 'contract' && _b.e ? ecActions(a, _b.e) : null;
   const next = a.cxl ? null : steps.find(([k]) => !a[k]);
-  const at = a.cxl ? 3 : !a.contract ? 1 : !a.docs ? 2 : 3;
+  const at = a.cxl ? 3 : !stepDone(a, 'contract') ? 1 : !a.docs ? 2 : 3;
 
   el.innerHTML = `
-    <div class="ph"><h2>접수 상세</h2><span class="c n">${esc(a.no)}</span>
-      ${stepper(['접수 확인', '서류 확인', '인도 처리'], at)}</div>
+    <div class="ph"><h2>접수 상세</h2><span class="c n">${esc(a.no)}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['접수 확인', '서류 확인', '인도 처리'], at)}
       <div class="dtop">
         <div>${shotBox(!!(p && p.body), 'shot')}
           <div class="strip">${[0, 1, 2, 3].map(() => `<span>${p && p.body ? glyph() : ''}</span>`).join('')}<span class="more">+2</span></div></div>
@@ -361,29 +859,59 @@ function detailApp(el) {
           <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${esc(a.trim)}</p>
           <div class="amt"><div><div class="k">월 대여료 · ${a.term}개월 ${VAT}</div><div class="v">${won(a.rent)}</div></div>
             <span class="u">보증금 ${a.dep ? man(a.dep) + '원' : '무보증'} · ${yr(a.mile) || '약정 미확인'}</span></div>
-          <dl class="kv">
-            <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : '<span class="unk">미배정</span>'}</dd>
-            <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : '<span class="unk">미입력</span>'}</dd>
+          ${a.promo ? `<div class="promo"><span class="pk">프로모션</span>
+            <span class="pv">${promoLine(a.promo, a.promoShare)}</span>
+            ${a.promoWhy ? `<span class="pw">${esc(a.promoWhy)}</span>` : '<span class="pw unk">사유 없음</span>'}</div>` : ''}
+          <dl class="kv two">
+            <dt>차량번호</dt><dd class="n">${a.plate ? esc(a.plate) : unk('미배정')}</dd>
+            <dt>연락처</dt><dd>${a.phone ? esc(a.phone) : unk('미입력')}</dd>
+            <dt>상품</dt><dd>${esc(a.product || '—')}${a.rentKind ? `<span class="sfx">${esc(a.rentKind)}</span>` : ''}</dd>
+            <dt>계약형태</dt><dd>${esc(a.contractType || '—')}</dd>
+            <dt>납입</dt><dd>${esc(a.payKind || '—')}</dd>
+            <dt>출고지역</dt><dd>${esc(a.region || '—')}</dd>
+            <dt>영업채널</dt><dd>${esc(a.ch)}${a.agentCode ? `<span class="sfx n">${esc(a.agentCode)}</span>` : ''}</dd>
             <dt>담당자</dt><dd>${esc(a.staff)}</dd>
+            <dt>인도희망</dt><dd class="n">${a.wantAt ? esc(a.wantAt) : dash()}</dd>
+            <dt>인도완료</dt><dd class="n">${a.deliv ? '09-16' : unk('미인도')}</dd>
+            <dt>공급사</dt><dd>${esc(a.sup)}</dd>
             <dt>선택 Offer</dt><dd class="n">${esc(a.oid)}</dd>
-            <dt>굳힌 때</dt><dd class="n">${esc(a.at)}</dd>
             <dt>상품 판</dt><dd class="n">${esc(a.pid)} v${a.pv}</dd>
-            <dt>영업채널</dt><dd>${esc(a.ch)}</dd>
+            <dt>굳힌 때</dt><dd class="n">${esc(a.at)}</dd>
           </dl>
+          <!-- ★청구월은 «접수와 정산을 잇는 유일한 고리» 라 따로 세운다.
+               kv 에 섞으면 열넷 중 하나가 되어 눈에 안 걸린다. -->
+          <div class="bill ${a.billMonth ? 'set' : 'open'}">
+            <span class="bk">${ic('coin')} 청구월</span>
+            <span class="bv">${a.cxl ? '<span class="st bad">취소 — 청구 없음</span>'
+              : a.billMonth ? `<b class="n">${esc(a.billMonth.replace('-', '년 '))}월</b>`
+              : unk('아직 안 정해짐')}</span>
+            <span class="bw">${a.cxl ? '취소 건은 원장에 서지 않는다'
+              : a.billMonth ? '이 달 정산원장에 선다'
+              : a.deliv ? '인도는 끝났다 — 청구월만 비었다' : '인도가 끝나야 정해진다'}</span>
+          </div>
         </div>
       </div>
-      <div class="sec"><h3>진행 — 셋은 서로 독립인 사실이다</h3>
-        <table class="g"><thead><tr><th>단계</th><th>상태</th><th>때</th><th></th></tr></thead><tbody>
-          ${steps.map(([k, t]) => `<tr><td class="nm">${t}</td>
-            <td><span class="st ${a[k] ? 'ok' : 'wait'}">${a[k] ? '완료' : '대기'}</span></td>
-            <td class="mut n">${a[k] ? '09-16' : '—'}</td>
-            <td class="r">${a.cxl ? '' : `<button class="btn sm" data-tg="${k}">${a[k] ? '되돌리기' : '완료 처리'}</button>`}</td></tr>`).join('')}
+      <div class="sec"><h3>진행 — 넷은 서로 독립인 사실이다</h3>
+        <table class="g"><caption class="sr">진행 — 단계, 상태, 때</caption>
+          <thead><tr><th scope="col">단계</th><th scope="col">상태</th><th scope="col">때</th><th scope="col"><span class="sr">행동</span></th></tr></thead><tbody>
+          ${steps.map(([k, t]) => {
+            /* ★계약서 칸만 «펼쳐진다» — 전자계약이 붙어 있을 때만.
+               없으면(종이·엑셀·직접입력) 다른 세 칸과 똑같은 체크 한 칸이다. */
+            const ec = k === 'contract' ? ecOf(a) : null;
+            return `<tr${ec ? ' class="exp"' : ''}><td class="nm">${t}${ec ? ' <span class="mut" style="font-size:10px">전자계약</span>' : ''}</td>
+            <td>${ec ? `<span class="st ${ecTone(ec)}">${esc(ecStage(ec).t)}</span>${ecFlagTags(ecFlags(ec), ec)}`
+                     : `<span class="st ${stepDone(a, k) ? 'ok' : 'wait'}">${stepDone(a, k) ? '완료' : '대기'}</span>`}</td>
+            <td class="mut n">${ec ? esc(ec.at) : stepDone(a, k) ? '09-16' : '—'}</td>
+            <td class="r">${ec ? `<button class="btn sm" id="ecopen" aria-expanded="${!!S.ecOpen}">${S.ecOpen ? '접기' : '펼치기'}</button>`
+                               : a.cxl ? '' : `<button class="btn sm" data-tg="${k}">${a[k] ? '되돌리기' : '완료 처리'}</button>`}</td></tr>`
+            + (ec && S.ecOpen ? `<tr class="expbody"><td colspan="4">${ecSection(ec)}</td></tr>` : '');
+          }).join('')}
         </tbody></table></div>
       <div class="sec"><h3>어디까지 왔나</h3>
         <ul class="tl">
           <li class="on"><div class="t">접수</div><div class="w">${esc(a.at)} · ${esc(a.staff)}</div></li>
           ${steps.map(([k, t], i) => {
-            const done = a[k], now = !a.cxl && !done && steps.slice(0, i).every(([j]) => a[j]);
+            const done = stepDone(a, k), now = !a.cxl && !done && steps.slice(0, i).every(([j]) => stepDone(a, j));
             return `<li class="${done ? 'on' : now ? 'now' : ''}"><div class="t">${t}</div>
               <div class="w">${done ? '완료' : now ? '지금 할 것' : '대기'}</div></li>`;
           }).join('')}
@@ -400,15 +928,15 @@ function detailApp(el) {
       <div class="sec"><h3>이력 — 덮지 않고 쌓는다</h3>
         <table class="g"><tbody>
           <tr><td class="mut n" style="width:90px">${esc(a.at)}</td><td><b>접수</b> — ${esc(a.staff)}</td></tr>
-          ${a.contract ? '<tr><td class="mut n">09-16 10:02</td><td><b>계약서</b> 완료</td></tr>' : ''}
+          ${stepDone(a, 'contract') ? '<tr><td class="mut n">09-16 10:02</td><td><b>계약서</b> 완료</td></tr>' : ''}
           ${a.docs ? '<tr><td class="mut n">09-16 11:20</td><td><b>필수서류</b> 완료</td></tr>' : ''}
           ${a.deliv ? '<tr><td class="mut n">09-16 15:40</td><td><b>인도</b> 완료 — 실적 후보로 넘어감</td></tr>' : ''}
           ${a.cxl ? `<tr><td class="mut n">09-12 17:11</td><td><b>취소</b> — ${esc(a.cxlReason)}</td></tr>` : ''}
         </tbody></table></div>
-      ${a.cxl ? `<div class="note e"><span class="i">&#10005;</span><div><b>취소된 접수입니다</b><p>${esc(a.cxlReason)} — 지우지 않고 이유와 함께 남깁니다.</p></div></div>`
+      ${a.cxl ? `<div class="note e"><span class="i">${ic('close')}</span><div><b>취소된 접수입니다</b><p>${esc(a.cxlReason)} — 지우지 않고 이유와 함께 남깁니다.</p></div></div>`
         : drift ? `<div class="note w"><span class="i">!</span><div><b>지금 상품은 v${p.v}, 이 접수는 v${a.pv} 를 보고 받았습니다</b>
             <p>그 사이 상품이 바뀌었습니다. <b>접수 조건은 안 바뀝니다</b> — 위 값이 접수 당시 그대로입니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>진행할 수 있는 접수입니다</b>
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>진행할 수 있는 접수입니다</b>
             <p>계약서·서류·인도는 서로 독립입니다. 순서가 어긋나도 됩니다.</p></div></div>`}
     </div></div>
     ${actBar({
@@ -424,8 +952,12 @@ function detailApp(el) {
         : next ? { t: next[1] + ' 완료 처리', go: () => { a[next[0]] = true; render(); } }
         : { t: '계약서 발송', go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
     })}`;
+  if (ecAct) el.querySelector('.dact').outerHTML = actBar(ecAct);
 
   el.querySelectorAll('[data-tg]').forEach(b => b.onclick = ev => { ev.stopPropagation(); a[b.dataset.tg] = !a[b.dataset.tg]; render(); });
+  if ($('#ecopen')) $('#ecopen').onclick = () => { S.ecOpen = !S.ecOpen; render(); };
+  el.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => alert(b.dataset.fix + ' — 이번 범위 밖'));
+  if (ecAct) { bindAct(el, ecAct); return; }
   bindAct(el, {
     more: a.cxl ? [] : [{ go: () => { S.screen = 'esign'; const m = ESIGNS.find(e => e.app === a.no); if (m) S.esignNo = m.no; S.focus = 'esign'; render(); } },
                         { go: () => {} }, '-',
@@ -465,11 +997,9 @@ function renderPick() {
   const open = rows.filter(r => !r.done).length;
 
   root.innerHTML = `<div class="pick" id="pw"><div class="pickbox">
-    <div class="ph"><h2>환수 대상 고르기</h2><span class="c">되돌릴 수 있는 것 ${open}건</span>
+    <div class="ph"><h2>환수 대상 고르기</h2><span class="c">인도가 찍힌 건만</span>
       <span class="sp"></span><button class="btn sm" id="pkx">닫기</button></div>
-    <div class="bar"><div class="fd"><span class="mg">&#9906;</span>
-      <input type="search" id="pkq" value="${esc(S.pickQ)}" placeholder="차량번호 · 고객 · 공급사"></div>
-      <span class="mut" style="font-size:11px">★인도가 찍혀 «실적이 선» 건만 나옵니다</span></div>
+    <div class="bar">${findbox('pkq', '차량번호 · 고객 · 공급사', S.pickQ)}</div>
     <div class="body2">${rows.length ? `<table class="g">
       <thead><tr><th>차량번호</th><th>고객</th><th>차량</th><th>공급사</th><th>영업채널</th>
         <th class="r">되돌릴 금액</th><th>실적</th></tr></thead>
@@ -482,13 +1012,14 @@ function renderPick() {
       </tr>`).join('')}</tbody></table>`
       : `<div class="empty"><b>되돌릴 실적이 없다</b>
           <p>인도가 찍혀 실적이 선 건만 환수할 수 있다.</p></div>`}</div>
-    <div class="pf"><span>★이미 환수가 붙은 줄은 잠겨 있다 — 두 번 되돌리면 두 배로 빠진다</span></div>
+    <div class="pf">${tl('되돌릴 수 있는 것', open)}${tl('이미 환수됨', rows.length - open, 'bad')}</div>
   </div></div>`;
 
   $('#pw').onclick = ev => { if (ev.target.id === 'pw') { S.pick = null; renderPick(); } };
   $('#pkx').onclick = () => { S.pick = null; renderPick(); };
   const q = $('#pkq');
   q.oninput = () => { S.pickQ = q.value; renderPick(); const e = $('#pkq'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); };
+  if ($('#pkqx')) $('#pkqx').onclick = () => { S.pickQ = ''; renderPick(); };
   root.querySelectorAll('tbody tr').forEach(r => r.onclick = () => {
     const t = rows.find(x => x.p.no === r.dataset.no);
     if (!t || t.done) return;          /* 잠긴 줄은 안 열린다 */
@@ -520,9 +1051,9 @@ function makeClawbackFrom(src) {
 /* ══ 정산 ══════════════════════════════════════ */
 function panePerf(el) {
   const sum = PERFS.reduce((n, p) => n + (p.bill - p.pay), 0);
+  const nClaw = PERFS.filter(isClaw).length;
   el.innerHTML = `<div class="ph"><h2>실적 목록</h2><span class="c">${PERFS.length}건</span><span class="sp"></span>
-      <span class="c">마진 합계 <b class="n">${won2(sum)}</b></span>
-      <button class="btn sm" id="newclaw" style="margin-left:var(--sp)">+ 환수</button></div>
+      <button class="btn sm" id="newclaw">+ 환수</button></div>
     <div class="pb"><table class="g">
       <thead><tr><th style="width:56px">갈래</th><th>차량번호</th><th>고객</th><th>차량</th><th>채널</th>
         <th class="r">청구</th><th class="r">지급</th><th class="r">마진</th><th>단계</th></tr></thead>
@@ -535,7 +1066,8 @@ function panePerf(el) {
           <td class="r n"${isClaw(p) ? ' style="color:var(--bad)"' : ''}>${p.pay ? won2(p.pay) : '—'}</td>
           <td class="r n" style="font-weight:650${isClaw(p) ? ';color:var(--bad)' : ''}">${won2(p.bill - p.pay)}</td>
           <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>★환수는 «되돌리는 줄» 이다 — 원 실적을 고치지 않고 반대 부호로 한 줄 더 선다</span></div>`;
+    <div class="pf">${tl('정상', PERFS.length - nClaw)}${tl('환수', nClaw, 'bad')}${tl('이슈', PERFS.filter(p => p.issue).length, 'bad')}
+      <span class="sp"></span><span class="t"><i>마진 합계</i><b class="${sum < 0 ? 'bad' : ''}">${won2(sum)}</b></span></div>`;
   $('#newclaw').onclick = openClawPick;
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.perfNo = r.dataset.k; S.focus = 'perf'; render(); });
 }
@@ -559,7 +1091,11 @@ function paneLedger(el) {
             <td class="nm">${esc(p.ch)}</td><td class="r n">${won(p.fixed)}</td><td class="r n">${won(p.paid)}</td>
             <td class="r n" style="${l ? 'color:var(--bad);font-weight:700' : ''}">${won(l)}</td>
             <td><span class="st ${st.c}">${st.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>청구 원장과 지급 원장은 <b>따로 선다</b> — 한 표에 합치지 않는다</span></div>`;
+    <div class="pf">${inv
+      ? tl('공급사', BILLS.length) + tl('미수', BILLS.filter(b => b.fixed - b.got > 0).length, 'bad')
+        + `<span class="sp"></span><span class="t"><i>미수 합계</i><b class="${BILLS.some(b => b.fixed > b.got) ? 'bad' : ''}">${won(BILLS.reduce((n, b) => n + (b.fixed - b.got), 0))}</b></span>`
+      : tl('영업채널', PAYS.length) + tl('미지급', PAYS.filter(p => p.fixed - p.paid > 0).length, 'warn') + tl('보류', PAYS.filter(p => p.hold).length, 'bad')
+        + `<span class="sp"></span><span class="t"><i>미지급 합계</i><b>${won(PAYS.reduce((n, p) => n + (p.fixed - p.paid), 0))}</b></span>`}</div>`;
   el.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { S.tab = b.dataset.t; S.focus = b.dataset.t === 'payout' ? 'pay' : 'bill'; render(); });
   el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => {
     if (inv) { S.billSup = r.dataset.k; S.focus = 'bill'; } else { S.payCh = r.dataset.k; S.focus = 'pay'; } render();
@@ -569,9 +1105,9 @@ function paneLedger(el) {
 function detailPerf(el) {
   const pf = PERFS.find(x => x.no === S.perfNo) || PERFS[0];
   const a = APPS.find(x => x.no === pf.app);
-  el.innerHTML = `<div class="ph"><h2>실적 상세</h2><span class="c n">${esc(pf.no)}</span>
-      ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}</div>
+  el.innerHTML = `<div class="ph"><h2>실적 상세</h2><span class="c n">${esc(pf.no)}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['영업자 확인', '공급사 대조', '최종 확정'], Math.min(3, pf.stage))}
       <div class="dchips"><span class="st ${isClaw(pf) ? 'bad' : 'mut'}">${isClaw(pf) ? '환수 실적' : '정상 실적'}</span>
         <span class="tag n">${esc(a.plate || '차량번호 미배정')}</span><span class="tag">${esc(a.sup)}</span><span class="tag">${esc(a.ch)}</span><span class="tag n">접수 ${esc(a.no)}</span></div>
       <h3 class="dttl">${esc(a.cust)}</h3><p class="dsub">${esc(a.veh)} · ${a.term}개월</p>
@@ -598,8 +1134,8 @@ function detailPerf(el) {
         <table class="g"><tbody>${STAGES.map((t, i) => `<tr><td style="width:34px" class="mut n">${i + 1}</td><td>${esc(t)}</td>
           <td class="r"><span class="st ${i + 1 < pf.stage ? 'ok' : i + 1 === pf.stage ? 'key' : 'mut'}">${i + 1 < pf.stage ? '완료' : i + 1 === pf.stage ? '지금 여기' : '—'}</span></td></tr>`).join('')}</tbody></table></div>
       ${pf.issue ? `<div class="note e"><span class="i">!</span><div><b>공급사와 어긋납니다</b><p>${esc(pf.note)} — 영업자 지급액에 닿는 어긋남이라 재확인으로 돌려보냅니다. 어긋난 채로 확정하지 않습니다.</p></div></div>`
-        : pf.stage >= 4 ? `<div class="note"><span class="i">&#10003;</span><div><b>정산 확정</b><p>청구 원장과 지급 원장에 각각 들어갔습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>${esc(STAGES[pf.stage - 1])} 차례입니다</b><p>어긋난 채로 확정하지 않습니다.</p></div></div>`}
+        : pf.stage >= 4 ? `<div class="note"><span class="i">${ic('check')}</span><div><b>정산 확정</b><p>청구 원장과 지급 원장에 각각 들어갔습니다.</p></div></div>`
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>${esc(STAGES[pf.stage - 1])} 차례입니다</b><p>어긋난 채로 확정하지 않습니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><textarea placeholder="대조 메모"></textarea></div>
       ${pf.issue ? '<button class="btn" id="rs">이슈 해소</button><button class="btn go" id="re">재확인 요청</button>'
@@ -618,9 +1154,9 @@ function detailPerf(el) {
 
 function detailBill(el) {
   const b = BILLS.find(x => x.sup === S.billSup) || BILLS[0], due = b.fixed - b.got;
-  el.innerHTML = `<div class="ph"><h2>청구 상세</h2><span class="c">${esc(b.sup)} · ${b.month}</span>
-      ${stepper(['청구서', '계산서', '수금'], b.got >= b.fixed ? 3 : b.tax === '발행' ? 3 : 2)}</div>
+  el.innerHTML = `<div class="ph"><h2>청구 상세</h2><span class="c">${esc(b.sup)} · ${b.month}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['청구서', '계산서', '수금'], b.got >= b.fixed ? 3 : b.tax === '발행' ? 3 : 2)}
       <div class="dchips"><span class="tag">확정 실적 ${b.cnt}건</span><span class="st ${b.tax === '발행' ? 'ok' : 'wait'}">계산서 ${b.tax}</span></div>
       <h3 class="dttl">${esc(b.sup)}</h3><p class="dsub">${b.month} 청구</p>
       <div class="sec"><h3>돈 — 셋을 한 칸에 합치지 않는다</h3>
@@ -633,7 +1169,7 @@ function detailBill(el) {
         <table class="g"><tbody>${b.hist.map(x => `<tr><td class="mut n" style="width:70px">${x.t}</td><td>${esc(x.w)}</td><td class="r n">${x.a != null ? won(x.a) : ''}</td></tr>`).join('')}</tbody></table></div>
       ${b.got > 0 && due > 0 ? `<div class="note w"><span class="i">!</span><div><b>부분수금은 정상입니다</b>
         <p>확정액 ${won(b.fixed)} 은 그대로 두고 들어온 ${won(b.got)} 을 이력으로 더했습니다. 원금액을 덮어쓰지 않습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>청구확정 · 계산서 · 수금은 서로 다른 상태입니다</b><p>계산서를 끊었다고 수금이 된 것이 아닙니다.</p></div></div>`}
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>청구확정 · 계산서 · 수금은 서로 다른 상태입니다</b><p>계산서를 끊었다고 수금이 된 것이 아닙니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><input id="am" class="n" value="${due}" ${due ? '' : 'disabled'}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
@@ -649,9 +1185,9 @@ function detailBill(el) {
 
 function detailPay(el) {
   const p = PAYS.find(x => x.ch === S.payCh) || PAYS[0], left = p.fixed - p.paid;
-  el.innerHTML = `<div class="ph"><h2>지급 상세</h2><span class="c">${esc(p.ch)} · ${p.month}</span>
-      ${stepper(['지급 확정', '지급 실행', '완료'], p.paid >= p.fixed ? 3 : p.paid ? 2 : 1)}</div>
+  el.innerHTML = `<div class="ph"><h2>지급 상세</h2><span class="c">${esc(p.ch)} · ${p.month}</span></div>
     <div class="pb"><div class="dwrap">
+      ${stepper(['지급 확정', '지급 실행', '완료'], p.paid >= p.fixed ? 3 : p.paid ? 2 : 1)}
       <div class="dchips"><span class="tag">확정 실적 ${p.cnt}건</span>${p.hold ? '<span class="st bad">지급 보류</span>' : ''}</div>
       <h3 class="dttl">${esc(p.ch)}</h3><p class="dsub">${p.month} 지급</p>
       <div class="sec"><h3>돈</h3><table class="g"><tbody>
@@ -662,7 +1198,7 @@ function detailPay(el) {
       <div class="sec"><h3>이력</h3><table class="g"><tbody>${p.hist.map(x => `<tr><td class="mut n" style="width:70px">${x.t}</td><td>${esc(x.w)}</td><td class="r n">${x.a != null ? won(x.a) : ''}</td></tr>`).join('')}</tbody></table></div>
       ${p.hold ? `<div class="note e"><span class="i">!</span><div><b>지급 보류 — 결정 필요</b>
           <p>${esc(p.holdWhy)}<br>「공급사 수금 전에 채널에 줘도 되나」는 <b>아직 정해지지 않은 정책</b>이라 화면이 임의로 밀지 않습니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>청구 원장과 지급 원장은 따로 섭니다</b><p>받을 돈이 덜 들어왔다고 줄 돈이 저절로 줄지 않습니다.</p></div></div>`}
+        : `<div class="note"><span class="i">${ic('check')}</span><div><b>청구 원장과 지급 원장은 따로 섭니다</b><p>받을 돈이 덜 들어왔다고 줄 돈이 저절로 줄지 않습니다.</p></div></div>`}
     </div></div>
     <div class="dact"><div class="grow"><input id="pa" class="n" value="${left}" ${p.hold || !left ? 'disabled' : ''}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
@@ -677,95 +1213,143 @@ function detailPay(el) {
   if ($('#unhold')) $('#unhold').onclick = () => { p.hold = false; p.hist.push({ t: '09-16', w: '보류 해제', a: null }); render(); };
 }
 
-/* ══ 전자계약 ══════════════════════════════════ */
-function paneEsign(el) {
-  el.innerHTML = `<div class="ph"><h2>계약 목록</h2><span class="c">${ESIGNS.length}건</span></div>
-    <div class="pb"><table class="g">
-      <thead><tr><th>고객</th><th>차량</th><th>받는 곳</th><th>발송</th><th>열람</th><th>서명</th><th>상태</th></tr></thead>
-      <tbody>${ESIGNS.map(e => { const s = esignSt(e);
-        return `<tr data-no="${e.no}" class="${e.no === S.esignNo && S.focus === 'esign' ? 'on' : ''}">
-          <td class="nm">${esc(e.cust)}</td><td class="mut">${esc(e.veh)}</td>
-          <td class="mut n">${e.to ? esc(e.to) : '<span class="unk">없음</span>'}</td>
-          <td class="mut n">${esc(e.sent)}</td><td class="mut n">${e.seen ? esc(e.seen) : '—'}</td>
-          <td class="mut n">${e.signed ? esc(e.signed) : '—'}</td>
-          <td><span class="st ${s.c}">${s.t}</span></td></tr>`; }).join('')}</tbody></table></div>
-    <div class="pf"><span>보냈나 · 봤나 · 서명했나는 <b>서로 다른 사실</b>이다</span></div>`;
-  el.querySelectorAll('tbody tr').forEach(r => r.onclick = () => { S.esignNo = r.dataset.no; S.focus = 'esign'; render(); });
-}
-
-function detailEsign(el) {
-  const e = ESIGNS.find(x => x.no === S.esignNo) || ESIGNS[0];
-  const blocked = !e.to, at = e.signed ? 3 : e.seen ? 2 : 1;
-  el.innerHTML = `<div class="ph"><h2>계약 상세</h2><span class="c n">${esc(e.no)}</span>
-      ${stepper(['발송', '열람', '서명'], at)}</div>
-    <div class="pb"><div class="dwrap">
-      <div class="dtop"><div>${shotBox(true, 'shot')}</div>
-        <div><div class="dchips"><span class="tag n">접수 ${esc(e.app)}</span><span class="st ${esignSt(e).c}">${esignSt(e).t}</span></div>
-          <h3 class="dttl">${esc(e.cust)}</h3><p class="dsub">${esc(e.veh)} · ${esc(e.doc)}</p>
-          <dl class="kv">
-            <dt>받는 곳</dt><dd>${e.to ? esc(e.to) : '<span class="unk">연락처 없음</span>'}</dd>
-            <dt>발송</dt><dd class="n">${esc(e.sent)}</dd>
-            <dt>열람</dt><dd>${e.seen ? `<span class="n">${esc(e.seen)}</span>` : '<span class="unk">아직 안 봤습니다</span>'}</dd>
-            <dt>서명</dt><dd>${e.signed ? `<span class="n">${esc(e.signed)}</span>` : '<span class="unk">아직</span>'}</dd>
-            <dt>신분 확인</dt><dd>${e.signed
-              ? '<span class="st ok">수집됨</span> <span class="mut" style="font-size:11px">주민번호·면허 — 관리자는 열람하지 않습니다</span>'
-              : '<span class="mut">서명 시 수집</span>'}</dd>
-          </dl></div></div>
-      ${blocked ? `<div class="note e"><span class="i">!</span><div><b>보낼 곳이 없습니다</b>
-          <p>접수에서 전화번호를 강제하지 않았기 때문입니다. 가짜 번호를 미리 받는 것보다 <b>여기서 받아</b> 보내는 편이 낫습니다.</p></div></div>`
-        : e.signed ? `<div class="note"><span class="i">&#10003;</span><div><b>서명 완료</b><p>서명된 계약서의 판까지 남겼습니다 — 나중에 다툴 때 댈 근거가 됩니다.</p></div></div>`
-        : `<div class="note"><span class="i">&#10003;</span><div><b>보냈나 · 봤나 · 서명했나는 서로 다른 사실입니다</b><p>하나의 「진행 중」으로 뭉치면 어디서 멈췄는지 못 봅니다.</p></div></div>`}
-    </div></div>
-    <div class="dact"><div class="grow">${blocked
-        ? `<input id="eph" placeholder="받는 연락처 010-0000-0000" style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)">`
-        : `<textarea placeholder="함께 보낼 말 (선택)"></textarea>`}</div>
-      <button class="btn">미리보기</button>
-      ${e.signed ? '<button class="btn" disabled>완료됨</button>' : `<button class="btn go" id="send"${blocked ? ' disabled' : ''}>${e.seen ? '재발송' : '계약서 발송'}</button>`}</div>`;
-  const ph = $('#eph'); if (ph) ph.oninput = () => { $('#send').disabled = ph.value.trim().length < 9; };
-  if ($('#send')) $('#send').onclick = () => {
-    if (blocked) e.to = $('#eph').value.trim();
-    e.sent = '09-16 15:40'; e.st = e.seen ? '서명 대기' : '열람 전'; render();
-  };
-}
-
 /* ══ 세부필터 시트 ═════════════════════════════ */
+/**
+ * 세부필터 — ★누르면 «검색창 바로 아래» 로 펼쳐진다.
+ *
+ * ★대표 2026-09-17
+ *   「세부필터는 누르면 그냥 바로 아래로 나오게끔 그게 레트로도 그렇게 되어있는데」
+ *   「기능은 통일하고 테마만 다르게 가는거니까」
+ *
+ * freepasserp4 `features/finder/FinderQuickFilters.tsx` 의 `FinderDetailButton` 이 그 꼴이다 —
+ *   검색창 «안» 우측 단추(사장님 2026-09-04 「세부필터는 검색창에 놨었다고」) ·
+ *   누르면 `rect.bottom + 6` 에 폭 380 패널 · 바깥을 누르면 닫힌다 ·
+ *   창이 움직이면 자리를 다시 잡는다.
+ *
+ * ★전에는 오른쪽에서 밀려 나오는 «전체화면 시트» 였다. 그건 폰 방식이다 —
+ *   fp4 도 폰에서만 BottomSheet 를 쓴다. 데스크에서 시트를 띄우면
+ *   목록이 통째로 가려져 「거르면서 줄이 줄어드는 것」 을 못 본다.
+ *
+ * ★markup 은 하나다. 레트로와 트렌디는 CSS 한 장만 갈린다 (테마-규격).
+ */
+/**
+ * 세부필터 — ★누르면 «검색창 바로 아래» 로 펼쳐지고,
+ *            안은 «좌측 항목 · 우측 값» 두 칸이다.
+ *
+ * ★대표 2026-09-17
+ *   「세부필터는 누르면 그냥 바로 아래로 나오게끔 그게 레트로도 그렇게 되어있는데」
+ *   「세부필터는 열면 필터창 좌측에 필터항목이 있고 그거 누르면 우측에 쭉 필터값이 나오는 형태인데」
+ *   「기능은 통일하고 테마만 다르게 가는거니까」
+ *
+ * 자리 : freepasserp4 `FinderDetailButton` 과 같다 — 검색창 «안» 우측 단추 아래
+ *        `rect.bottom + 6` · 오른쪽 끝 맞춤 · 바깥 누르면 닫힘 · 창 움직이면 다시 잡음
+ * 속   : 좌 항목 / 우 값. ★축이 여덟이라 한 줄로 늘어놓으면 스크롤만 길어진다.
+ *
+ * ★markup 은 하나다. 레트로와 트렌디는 CSS 한 장만 갈린다 (테마-규격).
+ * ★전에는 오른쪽에서 밀려 나오는 «전체화면 시트» 였다. 그건 폰 방식이고,
+ *   데스크에서 띄우면 목록이 통째로 가려져 «거르면서 줄이 주는 것» 을 못 본다.
+ */
 function renderSheet() {
-  if (!S.sheet) { $('#sheetroot').innerHTML = ''; return; }
+  const root = $('#sheetroot');
+  if (!S.sheet) { if (root._off) { root._off(); root._off = null; } root.innerHTML = ''; return; }
+
+  const phone = isMobile();
   const sel = effSel(), text = parseQ().text, read = parseQ().read;
-  const live = AXES.map(ax => ({ ax, opts: ax.opts.map(o => ({ o, c: countOpt(ax, o, sel, text) })).filter(x => x.c > 0) })).filter(x => x.opts.length);
+  /* ★0건짜리 값은 안 보인다 — 고를 수 없는 것을 늘어놓지 않는다 */
+  const live = AXES.map(ax => ({ ax, opts: ax.opts.map(o => ({ o, c: countOpt(ax, o, sel, text) })).filter(x => x.c > 0) }))
+                   .filter(x => x.opts.length);
   if (!live.some(x => x.ax.k === S.sheetAxis)) S.sheetAxis = live.length ? live[0].ax.k : null;
   const cur = live.find(x => x.ax.k === S.sheetAxis);
   const picked = Object.keys(S.sel).some(k => (S.sel[k] || []).length);
+  const n = evaluate().hits.length;
 
-  $('#sheetroot').innerHTML = `<div class="sheet" id="sw"><div class="sbox">
-    <div class="sh"><b>세부필터</b><span class="sp"></span>${picked ? '<button id="sclr">초기화</button>' : ''}
-      <button id="sx" aria-label="닫기">&#10005; 닫기</button></div>
-    <div class="sbd">
-      <nav class="smap">${live.map(({ ax }) => {
-        const n = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
-        return `<button data-a="${ax.k}" aria-current="${ax.k === S.sheetAxis}">${esc(ax.t)}${n ? `<span class="b">${n}</span>` : ''}</button>`;
-      }).join('')}</nav>
-      <div class="svl"><h4>${cur ? esc(cur.ax.t) : ''}</h4>
-        <div class="hint">${cur && cur.ax.scope === 'offer' ? '같은 Offer 안에서 잽니다 — 다른 Offer 의 값을 섞지 않습니다' : '차 자체에 대는 잣대입니다'}</div>
-        ${cur ? cur.opts.map(({ o, c }) => {
-          const on = (sel[cur.ax.k] || []).includes(o.k);
-          const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
-          return `<button class="opt" data-k="${o.k}" aria-pressed="${on}"${fq ? ' disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
-            <span class="bx">&#10003;</span><span class="t">${esc(o.label)}${fq ? ' <span style="color:var(--ink-3);font-size:11px">· 검색어</span>' : ''}</span>
-            <span class="c">${c}</span></button>`;
-        }).join('') : ''}</div></div>
-    <div class="sft"><button class="btn go" id="sdone">${evaluate().hits.length}건 보기</button></div>
-  </div></div>`;
+  root.innerHTML = `<div class="fdrop${phone ? ' phone' : ''}" id="fw">
+    <div class="fpanel" id="fp" role="dialog" aria-label="세부 조건">
+      <header>
+        <span class="hn"><b>${n.toLocaleString()}</b>건</span>
+        <span class="hs">${picked ? `조건 ${Object.values(S.sel).reduce((t, v) => t + (v || []).length, 0)}개` : '조건을 고르면 바로 줄어듭니다'}</span>
+        <span class="sp"></span>
+        ${picked ? '<button id="sclr" class="hclr">전부 해제</button>' : ''}
+        <button id="sx" class="hx" aria-label="닫기">${ic('close')}</button></header>
+      <div class="fbody">
+        <nav class="fmap" role="tablist" aria-label="필터 항목">${live.map(({ ax, opts }) => {
+          const k = (S.sel[ax.k] || []).length + read.filter(r => r.axis === ax.k).length;
+          return `<button role="tab" data-a="${ax.k}" aria-selected="${ax.k === S.sheetAxis}">
+            <span class="t">${esc(ax.t)}</span>${k ? `<span class="b">${k}</span>` : `<span class="n">${opts.length}</span>`}</button>`;
+        }).join('')}</nav>
+        <div class="fvals" role="tabpanel">${cur ? `
+          <h4>${esc(cur.ax.t)}
+            ${cur.ax.scope === 'offer' ? '<i title="같은 Offer 안에서 잽니다 — 다른 Offer 의 값을 섞지 않습니다">같은 Offer</i>' : ''}
+            ${(S.sel[cur.ax.k] || []).length ? `<button class="fclr" data-clr="${cur.ax.k}">이 항목 해제</button>` : ''}</h4>
+          <p class="fhint">${cur.ax.scope === 'offer'
+            ? '★같은 Offer 하나가 다 만족해야 «찾았다» 입니다 — 다른 Offer 의 값을 섞지 않습니다.'
+            : '차 자체에 대는 잣대입니다.'}</p>
+          ${(() => {
+            /* ★고른 것을 맨 위로 올린다 — 스무 줄짜리 축에서 내가 뭘 골랐는지 찾아 헤매지 않게 */
+            const on = k => (sel[cur.ax.k] || []).includes(k);
+            const rows = [...cur.opts].sort((x, y) => (on(y.o.k) ? 1 : 0) - (on(x.o.k) ? 1 : 0));
+            const max = Math.max(...cur.opts.map(x => x.c), 1);
+            return rows.map(({ o, c }) => {
+              const sel1 = on(o.k);
+              const fq = read.some(r => r.axis === cur.ax.k && r.key === o.k);
+              /* ★막대 — 「몇 건인가」 를 눈으로 먼저 읽는다. 숫자는 그 다음이다 */
+              const w = Math.round(c / max * 100);
+              return `<button class="fopt" data-a="${cur.ax.k}" data-k="${o.k}" aria-pressed="${sel1}"
+                ${fq ? 'disabled title="검색어에서 읽은 조건 — 검색창에서 지웁니다"' : ''}>
+                <span class="fmeter" style="width:${w}%" aria-hidden="true"></span>
+                <span class="t">${esc(o.label)}${fq ? '<span class="fq">검색어</span>' : ''}</span>
+                <span class="c">${c.toLocaleString()}</span></button>`;
+            }).join('');
+          })()}` : '<div class="empty"><b>고를 조건이 없다</b><p>지금 목록에 값이 하나뿐이면 가를 것이 없다.</p></div>'}</div>
+      </div>
+      ${phone ? `<div class="sft"><button class="btn go" id="sdone">${n}건 보기</button></div>` : ''}
+    </div></div>`;
 
-  $('#sw').onclick = ev => { if (ev.target.id === 'sw') { S.sheet = false; renderSheet(); } };
-  $('#sx').onclick = $('#sdone').onclick = () => { S.sheet = false; renderSheet(); };
-  if ($('#sclr')) $('#sclr').onclick = () => { S.sel = {}; render(); };
-  $('#sheetroot').querySelectorAll('.smap button').forEach(b => b.onclick = () => { S.sheetAxis = b.dataset.a; renderSheet(); });
-  $('#sheetroot').querySelectorAll('.opt').forEach(b => b.onclick = () => {
-    const k = b.dataset.k, a = S.sheetAxis;
-    S.sel[a] = S.sel[a] || [];
-    S.sel[a] = S.sel[a].includes(k) ? S.sel[a].filter(x => x !== k) : [...S.sel[a], k];
-    render(); renderSheet();   /* 적용 단추가 없다 — 고르는 즉시 바뀐다 */
+  /* ★단추 바로 아래에 붙인다. 오른쪽 끝을 맞춘다 — 검색창 «안» 우측에서 나오니까 */
+  if (!phone) {
+    /* ★찾는 칸 «왼쪽 끝» 에 맞춘다.
+       전에는 단추(오른쪽 끝)에 맞췄더니 폭 480 이 왼쪽으로 뻗어
+       사이드바까지 넘어가 목록 위에 어정쩡하게 걸쳤다(실측).
+       찾는 칸에서 나온 것이니 찾는 칸에서 시작하는 게 눈에 맞는다.
+       ★판 밖으로는 안 나간다 — 넘치면 판 안으로 당긴다. */
+    const box = $('.fd');
+    const pane = $('#p1');
+    const panel = $('#fp');
+    const place = () => {
+      const r = box.getBoundingClientRect();
+      const p = pane.getBoundingClientRect();
+      const w = Math.min(460, Math.max(r.width, p.width - 24), innerWidth - 24);
+      let left = Math.round(r.left);
+      if (left + w > p.right - 12) left = Math.round(p.right - 12 - w);
+      if (left < p.left + 12) left = Math.round(p.left + 12);
+      panel.style.top = Math.round(r.bottom + 7) + 'px';
+      panel.style.left = left + 'px';
+      panel.style.width = w + 'px';
+      panel.style.maxHeight = Math.max(240, innerHeight - r.bottom - 28) + 'px';
+    };
+    place();
+    const on = () => place();
+    addEventListener('resize', on); addEventListener('scroll', on, true);
+    root._off = () => { removeEventListener('resize', on); removeEventListener('scroll', on, true); };
+  }
+
+  const close = () => { S.sheet = false; renderSheet(); };
+  /* 바깥을 누르면 닫힌다. ★단추 자신은 빼야 «두 번 눌러야 닫히는» 일이 안 생긴다 */
+  $('#fw').onpointerdown = ev => {
+    if ($('#fp').contains(ev.target)) return;
+    if ($('#cond') && $('#cond').contains(ev.target)) return;
+    close();
+  };
+  $('#sx').onclick = close;
+  if ($('#sdone')) $('#sdone').onclick = close;
+  if ($('#sclr')) $('#sclr').onclick = () => { S.sel = {}; render(); renderSheet(); };
+  root.querySelectorAll('[data-clr]').forEach(b => b.onclick = () => { S.sel[b.dataset.clr] = []; render(); renderSheet(); });
+  root.querySelectorAll('.fmap button').forEach(b => b.onclick = () => { S.sheetAxis = b.dataset.a; renderSheet(); });
+  root.querySelectorAll('.fopt').forEach(b => b.onclick = () => {
+    const k = b.dataset.k, ax = b.dataset.a;
+    S.sel[ax] = S.sel[ax] || [];
+    S.sel[ax] = S.sel[ax].includes(k) ? S.sel[ax].filter(x => x !== k) : [...S.sel[ax], k];
+    render(); renderSheet();   /* ★적용 단추가 없다 — 고르는 즉시 목록이 주는 것을 본다 */
   });
 }
 
@@ -774,14 +1358,14 @@ const HEAD = {
   product: ['상품 찾기', '조건에 맞는 상품을 찾고, 그 조건 그대로 접수로 넘깁니다.'],
   intake: ['계약 접수', '접수 건을 고르고 계약서 · 필수서류 · 인도를 처리합니다.'],
   settle: ['정산 관리', '실적을 대조해 확정하고, 청구 · 수금 · 지급을 따로 관리합니다.'],
-  esign: ['전자계약', '계약서를 보내고 열람 · 서명을 확인합니다.'],
+  esign: ['전자계약', '단계마다 할 일이 하나입니다 — 링크를 만들고, 제출을 검토하고, 완료를 봉인합니다.'],
 };
 
 function renderNav() {
   $('#nav').innerHTML = '<div class="gl">업무</div>' + NAV.map(n => {
     const b = n.badge ? n.badge() : 0;
     return `<button data-k="${n.k}" data-t="${esc(n.t)}" aria-current="${n.k === S.screen}" title="${esc(n.t)}">
-      <span class="gi">${n.i}</span><span class="lb">${n.t}</span>${b ? `<span class="bd">${b}</span>` : ''}</button>`;
+      <span class="gi">${ic(NAV_ICON[n.k])}</span><span class="lb">${n.t}</span>${b ? `<span class="bd">${b}</span>` : ''}</button>`;
   }).join('');
   $('#nav').querySelectorAll('button').forEach(b => b.onclick = () => {
     S.screen = b.dataset.k; S.sheet = false;
@@ -798,15 +1382,22 @@ function render() {
   const [t, p] = HEAD[S.screen];
   const K = {
     product: () => [['판매 가능', PRODUCTS.length + '건'], ['부분 매칭', PRODUCTS.filter(x => x.match !== 'TRIM').length + '건', 'hot'], ['조건 결과', evaluate().hits.length + '건']],
-    intake: () => [['칠 것', APPS.filter(a => !a.cxl && !a.deliv).length + '건', 'hot'], ['진행 중', APPS.filter(a => a.contract && !a.deliv && !a.cxl).length + '건'], ['인도완료', APPS.filter(a => a.deliv && !a.cxl).length + '건', 'ok']],
+    intake: () => [['칠 것', APPS.filter(a => !a.cxl && !a.deliv).length + '건', 'hot'], ['진행 중', APPS.filter(a => stepDone(a, 'contract') && !a.deliv && !a.cxl).length + '건'], ['인도완료', APPS.filter(a => a.deliv && !a.cxl).length + '건', 'ok']],
     settle: () => [['대조 중', PERFS.filter(x => x.stage < 4).length + '건', 'hot'], ['미수', man(BILLS.reduce((n, b) => n + b.fixed - b.got, 0)) + '원'], ['미지급', man(PAYS.reduce((n, x) => n + x.fixed - x.paid, 0)) + '원']],
-    esign: () => [['서명 대기', ESIGNS.filter(x => x.st === '서명 대기').length + '건', 'hot'], ['열람 전', ESIGNS.filter(x => x.st === '열람 전').length + '건'], ['완료', ESIGNS.filter(x => x.st === '완료').length + '건', 'ok']],
+    esign: () => [['검토 대기', ESIGNS.filter(x => x.stage === 'review').length + '건', 'hot'],
+      ['고객 작성 중', ESIGNS.filter(x => x.stage === 'filling').length + '건'],
+      ['완료', ESIGNS.filter(x => x.stage === 'done').length + '건', 'ok']],
   }[S.screen]();
   $('#phead').innerHTML = `<h1>${esc(t)}</h1><span class="sub">${esc(p)}</span>${kpis(K)}`;
 
   /* 목록 둘은 왼쪽에 위아래로, 상세는 «하나» 가 오른쪽에 세로로 선다.
      상세는 마지막에 고른 줄을 그린다 — 목록을 오가도 자리는 그대로다. */
   const P1 = $('#p1'), P2 = $('#p2'), D = $('#d1');
+  /* ★판 넷이 «같은 꼴» 이다 — 전자계약도 예외가 아니다 (대표 2026-09-16).
+     fp4 의 4칸은 «기능» 이 아니라 «화면» 이라 안 가져온다.
+     「계약 진행」과 「계약서·링크」는 상세 한 판의 구역 둘로 산다. */
+  /* ★전자계약은 «원장을 갖지 않는다» — 좌상이 접수 원장을 거른 보기일 뿐이고,
+     상세는 접수 상세 «그대로» 다. 두 원장이 아니라 한 원장이라 어긋날 자리가 없다. */
   if (S.screen === 'settle') { panePerf(P1); paneLedger(P2); }
   else if (S.screen === 'esign') { paneEsign(P1); paneApps(P2); }
   else { paneProducts(P1); paneApps(P2); }
@@ -825,9 +1416,23 @@ function render() {
 function mountSplit() {
   const work = document.querySelector('.work');
   const vs = work.querySelector('.vs'), hs = work.querySelector('.hs');
+  /* ★대표 2026-09-17 「이걸 어떻게 보기좋게 만들어야하나……」
+     ⇒ 판 둘이 «반반» 씩 나눠 갖고 있던 것이 가장 큰 까닭이었다.
+       1500×900 화면에서 목록 한 판에 돌아오는 높이가 «280px» 이었다.
+       표로는 여섯 줄, 카드로는 한 줄이 겨우 선다. 그 높이로는 무엇을 해도 안 예쁘다.
+
+     ★지금 «보는 쪽» 이 높이를 갖는다. 다른 판은 머리띠만 남기고 접힌다.
+       접힌 머리를 누르면 그쪽으로 넘어간다 — 두 판이 한 화면에 있다는 뜻은 그대로다.
+     끌어서 바꾸면(S.rh) 그 뜻이 사람의 것이 되므로 손대지 않는다. */
+  const FOLD = 'var(--h-act)';
   const apply = () => {
     work.style.gridTemplateColumns = S.lw ? `${S.lw}px 7px minmax(360px,1fr)` : '';
-    work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr` : '';
+    work.style.gridTemplateRows = S.rh ? `${S.rh}fr 7px ${100 - S.rh}fr`
+      : S.screen === 'intake' ? `${FOLD} 7px 1fr` : `1fr 7px ${FOLD}`;
+    const p1 = document.getElementById('p1'), p2 = document.getElementById('p2');
+    const foldTop = !S.rh && S.screen === 'intake';
+    if (p1) p1.classList.toggle('folded', foldTop);
+    if (p2) p2.classList.toggle('folded', !S.rh && !foldTop);
   };
   if (!vs.dataset.on) {
     vs.dataset.on = '1';
@@ -847,6 +1452,14 @@ function mountSplit() {
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
     });
     hs.addEventListener('dblclick', () => { S.rh = null; apply(); });
+    /* 접힌 머리를 누르면 그 판으로 넘어간다 */
+    work.addEventListener('click', ev => {
+      const p = ev.target.closest('.pane.folded');
+      if (!p) return;
+      S.screen = p.id === 'p1' ? 'product' : 'intake';
+      S.focus = p.id === 'p1' ? 'product' : 'app';
+      S.rh = null; render();
+    });
   }
   apply();
 }
@@ -871,9 +1484,9 @@ function detailNew(el) {
   if (!d) { S.focus = 'product'; return detailProduct(el); }
   const ok = !!d.name.trim();
 
-  el.innerHTML = `<div class="ph"><h2>신규접수</h2><span class="c">필수 4</span>
-      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 3)}</div>
-    <div class="pb"><div class="dwrap"><div class="form">
+  el.innerHTML = `<div class="ph"><h2>신규접수</h2><span class="c">필수 4</span></div>
+    <div class="pb"><div class="dwrap">
+      ${stepper(['상품 선택', '상세 확인', '접수 등록'], 3)}<div class="form">
       <div class="lock"><div class="k">접수 대상 — 고른 그대로</div>
         <div class="v">${esc(d.p.name)} · ${esc(d.p.sub)}</div>
         <div class="v2">${d.o.term}개월 · ${won(d.o.rent)}/월 · 보증금 ${dep(d.o.dep)} · ${yr(d.o.mile) || '약정 미확인'}</div>
@@ -889,7 +1502,21 @@ function detailNew(el) {
       <div class="fld"><label for="f-ph">연락처</label>
         <input id="f-ph" value="${esc(d.phone)}" placeholder="아직 몰라도 됩니다" autocomplete="off">
         <div class="hint">★필수가 아닙니다. 강제하면 010-0000-0000 이 원장에 쌓입니다.</div></div>
-      <div class="note"><span class="i">&#10003;</span><div><b>저장하면 이 조건이 «굳습니다»</b>
+
+      <div class="fld2">
+        <div class="fld"><label for="f-pm">프로모션 금액</label>
+          <input id="f-pm" class="n" inputmode="numeric" value="${d.promo ?? ''}" placeholder="예: 500000" autocomplete="off">
+          <div class="hint">공급사에서 «더 받는» 것. 없으면 비웁니다.</div></div>
+        <div class="fld"><label for="f-ps">영업자 지급 비율</label>
+          <div class="pctwrap"><input id="f-ps" class="n" inputmode="numeric"
+            value="${d.share ?? 100}" autocomplete="off"><span class="pct">%</span></div>
+          <div class="hint">★기본 100% — 다 넘깁니다.</div></div>
+      </div>
+      <div class="fld"><label for="f-pr">프로모션 사유</label>
+        <input id="f-pr" value="${esc(d.promoWhy || '')}" placeholder="예: 9월 전기차 프로모션" autocomplete="off">
+        <div class="hint">★사유 없는 돈은 다음 달에 아무도 못 읽습니다.</div></div>
+      <div id="promobox"></div>
+      <div class="note"><span class="i">${ic('check')}</span><div><b>저장하면 이 조건이 «굳습니다»</b>
         <p>상품이 나중에 바뀌어도 이 접수의 계약조건은 안 바뀝니다. 같은 건을 두 번 눌러도 한 건만 만들어집니다.</p></div></div>
     </div></div></div>
     ${actBar({
@@ -897,6 +1524,27 @@ function detailNew(el) {
       subs: [{ t: '그만두기', go: () => { S.draft = null; S.focus = 'product'; render(); } }],
       main: { t: S.saving ? '저장 중…' : '접수 저장', off: !ok || S.saving, go: saveNew },
     })}`;
+
+  /* ★한 곳에서만 센다 — 화면이 자기대로 또 세면 저장값과 갈린다 */
+  const drawPromo = () => {
+    const box = el.querySelector('#promobox');
+    const amount = promoAmount(d.promo);
+    if (!amount) { box.innerHTML = ''; return; }
+    const share = d.share === '' || d.share === null || d.share === undefined
+      ? DEFAULT_AGENT_SHARE : parseSharePct(d.share);
+    const s = splitPromo(amount, share);
+    box.innerHTML = `<div class="note ${s.pending ? 'w' : ''}"><span class="i">${s.pending ? '!' : ic('check')}</span><div>
+      <b>${s.pending ? '영업자 지급 비율을 아직 안 정했습니다' : '이렇게 갈립니다'}</b>
+      <p>${promoLine(amount, share)}</p>
+      ${s.pending ? '<p>0~100 사이로 적어 주세요. 100 을 넘는 값은 안 받습니다.</p>'
+        : `<p>공급사 청구 ${won(d.o.rent)}건 수수료 <b>+ ${won(s.claim)}</b> ·
+             영업자 지급 <b>+ ${won(s.pay)}</b></p>`}
+    </div></div>`;
+  };
+  drawPromo();
+  el.querySelector('#f-pm').oninput = e => { d.promo = e.target.value; drawPromo(); };
+  el.querySelector('#f-ps').oninput = e => { d.share = e.target.value; drawPromo(); };
+  el.querySelector('#f-pr').oninput = e => { d.promoWhy = e.target.value; };
 
   const nm = el.querySelector('#f-nm');
   nm.oninput = () => {
@@ -923,10 +1571,22 @@ function saveNew() {
   const no = 'A-260916-' + String(S.seq++).padStart(3, '0');
   APPS.unshift({
     no, cust: d.name.trim(), phone: d.phone.trim(), veh: d.p.name, trim: d.p.sub,
+    /* ★차량번호를 «접수할 때» 굳힌다.
+       F04 정산원장의 열쇠가 차량번호다(「한 계약의 키는 차량번호 + 접수일」).
+       나중에 상품에서 다시 끌어오면 그 사이 상품이 바뀐 것을 물게 된다. */
+    plate: d.p.plate || null,
+    /* ★프로모션을 «접수할 때» 굳힌다. 나중에 프로모션이 바뀌어도 이 건은 안 바뀐다.
+       파생(영업자 몫·우리 몫)은 «안 담는다» — 금액과 비율에서 언제든 다시 센다.
+       세 번째 수를 저장하면 둘과 어긋나고, 어긋나면 어느 것이 맞는지 아무도 모른다. */
+    promo: promoAmount(d.promo),
+    promoShare: promoAmount(d.promo)
+      ? (d.share === '' || d.share === null || d.share === undefined ? DEFAULT_AGENT_SHARE : parseSharePct(d.share))
+      : DEFAULT_AGENT_SHARE,
+    promoWhy: (d.promoWhy || '').trim() || null,
     pid: d.p.id, pv: d.p.v, sup: d.p.supplier, oid: d.o.id, term: d.o.term,
     rent: d.o.rent, dep: d.o.dep, mile: d.o.mile, ch: d.ch, staff: d.staff.split(' · ')[0],
     at: '09-16 ' + new Date().toTimeString().slice(0, 5),
-    contract: false, docs: false, deliv: false, cxl: false,
+    contract: false, docs: false, balance: false, deliv: false, cxl: false,
   });
   S.draft = null; S.saving = false;
   S.screen = 'intake'; S.appFilter = 'todo'; S.appNo = no; S.focus = 'app';
@@ -939,7 +1599,6 @@ function paneDetail(el) {
   if (S.focus === 'perf') return detailPerf(el);
   if (S.focus === 'bill') return detailBill(el);
   if (S.focus === 'pay') return detailPay(el);
-  if (S.focus === 'esign') return detailEsign(el);
   return detailApp(el);
 }
 
@@ -974,21 +1633,60 @@ const SKINS = [
   { k: '', t: '트렌디', d: '굳은 선 · 그림자 · 둥근 모서리' },
   { k: 'rt', t: '레트로', d: '볼록한 단추 · 파인 창 · 촘촘한 격자' },
 ];
-let skin = 0;
-$('#theme').onclick = () => {
-  skin = (skin + 1) % SKINS.length;
-  document.documentElement.className = SKINS[skin].k;
-  $('#theme').textContent = '결: ' + SKINS[skin].t;
-  $('#theme').title = SKINS[skin].d;
-};
+/**
+ * ★결(레트로·트렌디)과 «밝기»(밝게·어둡게)는 «다른 축» 이다.
+ *
+ *   대표 2026-09-17 「설정에서 레트로랑 트렌디랑 테마 반전 할수 있어야하고」
+ *
+ *   결   = 자리와 차례는 그대로 두고 «생김새» 만 바꾼다 (CSS 한 장)
+ *   밝기 = 같은 결 안에서 «바탕과 글자» 를 뒤집는다 (토큰만 바꾼다)
+ *   ★둘을 한 단추에 섞으면 네 조합 중 둘만 갈 수 있게 된다.
+ *
+ *   밝기 셋 — 「기기 따라」 가 기본이다. 사람이 고르면 그것이 이긴다.
+ *   (:root 에 data-theme 이 «없을 때» 만 prefers-color-scheme 이 먹는다)
+ */
+const LIGHTS = [
+  { k: '', t: '기기 따라', d: '기기 설정을 따른다' },
+  { k: 'light', t: '밝게', d: '늘 밝게' },
+  { k: 'dark', t: '어둡게', d: '늘 어둡게' },
+];
+let skin = 0, light = 0;
+
+/** ★한 곳에서만 바른다 — 두 축이 서로를 지우지 않게 */
+function applyTheme() {
+  const el = document.documentElement;
+  el.className = SKINS[skin].k;                        /* 결 */
+  if (LIGHTS[light].k) el.dataset.theme = LIGHTS[light].k;
+  else delete el.dataset.theme;                        /* 기기 따라 — 표시를 «지운다» */
+  const t = $('#theme'); if (t) { t.textContent = '결: ' + SKINS[skin].t; t.title = SKINS[skin].d; }
+  const l = $('#light'); if (l) { l.textContent = LIGHTS[light].t; l.title = LIGHTS[light].d; }
+  try { localStorage.setItem('fp.skin', String(skin)); localStorage.setItem('fp.light', String(light)); } catch (e) { /* 사생활 창에서는 못 적는다 — 그래도 돈다 */ }
+  if (typeof renderSheet === 'function' && S.sheet) renderSheet();
+}
+try {
+  const s = Number(localStorage.getItem('fp.skin')), g = Number(localStorage.getItem('fp.light'));
+  if (SKINS[s]) skin = s;
+  if (LIGHTS[g]) light = g;
+} catch (e) { /* 못 읽어도 기본으로 돈다 */ }
+
+if ($('#theme')) $('#theme').onclick = () => { skin = (skin + 1) % SKINS.length; applyTheme(); };
+if ($('#light')) $('#light').onclick = () => { light = (light + 1) % LIGHTS.length; applyTheme(); };
+applyTheme();
 
 /* 사이드바 — 접으면 아이콘만 남는다. 자리는 그대로라 손이 안 헤맨다 */
 $('#railtoggle').onclick = () => {
   S.mini = !S.mini;
   document.querySelector('.app').classList.toggle('mini', S.mini);
-  $('#railtoggle').innerHTML = S.mini ? '&#10095;' : '&#10094;';
+  $('#railtoggle').innerHTML = ic(S.mini ? 'right' : 'left');
   $('#railtoggle').title = S.mini ? '사이드바 펼치기' : '사이드바 접기';
 };
+
+/* 폰 ↔ 데스크가 갈리는 목만 다시 그린다 — 듣개는 «하나» 다 */
+let _w = innerWidth;
+addEventListener('resize', () => {
+  if ((innerWidth <= 1100) !== (_w <= 1100)) { _w = innerWidth; render(); }
+  _w = innerWidth;
+});
 
 document.addEventListener('keydown', ev => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(ev.target.tagName);
@@ -1004,4 +1702,9 @@ document.addEventListener('keydown', ev => {
   if (ev.key === '[') { $('#railtoggle').click(); }
 });
 
-render();
+/* ★첫 그리기는 «맨 뒤» 다.
+   app.js 가 끝나자마자 그리면 뒤에 오는 esign.js 의 const 가 아직 TDZ 라
+   `typeof ecOf` 조차 ReferenceError 로 터진다(실측 — 상세 판이 통째로 비었다).
+   DOMContentLoaded 는 마지막 스크립트까지 파싱된 뒤에 온다. */
+if (document.readyState === 'loading') addEventListener('DOMContentLoaded', () => render());
+else render();

@@ -102,7 +102,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       </ActionBar>
     );
   }
-  const events = await settlements.events(r.plate, r.receivedAt);
+  const events = await settlements.events(r.plate, r.receivedAt, r.catalogRef?.productId);
   const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>
@@ -120,7 +120,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 
       <h3 className="dz-sub">진행</h3>
       {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</Notice>}
-      <Progress code={r.id} paper={r.progress.paper} delivered={r.progress.delivered}
+      <Progress code={r.id} plate={r.plate ?? ''} paper={r.progress.paper} delivered={r.progress.delivered}
         deliveredAt={r.progress.deliveredAt ?? ''} cancelled={r.progress.cancelled} today={today()} />
       {/* 받은 회차 — 분납 · 인도된 줄에서만(기능 세션 2026-09-18) */}
       {roundsOf(r.payKind) >= 2 && r.progress.delivered && (

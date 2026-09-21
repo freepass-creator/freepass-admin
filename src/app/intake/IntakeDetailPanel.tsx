@@ -27,7 +27,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
    * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
    * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
    */
-  life?: { axis: Axis; mode: string; link: (mode: string) => string };
+  life?: { axis: Axis; mode: string; link: (mode: string) => string; nextHref?: string };
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   let 바 = (
@@ -103,10 +103,12 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         </div>
       </>
     );
+    const 완료 = stage === '수금' || stage === '지급';
     바 = (
       <ActionBar>
         {보조}
         {주 && <button type="submit" form={fid} className="primary">{주.label}</button>}
+        {!주 && 완료 && life.nextHref && <Link className="primary" href={life.nextHref}>다음 할 일</Link>}
       </ActionBar>
     );
   }

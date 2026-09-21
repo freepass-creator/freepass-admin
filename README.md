@@ -42,3 +42,27 @@ FreePass **관리자 화면**입니다. 관리자가 상품을 찾고, 접수하
 ## Isolation rule
 
 기존 프로젝트(`freepasserp4` 등)의 DB, Firebase, API, 시트, 환경변수, 인증정보를 연결하거나 fallback으로 사용하지 않습니다. 기존 구현은 별도 승인 범위에서 설계 참고만 가능합니다.
+
+
+## Live ERP5 runtime
+
+현재 핵심 관리자 화면은 mock 데이터가 아니라 `freepasserp5` Firestore repository를 읽는다.
+
+- `/intake`: 상품 + 접수/정산원장
+- `/settlement`: 청구/지급 + 실적 줄 + 접수 상세
+- `/esign`: 실제 contract collection
+- `/system/data-status`: 실제 repository 연결/건수 진단
+
+배포 읽기 자격증명:
+- `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` 또는
+- `ERP5_SERVICE_ACCOUNT_PATH`
+
+쓰기 활성화:
+- `ERP5_WRITE=on`
+
+검사:
+```bash
+npm run data:check
+```
+
+상세: `docs/LIVE-DATA-RUNTIME-2026-09-21.md`

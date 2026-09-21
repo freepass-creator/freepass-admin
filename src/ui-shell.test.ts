@@ -79,3 +79,10 @@ test('settlement completed row offers next actionable work',()=>{
   assert.ok(intakeDetail.includes('다음 할 일'));
   assert.ok(intakeDetail.includes('life.nextHref'));
 });
+
+
+test('settlement completed queue can continue to the next actionable party',()=>{
+  assert.ok(settlementPage.includes('nextActionableLedgerParty'));
+  assert.ok(intakeDetail.includes('다음 거래처'));
+  assert.ok(intakeDetail.includes('life.nextGroupHref'));
+});

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
-import { lead, mergeProductSelections, parseProductSearch, 보증금 } from './workspace-config';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -74,9 +74,18 @@ test('age outside canonical perk range is not fabricated as a filter', () => {
   assert.equal(q.text, '26세');
 });
 
-test('amount ceilings map into the same existing rent and deposit bands', () => {
-  const q = parseProductSearch('월 70만원 이하 보증금 100만원 이하');
-  assert.deepEqual(q.inferred.rent, ['r50', 'r60', 'r70']);
-  assert.deepEqual(q.inferred.dep, ['d0', 'd1']);
+test('amount ceilings include the overlapping band and preserve the exact numeric ceiling', () => {
+  const q = parseProductSearch('월 55만원 이하 보증금 150만원 이하');
+  assert.deepEqual(q.inferred.rent, ['r50', 'r60']);
+  assert.deepEqual(q.inferred.dep, ['d0', 'd1', 'd2']);
+  assert.deepEqual(q.limits, { rentMax: 550_000, depositMax: 1_500_000 });
   assert.equal(q.text, '');
+});
+
+test('exact amount ceilings do not lose valid offers inside a coarse facet band', () => {
+  const limits = parseProductSearch('월 55만원 이하 보증금 150만원 이하').limits;
+  assert.equal(offerWithinSearchLimits({ monthlyRent: 520_000, deposit: 1_200_000 }, limits), true);
+  assert.equal(offerWithinSearchLimits({ monthlyRent: 560_000, deposit: 1_200_000 }, limits), false);
+  assert.equal(offerWithinSearchLimits({ monthlyRent: 520_000, deposit: 1_600_000 }, limits), false);
+  assert.equal(offerWithinSearchLimits({ monthlyRent: 520_000, deposit: undefined }, limits), false);
 });

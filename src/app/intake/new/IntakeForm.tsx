@@ -8,6 +8,7 @@ export type IntakeDefaults = {
   term: string; rent: string; deposit: string;
   /** 차에서 온 원장 상품구분 · 렌트구분(기능 ledgerKindOf) · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
   product?: string; rentKind?: string; price?: string;
+  sourceProductId?: string; sourceProductVersion?: string; sourceOfferId?: string; sourceSnapshotId?: string;
 };
 export type IntakeOptions = {
   channels: string[]; channelCode: Record<string, string>;
@@ -151,6 +152,10 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           ))}
           <input type="hidden" name="supplierCode" value={supplierCode} />
           <input type="hidden" name="rentKind" value={defaults.rentKind ?? ''} />
+          <input type="hidden" name="sourceProductId" value={defaults.sourceProductId ?? ''} />
+          <input type="hidden" name="sourceProductVersion" value={defaults.sourceProductVersion ?? ''} />
+          <input type="hidden" name="sourceOfferId" value={defaults.sourceOfferId ?? ''} />
+          <input type="hidden" name="sourceSnapshotId" value={defaults.sourceSnapshotId ?? ''} />
           {/* 상품구분 — 짝이 하나면 숨은 칸 · 아니면 사람이 고른다(수수료 갈래가 갈린다) */}
           {productChoices?.length
             ? 묶음('상품구분 — 골라 주세요', (

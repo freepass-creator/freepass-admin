@@ -10,15 +10,15 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap">
   <style>
     :root {
-      --navy:#1b2a4a; --sky:#9ec5f3; --ground:#eef1f4; --panel:#fff;
-      --box:#f6f7f9; --picked:#e6ecf5; --ink:#202733; --muted:#687383;
-      --line:#eceef0; --control-line:#d9dee5; --control-bg:#f8f9fb; --good:#15803d; --good-bg:#f0fdf4;
+      --navy:#1b2a4a; --sky:#9ec5f3; --ground:#f7f8fa; --panel:#fff;
+      --box:#f2f3f5; --picked:#e6ecf5; --ink:#212529; --muted:#5c6268;
+      --line:#eceef0; --control-line:#e1e4e7; --control-bg:#fff; --good:#15803d; --good-bg:#f0fdf4;
       --warn:#9a6700; --warn-bg:#fff7db; --bad:#b42318; --bad-bg:#fff0ee;
       --radius:4px; --control:40px; --action:44px;
     }
     * { box-sizing:border-box; }
     [hidden] { display:none !important; }
-    html,body { margin:0; min-height:100%; background:#dfe4e9; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
+    html,body { margin:0; min-height:100%; background:#f1f3f5; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
     button,input,select { font:inherit; }
     button { cursor:pointer; }
     .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; }
@@ -35,11 +35,14 @@
     .panel-head h2 { margin:0; font-size:18px; line-height:1.25; }
     .panel-head span { color:var(--muted); font-size:14px; font-weight:700; }
     .panel-head p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
-    .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:10px; }
+    .search { display:block; margin-bottom:10px; }
     .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--control-line); border-radius:var(--radius); background:var(--control-bg); color:#8a939f; transition:border-color .16s,background .16s,box-shadow .16s; }
     .search-field:focus-within { border-color:#aeb8c5; background:#fff; box-shadow:0 0 0 3px rgba(27,42,74,.05); }
     .search-field input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; background:transparent; }
-    .search > button { min-width:76px; height:44px; padding:0 12px; border:0; border-radius:var(--radius); background:#f0f2f5; color:#4f5b6b; font-size:13px; font-weight:700; white-space:nowrap; }
+    .search-field > svg { flex:none; width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .filter-trigger { flex:none; width:40px; height:40px; padding:0; border:0; border-radius:var(--radius); background:transparent; color:var(--muted); display:grid; place-items:center; }
+    .filter-trigger svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .filter-trigger:hover { background:var(--box); color:var(--navy); }
     .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
     .chips::-webkit-scrollbar { display:none; }
     .chip { height:40px; padding:0 13px; border:0; border-radius:var(--radius); background:var(--box); color:#445064; font-size:13px; white-space:nowrap; }
@@ -135,11 +138,9 @@
     main { padding:var(--sales-space) 16px calc(76px + env(safe-area-inset-bottom)); }
     #screen { min-height:calc(100dvh - 60px - 88px); }
     .search { gap:var(--sales-gap); margin-bottom:var(--sales-gap); }
-    .search-field,.search>button { height:var(--sales-control); border-radius:var(--sales-control-radius); }
+    .search-field { height:var(--sales-control); border-radius:var(--sales-control-radius); }
     .search-field { padding-inline:var(--sales-control-inset); }
-    .search>button { padding-inline:var(--sales-control-inset); }
-    .search-field input,.search>button { font-size:var(--sales-control-font); line-height:1; }
-    .search>button { font-weight:600; }
+    .search-field input { font-size:var(--sales-control-font); line-height:1; }
     .chips { gap:6px; margin-bottom:var(--sales-space); }
     .chip { height:40px; padding:0 12px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; line-height:1; }
     .chip.on { background:var(--picked); color:var(--navy); font-weight:650; }
@@ -178,7 +179,7 @@
       .web-nav button { height:36px; padding:0 16px; border:0; border-radius:var(--sales-control-radius); background:transparent; color:#b8c4d8; font-size:var(--sales-body); font-weight:600; line-height:1; }
       .web-nav button.on { background:#fff; color:var(--navy); }
       .web-sync { color:#b9f5ca; }
-      .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#dfe4e9; }
+      .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#f1f3f5; }
       .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:#fff; }
       .web-panel-head { flex:none; min-height:44px; display:flex; align-items:baseline; gap:6px; }
       .web-panel-head h2 { margin:0; font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
@@ -187,7 +188,7 @@
       .web-panel-head small { margin-left:auto; }
       .web-scroll { min-height:0; flex:1; overflow:auto; padding-right:2px; }
       .web-panel .search { margin-bottom:8px; }
-      .web-panel .search-field,.web-panel .search>button { height:var(--sales-control); }
+      .web-panel .search-field { height:var(--sales-control); }
       .web-panel .chip { height:var(--sales-small); padding:0 11px; font-size:var(--sales-support); }
       .web-panel .row { min-height:80px; grid-template-columns:64px minmax(0,1fr); padding:var(--sales-card-inset); }
       .web-panel .thumb { width:64px; height:48px; }
@@ -244,6 +245,10 @@ const ICONS={
   performance:'<path d="M4 19V9M10 19V5M16 19v-7M3 19h18"/>',
   settlement:'<path d="M4 6h16v12H4z"/><path d="M4 10h16M8 15h3"/>'
 };
+const TOOL_ICONS={
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  filter:'<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>'
+};
 const LABEL={product:'상품',intake:'접수',contract:'계약',performance:'실적',settlement:'정산'};
 const state={module:'product',depth:0,selected:null,offer:'o36',filter:'전체',toast:''};
 const data={
@@ -270,6 +275,7 @@ const data={
 };
 const $=s=>document.querySelector(s);
 function icon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`}
+function toolIcon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${TOOL_ICONS[k]}</svg>`}
 function current(){return data[state.module].find(x=>x.id===state.selected)||data[state.module][0]}
 function status(){
   const homeTitle={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
@@ -289,7 +295,7 @@ function nav(){
 function list(prefix=''){
  const placeholders={product:'차량·공급사·조건 검색',intake:'고객·차량·접수번호 검색',contract:'고객·계약번호 검색',performance:'고객·차량번호·공급사 검색',settlement:'공급사·채널·정산월 검색'};
  const chips={product:['전체','무보증','21세','즉시출고'],intake:['전체','할 일','진행 중','인도 완료'],contract:['전체','발송 대기','서명 대기','검토'],performance:['전체','할 일','이슈','완료'],settlement:['전체','청구','수금','지급']}[state.module];
- return `<div class="search"><label class="search-field">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"></label><button class="openFilter" id="${prefix}openFilter" aria-haspopup="dialog">세부필터</button></div>
+ return `<div class="search"><div class="search-field">${toolIcon('search')}<input aria-label="검색" placeholder="${placeholders[state.module]}"><button class="filter-trigger openFilter" id="${prefix}openFilter" aria-haspopup="dialog" aria-label="세부필터">${toolIcon('filter')}</button></div></div>
  <div class="chips">${chips.map(x=>`<button class="chip ${state.filter===x?'on':''}" data-filter="${x}">${x}</button>`).join('')}</div>
  <div class="list">${data[state.module].map(row).join('')}</div>`;
 }

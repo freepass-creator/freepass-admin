@@ -126,7 +126,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           <div className="dz-listtop">
             {focusMiss && (
               <Notice tone="warn">
-                이 접수는 지금 ${tab === 'claim' ? '청구' : '지급'} 원장에 설 수 없습니다.{' '}
+                이 접수는 지금 {tab === 'claim' ? '청구' : '지급'} 원장에 설 수 없습니다.{' '}
                 <Link href={`/intake?ic=${encodeURIComponent(focusCode)}&v=work`}>접수 상세에서 막힘 확인</Link>
               </Notice>
             )}

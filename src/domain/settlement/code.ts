@@ -24,3 +24,32 @@ export function settlementCode(plate: unknown, receivedAt: unknown): string {
 /** `settlement_events` 문서 id — erp4 `eventKey` 와 같은 꼴(차번|접수일, 금지문자 치환). */
 export const eventDocId = (plate: unknown, receivedAt: unknown) =>
   `${String(plate ?? '').trim()}|${String(receivedAt ?? '').trim()}`.replace(/[.$#[\]/\s|]/g, '_');
+
+
+/**
+ * 새 Admin 접수의 안정적 identity.
+ * - 상품에서 온 접수: Product ID가 차량번호 배정 전후에도 변하지 않으므로 Product ID를 쓴다.
+ * - 직접 접수: 기존처럼 차량번호를 쓴다.
+ */
+export const intakeIdentity = (plate: unknown, sourceProductId: unknown) => {
+  const product = String(sourceProductId ?? '').trim();
+  if (product) return `product:${product}`;
+  const car = String(plate ?? '').replace(/\s/g, '');
+  return car ? `plate:${car}` : '';
+};
+
+export const intakeKey = (plate: unknown, sourceProductId: unknown, receivedAt: unknown) =>
+  `${intakeIdentity(plate, sourceProductId)}|${String(receivedAt ?? '').trim().slice(0, 10)}`;
+
+export function intakeCode(plate: unknown, sourceProductId: unknown, receivedAt: unknown): string {
+  const identity = intakeKey(plate, sourceProductId, receivedAt);
+  const d = createHash('sha256').update(`settlement:${identity.trim()}`, 'utf8').digest();
+  let t = '';
+  for (let i = 0; i < 10; i += 1) t += ALPHABET[d[i] % ALPHABET.length];
+  return `stl_${t}`;
+}
+
+export const intakeEventDocId = (plate: unknown, sourceProductId: unknown, receivedAt: unknown) => {
+  const identity = intakeIdentity(plate, sourceProductId);
+  return `${identity}|${String(receivedAt ?? '').trim()}`.replace(/[.$#[\]/\s|:]/g, '_');
+};

@@ -6,7 +6,7 @@ import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const NOW = new Date(2026, 8, 18);
 const mk = (o: Record<string, unknown>) => toSettlementRow({
-  code: String(o.code ?? 'a'), plate: '1가1', receivedAt: '2026-09-01', supplier: 'A', channel: 'X', delivered: true, deliveredAt: '2026-09-03',
+  code: String(o.code ?? 'a'), plate: '1가1', receivedAt: '2026-09-01', supplier: 'A', channel: 'X', paper: true, delivered: true, deliveredAt: '2026-09-03',
   billMonth: '', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납', claimStage: '접수', payStage: '접수', ...o,
 }, String(o.code ?? 'a')).row;
 

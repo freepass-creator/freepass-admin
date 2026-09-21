@@ -6,7 +6,7 @@ import type { Offer } from '../../domain/product/types';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
 import { settlements } from '../../server/erp5';
-import { blockOf, type SettlementRow } from '../../domain/settlement/types';
+import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
@@ -174,6 +174,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     ['ich', '영업채널', (r) => r.channel ?? ''],
     ['iag', '영업담당', (r) => r.agent ?? ''],
     ['ipr', '상품구분', (r) => r.product ?? ''],
+    ['itask', '다음 할 일', (r) => intakeTaskOf(r)],
   ];
   const isel = Object.fromEntries(접수축.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
   const i통과 = (r: SettlementRow, skip?: string) => 접수축.every(([a, , of]) => a === skip || !isel[a].length || isel[a].includes(of(r)));

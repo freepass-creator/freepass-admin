@@ -118,11 +118,12 @@
     .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:13px; }
     /* FreePass Sales 운영 규격: 웹/app.css의 타이포·간격·컨트롤 토큰만 공유한다. */
     :root {
-      --sales-head:19px; --sales-title:14.5px; --sales-body:14px;
+      --sales-head:18px; --sales-title:14px; --sales-body:13px;
       --sales-support:12px; --sales-meta:11px; --sales-tiny:10px;
-      --sales-control-font:16px; --sales-control:44px; --sales-small:32px;
+      --sales-control-font:14px; --sales-control:44px; --sales-small:32px;
       --sales-space:14px; --sales-gap:8px; --sales-control-radius:6px;
       --sales-card-radius:12px; --sales-tag-radius:8px;
+      --sales-card-inset:12px; --sales-control-inset:12px;
       --sales-leading-head:1.25; --sales-leading-title:1.4;
       --sales-leading-body:1.55; --sales-leading-support:1.5; --sales-leading-meta:1.45;
     }
@@ -135,31 +136,33 @@
     #screen { min-height:calc(100dvh - 60px - 88px); }
     .search { gap:var(--sales-gap); margin-bottom:var(--sales-gap); }
     .search-field,.search>button { height:var(--sales-control); border-radius:var(--sales-control-radius); }
-    .search-field input,.search>button { font-size:var(--sales-control-font); }
+    .search-field { padding-inline:var(--sales-control-inset); }
+    .search>button { padding-inline:var(--sales-control-inset); }
+    .search-field input,.search>button { font-size:var(--sales-control-font); line-height:1; }
     .search>button { font-weight:600; }
     .chips { gap:6px; margin-bottom:var(--sales-space); }
-    .chip { height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; }
+    .chip { height:40px; padding:0 12px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; line-height:1; }
     .chip.on { background:var(--picked); color:var(--navy); font-weight:650; }
     .list { gap:var(--sales-gap); }
-    .row { border:0; border-radius:var(--sales-card-radius); background:#fff; }
+    .row { padding:var(--sales-card-inset); border:0; border-radius:var(--sales-card-radius); background:#fff; }
     .row:active { background:#f2f3f5; }
     .row-title b,.offer strong,.summary b { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
     .meta,.sub,.offer small,.identity p,.fact,.notice { font-size:var(--sales-support); line-height:var(--sales-leading-support); }
     .value { font-size:var(--sales-body); font-weight:650; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
     .tag { padding:0; border-radius:0; background:transparent; font-size:var(--sales-meta); font-weight:600; line-height:var(--sales-leading-meta); letter-spacing:0; }
     .tag.good,.tag.warn,.tag.bad { background:transparent; }
-    .identity,.summary div,.offer,.step { border-radius:var(--sales-card-radius); }
+    .identity,.summary div,.offer,.step { padding:var(--sales-card-inset); border-radius:var(--sales-card-radius); }
     .offer.on { background:#f2f3f5; box-shadow:none; }
     .identity h3 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
-    .money { font-size:19px; font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.02em; }
+    .money { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.02em; }
     .section h4 { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
     .form { gap:var(--sales-gap); }
     .form label { gap:6px; font-size:var(--sales-support); font-weight:500; }
-    .form input,.form select { height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); }
+    .form input,.form select { height:var(--sales-control); padding-inline:var(--sales-control-inset); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); line-height:1.4; }
     .step { min-height:var(--sales-control); font-size:var(--sales-body); line-height:var(--sales-leading-body); }
     .bottom-nav button { font-size:var(--sales-tiny); font-weight:500; }
     .actionbar,.sheet-actions,.web-actions { gap:var(--sales-gap); }
-    .actionbar button,.sheet-actions button,.web-actions button { min-height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); font-weight:650; }
+    .actionbar button,.sheet-actions button,.web-actions button { min-height:var(--sales-control); padding:0 14px; border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); font-weight:650; line-height:1; }
     .sheet { border-radius:18px 18px 0 0; }
     .sheet-head h3 { font-size:18px; font-weight:650; }
     .filter-axes button,.filter-values strong,.filter-values label { font-size:var(--sales-body); }
@@ -172,7 +175,7 @@
       .web-brand { font-family:"Exo 2","Pretendard Variable",sans-serif; font-size:var(--sales-head); font-weight:600; letter-spacing:-.02em; }
       .web-brand small { margin-left:7px; color:#b8c4d8; font-size:var(--sales-meta); font-weight:500; }
       .web-nav { height:100%; display:flex; align-items:center; justify-content:center; gap:2px; }
-      .web-nav button { height:var(--sales-control); padding:0 18px; border:0; border-radius:var(--sales-control-radius); background:transparent; color:#b8c4d8; font-size:var(--sales-body); font-weight:600; }
+      .web-nav button { height:36px; padding:0 16px; border:0; border-radius:var(--sales-control-radius); background:transparent; color:#b8c4d8; font-size:var(--sales-body); font-weight:600; line-height:1; }
       .web-nav button.on { background:#fff; color:var(--navy); }
       .web-sync { color:#b9f5ca; }
       .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#dfe4e9; }
@@ -185,8 +188,8 @@
       .web-scroll { min-height:0; flex:1; overflow:auto; padding-right:2px; }
       .web-panel .search { margin-bottom:8px; }
       .web-panel .search-field,.web-panel .search>button { height:var(--sales-control); }
-      .web-panel .chip { height:var(--sales-small); font-size:var(--sales-support); }
-      .web-panel .row { min-height:78px; grid-template-columns:64px minmax(0,1fr); padding:10px; }
+      .web-panel .chip { height:var(--sales-small); padding:0 11px; font-size:var(--sales-support); }
+      .web-panel .row { min-height:80px; grid-template-columns:64px minmax(0,1fr); padding:var(--sales-card-inset); }
       .web-panel .thumb { width:64px; height:48px; }
       .web-panel .thumb.car::before { width:48px; }
       .web-panel .row.selected { background:#f5f7f9; box-shadow:0 5px 16px rgba(24,34,48,.085),0 1px 3px rgba(24,34,48,.045); }

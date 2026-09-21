@@ -6,7 +6,7 @@ import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
-import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, snapshotOf, tokenHash } from '../../domain/settlement/claim-link';
+import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
@@ -378,7 +378,7 @@ export class Erp5SettlementRepository {
    * **상대가 답한다** — 확인 또는 이의. 매번 사업자등록번호를 다시 본다(링크는 문서 하나, 세션이 없다).
    * 확인 → 그 줄들 그 축 「확인」 · 이의 → 고른 줄(없으면 전부) 「정정」 + 사유
    */
-  async respondClaim(token: string, bizNo: string, kind: '확인' | '이의', memo: string, codes: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  async respondClaim(token: string, bizNo: string, kind: '확인' | '이의', memo: string, codes: string[]): Promise<{ ok: true; response: ClaimResponse } | { ok: false; error: string }> {
     mustWrite();
     const ref = await this.byToken(token);
     if (!ref) return { ok: false, error: '링크를 찾을 수 없습니다' };
@@ -389,12 +389,10 @@ export class Erp5SettlementRepository {
       const now = Date.now();
       const r = checkOpen(inv, bizNo, now);
       if (!r.ok) { if (r.reason === 'WRONG') tx.update(ref, failPatch(inv, now)); return { ok: false as const, error: r.message }; }
-      if (kind === '이의' && !memo.trim()) return { ok: false as const, error: '무엇이 다른지 적어 주세요' };
-      const target = kind === '이의' && codes.length ? codes.filter((c) => inv.codes.includes(c)) : inv.codes;
-      if (!target.length) return { ok: false as const, error: '선택한 정산 줄이 발행 사본에 없습니다 — 문서를 다시 열어 주세요' };
-      if (kind === '이의' && codes.length && target.length !== new Set(codes).size) {
-        return { ok: false as const, error: '발행 사본에 없는 줄이 섞여 있습니다 — 문서를 다시 열어 주세요' };
-      }
+      const responsePlan = planClaimResponse(inv.response ?? null, kind, memo, codes, inv.codes, now);
+      if (!responsePlan.ok) return responsePlan;
+      if (responsePlan.idempotent) return { ok: true as const, response: responsePlan.response };
+      const target = responsePlan.target;
       const rowDocs = await Promise.all(target.map((c) => tx.get(db.collection(ROWS).doc(c))));
       if (rowDocs.some((rd) => !rd.exists)) return { ok: false as const, error: '발행 뒤 원장 줄이 사라졌습니다 — 관리자 확인이 필요합니다' };
       const who = `${inv.axis}-link:${inv.partyCode ?? inv.party}`;
@@ -419,8 +417,8 @@ export class Erp5SettlementRepository {
         for (const e of x.events) ev[audId()] = { at: now, by: who, ...e };
         tx.set(db.collection(EVENTS).doc(eventIdOf(x.cur)), ev, { merge: true });
       }
-      tx.update(ref, { response: { state: kind, at: now, ...(memo.trim() ? { memo: memo.trim() } : {}), ...(kind === '이의' ? { codes: target } : {}) }, failCount: 0 });
-      return { ok: true as const };
+      tx.update(ref, { response: responsePlan.response, failCount: 0 });
+      return { ok: true as const, response: responsePlan.response };
     });
   }
 

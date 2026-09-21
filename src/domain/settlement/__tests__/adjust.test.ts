@@ -30,6 +30,11 @@ describe('프로모션/가감 수정 잠금 — 발행된 문서와 원장이 �
     assert.equal(moneyEditPatch({ payStage: '통보', payIncentive: 0 }, { payIncentive: 100 }).ok, false);
     assert.equal(moneyEditPatch({ payStage: '확인', payAdjust: 0 }, { payAdjust: -100 }).ok, false);
   });
+  it('레거시 Y/1/참 완료표시도 발행·취소 잠금으로 본다', () => {
+    assert.equal(moneyEditPatch({ billed: 'Y', claimAdjust: 0 }, { claimAdjust: 1 }).ok, false);
+    assert.equal(moneyEditPatch({ paid: 1, payAdjust: 0 }, { payAdjust: 1 }).ok, false);
+    assert.equal(moneyEditPatch({ cancelled: '참', claimAdjust: 0 }, { claimAdjust: 1 }).ok, false);
+  });
   it('발행 전에는 바뀐 칸만 패치하고 같은 값은 쓰지 않는다', () => {
     const r = moneyEditPatch({ claimAdjust: 0, payAdjust: 5, payStage: '접수' }, { claimAdjust: -10, payAdjust: 5, unknown: 1 });
     assert.ok(r.ok);

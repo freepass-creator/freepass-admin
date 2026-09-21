@@ -8,6 +8,7 @@ import { sp, txt, vocab, won } from '../_fn/fmt';
 import { settlements } from '../../server/erp5';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
+import { sortIntakeRows } from '../../domain/settlement/intake-list';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow, type RowStatus } from '../_design/ListRow';
@@ -180,8 +181,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   const i통과 = (r: SettlementRow, skip?: string) => 접수축.every(([a, , of]) => a === skip || !isel[a].length || isel[a].includes(of(r)));
   const isearched = irows.filter(진행)
     .filter((r) => !iq || [r.plate, r.customer, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(iq));
-  const ishown = isearched.filter((r) => i통과(r))
-    .sort((x, y) => String(y.receivedAt).localeCompare(String(x.receivedAt)));
+  const ishown = sortIntakeRows(isearched.filter((r) => i통과(r)), iv as Bucket | 'all');
   const 접수판축: FacetAxis[] = 접수축.map(([a, label, of]) => {
     const keys = a === 'im' ? [...new Set(irows.map(of).filter(Boolean))].sort().reverse() : 많은순(irows.map(of));
     const base = tallyMatch(irows, keys, (r, k) => of(r) === k);

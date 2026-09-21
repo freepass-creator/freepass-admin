@@ -5,7 +5,7 @@ import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
-import { clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
+import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, snapshotOf, tokenHash } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
@@ -444,7 +444,12 @@ export class Erp5SettlementRepository {
       const r = clawbackRecord(row, input, BY, now);
       if (!r.ok) return r;
       const cref = db.collection('settlement_clawbacks').doc(r.id);
-      if ((await tx.get(cref)).exists) return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
+      const legacyRef = db.collection('settlement_clawbacks').doc(clawbackId(row.plate, String(r.doc.month)));
+      const [currentDoc, legacyDoc] = await Promise.all([tx.get(cref), tx.get(legacyRef)]);
+      if (currentDoc.exists) return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
+      if (legacyDoc.exists) {
+        return { ok: false as const, error: `레거시 환수(${legacyRef.id})가 이미 있어 계약을 안전하게 구분할 수 없습니다 — 기존 환수를 확인한 뒤 처리합니다` };
+      }
       tx.create(cref, r.doc);
       tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
         { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });

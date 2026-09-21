@@ -57,8 +57,7 @@ function credential(): Sa {
 
 let app: App | null = null;
 
-/** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
-export function erp5(): Firestore {
+function ensureErp5App(): App {
   if (!app) {
     app = getApps().find((a) => a.name === APP_NAME) ?? null;
   }
@@ -69,7 +68,17 @@ export function erp5(): Firestore {
       projectId: sa.project_id,
     }, APP_NAME);
   }
-  return getFirestore(app);
+  return app;
+}
+
+/** ERP5 Admin app — Firestore와 Storage가 반드시 같은 자격증명/프로젝트를 공유한다. */
+export function erp5App(): App {
+  return ensureErp5App();
+}
+
+/** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
+export function erp5(): Firestore {
+  return getFirestore(ensureErp5App());
 }
 
 /** 붙었나 — 화면·상태줄이 「어디를 보고 있나」 를 말할 수 있게. */

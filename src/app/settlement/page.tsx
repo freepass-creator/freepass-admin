@@ -51,6 +51,23 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
   const gSel = groups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
   const ic = sp(q.ic);
+
+  /* 실적 줄 찾기 — 묶음 안에서 고객/차번/차량/상대/담당을 바로 찾고, 지금 처리할 줄을 상태로 가른다. */
+  const lq = sp(q.lq).trim().toLowerCase();
+  const ls = ['all', 'todo', 'issue', 'done'].includes(sp(q.ls)) ? sp(q.ls) : 'todo';
+  const lineDone = (x: NonNullable<typeof gSel>['lines'][number]) =>
+    tab === 'claim' ? x.row.progress.collected : x.row.progress.paid;
+  const lineIssue = (x: NonNullable<typeof gSel>['lines'][number]) =>
+    x.broken || x.row.progress.billHold || (tab === 'claim' ? x.row.claimStage : x.row.payStage) === '정정';
+  const lineMode = (x: NonNullable<typeof gSel>['lines'][number], mode: string) =>
+    mode === 'all' ? true : mode === 'done' ? lineDone(x) : mode === 'issue' ? lineIssue(x) : !lineDone(x);
+  const lineText = (x: NonNullable<typeof gSel>['lines'][number]) =>
+    [x.row.customer, x.row.plate, x.row.model, x.row.supplier, x.row.channel, x.row.agent, x.row.id]
+      .filter(Boolean).join(' ').toLowerCase();
+  const performanceLines = (gSel?.lines ?? []).filter((x) => lineMode(x, ls) && (!lq || lineText(x).includes(lq)));
+  const performanceCount = (mode: string) => (gSel?.lines ?? []).filter((x) => lineMode(x, mode)).length;
+  const shownClawbacks = (gSel?.clawbacks ?? []).filter((x) =>
+    (ls === 'all' || ls === 'issue') && (!lq || [x.plate, x.reason, x.month].filter(Boolean).join(' ').toLowerCase().includes(lq)));
   /* ── 발행 — 고른 묶음(한 달 · 한 상대)의 청구서/지급명세. 미리보기 = 기능 쪽 planInvoice 그대로(발행과 같은 셈) ── */
   const axis: Axis = tab === 'claim' ? '공급사' : '영업채널';
   const 장부 = month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
@@ -134,8 +151,28 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
         <section className="panel detail-panel st-lines">
           <div className="dz-listtop">
-            <PanelHeader title={gSel ? gSel.party : '실적 줄'} count={gSel ? `${gSel.lines.length}줄` : undefined}
+            <PanelHeader title={gSel ? gSel.party : '실적 줄'} count={gSel ? `${performanceLines.length} / ${gSel.lines.length}줄` : undefined}
               backHref={keep({ v: 'list' })} backLabel="묶음으로" />
+            {gSel && (
+              <>
+                <form className="dz-find" action="/settlement">
+                  <input type="hidden" name="tab" value={tab} />
+                  <input type="hidden" name="month" value={month} />
+                  <input type="hidden" name="g" value={gSel.party} />
+                  <input type="hidden" name="ls" value={ls} />
+                  <input type="hidden" name="v" value="detail" />
+                  <div className="searchbox dz-searchbox">
+                    <SearchField name="lq" defaultValue={sp(q.lq)} placeholder="고객 · 차량번호 · 차량 · 담당자" />
+                  </div>
+                </form>
+                <div className="quick-filters">
+                  <Link className={ls === 'todo' ? 'active' : ''} href={keep({ ls: 'todo', ic: '', v: 'detail' })}>할일 <small>{performanceCount('todo')}</small></Link>
+                  <Link className={ls === 'issue' ? 'active' : ''} href={keep({ ls: 'issue', ic: '', v: 'detail' })}>이슈 <small>{performanceCount('issue')}</small></Link>
+                  <Link className={ls === 'done' ? 'active' : ''} href={keep({ ls: 'done', ic: '', v: 'detail' })}>완료 <small>{performanceCount('done')}</small></Link>
+                  <Link className={ls === 'all' ? 'active' : ''} href={keep({ ls: 'all', ic: '', v: 'detail' })}>전체 <small>{performanceCount('all')}</small></Link>
+                </div>
+              </>
+            )}
             {gSel && (
               <SummaryGrid>
                 <SummaryItem label="합">{won(gSel.total)}원</SummaryItem>
@@ -159,7 +196,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             )}
           </div>
           <div className="list">
-            {gSel?.lines.map(({ row: r, amount, broken, ratio }) => {
+            {performanceLines.map(({ row: r, amount, broken, ratio }) => {
               const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
               return (
                 <ListRow key={r.id} href={keep({ g: gSel.party, ic: r.id, v: 'work' })} selected={r.id === ic}
@@ -172,7 +209,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
               );
             })}
             {/* 환수 — 접수 줄의 체크가 아니라 «반대 부호의 한 줄»(기능 세션) */}
-            {gSel?.clawbacks.map((c, k) => (
+            {shownClawbacks.map((c, k) => (
               <div key={`환수-${k}`} className="dz-row dz-row-minus">
                 <StatusTile s={{ icon: 'repeat', label: '환수', tone: 'red' }} />
                 <span className="dz-row-body">
@@ -183,6 +220,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
               </div>
             ))}
             {!gSel && <EmptyState>왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</EmptyState>}
+            {gSel && performanceLines.length === 0 && shownClawbacks.length === 0 && <EmptyState>이 검색/상태에 맞는 실적이 없습니다.</EmptyState>}
           </div>
           {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
           {gSel && (

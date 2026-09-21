@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../adjust.js';
+import { adjustPatch, adjustmentFromInput, moneyEditPatch, promotionFromInput, promotionPatch } from '../adjust.js';
 import { claimAmountOf, payAmountOf } from '../ledgers.js';
 import { intakeRecord } from '../intake.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
@@ -22,6 +22,19 @@ describe('가감 — ★사유 없는 돈은 안 받는다', () => {
   });
   it('사유가 없으면 거절', () => assert.equal(adjustmentFromInput('50000', '', '').ok, false));
   it('숫자가 아니면 거절', () => assert.equal(adjustmentFromInput('오만원', '', '이유').ok, false));
+});
+
+describe('프로모션/가감 수정 잠금 — 발행된 문서와 원장이 갈리지 않는다', () => {
+  it('청구서 뒤 청구축, 지급명세 통보 뒤 지급축을 막는다', () => {
+    assert.equal(moneyEditPatch({ billed: true, claimIncentive: 0 }, { claimIncentive: 100 }).ok, false);
+    assert.equal(moneyEditPatch({ payStage: '통보', payIncentive: 0 }, { payIncentive: 100 }).ok, false);
+    assert.equal(moneyEditPatch({ payStage: '확인', payAdjust: 0 }, { payAdjust: -100 }).ok, false);
+  });
+  it('발행 전에는 바뀐 칸만 패치하고 같은 값은 쓰지 않는다', () => {
+    const r = moneyEditPatch({ claimAdjust: 0, payAdjust: 5, payStage: '접수' }, { claimAdjust: -10, payAdjust: 5, unknown: 1 });
+    assert.ok(r.ok);
+    assert.deepEqual(r.ok && r.patch, { claimAdjust: -10 });
+  });
 });
 
 describe('금액 식 — (수수료 + 프로모션) × 비율 + 가감', () => {

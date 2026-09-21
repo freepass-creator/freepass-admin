@@ -91,7 +91,7 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, respo
   month: string; axis: '공급사' | '영업채널'; party: string;
   /** 살아 있는 링크가 있나(만든 적 있고 안 거둠) */
   live: boolean; openCount?: number; openedAt?: number;
-  response?: { state: '확인' | '이의'; at: number; memo?: string } | null;
+  response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] } | null;
 }) {
   const [made, make, making] = useActionState<FormState & { url?: string; warn?: string }, FormData>(createClaimLinkAction, { errors: [] });
   const [gone, revoke, revoking] = useActionState<FormState, FormData>(revokeClaimLinkAction, { errors: [] });
@@ -104,7 +104,7 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, respo
         <b>청구 링크</b>{' '}
         {live ? <span>살아 있음</span> : <span className="dz-muted">없음</span>}
         {openCount ? <span> · 열어봄 {openCount}번{openedAt ? ` (${날(openedAt)})` : ''}</span> : null}
-        {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의 — ${response.memo ?? ''}`} ({날(response.at)})</span>}
+        {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의${response.codes?.length ? ` ${response.codes.length}건` : ''} — ${response.memo ?? ''}`} ({날(response.at)})</span>}
       </p>
       <div className="dz-claim-link-go">
         <form aria-busy={making} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>

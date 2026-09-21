@@ -122,7 +122,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     } else if (nextAction.kind === 'delivered') {
       주액션 = <button type="submit" form={progressFormId(r.id, 'delivered')} name="on" value="1" className="primary">인도 완료</button>;
     } else if (nextAction.kind === 'settlement') {
-      주액션 = <Link className="primary" href={`/settlement?tab=${nextAction.tab}`}>정산관리</Link>;
+      주액션 = <Link className="primary" href={`/settlement?tab=${nextAction.tab}&focus=${encodeURIComponent(r.id)}`}>정산관리</Link>;
     } else {
       주액션 = <button type="button" className="primary" disabled>다음 · {nextAction.label}</button>;
     }

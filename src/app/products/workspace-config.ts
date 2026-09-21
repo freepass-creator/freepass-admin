@@ -102,10 +102,29 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
     if (Number.isFinite(km) && km > 0) add('mile', String(km), `연 ${Number(n).toLocaleString('ko-KR')}만km`);
     return ' ';
   });
+  // 금액 상한 — 기존 구간 facet을 여러 값 OR로 켠다. 별도 가격 엔진을 만들지 않는다.
+  rest = rest.replace(/보증금\s*(\d+(?:\.\d+)?)\s*만(?:원)?\s*(?:이하|이내|밑)/g, (_, n: string) => {
+    const max = Number(n) * 10000;
+    for (const b of 보증금구간) if (b.hi <= max) add('dep', b.k, b.label);
+    return ' ';
+  });
+  rest = rest.replace(/(?:월\s*)?(\d+(?:\.\d+)?)\s*만(?:원)?\s*(?:이하|이내|밑)/g, (_, n: string) => {
+    const max = Number(n) * 10000;
+    for (const b of 대여료구간) if (b.hi <= max) add('rent', b.k, b.label);
+    return ' ';
+  });
+
   eat(/무\s*보증|보증금\s*(?:0|없음?)/, 'dep', 'd0', '무보증');
   eat(/무\s*심사/, 'perk', '무심사', '무심사');
-  eat(/(?:만\s*)?21\s*세|21살/, 'perk', '만21세', '만21세');
-  eat(/경력\s*무관/, 'perk', '경력무관', '경력무관');
+  rest = rest.replace(/(?:만\s*)?(\d{2})\s*세|([2-9]\d)살/g, (_m, a: string, b: string) => {
+    const age = a || b;
+    add('perk', `만${age}세`, `만${age}세`);
+    return ' ';
+  });
+  for (const perk of ['경력무관', '소득확인', '신용조회', '분납가능', '무사고']) {
+    const re = new RegExp(perk.replace(/(.{2})/, '$1\\s*'));
+    if (re.test(rest)) { rest = rest.replace(re, ' '); add('perk', perk, perk); }
+  }
   eat(/즉시\s*출고/, 'status', '즉시출고', '즉시출고');
   eat(/하이브리드|하브|\bHEV\b/i, 'fuel', '하이브리드', '하이브리드');
   eat(/디젤/, 'fuel', '디젤', '디젤');

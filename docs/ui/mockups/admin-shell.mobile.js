@@ -32,7 +32,7 @@ function mbar(title, sub, opts = {}) {
 
 /* ── 탭바 ─────────────────────────────────────── */
 function mtabs() {
-  return `<nav class="mtabs">${MTABS.map(t => {
+  return `<nav class="mtabs" data-ai-feature="navigation.bottom-nav">${MTABS.map(t => {
     const b = t.badge ? t.badge() : 0;
     return `<button data-k="${t.k}" aria-current="${t.k === M.tab}">
       <span class="i">${t.i}${b ? `<em>${b}</em>` : ''}</span><span class="l">${t.t}</span></button>`;
@@ -47,7 +47,7 @@ function mProducts() {
   return mbar('상품 찾기', `${hits.length}건`, {
     right: `<button class="mb-ic" id="mcond" aria-label="세부필터">&#9868;${n ? `<em>${n}</em>` : ''}</button>`,
   }) + `<div class="mbody">
-    <div class="msearch"><span class="mg">&#9906;</span>
+    <div class="msearch" data-ai-feature="data.search-discovery"><span class="mg">&#9906;</span>
       <input type="search" id="mq" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월"></div>
     ${n ? `<div class="mtoks">${tokens(sel)}</div>` : ''}
     <div class="mlist">${hits.length ? hits.map(({ p, ok }) => {
@@ -78,7 +78,7 @@ function mProductDetail() {
       <div class="amt"><div><div class="k">월 대여료 · ${o.term}개월</div><div class="v">${won(o.rent)}</div></div>
         <span class="u">보증금 ${depText(o)} · VAT 포함</span></div>
       <div class="sec"><h3>대여 조건 — 고른 것 하나가 접수로 간다</h3>
-        <div class="mopts" id="mopts">${p.offers.map(x => {
+        <div class="mopts" id="mopts" data-ai-feature="data.variant-selector">${p.offers.map(x => {
           const pass = offerOK(x, sel, null);
           return `<button class="mopt${x.id === S.oid ? ' on' : ''}" data-oid="${x.id}"${pass ? '' : ' disabled'}>
             <span class="o1"><b class="n">${x.term}개월</b><b class="n price">${won(x.rent)}</b></span>
@@ -90,7 +90,7 @@ function mProductDetail() {
         ${fact('연료', p.fuel)}${fact('인승', p.seats ? p.seats + '인승' : null)}
         ${fact('색상', p.color)}${fact('차량번호', p.plate)}</dl></div>
     </div>
-    <div class="mact"><button class="btn" id="mshare2">공유</button>
+    <div class="mact" data-ai-feature="navigation.bottom-action"><button class="btn" id="mshare2">공유</button>
       <button class="btn go" id="mapply">이 조건으로 접수</button></div>` + mtabs();
 }
 
@@ -141,7 +141,7 @@ function mAppDetail() {
         <dt>선택 Offer</dt><dd class="n">${esc(a.oid)}</dd>
         <dt>상품 판</dt><dd class="n">${esc(a.pid)} v${a.pv}</dd></dl></div>
     </div>
-    <div class="mact">${a.cxl ? '<button class="btn" disabled>취소된 건</button>'
+    <div class="mact" data-ai-feature="navigation.bottom-action">${a.cxl ? '<button class="btn" disabled>취소된 건</button>'
       : next ? `<button class="btn" id="mcxl">취소</button><button class="btn go" id="mnext">${next[1]} 완료</button>`
       : '<button class="btn go" id="mnext" disabled>모두 완료</button>'}</div>` + mtabs();
 }
@@ -161,7 +161,7 @@ function mNew() {
       <div class="fld"><label>연락처</label><input id="f-ph" value="${esc(d.phone)}" placeholder="아직 몰라도 됩니다">
         <div class="hint">★필수가 아닙니다. 강제하면 가짜 번호가 쌓입니다.</div></div>
     </div></div>
-    <div class="mact"><button class="btn" id="mcancel">그만두기</button>
+    <div class="mact" data-ai-feature="navigation.bottom-action"><button class="btn" id="mcancel">그만두기</button>
       <button class="btn go" id="msave"${d.name.trim() ? '' : ' disabled'}>접수 저장</button></div>` + mtabs();
 }
 
@@ -194,7 +194,7 @@ function mPerfDetail() {
       <div class="t">${esc(t)}</div><div class="w">${i + 1 < pf.stage ? '완료' : i + 1 === pf.stage ? '지금 여기' : '대기'}</div></li>`).join('')}</ul></div>
     ${pf.issue ? `<div class="note e"><span class="i">!</span><div><b>공급사와 어긋납니다</b><p>${esc(pf.note)}</p></div></div>` : ''}
   </div>
-  <div class="mact">${pf.stage >= 4 ? '<button class="btn" disabled>확정됨</button>'
+  <div class="mact" data-ai-feature="navigation.bottom-action">${pf.stage >= 4 ? '<button class="btn" disabled>확정됨</button>'
     : `<button class="btn" id="mp-no">이견</button><button class="btn go" id="mp-ok">${pf.stage === 3 ? '정산 확정' : '확인'}</button>`}</div>` + mtabs();
 }
 

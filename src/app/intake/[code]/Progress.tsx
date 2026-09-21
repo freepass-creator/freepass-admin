@@ -4,8 +4,8 @@ import { startTransition, useActionState } from 'react';
 import { progressAction, type FormState } from '../actions';
 
 /** 계약서 · 인도 · 취소 — 누르면 원장에 바로 쓴다. ★규칙(인도일 필수 · 취소 사유 필수)은 서버가 다시 본다. */
-export default function Progress({ code, paper, delivered, deliveredAt, cancelled, today }: {
-  code: string; paper: boolean; delivered: boolean; deliveredAt: string; cancelled: boolean; today: string;
+export default function Progress({ code, plate, paper, delivered, deliveredAt, cancelled, today }: {
+  code: string; plate: string; paper: boolean; delivered: boolean; deliveredAt: string; cancelled: boolean; today: string;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(progressAction, { errors: [] });
   const send = (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,6 +18,11 @@ export default function Progress({ code, paper, delivered, deliveredAt, cancelle
 
   return (
     <div className="fn-box">
+      <form onSubmit={send} className="dz-progress-row" aria-busy={pending}>
+        <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="plate" />
+        차량번호 <input name="plate" defaultValue={plate} placeholder="배정 후 입력" disabled={pending || cancelled} />{' '}
+        <button type="submit" disabled={pending || cancelled}>차량번호 저장</button>
+      </form>
       <form onSubmit={send} className="dz-progress-row" aria-busy={pending}>
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="paper" />
         계약서 {paper ? '● 받음' : '○ 안 받음'}{' '}

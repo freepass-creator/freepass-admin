@@ -184,7 +184,8 @@ export class Erp5SettlementRepository {
       if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
       const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
       if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
-      if (cur.paid === true && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false, error: '지급이 끝난 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
+      const payIssued = ['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true;
+      if (payIssued && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
       return {
         ok: true,
         patch: Object.fromEntries(changed),

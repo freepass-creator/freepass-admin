@@ -281,12 +281,13 @@ describe('★분납이 끊기면 — 받은 회차는 사람이 적는다', () =
 });
 
 describe('받은 회차 찍기', () => {
-  it('분납·인도된 줄만 · 1~회차 수', () => {
+  it('분납·인도된 줄만 · 1~회차 수 · 정산 시작 뒤 변경 금지', () => {
     assert.equal(progressPatch({ payKind: '일시납', delivered: true }, { kind: 'paidRounds', rounds: 1 }).ok, false);
     assert.equal(progressPatch({ payKind: '2회분납', delivered: false }, { kind: 'paidRounds', rounds: 1 }).ok, false);
     assert.equal(progressPatch({ payKind: '2회분납', delivered: true }, { kind: 'paidRounds', rounds: 3 }).ok, false);
-    const r = progressPatch({ payKind: '2회분납', delivered: true }, { kind: 'paidRounds', rounds: 1 });
+    const r = progressPatch({ payKind: '2회분납', delivered: true, claimStage: '접수', payStage: '접수' }, { kind: 'paidRounds', rounds: 1 });
     assert.deepEqual(r.ok && r.patch, { paidRounds: 1 });
+    assert.equal(progressPatch({ payKind: '2회분납', delivered: true, claimStage: '청구', payStage: '통보', billed: true }, { kind: 'paidRounds', rounds: 1 }).ok, false);
   });
 });
 

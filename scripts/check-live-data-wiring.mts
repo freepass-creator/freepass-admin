@@ -6,6 +6,8 @@ const read=(p:string)=>readFile(path.join(root,p),'utf8');
 const errors:string[]=[];
 
 const rootPage=await read('src/app/page.tsx');
+const designPage=await read('src/app/design/page.tsx');
+const intakeListPage=await read('src/app/intake/list/page.tsx');
 const product=await read('src/app/products/workspace.tsx');
 const settlement=await read('src/app/settlement/page.tsx');
 const esign=await read('src/app/esign/page.tsx');
@@ -18,6 +20,9 @@ const must=(ok:boolean,msg:string)=>{if(!ok)errors.push(msg)};
 
 must(/redirect\(['\"]\/intake['\"]\)/.test(rootPage),'root route must enter the real /intake workspace');
 must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(rootPage),'root route must not contain local fake runtime data');
+must(/redirect\(['\"]\/intake['\"]\)/.test(designPage),'legacy /design route must redirect to /intake');
+must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(designPage),'legacy /design route must not contain fake runtime data');
+must(intakeListPage.includes("redirect(`/intake?${u}`)"),'legacy /intake/list route must redirect to canonical /intake workspace');
 
 must(/productList\(\)/.test(product),'products workspace must read productList()');
 must(/settlements\.list\(\)/.test(product),'intake workspace must read settlements.list()');

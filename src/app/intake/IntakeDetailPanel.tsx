@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { blockOf, type Block } from '../../domain/settlement/types';
+import { blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
@@ -16,6 +16,7 @@ import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
+import { intakeNextAction } from './next-action';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
@@ -110,24 +111,20 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
   if (!life && newHref) {
+    const nextAction = intakeNextAction(다음블록, r.progress.cancelled, r.progress.delivered);
     let 주액션: React.ReactNode;
-    if (r.progress.cancelled || !다음블록) {
+    if (nextAction.kind === 'new') {
       주액션 = <Link className="primary" href={newHref}>+ 신규 접수</Link>;
-    } else if (다음블록 === '계약서') {
+    } else if (nextAction.kind === 'paper') {
       주액션 = <button type="submit" form={progressFormId(r.id, 'paper')} name="on" value="1" className="primary">계약서 받음</button>;
-    } else if (다음블록 === '차량번호 없음') {
+    } else if (nextAction.kind === 'plate') {
       주액션 = <button type="submit" form={progressFormId(r.id, 'plate')} className="primary">차량번호 저장</button>;
-    } else if (다음블록 === '인도') {
+    } else if (nextAction.kind === 'delivered') {
       주액션 = <button type="submit" form={progressFormId(r.id, 'delivered')} name="on" value="1" className="primary">인도 완료</button>;
+    } else if (nextAction.kind === 'settlement') {
+      주액션 = <Link className="primary" href={`/settlement?tab=${nextAction.tab}`}>정산관리</Link>;
     } else {
-      const 지급막힘: Block[] = ['영업채널 없음', '지급금액 모름', '지급'];
-      const 청구막힘: Block[] = ['청구금액 모름', '청구', '계산서', '수금'];
-      if (r.progress.delivered && (지급막힘.includes(다음블록) || 청구막힘.includes(다음블록))) {
-        const tab = 지급막힘.includes(다음블록) ? 'pay' : 'claim';
-        주액션 = <Link className="primary" href={`/settlement?tab=${tab}`}>정산관리</Link>;
-      } else {
-        주액션 = <button type="button" className="primary" disabled>다음 · {다음블록}</button>;
-      }
+      주액션 = <button type="button" className="primary" disabled>다음 · {nextAction.label}</button>;
     }
     바 = (
       <ActionBar>

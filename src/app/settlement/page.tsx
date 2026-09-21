@@ -219,7 +219,8 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 {어긋남 && <Notice tone="warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</Notice>}
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
                 {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
-                  live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt} response={장.response ?? null} />}
+                  live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt}
+                  failCount={장.failCount} lockedUntil={장.lockedUntil} response={장.response ?? null} />}
               </div>
             )}
           </div>

@@ -49,10 +49,11 @@ describe('validateIntake — 최초 접수 필수값', () => {
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
-  it('★인도완료는 계약서와 인도일을 모두 요구한다', () => {
+  it('★인도는 계약서와 독립 사실이고, 인도일만 함께 요구한다', () => {
     const e = validateIntake({ ...base, paper: false, delivered: true }, '2026-09-18').join();
-    assert.match(e, /계약서/);
+    assert.doesNotMatch(e, /계약서/);
     assert.match(e, /인도일/);
+    assert.equal(validateIntake({ ...base, paper: false, delivered: true, deliveredAt: '2026-09-18' }, '2026-09-18').some((x) => x.includes('계약서')), false);
   });
 });
 
@@ -149,8 +150,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     const r = progressPatch({ paper: true }, { kind: 'paper', on: true });
     assert.ok(r.ok && r.events.length === 0);
   });
-  it('계약서 없으면 인도 완료를 막는다', () =>
-    assert.match(String((progressPatch({ paper: false, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /계약서/));
+  it('계약서가 없어도 실제 인도 사실은 기록한다', () => {
+    const r = progressPatch({ paper: false, plate: '12가3456', delivered: false }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
+    assert.ok(r.ok);
+    assert.deepEqual(r.ok && r.patch, { delivered: true, deliveredAt: '2026-09-18' });
+  });
   it('차량번호 없으면 인도 완료를 막는다', () =>
     assert.match(String((progressPatch({ paper: true, plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
   it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
@@ -178,6 +182,20 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('청구/통보 등 정산이 시작된 뒤에는 일반 취소하지 않는다', () => {
     assert.equal(progressPatch({ billed: true, claimStage: '청구', payStage: '통보' }, { kind: 'cancelled', on: true, reason: '중도 해지' }).ok, false);
     assert.equal(progressPatch({ claimStage: '확인', payStage: '확인' }, { kind: 'cancelled', on: true, reason: '중도 해지' }).ok, false);
+  });
+  it('레거시 TRUE 꼴과 과거 정산 atom도 정산 시작으로 본다', () => {
+    assert.equal(progressPatch({ collected: 1 }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+    assert.equal(progressPatch({ paid: 'Y' }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+    assert.equal(progressPatch({ supplierOk: '참' }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+    assert.equal(progressPatch({ stage: '청구' }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+    assert.equal(progressPatch({ settledAlready: 1 }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+    assert.equal(progressPatch({ invoiceNoS: 'FP-S-202609-001' }, { kind: 'cancelled', on: true, reason: 'x' }).ok, false);
+  });
+  it('정산 흔적이 있는 취소 건은 취소를 풀어 원장에 재등장시키지 않는다', () => {
+    assert.equal(progressPatch({ cancelled: true, billed: true }, { kind: 'cancelled', on: false }).ok, false);
+    assert.equal(progressPatch({ cancelled: true, collected: 1 }, { kind: 'cancelled', on: false }).ok, false);
+    const clean = progressPatch({ cancelled: true, claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: false });
+    assert.ok(clean.ok);
   });
   it('취소된 줄은 취소를 풀기 전에 못 고친다', () =>
     assert.equal(progressPatch({ cancelled: true }, { kind: 'paper', on: true }).ok, false));

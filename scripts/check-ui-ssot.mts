@@ -69,10 +69,12 @@ for (const token of requiredCss) {
 }
 
 const cssBaseline = [
+  [/--ui-control-radius:\s*6px/, '--ui-control-radius 6px'],
+  [/--ui-control-gap:\s*8px/, '--ui-control-gap 8px'],
   [/--글제목:\s*18px/, '--글제목 18px'],
   [/--글메인:\s*14px/, '--글메인 14px'],
   [/--글보조:\s*12px/, '--글보조 12px'],
-  [/--컨트롤:\s*40px/, '--컨트롤 40px'],
+  [/--컨트롤:\s*44px/, '--컨트롤 44px'],
   [/--ui-action-h:\s*44px/, '--ui-action-h 44px'],
   [/--ui-touch-min:\s*44px/, '--ui-touch-min 44px'],
   [/--r:\s*4px/, '--r 4px'],
@@ -91,7 +93,7 @@ const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindi
 
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
   typography?: { title?: { px?: number }; main?: { px?: number }; support?: { px?: number } };
-  controls?: { standard?: { heightPx?: number }; primary?: { heightPx?: number }; mobileTouchMinimumPx?: number };
+  controls?: { standard?: { heightPx?: number }; primary?: { heightPx?: number }; mobileTouchMinimumPx?: number; radiusPx?: number; gapPx?: number };
   radii?: { defaultPx?: number };
   aiCore?: { upstreamRepository?: string; upstreamRevision?: string; featureRegistryVersion?: string; semanticAuthority?: boolean };
   listPresentation?: { authorityFeature?: string; modes?: Record<string,string> };
@@ -127,7 +129,9 @@ const expected = [
   ['typography.title.px', ssot.typography?.title?.px, 18],
   ['typography.main.px', ssot.typography?.main?.px, 14],
   ['typography.support.px', ssot.typography?.support?.px, 12],
-  ['controls.standard.heightPx', ssot.controls?.standard?.heightPx, 40],
+  ['controls.standard.heightPx', ssot.controls?.standard?.heightPx, 44],
+  ['controls.radiusPx', ssot.controls?.radiusPx, 6],
+  ['controls.gapPx', ssot.controls?.gapPx, 8],
   ['controls.primary.heightPx', ssot.controls?.primary?.heightPx, 44],
   ['controls.mobileTouchMinimumPx', ssot.controls?.mobileTouchMinimumPx, 44],
   ['radii.defaultPx', ssot.radii?.defaultPx, 4],
@@ -145,8 +149,9 @@ if (errors.length) {
   console.log('UI/UX SSOT check PASS');
   console.log(`- checked UI files: ${coreFiles.length}`);
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
-  console.log('- visual baseline: 18/14/12 · control 40 · action/touch 44 · radius 4');
+  console.log('- visual baseline: 18/14/12 · Sales control/action 44 · control radius 6 · gap 8 · panel radius 4');
   console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
   console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);
 }
+

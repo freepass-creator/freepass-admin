@@ -6,6 +6,8 @@
 코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
 > 공통 UI/UX 의미·선택 규칙의 정본은 **AI Core**다.
+> **실제 화면 형태의 기본은 FreePass Sales 운영 앱이다(사용자 2026-09-21 정정).**
+> 참조 revision/컴포넌트별 매핑은 `SALES-APP-BASELINE.md`를 먼저 읽는다.
 > 이 문서는 FreePass Admin이 AI Core 규격을 어떤 도메인에 어떻게 적용하는지 정하는 **Product Profile**이다.
 >
 > AI Core binding: `docs/ui/ai-core-bindings.json`
@@ -191,13 +193,13 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 | 등급 | 높이 | 글자 | 용도 |
 |---|---:|---:|---|
 | Badge / signal | content based | 12 | 상태·신원 표시 |
-| Standard workspace control | **40px** | 14 | 필터, 탭, 기간, 보조 버튼, 업무 입력 |
-| Search / field | **40px** | 14 | 검색창, 주요 입력 |
+| Standard workspace control | **44px** | 14 | 필터, 탭, 기간, 보조 버튼, 업무 입력 |
+| Search / field | **44px** | 14 | 검색창, 주요 입력 |
 | Primary action | **44px** | 14 bold | 저장, 접수, 발행, 승인 |
 | Mobile touch action | **44px 이상** | 14 | 엄지로 누르는 주요 행동 |
 
 ### Button radius
-- 일반 버튼: **4px**
+- 일반 버튼: **6px** — Sales 운영 공통 컨트롤 토큰
 - 새로운 radius 금지
 
 ### Primary
@@ -213,7 +215,7 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 
 ### Utility
 - 필터·탭·작은 조작
-- 업무 workspace에서는 40px
+- 업무 workspace에서는 44px
 - 평소 투명/중립
 - active에서 Navy 면
 
@@ -227,11 +229,11 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 
 현재 처리:
 - `.dz-phone-back`은 보이는 상자 32px를 유지하되 **실제 hit-area 44px**를 확보했다.
-- 달 넘기기 등 workspace 조작은 공통 `--ui-control-h` 40px를 사용한다.
+- 달 넘기기 등 workspace 조작은 공통 `--ui-control-h` 44px를 사용한다.
 
 승인된 compact 예외:
-- Desktop 하단 TopMenu도 버튼 규격 44px를 사용한다(2026-09-21 개정).
-- 검색창 내부 `세부검색` 단추는 32px visual이지만 40px search box 안의 내부 조작이다.
+- Desktop 하단 TopMenu는 Sales의 60px 탭바 안에서 최소 44px 터치 영역을 사용한다(2026-09-21 개정).
+- 검색창 내부 `세부검색` 단추는 32px visual이지만 44px search box 안의 내부 조작이다.
 
 ---
 
@@ -360,7 +362,7 @@ AI Core가 이 선택 규칙을 변경하면 FreePass Admin은 consumer binding�
 # 10. Search / Filter SSOT
 
 ## Search
-- 높이 **40px**
+- 높이 **44px**
 - 검색 icon
 - 텍스트
 - 필요하면 내부 우측에 “세부검색”
@@ -369,7 +371,7 @@ AI Core가 이 선택 규칙을 변경하면 FreePass Admin은 consumer binding�
 
 ## Quick filter
 - search 아래
-- height **40px** (`--ui-control-h`)
+- height **44px** (`--ui-control-h`)
 - active = Navy
 - 같은 축 선택값은 주소/query SSOT와 연결
 
@@ -429,7 +431,7 @@ Summary box는 `summary-grid` 규격을 사용한다.
 
 - primary 44
 - secondary 44
-- radius 4
+- radius 6
 - panel bottom에 정렬
 - content 중간에 떠 있지 않는다.
 
@@ -444,9 +446,9 @@ Summary box는 `summary-grid` 규격을 사용한다.
 - 상단은 상태바다. FreePass Admin 워드마크·업무 메뉴·실행 버튼을 넣지 않는다.
 - 데이터 설정 여부, 쓰기 허용 여부, 로그인 사용자만 표시한다. 설정 확인을 실시간 연결 성공으로 표현하지 않는다.
 - 상태 링크는 기존 데이터 진단 화면으로 이어진다. 로그아웃은 그 화면의 하단 공통 ActionBar로 이동한다.
-- Desktop 기존 업무 4축은 하단 44px 버튼으로 옮긴다. 패널별 실행은 기존 ActionBar와 실제 동작을 유지한다.
-- Mobile 기존 업무 5걸음은 버튼 면을 사용하며 depth 1/2에서는 숨기고 현재 판의 실행바만 보인다.
-- 제목 18 / 본문 14 / 보조 12, 라운드 4, 보조:주 3:7, 실행 높이 44는 유지한다.
+- Desktop 기존 업무 4축은 Sales 형태의 흰 하단바(60px)에 아이콘·라벨 탭으로 옮긴다. 활성 탭 전체를 진한 면으로 채우지 않는다. 패널별 실행은 기존 ActionBar와 실제 동작을 유지한다.
+- Mobile 기존 업무 5걸음은 Sales 형태의 아이콘·라벨 탭을 사용하며 depth 1/2에서는 숨기고 현재 판의 실행바만 보인다.
+- 제목 18 / 본문 14 / 보조 12, 패널 라운드 4는 유지한다. 버튼/입력은 Sales의 높이 44·반경 6·간격 8을 사용한다. 두 실행의 업무 비율 3:7은 유지한다.
 - 이 결정은 과거 CI 상단·상단 4메뉴·33px TopMenu 설명보다 우선한다. 로그인 화면의 BI는 대상이 아니다.
 
 
@@ -623,9 +625,9 @@ depth 0 목록
 새 화면/컴포넌트 추가 전 반드시 확인:
 
 - [ ] Title/Main/Support 18/14/12 안에서 해결했나?
-- [ ] 업무 컨트롤 40 / 주 행동·모바일 터치 44 체계 안에 있나?
+- [ ] 업무 컨트롤 44 / 주 행동·모바일 터치 44 체계 안에 있나?
 - [ ] mobile touch는 44 이상인가?
-- [ ] radius 4가 기본인가?
+- [ ] 컨트롤 반경 6 / 패널 반경 4를 구분했나?
 - [ ] 신원 = Tag, 조건 = PerkMarks로 갈랐나?
 - [ ] 목록이면 ListRow를 재사용했나?
 - [ ] Panel은 LIST/DETAIL/WORK 중 하나인가?
@@ -640,7 +642,7 @@ depth 0 목록
 
 # 19. 한 문장 규칙
 
-> **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 업무 컨트롤은 40, 주 행동·모바일 터치는 44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**
+> **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 업무 컨트롤은 44, 주 행동·모바일 터치는 44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**
 
 
 ---
@@ -657,7 +659,7 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 - 핵심 화면이 공통 primitive를 우회해 raw 공통 마크업을 다시 만드는지
 - 안정적인 UI 값이 inline style로 다시 들어오는지
 - `--ui-*` 핵심 토큰이 사라졌는지
-- 실제 CSS와 machine SSOT의 18/14/12 · 40 · 44 · radius 4가 변했는지
+- 실제 CSS와 machine SSOT의 18/14/12 · 44 · 44 · radius 4가 변했는지
 - focus-visible / reduced-motion 공통 규칙이 사라졌는지
 
 를 검사한다.

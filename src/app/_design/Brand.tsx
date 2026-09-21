@@ -11,6 +11,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Icon } from './Icon';
 import { Exo_2 } from 'next/font/google';
 
 const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
@@ -26,7 +27,7 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 
 /**
  * 기존 이름 TopMenu는 호환을 위해 유지한다. 현재 위치는 PC 하단 업무 버튼(2026-09-21).
- *   켜진 메뉴 = 한 단 밝은 남색 면 + 스카이 글자 — CI 두 색을 다 쓴다. 선·밑줄은 긋지 않는다.
+ *   Sales 기준: 흰 바탕, 아이콘·라벨만 강조. 활성 메뉴에 진한 버튼 면을 칠하지 않는다.
  * ★폰에서는 이 메뉴가 안 보인다 — `_design/MobileTabBar`의 다섯 걸음
  *   (상품 · 접수 · 계약 · 청구 · 지급)이 대신한다.
  *   Desktop 4축과 Mobile 5걸음은 같은 업무를 다른 깊이로 배열한 것이며,
@@ -40,7 +41,8 @@ export function TopMenu({ items }: { items: readonly (readonly [string, string])
         const 여기 = path === href || path.startsWith(`${href}/`);
         return (
           <Link key={href} href={href} className={여기 ? 'on' : undefined} aria-current={여기 ? 'page' : undefined}>
-            {label}
+            <Icon name={href === '/products' ? 'search' : href === '/intake' ? 'clipboard' : href === '/settlement' ? 'wallet' : 'file-text'} size={24} />
+            <span>{label}</span>
           </Link>
         );
       })}

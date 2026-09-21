@@ -3,26 +3,21 @@
  * 파일 분리 전 source order를 그대로 유지하기 위해 layout에서 globals.css 다음, _fn/fn.css 전에 import한다.
  */
 
-/* ═══════════════════════════════════════════════════════════════════
-   ★★★ 크기 규격 — 두 단뿐: 뱃지 22 · 컨트롤 40 (대표 2026-09-18
-     「검색창이랑 버튼이랑 규격이 같았으면 좋겠어 · 사이즈 규격이 상하나 이런 것들 · 규격이 다 중구난방」)
-     ⚠ 앞서(실측): 검색창 40 · 단추 33 · 하단바 44 · 판 머리 32 · 뱃지 22 — 다섯 가지 높이가 섞였다.
-     ⇒ 누르는 것 · 쓰는 것은 전부 40(검색창 · 퀵 단추 · 탭 · 기간 · 하단바 · 입력칸 · 달 넘기기 · 걸음 길).
-        검색창 «안»의 세부검색 단추만 32(창 40 안에서 위아래 4 · 오른쪽 4). 글은 메인 14 · 줄 16 · 가운데.
-   ★★ 색 위계 — 바닥 < 판 < 카드 < 손 < 고름 (「목록카드 색깔도 위계를 확실하게 · 배경이랑 살짝만 차이 나도」)
-     바닥 #eef1f4 · 판 #fff(선) · 카드 #f6f7f9(판보다 «살짝»만) · 손 댄 카드 #eef1f4 · 고른 카드 옅은 남색 #e6ecf5.
-     카드 안 뱃지는 카드보다 한 단 짙게(#eaeef2) — 고른 카드 위에서는 흰 면.
-   ═══════════════════════════════════════════════════════════════════ */
+/* 현행: FreePass Sales 컨트롤 44 / 모서리 6 / 간격 8.
+ * 패널·목록·정보 위계는 ADMIN-UI-UX-SSOT.md, 출처는 SALES-APP-BASELINE.md. */
 :root {
-  --컨트롤: 40px; --카드: #f6f7f9; --카드손: #eef1f4;
+  --컨트롤: 44px; --카드: #f6f7f9; --카드손: #eef1f4;
 
   /* ★공통 UI/UX SSOT aliases — 화면값은 안 바꾸고, 다음 화면이 같은 숫자를 재사용하게 이름만 세운다.
-     현행 관리자 workspace 기준: 본문 컨트롤 40 · 주행동/모바일 터치 44 · 기본 라운드 4 · 글 18/14/12. */
+     현행 관리자 workspace 기준: 본문 컨트롤 44 · 주행동/모바일 터치 44 · 패널 라운드 4 · 컨트롤 라운드 6 · 글 18/14/12. */
   --ui-text-title: var(--글제목);
   --ui-text-main: var(--글메인);
   --ui-text-support: var(--글보조);
   --ui-radius: var(--r);
   --ui-control-h: var(--컨트롤);
+  --ui-control-radius: 6px;
+  --ui-control-gap: 8px;
+  --ui-shell-h: 60px;
   --ui-action-h: 44px;
   --ui-touch-min: 44px;
   --ui-panel-gap: 12px;
@@ -36,7 +31,7 @@
   --ui-status-tile: 64px;
 }
 
-/* 컨트롤 40 */
+/* Sales 공통 컨트롤 44 */
 .fn-main .workspace .dz-searchbox { height: var(--ui-control-h); padding: 0 4px 0 12px; gap: 8px; }
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
@@ -54,7 +49,7 @@
 .dz-month > a, .dz-month > span:not(.dz-month-sum) { width: var(--ui-control-h); }
 .dz-fs-axis { height: var(--ui-control-h); }
 /* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
-.dz-fs-open { top: 4px; right: 4px; height: 32px; line-height: 16px; }
+.dz-fs-open { top: 6px; right: 4px; height: 32px; line-height: 16px; }
 /* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
 @media (max-width: 900px) {
   :root { --판탭: 56px; }
@@ -415,48 +410,74 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 }
 
 
-/* 2026-09-21: 상단은 상태, 하단은 버튼. 이전 CI 상단 규칙은 이 관리자 틀에 적용하지 않는다. */
+/* 2026-09-21 사용자: FreePass Sales 앱 형태가 기본.
+ * source: freepass-sales@e2b7fb0077a23c9e9bb2db4635e80cd4ba175492 웹/app.css
+ * .머리 / .탭바 / .기록바 / .바줄 및 공통 컨트롤 토큰. 운영 업무와 데이터는 Admin 소유. */
+body:has(> .dz-statusbar) {
+  --바닥: #f7f8fa; --박스: #f2f3f5; --글: #212529; --선: #eceef0;
+  font-variant-numeric: tabular-nums;
+}
 header.fn-top.dz-statusbar {
-  height: 52px; padding: 0 16px; gap: 12px; flex-wrap: nowrap;
-  background: var(--ci남색); color: #fff;
+  height: var(--ui-shell-h); padding: 8px 16px 10px; gap: 10px; flex-wrap: nowrap;
+  background: var(--판); color: var(--글); border-bottom: 1px solid var(--선);
 }
 header.dz-statusbar .fn-state {
-  margin: 0; min-width: 0; font-size: var(--ui-text-support); color: #fff;
+  display: flex; align-items: center; min-height: var(--ui-touch-min);
+  margin: 0; min-width: 0; font-size: var(--ui-text-support); color: #5c6268;
 }
 header.dz-statusbar .dz-me {
   margin-left: auto; max-width: 35%; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; font-size: var(--ui-text-support); color: #fff;
+  white-space: nowrap; font-size: var(--ui-text-support); color: #5c6268;
 }
 .dz-desktop-bottom { display: none; }
 header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
-  outline: 2px solid var(--ci스카이); outline-offset: 3px;
+  outline: 2px solid var(--ci남색); outline-offset: -3px;
 }
-/* 하단 실행 단추는 PC/폰 모두 정본 44. 이전 PC 40px 덮개보다 우선한다. */
-.fn-main .workspace .dz-bar-go > .primary,
-.fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }
+/* Sales: controls 44 / radius 6 / gap 8; 판/목록/뱃지의 반경은 별도 역할이다. */
+.fn-main .workspace .panel :is(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+.fn-main .workspace .panel :is(a.primary, a.dz-bar-sub, .quick-filters a, .tabs a, .dz-searchbox) {
+  border-radius: var(--ui-control-radius);
+}
+.fn-main .dz-bar-go { gap: var(--ui-control-gap); }
+.fn-main .dz-bar-go > .primary, .fn-main .dz-bar-go > .dz-bar-sub,
+.fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub {
+  height: var(--ui-action-h); border-radius: var(--ui-control-radius); box-shadow: none;
+}
+.fn-main .dz-bar-go > .dz-bar-sub { background: var(--박스); color: #5c6268; }
+/* 넓은 업무판의 배치는 보존하되, 이동 탭의 얼굴은 Sales와 같다. */
 @media (min-width: 901px) {
-  body:has(> .dz-statusbar) { --ui-desktop-bottom-h: 68px; padding-bottom: var(--ui-desktop-bottom-h); }
+  body:has(> .dz-statusbar) { --ui-desktop-bottom-h: var(--ui-shell-h); padding-bottom: var(--ui-desktop-bottom-h); }
   body:has(> .dz-statusbar) .fn-main .workspace {
-    height: calc(100dvh - 52px - var(--ui-desktop-bottom-h));
+    height: calc(100dvh - var(--ui-shell-h) - var(--ui-desktop-bottom-h));
   }
   .dz-desktop-bottom {
     display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    height: var(--ui-desktop-bottom-h); padding: 12px 16px; background: var(--판);
+    height: var(--ui-desktop-bottom-h); padding: 0 4px; background: var(--판);
+    border-top: 1px solid var(--선); box-shadow: 0 -2px 8px rgba(15,23,42,.05);
   }
-  .dz-desktop-bottom .dz-menu { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .dz-desktop-bottom .dz-menu { height: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
   .dz-desktop-bottom .dz-menu a {
-    display: flex; align-items: center; justify-content: center; height: var(--ui-action-h);
-    border-radius: var(--ui-radius); background: var(--박스); color: var(--글);
-    font-size: var(--ui-text-main); font-weight: 600; text-decoration: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-height: var(--ui-touch-min); background: none; color: #5c6268;
+    font-size: var(--ui-text-support); font-weight: 500; text-decoration: none;
   }
-  .dz-desktop-bottom .dz-menu a:hover { background: var(--박스손); }
-  .dz-desktop-bottom .dz-menu a.on { background: var(--ci남색); color: #fff; }
+  .dz-desktop-bottom .dz-menu a.on { color: var(--ci남색); font-weight: 650; }
+}
+.dz-desktop-bottom a.on svg, .dz-tabbar a.on svg {
+  fill: color-mix(in srgb, var(--ci남색) 15%, transparent); stroke-width: 2.1;
 }
 @media (max-width: 900px) {
-  /* 기존 다섯 걸음 및 depth 숨김 조건 유지, 누르는 영역만 공통 버튼 면으로 표시. */
-  .dz-tabbar { gap: 4px; padding: 7px 8px calc(7px + env(safe-area-inset-bottom)); background: var(--판); }
-  .dz-tabbar a { min-height: var(--ui-touch-min); border-radius: var(--ui-radius); background: var(--박스); color: var(--글); }
-  .dz-tabbar a.on { background: var(--ci남색); color: #fff; }
+  :root { --아래띠: calc(var(--ui-shell-h) + env(safe-area-inset-bottom)); }
+  /* 기존 depth 1/2 body 변수 override와 숨김 선택자는 그대로 사용한다. */
+  .dz-tabbar {
+    height: calc(var(--ui-shell-h) + env(safe-area-inset-bottom)); gap: 0;
+    padding: 0 4px env(safe-area-inset-bottom); background: var(--판);
+    border-top: 1px solid var(--선); box-shadow: 0 -2px 8px rgba(15,23,42,.05);
+  }
+  .dz-tabbar a { min-height: var(--ui-touch-min); gap: 2px; background: none; color: #5c6268; font-weight: 500; }
+  .dz-tabbar a.on { background: none; color: var(--ci남색); font-weight: 650; }
+  .dz-tabbar svg { width: 24px; height: 24px; }
+  .fn-main .workspace > .panel { min-height: calc(100dvh - var(--ui-shell-h) - var(--판탭) - var(--아래띠) - 8px); }
 }
 
 /* GPT R2 — actual /esign uses the same two-panel workspace as product-find. */

@@ -49,12 +49,12 @@
   },
   "controls": {
     "standard": {
-      "heightPx": 40,
+      "heightPx": 44,
       "fontPx": 14,
       "token": "--ui-control-h"
     },
     "searchField": {
-      "heightPx": 40,
+      "heightPx": 44,
       "fontPx": 14,
       "token": "--ui-control-h"
     },
@@ -75,9 +75,12 @@
       "note": "inside 40px search box; not a standalone workspace control"
     },
     "desktopGlobalNavigation": {
-      "heightPx": 44,
-      "note": "Existing TopMenu rendered as bottom buttons"
-    }
+      "heightPx": 60,
+      "touchMinimumPx": 44,
+      "note": "Sales white icon/label tabs; no filled active background"
+    },
+    "radiusPx": 6,
+    "gapPx": 8
   },
   "panels": {
     "desktop": {
@@ -140,6 +143,19 @@
       "actions": false,
       "statusLink": "/system/data-status",
       "logoutLocation": "data-status ActionBar"
+    },
+    "visualReference": {
+      "repository": "freepass-creator/freepass-sales",
+      "revision": "e2b7fb0077a23c9e9bb2db4635e80cd4ba175492",
+      "paths": [
+        "docs/UI-STANDARD.md",
+        "웹/app.css",
+        "웹/index.html"
+      ],
+      "headerSurface": "white",
+      "bottomSurface": "white",
+      "activeTab": "icon tint + label weight, no filled background",
+      "barHeightPx": 60
     }
   },
   "components": {
@@ -184,7 +200,8 @@
     ],
     "listSelectionBySurface": true,
     "mobileOnePanelAtATime": true,
-    "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true
+    "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true,
+    "salesAppIsVisualBaseline": true
   },
   "knownDebt": [
     "globals.css contains legacy rules overridden later by final rules",

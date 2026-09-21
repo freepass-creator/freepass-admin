@@ -64,12 +64,29 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     const u = lifePatch(mk({ billed: true, claimStage: '정정', supplierFix: true }), { kind: 'uncorrect', axis: '공급사' });
     assert.deepEqual(u.ok && u.patch, { supplierFix: false, claimStage: '청구' });
   });
-  it('수금 · 지급 · 계산서는 순서를 지킨다', () => {
+  it('수금 · 지급 · 계산서는 확인 단계를 건너뛰지 않는다', () => {
     assert.equal(lifePatch(mk({}), { kind: 'collected', amount: 1, day: '2026-09-30' }).ok, false);
-    const col = lifePatch(billed, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' });
+    assert.equal(lifePatch(billed, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' }).ok, false);
+    assert.equal(lifePatch(billed, { kind: 'paid', amount: 800_000, day: '2026-09-30' }).ok, false);
+
+    const supplierConfirmed = mk({ billed: true, invoiceIssued: true, claimStage: '확인', payStage: '통보' });
+    const col = lifePatch(supplierConfirmed, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' });
     assert.equal(col.ok && col.patch.claimStage, '수금');
-    assert.equal(lifePatch(mk({}), { kind: 'paid', amount: 1, day: '2026-09-30' }).ok, false);
+
+    const supplierNoInvoice = mk({ billed: true, invoiceIssued: false, claimStage: '확인', payStage: '통보' });
+    assert.equal(lifePatch(supplierNoInvoice, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' }).ok, false);
+
+    const channelConfirmed = mk({ billed: true, claimStage: '청구', payStage: '확인' });
+    const paid = lifePatch(channelConfirmed, { kind: 'paid', amount: 800_000, day: '2026-09-30' });
+    assert.equal(paid.ok && paid.patch.payStage, '지급');
+
     assert.equal(lifePatch(mk({}), { kind: 'invoice', on: true }).ok, false);
+  });
+  it('정정 중 확인과 완료 뒤 정정을 막고, 수금 뒤 계산서 취소도 막는다', () => {
+    assert.equal(lifePatch(mk({ billed: true, claimStage: '정정' }), { kind: 'confirm', axis: '공급사' }).ok, false);
+    assert.equal(lifePatch(mk({ billed: true, claimStage: '수금' }), { kind: 'correct', axis: '공급사', amount: 1, memo: '뒤늦은 변경' }).ok, false);
+    assert.equal(lifePatch(mk({ payStage: '지급' }), { kind: 'correct', axis: '영업채널', amount: 1, memo: '뒤늦은 변경' }).ok, false);
+    assert.equal(lifePatch(mk({ billed: true, invoiceIssued: true, collected: true, claimStage: '수금' }), { kind: 'invoice', on: false }).ok, false);
   });
   it('청구월 정하기 — 인도된 · 청구 전 줄만', () => {
     assert.deepEqual((lifePatch(mk({}), { kind: 'billMonth', month: '2026-10' }) as { patch: unknown }).patch, { billMonth: '2026-10' });

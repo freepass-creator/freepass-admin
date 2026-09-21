@@ -60,3 +60,60 @@ export const 보증금 = (n?: number | null) => (n === undefined || n === null ?
 
 export const 정책말 = (s?: 'CONFIRMED' | 'INFERRED' | 'MISSING'): string | undefined =>
   s === 'INFERRED' ? '정책 추정' : s === 'MISSING' ? '정책 없음' : undefined;
+
+
+export type ParsedProductSearch = {
+  text: string;
+  inferred: Partial<Record<상품축, string[]>>;
+  tokens: { axis: 상품축; key: string; label: string }[];
+};
+
+/**
+ * 검색창의 업무 말을 기존 facet 축으로 읽는다.
+ * ★별도 검색 상태를 만들지 않는다 — 읽힌 조건도 URL facet과 같은 상품축/요금축 판정으로 흘린다.
+ * 모르는 말은 text 에 남겨 차량명·차번·공급사 자유검색으로 보낸다.
+ */
+export function parseProductSearch(raw: string): ParsedProductSearch {
+  let rest = ` ${raw.normalize('NFKC')} `;
+  const inferred: Partial<Record<상품축, string[]>> = {};
+  const tokens: ParsedProductSearch['tokens'] = [];
+  const add = (axis: 상품축, key: string, label: string) => {
+    const a = inferred[axis] ?? [];
+    if (!a.includes(key)) a.push(key);
+    inferred[axis] = a;
+    if (!tokens.some((x) => x.axis === axis && x.key === key)) tokens.push({ axis, key, label });
+  };
+  const eat = (re: RegExp, axis: 상품축, key: string, label: string) => {
+    if (!re.test(rest)) return;
+    rest = rest.replace(re, ' ');
+    add(axis, key, label);
+  };
+
+  // 계약기간은 실제 source-derived 기간이라 어떤 양의 개월 수도 읽는다.
+  rest = rest.replace(/\b(\d{1,3})\s*개월\b/g, (_, n: string) => {
+    const month = Number(n);
+    if (Number.isInteger(month) && month > 0) add('term', String(month), `${month}개월`);
+    return ' ';
+  });
+
+  eat(/무\s*보증|보증금\s*(?:0|없음?)/, 'dep', 'd0', '무보증');
+  eat(/무\s*심사/, 'perk', '무심사', '무심사');
+  eat(/(?:만\s*)?21\s*세|21살/, 'perk', '만21세', '만21세');
+  eat(/경력\s*무관/, 'perk', '경력무관', '경력무관');
+  eat(/즉시\s*출고/, 'status', '즉시출고', '즉시출고');
+  eat(/하이브리드|하브|\bHEV\b/i, 'fuel', '하이브리드', '하이브리드');
+  eat(/디젤/, 'fuel', '디젤', '디젤');
+  eat(/가솔린|휘발유/, 'fuel', '가솔린', '가솔린');
+
+  return { text: rest.replace(/\s+/g, ' ').trim(), inferred, tokens };
+}
+
+export function mergeProductSelections(
+  explicit: Record<상품축, string[]>,
+  inferred: Partial<Record<상품축, string[]>>,
+): Record<상품축, string[]> {
+  return Object.fromEntries(상품축이름.map(([axis]) => [
+    axis,
+    [...new Set([...(explicit[axis] ?? []), ...(inferred[axis] ?? [])])],
+  ])) as Record<상품축, string[]>;
+}

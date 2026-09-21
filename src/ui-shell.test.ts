@@ -86,3 +86,10 @@ test('settlement completed queue can continue to the next actionable party',()=>
   assert.ok(intakeDetail.includes('다음 거래처'));
   assert.ok(intakeDetail.includes('life.nextGroupHref'));
 });
+
+
+test('focused settlement miss stays fail-closed and points back to intake',()=>{
+  assert.ok(settlementPage.includes('focusMiss'));
+  assert.ok(settlementPage.includes('접수 상세에서 막힘 확인'));
+  assert.ok(settlementPage.includes('/intake?ic='));
+});

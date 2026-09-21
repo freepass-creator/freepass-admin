@@ -46,6 +46,7 @@ export function LifeForm({ id, code, kind, axis, need, amount, day, operationId 
       {need === 'money' && <>
         <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" /></label>
         <label>{kind === 'collected' ? '받은 날' : '준 날'}<input name="day" type="date" defaultValue={day} /></label>
+        {typeof amount === 'number' && <small className="dz-muted wide">남은 금액 {Math.round(amount).toLocaleString('ko-KR')}원 전액이 기본값입니다. 부분 처리면 금액만 줄여 입력합니다.</small>}
       </>}
       {need === 'correct' && <>
         <label>상대가 말한 금액<input name="amount" inputMode="numeric" placeholder="모르면 비움" /></label>

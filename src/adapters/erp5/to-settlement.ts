@@ -75,7 +75,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
 
   const plate = s(d.plate);
   const supplier = s(d.supplier);
-  if (!plate) warnings.push('★차량번호가 없다 — 열쇠가 없으면 정산에서 못 붙는다');
+  if (!plate) warnings.push('★차량번호가 없다 — 접수는 유지되지만 인도·정산 전에 차량번호를 배정해야 한다');
   if (!supplier) warnings.push('★공급사가 없다 — 청구할 곳이 없다');
 
   const ratio = n(d.settleRatio) ?? 1;

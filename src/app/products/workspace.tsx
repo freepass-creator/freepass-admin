@@ -109,6 +109,8 @@ export async function ProductWorkspace({ q, mode, base }: {
       .map((m) => ({ k: String(m), label: `${m}개월` })),
     rent: 대여료구간.map((b) => ({ k: b.k, label: b.label })),
     dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
+    mile: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.annualMileageKm).filter((x): x is number => typeof x === 'number')))]
+      .sort((a, b) => a - b).map((km) => ({ k: String(km), label: `연 ${(km / 10000).toLocaleString('ko-KR')}만km` })),
     supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),

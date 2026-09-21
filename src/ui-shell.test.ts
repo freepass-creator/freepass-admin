@@ -107,3 +107,15 @@ test('supplier lifecycle renders invoice as an explicit step',()=>{
   assert.ok(intakeDetail.includes("['접수', '청구', '확인', '계산서', '수금']"));
   assert.ok(intakeDetail.includes("r.progress.invoiceIssued ? '수금' : '계산서'"));
 });
+
+
+test('settlement UI separates document progress from cash completion',()=>{
+  assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
+  assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
+  assert.ok(settlementPage.includes('g.completed'));
+});
+
+
+test('claim rows stay active until collection completes',()=>{
+  assert.ok(settlementPage.includes("tab === 'claim' ? r.progress.collected : r.progress.paid"));
+});

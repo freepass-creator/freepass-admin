@@ -35,7 +35,8 @@ export const intakeIdentity = (plate: unknown, sourceProductId: unknown) => {
   const product = String(sourceProductId ?? '').trim();
   if (product) return `product:${product}`;
   const car = String(plate ?? '').replace(/\s/g, '');
-  return car ? `plate:${car}` : '';
+  // 기존 차량번호 접수는 erp4/기존 ERP5 코드와 완전히 같은 identity를 유지한다.
+  return car;
 };
 
 export const intakeKey = (plate: unknown, sourceProductId: unknown, receivedAt: unknown) =>

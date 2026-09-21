@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { blockOf } from '../../domain/settlement/types';
+import { blockOf, type Block } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
@@ -15,6 +15,7 @@ import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
+import { progressFormId } from './progress-form-id';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
@@ -45,6 +46,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
   const { row: r, raw, warnings } = hit;
+  const 다음블록 = blockOf(r);
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
@@ -107,8 +109,36 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       </ActionBar>
     );
   }
+  if (!life && newHref) {
+    let 주액션: React.ReactNode;
+    if (r.progress.cancelled || !다음블록) {
+      주액션 = <Link className="primary" href={newHref}>+ 신규 접수</Link>;
+    } else if (다음블록 === '계약서') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'paper')} name="on" value="1" className="primary">계약서 받음</button>;
+    } else if (다음블록 === '차량번호 없음') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'plate')} className="primary">차량번호 저장</button>;
+    } else if (다음블록 === '인도') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'delivered')} name="on" value="1" className="primary">인도 완료</button>;
+    } else {
+      const 지급막힘: Block[] = ['영업채널 없음', '지급금액 모름', '지급'];
+      const 청구막힘: Block[] = ['청구금액 모름', '청구', '계산서', '수금'];
+      if (r.progress.delivered && (지급막힘.includes(다음블록) || 청구막힘.includes(다음블록))) {
+        const tab = 지급막힘.includes(다음블록) ? 'pay' : 'claim';
+        주액션 = <Link className="primary" href={`/settlement?tab=${tab}`}>정산관리</Link>;
+      } else {
+        주액션 = <button type="button" className="primary" disabled>다음 · {다음블록}</button>;
+      }
+    }
+    바 = (
+      <ActionBar>
+        <Link className="dz-bar-sub" href={back}>목록</Link>
+        {주액션}
+      </ActionBar>
+    );
+  }
+
   const events = await settlements.events(r.plate, r.receivedAt, r.catalogRef?.productId);
-  const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
+  const 다음 = 다음블록 ?? (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}

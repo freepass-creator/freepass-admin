@@ -129,6 +129,7 @@ function group(
 }
 
 export type LedgerGroupAttention = 'issue' | 'todo' | 'done';
+export type LedgerGroupFilter = 'all' | LedgerGroupAttention;
 
 export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
   if (g.unknown > 0 || g.broken > 0 || g.clawbacks.length > 0) return 'issue';
@@ -137,6 +138,12 @@ export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
 }
 
 const attentionRank: Record<LedgerGroupAttention, number> = { issue: 0, todo: 1, done: 2 };
+
+export function filterLedgerGroups(groups: readonly LedgerGroup[], mode: LedgerGroupFilter, text = ''): LedgerGroup[] {
+  const q = text.trim().toLowerCase();
+  return groups.filter((g) => (mode === 'all' || ledgerGroupAttention(g) === mode)
+    && (!q || g.party.toLowerCase().includes(q)));
+}
 
 export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
   return [...groups].sort((a, b) => {

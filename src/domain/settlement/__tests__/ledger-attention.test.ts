@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ledgerGroupAttention, sortLedgerGroups, type LedgerGroup } from '../ledgers';
+import { filterLedgerGroups, ledgerGroupAttention, sortLedgerGroups, type LedgerGroup } from '../ledgers';
 
 const group = ({
   party,
@@ -62,4 +62,18 @@ test('같은 우선순위에서는 이슈 수·미처리 수·금액 순으로 �
   const oneTodo = group({ party: '할일1', lines: 2, done: 1, net: 10_000_000 });
   const twoTodo = group({ party: '할일2', lines: 3, done: 1, net: 1 });
   assert.deepEqual(sortLedgerGroups([oneTodo, twoTodo]).map((x) => x.party), ['할일2', '할일1']);
+});
+
+
+test('거래처 묶음 필터는 이슈·미처리·완료와 거래처 검색을 함께 적용한다', () => {
+  const issue = group({ party: '오토플러스', unknown: 1 });
+  const todo = group({ party: '손오공', lines: 2, done: 1 });
+  const done = group({ party: '완료렌터카', lines: 1, done: 1 });
+  const groups = [issue, todo, done];
+
+  assert.deepEqual(filterLedgerGroups(groups, 'issue').map((x) => x.party), ['오토플러스']);
+  assert.deepEqual(filterLedgerGroups(groups, 'todo').map((x) => x.party), ['손오공']);
+  assert.deepEqual(filterLedgerGroups(groups, 'done').map((x) => x.party), ['완료렌터카']);
+  assert.deepEqual(filterLedgerGroups(groups, 'all', '오토').map((x) => x.party), ['오토플러스']);
+  assert.deepEqual(filterLedgerGroups(groups, 'issue', '손').map((x) => x.party), []);
 });

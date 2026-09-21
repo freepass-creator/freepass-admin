@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
-import { claimLedger, ledgerGroupAttention, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
+import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
@@ -48,8 +48,12 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const 미정 = months.includes(NO_MONTH) ? (tab === 'claim' ? claimLedger(rows, NO_MONTH, cb) : payLedger(rows, NO_MONTH, cb)) : [];
   const 미정수 = 미정.reduce((n, g) => n + g.lines.length, 0);
 
-  const gq = sp(q.gq).trim().toLowerCase();
-  const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
+  const gq = sp(q.gq).trim();
+  const gs = (['all', 'issue', 'todo', 'done'] as const).includes(sp(q.gs) as LedgerGroupFilter)
+    ? sp(q.gs) as LedgerGroupFilter : 'all';
+  const shownGroups = filterLedgerGroups(groups, gs, gq);
+  const groupCount = (mode: LedgerGroupFilter) =>
+    mode === 'all' ? groups.length : groups.filter((g) => ledgerGroupAttention(g) === mode).length;
   const gSel = shownGroups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
   const ic = sp(q.ic);
 
@@ -115,7 +119,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           <div className="dz-listtop">
             <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
             <form className="dz-find" action="/settlement">
-              <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} />
+              <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />
               <div className="searchbox dz-searchbox">
                 <SearchField name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
               </div>
@@ -123,6 +127,10 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             <div className="quick-filters">
               <Link className={tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', g: '', ic: '' })}>청구 · 공급사</Link>
               <Link className={tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', g: '', ic: '' })}>지급 · 영업채널</Link>
+              <Link className={gs === 'all' ? 'active' : ''} href={keep({ gs: 'all', g: '', ic: '', v: 'list' })}>전체 <small>{groupCount('all')}</small></Link>
+              <Link className={gs === 'issue' ? 'active warn' : 'warn'} href={keep({ gs: 'issue', g: '', ic: '', v: 'list' })}>이슈 <small>{groupCount('issue')}</small></Link>
+              <Link className={gs === 'todo' ? 'active' : ''} href={keep({ gs: 'todo', g: '', ic: '', v: 'list' })}>미처리 <small>{groupCount('todo')}</small></Link>
+              <Link className={gs === 'done' ? 'active' : ''} href={keep({ gs: 'done', g: '', ic: '', v: 'list' })}>완료 <small>{groupCount('done')}</small></Link>
               {미정수 > 0 && (
                 <Link className={`${month === NO_MONTH ? 'active ' : ''}warn`} href={달로(NO_MONTH)}>{NO_MONTH} <small>{미정수}</small></Link>
               )}

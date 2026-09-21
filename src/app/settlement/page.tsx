@@ -225,7 +225,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           </div>
           <div className="list">
             {performanceLines.map(({ row: r, amount, broken, ratio }) => {
-              const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
+              const 끝 = tab === 'claim' ? r.progress.collected : r.progress.paid;
               return (
                 <ListRow key={r.id} href={keep({ g: gSel?.party ?? '', ic: r.id, v: 'work' })} selected={r.id === ic}
                   status={줄상태(tab === 'claim' ? r.claimStage : r.payStage, r.progress.billHold && tab === 'claim', broken)}

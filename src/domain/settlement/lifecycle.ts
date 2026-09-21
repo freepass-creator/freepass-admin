@@ -98,6 +98,13 @@ export function planInvoice(
   if (unknown.length) return { ok: false, error: `금액 모름 ${unknown.length}줄 — 금액을 먼저 정해야 발행합니다` };
   const corr = live.filter((l) => (axis === '공급사' ? l.row.claimStage : l.row.payStage) === '정정');
   if (corr.length) return { ok: false, error: `정정 중인 줄 ${corr.length} — 정정을 먼저 풉니다` };
+  const cashMoved = live.filter((l) => axis === '공급사'
+    ? l.row.progress.collected || (l.row.progress.collectedAmt ?? 0) > 0
+    : l.row.progress.paid || (l.row.progress.paidAmt ?? 0) > 0);
+  if (cashMoved.length) return { ok: false, error: `이미 ${axis === '공급사' ? '수금' : '지급'}이 시작된 줄 ${cashMoved.length} — 문서를 다시 발행하지 않고 정정/환수로 처리합니다` };
+  if (axis === '공급사' && live.some((l) => l.row.progress.invoiceIssued)) {
+    return { ok: false, error: '계산서가 처리된 줄은 청구서를 다시 발행할 수 없습니다 — 정정/가감 절차를 사용합니다' };
+  }
 
   let supply = 0, vat = 0;
   for (const l of live) { const m = invoiceMoneyOf(l.amount ?? 0, l.row.money.vatIncluded); supply += m.net; vat += m.vat; }
@@ -124,7 +131,16 @@ export function planInvoice(
     if (axis === '공급사') {
       if (!r.progress.billed) { patch.billed = true; patch.billedAt = day; events.push({ field: '청구서', from: 'false', to: invoice.invoiceNo }); }
       if (r.claimStage === '접수') { patch.claimStage = '청구'; events.push({ field: '청구 축', from: '접수', to: '청구' }); }
-    } else if (r.payStage === '접수') { patch.payStage = '통보'; events.push({ field: '지급 축', from: '접수', to: '통보' }); }
+      else if (existing && r.claimStage === '확인') {
+        patch.supplierOk = false; patch.claimStage = '청구';
+        events.push({ field: '청구 재발행', from: '확인', to: '청구 재확인 필요' });
+      }
+    } else if (r.payStage === '접수') {
+      patch.payStage = '통보'; events.push({ field: '지급 축', from: '접수', to: '통보' });
+    } else if (existing && r.payStage === '확인') {
+      patch.channelOk = false; patch.payStage = '통보';
+      events.push({ field: '지급명세 재발행', from: '확인', to: '통보 재확인 필요' });
+    }
     return { code: r.id, patch, events };
   });
   return { ok: true, invoice, patches };

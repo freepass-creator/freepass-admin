@@ -45,16 +45,19 @@ describe('접수 뒤 수수료 고치기', () => {
 
 describe('환수 — 열어 둔다', () => {
   const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
-  it('기존 꼴 그대로 — id 차번_환수월 · 환수일이 든 달에 선다', () => {
-    const r = clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', 0);
+  it('신규 환수 id는 계약줄까지 포함해 같은 차·같은 달 재계약 충돌을 막는다', () => {
+    const r = clawbackRecord(row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' }), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', 0);
     assert.ok(r.ok);
-    assert.equal(r.ok && r.id, clawbackId('12가 3456', '2026-09'));
+    assert.equal(r.ok && r.id, clawbackId('12가 3456', '2026-09', 'stl_x'));
+    assert.notEqual(clawbackId('12가 3456', '2026-09', 'stl_x'), clawbackId('12가 3456', '2026-09', 'stl_y'));
     assert.equal(r.ok && r.doc.month, '2026-09');
     assert.equal(r.ok && r.doc.code, 'stl_x');
   });
-  it('사유 · 금액 · 인도 필수', () => {
-    assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: '' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 0, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({ delivered: false, deliveredAt: '' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
+  it('사유 · 금액 · 인도 · 실제 수금/지급 완료가 필수', () => {
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: '' }, 't', 0).ok, false);
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
+    assert.equal(clawbackRecord(row({ delivered: false, deliveredAt: '', collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
+    assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 1, reason: 'x' }, 't', 0).ok, false);
   });
 });

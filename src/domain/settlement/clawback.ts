@@ -16,8 +16,11 @@ export interface ClawbackInput { at: string; supplierAmt: number | null; agentAm
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-export const clawbackId = (plate: unknown, month: string) =>
-  `${String(plate ?? '').trim().replace(/[.$#[\]/\s]/g, '_')}_${month}`;
+export const clawbackId = (plate: unknown, month: string, code?: unknown) => {
+  const p = String(plate ?? '').trim().replace(/[.$#[\]/\s]/g, '_');
+  const c = String(code ?? '').trim().replace(/[.$#[\]/\s]/g, '_');
+  return c ? `${p}_${month}_${c}` : `${p}_${month}`;
+};
 
 export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, nowMs: number):
   { ok: true; id: string; doc: Record<string, unknown> } | { ok: false; error: string } {
@@ -28,10 +31,14 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
   const s = x.supplierAmt ?? 0, a = x.agentAmt ?? 0;
   if (![s, a].every((v) => Number.isFinite(v) && v >= 0)) return { ok: false, error: '환수 금액을 읽지 못했습니다' };
   if (!s && !a) return { ok: false, error: '공급사 환수·영업채널 환수 중 하나는 있어야 합니다' };
+  const supplierSettled = r.progress.collected || r.claimStage === '수금';
+  const channelSettled = r.progress.paid || r.payStage === '지급';
+  if (s && !supplierSettled) return { ok: false, error: '공급사 수금이 끝나지 않은 줄은 공급사 환수할 수 없습니다 — 먼저 정산 상태를 확인합니다' };
+  if (a && !channelSettled) return { ok: false, error: '영업채널 지급이 끝나지 않은 줄은 영업채널 환수할 수 없습니다 — 먼저 정산 상태를 확인합니다' };
   const month = x.at.slice(0, 7);
   return {
     ok: true,
-    id: clawbackId(r.plate, month),
+    id: clawbackId(r.plate, month, r.id),
     doc: {
       plate: r.plate, model: r.model ?? '', at: x.at, month,
       supplierAmt: Math.round(s), agentAmt: Math.round(a), reason: x.reason.trim(),

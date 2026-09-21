@@ -221,6 +221,11 @@ export async function ProductWorkspace({ q, mode, base }: {
             {/* ★세부검색 = 화이트라벨 두 칸 조건판(창 «안» 오른쪽 끝) — 고르면 바로 걸린다 */}
             <FilterSheet axes={상품판축} count={sorted.length} unit="대" />
           </div>
+          {parsedSearch.tokens.length > 0 && (
+            <div className="chips dz-search-recognized" aria-label="검색에서 읽은 조건">
+              {parsedSearch.tokens.map((x) => <span key={`${x.axis}:${x.key}`}>{x.label}</span>)}
+            </div>
+          )}
           {/**
             * ★퀵 단추는 «여섯»만 — 대표 2026-09-18 「퀵필터 그렇게까지 필요없다」
             *   ⚠ 출고상태·상품구분·혜택을 다 세웠더니 19개였다. 남긴 것은 대표가 짚은 것 —

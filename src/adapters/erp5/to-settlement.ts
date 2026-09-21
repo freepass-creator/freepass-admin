@@ -143,5 +143,6 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
 /** 화면의 갈래 이름 — ★「무엇이 있나」가 아니라 「무엇을 하나」 */
 export const BLOCK_ORDER: Block[] = [
   '차량번호 없음', '공급사 없음', '계약서', '인도',
-  '청구금액 모름', '청구', '계산서', '수금', '지급',
+  '청구금액 모름', '청구', '계산서', '수금',
+  '영업채널 없음', '지급금액 모름', '지급',
 ];

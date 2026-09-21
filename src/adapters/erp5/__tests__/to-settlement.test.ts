@@ -119,9 +119,9 @@ describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나
     assert.equal(blockOf(mk({ paper: true, delivered: true, claimWritten: 100, billed: true, payStage: '통보' })), '계산서');
   });
   it('★수금·지급이 마지막 관문이다 — 461줄 중 켜진 것이 0 이다', () => {
-    const r = mk({ paper: true, delivered: true, claimWritten: 100, billed: true, payStage: '통보', invoiceIssued: true });
+    const r = mk({ paper: true, delivered: true, claimWritten: 100, payWritten: 80, channel: '영업사', billed: true, payStage: '통보', invoiceIssued: true });
     assert.equal(blockOf(r), '수금');
-    const r2 = mk({ paper: true, delivered: true, claimWritten: 100, billed: true, payStage: '통보', invoiceIssued: true, collected: true });
+    const r2 = mk({ paper: true, delivered: true, claimWritten: 100, payWritten: 80, channel: '영업사', billed: true, payStage: '통보', invoiceIssued: true, collected: true });
     assert.equal(blockOf(r2), '지급');
   });
   it('취소된 줄은 안 막힌다 — 할 일이 없다', () => {

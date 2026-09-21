@@ -76,6 +76,9 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     const supplierNoInvoice = mk({ billed: true, invoiceIssued: false, claimStage: '확인', payStage: '통보' });
     assert.equal(lifePatch(supplierNoInvoice, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' }).ok, false);
 
+    assert.equal(lifePatch(billed, { kind: 'invoice', on: true, day: '2026-09-30' }).ok, false);
+    assert.equal(lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30' }).ok, true);
+
     const channelConfirmed = mk({ billed: true, claimStage: '청구', payStage: '확인' });
     const paid = lifePatch(channelConfirmed, { kind: 'paid', amount: 800_000, day: '2026-09-30' });
     assert.equal(paid.ok && paid.patch.payStage, '지급');

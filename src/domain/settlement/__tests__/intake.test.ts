@@ -145,9 +145,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     const r = progressPatch({ paper: true }, { kind: 'paper', on: true });
     assert.ok(r.ok && r.events.length === 0);
   });
-  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({}, { kind: 'delivered', on: true }).ok, false));
+  it('차량번호 없으면 인도 완료를 막는다', () =>
+    assert.match(String((progressPatch({ plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
+  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
-    const r = progressPatch({ delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
+    const r = progressPatch({ plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
@@ -226,7 +228,7 @@ describe('받은 회차 찍기', () => {
 describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () => {
   const mk = (o: Record<string, unknown>) => toSettlementRow({
     code: String(o.code), plate: '1가1', receivedAt: '2026-08-01', supplier: 'A', channel: 'X',
-    delivered: true, deliveredAt: '2026-08-03', cancelled: false, billMonth: '2026-08', claimWritten: 100, payWritten: 40, payStage: '접수',
+    paper: true, delivered: true, deliveredAt: '2026-08-03', cancelled: false, billMonth: '2026-08', claimWritten: 100, payWritten: 40, payStage: '접수',
     ...o,
   }, String(o.code)).row;
   const rows = [
@@ -242,6 +244,11 @@ describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () 
     mk({ code: 'k', billMonth: '', deliveredAt: '2026-08-20' }),               // 박힌 달(8월)에 계산으로 오는 줄 → 청구월 미정
   ];
   const claw = [{ plate: '1가1', month: '2026-08', supplier: 'A', channel: 'X', supplierAmt: 50, agentAmt: 10, reason: '중도해지', at: '2026-08-20' }];
+  it('계약서 또는 차량번호 없는 줄은 돈 원장에 안 선다', () => {
+    const bad = [mk({ code: 'no-paper', paper: false }), mk({ code: 'no-plate', plate: '' })];
+    assert.equal(claimLedger(bad, '2026-08', [], NOW).length, 0);
+    assert.equal(payLedger(bad, '2026-08', [], NOW).length, 0);
+  });
   it('인도 전 줄은 안 선다 · 취소·제외도 안 선다', () => {
     const a = claimLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'A')!;
     assert.deepEqual(a.rows.map((r) => r.id).sort(), ['a', 'g', 'h', 'j']);

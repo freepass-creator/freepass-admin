@@ -36,10 +36,11 @@ test('deposit display keeps unknown distinct from zero', () => {
 
 
 test('natural product search extracts arbitrary term and common business conditions', () => {
-  const q = parseProductSearch('싼타페 27개월 무보증 21세 하이브리드 즉시출고');
+  const q = parseProductSearch('싼타페 27개월 연 2만km 무보증 21세 하이브리드 즉시출고');
   assert.equal(q.text, '싼타페');
   assert.deepEqual(q.inferred.term, ['27']);
   assert.deepEqual(q.inferred.dep, ['d0']);
+  assert.deepEqual(q.inferred.mile, ['20000']);
   assert.deepEqual(q.inferred.perk, ['만21세']);
   assert.deepEqual(q.inferred.fuel, ['하이브리드']);
   assert.deepEqual(q.inferred.status, ['즉시출고']);

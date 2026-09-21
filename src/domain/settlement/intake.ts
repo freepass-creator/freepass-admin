@@ -31,6 +31,11 @@ export interface IntakeInput {
   deposit: number | null;
   price: number | null;
   payKind: string;      // 일시납 · 2회분납 · 3회분납
+  /** 상품에서 골라 들어온 접수만 채운다. 접수 당시 Product/Offer 원본을 되짚기 위한 provenance. */
+  sourceProductId?: string;
+  sourceProductVersion?: number | null;
+  sourceOfferId?: string;
+  sourceSnapshotId?: string;
   paper: boolean;
   delivered: boolean;
   deliveredAt: string;
@@ -101,8 +106,13 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     channel: x.channel.trim(), channelCode: x.channelCode.trim(),
     agent: x.agent.trim(), agentCode: x.agentCode.trim(),
     product: x.product.trim(), rentKind: x.rentKind.trim(), contractType: x.contractType.trim(),
-    term: x.term ?? 0, rent: x.rent ?? 0, deposit: x.deposit ?? 0, price: x.price ?? 0,
+    // ★미확인(null)을 0으로 바꾸지 않는다. 0원/무보증과 미확인은 전혀 다른 사실이다.
+    term: x.term, rent: x.rent, deposit: x.deposit, price: x.price,
     payKind: x.payKind.trim(),
+    sourceProductId: x.sourceProductId?.trim() || null,
+    sourceProductVersion: x.sourceProductVersion ?? null,
+    sourceOfferId: x.sourceOfferId?.trim() || null,
+    sourceSnapshotId: x.sourceSnapshotId?.trim() || null,
     /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
     supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,
     claimWritten: mClaim ?? (auto ? auto.claim : 0), payWritten: mPay ?? (auto ? auto.pay : 0),

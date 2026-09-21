@@ -209,22 +209,23 @@ export class Erp5SettlementRepository {
        * 해당 거래처의 현재 줄 + 처음 본 줄(상대가 바뀐 경우까지) + 당월 환수를 트랜잭션 안에서 다시 읽어
        * 같은 도메인 함수로 재계산한 결과만 발행한다.
        */
-      const [invDoc, sameMonth, partyRows, clawRows, ...initialRows] = await Promise.all([
+      const [invDoc, sameMonth, partyRows, lockedMonthRows, clawRows, ...initialRows] = await Promise.all([
         tx.get(invRef),
         tx.get(db.collection(INVOICES).where('month', '==', month)),
         tx.get(db.collection(ROWS).where(partyField, '==', party)),
+        tx.get(db.collection(ROWS).where('billMonth', '==', month)),
         tx.get(db.collection('settlement_clawbacks').where('month', '==', month)),
         ...initialIds.map((id) => tx.get(db.collection(ROWS).doc(id))),
       ]);
 
       const replacement = new Map<string, RowWithRaw>();
-      for (const d of [...partyRows.docs, ...initialRows]) {
+      for (const d of [...partyRows.docs, ...lockedMonthRows.docs, ...initialRows]) {
         if (!d.exists) continue;
         const raw = d.data()!;
         const { row, warnings } = toSettlementRow(raw, d.id);
         replacement.set(d.id, { row, raw, warnings });
       }
-      const replaceIds = new Set([...initialIds, ...partyRows.docs.map((d) => d.id)]);
+      const replaceIds = new Set([...initialIds, ...partyRows.docs.map((d) => d.id), ...lockedMonthRows.docs.map((d) => d.id)]);
       const mergedRows = [
         ...rows.filter((r) => !replaceIds.has(r.id)),
         ...[...replacement.values()].map((x) => x.row),

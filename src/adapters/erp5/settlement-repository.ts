@@ -75,6 +75,7 @@ export class Erp5SettlementRepository {
     code: string,
     apply: (cur: Record<string, unknown>, row: SettlementRow) => { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string },
     by: string = BY,
+    operationId?: string,
   ): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
@@ -83,6 +84,13 @@ export class Erp5SettlementRepository {
       const d = await tx.get(ref);
       if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
       const cur = d.data()!;
+      const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
+      if (operationId) {
+        const eventDoc = await tx.get(eventRef);
+        const seen = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
+          !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
+        if (seen) return { ok: true as const, changed: 0 };
+      }
       const { row } = toSettlementRow(cur, d.id);
       const r = apply(cur, row);
       if (!r.ok) return r;
@@ -90,8 +98,8 @@ export class Erp5SettlementRepository {
       const now = Date.now();
       tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
       const ev: Record<string, unknown> = {};
-      for (const e of r.events) ev[audId()] = { at: now, by, ...e };
-      tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
+      for (const e of r.events) ev[audId()] = { at: now, by, ...(operationId ? { operationId } : {}), ...e };
+      tx.set(eventRef, ev, { merge: true });
       return { ok: true as const, changed: r.events.length };
     });
   }
@@ -376,8 +384,8 @@ export class Erp5SettlementRepository {
   }
 
   /** 한 줄의 다음 걸음 — 확인 · 정정 · 계산서 · 수금 · 지급 · 보류 · 청구월 (domain/settlement/lifecycle.ts) */
-  async setLifecycle(code: string, change: LifeChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    return this.mutateRow(code, (_cur, row) => lifePatch(row, change));
+  async setLifecycle(code: string, change: LifeChange, operationId?: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    return this.mutateRow(code, (_cur, row) => lifePatch(row, change), BY, operationId);
   }
 
   /**

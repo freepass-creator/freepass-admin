@@ -215,6 +215,7 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
+    if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();
     if (!reason) return { ok: false, error: '취소 사유를 넣어야 합니다' };
     const note = [S(cur.note).trim(), `[취소] ${reason}`].filter(Boolean).join(' / ');

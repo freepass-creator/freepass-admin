@@ -50,7 +50,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
 
   const gq = sp(q.gq).trim().toLowerCase();
   const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
-  const gSel = groups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
+  const gSel = shownGroups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
   const ic = sp(q.ic);
 
   /* 실적 줄 찾기 — 판정은 domain/performance-filter 한 곳에서만 한다. */

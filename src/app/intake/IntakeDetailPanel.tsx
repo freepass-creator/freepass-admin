@@ -59,7 +59,11 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   if (life) {
     const 청구축 = life.axis === '공급사';
     const stage = 청구축 ? r.claimStage : r.payStage;
-    const 길 = 청구축 ? ['접수', '청구', '확인', '수금'] : ['접수', '통보', '확인', '지급'];
+    const 길 = 청구축 ? ['접수', '청구', '확인', '계산서', '수금'] : ['접수', '통보', '확인', '지급'];
+    const 현재걸음 = 청구축 && stage === '확인'
+      ? (r.progress.invoiceIssued ? '수금' : '계산서')
+      : stage;
+    const 현재순번 = 길.indexOf(현재걸음);
     const fid = `life-${r.id}`;
     const 끝말 = 청구축 ? '수금' : '지급';
     const 누적현금 = 청구축 ? (r.progress.collectedAmt ?? 0) : (r.progress.paidAmt ?? 0);
@@ -95,7 +99,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <h3 className="dz-sub">정산 걸음 · {life.axis}</h3>
         {/* 걸음 길 — 지금 자리는 남색 면, 정정은 붉은 면(곁길) */}
         <ol className="dz-path">
-          {길.map((x) => <li key={x} className={x === stage ? 'on' : 길.indexOf(x) < 길.indexOf(stage) ? 'done' : ''}>{x}</li>)}
+          {길.map((x) => <li key={x} className={x === 현재걸음 ? 'on' : 현재순번 >= 0 && 길.indexOf(x) < 현재순번 ? 'done' : ''}>{x}</li>)}
           {stage === '정정' && <li className="warn">정정</li>}
         </ol>
         {stage === '접수' && <EmptyState>{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</EmptyState>}

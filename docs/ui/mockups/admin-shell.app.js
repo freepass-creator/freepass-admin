@@ -65,7 +65,7 @@ const stepper = (names, at) => `<div class="steps">${names.map((n, i) => {
  *   빨간 버튼을 늘 보이게 두면 매일 보는 사람은 그걸 곧 무시한다.
  */
 function actBar({ memo, more = [], subs = [], main }) {
-  return `<div class="dact">
+  return `<div class="dact" data-ai-feature="navigation.bottom-action">
     ${memo ? `<div class="memo">${memo}</div>` : ''}
     <div class="row">
       ${more.length ? `<div class="menuwrap"><button class="btn mbtn" id="moreBtn" aria-label="더보기" title="더보기">&#8943;</button>
@@ -178,7 +178,7 @@ function paneProducts(el) {
     <div class="ph"><h2>상품 목록</h2><span class="c">${hits.length}건</span><span class="sp"></span>
       <button class="sb" id="cond">세부필터${n ? `<span class="b">${n}</span>` : ''}</button></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span>
+      <div class="fd" data-ai-feature="form.search"><span class="mg">&#9906;</span>
         <input type="search" id="q" value="${esc(S.q)}" placeholder="차종 · 무보증 · 21세 · 36개월">
         ${S.q ? '<button class="x" id="qx" aria-label="지우기">&#10005;</button>' : ''}</div>
       ${tokens(sel)}
@@ -253,7 +253,7 @@ function paneApps(el) {
     <div class="ph"><h2>접수 목록</h2><span class="c">${list.length}건</span><span class="sp"></span>
       <button class="btn sm go" id="newapp">+ 신규접수</button></div>
     <div class="bar">
-      <div class="fd"><span class="mg">&#9906;</span><input type="search" id="aq" value="${esc(S.appQ)}" placeholder="고객 · 접수번호 · 차량"></div>
+      <div class="fd" data-ai-feature="form.search"><span class="mg">&#9906;</span><input type="search" id="aq" value="${esc(S.appQ)}" placeholder="고객 · 접수번호 · 차량"></div>
       ${AF.map(x => `<button class="sb" data-f="${x.k}" aria-pressed="${x.k === S.appFilter}">${x.t}<span class="b">${APPS.filter(x.f).length}</span></button>`).join('')}
     </div>
     <div class="pb" id="pbB"></div>
@@ -467,7 +467,7 @@ function renderPick() {
   root.innerHTML = `<div class="pick" id="pw"><div class="pickbox">
     <div class="ph"><h2>환수 대상 고르기</h2><span class="c">되돌릴 수 있는 것 ${open}건</span>
       <span class="sp"></span><button class="btn sm" id="pkx">닫기</button></div>
-    <div class="bar"><div class="fd"><span class="mg">&#9906;</span>
+    <div class="bar"><div class="fd" data-ai-feature="form.search"><span class="mg">&#9906;</span>
       <input type="search" id="pkq" value="${esc(S.pickQ)}" placeholder="차량번호 · 고객 · 공급사"></div>
       <span class="mut" style="font-size:11px">★인도가 찍혀 «실적이 선» 건만 나옵니다</span></div>
     <div class="body2">${rows.length ? `<table class="g">
@@ -601,7 +601,7 @@ function detailPerf(el) {
         : pf.stage >= 4 ? `<div class="note"><span class="i">&#10003;</span><div><b>정산 확정</b><p>청구 원장과 지급 원장에 각각 들어갔습니다.</p></div></div>`
         : `<div class="note"><span class="i">&#10003;</span><div><b>${esc(STAGES[pf.stage - 1])} 차례입니다</b><p>어긋난 채로 확정하지 않습니다.</p></div></div>`}
     </div></div>
-    <div class="dact"><div class="grow"><textarea placeholder="대조 메모"></textarea></div>
+    <div class="dact" data-ai-feature="navigation.bottom-action"><div class="grow"><textarea placeholder="대조 메모"></textarea></div>
       ${pf.issue ? '<button class="btn" id="rs">이슈 해소</button><button class="btn go" id="re">재확인 요청</button>'
         : pf.stage === 1 ? '<button class="btn" id="dis">이견 있음</button><button class="btn go" id="ok">확인</button>'
         : pf.stage === 2 ? '<button class="btn" id="raise">이슈 등록</button><button class="btn go" id="ok">공급사 확인 완료</button>'
@@ -635,7 +635,7 @@ function detailBill(el) {
         <p>확정액 ${won(b.fixed)} 은 그대로 두고 들어온 ${won(b.got)} 을 이력으로 더했습니다. 원금액을 덮어쓰지 않습니다.</p></div></div>`
         : `<div class="note"><span class="i">&#10003;</span><div><b>청구확정 · 계산서 · 수금은 서로 다른 상태입니다</b><p>계산서를 끊었다고 수금이 된 것이 아닙니다.</p></div></div>`}
     </div></div>
-    <div class="dact"><div class="grow"><input id="am" class="n" value="${due}" ${due ? '' : 'disabled'}
+    <div class="dact" data-ai-feature="navigation.bottom-action"><div class="grow"><input id="am" class="n" value="${due}" ${due ? '' : 'disabled'}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
       ${b.tax === '미발행' ? '<button class="btn" id="tax">계산서 처리</button>' : ''}
       ${due ? '<button class="btn go" id="got">수금 등록</button>' : '<button class="btn go" id="toPay">지급 원장으로</button>'}</div>`;
@@ -664,7 +664,7 @@ function detailPay(el) {
           <p>${esc(p.holdWhy)}<br>「공급사 수금 전에 채널에 줘도 되나」는 <b>아직 정해지지 않은 정책</b>이라 화면이 임의로 밀지 않습니다.</p></div></div>`
         : `<div class="note"><span class="i">&#10003;</span><div><b>청구 원장과 지급 원장은 따로 섭니다</b><p>받을 돈이 덜 들어왔다고 줄 돈이 저절로 줄지 않습니다.</p></div></div>`}
     </div></div>
-    <div class="dact"><div class="grow"><input id="pa" class="n" value="${left}" ${p.hold || !left ? 'disabled' : ''}
+    <div class="dact" data-ai-feature="navigation.bottom-action"><div class="grow"><input id="pa" class="n" value="${left}" ${p.hold || !left ? 'disabled' : ''}
         style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)"></div>
       ${p.hold ? '<button class="btn go" id="unhold">보류 풀기</button>'
         : left ? '<button class="btn red" id="hold">지급 보류</button><button class="btn go" id="pay">지급 등록</button>'
@@ -716,7 +716,7 @@ function detailEsign(el) {
         : e.signed ? `<div class="note"><span class="i">&#10003;</span><div><b>서명 완료</b><p>서명된 계약서의 판까지 남겼습니다 — 나중에 다툴 때 댈 근거가 됩니다.</p></div></div>`
         : `<div class="note"><span class="i">&#10003;</span><div><b>보냈나 · 봤나 · 서명했나는 서로 다른 사실입니다</b><p>하나의 「진행 중」으로 뭉치면 어디서 멈췄는지 못 봅니다.</p></div></div>`}
     </div></div>
-    <div class="dact"><div class="grow">${blocked
+    <div class="dact" data-ai-feature="navigation.bottom-action"><div class="grow">${blocked
         ? `<input id="eph" placeholder="받는 연락처 010-0000-0000" style="width:100%;height:36px;border:1px solid var(--line-2);border-radius:5px;padding:0 10px;background:var(--card)">`
         : `<textarea placeholder="함께 보낼 말 (선택)"></textarea>`}</div>
       <button class="btn">미리보기</button>

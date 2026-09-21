@@ -26,6 +26,8 @@ must(/new Erp5SettlementRepository\(\)/.test(server),'server must use Erp5Settle
 must(/new Erp5ContractRepository\(\)/.test(server),'server must use Erp5ContractRepository');
 must(/collection\('products'\)/.test(productRepo),'product repository must read ERP5 products collection');
 must(/const ROWS = 'settlement_rows'/.test(settlementRepo),'settlement repository must use settlement_rows');
+must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash movement ledger must use settlement_cash_events');
+must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
 must(/adminDataStatus/.test(status),'live data status probe missing');
 
@@ -41,7 +43,7 @@ if(errors.length){
   console.log('LIVE DATA WIRING CHECK PASS');
   console.log('- products -> Erp5ProductRepository / products');
   console.log('- intake + settlement -> Erp5SettlementRepository / settlement_rows');
-  console.log('- settlement -> clawbacks + invoices + lifecycle actions');
+  console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
   console.log('- esign -> Erp5ContractRepository / contract');
   console.log('- writes remain fail-closed unless ERP5_WRITE=on');
 }

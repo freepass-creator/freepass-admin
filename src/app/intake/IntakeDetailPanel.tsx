@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
@@ -74,8 +75,9 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       주 = {
         label: 누적현금 > 0 ? `${끝말} 추가` : `${끝말} 찍기`,
         form: <LifeForm id={fid} code={r.id} kind={청구축 ? 'collected' : 'paid'} axis={life.axis} need="money"
-          /* 부분수금/부분지급 뒤에는 전체액이 아니라 남은 실제 현금액을 기본값으로 준다. */
-          amount={남은현금 ?? 0} day={today()} />,
+          /* 부분수금/부분지급 뒤에는 전체액이 아니라 남은 실제 현금액을 기본값으로 준다.
+             operationId는 동일 제출/네트워크 재시도를 서버에서 한 번만 반영하기 위한 영수증 키다. */
+          amount={남은현금 ?? 0} day={today()} operationId={randomUUID()} />,
       };
       보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
     }

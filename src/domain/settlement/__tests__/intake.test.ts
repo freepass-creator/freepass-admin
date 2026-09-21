@@ -95,6 +95,39 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
       sourceSnapshotId: 'erp5-20260921',
     });
   });
+
+  it('상품접수 immutable snapshot은 Offer 조건과 적용 정책을 그대로 보존한다', () => {
+    const snapshot = {
+      capturedAt: '2026-09-21T00:00:00.000Z',
+      product: {
+        id: 'P-1', version: 7, sourceSnapshotId: 'erp5-20260921',
+        supplierId: 'SUP-1', supplierName: '공급사A', productKind: '중고렌트',
+        vehicle: {
+          nodeId: 'trim-1', originId: 'KR', manufacturerId: 'HYUNDAI',
+          modelId: 'SANTAFE', subModelId: 'MX5', trimId: 'CALLI', matchLevel: 'TRIM',
+        },
+        registration: { vehicleNumber: null, vin: null, firstRegistrationDate: null },
+      },
+      offer: {
+        id: 'O-36', termMonths: 36, monthlyRent: 700000,
+        deposit: null, prepayment: 1000000, annualMileageKm: 20000,
+        policyValues: [{ policyId: 'min-age', type: 'NUMBER' as const, value: 21 }],
+      },
+    };
+    const raw = intakeRecord({
+      ...base,
+      sourceProductId: 'P-1',
+      sourceProductVersion: 7,
+      sourceOfferId: 'O-36',
+      sourceSnapshotId: 'erp5-20260921',
+      catalogSnapshot: snapshot,
+    }, 1_790_000_000_000);
+    const { row } = toSettlementRow(raw, String(raw.code));
+    assert.deepEqual(row.catalogSnapshot, snapshot);
+    assert.equal(row.catalogSnapshot?.offer.annualMileageKm, 20000);
+    assert.equal(row.catalogSnapshot?.offer.prepayment, 1000000);
+    assert.equal(row.catalogSnapshot?.offer.policyValues[0]?.policyId, 'min-age');
+  });
 });
 
 describe('progressPatch — 계약서 · 인도 · 취소', () => {

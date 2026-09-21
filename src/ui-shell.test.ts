@@ -11,6 +11,8 @@ const chrome=read('src/app/_design/AdminChrome.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
+const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
 const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
 
@@ -118,4 +120,13 @@ test('settlement UI separates document progress from cash completion',()=>{
 
 test('claim rows stay active until collection completes',()=>{
   assert.ok(settlementPage.includes("tab === 'claim' ? r.progress.collected : r.progress.paid"));
+});
+
+
+test('claim link renders authoritative final response and lock state',()=>{
+  assert.ok(claimDoor.includes('res?.ok ? res.response'));
+  assert.ok(claimDoor.includes('받은답.codes?.length'));
+  assert.ok(claimLinkUi.includes('사업자번호 오입력'));
+  assert.ok(claimLinkUi.includes('잠김'));
+  assert.ok(settlementPage.includes('locked={!!장.lockedUntil && 장.lockedUntil > Date.now()}'));
 });

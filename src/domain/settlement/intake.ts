@@ -200,7 +200,7 @@ export function progressPatch(
   }
   if (c.kind === 'paper') {
     if (B(cur.paper) === c.on) return { ok: true, patch: {}, events: [] };
-    if (!c.on && (B(cur.delivered) || settlementStarted())) return { ok: false, error: '인도 또는 정산이 시작된 뒤에는 계약서 확인을 해제할 수 없습니다' };
+    if (!c.on && settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 계약서 확인을 해제할 수 없습니다' };
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }
   if (c.kind === 'delivered') {

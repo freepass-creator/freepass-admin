@@ -43,6 +43,14 @@ describe('접수 뒤 수수료 고치기', () => {
   });
 });
 
+describe('수수료 고침 — 레거시 완료표시도 잠근다', () => {
+  it('Y/1/참 상태에서 발행된 축 금액을 다시 쓰지 않는다', () => {
+    assert.equal(feeFixPatch({ billed: 'Y', claimWritten: 100 }, 200, null, '정정').ok, false);
+    assert.equal(feeFixPatch({ paid: 1, payWritten: 100 }, null, 200, '정정').ok, false);
+    assert.equal(feeFixPatch({ cancelled: '참', claimWritten: 100 }, 200, null, '정정').ok, false);
+  });
+});
+
 describe('환수 — 열어 둔다', () => {
   const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   it('신규 환수 id는 계약줄까지 포함해 같은 차·같은 달 재계약 충돌을 막는다', () => {

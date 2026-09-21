@@ -3,7 +3,7 @@
   "status": "ACTIVE_CONSUMER_MAPPING",
   "upstream": {
     "repository": "freepass-creator/ai-core",
-    "revision": "a4a41a0664fbc2d4044841759af33e00b3ceb46b",
+    "revision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
     "feature_registry_version": "1.8.0",
     "required_features": [
       "data.list-presentation",

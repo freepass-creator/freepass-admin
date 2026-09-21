@@ -6,11 +6,18 @@
  *   ② 청구금액 0 이 「청구 안 함」인지 「모름」인지 갈린다 → 아래 규칙대로 null 로 둔다
  */
 import type {
-  Block, ClaimStage, FeeBasis, Maybe, PayStage, SettlementRow, SettleTarget,
+  Block, ClaimStage, FeeBasis, IntakeCatalogSnapshot, Maybe, PayStage, SettlementRow, SettleTarget,
 } from '../../domain/settlement/types';
 import { boolOf as b, numOrNull as n, strOrNull as s } from './atom';
 
 export type Erp5Row = Record<string, unknown>;
+
+function catalogSnapshotOf(v: unknown): IntakeCatalogSnapshot | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const d = v as Record<string, unknown>;
+  if (!d.product || typeof d.product !== 'object' || !d.offer || typeof d.offer !== 'object') return null;
+  return v as IntakeCatalogSnapshot;
+}
 
 /**
  * ★요율이냐 정액이냐 — **1 이 가른다.**
@@ -93,6 +100,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
       offerId: s(d.sourceOfferId),
       sourceSnapshotId: s(d.sourceSnapshotId),
     },
+    catalogSnapshot: catalogSnapshotOf(d.catalogSnapshot),
 
     progress: {
       paper: b(d.paper),

@@ -154,12 +154,16 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       const [stage, ok, fix] = c.axis === '공급사' ? [r.claimStage, 'supplierOk', 'supplierFix'] : [r.payStage, 'channelOk', 'channelFix'];
       if (stage === '접수') return { ok: false, error: c.axis === '공급사' ? '청구서가 아직 안 나갔습니다' : '아직 통보 전입니다' };
       if (stage === '확인' || stage === '수금' || stage === '지급') return { ok: true, patch: {}, events: [] };
+      if (stage === '정정') return { ok: false, error: '정정 중입니다 — 정정을 먼저 풀어야 확인할 수 있습니다' };
+      const expected = c.axis === '공급사' ? '청구' : '통보';
+      if (stage !== expected) return { ok: false, error: `${expected} 단계에서만 확인할 수 있습니다` };
       const axisKey = c.axis === '공급사' ? 'claimStage' : 'payStage';
       return { ok: true, patch: { [ok]: true, [fix]: false, [axisKey]: '확인' }, events: [ev(`${c.axis} 확인`, stage, '확인')] };
     }
     case 'correct': {
       const stage = c.axis === '공급사' ? r.claimStage : r.payStage;
       if (stage === '접수') return { ok: false, error: '아직 상대에게 안 나갔습니다 — 정정할 것이 없습니다' };
+      if (stage === '수금' || stage === '지급') return { ok: false, error: '이미 돈 처리가 끝난 줄입니다 — 정정이 아니라 환수/가감으로 처리합니다' };
       if (!c.memo.trim()) return { ok: false, error: '정정 사유(상대가 뭐라고 했는지)를 적어야 합니다' };
       const p = c.axis === '공급사'
         ? { supplierFix: true, supplierOk: false, supplierFixAmt: c.amount ?? 0, supplierMemo: c.memo.trim(), claimStage: '정정' }
@@ -175,6 +179,8 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
     }
     case 'invoice': {
       if (c.on && !r.progress.billed) return { ok: false, error: '청구서가 나간 뒤에 계산서를 끊습니다' };
+      if (c.on && r.claimStage === '정정') return { ok: false, error: '정정 중에는 계산서를 끊을 수 없습니다' };
+      if (!c.on && r.progress.collected) return { ok: false, error: '수금이 끝난 줄의 계산서는 되돌릴 수 없습니다' };
       if (c.on && c.day && !DAY.test(c.day)) return { ok: false, error: '계산서 날짜는 YYYY-MM-DD' };
       if (r.progress.invoiceIssued === c.on) return { ok: true, patch: {}, events: [] };
       return {
@@ -185,6 +191,8 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
     }
     case 'collected': {
       if (!r.progress.billed) return { ok: false, error: '청구서가 나간 뒤에 수금을 찍습니다' };
+      if (r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 수금을 찍습니다' };
+      if (!r.progress.invoiceIssued) return { ok: false, error: '계산서를 끊은 뒤에 수금을 찍습니다' };
       if (!DAY.test(c.day)) return { ok: false, error: '받은 날은 YYYY-MM-DD' };
       if (!Number.isFinite(c.amount) || c.amount <= 0) return { ok: false, error: '받은 금액을 넣어야 합니다' };
       return {
@@ -194,6 +202,7 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
     }
     case 'paid': {
       if (r.payStage === '접수') return { ok: false, error: '통보 전입니다 — 지급명세를 먼저 냅니다' };
+      if (r.payStage !== '확인') return { ok: false, error: '영업채널 확인이 끝난 뒤에 지급을 찍습니다' };
       if (!DAY.test(c.day)) return { ok: false, error: '준 날은 YYYY-MM-DD' };
       if (!Number.isFinite(c.amount) || c.amount < 0) return { ok: false, error: '준 금액을 넣어야 합니다' };
       return {

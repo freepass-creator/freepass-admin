@@ -9,7 +9,7 @@ import { Tag, 신원 } from '../_design/Badges';
 import { ActionBar, EmptyState, Notice, PanelHeader, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
-import { invoiceMoneyOf, type Axis } from '../../domain/settlement/lifecycle';
+import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
@@ -57,6 +57,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     const 길 = 청구축 ? ['접수', '청구', '확인', '수금'] : ['접수', '통보', '확인', '지급'];
     const fid = `life-${r.id}`;
     const 끝말 = 청구축 ? '수금' : '지급';
+    const 누적현금 = 청구축 ? (r.progress.collectedAmt ?? 0) : (r.progress.paidAmt ?? 0);
+    const 남은현금 = cashRemainingOf(life.axis, r);
     const 정정중 = life.mode === 'correct' && stage !== '접수';
     let 주: { label: string; form: React.ReactNode } | null = null;
     let 보조: React.ReactNode = <Link className="dz-bar-sub" href={back}>목록</Link>;
@@ -70,10 +72,10 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       주 = { label: '정정 풂', form: <LifeForm id={fid} code={r.id} kind="uncorrect" axis={life.axis} need="none" /> };
     } else if (stage === '확인') {
       주 = {
-        label: `${끝말} 찍기`,
+        label: 누적현금 > 0 ? `${끝말} 추가` : `${끝말} 찍기`,
         form: <LifeForm id={fid} code={r.id} kind={청구축 ? 'collected' : 'paid'} axis={life.axis} need="money"
-          /* ★기본값 = 통장에 오가는 돈 = 계산서 합계(부가세 포함). claimAmountOf/payAmountOf 는 공급가라 그대로 두면 매번 고쳐야 했다(기능 세션) */
-          amount={invoiceMoneyOf((청구축 ? 청구 : 지급) ?? 0, r.money.vatIncluded).total} day={today()} />,
+          /* 부분수금/부분지급 뒤에는 전체액이 아니라 남은 실제 현금액을 기본값으로 준다. */
+          amount={남은현금 ?? 0} day={today()} />,
       };
       보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
     }
@@ -87,6 +89,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         </ol>
         {stage === '접수' && <EmptyState>{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</EmptyState>}
         {(stage === '수금' || stage === '지급') && <Notice tone="ok">{끝말}까지 끝난 줄입니다.</Notice>}
+        {stage === '확인' && 누적현금 > 0 && 남은현금 !== null && <Notice tone="warn">부분{끝말} {won(누적현금)}원 처리 · 남은 금액 {won(남은현금)}원</Notice>}
         {주?.form}
         <div className="dz-side-steps">
           {청구축 && !r.progress.billed && <SideStep code={r.id} kind="hold" label={r.progress.billHold ? '청구 보류 중' : '청구 보류'} on={r.progress.billHold} />}

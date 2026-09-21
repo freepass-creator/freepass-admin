@@ -26,6 +26,8 @@ const ROWS = 'settlement_rows';
 const EVENTS = 'settlement_events';
 /** 발행 기록 — 한 달 · 한 축 · 한 상대 = 한 문서. 번호가 여기서 안 바뀐다 */
 const INVOICES = 'settlement_invoices';
+/** 실제 수금/지급 한 번 = 한 불변 거래. collectedAmt/paidAmt는 이 거래들의 빠른 projection이다. */
+const CASH_EVENTS = 'settlement_cash_events';
 const BY = 'freepass-admin';
 const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt);
 
@@ -76,6 +78,7 @@ export class Erp5SettlementRepository {
     apply: (cur: Record<string, unknown>, row: SettlementRow) => { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string },
     by: string = BY,
     operationId?: string,
+    cash?: { axis: Axis; amount: number; day: string; kind: 'collected' | 'paid' },
   ): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
@@ -85,11 +88,17 @@ export class Erp5SettlementRepository {
       if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
       const cur = d.data()!;
       const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
+      let cashRef: ReturnType<typeof db.collection>['prototype'] extends never ? never : any = null;
       if (operationId) {
-        const eventDoc = await tx.get(eventRef);
-        const seen = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
+        const cashId = `cash_${createHash('sha256').update(`${code}|${operationId}`).digest('hex').slice(0, 24)}`;
+        cashRef = db.collection(CASH_EVENTS).doc(cashId);
+        const [eventDoc, cashDoc] = await Promise.all([
+          tx.get(eventRef),
+          cash ? tx.get(cashRef) : Promise.resolve(null),
+        ]);
+        const seenAudit = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
           !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
-        if (seen) return { ok: true as const, changed: 0 };
+        if (seenAudit || (cashDoc && cashDoc.exists)) return { ok: true as const, changed: 0 };
       }
       const { row } = toSettlementRow(cur, d.id);
       const r = apply(cur, row);
@@ -100,6 +109,13 @@ export class Erp5SettlementRepository {
       const ev: Record<string, unknown> = {};
       for (const e of r.events) ev[audId()] = { at: now, by, ...(operationId ? { operationId } : {}), ...e };
       tx.set(eventRef, ev, { merge: true });
+      if (cash && operationId && cashRef) {
+        tx.create(cashRef, {
+          operationId, code, axis: cash.axis, kind: cash.kind,
+          amount: Math.round(cash.amount), day: cash.day,
+          by, createdAt: now,
+        });
+      }
       return { ok: true as const, changed: r.events.length };
     });
   }
@@ -386,7 +402,12 @@ export class Erp5SettlementRepository {
 
   /** 한 줄의 다음 걸음 — 확인 · 정정 · 계산서 · 수금 · 지급 · 보류 · 청구월 (domain/settlement/lifecycle.ts) */
   async setLifecycle(code: string, change: LifeChange, operationId?: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    return this.mutateRow(code, (_cur, row) => lifePatch(row, change), BY, operationId);
+    const cash = change.kind === 'collected'
+      ? { axis: '공급사' as const, amount: change.amount, day: change.day, kind: change.kind }
+      : change.kind === 'paid'
+        ? { axis: '영업채널' as const, amount: change.amount, day: change.day, kind: change.kind }
+        : undefined;
+    return this.mutateRow(code, (_cur, row) => lifePatch(row, change), BY, operationId, cash);
   }
 
   /**

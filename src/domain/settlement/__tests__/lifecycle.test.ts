@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { cashRemainingOf, driftOf, invoiceMoneyOf, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
+import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
 import { claimLedger } from '../ledgers.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -64,6 +64,15 @@ describe('청구서 발행 계획', () => {
   });
   it('발행 뒤 원장이 바뀌면 말한다', () =>
     assert.match(driftOf({ supply: 1, vat: 0, lines: 1 } as never, { supply: 2, vat: 0, lines: 1 })!, /공급가/));
+});
+
+describe('환수 포함 묶음 — 행별 현금 배분은 정책 확정 전 HOLD', () => {
+  it('발행 문서에 환수 금액/사본이 있으면 행별 cash allocation이 필요하다고 표시한다', () => {
+    assert.equal(invoiceNeedsCashAllocation(null), false);
+    assert.equal(invoiceNeedsCashAllocation({ clawback: 0, snapshot: { lines: [], clawbacks: [] } } as never), false);
+    assert.equal(invoiceNeedsCashAllocation({ clawback: 100 } as never), true);
+    assert.equal(invoiceNeedsCashAllocation({ clawback: 0, snapshot: { lines: [], clawbacks: [{}] } } as never), true);
+  });
 });
 
 describe('한 줄의 다음 걸음 — 두 축', () => {

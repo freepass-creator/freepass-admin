@@ -39,6 +39,20 @@ describe('청구서 발행 계획', () => {
     assert.equal(p.invoice.vat, 150_000 - 10_000);
     assert.deepEqual(p.patches[0].patch, { billMonth: '2026-09', billed: true, billedAt: '2026-09-18', claimStage: '청구' });
   });
+  it('재발행은 기존 확인을 초기화해 새 문서를 다시 확인받는다', () => {
+    const confirmed = claimLedger([mk({ code: 'confirmed', billed: true, claimStage: '확인', supplierOk: true })], '2026-09', [], NOW)[0];
+    const p = planInvoice('2026-09', '공급사', 'A', confirmed.lines, [], { invoiceNo: 'FP-S-202609-003' } as never, [], NOW.getTime(), 't');
+    assert.ok(p.ok);
+    if (!p.ok) return;
+    assert.equal(p.patches[0].patch.claimStage, '청구');
+    assert.equal(p.patches[0].patch.supplierOk, false);
+  });
+  it('일부라도 돈이 움직였거나 계산서 처리 뒤에는 재발행하지 않는다', () => {
+    const partialClaim = claimLedger([mk({ code: 'partial', billed: true, claimStage: '확인', collectedAmt: 1 })], '2026-09', [], NOW)[0];
+    assert.equal(planInvoice('2026-09', '공급사', 'A', partialClaim.lines, [], { invoiceNo: 'FP-S-202609-001' } as never, [], 0, 't').ok, false);
+    const invoiced = claimLedger([mk({ code: 'tax', billed: true, claimStage: '확인', invoiceIssued: true })], '2026-09', [], NOW)[0];
+    assert.equal(planInvoice('2026-09', '공급사', 'A', invoiced.lines, [], { invoiceNo: 'FP-S-202609-001' } as never, [], 0, 't').ok, false);
+  });
   it('★다시 발행하면 같은 번호', () => {
     const p = planInvoice('2026-09', '공급사', 'A', g.lines, [], { invoiceNo: 'FP-S-202609-003' } as never, [], NOW.getTime(), 't');
     assert.equal(p.ok && p.invoice.invoiceNo, 'FP-S-202609-003');

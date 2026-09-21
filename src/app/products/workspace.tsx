@@ -1,14 +1,13 @@
 import Link from 'next/link';
-import { productList } from '../../server/erp5';
+import { productList, settlements, today } from '../../server/erp5';
 import { searchProducts } from '../../domain/search/search-products';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import type { Offer } from '../../domain/product/types';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
-import { settlements } from '../../server/erp5';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
-import { sortIntakeRows } from '../../domain/settlement/intake-list';
+import { intakeAgeDays, sortIntakeRows } from '../../domain/settlement/intake-list';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow, type RowStatus } from '../_design/ListRow';
@@ -182,6 +181,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   const isearched = irows.filter(진행)
     .filter((r) => !iq || [r.plate, r.customer, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(iq));
   const ishown = sortIntakeRows(isearched.filter((r) => i통과(r)), iv as Bucket | 'all');
+  const 오늘 = today();
+  const 지연표시 = (r: SettlementRow) => {
+    if (칸의.get(r) !== '미완료') return undefined;
+    const days = intakeAgeDays(r, 오늘);
+    return days === null ? '지연' : `지연 ${days}일`;
+  };
   const 접수판축: FacetAxis[] = 접수축.map(([a, label, of]) => {
     const keys = a === 'im' ? [...new Set(irows.map(of).filter(Boolean))].sort().reverse() : 많은순(irows.map(of));
     const base = tallyMatch(irows, keys, (r, k) => of(r) === k);
@@ -330,6 +335,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
+                  flag={지연표시(r)}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}

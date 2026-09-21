@@ -60,3 +60,17 @@ test('parsed conditions merge with explicit facet state without duplicates', () 
   assert.deepEqual(merged.perk, ['무심사', '만21세']);
   assert.deepEqual(merged.term, ['36']);
 });
+
+
+test('natural search supports dynamic age and known perk words', () => {
+  const q = parseProductSearch('26세 소득확인 분납가능');
+  assert.deepEqual(q.inferred.perk, ['만26세', '소득확인', '분납가능']);
+  assert.equal(q.text, '');
+});
+
+test('amount ceilings map into the same existing rent and deposit bands', () => {
+  const q = parseProductSearch('월 70만원 이하 보증금 100만원 이하');
+  assert.deepEqual(q.inferred.rent, ['r50', 'r60', 'r70']);
+  assert.deepEqual(q.inferred.dep, ['d0', 'd1']);
+  assert.equal(q.text, '');
+});

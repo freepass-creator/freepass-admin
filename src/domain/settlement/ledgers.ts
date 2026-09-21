@@ -44,6 +44,8 @@ export interface LedgerGroup {
   unknown: number;
   /** 청구목록: 청구서 보냄 · 지급목록: 통보(지급 확정) */
   done: number;
+  /** 실제 생애주기 완료 — 청구=수금 완료 · 지급=지급 완료 */
+  completed: number;
   /** 청구 보류 — 금액에 안 넣는다(erp4 claimOf) */
   hold: number;
   /** ⚠ 더 안 쓴다 — 인도 전 «예정» 줄은 목록에 안 선다(대표 2026-09-18 「완납인도기준」). 늘 0 */
@@ -89,7 +91,7 @@ function group(
   const by = new Map<string, LedgerGroup>();
   const locked = lockedMonthsOf(rows);
   const get = (party: string) => {
-    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
+    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, completed: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
     by.set(party, g);
     return g;
   };
@@ -110,6 +112,7 @@ function group(
     if (broken) g.broken += 1;
     if (amount === null) g.unknown += 1; else g.total += amount;
     if (side === 'claim' ? r.progress.billed : ['통보', '확인', '지급'].includes(r.payStage)) g.done += 1;
+    if (side === 'claim' ? r.progress.collected : r.progress.paid) g.completed += 1;
     if (side === 'claim' && r.progress.billHold) g.hold += 1;
   }
   for (const c of clawbacks) {
@@ -161,7 +164,7 @@ export type LedgerGroupFilter = 'all' | LedgerGroupAttention;
 
 export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
   if (g.unknown > 0 || g.broken > 0 || g.clawbacks.length > 0) return 'issue';
-  if (g.done < g.lines.length || g.hold > 0) return 'todo';
+  if (!g.lines.length || g.completed < g.lines.length || g.hold > 0) return 'todo';
   return 'done';
 }
 
@@ -186,8 +189,8 @@ export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
     const aIssues = a.unknown + a.broken + a.clawbacks.length;
     const bIssues = b.unknown + b.broken + b.clawbacks.length;
     if (aIssues !== bIssues) return bIssues - aIssues;
-    const aTodo = Math.max(a.lines.length - a.done, a.hold);
-    const bTodo = Math.max(b.lines.length - b.done, b.hold);
+    const aTodo = Math.max(a.lines.length - a.completed, a.hold);
+    const bTodo = Math.max(b.lines.length - b.completed, b.hold);
     if (aTodo !== bTodo) return bTodo - aTodo;
     return b.net - a.net || a.party.localeCompare(b.party);
   });
@@ -204,9 +207,9 @@ export const payLedger = (rows: readonly SettlementRow[], month: string, clawbac
 export function ledgerTotals(groups: readonly LedgerGroup[]) {
   return groups.reduce(
     (t, g) => ({
-      rows: t.rows + g.lines.length, total: t.total + g.total, unknown: t.unknown + g.unknown, done: t.done + g.done,
+      rows: t.rows + g.lines.length, total: t.total + g.total, unknown: t.unknown + g.unknown, done: t.done + g.done, completed: t.completed + g.completed,
       forecast: t.forecast + g.forecast, broken: t.broken + g.broken, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
     }),
-    { rows: 0, total: 0, unknown: 0, done: 0, forecast: 0, broken: 0, clawback: 0, net: 0 },
+    { rows: 0, total: 0, unknown: 0, done: 0, completed: 0, forecast: 0, broken: 0, clawback: 0, net: 0 },
   );
 }

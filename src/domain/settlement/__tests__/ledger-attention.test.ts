@@ -6,6 +6,7 @@ const group = ({
   party,
   lines = 1,
   done = 0,
+  completed = 0,
   unknown = 0,
   broken = 0,
   hold = 0,
@@ -15,6 +16,7 @@ const group = ({
   party: string;
   lines?: number;
   done?: number;
+  completed?: number;
   unknown?: number;
   broken?: number;
   hold?: number;
@@ -27,6 +29,7 @@ const group = ({
   total: net,
   unknown,
   done,
+  completed,
   hold,
   forecast: 0,
   broken,
@@ -43,12 +46,13 @@ test('정산 묶음은 환수·금액모름·끊김을 이슈로 본다', () => 
 
 test('정산 묶음은 미처리와 완료를 구분한다', () => {
   assert.equal(ledgerGroupAttention(group({ party: '대기', lines: 3, done: 1 })), 'todo');
-  assert.equal(ledgerGroupAttention(group({ party: '보류', lines: 1, done: 1, hold: 1 })), 'todo');
-  assert.equal(ledgerGroupAttention(group({ party: '완료', lines: 2, done: 2 })), 'done');
+  assert.equal(ledgerGroupAttention(group({ party: '문서완료', lines: 2, done: 2, completed: 0 })), 'todo');
+  assert.equal(ledgerGroupAttention(group({ party: '보류', lines: 1, done: 1, completed: 0, hold: 1 })), 'todo');
+  assert.equal(ledgerGroupAttention(group({ party: '완료', lines: 2, done: 2, completed: 2 })), 'done');
 });
 
 test('정산 묶음 순서는 금액보다 이슈와 미처리를 우선한다', () => {
-  const done = group({ party: '완료큰금액', lines: 1, done: 1, net: 100_000_000 });
+  const done = group({ party: '완료큰금액', lines: 1, done: 1, completed: 1, net: 100_000_000 });
   const todo = group({ party: '미처리', lines: 3, done: 1, net: 10_000 });
   const issue = group({ party: '금액모름', lines: 1, unknown: 1, net: 1 });
   assert.deepEqual(sortLedgerGroups([done, todo, issue]).map((x) => x.party), ['금액모름', '미처리', '완료큰금액']);
@@ -68,7 +72,7 @@ test('같은 우선순위에서는 이슈 수·미처리 수·금액 순으로 �
 test('거래처 묶음 필터는 이슈·미처리·완료와 거래처 검색을 함께 적용한다', () => {
   const issue = group({ party: '오토플러스', unknown: 1 });
   const todo = group({ party: '손오공', lines: 2, done: 1 });
-  const done = group({ party: '완료렌터카', lines: 1, done: 1 });
+  const done = group({ party: '완료렌터카', lines: 1, done: 1, completed: 1 });
   const groups = [issue, todo, done];
 
   assert.deepEqual(filterLedgerGroups(groups, 'issue').map((x) => x.party), ['오토플러스']);
@@ -80,10 +84,18 @@ test('거래처 묶음 필터는 이슈·미처리·완료와 거래처 검색�
 
 
 test('next actionable ledger party skips completed parties and follows attention order', () => {
-  const done = group({ party: '완료', lines: 1, done: 1 });
+  const done = group({ party: '완료', lines: 1, done: 1, completed: 1 });
   const todo = group({ party: '미처리', lines: 2, done: 1 });
   const issue = group({ party: '이슈', unknown: 1 });
   assert.equal(nextActionableLedgerParty([done, todo, issue], '완료'), '이슈');
   assert.equal(nextActionableLedgerParty([done, todo, issue], '이슈'), '미처리');
   assert.equal(nextActionableLedgerParty([done], '완료'), null);
+});
+
+
+test('문서 발행이 전부 끝나도 실제 수금·지급이 남으면 완료가 아니다', () => {
+  const sentOnly = group({ party: '문서만완료', lines: 3, done: 3, completed: 0 });
+  assert.equal(ledgerGroupAttention(sentOnly), 'todo');
+  const fullySettled = group({ party: '실제완료', lines: 3, done: 3, completed: 3 });
+  assert.equal(ledgerGroupAttention(fullySettled), 'done');
 });

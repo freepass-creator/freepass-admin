@@ -121,8 +121,9 @@ export class Erp5SettlementRepository {
   }
 
   /**
-   * 접수 한 건을 세운다. ★같은 차번+접수일이 이미 있으면 «안 만든다» — 있던 코드를 돌려준다.
-   *   ERP 화면에서 먼저 넣은 줄은 코드가 무작위라 문서 id 로는 못 찾는다 ⇒ 열쇠로도 찾는다.
+   * 접수 한 건을 세운다.
+   * ★직접접수는 차번+접수일, 상품접수는 Product ID+접수일로 중복을 막는다.
+   * ERP/F04에서 먼저 만든 기존 줄은 문서 id를 믿지 않고 같은 날짜의 실제 identity도 대조한다.
    */
   async createIntake(input: IntakeInput): Promise<{ code: string; created: boolean }> {
     mustWrite();

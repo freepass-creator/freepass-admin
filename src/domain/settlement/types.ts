@@ -208,10 +208,11 @@ export type Block =
 
 export function blockOf(r: SettlementRow): Maybe<Block> {
   if (r.progress.cancelled) return null;
+  /* 직원 업무 순서: 계약 확인 → 차량번호 확정 → 인도 → 정산. 신차는 계약 시점에 차번이 없을 수 있다. */
+  if (!r.progress.paper) return '계약서';
   if (!r.plate) return '차량번호 없음';
   /* 공급사도 원래 줄을 가르는 열쇠다. 다만 이미 수금된 축은 과거 필수정보 누락으로 다시 열지 않는다. */
   if (r.settleTarget !== '영업' && !r.progress.collected && !r.supplier) return '공급사 없음';
-  if (!r.progress.paper) return '계약서';
   if (!r.progress.delivered) return '인도';
 
   /* 정산대상별 축을 따로 본다. 영업-only 줄에 공급사를 요구하거나 공급-only 줄에 영업채널을 요구하면 안 된다. */

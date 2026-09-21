@@ -19,3 +19,26 @@ export function sortIntakeRows(rows: SettlementRow[], view: IntakeListView): Set
     return a.id.localeCompare(b.id);
   });
 }
+
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const dayStamp = (value: string | null | undefined): number | null => {
+  const m = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const month = Number(m[2]);
+  const d = Number(m[3]);
+  const stamp = Date.UTC(y, month - 1, d);
+  const check = new Date(stamp);
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== d) return null;
+  return stamp;
+};
+
+/** Calendar-day age of an intake, used only as an operational cue. */
+export function intakeAgeDays(row: SettlementRow, asOf: string): number | null {
+  const start = dayStamp(row.receivedAt);
+  const end = dayStamp(asOf);
+  if (start === null || end === null) return null;
+  return Math.max(0, Math.floor((end - start) / DAY_MS));
+}

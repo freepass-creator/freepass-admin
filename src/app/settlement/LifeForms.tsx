@@ -34,14 +34,15 @@ export function IssueForm({ id, month, axis, party }: { id: string; month: strin
  * 한 줄의 주 걸음 — 하단바 주 단추가 보내는 폼. need 에 따라 칸이 선다:
  *   none(확인 · 정정 풂) · money(수금 · 지급 — 금액 · 날) · correct(정정 — 금액 · 사유 필수)
  */
-export function LifeForm({ id, code, kind, axis, need, amount, day }: {
+export function LifeForm({ id, code, kind, axis, need, amount, day, operationId }: {
   id: string; code: string; kind: string; axis: '공급사' | '영업채널';
-  need: 'none' | 'money' | 'correct'; amount?: number | null; day?: string;
+  need: 'none' | 'money' | 'correct'; amount?: number | null; day?: string; operationId?: string;
 }) {
   const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
     <form id={id} className={need === 'none' ? '' : 'dz-life-form'} onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} /><input type="hidden" name="axis" value={axis} />
+      {operationId && <input type="hidden" name="operationId" value={operationId} />}
       {need === 'money' && <>
         <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" /></label>
         <label>{kind === 'collected' ? '받은 날' : '준 날'}<input name="day" type="date" defaultValue={day} /></label>

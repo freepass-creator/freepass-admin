@@ -342,14 +342,19 @@ export class Erp5SettlementRepository {
       if (!r.ok) { if (r.reason === 'WRONG') tx.update(ref, failPatch(inv, now)); return { ok: false as const, error: r.message }; }
       if (kind === '이의' && !memo.trim()) return { ok: false as const, error: '무엇이 다른지 적어 주세요' };
       const target = kind === '이의' && codes.length ? codes.filter((c) => inv.codes.includes(c)) : inv.codes;
+      if (!target.length) return { ok: false as const, error: '선택한 정산 줄이 발행 사본에 없습니다 — 문서를 다시 열어 주세요' };
+      if (kind === '이의' && codes.length && target.length !== new Set(codes).size) {
+        return { ok: false as const, error: '발행 사본에 없는 줄이 섞여 있습니다 — 문서를 다시 열어 주세요' };
+      }
       const rowDocs = await Promise.all(target.map((c) => tx.get(db.collection(ROWS).doc(c))));
+      if (rowDocs.some((rd) => !rd.exists)) return { ok: false as const, error: '발행 뒤 원장 줄이 사라졌습니다 — 관리자 확인이 필요합니다' };
       const who = `${inv.axis}-link:${inv.partyCode ?? inv.party}`;
       for (const rd of rowDocs) {
-        if (!rd.exists) continue;
         const cur = rd.data()!;
         const { row } = toSettlementRow(cur, rd.id);
         const p = lifePatch(row, kind === '확인' ? { kind: 'confirm', axis: inv.axis } : { kind: 'correct', axis: inv.axis, amount: null, memo: memo.trim() });
-        if (!p.ok || !p.events.length) continue;
+        if (!p.ok) return { ok: false as const, error: p.error };
+        if (!p.events.length) continue;
         tx.update(rd.ref, { ...p.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
         const ev: Record<string, unknown> = {};
         for (const e of p.events) ev[audId()] = { at: now, by: who, ...e };

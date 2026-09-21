@@ -189,6 +189,16 @@ const row = (o: Record<string, unknown>) => toSettlementRow({
   cancelled: false, billMonth: '', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납', ...o,
 }, 'r').row;
 
+describe('다음 할 일 — 계약 → 차량 → 인도 순서', () => {
+  it('신차처럼 차번이 없어도 계약서가 먼저다', () => {
+    assert.equal(blockOf(row({ paper: false, plate: '', delivered: false, deliveredAt: '' })), '계약서');
+  });
+  it('계약 확인 뒤 차번, 차번 뒤 인도 순서다', () => {
+    assert.equal(blockOf(row({ paper: true, plate: '', delivered: false, deliveredAt: '' })), '차량번호 없음');
+    assert.equal(blockOf(row({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' })), '인도');
+  });
+});
+
 describe('다음 할 일 — 정산대상별 축을 섞지 않는다', () => {
   it('영업-only는 공급사가 없어도 되고 영업채널/지급만 본다', () => {
     const salesOnly = row({

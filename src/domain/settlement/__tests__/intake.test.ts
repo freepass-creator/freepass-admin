@@ -169,7 +169,9 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   });
   it('인도/정산 시작 뒤 차량번호·계약서·인도일·인도완료 핵심 사실을 되돌리지 않는다', () => {
     assert.equal(progressPatch({ delivered: true, plate: '12가3456' }, { kind: 'plate', plate: '34나5678' }).ok, false);
-    assert.equal(progressPatch({ delivered: true, paper: true }, { kind: 'paper', on: false }).ok, false);
+    const paperCorrection = progressPatch({ delivered: true, paper: true, claimStage: '접수', payStage: '접수' }, { kind: 'paper', on: false });
+    assert.ok(paperCorrection.ok);
+    assert.equal(progressPatch({ delivered: true, paper: true, billed: true, claimStage: '청구' }, { kind: 'paper', on: false }).ok, false);
     assert.equal(progressPatch({ delivered: true, deliveredAt: '2026-09-01', billed: true, claimStage: '청구', payStage: '통보', paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-02' }).ok, false);
     assert.equal(progressPatch({ delivered: true, billed: true, claimStage: '청구', payStage: '통보' }, { kind: 'delivered', on: false }).ok, false);
   });

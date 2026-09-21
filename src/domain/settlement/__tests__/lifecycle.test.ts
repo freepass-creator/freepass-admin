@@ -114,6 +114,7 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifePatch(mk({ billed: true, claimStage: '수금' }), { kind: 'correct', axis: '공급사', amount: 1, memo: '뒤늦은 변경' }).ok, false);
     assert.equal(lifePatch(mk({ payStage: '지급' }), { kind: 'correct', axis: '영업채널', amount: 1, memo: '뒤늦은 변경' }).ok, false);
     assert.equal(lifePatch(mk({ billed: true, invoiceIssued: true, collected: true, claimStage: '수금' }), { kind: 'invoice', on: false }).ok, false);
+    assert.equal(lifePatch(mk({ billed: true, invoiceIssued: true, collected: false, collectedAmt: 1, claimStage: '확인' }), { kind: 'invoice', on: false }).ok, false);
   });
   it('청구월 정하기 — 인도된 · 청구 전 줄만', () => {
     assert.deepEqual((lifePatch(mk({}), { kind: 'billMonth', month: '2026-10' }) as { patch: unknown }).patch, { billMonth: '2026-10' });

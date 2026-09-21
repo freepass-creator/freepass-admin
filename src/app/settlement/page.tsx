@@ -5,7 +5,7 @@ import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, le
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
-import { filterPerformanceLines, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
+import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
 import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
@@ -68,6 +68,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const performanceLines = filterPerformanceLines(gSel?.lines ?? [], perfAxis, ls, lq);
   const performanceCount = (mode: PerformanceFilterMode) =>
     (gSel?.lines ?? []).filter((x) => performanceMatchesMode(x, perfAxis, mode)).length;
+  const nextPerformanceCode = ic ? nextActionablePerformanceCode(gSel?.lines ?? [], perfAxis, ic, lq) : null;
   const shownClawbacks = (gSel?.clawbacks ?? []).filter((x) =>
     (ls === 'all' || ls === 'issue')
     && (!lq || [x.plate, x.reason, x.month].filter(Boolean).join(' ').toLowerCase().includes(lq.toLowerCase())));
@@ -254,7 +255,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         <section className="panel work-panel">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }) }} />
+                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined }} />
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

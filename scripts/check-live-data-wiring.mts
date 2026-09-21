@@ -39,6 +39,8 @@ must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash m
 must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
 must(/adminDataStatus/.test(status),'live data status probe missing');
+must(/products\.list\(\)/.test(status),'data-status must bypass product cache and read the live product repository');
+must(!/productList\(\)/.test(status),'data-status must not report the cached productList as a live repository probe');
 
 for(const [name,src] of [['products',product],['settlement',settlement],['esign',esign]] as const){
   must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(src),`${name} route contains local fake runtime data`);

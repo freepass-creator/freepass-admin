@@ -1,6 +1,6 @@
 import { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
 import { writeEnabled } from '../adapters/erp5/settlement-repository';
-import { contracts, productList, settlements } from './erp5';
+import { contracts, products, settlements } from './erp5';
 
 export type DataProbe = {
   key: 'products' | 'intakes' | 'clawbacks' | 'cashEvents' | 'contracts';
@@ -23,7 +23,7 @@ async function probe(key: DataProbe['key'], label: string, read: () => Promise<u
 export async function adminDataStatus() {
   const credential = erp5Ready();
   const probes = await Promise.all([
-    probe('products', '상품', async () => (await productList()).rows),
+    probe('products', '상품', () => products.list()),
     probe('intakes', '접수·정산원장', async () => (await settlements.list()).map((x) => x.row)),
     probe('clawbacks', '환수', () => settlements.clawbacks()),
     probe('cashEvents', '수금·지급 거래', () => settlements.cashEvents()),

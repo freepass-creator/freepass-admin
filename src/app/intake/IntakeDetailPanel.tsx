@@ -15,6 +15,8 @@ import { PaidRounds } from './PaidRounds';
 import { roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
+import { progressFormId } from './progress-form-id';
+import { intakeNextAction } from './next-action';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
@@ -45,6 +47,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
   const { row: r, raw, warnings } = hit;
+  const 다음블록 = blockOf(r);
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
@@ -107,8 +110,32 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       </ActionBar>
     );
   }
+  if (!life && newHref) {
+    const nextAction = intakeNextAction(다음블록, r.progress.cancelled, r.progress.delivered);
+    let 주액션: React.ReactNode;
+    if (nextAction.kind === 'new') {
+      주액션 = <Link className="primary" href={newHref}>+ 신규 접수</Link>;
+    } else if (nextAction.kind === 'paper') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'paper')} name="on" value="1" className="primary">계약서 받음</button>;
+    } else if (nextAction.kind === 'plate') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'plate')} className="primary">차량번호 저장</button>;
+    } else if (nextAction.kind === 'delivered') {
+      주액션 = <button type="submit" form={progressFormId(r.id, 'delivered')} name="on" value="1" className="primary">인도 완료</button>;
+    } else if (nextAction.kind === 'settlement') {
+      주액션 = <Link className="primary" href={`/settlement?tab=${nextAction.tab}`}>정산관리</Link>;
+    } else {
+      주액션 = <button type="button" className="primary" disabled>다음 · {nextAction.label}</button>;
+    }
+    바 = (
+      <ActionBar>
+        <Link className="dz-bar-sub" href={back}>목록</Link>
+        {주액션}
+      </ActionBar>
+    );
+  }
+
   const events = await settlements.events(r.plate, r.receivedAt, r.catalogRef?.productId);
-  const 다음 = blockOf(r) ?? (r.progress.cancelled ? '취소됨' : '끝');
+  const 다음 = 다음블록 ?? (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}

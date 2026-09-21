@@ -165,6 +165,8 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
   }
   revalidatePath(`/intake/${code}`);
   revalidatePath('/intake');
+  // 계약서/차량번호/인도 상태는 실적·정산 eligibility와 직결된다.
+  revalidatePath('/settlement');
   return { errors: [] };
 }
 

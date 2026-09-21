@@ -62,10 +62,16 @@ test('parsed conditions merge with explicit facet state without duplicates', () 
 });
 
 
-test('natural search supports dynamic age and known perk words', () => {
-  const q = parseProductSearch('26세 소득확인 분납가능');
-  assert.deepEqual(q.inferred.perk, ['만26세', '소득확인', '분납가능']);
+test('natural search supports canonical age perks and known perk words', () => {
+  const q = parseProductSearch('20세 소득확인 분납가능');
+  assert.deepEqual(q.inferred.perk, ['만20세', '소득확인', '분납가능']);
   assert.equal(q.text, '');
+});
+
+test('age outside canonical perk range is not fabricated as a filter', () => {
+  const q = parseProductSearch('26세');
+  assert.equal(q.inferred.perk, undefined);
+  assert.equal(q.text, '26세');
 });
 
 test('amount ceilings map into the same existing rent and deposit bands', () => {

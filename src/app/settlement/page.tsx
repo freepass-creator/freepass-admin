@@ -167,7 +167,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 status={묶음상태(g)}
                 title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
                 tone={묶음톤(g)}
-                meta={[`${g.lines.length}줄`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
+                meta={[`${g.lines.length}줄`, `${tab === 'claim' ? '수금' : '지급'} ${g.completed}/${g.lines.length}`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
                   g.clawbacks.length ? `환수 ${g.clawbacks.length}` : ''].filter(Boolean).join(' · ')}
                 value={`${won(g.net)}원`} aside={who} />
             ))}
@@ -206,6 +206,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <SummaryItem label="환수">{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</SummaryItem>
                 <SummaryItem label={tab === 'claim' ? '청구할 돈' : '줄 돈'}><b>{won(gSel.net)}원</b></SummaryItem>
                 <SummaryItem label={tab === 'claim' ? '청구서 보냄' : '지급 통보'}>{gSel.done} / {gSel.lines.length}</SummaryItem>
+                <SummaryItem label={tab === 'claim' ? '수금 완료' : '지급 완료'}><b>{gSel.completed} / {gSel.lines.length}</b></SummaryItem>
               </SummaryGrid>
             )}
             {/* 발행 — 번호 · 미리보기(공급가 · 부가세 · 합계) · 막힌 까닭 · 발행 뒤 원장이 바뀜 */}

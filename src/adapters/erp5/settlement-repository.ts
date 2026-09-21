@@ -2,7 +2,7 @@ import { erp5 } from './firestore';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
-import { eventDocId, settlementKey } from '../../domain/settlement/code';
+import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch } from '../../domain/settlement/adjust';
 import { clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
@@ -27,6 +27,7 @@ const EVENTS = 'settlement_events';
 /** 발행 기록 — 한 달 · 한 축 · 한 상대 = 한 문서. 번호가 여기서 안 바뀐다 */
 const INVOICES = 'settlement_invoices';
 const BY = 'freepass-admin';
+const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt);
 
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
@@ -84,7 +85,7 @@ export class Erp5SettlementRepository {
       tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
       const ev: Record<string, unknown> = {};
       for (const e of r.events) ev[audId()] = { at: now, by, ...e };
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+      tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
       return { ok: true as const, changed: r.events.length };
     });
   }
@@ -133,8 +134,8 @@ export class Erp5SettlementRepository {
     if (manualErr.length) throw new Error(manualErr.join(' · '));
     const rec = intakeRecord(input, Date.now(), fee, rules.version);
     const code = String(rec.code);
-    const plate = String(rec.plate);
-    const key = settlementKey(plate, input.receivedAt);
+    const plate = String(rec.plate ?? '');
+    const key = intakeKey(plate, input.sourceProductId, input.receivedAt);
 
     return db.runTransaction(async (tx) => {
       /*
@@ -143,12 +144,19 @@ export class Erp5SettlementRepository {
        *   접수일은 461줄 모두 YYYY-MM-DD 한 꼴이다(실측).
        */
       const same = await tx.get(db.collection(ROWS).where('receivedAt', '==', input.receivedAt));
-      const hit = same.docs.find((d) => settlementKey(d.data().plate, d.data().receivedAt) === key);
+      const hit = same.docs.find((d) => {
+        const x = d.data();
+        if (intakeKey(x.plate, x.sourceProductId, x.receivedAt) === key) return true;
+        const sameProduct = !!input.sourceProductId && String(x.sourceProductId ?? '') === input.sourceProductId;
+        const norm = (v: unknown) => String(v ?? '').replace(/\s/g, '');
+        const samePlate = !!plate && norm(x.plate) === norm(plate);
+        return sameProduct || samePlate;
+      });
       if (hit) return { code: hit.id, created: false };
       const byId = await tx.get(db.collection(ROWS).doc(code));
       if (byId.exists) return { code, created: false };
       tx.create(db.collection(ROWS).doc(code), rec);
-      tx.set(db.collection(EVENTS).doc(eventDocId(plate, input.receivedAt)),
+      tx.set(db.collection(EVENTS).doc(intakeEventDocId(plate, input.sourceProductId, input.receivedAt)),
         { [audId()]: { at: rec.createdAt, by: BY, field: '접수', from: '', to: code } }, { merge: true });
       return { code, created: true };
     });
@@ -225,7 +233,7 @@ export class Erp5SettlementRepository {
         tx.update(db.collection(ROWS).doc(x.code), { ...x.patch, updatedAt: now, stateAt: new Date(now).toISOString(), [`invoiceNo${axis === '공급사' ? 'S' : 'P'}`]: plan.invoice.invoiceNo });
         const ev: Record<string, unknown> = {};
         for (const e of x.events) ev[audId()] = { at: now, by: BY, ...e };
-        if (x.events.length) tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+        if (x.events.length) tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
       }
       /* ★상대에게 보일 사본 — 발행한 줄(보류 뺀)만 · 그 축 금액만 */
       const live = new Set(plan.invoice.codes);
@@ -343,7 +351,7 @@ export class Erp5SettlementRepository {
         tx.update(rd.ref, { ...p.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
         const ev: Record<string, unknown> = {};
         for (const e of p.events) ev[audId()] = { at: now, by: who, ...e };
-        tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)), ev, { merge: true });
+        tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
       }
       tx.update(ref, { response: { state: kind, at: now, ...(memo.trim() ? { memo: memo.trim() } : {}), ...(kind === '이의' ? { codes: target } : {}) }, failCount: 0 });
       return { ok: true as const };
@@ -380,7 +388,7 @@ export class Erp5SettlementRepository {
       const cref = db.collection('settlement_clawbacks').doc(r.id);
       if ((await tx.get(cref)).exists) return { ok: false as const, error: `이 차의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
       tx.create(cref, r.doc);
-      tx.set(db.collection(EVENTS).doc(eventDocId(cur.plate, cur.receivedAt)),
+      tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
         { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
       return { ok: true as const, id: r.id };
     });
@@ -392,8 +400,8 @@ export class Erp5SettlementRepository {
   }
 
   /** 한 줄의 이력 — 최신이 앞. */
-  async events(plate: unknown, receivedAt: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
-    const d = await erp5().collection(EVENTS).doc(eventDocId(plate, receivedAt)).get();
+  async events(plate: unknown, receivedAt: unknown, sourceProductId?: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
+    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(plate, sourceProductId, receivedAt)).get();
     if (!d.exists) return [];
     return Object.values(d.data()!)
       .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')

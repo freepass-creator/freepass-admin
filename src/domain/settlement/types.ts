@@ -229,3 +229,16 @@ export function blockOf(r: SettlementRow): Maybe<Block> {
   }
   return null;
 }
+
+/** 접수 목록의 업무 필터. 화면이 자체 판정을 만들지 않고 blockOf의 다음 손을 그대로 묶는다. */
+export type IntakeTask = '계약' | '차량' | '인도' | '정산' | '완료' | '취소';
+
+export function intakeTaskOf(r: SettlementRow): IntakeTask {
+  if (r.progress.cancelled) return '취소';
+  const block = blockOf(r);
+  if (!block) return '완료';
+  if (block === '계약서') return '계약';
+  if (block === '차량번호 없음') return '차량';
+  if (block === '인도') return '인도';
+  return '정산';
+}

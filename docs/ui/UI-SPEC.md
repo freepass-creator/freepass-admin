@@ -7,6 +7,29 @@
 
 ---
 
+## 0. Shell Baseline — 웹/모바일 기본 틀
+
+이 절은 화면 디자인보다 먼저 적용한다.
+
+### Mobile
+- HTML은 반드시 `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` 를 가진다.
+- `#mapp`은 실제 device width 100%와 `100dvh`를 사용한다. PC 기준 폭을 모바일에서 축소 렌더링하지 않는다.
+- 앱바 52 / 입력 38 / 목록행 64 / 실행 44 토큰을 유지한다.
+- 하단 탭은 기존 **상품 · 접수 · 실적 · 설정** 4개다.
+- 페이지 action이 있으면 기존 `.mact`가 탭바 바로 위에 붙는다.
+- LIST → DETAIL → WORK 전환을 유지하며 PC panel을 세로로 쌓지 않는다.
+
+### Web
+- 왼쪽 rail 기본 200, 접힘 54.
+- 본문은 기존 **목록 7 : 상세 3**, 상세 최소 360px.
+- 제목줄 / 도구줄 / 발치줄은 각 38px.
+- 표 row 34, table header 30.
+- 기존 splitter로 목록/상세 및 좌측 상하 pane 비율 조절 가능.
+
+### AI Core
+AI Core는 위 shell을 다시 디자인하지 않는다.
+기존 UI에 `data.search-discovery`, `data.master-detail`, `navigation.bottom-action`, `navigation.bottom-nav`, `data.variant-selector` 계약만 매핑한다.
+
 ## 1. 눈금 — 높이는 **넷**뿐이다
 
 | 토큰 | 값 | 무엇 | 쓰는 곳 |

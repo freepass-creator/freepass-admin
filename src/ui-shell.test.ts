@@ -8,7 +8,7 @@ const root=read('src/app/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
-const css=read('src/app/globals.css');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));

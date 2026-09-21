@@ -50,7 +50,7 @@ describe('문 열기 — 거둠 · 잠금 · 번호', () => {
 
 describe('굳힌 사본 — ★그 축 금액만 · 손님 이름 가림', () => {
   const row = toSettlementRow({ code: 'a', plate: '12가3456', receivedAt: '2026-09-01', supplier: 'A', channel: 'X', customer: '홍길동',
-    delivered: true, deliveredAt: '2026-09-03', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납' }, 'a').row;
+    paper: true, delivered: true, deliveredAt: '2026-09-03', claimWritten: 1_000_000, payWritten: 800_000, payKind: '일시납' }, 'a').row;
   const g = claimLedger([row], '2026-09', [], new Date(2026, 8, 18))[0];
   it('공급사 사본에는 청구액만 — 지급액(800,000)·우리 몫은 없다', () => {
     const snap = snapshotOf('공급사', 'A', '2026-09', g.lines, []);

@@ -5,7 +5,7 @@ import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '.
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
 import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
 import { claimAmountOf, payAmountOf } from '../money.js';
-import { blockOf } from '../types.js';
+import { blockOf, intakeTaskOf } from '../types.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
@@ -224,6 +224,17 @@ describe('다음 할 일 — 정산대상별 축을 섞지 않는다', () => {
       payWritten: 800_000, paid: false,
     });
     assert.equal(blockOf(both), '영업채널 없음');
+  });
+});
+
+describe('접수 업무 필터 — blockOf와 같은 정본을 쓴다', () => {
+  it('계약/차량/인도/정산/완료/취소를 한 번씩 분류한다', () => {
+    assert.equal(intakeTaskOf(row({ paper: false, plate: '', delivered: false })), '계약');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: '', delivered: false })), '차량');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: false })), '인도');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: true, claimWritten: 1_000_000, billed: false })), '정산');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: true, billed: true, invoiceIssued: true, collected: true, paid: true })), '완료');
+    assert.equal(intakeTaskOf(row({ cancelled: true })), '취소');
   });
 });
 

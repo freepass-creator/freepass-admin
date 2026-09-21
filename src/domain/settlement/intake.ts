@@ -159,6 +159,10 @@ export function progressPatch(
 ): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
   const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true';   // ★domain 은 adapters 를 모른다 — 어댑터 쪽 boolOf() 를 안 끌어온다(방향을 어긴다)
   const S = (v: unknown) => String(v ?? '');
+  const settlementStarted = () =>
+    B(cur.billed) || B(cur.invoiceIssued) || B(cur.collected) || B(cur.paid)
+    || (S(cur.claimStage) && S(cur.claimStage) !== '접수')
+    || (S(cur.payStage) && S(cur.payStage) !== '접수');
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
 
   if (c.kind === 'plate') {
@@ -166,6 +170,7 @@ export function progressPatch(
     if (!plate) return { ok: false, error: '차량번호를 넣어야 합니다' };
     const before = S(cur.plate).replace(/\s/g, '');
     if (before === plate) return { ok: true, patch: {}, events: [] };
+    if (B(cur.delivered) || settlementStarted()) return { ok: false, error: '인도 또는 정산이 시작된 뒤에는 차량번호를 바꿀 수 없습니다' };
     return { ok: true, patch: { plate }, events: [{ field: '차량번호', from: before, to: plate }] };
   }
 
@@ -185,6 +190,7 @@ export function progressPatch(
   }
   if (c.kind === 'paper') {
     if (B(cur.paper) === c.on) return { ok: true, patch: {}, events: [] };
+    if (!c.on && (B(cur.delivered) || settlementStarted())) return { ok: false, error: '인도 또는 정산이 시작된 뒤에는 계약서 확인을 해제할 수 없습니다' };
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }
   if (c.kind === 'delivered') {
@@ -193,6 +199,9 @@ export function progressPatch(
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();
       if (!DAY.test(day)) return { ok: false, error: '인도완료를 켜려면 인도일을 같이 넣어야 합니다' };
+      if (B(cur.delivered) && S(cur.deliveredAt) !== day && settlementStarted()) {
+        return { ok: false, error: '정산이 시작된 뒤에는 인도일을 바꿀 수 없습니다' };
+      }
       const ev: ProgressEvent[] = [];
       if (!B(cur.delivered)) ev.push({ field: '인도완료', from: 'false', to: 'true' });
       if (S(cur.deliveredAt) !== day) ev.push({ field: '인도일', from: S(cur.deliveredAt), to: day });
@@ -200,6 +209,7 @@ export function progressPatch(
     }
     /* ★인도를 끌 때 인도일은 «지우지 않는다» — 잘못 누른 것을 되돌릴 때 날짜를 잃는다 */
     if (!B(cur.delivered)) return { ok: true, patch: {}, events: [] };
+    if (settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 인도를 되돌릴 수 없습니다 — 정정/환수 절차를 사용합니다' };
     return { ok: true, patch: { delivered: false }, events: [{ field: '인도완료', from: 'true', to: 'false' }] };
   }
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */

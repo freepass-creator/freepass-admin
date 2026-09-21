@@ -24,7 +24,7 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -76,7 +76,8 @@ export async function ProductWorkspace({ q, mode, base }: {
    */
   const pool = searchProducts(rows, {} as ProductSearchQuery);
   const 남은요금 = (h: (typeof pool)[number], skip?: 상품축) => h.matchedOffers.filter((o) =>
-    요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k))));
+    요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k)))
+    && offerWithinSearchLimits(o, parsedSearch.limits));
   const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
     차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
     && 남은요금(h, skip).length > 0;

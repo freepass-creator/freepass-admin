@@ -1,0 +1,33 @@
+{
+  "contract": "freepass-admin-ai-core-ui-consumer/v1",
+  "status": "ACTIVE_CONSUMER_MAPPING",
+  "upstream": {
+    "repository": "freepass-creator/ai-core",
+    "revision": "a4a41a0664fbc2d4044841759af33e00b3ceb46b",
+    "feature_registry_version": "1.8.0",
+    "required_features": [
+      "data.list-presentation",
+      "data.search-discovery",
+      "data.variant-selector",
+      "data.master-detail",
+      "navigation.bottom-action",
+      "navigation.bottom-nav"
+    ]
+  },
+  "list_presentation": {
+    "product_catalog": "product-media-row",
+    "application": "business-row",
+    "performance": "business-row",
+    "billing": "business-row",
+    "payout": "business-row",
+    "offer": "variant-card",
+    "dense_relational_comparison": "data-table"
+  },
+  "policy": {
+    "ai_core_semantics_authoritative": true,
+    "product_profile_may_style": true,
+    "product_profile_may_redefine_selection_semantics": false,
+    "responsive_semantic_mode_must_match": true,
+    "drift_behavior": "FAIL_CHECK"
+  }
+}

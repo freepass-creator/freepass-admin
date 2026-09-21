@@ -101,3 +101,9 @@ test('settlement supplier flow places invoice before collection',()=>{
   assert.ok(intakeDetail.includes('biz={life.invoiceBiz}'));
   assert.ok(settlementPage.includes('invoiceBiz: 장?.partyBizNo'));
 });
+
+
+test('supplier lifecycle renders invoice as an explicit step',()=>{
+  assert.ok(intakeDetail.includes("['접수', '청구', '확인', '계산서', '수금']"));
+  assert.ok(intakeDetail.includes("r.progress.invoiceIssued ? '수금' : '계산서'"));
+});

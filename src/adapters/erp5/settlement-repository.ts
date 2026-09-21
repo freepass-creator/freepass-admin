@@ -4,7 +4,7 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
-import { feeFixPatch } from '../../domain/settlement/adjust';
+import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, snapshotOf, tokenHash } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
@@ -174,24 +174,7 @@ export class Erp5SettlementRepository {
    *   그때는 다음 달 이월(carry)로 넘기는 것이 맞다(erp4 「가감사유 → 다음 달에 할 말」).
    */
   async setMoney(code: string, patch: Record<string, unknown>): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    const LABEL: Record<string, string> = {
-      claimIncentive: '프로모션(공급사)', payIncentive: '프로모션(영업자)', promoShare: '프로모션 영업자 비율', promoReason: '프로모션 사유',
-      claimAdjust: '가감(청구)', payAdjust: '가감(지급)', adjustReason: '가감 사유',
-    };
-    const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
-    const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
-    return this.mutateRow(code, (cur) => {
-      if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
-      const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
-      if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
-      const payIssued = ['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true;
-      if (payIssued && changed.some(([k]) => PAY_SIDE.has(k))) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
-      return {
-        ok: true,
-        patch: Object.fromEntries(changed),
-        events: changed.map(([k, v]) => ({ field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') })),
-      };
-    });
+    return this.mutateRow(code, (cur) => moneyEditPatch(cur, patch));
   }
 
   /**

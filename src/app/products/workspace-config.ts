@@ -67,6 +67,7 @@ export type ParsedProductSearch = {
   text: string;
   inferred: Partial<Record<상품축, string[]>>;
   tokens: { axis: 상품축; key: string; label: string }[];
+  limits: { rentMax?: number; depositMax?: number };
 };
 
 /**
@@ -78,6 +79,7 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   let rest = ` ${raw.normalize('NFKC')} `;
   const inferred: Partial<Record<상품축, string[]>> = {};
   const tokens: ParsedProductSearch['tokens'] = [];
+  const limits: ParsedProductSearch['limits'] = {};
   const add = (axis: 상품축, key: string, label: string) => {
     const a = inferred[axis] ?? [];
     if (!a.includes(key)) a.push(key);
@@ -105,12 +107,15 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   // 금액 상한 — 기존 구간 facet을 여러 값 OR로 켠다. 별도 가격 엔진을 만들지 않는다.
   rest = rest.replace(/보증금\s*(\d+(?:\.\d+)?)\s*만(?:원)?\s*(?:이하|이내|밑)/g, (_, n: string) => {
     const max = Number(n) * 10000;
-    for (const b of 보증금구간) if (b.hi <= max) add('dep', b.k, b.label);
+    limits.depositMax = max;
+    // 상한이 구간 중간에 걸리면 그 구간도 후보로 넣고, 마지막에 실제 숫자로 다시 자른다.
+    for (const b of 보증금구간) if (max > b.lo) add('dep', b.k, b.label);
     return ' ';
   });
   rest = rest.replace(/(?:월\s*)?(\d+(?:\.\d+)?)\s*만(?:원)?\s*(?:이하|이내|밑)/g, (_, n: string) => {
     const max = Number(n) * 10000;
-    for (const b of 대여료구간) if (b.hi <= max) add('rent', b.k, b.label);
+    limits.rentMax = max;
+    for (const b of 대여료구간) if (max > b.lo) add('rent', b.k, b.label);
     return ' ';
   });
 
@@ -134,7 +139,7 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   eat(/디젤/, 'fuel', '디젤', '디젤');
   eat(/가솔린|휘발유/, 'fuel', '가솔린', '가솔린');
 
-  return { text: rest.replace(/\s+/g, ' ').trim(), inferred, tokens };
+  return { text: rest.replace(/\s+/g, ' ').trim(), inferred, tokens, limits };
 }
 
 export function mergeProductSelections(
@@ -145,4 +150,18 @@ export function mergeProductSelections(
     axis,
     [...new Set([...(explicit[axis] ?? []), ...(inferred[axis] ?? [])])],
   ])) as Record<상품축, string[]>;
+}
+
+
+/** 자연어에서 읽은 임의 금액 상한을 Offer 실제 숫자로 마지막 확인한다. */
+export function offerWithinSearchLimits(
+  o: Pick<Offer, 'monthlyRent' | 'deposit'>,
+  limits: ParsedProductSearch['limits'],
+): boolean {
+  if (limits.rentMax !== undefined && o.monthlyRent > limits.rentMax) return false;
+  if (limits.depositMax !== undefined) {
+    if (o.deposit === undefined || o.deposit === null) return false;
+    if (o.deposit > limits.depositMax) return false;
+  }
+  return true;
 }

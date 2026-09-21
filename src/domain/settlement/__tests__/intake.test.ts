@@ -49,8 +49,11 @@ describe('validateIntake — 최초 접수 필수값', () => {
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
-  it('★인도완료는 인도일과 같이', () =>
-    assert.match(validateIntake({ ...base, delivered: true }, '2026-09-18').join(), /인도일/));
+  it('★인도완료는 계약서와 인도일을 모두 요구한다', () => {
+    const e = validateIntake({ ...base, paper: false, delivered: true }, '2026-09-18').join();
+    assert.match(e, /계약서/);
+    assert.match(e, /인도일/);
+  });
 });
 
 describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
@@ -146,11 +149,13 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     const r = progressPatch({ paper: true }, { kind: 'paper', on: true });
     assert.ok(r.ok && r.events.length === 0);
   });
+  it('계약서 없으면 인도 완료를 막는다', () =>
+    assert.match(String((progressPatch({ paper: false, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /계약서/));
   it('차량번호 없으면 인도 완료를 막는다', () =>
-    assert.match(String((progressPatch({ plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
-  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
+    assert.match(String((progressPatch({ paper: true, plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
+  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
-    const r = progressPatch({ plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
+    const r = progressPatch({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });

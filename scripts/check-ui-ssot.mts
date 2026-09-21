@@ -99,6 +99,7 @@ const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot
 
 const aiCoreExpected = [
   ['binding.upstream.repository', binding.upstream?.repository, 'freepass-creator/ai-core'],
+  ['ssot.aiCore.upstreamRevision', ssot.aiCore?.upstreamRevision, binding.upstream?.revision],
   ['binding.upstream.feature_registry_version', binding.upstream?.feature_registry_version, '1.8.0'],
   ['binding.policy.ai_core_semantics_authoritative', binding.policy?.ai_core_semantics_authoritative, true],
   ['binding.policy.product_profile_may_redefine_selection_semantics', binding.policy?.product_profile_may_redefine_selection_semantics, false],

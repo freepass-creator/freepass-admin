@@ -7,7 +7,7 @@
  *
  * ★칸 이름은 ERP5 원자 그대로다 (실측 461줄 · 70칸). 새 이름을 만들지 않는다.
  */
-import { settlementCode } from './code';
+import { intakeCode } from './code';
 import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
@@ -60,7 +60,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  */
 export function validateIntake(x: IntakeInput, today: string): string[] {
   const e: string[] = [];
-  if (!x.plate.trim()) e.push('차량번호가 없습니다');
+  if (!x.plate.trim() && !x.sourceProductId?.trim()) e.push('차량번호 또는 상품 원본 ID가 없습니다');
   if (!DAY.test(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 로 넣습니다');
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
   if (!x.customer.trim()) e.push('고객명이 없습니다');
@@ -88,7 +88,7 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
  *   가장 비슷한 규칙에 끼워 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
 export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
-  const code = settlementCode(x.plate, x.receivedAt);
+  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt);
   const iso = new Date(nowMs).toISOString();
   const auto = fee?.status === 'AUTO' ? fee : null;
   const m = x.feeManual;

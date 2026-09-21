@@ -38,6 +38,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const rows = all.map((x) => x.row);
   const focusCode = sp(q.focus).trim();
   const focus = focusCode ? locateSettlementFocus(rows, cb, focusCode, requestedTab) : null;
+  const focusMiss = !!focusCode && !focus;
   const tab = focus?.tab ?? requestedTab;
 
   const months = ledgerMonths(rows, cb);
@@ -123,6 +124,12 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         {/* ── 묶음 — 공급사(청구) / 영업채널(지급) ─────────────────── */}
         <section className="panel product-panel">
           <div className="dz-listtop">
+            {focusMiss && (
+              <Notice tone="warn">
+                이 접수는 지금 ${tab === 'claim' ? '청구' : '지급'} 원장에 설 수 없습니다.{' '}
+                <Link href={`/intake?ic=${encodeURIComponent(focusCode)}&v=work`}>접수 상세에서 막힘 확인</Link>
+              </Notice>
+            )}
             <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />

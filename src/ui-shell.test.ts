@@ -72,3 +72,10 @@ test('intake settlement handoff carries focus and settlement resolves it',()=>{
   assert.ok(settlementPage.includes('locateSettlementFocus'));
   assert.ok(settlementPage.includes("u.delete('focus')"));
 });
+
+
+test('settlement completed row offers next actionable work',()=>{
+  assert.ok(settlementPage.includes('nextActionablePerformanceCode'));
+  assert.ok(intakeDetail.includes('다음 할 일'));
+  assert.ok(intakeDetail.includes('life.nextHref'));
+});

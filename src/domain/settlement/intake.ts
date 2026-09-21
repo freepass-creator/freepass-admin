@@ -181,6 +181,7 @@ export function progressPatch(
    *   인도 전에는 못 적는다(1회차는 인도 때 낸다). 회차 수를 넘지 못한다.
    */
   if (c.kind === 'paidRounds') {
+    if (settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 받은 회차를 바꿀 수 없습니다 — 정정/환수로 처리합니다' };
     const n = (() => { const m = /(\d)\s*회/.exec(S(cur.payKind)); const k = m ? Number(m[1]) : 1; return k >= 2 ? k : 1; })();
     if (n < 2) return { ok: false, error: '분납 줄이 아닙니다 — 받은 회차는 분납에만 적습니다' };
     if (!B(cur.delivered)) return { ok: false, error: '인도 전입니다 — 1회차는 인도 때 냅니다' };

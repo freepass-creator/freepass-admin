@@ -61,6 +61,33 @@ export const adjustPatch = (a: Adjustment): Record<string, unknown> =>
 
 export { promotionFromInput };
 
+/** 프로모션/가감 수정도 문서 발행 전까지만. 어댑터가 상태 규칙을 복제하지 않게 도메인에서 판정한다. */
+export function moneyEditPatch(
+  cur: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
+  const LABEL: Record<string, string> = {
+    claimIncentive: '프로모션(공급사)', payIncentive: '프로모션(영업자)', promoShare: '프로모션 영업자 비율', promoReason: '프로모션 사유',
+    claimAdjust: '가감(청구)', payAdjust: '가감(지급)', adjustReason: '가감 사유',
+  };
+  const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
+  const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
+  if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
+  const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
+  if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) {
+    return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
+  }
+  const payIssued = ['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true;
+  if (payIssued && changed.some(([k]) => PAY_SIDE.has(k))) {
+    return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
+  }
+  return {
+    ok: true,
+    patch: Object.fromEntries(changed),
+    events: changed.map(([k, v]) => ({ field: LABEL[k], from: String(cur[k] ?? ''), to: String(v ?? '') })),
+  };
+}
+
 /**
  * **접수 뒤 수수료 고치기** — 「금액 모름」 줄에 넣거나, 표와 다르게 정해진 금액으로 바꾼다.
  * ★사유가 있어야 한다 · 청구서가 나간 줄의 청구, 지급명세가 나간 줄의 지급은 못 바꾼다(나간 종이와 갈린다 — 가감·이월로).

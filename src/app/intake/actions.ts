@@ -59,7 +59,9 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
    * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
   if (input.sourceProductId || input.sourceOfferId) {
-    if (!input.sourceProductId || !input.sourceOfferId) return { errors: ['상품 접수의 Product/Offer 원본 정보가 불완전합니다 — 상품을 다시 골라 주세요'] };
+    if (!input.sourceProductId || !input.sourceOfferId || input.sourceProductVersion === null || !input.sourceSnapshotId) {
+      return { errors: ['상품 접수의 Product/Version/Offer/Snapshot 정보가 불완전합니다 — 상품을 다시 골라 주세요'] };
+    }
     let product;
     try { product = await productById(input.sourceProductId); }
     catch (e) { return { errors: [`상품을 다시 확인하지 못했습니다 — ${(e as Error).message}`] }; }

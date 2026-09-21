@@ -90,7 +90,7 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   };
 
   // 계약기간은 실제 source-derived 기간이라 어떤 양의 개월 수도 읽는다.
-  rest = rest.replace(/\b(\d{1,3})\s*개월\b/g, (_, n: string) => {
+  rest = rest.replace(/(\d{1,3})\s*개월/g, (_, n: string) => {
     const month = Number(n);
     if (Number.isInteger(month) && month > 0) add('term', String(month), `${month}개월`);
     return ' ';

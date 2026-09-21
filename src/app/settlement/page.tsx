@@ -237,7 +237,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />
                 <EmptyState>가운데 실적 줄을 누르면 그 접수의 진행 · 금액 · 원자 전부가 여기 섭니다.</EmptyState>
-                <EmptyState>청구서 발행 · 수금 · 지급 처리는 업무 규칙이 굳으면 여기 하단바로 들어옵니다.</EmptyState>
+                <EmptyState>청구서·지급명세는 가운데 묶음에서 발행하고, 실적 줄을 고르면 확인·정정·계산서·수금·지급을 오른쪽에서 이어서 처리합니다.</EmptyState>
               </>
             )}
         </section>

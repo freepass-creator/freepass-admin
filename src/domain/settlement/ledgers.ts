@@ -125,7 +125,32 @@ function group(
     g.lines.sort((a, b) => String(a.row.receivedAt).localeCompare(String(b.row.receivedAt)));
     g.rows = g.lines.map((l) => l.row);
   }
-  return [...by.values()].sort((a, b) => b.net - a.net || a.party.localeCompare(b.party));
+  return sortLedgerGroups([...by.values()]);
+}
+
+export type LedgerGroupAttention = 'issue' | 'todo' | 'done';
+
+export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
+  if (g.unknown > 0 || g.broken > 0 || g.clawbacks.length > 0) return 'issue';
+  if (g.done < g.lines.length || g.hold > 0) return 'todo';
+  return 'done';
+}
+
+const attentionRank: Record<LedgerGroupAttention, number> = { issue: 0, todo: 1, done: 2 };
+
+export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
+  return [...groups].sort((a, b) => {
+    const aa = ledgerGroupAttention(a);
+    const ba = ledgerGroupAttention(b);
+    if (aa !== ba) return attentionRank[aa] - attentionRank[ba];
+    const aIssues = a.unknown + a.broken + a.clawbacks.length;
+    const bIssues = b.unknown + b.broken + b.clawbacks.length;
+    if (aIssues !== bIssues) return bIssues - aIssues;
+    const aTodo = Math.max(a.lines.length - a.done, a.hold);
+    const bTodo = Math.max(b.lines.length - b.done, b.hold);
+    if (aTodo !== bTodo) return bTodo - aTodo;
+    return b.net - a.net || a.party.localeCompare(b.party);
+  });
 }
 
 /** 청구목록 — 공급사에게 받을 것. 끝남 = 청구서를 보냈다(`billed`). */

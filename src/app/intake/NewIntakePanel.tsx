@@ -30,7 +30,11 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
     product: 짝?.product ?? '',
     rentKind: 짝?.rentKind ?? '',
-    price: product?.consumerPrice ? String(product.consumerPrice) : '',
+    price: product?.consumerPrice !== undefined ? String(product.consumerPrice) : '',
+    sourceProductId: product?.id ?? '',
+    sourceProductVersion: product ? String(product.version) : '',
+    sourceOfferId: offer?.id ?? '',
+    sourceSnapshotId: product?.sourceSnapshotId ?? '',
   };
   /*
    * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).

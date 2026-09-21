@@ -5,16 +5,16 @@
  *   (대표 2026-09-18 「디자인과 기능은 확실히 분리」).
  * ★상품은 1,615건을 매번 읽으면 느리다 — 60초만 들고 있는다. 정산은 매번 읽는다(방금 쓴 것이 보여야 한다).
  */
-import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
+import { FreepassDataProductRepository } from '../adapters/freepass-data/product-repository';
 import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository';
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 
 const g = globalThis as unknown as {
-  __fpaProducts?: { at: number; rows: CanonicalProduct[]; report: ReturnType<Erp5ProductRepository['report']> };
+  __fpaProducts?: { at: number; rows: CanonicalProduct[]; report: ReturnType<FreepassDataProductRepository['report']> };
 };
 
-export const products = new Erp5ProductRepository();
+export const products = new FreepassDataProductRepository();
 export const settlements = new Erp5SettlementRepository();
 export const contracts = new Erp5ContractRepository();
 

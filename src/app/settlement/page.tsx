@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
-import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
+import { claimLedger, ledgerGroupAttention, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
@@ -93,6 +93,19 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
               : stage === '청구' || stage === '통보' ? { icon: 'send', label: stage, tone: 'navy' }
                 : { icon: 'clipboard', label: '접수', tone: 'grey' };
   const 금액 = (n: number | null | undefined) => (n === null || n === undefined ? '금액 모름' : `${won(n)}원`);
+  const 묶음상태 = (g: (typeof groups)[number]): RowStatus => {
+    if (month === NO_MONTH) return { icon: 'alert', label: '미정', tone: 'red' };
+    const attention = ledgerGroupAttention(g);
+    if (attention === 'issue') return { icon: 'alert', label: '이슈', tone: 'red' };
+    if (attention === 'done') return { icon: 'circle-check', label: '완료', tone: 'green' };
+    return g.done > 0
+      ? { icon: 'clock', label: `${g.done}/${g.lines.length}`, tone: 'navy' }
+      : { icon: 'clock', label: '대기', tone: 'navy' };
+  };
+  const 묶음톤 = (g: (typeof groups)[number]) => {
+    const attention = ledgerGroupAttention(g);
+    return attention === 'issue' ? 'warn' as const : attention === 'todo' ? 'act' as const : 'plain' as const;
+  };
 
   return (
     <>
@@ -130,12 +143,9 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           <div className="list">
             {shownGroups.map((g) => (
               <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
-                status={month === NO_MONTH ? { icon: 'alert', label: '미정', tone: 'red' }
-                  : g.done >= g.lines.length ? { icon: 'circle-check', label: '완료', tone: 'green' }
-                    : g.done > 0 ? { icon: 'clock', label: `${g.done}/${g.lines.length}`, tone: 'navy' }
-                      : { icon: 'file-text', label: '대기', tone: 'grey' }}
+                status={묶음상태(g)}
                 title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
-                tone={g.done < g.lines.length ? 'act' : 'plain'}
+                tone={묶음톤(g)}
                 meta={[`${g.lines.length}줄`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
                   g.clawbacks.length ? `환수 ${g.clawbacks.length}` : ''].filter(Boolean).join(' · ')}
                 value={`${won(g.net)}원`} aside={who} />

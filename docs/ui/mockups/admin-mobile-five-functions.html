@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>FreePass Admin · 모바일 5기능 목업</title>
+  <style>
+    :root {
+      --navy:#1b2a4a; --sky:#9ec5f3; --ground:#eef1f4; --panel:#fff;
+      --box:#f6f7f9; --picked:#e6ecf5; --ink:#202733; --muted:#687383;
+      --line:#dfe4ea; --good:#15803d; --good-bg:#f0fdf4;
+      --warn:#9a6700; --warn-bg:#fff7db; --bad:#b42318; --bad-bg:#fff0ee;
+      --radius:4px; --control:40px; --action:44px;
+    }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    html,body { margin:0; min-height:100%; background:#dfe4e9; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; box-shadow:0 0 28px rgba(27,42,74,.12); }
+    .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
+    .statusbar > div { min-width:0; flex:1; }
+    .statusbar h1 { margin:0; font-size:18px; line-height:1; }
+    .statusbar h1 span { margin-left:5px; color:var(--muted); font-size:14px; }
+    .statusbar small { color:var(--muted); font-size:12px; }
+    .sync { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--good); font-weight:700; }
+    .sync::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--good); }
+    main { padding:12px 12px calc(76px + env(safe-area-inset-bottom)); }
+    #screen { min-height:calc(100dvh - 52px - 88px); }
+    .panel-head { min-height:32px; display:flex; align-items:flex-start; gap:8px; margin-bottom:12px; }
+    .panel-head h2 { margin:0; font-size:18px; line-height:1.25; }
+    .panel-head span { color:var(--muted); font-size:14px; font-weight:700; }
+    .panel-head p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:10px; }
+    .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 11px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; }
+    .search-field input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; background:transparent; }
+    .search > button { min-width:76px; height:44px; padding:0 12px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; color:var(--navy); font-size:13px; font-weight:700; white-space:nowrap; }
+    .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
+    .chips::-webkit-scrollbar { display:none; }
+    .chip { height:40px; padding:0 13px; border:0; border-radius:var(--radius); background:var(--box); color:#445064; font-size:13px; white-space:nowrap; }
+    .chip.on { background:var(--navy); color:#fff; font-weight:700; }
+    .list { display:grid; gap:8px; }
+    .row { width:100%; min-height:88px; padding:12px; border:0; border-radius:var(--radius); background:var(--box); color:inherit; text-align:left; display:grid; grid-template-columns:64px 1fr; gap:12px; }
+    .row:active { background:var(--picked); }
+    .thumb { width:64px; height:64px; border-radius:var(--radius); background:linear-gradient(145deg,#dce4eb,#f8fafb); display:grid; place-items:center; color:var(--navy); font-size:12px; font-weight:800; text-align:center; overflow:hidden; }
+    .thumb.car::before { content:""; width:50px; height:21px; border-radius:12px 15px 6px 6px; background:var(--navy); box-shadow:0 16px 0 -7px #8190a2; }
+    .row-body { min-width:0; display:grid; align-content:center; gap:5px; }
+    .row-title { display:flex; align-items:center; gap:6px; min-width:0; }
+    .row-title b { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .meta,.sub { color:var(--muted); font-size:12px; line-height:1.3; }
+    .value { font-size:14px; font-weight:800; color:var(--navy); }
+    .tag { display:inline-flex; align-items:center; width:max-content; padding:5px 9px; border-radius:8px; background:#eaeef2; color:#525c68; font-size:12px; font-weight:700; }
+    .tag.good { background:var(--good-bg); color:var(--good); }
+    .tag.warn { background:var(--warn-bg); color:var(--warn); }
+    .tag.bad { background:var(--bad-bg); color:var(--bad); }
+    .identity { padding:14px; margin-bottom:10px; background:var(--box); border-radius:var(--radius); }
+    .identity h3 { margin:0 0 4px; font-size:18px; }
+    .identity p { margin:0; color:var(--muted); font-size:12px; }
+    .money { margin-top:10px; color:var(--navy); font-size:20px; font-weight:900; }
+    .summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+    .summary div { min-height:66px; padding:10px; background:var(--box); border-radius:var(--radius); }
+    .summary small { display:block; margin-bottom:5px; color:var(--muted); font-size:12px; }
+    .summary b { font-size:14px; }
+    .section { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .section h4 { margin:0 0 9px; font-size:14px; }
+    .facts { display:grid; gap:8px; }
+    .fact { display:flex; justify-content:space-between; gap:14px; font-size:13px; }
+    .fact span { color:var(--muted); }
+    .fact b { text-align:right; }
+    .offer { width:100%; padding:12px; border:0; border-radius:var(--radius); background:var(--box); color:inherit; text-align:left; display:grid; gap:5px; }
+    .offer + .offer { margin-top:8px; }
+    .offer.on { background:var(--picked); box-shadow:inset 3px 0 0 var(--navy); }
+    .offer strong { font-size:14px; }
+    .offer small { color:var(--muted); font-size:12px; }
+    .form { display:grid; gap:10px; }
+    .form label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
+    .form input,.form select { height:40px; padding:0 10px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; color:var(--ink); font-size:16px; }
+    .timeline { display:grid; gap:8px; }
+    .step { display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; min-height:44px; padding:8px 10px; background:var(--box); border-radius:var(--radius); font-size:13px; }
+    .step i { width:18px; height:18px; border-radius:50%; background:#cbd3dc; color:#fff; font-style:normal; display:grid; place-items:center; font-size:11px; }
+    .step.done i { background:var(--good); }
+    .step small { color:var(--muted); }
+    .notice { padding:10px; border-radius:var(--radius); background:var(--warn-bg); color:#725000; font-size:12px; line-height:1.5; }
+    .bottom-nav,.actionbar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,430px); z-index:30; padding-bottom:env(safe-area-inset-bottom); }
+    .bottom-nav { height:calc(60px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); padding:0 4px env(safe-area-inset-bottom); background:var(--panel); border-top:1px solid var(--line); box-shadow:0 -2px 8px rgba(15,23,42,.05); }
+    .bottom-nav button { height:100%; padding:0 2px; border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:500; }
+    .bottom-nav button.on { color:var(--navy); font-weight:700; }
+    .bottom-nav svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.9; }
+    .bottom-nav button.on svg { fill:rgba(27,42,74,.12); }
+    .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; border-top:1px solid var(--line); }
+    .actionbar.three { grid-template-columns:3fr 3fr 4fr; }
+    .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
+    .secondary { background:#fff; color:var(--navy); }
+    .primary { background:var(--navy); color:#fff; }
+    .sheet-wrap { position:fixed; inset:0; z-index:60; display:grid; align-items:end; }
+    .scrim { position:absolute; inset:0; border:0; background:rgba(15,23,42,.42); }
+    .sheet { position:relative; width:min(100%,430px); margin:0 auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); background:#fff; border-radius:12px 12px 0 0; box-shadow:0 -8px 30px rgba(15,23,42,.18); }
+    .sheet-head { display:flex; align-items:center; justify-content:space-between; min-height:44px; border-bottom:1px solid var(--line); }
+    .sheet-head h3 { margin:0; font-size:17px; }
+    .sheet-head button { width:44px; height:44px; border:0; background:transparent; font-size:22px; }
+    .filter-body { height:280px; display:grid; grid-template-columns:116px 1fr; }
+    .filter-axes { padding:4px 0; overflow:auto; background:var(--box); }
+    .filter-axes button { width:100%; min-height:50px; padding:0 12px; border:0; background:transparent; color:var(--muted); text-align:left; font-size:13px; }
+    .filter-axes button.on { background:#fff; color:var(--navy); font-weight:800; }
+    .filter-values { padding:12px 16px; overflow:auto; }
+    .filter-values strong { display:block; min-height:32px; font-size:13px; }
+    .filter-values label { min-height:44px; display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; font-size:13px; }
+    .filter-values small { color:var(--muted); font-variant-numeric:tabular-nums; }
+    .sheet-actions { display:grid; grid-template-columns:3fr 7fr; gap:8px; }
+    .sheet-actions button { min-height:44px; border:0; border-radius:var(--radius); font-weight:800; }
+    .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:13px; }
+    :focus-visible { outline:2px solid var(--navy); outline-offset:2px; }
+  </style>
+</head>
+<body>
+<div class="phone">
+  <header class="statusbar" id="status"></header>
+  <main><section id="screen"></section></main>
+  <nav class="bottom-nav" id="nav" aria-label="주요 업무"></nav>
+  <div class="actionbar" id="actions" hidden></div>
+  <div class="sheet-wrap" id="filterSheet" hidden></div>
+</div>
+<script>
+const ICONS={
+  product:'<path d="M4 7h16v12H4z"/><path d="M7 7V4h10v3M8 12h8"/>',
+  intake:'<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  contract:'<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h5M8 13h8M8 17h6"/>',
+  performance:'<path d="M4 19V9M10 19V5M16 19v-7M3 19h18"/>',
+  settlement:'<path d="M4 6h16v12H4z"/><path d="M4 10h16M8 15h3"/>'
+};
+const LABEL={product:'상품',intake:'접수',contract:'계약',performance:'실적',settlement:'정산'};
+const state={module:'product',depth:0,selected:null,offer:'o36',filter:'전체',toast:''};
+const data={
+ product:[
+  {id:'p1',title:'싼타페 MX5 캘리그래피',meta:'B렌터카 · 즉시출고',value:'36개월 · 월 920,000원',tag:'무보증',tone:'good'},
+  {id:'p2',title:'더 뉴 K5 DL3 노블레스',meta:'C렌터카 · 차량번호 보유',value:'24개월 · 월 780,000원',tag:'카드결제',tone:''},
+  {id:'p3',title:'쏘나타 디 엣지',meta:'A렌터카 · 세부트림 미확인',value:'36개월 · 월 690,000원',tag:'21세 가능',tone:'warn'}],
+ intake:[
+  {id:'a1',title:'김민수 · 싼타페 MX5',meta:'A-260921-014 · 오토채널 · 박지훈',value:'계약 진행 중',tag:'서류 대기',tone:'warn'},
+  {id:'a2',title:'이서연 · 더 뉴 K5',meta:'A-260921-013 · 제휴영업 · 최유진',value:'접수 완료',tag:'계약 대기',tone:''},
+  {id:'a3',title:'정우진 · GV80',meta:'A-260920-041 · 직영 · 박지훈',value:'인도 완료',tag:'실적 생성',tone:'good'}],
+ contract:[
+  {id:'c1',title:'김민수 · 싼타페 MX5',meta:'E-260921-041 · 14:32 발송',value:'고객 서명 대기',tag:'발송',tone:'warn'},
+  {id:'c2',title:'이서연 · 더 뉴 K5',meta:'E-260921-040 · 제출 13:18',value:'관리자 검토 대기',tag:'검토',tone:'warn'},
+  {id:'c3',title:'정우진 · GV80',meta:'E-260920-122 · 완료 09:11',value:'계약 완료',tag:'봉인 완료',tone:'good'}],
+ performance:[
+  {id:'r1',title:'정우진 · GV80',meta:'P-260920-031 · D렌터카 · 직영',value:'마진 310,000원',tag:'공급사 확인',tone:'warn'},
+  {id:'r2',title:'한지우 · 쏘나타',meta:'P-260919-028 · A렌터카 · 오토채널',value:'마진 190,000원',tag:'완료',tone:'good'},
+  {id:'r3',title:'박서준 · K5',meta:'P-260918-017 · C렌터카 · 제휴영업',value:'마진 확인 필요',tag:'이슈',tone:'bad'}],
+ settlement:[
+  {id:'s1',title:'D렌터카 · 2026년 9월',meta:'실적 12건 · 청구 8건',value:'미수 3,240,000원',tag:'수금 대기',tone:'warn'},
+  {id:'s2',title:'오토채널 · 2026년 9월',meta:'지급 대상 7건',value:'미지급 2,030,000원',tag:'지급 대기',tone:'warn'},
+  {id:'s3',title:'A렌터카 · 2026년 8월',meta:'실적 18건 · 전액 수금',value:'마감 완료',tag:'완료',tone:'good'}]
+};
+const $=s=>document.querySelector(s);
+function icon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`}
+function current(){return data[state.module].find(x=>x.id===state.selected)||data[state.module][0]}
+function status(){
+  const homeTitle={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
+  const detailTitle={product:'상품 상세',intake:'접수 상세',contract:'전자계약 상세',performance:'실적 상세',settlement:'정산 상세'};
+  const title=state.depth===2?'신규 계약접수':(state.depth?detailTitle[state.module]:homeTitle[state.module]);
+  const homeState={product:['3대','판매 가능'],intake:['3건','할 일 2건'],contract:['3건','서명·검토 대기 2건'],performance:['3건','확인 필요 2건'],settlement:['3건','미수·미지급 2건']};
+  const detailState={product:'즉시출고 · Offer 선택',intake:'진행 중 · 다음 계약',contract:'고객 서명 대기',performance:'공급사 확인 중',settlement:'수금 대기'};
+  const count=state.depth?'':`<span>${homeState[state.module][0]}</span>`;
+  const sub=state.depth===2?'작성 중 · Snapshot 저장 전':(state.depth?detailState[state.module]:homeState[state.module][1]);
+  $('#status').innerHTML=`<div><h1>${title}${count}</h1><small>${sub}</small></div><span class="sync">연결 정상</span>`;
+}
+function nav(){
+  $('#nav').hidden=!!state.depth;
+  $('#nav').innerHTML=Object.keys(LABEL).map(k=>`<button data-k="${k}" class="${state.module===k?'on':''}">${icon(k)}<span>${LABEL[k]}</span></button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.module=b.dataset.k;state.depth=0;state.selected=null;render()});
+}
+function list(){
+ const placeholders={product:'차량·공급사·조건 검색',intake:'고객·차량·접수번호 검색',contract:'고객·계약번호 검색',performance:'고객·차량번호·공급사 검색',settlement:'공급사·채널·정산월 검색'};
+ const chips={product:['전체','무보증','21세','즉시출고'],intake:['전체','할 일','진행 중','인도 완료'],contract:['전체','발송 대기','서명 대기','검토'],performance:['전체','할 일','이슈','완료'],settlement:['전체','청구','수금','지급']}[state.module];
+ return `<div class="search"><label class="search-field">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"></label><button id="openFilter" aria-haspopup="dialog">세부필터</button></div>
+ <div class="chips">${chips.map(x=>`<button class="chip ${state.filter===x?'on':''}" data-filter="${x}">${x}</button>`).join('')}</div>
+ <div class="list">${data[state.module].map(row).join('')}</div>`;
+}
+function row(x){return `<button class="row" data-id="${x.id}"><span class="thumb ${state.module==='product'?'car':''}">${state.module==='product'?'':LABEL[state.module]}</span><span class="row-body"><span class="row-title"><b>${x.title}</b><span class="tag ${x.tone}">${x.tag}</span></span><span class="meta">${x.meta}</span><span class="value">${x.value}</span></span></button>`}
+function detail(){return ({product:productDetail,intake:intakeDetail,contract:contractDetail,performance:performanceDetail,settlement:settlementDetail}[state.module])()}
+function productDetail(){const x=current();return `<div class="identity"><span class="tag good">즉시출고</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">월 920,000원</div></div><div class="section"><h4>계약조건 선택</h4><button class="offer ${state.offer==='o24'?'on':''}" data-offer="o24"><strong>24개월 · 월 990,000원</strong><small>보증금 1,000,000원 · 연 20,000km · 카드결제</small></button><button class="offer ${state.offer==='o36'?'on':''}" data-offer="o36"><strong>36개월 · 월 920,000원</strong><small>무보증 · 연 20,000km · 만 21세 · 카드결제</small></button></div><div class="section"><h4>차량 정보</h4><div class="facts"><div class="fact"><span>차량</span><b>싼타페 MX5 캘리그래피</b></div><div class="fact"><span>연료 / 구동</span><b>하이브리드 / 2WD</b></div><div class="fact"><span>공급사</span><b>B렌터카</b></div></div></div>`}
+function intakeDetail(){const x=current();return `<div class="identity"><span class="tag warn">진행 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">월 920,000원</div></div><div class="section"><h4>진행 사실</h4><div class="timeline"><div class="step done"><i>✓</i><b>접수 완료</b><small>14:08</small></div><div class="step done"><i>✓</i><b>전자계약 발송</b><small>14:32</small></div><div class="step"><i></i><b>계약 완료</b><small>대기</small></div><div class="step"><i></i><b>인도 완료</b><small>대기</small></div></div></div><div class="section"><h4>담당</h4><div class="facts"><div class="fact"><span>영업채널</span><b>오토채널</b></div><div class="fact"><span>담당자</span><b>박지훈</b></div></div></div>`}
+function contractDetail(){const x=current();return `<div class="identity"><span class="tag warn">고객 서명 대기</span><h3>${x.title}</h3><p>${x.meta} · 문서 rev.3</p></div><div class="section"><h4>계약 흐름</h4><div class="timeline"><div class="step done"><i>✓</i><b>계약서 생성</b><small>14:30</small></div><div class="step done"><i>✓</i><b>서명 링크 발송</b><small>14:32</small></div><div class="step"><i></i><b>고객 서명</b><small>대기</small></div><div class="step"><i></i><b>관리자 검토·봉인</b><small>대기</small></div></div></div><div class="section"><div class="notice">주민번호는 전자계약 서비스에서 수집하며 관리자 화면에서는 표시하지 않습니다.</div></div>`}
+function performanceDetail(){const x=current();return `<div class="identity"><span class="tag warn">공급사 확인 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">마진 310,000원</div></div><div class="summary"><div><small>공급사 청구</small><b>1,240,000원</b></div><div><small>채널 지급</small><b>930,000원</b></div></div><div class="section"><h4>대조 단계</h4><div class="timeline"><div class="step done"><i>✓</i><b>영업자 확인</b><small>완료</small></div><div class="step"><i></i><b>공급사 Cross Check</b><small>진행 중</small></div><div class="step"><i></i><b>최종 확정</b><small>대기</small></div></div></div>`}
+function settlementDetail(){const x=current();return `<div class="identity"><span class="tag warn">수금 대기</span><h3>${x.title}</h3><p>${x.meta} · 확정금액 변경 금지</p><div class="money">미수 3,240,000원</div></div><div class="summary"><div><small>청구확정</small><b>8,760,000원</b></div><div><small>실제수금</small><b>5,520,000원</b></div></div><div class="section"><h4>처리 이력</h4><div class="timeline"><div class="step done"><i>✓</i><b>청구서 생성</b><small>9/20</small></div><div class="step done"><i>✓</i><b>계산서 증빙</b><small>9/21</small></div><div class="step"><i></i><b>잔여 수금</b><small>3,240,000원</small></div></div></div>`}
+function applicationForm(){return `<div class="identity"><span class="tag good">선택 조건</span><h3>싼타페 MX5 캘리그래피</h3><p>36개월 · 월 920,000원 · 무보증 · 연 20,000km</p></div><div class="form"><label>영업채널<select><option>오토채널</option><option>제휴영업</option><option>직영</option></select></label><label>담당자<select><option>박지훈</option><option>최유진</option></select></label><label>고객명<input id="customer" placeholder="고객명을 입력하세요"></label><label>연락처 · 선택<input placeholder="010-0000-0000"></label></div>`}
+function actions(){
+ const el=$('#actions'); if(!state.depth){el.hidden=true;return} el.hidden=false; el.className='actionbar';
+ if(state.depth===2){el.innerHTML='<button class="secondary" id="backAction">이전</button><button class="primary" id="save">접수 저장</button>';$('#backAction').onclick=()=>{state.depth=1;render()};$('#save').onclick=()=>{state.module='intake';state.depth=0;state.selected=null;render()};return}
+ const config={
+  product:{secondary:'공유',primary:'접수하기'},
+  intake:{primary:'전자계약'},
+  contract:{secondary:'다시 보내기',primary:'상태 확인'},
+  performance:{secondary:'이슈 등록',primary:'확인 완료'},
+  settlement:{secondary:'지급 보기',primary:'수금 등록'}
+ }[state.module];
+ el.classList.toggle('three',!!config.secondary);
+ el.innerHTML=`<button class="secondary" id="backAction">목록</button>${config.secondary?`<button class="secondary" id="secondaryAction">${config.secondary}</button>`:''}<button class="primary" id="primary">${config.primary}</button>`;
+ $('#backAction').onclick=()=>{state.depth=0;state.selected=null;render()};
+ if($('#secondaryAction')) $('#secondaryAction').onclick=()=>alert('목업 동작: '+config.secondary);
+ $('#primary').onclick=()=>{if(state.module==='product'){state.depth=2;render()}else if(state.module==='intake'){state.module='contract';state.depth=1;state.selected='c1';render()}else alert('목업 동작: '+config.primary)};
+}
+function openFilter(){
+ const facets={
+  product:{axes:['출고상태','상품구분','혜택','계약기간'],title:'출고상태',values:[['즉시출고',128],['출고협의',12],['출고불가',0]]},
+  intake:{axes:['할 일','진행상태','담당자','접수일'],title:'할 일',values:[['서류 확인',8],['계약 대기',4],['실적 생성',2]]},
+  contract:{axes:['서명상태','발송상태','담당자','계약일'],title:'서명상태',values:[['발송 대기',3],['서명 대기',5],['완료',18]]},
+  performance:{axes:['확인상태','이슈','공급사','인도월'],title:'확인상태',values:[['확인 필요',6],['공급사 대기',3],['완료',21]]},
+  settlement:{axes:['정산단계','정산월','공급사','영업채널'],title:'정산단계',values:[['청구',7],['계산서',4],['수금',6],['지급',9]]}
+ }[state.module];
+ const sheet=$('#filterSheet'); sheet.hidden=false;
+ sheet.innerHTML=`<button class="scrim" aria-label="세부필터 닫기"></button><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterTitle"><div class="sheet-head"><h3 id="filterTitle">상세 조건</h3><button id="closeFilter" aria-label="닫기">×</button></div><div class="filter-body"><nav class="filter-axes" aria-label="조건 항목">${facets.axes.map((x,i)=>`<button class="${i?'':'on'}">${x}</button>`).join('')}</nav><div class="filter-values"><strong>${facets.title}</strong>${facets.values.map(([x,n])=>`<label><input type="checkbox" ${state.filter===x?'checked':''}><span>${x}</span><small>${n}</small></label>`).join('')}</div></div><div class="sheet-actions"><button class="secondary" id="resetFilter">초기화</button><button class="primary" id="applyFilter">${data[state.module].length}${state.module==='product'?'대':'건'} 보기</button></div></section>`;
+ const close=()=>{sheet.hidden=true;$('#openFilter')?.focus()};
+ sheet.querySelector('.scrim').onclick=close; $('#closeFilter').onclick=close; $('#resetFilter').onclick=()=>{state.filter='전체';close();render()}; $('#applyFilter').onclick=close;
+ $('#closeFilter').focus();
+}
+function bind(){
+ document.querySelectorAll('.row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;state.depth=1;render()});
+ document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
+ document.querySelectorAll('.offer').forEach(b=>b.onclick=()=>{state.offer=b.dataset.offer;render()});
+ if($('#openFilter')) $('#openFilter').onclick=openFilter;
+}
+function render(){status();nav();$('#screen').innerHTML=state.depth===2?applicationForm():(state.depth?detail():list());actions();bind()}
+render();
+</script>
+</body>
+</html>

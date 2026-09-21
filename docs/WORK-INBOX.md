@@ -840,3 +840,51 @@ AI Core 적용:
 
 최신 branch:
 `work/gpt/admin-p18-existing-ui-ai-core-alignment-20260921`
+
+
+---
+
+## 24. P19 Shell Baseline — 웹/모바일 기본 틀 고정 — 2026-09-21
+
+사용자 피드백:
+기존 승인 디자인을 새로 만들지 말고, 웹/모바일의 **기본 틀부터 규격대로 정상화**한다.
+
+### 발견 원인
+기존 `admin-shell.html`에 mobile viewport meta가 없어 Android 브라우저가 PC 폭 기준으로 페이지를 축소 렌더링했다.
+그 결과 앱바/목록/하단탭 전체가 실제 모바일 규격보다 매우 작게 보였다.
+
+### 수정
+- viewport: `width=device-width, initial-scale=1, viewport-fit=cover`
+- mobile root: width 100% + 100dvh + outer scroll 차단
+- desktop/mobile breakpoint를 명시적으로 상호 배타 고정
+- 기존 모바일 토큰 유지:
+  - app bar 52
+  - control 38
+  - list row 64
+  - action 44
+- 기존 mobile bottom tabs 유지:
+  - 상품
+  - 접수
+  - 실적
+  - 설정
+- 기존 action strip `.mact`는 tab bar 위
+- 기존 Web shell 유지:
+  - rail 200 / collapsed 54
+  - list : detail = 7 : 3
+  - detail min 360
+  - ph/bar/pf = 38
+  - table row = 34
+- AI Core는 invisible behavior binding만 적용
+- 기간 filter option은 실제 Product Offer에서 source-derived 생성
+
+### 금지
+- shell 안정화 중 새 card/button/nav 디자인 생성
+- 기존 mobile 4-tab을 다른 탭 수로 변경
+- 기존 desktop 7:3을 임의의 1:1:1 구조로 변경
+- AI Core 적용을 이유로 기존 FreePass visual grammar 교체
+
+Preview:
+`https://surging-fader-dp29hr4.shipstatic.com`
+
+Latest branch:
+`work/gpt/admin-p19-shell-baseline-20260921`

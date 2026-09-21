@@ -171,9 +171,13 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   });
   it('취소는 사유가 있어야 · 사유는 메모에 덧붙인다', () => {
     assert.equal(progressPatch({}, { kind: 'cancelled', on: true }).ok, false);
-    const r = progressPatch({ note: '원래 메모' }, { kind: 'cancelled', on: true, reason: '고객 변심' });
+    const r = progressPatch({ note: '원래 메모', claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: true, reason: '고객 변심' });
     assert.ok(r.ok);
     assert.equal(r.ok && r.patch.note, '원래 메모 / [취소] 고객 변심');
+  });
+  it('청구/통보 등 정산이 시작된 뒤에는 일반 취소하지 않는다', () => {
+    assert.equal(progressPatch({ billed: true, claimStage: '청구', payStage: '통보' }, { kind: 'cancelled', on: true, reason: '중도 해지' }).ok, false);
+    assert.equal(progressPatch({ claimStage: '확인', payStage: '확인' }, { kind: 'cancelled', on: true, reason: '중도 해지' }).ok, false);
   });
   it('취소된 줄은 취소를 풀기 전에 못 고친다', () =>
     assert.equal(progressPatch({ cancelled: true }, { kind: 'paper', on: true }).ok, false));

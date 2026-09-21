@@ -3,7 +3,7 @@ import { writeEnabled } from '../adapters/erp5/settlement-repository';
 import { contracts, productList, settlements } from './erp5';
 
 export type DataProbe = {
-  key: 'products' | 'intakes' | 'clawbacks' | 'contracts';
+  key: 'products' | 'intakes' | 'clawbacks' | 'cashEvents' | 'contracts';
   label: string;
   ok: boolean;
   count: number | null;
@@ -26,6 +26,7 @@ export async function adminDataStatus() {
     probe('products', '상품', async () => (await productList()).rows),
     probe('intakes', '접수·정산원장', async () => (await settlements.list()).map((x) => x.row)),
     probe('clawbacks', '환수', () => settlements.clawbacks()),
+    probe('cashEvents', '수금·지급 거래', () => settlements.cashEvents()),
     probe('contracts', '전자계약', () => contracts.list()),
   ]);
   return {

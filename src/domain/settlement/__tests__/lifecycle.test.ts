@@ -100,13 +100,16 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifePatch(supplierNoInvoice, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' }).ok, false);
 
     assert.equal(lifePatch(billed, { kind: 'invoice', on: true, day: '2026-09-30' }).ok, false);
-    assert.equal(lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30' }).ok, true);
+    assert.equal(lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123-45-67890' }).ok, true);
 
     const channelConfirmed = mk({ billed: true, claimStage: '청구', payStage: '확인' });
     const paid = lifePatch(channelConfirmed, { kind: 'paid', amount: 880_000, day: '2026-09-30' });
     assert.equal(paid.ok && paid.patch.payStage, '지급');
 
     assert.equal(lifePatch(mk({}), { kind: 'invoice', on: true }).ok, false);
+    const invoice = lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123-45-67890' });
+    assert.equal(invoice.ok && invoice.patch.invoiceBiz, '1234567890');
+    assert.equal(lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123' }).ok, false);
   });
   it('부분수금/부분지급은 누적하고 전액에 닿을 때만 완료한다', () => {
     const supplierConfirmed = mk({ billed: true, invoiceIssued: true, claimStage: '확인', collectedAmt: 0 });

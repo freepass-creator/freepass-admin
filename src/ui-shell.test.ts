@@ -93,3 +93,17 @@ test('focused settlement miss stays fail-closed and points back to intake',()=>{
   assert.ok(settlementPage.includes('접수 상세에서 막힘 확인'));
   assert.ok(settlementPage.includes('/intake?ic='));
 });
+
+
+test('settlement supplier flow places invoice before collection',()=>{
+  assert.ok(intakeDetail.includes('settlementPrimaryAction'));
+  assert.ok(intakeDetail.includes("label: '계산서 끊기'"));
+  assert.ok(intakeDetail.includes('biz={life.invoiceBiz}'));
+  assert.ok(settlementPage.includes('invoiceBiz: 장?.partyBizNo'));
+});
+
+
+test('supplier lifecycle renders invoice as an explicit step',()=>{
+  assert.ok(intakeDetail.includes("['접수', '청구', '확인', '계산서', '수금']"));
+  assert.ok(intakeDetail.includes("r.progress.invoiceIssued ? '수금' : '계산서'"));
+});

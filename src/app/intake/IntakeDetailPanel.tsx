@@ -17,6 +17,7 @@ import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
 import { intakeNextAction } from './next-action';
+import { settlementPrimaryAction } from '../settlement/primary-action';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
@@ -27,7 +28,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
    * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
    * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
    */
-  life?: { axis: Axis; mode: string; link: (mode: string) => string; nextHref?: string; nextGroupHref?: string };
+  life?: { axis: Axis; mode: string; link: (mode: string) => string; nextHref?: string; nextGroupHref?: string; invoiceBiz?: string };
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   let 바 = (
@@ -58,28 +59,37 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   if (life) {
     const 청구축 = life.axis === '공급사';
     const stage = 청구축 ? r.claimStage : r.payStage;
-    const 길 = 청구축 ? ['접수', '청구', '확인', '수금'] : ['접수', '통보', '확인', '지급'];
+    const 길 = 청구축 ? ['접수', '청구', '확인', '계산서', '수금'] : ['접수', '통보', '확인', '지급'];
+    const 현재걸음 = 청구축 && stage === '확인'
+      ? (r.progress.invoiceIssued ? '수금' : '계산서')
+      : stage;
+    const 현재순번 = 길.indexOf(현재걸음);
     const fid = `life-${r.id}`;
     const 끝말 = 청구축 ? '수금' : '지급';
     const 누적현금 = 청구축 ? (r.progress.collectedAmt ?? 0) : (r.progress.paidAmt ?? 0);
     const 남은현금 = cashRemainingOf(life.axis, r);
     const 정정중 = life.mode === 'correct' && stage !== '접수';
+    const primary = settlementPrimaryAction(r, life.axis);
     let 주: { label: string; form: React.ReactNode } | null = null;
     let 보조: React.ReactNode = <Link className="dz-bar-sub" href={back}>목록</Link>;
     if (정정중) {
       주 = { label: '정정 저장', form: <LifeForm id={fid} code={r.id} kind="correct" axis={life.axis} need="correct" /> };
       보조 = <Link className="dz-bar-sub" href={life.link('')}>취소</Link>;
-    } else if (stage === '청구' || stage === '통보') {
+    } else if (primary === 'confirm') {
       주 = { label: `${life.axis} 확인`, form: <LifeForm id={fid} code={r.id} kind="confirm" axis={life.axis} need="none" /> };
       보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
-    } else if (stage === '정정') {
+    } else if (primary === 'uncorrect') {
       주 = { label: '정정 풂', form: <LifeForm id={fid} code={r.id} kind="uncorrect" axis={life.axis} need="none" /> };
-    } else if (stage === '확인') {
+    } else if (primary === 'invoice') {
+      주 = {
+        label: '계산서 끊기',
+        form: <SideStep id={fid} code={r.id} kind="invoice" label="계산서" on={false} day={today()} biz={life.invoiceBiz} externalSubmit />,
+      };
+      보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
+    } else if (primary === 'cash') {
       주 = {
         label: 누적현금 > 0 ? `${끝말} 추가` : `${끝말} 찍기`,
         form: <LifeForm id={fid} code={r.id} kind={청구축 ? 'collected' : 'paid'} axis={life.axis} need="money"
-          /* 부분수금/부분지급 뒤에는 전체액이 아니라 남은 실제 현금액을 기본값으로 준다.
-             operationId는 동일 제출/네트워크 재시도를 서버에서 한 번만 반영하기 위한 영수증 키다. */
           amount={남은현금 ?? 0} day={today()} operationId={randomUUID()} />,
       };
       보조 = <Link className="dz-bar-sub" href={life.link('correct')}>정정 요청</Link>;
@@ -89,7 +99,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <h3 className="dz-sub">정산 걸음 · {life.axis}</h3>
         {/* 걸음 길 — 지금 자리는 남색 면, 정정은 붉은 면(곁길) */}
         <ol className="dz-path">
-          {길.map((x) => <li key={x} className={x === stage ? 'on' : 길.indexOf(x) < 길.indexOf(stage) ? 'done' : ''}>{x}</li>)}
+          {길.map((x) => <li key={x} className={x === 현재걸음 ? 'on' : 현재순번 >= 0 && 길.indexOf(x) < 현재순번 ? 'done' : ''}>{x}</li>)}
           {stage === '정정' && <li className="warn">정정</li>}
         </ol>
         {stage === '접수' && <EmptyState>{청구축 ? '청구서' : '지급명세'}는 가운데 판(묶음) 하단바에서 냅니다 — 나가면 여기 다음 걸음이 섭니다.</EmptyState>}
@@ -99,11 +109,11 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <div className="dz-side-steps">
           {청구축 && !r.progress.billed && <SideStep code={r.id} kind="hold" label={r.progress.billHold ? '청구 보류 중' : '청구 보류'} on={r.progress.billHold} />}
           {!r.progress.billed && r.progress.delivered && <SideStep code={r.id} kind="billMonth" label="청구월" month={r.progress.billMonth ?? today().slice(0, 7)} />}
-          {청구축 && r.progress.billed && <SideStep code={r.id} kind="invoice" label={r.progress.invoiceIssued ? '계산서 끊음' : '계산서'} on={r.progress.invoiceIssued} day={today()} />}
+          {청구축 && r.progress.billed && primary !== 'invoice' && <SideStep code={r.id} kind="invoice" label={r.progress.invoiceIssued ? '계산서 끊음' : '계산서'} on={r.progress.invoiceIssued} day={today()} biz={life.invoiceBiz} />}
         </div>
       </>
     );
-    const 완료 = stage === '수금' || stage === '지급';
+    const 완료 = primary === 'done';
     바 = (
       <ActionBar>
         {보조}

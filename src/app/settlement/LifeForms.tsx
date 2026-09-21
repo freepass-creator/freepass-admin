@@ -46,6 +46,7 @@ export function LifeForm({ id, code, kind, axis, need, amount, day, operationId 
       {need === 'money' && <>
         <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" /></label>
         <label>{kind === 'collected' ? '받은 날' : '준 날'}<input name="day" type="date" defaultValue={day} /></label>
+        {typeof amount === 'number' && <small className="dz-muted wide">남은 금액 {Math.round(amount).toLocaleString('ko-KR')}원 전액이 기본값입니다. 부분 처리면 금액만 줄여 입력합니다.</small>}
       </>}
       {need === 'correct' && <>
         <label>상대가 말한 금액<input name="amount" inputMode="numeric" placeholder="모르면 비움" /></label>
@@ -57,23 +58,24 @@ export function LifeForm({ id, code, kind, axis, need, amount, day, operationId 
 }
 
 /** 곁 걸음 — 본문 안 작은 폼(청구 보류 · 청구월 정하기 · 계산서). 제 단추를 가진다(주 걸음이 아니라서 하단바에 안 올린다) */
-export function SideStep({ code, kind, label, on, month, biz, day }: {
-  code: string; kind: 'hold' | 'billMonth' | 'invoice'; label: string;
-  on?: boolean; month?: string; biz?: string; day?: string;
+export function SideStep({ id, code, kind, label, on, month, biz, day, externalSubmit = false }: {
+  id?: string; code: string; kind: 'hold' | 'billMonth' | 'invoice'; label: string;
+  on?: boolean; month?: string; biz?: string; day?: string; externalSubmit?: boolean;
 }) {
   const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
-    <form className="dz-side-step" onSubmit={보냄(act)} aria-busy={pending}>
+    <form id={id} className="dz-side-step" onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} />
       <b>{label}</b>
       {kind === 'billMonth' && <input name="month" type="month" defaultValue={month} aria-label="청구월" disabled={pending} />}
       {kind === 'invoice' && !on && <>
         <input name="day" type="date" defaultValue={day} aria-label="계산서 날짜" disabled={pending} />
-        <input name="biz" defaultValue={biz} placeholder="사업자번호" aria-label="사업자번호" disabled={pending} />
+        <input name="biz" defaultValue={biz} placeholder="사업자번호 10자리" aria-label="사업자번호" inputMode="numeric" disabled={pending} />
+        {externalSubmit && <input type="hidden" name="on" value="1" />}
       </>}
-      {kind === 'billMonth'
+      {!externalSubmit && (kind === 'billMonth'
         ? <button type="submit" disabled={pending} aria-busy={pending}>달 정하기</button>
-        : <button type="submit" name="on" value={on ? '0' : '1'} disabled={pending} aria-busy={pending}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>}
+        : <button type="submit" name="on" value={on ? '0' : '1'} disabled={pending} aria-busy={pending}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>)}
       {오류(s)}
     </form>
   );

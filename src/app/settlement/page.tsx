@@ -220,7 +220,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
                 {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
                   live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt}
-                  failCount={장.failCount} lockedUntil={장.lockedUntil} response={장.response ?? null} />}
+                  failCount={장.failCount} locked={!!장.lockedUntil && 장.lockedUntil > Date.now()} lockedUntil={장.lockedUntil} response={장.response ?? null} />}
               </div>
             )}
           </div>

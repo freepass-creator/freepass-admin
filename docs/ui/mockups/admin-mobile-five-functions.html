@@ -130,13 +130,17 @@
     .search>button { font-weight:600; }
     .chips { gap:6px; margin-bottom:var(--sales-space); }
     .chip { height:var(--sales-control); border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; }
+    .chip.on { background:var(--picked); color:var(--navy); font-weight:650; }
     .list { gap:var(--sales-gap); }
-    .row { border-radius:var(--sales-card-radius); }
+    .row { border:1px solid #eceef0; border-radius:var(--sales-card-radius); background:#fff; }
+    .row:active { background:#f2f3f5; }
     .row-title b,.offer strong,.summary b { font-size:var(--sales-title); font-weight:600; }
     .meta,.sub,.offer small,.identity p,.fact,.notice { font-size:var(--sales-support); }
     .value { font-size:var(--sales-body); font-weight:650; }
-    .tag { border-radius:var(--sales-tag-radius); font-size:var(--sales-meta); font-weight:600; }
+    .tag { padding:0; border-radius:0; background:transparent; font-size:var(--sales-meta); font-weight:600; }
+    .tag.good,.tag.warn,.tag.bad { background:transparent; }
     .identity,.summary div,.offer,.step { border-radius:var(--sales-card-radius); }
+    .offer.on { background:#f2f3f5; box-shadow:none; }
     .identity h3 { font-size:var(--sales-head); font-weight:650; letter-spacing:-.03em; }
     .money { font-size:19px; font-weight:650; letter-spacing:-.02em; }
     .section h4 { font-size:var(--sales-title); font-weight:600; }
@@ -176,7 +180,8 @@
       .web-panel .row { min-height:78px; grid-template-columns:52px 1fr; padding:10px; }
       .web-panel .thumb { width:52px; height:52px; }
       .web-panel .thumb.car::before { width:42px; }
-      .web-panel .row.selected { background:var(--picked); box-shadow:inset 3px 0 0 var(--navy); }
+      .web-panel .row.selected { background:#f2f3f5; box-shadow:none; }
+      .web-panel .row.selected .row-title b { font-weight:650; }
       .web-panel .identity { margin-top:0; }
       .web-actions { flex:none; display:grid; grid-template-columns:3fr 7fr; gap:8px; padding-top:12px; background:#fff; }
       .web-actions.three { grid-template-columns:3fr 3fr 4fr; }

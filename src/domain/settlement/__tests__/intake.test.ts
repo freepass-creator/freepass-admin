@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { settlementCode, settlementKey, eventDocId } from '../code.js';
+import { intakeCode, intakeKey, settlementCode, settlementKey, eventDocId } from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
 import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
@@ -21,6 +21,13 @@ describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은
     assert.equal(settlementCode('12가 3456', '2026-09-18'), settlementCode('12가3456', '2026-09-18'));
   });
   it('ERP5 규격 stl_ + 10자', () => assert.match(settlementCode('12가3456', '2026-09-18'), /^stl_[2-9a-hj-km-np-z]{10}$/));
+  it('차량번호 접수는 새 intakeCode도 기존 settlementCode와 같다', () =>
+    assert.equal(intakeCode('12가3456', '', '2026-09-18'), settlementCode('12가3456', '2026-09-18')));
+  it('차량번호 없는 상품접수는 Product ID + 접수일로 안정적인 코드를 만든다', () => {
+    assert.equal(intakeCode('', 'P-1', '2026-09-18'), intakeCode('', 'P-1', '2026-09-18'));
+    assert.notEqual(intakeCode('', 'P-1', '2026-09-18'), intakeCode('', 'P-2', '2026-09-18'));
+    assert.equal(intakeKey('', 'P-1', '2026-09-18'), 'product:P-1|2026-09-18');
+  });
   it('접수일이 다르면 다른 줄 (재계약)', () =>
     assert.notEqual(settlementCode('316라1593', '2026-08-06'), settlementCode('316라1593', '2026-08-13')));
   it('이력 문서 id 는 ERP5 실측 꼴 — 차번_접수일', () => assert.equal(eventDocId('99시험0001', '2026-08-26'), '99시험0001_2026-08-26'));
@@ -31,6 +38,13 @@ describe('validateIntake — 최초 접수 필수값', () => {
   it('차번 · 고객 · 채널 · 담당 · 공급사가 비면 이름을 댄다', () => {
     const e = validateIntake({ ...base, plate: '', customer: ' ', channel: '', agent: '', supplier: '' }, '2026-09-18');
     assert.equal(e.length, 5);
+  });
+  it('차량번호 없는 상품접수는 Product ID가 있으면 받는다', () => {
+    const e = validateIntake({ ...base, plate: '', sourceProductId: 'P-NEW' }, '2026-09-18');
+    assert.equal(e.some((x) => x.includes('차량번호')), false);
+  });
+  it('직접접수는 차량번호도 Product ID도 없으면 막는다', () => {
+    assert.match(validateIntake({ ...base, plate: '', sourceProductId: undefined }, '2026-09-18').join(), /차량번호/);
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
@@ -87,6 +101,12 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('계약서 켜기 → 칸 하나 · 이력 하나', () => {
     const r = progressPatch({ paper: false }, { kind: 'paper', on: true });
     assert.ok(r.ok); assert.deepEqual(r.ok && r.patch, { paper: true }); assert.equal(r.ok && r.events.length, 1);
+  });
+  it('차량번호를 나중에 배정할 수 있다', () => {
+    const r = progressPatch({ plate: '', cancelled: false }, { kind: 'plate', plate: '12가 3456' });
+    assert.ok(r.ok);
+    assert.deepEqual(r.ok && r.patch, { plate: '12가3456' });
+    assert.equal(r.ok && r.events[0]?.field, '차량번호');
   });
   it('이미 그 값이면 안 쓴다', () => {
     const r = progressPatch({ paper: true }, { kind: 'paper', on: true });

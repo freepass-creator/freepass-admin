@@ -31,7 +31,7 @@ const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
   return !!b && n !== undefined && n !== null && n > b.lo && n <= b.hi;
 };
 
-export const 요금축 = ['term', 'rent', 'dep'] as const;
+export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
 export const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
@@ -39,13 +39,14 @@ export type 상품축 = 요금축 | 차축;
 
 export const 상품축이름: [상품축, string][] = [
   ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
-  ['rent', '월 대여료'], ['dep', '보증금'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
+  ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '약정주행'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
 ];
 
 export const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> = {
   term: (o, k) => String(o.termMonths) === k,
   rent: (o, k) => 구간에(대여료구간, k, o.monthlyRent),
   dep: (o, k) => 구간에(보증금구간, k, o.deposit),
+  mile: (o, k) => o.annualMileageKm !== undefined && String(o.annualMileageKm) === k,
 };
 
 /** 받은 값의 차례 — 많이 있는 것부터, 동률은 가나다순. */
@@ -96,6 +97,11 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
     return ' ';
   });
 
+  rest = rest.replace(/(?:연\s*)?(\d+(?:\.\d+)?)\s*만\s*km/gi, (_, n: string) => {
+    const km = Math.round(Number(n) * 10000);
+    if (Number.isFinite(km) && km > 0) add('mile', String(km), `연 ${Number(n).toLocaleString('ko-KR')}만km`);
+    return ' ';
+  });
   eat(/무\s*보증|보증금\s*(?:0|없음?)/, 'dep', 'd0', '무보증');
   eat(/무\s*심사/, 'perk', '무심사', '무심사');
   eat(/(?:만\s*)?21\s*세|21살/, 'perk', '만21세', '만21세');

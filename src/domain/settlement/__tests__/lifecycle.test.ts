@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { driftOf, invoiceMoneyOf, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
+import { cashRemainingOf, driftOf, invoiceMoneyOf, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
 import { claimLedger } from '../ledgers.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -80,10 +80,34 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifePatch(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30' }).ok, true);
 
     const channelConfirmed = mk({ billed: true, claimStage: '청구', payStage: '확인' });
-    const paid = lifePatch(channelConfirmed, { kind: 'paid', amount: 800_000, day: '2026-09-30' });
+    const paid = lifePatch(channelConfirmed, { kind: 'paid', amount: 880_000, day: '2026-09-30' });
     assert.equal(paid.ok && paid.patch.payStage, '지급');
 
     assert.equal(lifePatch(mk({}), { kind: 'invoice', on: true }).ok, false);
+  });
+  it('부분수금/부분지급은 누적하고 전액에 닿을 때만 완료한다', () => {
+    const supplierConfirmed = mk({ billed: true, invoiceIssued: true, claimStage: '확인', collectedAmt: 0 });
+    const p1 = lifePatch(supplierConfirmed, { kind: 'collected', amount: 400_000, day: '2026-09-20' });
+    assert.ok(p1.ok);
+    assert.equal(p1.ok && p1.patch.collected, false);
+    assert.equal(p1.ok && p1.patch.claimStage, '확인');
+    assert.equal(p1.ok && p1.patch.collectedAmt, 400_000);
+
+    const afterP1 = mk({ billed: true, invoiceIssued: true, claimStage: '확인', collectedAmt: 400_000, collected: false });
+    assert.equal(cashRemainingOf('공급사', afterP1), 700_000);
+    const p2 = lifePatch(afterP1, { kind: 'collected', amount: 700_000, day: '2026-09-30' });
+    assert.equal(p2.ok && p2.patch.collected, true);
+    assert.equal(p2.ok && p2.patch.claimStage, '수금');
+    assert.equal(p2.ok && p2.patch.collectedAmt, 1_100_000);
+
+    const channelConfirmed = mk({ billed: true, payStage: '확인', paidAmt: 0 });
+    const q1 = lifePatch(channelConfirmed, { kind: 'paid', amount: 300_000, day: '2026-09-20' });
+    assert.equal(q1.ok && q1.patch.paid, false);
+    const afterQ1 = mk({ billed: true, payStage: '확인', paidAmt: 300_000, paid: false });
+    assert.equal(cashRemainingOf('영업채널', afterQ1), 580_000);
+    const q2 = lifePatch(afterQ1, { kind: 'paid', amount: 580_000, day: '2026-09-30' });
+    assert.equal(q2.ok && q2.patch.paid, true);
+    assert.equal(q2.ok && q2.patch.paidAmt, 880_000);
   });
   it('정정 중 확인과 완료 뒤 정정을 막고, 수금 뒤 계산서 취소도 막는다', () => {
     assert.equal(lifePatch(mk({ billed: true, claimStage: '정정' }), { kind: 'confirm', axis: '공급사' }).ok, false);

@@ -8,7 +8,7 @@
     :root {
       --navy:#1b2a4a; --sky:#9ec5f3; --ground:#eef1f4; --panel:#fff;
       --box:#f6f7f9; --picked:#e6ecf5; --ink:#202733; --muted:#687383;
-      --line:#dfe4ea; --good:#15803d; --good-bg:#f0fdf4;
+      --line:#eceef0; --control-line:#7c838a; --good:#15803d; --good-bg:#f0fdf4;
       --warn:#9a6700; --warn-bg:#fff7db; --bad:#b42318; --bad-bg:#fff0ee;
       --radius:4px; --control:40px; --action:44px;
     }
@@ -17,7 +17,7 @@
     html,body { margin:0; min-height:100%; background:#dfe4e9; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
     button,input,select { font:inherit; }
     button { cursor:pointer; }
-    .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; box-shadow:0 0 28px rgba(27,42,74,.12); }
+    .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; }
     .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
     .statusbar > div { min-width:0; flex:1; }
     .statusbar h1 { margin:0; font-size:18px; line-height:1; }
@@ -32,9 +32,9 @@
     .panel-head span { color:var(--muted); font-size:14px; font-weight:700; }
     .panel-head p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
     .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:10px; }
-    .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 11px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; }
+    .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 11px; border:1px solid var(--control-line); border-radius:var(--radius); background:#fff; }
     .search-field input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; background:transparent; }
-    .search > button { min-width:76px; height:44px; padding:0 12px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; color:var(--navy); font-size:13px; font-weight:700; white-space:nowrap; }
+    .search > button { min-width:76px; height:44px; padding:0 12px; border:0; border-radius:var(--radius); background:var(--box); color:var(--navy); font-size:13px; font-weight:700; white-space:nowrap; }
     .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
     .chips::-webkit-scrollbar { display:none; }
     .chip { height:40px; padding:0 13px; border:0; border-radius:var(--radius); background:var(--box); color:#445064; font-size:13px; white-space:nowrap; }
@@ -74,7 +74,7 @@
     .offer small { color:var(--muted); font-size:12px; }
     .form { display:grid; gap:10px; }
     .form label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
-    .form input,.form select { height:40px; padding:0 10px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; color:var(--ink); font-size:16px; }
+    .form input,.form select { height:40px; padding:0 10px; border:1px solid var(--control-line); border-radius:var(--radius); background:#fff; color:var(--ink); font-size:16px; }
     .timeline { display:grid; gap:8px; }
     .step { display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; min-height:44px; padding:8px 10px; background:var(--box); border-radius:var(--radius); font-size:13px; }
     .step i { width:18px; height:18px; border-radius:50%; background:#cbd3dc; color:#fff; font-style:normal; display:grid; place-items:center; font-size:11px; }
@@ -90,7 +90,7 @@
     .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; border-top:1px solid var(--line); }
     .actionbar.three { grid-template-columns:3fr 3fr 4fr; }
     .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
-    .secondary { background:#fff; color:var(--navy); }
+    .secondary { background:var(--box); color:var(--navy); }
     .primary { background:var(--navy); color:#fff; }
     .sheet-wrap { position:fixed; inset:0; z-index:60; display:grid; align-items:end; }
     .scrim { position:absolute; inset:0; border:0; background:rgba(15,23,42,.42); }

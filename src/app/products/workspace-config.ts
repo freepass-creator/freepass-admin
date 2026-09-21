@@ -21,7 +21,7 @@ export const 대여료구간: RangeBand[] = [
 ];
 
 export const 보증금구간: RangeBand[] = [
-  { k: 'd0', label: '없음', lo: -1, hi: 1 }, { k: 'd1', label: '100만↓', lo: 1, hi: 1000000 },
+  { k: 'd0', label: '없음', lo: -1, hi: 0 }, { k: 'd1', label: '100만↓', lo: 0, hi: 1000000 },
   { k: 'd2', label: '100~200만', lo: 1000000, hi: 2000000 }, { k: 'd3', label: '200~300만', lo: 2000000, hi: 3000000 },
   { k: 'd4', label: '300만↑', lo: 3000000, hi: Infinity },
 ];
@@ -116,10 +116,14 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
 
   eat(/무\s*보증|보증금\s*(?:0|없음?)/, 'dep', 'd0', '무보증');
   eat(/무\s*심사/, 'perk', '무심사', '무심사');
-  rest = rest.replace(/(?:만\s*)?(\d{2})\s*세|([2-9]\d)살/g, (_m, a: string, b: string) => {
-    const age = a || b;
-    add('perk', `만${age}세`, `만${age}세`);
-    return ' ';
+  rest = rest.replace(/(?:만\s*)?(\d{2})\s*세|([2-9]\d)살/g, (matched, a: string, b: string) => {
+    const age = Number(a || b);
+    // ERP5 canonical perksOf()가 실제로 세우는 연령 혜택 범위와 같게 둔다.
+    if (age >= 18 && age <= 21) {
+      add('perk', `만${age}세`, `만${age}세`);
+      return ' ';
+    }
+    return matched;
   });
   for (const perk of ['경력무관', '소득확인', '신용조회', '분납가능', '무사고']) {
     const re = new RegExp(perk.replace(/(.{2})/, '$1\\s*'));

@@ -66,8 +66,9 @@ function monthOfRow(r: SettlementRow, locked: ReadonlySet<string>, now: Date): s
   return r.progress.delivered ? NO_MONTH : null;
 }
 
-/** 목록에 설 수 있나 — 취소·정산 제외는 어느 목록에도 안 선다 */
-const inLedger = (r: SettlementRow) => !r.progress.cancelled && !r.progress.settleExclude;
+/** 돈 원장에 설 수 있나 — 취소/제외뿐 아니라 차량 identity와 계약서가 확인돼야 한다. */
+const inLedger = (r: SettlementRow) =>
+  !r.progress.cancelled && !r.progress.settleExclude && !!r.plate && r.progress.paper;
 
 /* 금액은 한 곳(money.ts)에서 — 목록·상세·남는 것이 같은 셈을 쓴다 */
 import { claimAmountOf, payAmountOf } from './money';
@@ -99,7 +100,10 @@ function group(
     if (side === 'pay' && r.settleTarget === '공급') continue;
     const m = monthOfRow(r, locked, now);
     if (m !== month) continue;
-    const g = get((side === 'claim' ? r.supplier : r.channel) ?? '(이름 없음)');
+    const party = side === 'claim' ? r.supplier : r.channel;
+    // 상대가 없는 줄을 「이름 없음」으로 묶어 발행 후보로 만들지 않는다.
+    if (!party) continue;
+    const g = get(party);
     const amount = side === 'claim' ? claimAmountOf(r, now) : payAmountOf(r, now);
     const broken = brokenOf(r, now);
     g.lines.push({ row: r, month: m, amount, broken, ratio: paidRatioOf(r, now) });

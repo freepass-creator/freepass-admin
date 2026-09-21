@@ -393,7 +393,7 @@ export class Erp5SettlementRepository {
       const r = clawbackRecord(row, input, BY, now);
       if (!r.ok) return r;
       const cref = db.collection('settlement_clawbacks').doc(r.id);
-      if ((await tx.get(cref)).exists) return { ok: false as const, error: `이 차의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
+      if ((await tx.get(cref)).exists) return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
       tx.create(cref, r.doc);
       tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
         { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });

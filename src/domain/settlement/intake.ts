@@ -188,6 +188,7 @@ export function progressPatch(
   }
   if (c.kind === 'delivered') {
     if (c.on) {
+      if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();
       if (!DAY.test(day)) return { ok: false, error: '인도완료를 켜려면 인도일을 같이 넣어야 합니다' };
       const ev: ProgressEvent[] = [];

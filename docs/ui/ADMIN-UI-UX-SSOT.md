@@ -1,10 +1,15 @@
 # FreePass Admin UI/UX SSOT
 
-상태: **NORMATIVE / UI·UX 공통 정본**  
+상태: **PRODUCT PROFILE / AI CORE CONSUMER**  
 기준일: 2026-09-18  
 적용: `freepass-admin` 실제 관리자 화면  
 코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
+> 공통 UI/UX 의미·선택 규칙의 정본은 **AI Core**다.
+> 이 문서는 FreePass Admin이 AI Core 규격을 어떤 도메인에 어떻게 적용하는지 정하는 **Product Profile**이다.
+>
+> AI Core binding: `docs/ui/ai-core-bindings.json`
+>
 > 이 문서는 화면을 새로 디자인하는 문서가 아니다.  
 > **이미 확정된 화면의 눈에 보이는 위계·크기·역할을 한 곳에 고정**해서, 다음 화면과 다음 AI가 같은 규격을 쓰게 하는 문서다.
 
@@ -15,8 +20,10 @@
 충돌하면 아래 순서가 이긴다.
 
 1. **사용자의 최신 명시 결정**
-2. **이 문서 `ADMIN-UI-UX-SSOT.md`**
-3. 실제 공통 구현 — `src/app/_design/*`
+2. **AI Core UI/UX Feature Registry + Interaction Contract**
+3. `docs/ui/ai-core-bindings.json` — FreePass Admin consumer mapping
+4. **이 문서 `ADMIN-UI-UX-SSOT.md`** — FreePass Admin Product Profile
+5. 실제 공통 구현 — `src/app/_design/*`
 4. 실제 최종 CSS — `src/app/globals.css`의 뒤쪽 확정 규칙
 5. `docs/ui/UI-SPEC.md`
 6. mockup / POLISH-NOTES / 과거 CSS 주석
@@ -314,6 +321,24 @@ Tone:
 - selected와 status 색을 섞지 않는다.
 
 ---
+
+## 8-4. AI Core List Presentation
+
+목록 표현 방식의 선택은 FreePass Admin이 새로 정하지 않는다.
+AI Core `data.list-presentation`을 따른다.
+
+| FreePass domain | AI Core mode |
+|---|---|
+| 상품 목록 | `product-media-row` |
+| 접수 목록 | `business-row` |
+| 실적 목록 | `business-row` |
+| 청구 목록 | `business-row` |
+| 지급 목록 | `business-row` |
+| Offer 선택 | `variant-card` |
+| 고밀도 다열 비교 | `data-table` |
+
+Desktop/Mobile은 배치가 달라져도 **semantic mode는 바꾸지 않는다.**
+AI Core가 이 선택 규칙을 변경하면 FreePass Admin은 consumer binding을 갱신해 같이 따라간다.
 
 # 9. PanelHeader SSOT
 

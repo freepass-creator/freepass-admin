@@ -1,14 +1,13 @@
 import Link from 'next/link';
-import { productList } from '../../server/erp5';
+import { productList, settlements, today } from '../../server/erp5';
 import { searchProducts } from '../../domain/search/search-products';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import type { Offer } from '../../domain/product/types';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
-import { settlements } from '../../server/erp5';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
-import { sortIntakeRows } from '../../domain/settlement/intake-list';
+import { intakeAgeDays, sortIntakeRows } from '../../domain/settlement/intake-list';
 import { OfferPicker } from '../_design/OfferPicker';
 import { imgSrc } from '../../server/image-proxy';
 import { ListRow, type RowStatus } from '../_design/ListRow';
@@ -330,6 +329,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
+                  flag={칸의.get(r) === '미완료' ? (() => { const days = intakeAgeDays(r, today()); return days === null ? '지연' : `지연 ${days}일`; })() : undefined}
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}

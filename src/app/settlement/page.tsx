@@ -5,6 +5,7 @@ import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger } from '..
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
+import { filterPerformanceLines, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
 import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
@@ -52,24 +53,19 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const gSel = groups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
   const ic = sp(q.ic);
 
-  /* 실적 줄 찾기 — 묶음 안에서 고객/차번/차량/상대/담당을 바로 찾고, 지금 처리할 줄을 상태로 가른다. */
-  const lq = sp(q.lq).trim().toLowerCase();
-  const ls = ['all', 'todo', 'issue', 'done'].includes(sp(q.ls)) ? sp(q.ls) : 'todo';
-  const lineDone = (x: NonNullable<typeof gSel>['lines'][number]) =>
-    tab === 'claim' ? x.row.progress.collected : x.row.progress.paid;
-  const lineIssue = (x: NonNullable<typeof gSel>['lines'][number]) =>
-    x.broken || x.row.progress.billHold || (tab === 'claim' ? x.row.claimStage : x.row.payStage) === '정정';
-  const lineMode = (x: NonNullable<typeof gSel>['lines'][number], mode: string) =>
-    mode === 'all' ? true : mode === 'done' ? lineDone(x) : mode === 'issue' ? lineIssue(x) : !lineDone(x);
-  const lineText = (x: NonNullable<typeof gSel>['lines'][number]) =>
-    [x.row.customer, x.row.plate, x.row.model, x.row.supplier, x.row.channel, x.row.agent, x.row.id]
-      .filter(Boolean).join(' ').toLowerCase();
-  const performanceLines = (gSel?.lines ?? []).filter((x) => lineMode(x, ls) && (!lq || lineText(x).includes(lq)));
-  const performanceCount = (mode: string) => (gSel?.lines ?? []).filter((x) => lineMode(x, mode)).length;
+  /* 실적 줄 찾기 — 판정은 domain/performance-filter 한 곳에서만 한다. */
+  const lq = sp(q.lq).trim();
+  const ls = (['all', 'todo', 'issue', 'done'] as const).includes(sp(q.ls) as PerformanceFilterMode)
+    ? sp(q.ls) as PerformanceFilterMode : 'todo';
+  const perfAxis: Axis = tab === 'claim' ? '공급사' : '영업채널';
+  const performanceLines = filterPerformanceLines(gSel?.lines ?? [], perfAxis, ls, lq);
+  const performanceCount = (mode: PerformanceFilterMode) =>
+    (gSel?.lines ?? []).filter((x) => performanceMatchesMode(x, perfAxis, mode)).length;
   const shownClawbacks = (gSel?.clawbacks ?? []).filter((x) =>
-    (ls === 'all' || ls === 'issue') && (!lq || [x.plate, x.reason, x.month].filter(Boolean).join(' ').toLowerCase().includes(lq)));
+    (ls === 'all' || ls === 'issue')
+    && (!lq || [x.plate, x.reason, x.month].filter(Boolean).join(' ').toLowerCase().includes(lq.toLowerCase())));
   /* ── 발행 — 고른 묶음(한 달 · 한 상대)의 청구서/지급명세. 미리보기 = 기능 쪽 planInvoice 그대로(발행과 같은 셈) ── */
-  const axis: Axis = tab === 'claim' ? '공급사' : '영업채널';
+  const axis: Axis = perfAxis;
   const 장부 = month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
   const 계획 = gSel ? planInvoice(month, axis, gSel.party, gSel.lines, cb, 장, 장부.map((x) => x.invoiceNo), Date.now(), '미리보기') : null;
@@ -199,7 +195,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             {performanceLines.map(({ row: r, amount, broken, ratio }) => {
               const 끝 = tab === 'claim' ? r.progress.billed : r.progress.paid;
               return (
-                <ListRow key={r.id} href={keep({ g: gSel.party, ic: r.id, v: 'work' })} selected={r.id === ic}
+                <ListRow key={r.id} href={keep({ g: gSel?.party ?? '', ic: r.id, v: 'work' })} selected={r.id === ic}
                   status={줄상태(tab === 'claim' ? r.claimStage : r.payStage, r.progress.billHold && tab === 'claim', broken)}
                   title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
                   tone={r.progress.billHold || !끝 ? 'act' : 'plain'}

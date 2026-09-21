@@ -27,14 +27,15 @@
     .sync { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--good); font-weight:700; }
     .sync::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--good); }
     main { padding:12px 12px calc(76px + env(safe-area-inset-bottom)); }
-    .panel { min-height:calc(100dvh - 52px - 88px); padding:16px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); }
+    #screen { min-height:calc(100dvh - 52px - 88px); }
     .panel-head { min-height:32px; display:flex; align-items:flex-start; gap:8px; margin-bottom:12px; }
     .panel-head h2 { margin:0; font-size:18px; line-height:1.25; }
     .panel-head span { color:var(--muted); font-size:14px; font-weight:700; }
     .panel-head p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
-    .search { height:40px; display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:0 10px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; }
-    .search input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; }
-    .search button { height:32px; border:0; border-radius:var(--radius); background:var(--box); color:var(--navy); font-size:12px; font-weight:700; white-space:nowrap; }
+    .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:10px; }
+    .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 11px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; }
+    .search-field input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; background:transparent; }
+    .search > button { min-width:76px; height:44px; padding:0 12px; border:1px solid #bfc8d4; border-radius:var(--radius); background:#fff; color:var(--navy); font-size:13px; font-weight:700; white-space:nowrap; }
     .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
     .chips::-webkit-scrollbar { display:none; }
     .chip { height:40px; padding:0 13px; border:0; border-radius:var(--radius); background:var(--box); color:#445064; font-size:13px; white-space:nowrap; }
@@ -82,10 +83,11 @@
     .step small { color:var(--muted); }
     .notice { padding:10px; border-radius:var(--radius); background:var(--warn-bg); color:#725000; font-size:12px; line-height:1.5; }
     .bottom-nav,.actionbar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,430px); z-index:30; padding-bottom:env(safe-area-inset-bottom); }
-    .bottom-nav { height:calc(64px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); background:var(--navy); }
-    .bottom-nav button { border:0; background:transparent; color:rgba(255,255,255,.62); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11px; }
-    .bottom-nav button.on { color:var(--sky); font-weight:800; }
-    .bottom-nav svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; }
+    .bottom-nav { height:calc(60px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); padding:0 4px env(safe-area-inset-bottom); background:var(--panel); border-top:1px solid var(--line); box-shadow:0 -2px 8px rgba(15,23,42,.05); }
+    .bottom-nav button { height:100%; padding:0 2px; border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:500; }
+    .bottom-nav button.on { color:var(--navy); font-weight:700; }
+    .bottom-nav svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.9; }
+    .bottom-nav button.on svg { fill:rgba(27,42,74,.12); }
     .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; border-top:1px solid var(--line); }
     .actionbar.one { grid-template-columns:1fr; }
     .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
@@ -98,7 +100,7 @@
 <body>
 <div class="phone">
   <header class="statusbar" id="status"></header>
-  <main><section class="panel" id="screen"></section></main>
+  <main><section id="screen"></section></main>
   <nav class="bottom-nav" id="nav" aria-label="주요 업무"></nav>
   <div class="actionbar" id="actions" hidden></div>
 </div>
@@ -157,7 +159,7 @@ function nav(){
 function list(){
  const placeholders={product:'차량·공급사·조건 검색',intake:'고객·차량·접수번호 검색',contract:'고객·계약번호 검색',performance:'고객·차량번호·공급사 검색',settlement:'공급사·채널·정산월 검색'};
  const chips={product:['전체','무보증','21세','즉시출고'],intake:['전체','할 일','진행 중','인도 완료'],contract:['전체','발송 대기','서명 대기','검토'],performance:['전체','할 일','이슈','완료'],settlement:['전체','청구','수금','지급']}[state.module];
- return `<div class="search">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"><button>세부필터</button></div>
+ return `<div class="search"><label class="search-field">⌕<input aria-label="검색" placeholder="${placeholders[state.module]}"></label><button>세부필터</button></div>
  <div class="chips">${chips.map(x=>`<button class="chip ${state.filter===x?'on':''}" data-filter="${x}">${x}</button>`).join('')}</div>
  <div class="list">${data[state.module].map(row).join('')}</div>`;
 }

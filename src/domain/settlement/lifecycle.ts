@@ -195,7 +195,7 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       if (c.on && !r.progress.billed) return { ok: false, error: '청구서가 나간 뒤에 계산서를 끊습니다' };
       if (c.on && r.claimStage === '정정') return { ok: false, error: '정정 중에는 계산서를 끊을 수 없습니다' };
       if (c.on && !r.progress.invoiceIssued && r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 계산서를 끊습니다' };
-      if (!c.on && r.progress.collected) return { ok: false, error: '수금이 끝난 줄의 계산서는 되돌릴 수 없습니다' };
+      if (!c.on && (r.progress.collected || (r.progress.collectedAmt ?? 0) > 0)) return { ok: false, error: '수금이 시작된 줄의 계산서는 되돌릴 수 없습니다' };
       if (c.on && c.day && !DAY.test(c.day)) return { ok: false, error: '계산서 날짜는 YYYY-MM-DD' };
       if (r.progress.invoiceIssued === c.on) return { ok: true, patch: {}, events: [] };
       return {

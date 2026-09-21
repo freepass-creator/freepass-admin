@@ -14,9 +14,11 @@ export function performanceIssue(line: LedgerLine, axis: PerformanceAxis): boole
 
 export function performanceMatchesMode(line: LedgerLine, axis: PerformanceAxis, mode: PerformanceFilterMode): boolean {
   if (mode === 'all') return true;
-  if (mode === 'done') return performanceDone(line, axis);
-  if (mode === 'issue') return performanceIssue(line, axis);
-  return !performanceDone(line, axis);
+  const done = performanceDone(line, axis);
+  const issue = !done && performanceIssue(line, axis);
+  if (mode === 'done') return done;
+  if (mode === 'issue') return issue;
+  return !done && !issue;
 }
 
 export function performanceSearchText(line: LedgerLine): string {

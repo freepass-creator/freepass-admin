@@ -24,7 +24,8 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, 보증금, 정책말, type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
+  많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
+  type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
 
@@ -56,9 +57,11 @@ const 사진 = (p: { photoUrl?: string }): string | undefined =>
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
-  const text = sp(q.q).trim().toLowerCase();
-  /** 축마다 고른 값 — 주소 `?status=즉시출고,출고협의` (같은 축 안은 «또는», 축끼리는 «이면서») */
-  const psel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
+  const parsedSearch = parseProductSearch(sp(q.q));
+  const text = parsedSearch.text.toLowerCase();
+  /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
+  const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
+  const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);
   let all: Awaited<ReturnType<typeof productList>>;
   try { all = await productList(); }
   catch (e) {
@@ -217,13 +220,13 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   데이터에 없는 단추는 안 세운다(지어낸 단추가 없다). 두 화면 같은 줄이다.
             */}
           <div className="quick-filters">
-            <Link className={상품축이름.every(([a]) => !psel[a].length) ? 'active' : ''}
-              href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), page: '' })}>전체</Link>
+            <Link className={상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? 'active' : ''}
+              href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), q: parsedSearch.text, page: '' })}>전체</Link>
             {statuses.includes('즉시출고') && (
-              <Link className={psel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(psel.status, '즉시출고'), page: '' })}>즉시출고</Link>
+              <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
             {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
-              <Link key={x} className={psel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(psel.perk, x), page: '' })}>{x}</Link>
+              <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
             ))}
           </div>
           </div>

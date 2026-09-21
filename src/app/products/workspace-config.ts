@@ -80,10 +80,16 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   const inferred: Partial<Record<상품축, string[]>> = {};
   const tokens: ParsedProductSearch['tokens'] = [];
   const limits: ParsedProductSearch['limits'] = {};
-  const add = (axis: 상품축, key: string, label: string) => {
+  const infer = (axis: 상품축, key: string) => {
     const a = inferred[axis] ?? [];
     if (!a.includes(key)) a.push(key);
     inferred[axis] = a;
+  };
+  const add = (axis: 상품축, key: string, label: string) => {
+    infer(axis, key);
+    if (!tokens.some((x) => x.axis === axis && x.key === key)) tokens.push({ axis, key, label });
+  };
+  const token = (axis: 상품축, key: string, label: string) => {
     if (!tokens.some((x) => x.axis === axis && x.key === key)) tokens.push({ axis, key, label });
   };
   const eat = (re: RegExp, axis: 상품축, key: string, label: string) => {
@@ -109,13 +115,15 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
     const max = Number(n) * 10000;
     limits.depositMax = max;
     // 상한이 구간 중간에 걸리면 그 구간도 후보로 넣고, 마지막에 실제 숫자로 다시 자른다.
-    for (const b of 보증금구간) if (max > b.lo) add('dep', b.k, b.label);
+    for (const b of 보증금구간) if (max > b.lo) infer('dep', b.k);
+    token('dep', `max:${max}`, `보증금 ${Number(n).toLocaleString('ko-KR')}만원 이하`);
     return ' ';
   });
   rest = rest.replace(/(?:월\s*)?(\d+(?:\.\d+)?)\s*만(?:원)?\s*(?:이하|이내|밑)/g, (_, n: string) => {
     const max = Number(n) * 10000;
     limits.rentMax = max;
-    for (const b of 대여료구간) if (max > b.lo) add('rent', b.k, b.label);
+    for (const b of 대여료구간) if (max > b.lo) infer('rent', b.k);
+    token('rent', `max:${max}`, `월 ${Number(n).toLocaleString('ko-KR')}만원 이하`);
     return ' ';
   });
 

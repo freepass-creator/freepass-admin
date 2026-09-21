@@ -8,7 +8,7 @@ export type IntakeNextAction =
   | { kind: 'settlement'; tab: 'claim' | 'pay' }
   | { kind: 'blocked'; label: Block };
 
-const PAY_BLOCKS: Block[] = ['영업채널 없음', '지급금액 모름', '지급'];
+const PAY_BLOCKS: Block[] = ['지급금액 모름', '지급'];
 const CLAIM_BLOCKS: Block[] = ['청구금액 모름', '청구', '계산서', '수금'];
 
 export function intakeNextAction(block: Block | null, cancelled: boolean, delivered: boolean): IntakeNextAction {

@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
-import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
+import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
-import { filterPerformanceLines, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
+import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
 import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
@@ -29,19 +29,23 @@ export const dynamic = 'force-dynamic';
  */
 export default async function SettlementPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
-  const tab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
+  const requestedTab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 
   let all: Awaited<ReturnType<typeof settlements.list>>;
   let cb: Awaited<ReturnType<typeof settlements.clawbacks>>;
   try { [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]); }
   catch (e) { return <><h1>정산관리</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>; }
   const rows = all.map((x) => x.row);
+  const focusCode = sp(q.focus).trim();
+  const focus = focusCode ? locateSettlementFocus(rows, cb, focusCode, requestedTab) : null;
+  const focusMiss = !!focusCode && !focus;
+  const tab = focus?.tab ?? requestedTab;
 
   const months = ledgerMonths(rows, cb);
   /* ★처음 여는 달 = 이번 달까지 중 가장 최근(앞날 청구월이 적힌 줄이 있어 «맨 위»를 고르면 엉뚱한 달이 열린다) */
   const now = today().slice(0, 7);
   const 달들 = months.filter((m) => m !== NO_MONTH);
-  const month = sp(q.month) || 달들.find((m) => m <= now) || 달들[0] || NO_MONTH;
+  const month = focus?.month || sp(q.month) || 달들.find((m) => m <= now) || 달들[0] || NO_MONTH;
   const groups = tab === 'claim' ? claimLedger(rows, month, cb) : payLedger(rows, month, cb);
   const t = ledgerTotals(groups);
   const who = tab === 'claim' ? '공급사' : '영업채널';
@@ -49,22 +53,24 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const 미정수 = 미정.reduce((n, g) => n + g.lines.length, 0);
 
   const gq = sp(q.gq).trim();
-  const gs = (['all', 'issue', 'todo', 'done'] as const).includes(sp(q.gs) as LedgerGroupFilter)
-    ? sp(q.gs) as LedgerGroupFilter : 'all';
+  const gs = focus ? 'all' : ((['all', 'issue', 'todo', 'done'] as const).includes(sp(q.gs) as LedgerGroupFilter)
+    ? sp(q.gs) as LedgerGroupFilter : 'all');
   const shownGroups = filterLedgerGroups(groups, gs, gq);
   const groupCount = (mode: LedgerGroupFilter) =>
     mode === 'all' ? groups.length : groups.filter((g) => ledgerGroupAttention(g) === mode).length;
-  const gSel = shownGroups.find((g) => g.party === sp(q.g)) ?? shownGroups[0];
-  const ic = sp(q.ic);
+  const gSel = shownGroups.find((g) => g.party === (focus?.party ?? sp(q.g))) ?? shownGroups[0];
+  const nextGroupParty = gSel ? nextActionableLedgerParty(groups, gSel.party) : null;
+  const ic = focus?.code ?? sp(q.ic);
 
   /* 실적 줄 찾기 — 판정은 domain/performance-filter 한 곳에서만 한다. */
   const lq = sp(q.lq).trim();
-  const ls = (['all', 'todo', 'issue', 'done'] as const).includes(sp(q.ls) as PerformanceFilterMode)
-    ? sp(q.ls) as PerformanceFilterMode : 'todo';
+  const ls = focus ? 'all' : ((['all', 'todo', 'issue', 'done'] as const).includes(sp(q.ls) as PerformanceFilterMode)
+    ? sp(q.ls) as PerformanceFilterMode : 'todo');
   const perfAxis: Axis = tab === 'claim' ? '공급사' : '영업채널';
   const performanceLines = filterPerformanceLines(gSel?.lines ?? [], perfAxis, ls, lq);
   const performanceCount = (mode: PerformanceFilterMode) =>
     (gSel?.lines ?? []).filter((x) => performanceMatchesMode(x, perfAxis, mode)).length;
+  const nextPerformanceCode = ic ? nextActionablePerformanceCode(gSel?.lines ?? [], perfAxis, ic, lq) : null;
   const shownClawbacks = (gSel?.clawbacks ?? []).filter((x) =>
     (ls === 'all' || ls === 'issue')
     && (!lq || [x.plate, x.reason, x.month].filter(Boolean).join(' ').toLowerCase().includes(lq.toLowerCase())));
@@ -75,10 +81,11 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const 계획 = gSel ? planInvoice(month, axis, gSel.party, gSel.lines, cb, 장, 장부.map((x) => x.invoiceNo), Date.now(), '미리보기') : null;
   const 어긋남 = 계획?.ok ? driftOf(장, { supply: 계획.invoice.supply, vat: 계획.invoice.vat, lines: 계획.invoice.lines }) : null;
   const 문서 = tab === 'claim' ? '청구서' : '지급명세';
-  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v)) ?? (ic ? 'work' : sp(q.g) ? 'detail' : 'list');
+  const view = focus ? 'work' : ((['list', 'detail', 'work'] as const).find((v) => v === sp(q.v)) ?? (ic ? 'work' : sp(q.g) ? 'detail' : 'list'));
 
   const keep = (extra: Record<string, string>) => {
     const u = new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])));
+    u.delete('focus');
     for (const [k, v] of Object.entries(extra)) { if (v) u.set(k, v); else u.delete(k); }
     return `/settlement?${u}`;
   };
@@ -117,6 +124,12 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         {/* ── 묶음 — 공급사(청구) / 영업채널(지급) ─────────────────── */}
         <section className="panel product-panel">
           <div className="dz-listtop">
+            {focusMiss && (
+              <Notice tone="warn">
+                이 접수는 지금 {tab === 'claim' ? '청구' : '지급'} 원장에 설 수 없습니다.{' '}
+                <Link href={`/intake?ic=${encodeURIComponent(focusCode)}&v=work`}>접수 상세에서 막힘 확인</Link>
+              </Notice>
+            )}
             <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />
@@ -250,7 +263,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         <section className="panel work-panel">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }) }} />
+                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined }} />
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

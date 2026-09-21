@@ -38,3 +38,20 @@ export function filterPerformanceLines(
     performanceMatchesMode(line, axis, mode)
     && (!q || performanceSearchText(line).includes(q)));
 }
+
+
+/** 같은 거래처 묶음에서 아직 끝나지 않은 다음 업무 줄. 상태를 바꾸지 않고 이동만 줄인다. */
+export function nextActionablePerformanceCode(
+  lines: readonly LedgerLine[],
+  axis: PerformanceAxis,
+  currentCode: string,
+  text = '',
+): string | null {
+  const q = text.trim().toLowerCase();
+  const queue = lines.filter((line) => !performanceDone(line, axis)
+    && (!q || performanceSearchText(line).includes(q)));
+  if (!queue.length) return null;
+  const i = queue.findIndex((line) => line.row.id === currentCode);
+  if (i < 0) return queue[0].row.id;
+  return queue[i + 1]?.row.id ?? queue.find((line) => line.row.id !== currentCode)?.row.id ?? null;
+}

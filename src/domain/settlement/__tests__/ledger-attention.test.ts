@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterLedgerGroups, ledgerGroupAttention, sortLedgerGroups, type LedgerGroup } from '../ledgers';
+import { filterLedgerGroups, ledgerGroupAttention, nextActionableLedgerParty, sortLedgerGroups, type LedgerGroup } from '../ledgers';
 
 const group = ({
   party,
@@ -76,4 +76,14 @@ test('거래처 묶음 필터는 이슈·미처리·완료와 거래처 검색�
   assert.deepEqual(filterLedgerGroups(groups, 'done').map((x) => x.party), ['완료렌터카']);
   assert.deepEqual(filterLedgerGroups(groups, 'all', '오토').map((x) => x.party), ['오토플러스']);
   assert.deepEqual(filterLedgerGroups(groups, 'issue', '손').map((x) => x.party), []);
+});
+
+
+test('next actionable ledger party skips completed parties and follows attention order', () => {
+  const done = group({ party: '완료', lines: 1, done: 1 });
+  const todo = group({ party: '미처리', lines: 2, done: 1 });
+  const issue = group({ party: '이슈', unknown: 1 });
+  assert.equal(nextActionableLedgerParty([done, todo, issue], '완료'), '이슈');
+  assert.equal(nextActionableLedgerParty([done, todo, issue], '이슈'), '미처리');
+  assert.equal(nextActionableLedgerParty([done], '완료'), null);
 });

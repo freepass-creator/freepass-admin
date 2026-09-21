@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { LedgerLine } from './ledgers';
 import type { SettlementRow } from './types';
-import { filterPerformanceLines, performanceMatchesMode } from './performance-filter';
+import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode } from './performance-filter';
 
 const row = (o: Partial<SettlementRow> = {}): SettlementRow => ({
   id:'r1', plate:'12가3456', receivedAt:'2026-09-01', customer:'홍길동',
@@ -47,4 +47,15 @@ test('performance search spans customer plate model parties agent and id',()=>{
   assert.equal(filterPerformanceLines(lines,'공급사','all','12가3456').length,1);
   assert.equal(filterPerformanceLines(lines,'공급사','all','김영업').length,1);
   assert.equal(filterPerformanceLines(lines,'공급사','all','없는값').length,0);
+});
+
+
+test('next actionable performance moves to the next unfinished row without touching state',()=>{
+  const a=line(row({id:'a'}));
+  const b=line(row({id:'b'}));
+  const done=line(row({id:'done',progress:{...row().progress,collected:true}}));
+  assert.equal(nextActionablePerformanceCode([a,b,done],'공급사','a'),'b');
+  assert.equal(nextActionablePerformanceCode([a,b,done],'공급사','b'),'a');
+  assert.equal(nextActionablePerformanceCode([done,b],'공급사','done'),'b');
+  assert.equal(nextActionablePerformanceCode([done],'공급사','done'),null);
 });

@@ -128,6 +128,34 @@ function group(
   return sortLedgerGroups([...by.values()]);
 }
 
+export type SettlementFocus = {
+  tab: 'claim' | 'pay';
+  month: string;
+  party: string;
+  code: string;
+};
+
+/**
+ * 접수 상세 → 정산관리 handoff.
+ * 특정 정산축에서 이 줄이 실제로 서는 달과 거래처 묶음을 찾아 준다.
+ * 상대/계약/차량 identity가 없어 원장에 설 수 없는 줄은 null — 엉뚱한 정산 화면으로 보내지 않는다.
+ */
+export function locateSettlementFocus(
+  rows: readonly SettlementRow[],
+  clawbacks: readonly Clawback[],
+  code: string,
+  tab: 'claim' | 'pay',
+  now = new Date(),
+): SettlementFocus | null {
+  if (!rows.some((r) => r.id === code)) return null;
+  for (const month of ledgerMonths(rows, clawbacks, now)) {
+    const groups = tab === 'claim' ? claimLedger(rows, month, clawbacks, now) : payLedger(rows, month, clawbacks, now);
+    const group = groups.find((g) => g.lines.some((l) => l.row.id === code));
+    if (group) return { tab, month, party: group.party, code };
+  }
+  return null;
+}
+
 export type LedgerGroupAttention = 'issue' | 'todo' | 'done';
 export type LedgerGroupFilter = 'all' | LedgerGroupAttention;
 
@@ -143,6 +171,11 @@ export function filterLedgerGroups(groups: readonly LedgerGroup[], mode: LedgerG
   const q = text.trim().toLowerCase();
   return groups.filter((g) => (mode === 'all' || ledgerGroupAttention(g) === mode)
     && (!q || g.party.toLowerCase().includes(q)));
+}
+
+export function nextActionableLedgerParty(groups: readonly LedgerGroup[], currentParty: string): string | null {
+  return sortLedgerGroups([...groups])
+    .find((g) => g.party !== currentParty && ledgerGroupAttention(g) !== 'done')?.party ?? null;
 }
 
 export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {

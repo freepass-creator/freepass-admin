@@ -114,3 +114,8 @@ test('settlement UI separates document progress from cash completion',()=>{
   assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
   assert.ok(settlementPage.includes('g.completed'));
 });
+
+
+test('claim rows stay active until collection completes',()=>{
+  assert.ok(settlementPage.includes("tab === 'claim' ? r.progress.collected : r.progress.paid"));
+});

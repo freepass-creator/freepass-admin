@@ -11,6 +11,7 @@ import { intakeCode } from './code';
 import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
+import type { IntakeCatalogSnapshot } from './types';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -36,6 +37,7 @@ export interface IntakeInput {
   sourceProductVersion?: number | null;
   sourceOfferId?: string;
   sourceSnapshotId?: string;
+  catalogSnapshot?: IntakeCatalogSnapshot;
   paper: boolean;
   delivered: boolean;
   deliveredAt: string;
@@ -113,6 +115,7 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,
     sourceSnapshotId: x.sourceSnapshotId?.trim() || null,
+    catalogSnapshot: x.catalogSnapshot ?? null,
     /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
     supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,
     claimWritten: mClaim ?? (auto ? auto.claim : 0), payWritten: mPay ?? (auto ? auto.pay : 0),

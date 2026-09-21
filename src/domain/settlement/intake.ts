@@ -156,12 +156,20 @@ export type ProgressEvent = { field: string; from: string; to: string };
 export function progressPatch(
   cur: Record<string, unknown>, c: ProgressChange,
 ): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
-  const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true';   // ★domain 은 adapters 를 모른다 — 어댑터 쪽 boolOf() 를 안 끌어온다(방향을 어긴다)
-  const S = (v: unknown) => String(v ?? '');
+  const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
+  const S = (v: unknown) => String(v ?? '').trim();
   const settlementStarted = () => {
     const claimStage = S(cur.claimStage) || '접수';
     const payStage = S(cur.payStage) || '접수';
+    const legacyStage = S(cur.stage);
+    const legacyFinancialStage = ['청구', '통보', '정정', '확인', '수금', '지급', '정산', '정산완료', '마감'].includes(legacyStage);
+    const datedOrNumbered = [
+      cur.billMonth, cur.billedAt, cur.invoiceAt, cur.collectedAt, cur.paidAt,
+      cur.invoiceNoS, cur.invoiceNoP,
+    ].some((v) => !!S(v));
     return B(cur.billed) || B(cur.invoiceIssued) || B(cur.collected) || B(cur.paid)
+      || B(cur.supplierOk) || B(cur.channelOk) || B(cur.supplierFix) || B(cur.channelFix)
+      || B(cur.settledAlready) || datedOrNumbered || legacyFinancialStage
       || claimStage !== '접수' || payStage !== '접수';
   };
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
@@ -223,6 +231,7 @@ export function progressPatch(
     return { ok: true, patch: { cancelled: true, note }, events: [{ field: '취소', from: 'false', to: 'true' }, { field: '취소사유', from: '', to: reason }] };
   }
   if (!B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
+  if (settlementStarted()) return { ok: false, error: '정산 흔적이 있는 취소 건은 다시 열 수 없습니다 — 정정/환수 절차로 처리합니다' };
   return { ok: true, patch: { cancelled: false }, events: [{ field: '취소', from: 'true', to: 'false' }] };
 }
 

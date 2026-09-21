@@ -64,11 +64,13 @@ const PRODUCTS = [
  *   48개월의 보증금을 섞어 없는 조건을 만들지 않는다.
  * ★`product` 축은 차 자체에 댄다(연료·연식·공급사·확정도).
  */
+const TERM_OPTIONS = [...new Set(PRODUCTS.flatMap(p => p.offers.map(o => o.term)))]
+  .filter(month => Number.isInteger(month) && month > 0)
+  .sort((a,b) => a-b)
+  .map(month => ({ k:String(month), label:`${month}개월`, test:o => o.term === month }));
+
 const AXES = [
-  { k:'term', t:'대여기간', scope:'offer', val:o=>`${o.term}개월`, opts:[
-    {k:'12',label:'12개월',test:o=>o.term===12},{k:'24',label:'24개월',test:o=>o.term===24},
-    {k:'36',label:'36개월',test:o=>o.term===36},{k:'48',label:'48개월',test:o=>o.term===48},
-    {k:'60',label:'60개월',test:o=>o.term===60}]},
+  { k:'term', t:'대여기간', scope:'offer', val:o=>`${o.term}개월`, opts:TERM_OPTIONS},
   { k:'rent', t:'월 대여료', scope:'offer', tok:o=>'월 '+o.label, val:o=>won(o.rent), opts:[
     {k:'r70',label:'70만원 이하',test:o=>o.rent<=700000},
     {k:'r100',label:'100만원 이하',test:o=>o.rent<=1000000},

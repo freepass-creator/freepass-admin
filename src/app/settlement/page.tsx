@@ -263,7 +263,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
         <section className="panel work-panel">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined }} />
+                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined, invoiceBiz: 장?.partyBizNo }} />
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

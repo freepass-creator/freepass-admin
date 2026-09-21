@@ -79,6 +79,7 @@ test('amount ceilings include the overlapping band and preserve the exact numeri
   assert.deepEqual(q.inferred.rent, ['r50', 'r60']);
   assert.deepEqual(q.inferred.dep, ['d0', 'd1', 'd2']);
   assert.deepEqual(q.limits, { rentMax: 550_000, depositMax: 1_500_000 });
+  assert.deepEqual(q.tokens.map((x) => x.label), ['보증금 150만원 이하', '월 55만원 이하']);
   assert.equal(q.text, '');
 });
 

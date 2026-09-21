@@ -10,7 +10,7 @@ import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, snapshotOf, t
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
-import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
+import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
 import type { DocumentReference } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
@@ -88,20 +88,33 @@ export class Erp5SettlementRepository {
       const d = await tx.get(ref);
       if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
       const cur = d.data()!;
+      const { row } = toSettlementRow(cur, d.id);
       const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
       let cashRef: DocumentReference | null = null;
+      let cashInvoiceRef: DocumentReference | null = null;
+      if (cash && row.progress.billMonth) {
+        const party = cash.axis === '공급사' ? row.supplier : row.channel;
+        if (party) {
+          cashInvoiceRef = db.collection(INVOICES).doc(
+            `inv_${createHash('sha256').update(invoiceKey(row.progress.billMonth, cash.axis, party)).digest('hex').slice(0, 16)}`,
+          );
+        }
+      }
       if (operationId) {
         const cashId = `cash_${createHash('sha256').update(`${code}|${operationId}`).digest('hex').slice(0, 24)}`;
         cashRef = db.collection(CASH_EVENTS).doc(cashId);
-        const [eventDoc, cashDoc] = await Promise.all([
+        const [eventDoc, cashDoc, cashInvoiceDoc] = await Promise.all([
           tx.get(eventRef),
           cash ? tx.get(cashRef) : Promise.resolve(null),
+          cashInvoiceRef ? tx.get(cashInvoiceRef) : Promise.resolve(null),
         ]);
         const seenAudit = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
           !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
         if (seenAudit || (cashDoc && cashDoc.exists)) return { ok: true as const, changed: 0 };
+        if (cashInvoiceDoc?.exists && invoiceNeedsCashAllocation(cashInvoiceDoc.data() as IssuedInvoice)) {
+          return { ok: false as const, error: '환수가 포함된 묶음 문서는 행별 수금·지급 배분 정책이 아직 확정되지 않았습니다 — 이 문서는 수동 정산 확인이 필요합니다' };
+        }
       }
-      const { row } = toSettlementRow(cur, d.id);
       const r = apply(cur, row);
       if (!r.ok) return r;
       if (!r.events.length) return { ok: true as const, changed: 0 };

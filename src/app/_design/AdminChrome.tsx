@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
+import { erp5Ready } from '../../adapters/erp5/firestore';
 import { Brand, TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { logoutAction } from '../login/actions';
@@ -24,12 +25,13 @@ const MENU = [
 export async function AdminChrome({ children }: { children: ReactNode }) {
   /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
   const 나 = await currentAdmin();
+  const data = erp5Ready();
   return (
     <>
       <nav className="fn-top">
         <Brand />
         <TopMenu items={MENU} />
-        <span className="fn-state">ERP5 freepasserp5 · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</span>
+        <a className="fn-state" href="/system/data-status">ERP5 freepasserp5 · 읽기 {data.ok ? '연결' : '오류'} · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</a>
         {/* 로그아웃 — 기능 쪽 logoutAction(쿠키 지우고 /login 으로). 폰에서도 작게 그대로 선다(이동 버튼이 아니라 계정 동작) */}
         {나 && <span className="dz-me">{나.name}</span>}
         <form action={logoutAction} className="dz-logout"><button type="submit">로그아웃</button></form>

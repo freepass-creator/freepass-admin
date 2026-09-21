@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 
 const read=(p:string)=>readFileSync(resolve(process.cwd(),p),'utf8');
 const root=read('src/app/page.tsx');
+const designRoute=read('src/app/design/page.tsx');
+const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
@@ -44,4 +46,14 @@ test('primary intake actions keep the shared bottom action boundary',()=>{
   assert.ok(intakeForm.includes('className="dz-bar-go"'));
   assert.ok(css.includes('.dz-bar'));
   assert.ok(css.includes('--ui-action-h'));
+});
+
+test('legacy prototype and duplicate intake routes converge on canonical workspace',()=>{
+  assert.ok(/redirect\(['"]\/intake['"]\)/.test(designRoute));
+  assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(designRoute),false);
+  assert.ok(intakeListRoute.includes("new URLSearchParams({ v: 'work' })"));
+  assert.ok(intakeListRoute.includes("u.set('iq', text)"));
+  assert.ok(intakeListRoute.includes("u.set('im', month)"));
+  assert.ok(intakeListRoute.includes("u.set('iv', '취소')"));
+  assert.ok(intakeListRoute.includes('redirect(`/intake?${u}`)'));
 });

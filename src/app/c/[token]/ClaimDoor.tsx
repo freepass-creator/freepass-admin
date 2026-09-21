@@ -7,7 +7,7 @@
  */
 import { startTransition, useActionState, useState } from 'react';
 import { Exo_2 } from 'next/font/google';
-import { openClaimAction, respondClaimAction, type OpenState } from '../actions';
+import { openClaimAction, respondClaimAction, type ClaimResponseState, type OpenState } from '../actions';
 
 const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
@@ -16,7 +16,7 @@ type 줄 = {
   product?: string; term?: number; rent?: number; net: number; vat: number; total: number; ratio?: number;
 };
 type 환수줄 = { plate?: string; at?: string; reason?: string; net: number; vat: number };
-type 답 = { state: '확인' | '이의'; at: number; memo?: string };
+type 답 = { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] };
 
 const 원 = (n: number | undefined | null) => (n === undefined || n === null ? '—' : `${Math.round(n).toLocaleString('ko-KR')}원`);
 const 날 = (t: number | string | undefined) => (t === undefined ? '—' : typeof t === 'number' ? new Date(t + 9 * 3600_000).toISOString().slice(0, 10) : t);
@@ -55,8 +55,8 @@ function ClaimBody({ token, biz, view }: { token: string; biz: string; view: Ext
   const claws = view.clawbacks as 환수줄[];
   const 문서 = view.axis === '공급사' ? '청구서' : '지급명세';
   const [mode, setMode] = useState<'' | '이의'>('');
-  const [res, resAct, sending] = useActionState<{ ok: boolean; error?: string } | null, FormData>(respondClaimAction, null);
-  const 받은답: 답 | null = res?.ok ? { state: mode === '이의' ? '이의' : '확인', at: Date.now() } : (view.response as 답 | null);
+  const [res, resAct, sending] = useActionState<ClaimResponseState, FormData>(respondClaimAction, null);
+  const 받은답: 답 | null = res?.ok ? res.response : (view.response as 답 | null);
 
   return (
     <main className="cl-main">
@@ -104,7 +104,7 @@ function ClaimBody({ token, biz, view }: { token: string; biz: string; view: Ext
 
         {받은답 ? (
           <p className={`cl-answer ${받은답.state === '이의' ? 'warn' : 'ok'}`}>
-            {받은답.state === '확인' ? '확인하셨습니다' : '이의를 보내셨습니다'} · {날(받은답.at)}{받은답.memo ? ` — ${받은답.memo}` : ''}
+            {받은답.state === '확인' ? '확인하셨습니다' : `이의를 보내셨습니다${받은답.codes?.length ? ` · ${받은답.codes.length}건` : ''}`} · {날(받은답.at)}{받은답.memo ? ` — ${받은답.memo}` : ''}
           </p>
         ) : (
           <>

@@ -14,6 +14,7 @@ const esign=await read('src/app/esign/page.tsx');
 const server=await read('src/server/erp5.ts');
 const productRepo=await read('src/adapters/erp5/product-repository.ts');
 const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
+const intakeActions=await read('src/app/intake/actions.ts');
 const status=await read('src/server/data-status.ts');
 
 const must=(ok:boolean,msg:string)=>{if(!ok)errors.push(msg)};
@@ -38,6 +39,8 @@ must(/const ROWS = 'settlement_rows'/.test(settlementRepo),'settlement repositor
 must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash movement ledger must use settlement_cash_events');
 must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
+must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
+must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');
 must(/adminDataStatus/.test(status),'live data status probe missing');
 must(/products\.list\(\)/.test(status),'data-status must bypass product cache and read the live product repository');
 must(!/productList\(\)/.test(status),'data-status must not report the cached productList as a live repository probe');

@@ -115,3 +115,62 @@ export function failPatch(s: LinkState, now: number): Record<string, unknown> {
   const n = (s.failCount ?? 0) + 1;
   return n >= MAX_FAILS ? { failCount: 0, lockedUntil: now + LOCK_MS } : { failCount: n };
 }
+
+
+export type ClaimResponse = {
+  state: '확인' | '이의';
+  at: number;
+  memo?: string;
+  codes?: string[];
+};
+
+const sameCodeSet = (a: readonly string[] = [], b: readonly string[] = []) => {
+  const aa = [...new Set(a)].sort();
+  const bb = [...new Set(b)].sort();
+  return aa.length === bb.length && aa.every((x, i) => x === bb[i]);
+};
+
+/**
+ * Public claim response is final for the currently issued invoice snapshot.
+ * Exact retries are idempotent; changing an already-recorded answer requires reissue.
+ */
+export function planClaimResponse(
+  existing: ClaimResponse | null | undefined,
+  kind: '확인' | '이의',
+  memo: string,
+  requestedCodes: readonly string[],
+  invoiceCodes: readonly string[],
+  now: number,
+):
+  | { ok: true; response: ClaimResponse; target: string[]; idempotent: boolean }
+  | { ok: false; error: string } {
+  const cleanMemo = memo.trim();
+  if (kind === '이의' && !cleanMemo) return { ok: false, error: '무엇이 다른지 적어 주세요' };
+
+  const uniqRequested = [...new Set(requestedCodes)];
+  const target = kind === '이의' && uniqRequested.length
+    ? uniqRequested.filter((c) => invoiceCodes.includes(c))
+    : [...invoiceCodes];
+
+  if (!target.length) return { ok: false, error: '선택한 정산 줄이 발행 사본에 없습니다 — 문서를 다시 열어 주세요' };
+  if (kind === '이의' && uniqRequested.length && target.length !== uniqRequested.length) {
+    return { ok: false, error: '발행 사본에 없는 줄이 섞여 있습니다 — 문서를 다시 열어 주세요' };
+  }
+
+  const next: ClaimResponse = {
+    state: kind,
+    at: now,
+    ...(cleanMemo ? { memo: cleanMemo } : {}),
+    ...(kind === '이의' ? { codes: target } : {}),
+  };
+
+  if (!existing) return { ok: true, response: next, target, idempotent: false };
+
+  const same = existing.state === next.state
+    && (existing.memo ?? '') === (next.memo ?? '')
+    && sameCodeSet(existing.codes, next.codes);
+
+  if (same) return { ok: true, response: existing, target, idempotent: true };
+
+  return { ok: false, error: '이미 답변한 청구서입니다 — 답변을 바꾸려면 프리패스에서 문서를 다시 발행해야 합니다' };
+}

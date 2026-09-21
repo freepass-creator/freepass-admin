@@ -87,16 +87,17 @@ export function SideStep({ id, code, kind, label, on, month, biz, day, externalS
  *   상대가 열어 본 횟수 · 답(확인 · 이의)을 같이 보인다. 하는 일은 기능 쪽 createClaimLinkAction · revokeClaimLinkAction.
  *   ⚠ 운영 원장 — 모양 확인 때 누르지 않는다.
  */
-export function ClaimLink({ month, axis, party, live, openCount, openedAt, response }: {
+export function ClaimLink({ month, axis, party, live, openCount, openedAt, failCount, locked, lockedUntil, response }: {
   month: string; axis: '공급사' | '영업채널'; party: string;
   /** 살아 있는 링크가 있나(만든 적 있고 안 거둠) */
-  live: boolean; openCount?: number; openedAt?: number;
-  response?: { state: '확인' | '이의'; at: number; memo?: string } | null;
+  live: boolean; openCount?: number; openedAt?: number; failCount?: number; locked?: boolean; lockedUntil?: number | null;
+  response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] } | null;
 }) {
   const [made, make, making] = useActionState<FormState & { url?: string; warn?: string }, FormData>(createClaimLinkAction, { errors: [] });
   const [gone, revoke, revoking] = useActionState<FormState, FormData>(revokeClaimLinkAction, { errors: [] });
   const [copied, setCopied] = useState(false);
   const 날 = (t?: number) => (t ? new Date(t + 9 * 3600_000).toISOString().slice(0, 10) : '');
+  const 시각 = (t?: number | null) => (t ? new Date(t + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') : '');
   const 칸 = (<><input type="hidden" name="month" value={month} /><input type="hidden" name="axis" value={axis} /><input type="hidden" name="party" value={party} /></>);
   return (
     <div className="dz-claim-link">
@@ -104,11 +105,14 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, respo
         <b>청구 링크</b>{' '}
         {live ? <span>살아 있음</span> : <span className="dz-muted">없음</span>}
         {openCount ? <span> · 열어봄 {openCount}번{openedAt ? ` (${날(openedAt)})` : ''}</span> : null}
-        {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의 — ${response.memo ?? ''}`} ({날(response.at)})</span>}
+        {locked
+          ? <span className="dz-warn-txt"> · 잠김 {시각(lockedUntil)}까지</span>
+          : failCount ? <span className="dz-warn-txt"> · 사업자번호 오입력 {failCount}회</span> : null}
+        {response && <span className={response.state === '이의' ? 'dz-warn-txt' : 'dz-ok-txt'}> · {response.state === '확인' ? '확인함' : `이의${response.codes?.length ? ` ${response.codes.length}건` : ''} — ${response.memo ?? ''}`} ({날(response.at)})</span>}
       </p>
       <div className="dz-claim-link-go">
         <form aria-busy={making} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>
-          {칸}<button type="submit" disabled={making} aria-busy={making}>{making ? '만드는 중…' : live ? '새로 만들기(옛 링크 죽음)' : '링크 만들기'}</button>
+          {칸}<button type="submit" disabled={making} aria-busy={making}>{making ? '만드는 중…' : live ? (locked ? '새 링크 만들기(잠금 초기화)' : '새로 만들기(옛 링크 죽음)') : '링크 만들기'}</button>
         </form>
         {live && (
           <form aria-busy={revoking} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>

@@ -68,7 +68,8 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
-  /* ★인도완료는 인도일과 «같이» 온다. 날짜 없이 켜면 청구월이 안 선다 (erp4 appendIntake 와 같은 규칙) */
+  /* ★업무 순서: 계약완료 → 인도완료. 인도는 계약서와 인도일이 함께 있어야 한다. */
+  if (x.delivered && !x.paper) e.push('계약서 확인 후 인도완료할 수 있습니다');
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {
@@ -188,6 +189,7 @@ export function progressPatch(
   }
   if (c.kind === 'delivered') {
     if (c.on) {
+      if (!B(cur.paper)) return { ok: false, error: '계약서 확인 후 인도 완료할 수 있습니다' };
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();
       if (!DAY.test(day)) return { ok: false, error: '인도완료를 켜려면 인도일을 같이 넣어야 합니다' };

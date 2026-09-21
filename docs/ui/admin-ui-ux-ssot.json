@@ -1,12 +1,13 @@
 {
   "version": "2026-09-18",
-  "status": "NORMATIVE",
+  "status": "PRODUCT_PROFILE / AI_CORE_CONSUMER",
   "authority": [
     "latest-user-decision",
+    "docs/ui/ai-core-bindings.json",
+    "freepass-creator/ai-core UI/UX registry + interaction contracts",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
     "src/app/_design/*",
     "src/app/globals.css final rules",
-    "docs/ui/UI-SPEC.md",
     "mockups-and-history"
   ],
   "typography": {
@@ -236,5 +237,25 @@
     "intakePanelsBoundary": "src/app/intake/panels.tsx",
     "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
     "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
+  },
+  "aiCore": {
+    "consumerBinding": "docs/ui/ai-core-bindings.json",
+    "upstreamRepository": "freepass-creator/ai-core",
+    "upstreamRevision": "a4a41a0664fbc2d4044841759af33e00b3ceb46b",
+    "featureRegistryVersion": "1.8.0",
+    "semanticAuthority": true
+  },
+  "listPresentation": {
+    "authorityFeature": "data.list-presentation",
+    "modes": {
+      "productCatalog": "product-media-row",
+      "application": "business-row",
+      "performance": "business-row",
+      "billing": "business-row",
+      "payout": "business-row",
+      "offer": "variant-card",
+      "denseComparison": "data-table"
+    },
+    "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
   }
 }

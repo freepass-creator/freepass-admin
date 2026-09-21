@@ -136,6 +136,12 @@ export class Erp5SettlementRepository {
     return snap.docs.map((d) => clawbackFromRaw(d.data()));
   }
 
+  /** 실제 수금/지급 거래 원장 — 누적 projection과 별도로 운영 점검/감사에서 읽는다. */
+  async cashEvents(): Promise<Record<string, unknown>[]> {
+    const snap = await erp5().collection(CASH_EVENTS).get();
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
   async get(code: string): Promise<RowWithRaw | null> {
     const d = await erp5().collection(ROWS).doc(code).get();
     if (!d.exists) return null;

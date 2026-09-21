@@ -56,7 +56,7 @@ export function OfferPicker({ offers, initial, perks, perksNote }: {
       {줄.length === 0 ? <EmptyState>받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</EmptyState> : (
         /* 기간 · 값 한 줄 — 본문과 같이 구른다. ★고른 요금은 판 하단바(DetailTabs)가 받아 「이 상품 접수하기」에 싣는다 */
         <div className="dz-apply">
-          <div className="offer-picker">
+          <div className="offer-picker" data-ai-feature="data.list-presentation data.variant-selector" data-ai-list-mode="variant-card">
             {줄.map((x) => (
               <button key={x.id} type="button" onClick={() => set고름(x.id)} className={x.id === 고름 ? 'active' : ''}>
                 {x.termMonths}개월{겹침(x.termMonths) && x.annualMileageKm ? ` · ${x.annualMileageKm / 10000}만km` : ''}

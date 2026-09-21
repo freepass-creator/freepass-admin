@@ -10,6 +10,7 @@ import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
+import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
 
 /**
  * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
@@ -86,6 +87,41 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       price: product.consumerPrice ?? null,
       sourceProductVersion: product.version,
       sourceSnapshotId: product.sourceSnapshotId,
+      catalogSnapshot: {
+        capturedAt: new Date().toISOString(),
+        product: {
+          id: product.id,
+          version: product.version,
+          sourceSnapshotId: product.sourceSnapshotId,
+          supplierId: product.supplierId,
+          supplierName: product.supplierName ?? null,
+          productKind: product.productKind ?? null,
+          vehicle: {
+            nodeId: product.vehicle.nodeId,
+            originId: product.vehicle.originId,
+            manufacturerId: product.vehicle.manufacturerId,
+            modelId: product.vehicle.modelId,
+            subModelId: product.vehicle.subModelId ?? null,
+            trimId: product.vehicle.trimId ?? null,
+            matchLevel: product.vehicle.matchLevel,
+          },
+          registration: {
+            vehicleNumber: product.registration?.vehicleNumber ?? null,
+            vin: product.registration?.vin ?? null,
+            firstRegistrationDate: product.registration?.firstRegistrationDate ?? null,
+          },
+        },
+        offer: {
+          id: offer.id,
+          termMonths: offer.termMonths,
+          monthlyRent: offer.monthlyRent,
+          deposit: offer.deposit ?? null,
+          prepayment: offer.prepayment ?? null,
+          annualMileageKm: offer.annualMileageKm ?? null,
+          policyValues: resolveOfferPolicies(product, offer).map((p) =>
+            p.type === 'MULTI_SELECT' ? { ...p, value: [...p.value] } : { ...p }),
+        },
+      },
     };
   }
 

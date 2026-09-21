@@ -12,6 +12,7 @@ import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
+import type { DocumentReference } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
 
 /**
@@ -88,7 +89,7 @@ export class Erp5SettlementRepository {
       if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
       const cur = d.data()!;
       const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
-      let cashRef: ReturnType<typeof db.collection>['prototype'] extends never ? never : any = null;
+      let cashRef: DocumentReference | null = null;
       if (operationId) {
         const cashId = `cash_${createHash('sha256').update(`${code}|${operationId}`).digest('hex').slice(0, 24)}`;
         cashRef = db.collection(CASH_EVENTS).doc(cashId);

@@ -27,6 +27,9 @@ export interface Adjustment {
   reason: string;
 }
 
+const legacyBool = (v: unknown): boolean =>
+  v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
+
 const money = (raw: unknown): number | null => {
   const t = String(raw ?? '').replace(/[,\s원]/g, '');
   if (!t) return 0;
@@ -72,12 +75,12 @@ export function moneyEditPatch(
   };
   const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
   const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
-  if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
+  if (legacyBool(cur.cancelled)) return { ok: false, error: '취소된 줄입니다' };
   const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
-  if (cur.billed === true && changed.some(([k]) => CLAIM_SIDE.has(k))) {
+  if (legacyBool(cur.billed) && changed.some(([k]) => CLAIM_SIDE.has(k))) {
     return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 다음 달 이월로 넘깁니다' };
   }
-  const payIssued = ['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true;
+  const payIssued = ['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || legacyBool(cur.paid);
   if (payIssued && changed.some(([k]) => PAY_SIDE.has(k))) {
     return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 다음 달 이월로 넘깁니다' };
   }
@@ -95,18 +98,18 @@ export function moneyEditPatch(
 export function feeFixPatch(
   cur: Record<string, unknown>, claim: number | null, pay: number | null, reason: string,
 ): { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
-  if (cur.cancelled === true) return { ok: false, error: '취소된 줄입니다' };
+  if (legacyBool(cur.cancelled)) return { ok: false, error: '취소된 줄입니다' };
   if (!reason.trim()) return { ok: false, error: '수수료를 고치는 사유를 적어야 합니다' };
   for (const [k, v] of [['청구', claim], ['지급', pay]] as const) if (v !== null && (!Number.isFinite(v) || v < 0)) return { ok: false, error: `${k} 수수료 값을 읽지 못했습니다` };
   const patch: Record<string, unknown> = {};
   const events: { field: string; from: string; to: string }[] = [];
   if (claim !== null && Number(cur.claimWritten ?? 0) !== claim) {
-    if (cur.billed === true) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 가감이나 다음 달 이월로' };
+    if (legacyBool(cur.billed)) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 가감이나 다음 달 이월로' };
     patch.claimWritten = Math.round(claim); patch.supplierRate = 0;
     events.push({ field: '청구금액', from: String(cur.claimWritten ?? ''), to: String(Math.round(claim)) });
   }
   if (pay !== null && Number(cur.payWritten ?? 0) !== pay) {
-    if (['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || cur.paid === true) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 가감이나 다음 달 이월로' };
+    if (['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || legacyBool(cur.paid)) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 가감이나 다음 달 이월로' };
     patch.payWritten = Math.round(pay); patch.agentRate = 0;
     events.push({ field: '지급액', from: String(cur.payWritten ?? ''), to: String(Math.round(pay)) });
   }

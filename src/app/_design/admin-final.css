@@ -415,6 +415,50 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 }
 
 
+/* 2026-09-21: 상단은 상태, 하단은 버튼. 이전 CI 상단 규칙은 이 관리자 틀에 적용하지 않는다. */
+header.fn-top.dz-statusbar {
+  height: 52px; padding: 0 16px; gap: 12px; flex-wrap: nowrap;
+  background: var(--ci남색); color: #fff;
+}
+header.dz-statusbar .fn-state {
+  margin: 0; min-width: 0; font-size: var(--ui-text-support); color: #fff;
+}
+header.dz-statusbar .dz-me {
+  margin-left: auto; max-width: 35%; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: var(--ui-text-support); color: #fff;
+}
+.dz-desktop-bottom { display: none; }
+header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
+  outline: 2px solid var(--ci스카이); outline-offset: 3px;
+}
+/* 하단 실행 단추는 PC/폰 모두 정본 44. 이전 PC 40px 덮개보다 우선한다. */
+.fn-main .workspace .dz-bar-go > .primary,
+.fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }
+@media (min-width: 901px) {
+  body:has(> .dz-statusbar) { --ui-desktop-bottom-h: 68px; padding-bottom: var(--ui-desktop-bottom-h); }
+  body:has(> .dz-statusbar) .fn-main .workspace {
+    height: calc(100dvh - 52px - var(--ui-desktop-bottom-h));
+  }
+  .dz-desktop-bottom {
+    display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    height: var(--ui-desktop-bottom-h); padding: 12px 16px; background: var(--판);
+  }
+  .dz-desktop-bottom .dz-menu { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .dz-desktop-bottom .dz-menu a {
+    display: flex; align-items: center; justify-content: center; height: var(--ui-action-h);
+    border-radius: var(--ui-radius); background: var(--박스); color: var(--글);
+    font-size: var(--ui-text-main); font-weight: 600; text-decoration: none;
+  }
+  .dz-desktop-bottom .dz-menu a:hover { background: var(--박스손); }
+  .dz-desktop-bottom .dz-menu a.on { background: var(--ci남색); color: #fff; }
+}
+@media (max-width: 900px) {
+  /* 기존 다섯 걸음 및 depth 숨김 조건 유지, 누르는 영역만 공통 버튼 면으로 표시. */
+  .dz-tabbar { gap: 4px; padding: 7px 8px calc(7px + env(safe-area-inset-bottom)); background: var(--판); }
+  .dz-tabbar a { min-height: var(--ui-touch-min); border-radius: var(--ui-radius); background: var(--박스); color: var(--글); }
+  .dz-tabbar a.on { background: var(--ci남색); color: #fff; }
+}
+
 /* GPT R2 — actual /esign uses the same two-panel workspace as product-find. */
 .workspace[data-mode="esign"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .workspace[data-mode="esign"] > .product-panel { grid-column: span 2; }

@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-18",
+  "version": "2026-09-21",
   "status": "PRODUCT_PROFILE / AI_CORE_CONSUMER",
   "authority": [
     "latest-user-decision",
@@ -70,13 +70,13 @@
       "paddingX": 10,
       "radiusPx": 8
     },
-    "desktopGlobalChromeCompact": {
-      "heightPx": 33,
-      "note": "TopMenu only; outside workspace control hierarchy"
-    },
     "searchEmbeddedFacet": {
       "visualHeightPx": 32,
       "note": "inside 40px search box; not a standalone workspace control"
+    },
+    "desktopGlobalNavigation": {
+      "heightPx": 44,
+      "note": "Existing TopMenu rendered as bottom buttons"
     }
   },
   "panels": {
@@ -131,7 +131,16 @@
       "청구",
       "지급"
     ],
-    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar"
+    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar",
+    "desktopPosition": "bottom",
+    "header": {
+      "role": "status-only",
+      "brand": false,
+      "menu": false,
+      "actions": false,
+      "statusLink": "/system/data-status",
+      "logoutLocation": "data-status ActionBar"
+    }
   },
   "components": {
     "canonical": [

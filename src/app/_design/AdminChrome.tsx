@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { erp5Ready } from '../../adapters/erp5/firestore';
-import { Brand, TopMenu } from './Brand';
+import { TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
-import { logoutAction } from '../login/actions';
 import { currentAdmin } from '../../server/require-admin';
 
-/** 메뉴 넷(웹 위 띠 글자 메뉴) — 대표 2026-09-18 「상품찾기 계약접수 정산관리 전자계약 이 4가지」.
+/** 기존 업무 4축 — 2026-09-21 결정에 따라 PC에서도 하단 버튼으로 배치.
  *   ★폰은 이 메뉴를 안 쓴다 — 다섯 걸음 하단바(`MobileTabBar`)가 대신한다(§14-8 개정, 아래 문서). */
 const MENU = [
   ['/products', '상품찾기'],
@@ -16,7 +15,7 @@ const MENU = [
 ] as const;
 
 /**
- * ★관리자 틀 — CI 위 띠(메뉴 넷 · 쓰기 상태) + 본문 판 + 폰 하단 다섯 걸음.
+ * 관리자 틀 — 상단 상태 + 본문 판 + 하단 업무 버튼. 상단에는 브랜드/실행 버튼을 두지 않는다.
  *   루트 layout 이 아니라 «관리자 쪽마다»(products · intake · settlement · esign · design 의 layout) 이 틀을 쓴다.
  *   까닭: 청구 링크(/c/[token])는 공급사가 여는 문이다 — 우리 직원이 아니다. 관리자 띠 · 메뉴 · 「ERP5 쓰기」 상태가
  *   화면에도, 쪽 원본(RSC)에도 실리면 안 된다(기능 세션 2026-09-18 「루트 layout 밖으로」).
@@ -28,15 +27,17 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
   const data = erp5Ready();
   return (
     <>
-      <nav className="fn-top">
-        <Brand />
-        <TopMenu items={MENU} />
-        <a className="fn-state" href="/system/data-status">ERP5 freepasserp5 · 읽기 {data.ok ? '연결' : '오류'} · 쓰기 {writeEnabled() ? '켜짐' : '꺼짐'}</a>
-        {/* 로그아웃 — 기능 쪽 logoutAction(쿠키 지우고 /login 으로). 폰에서도 작게 그대로 선다(이동 버튼이 아니라 계정 동작) */}
+      <header className="fn-top dz-statusbar" aria-label="관리자 상태">
+        {/* 설정 확인은 실제 읽기 성공과 다르다. 상세 진단과 로그아웃은 상태 화면에서 제공한다. */}
+        <a className="fn-state" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
+          {data.ok ? '데이터 설정됨' : '데이터 설정 필요'} · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
+        </a>
         {나 && <span className="dz-me">{나.name}</span>}
-        <form action={logoutAction} className="dz-logout"><button type="submit">로그아웃</button></form>
-      </nav>
+      </header>
       <main className="fn-main">{children}</main>
+      <nav className="dz-desktop-bottom" aria-label="업무 이동">
+        <TopMenu items={MENU} />
+      </nav>
       {/*
         ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).

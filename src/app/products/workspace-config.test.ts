@@ -54,7 +54,7 @@ test('natural product search keeps unknown words as free text', () => {
 
 test('parsed conditions merge with explicit facet state without duplicates', () => {
   const empty = {
-    status: [], kind: [], perk: [], term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [],
+    status: [], kind: [], perk: [], term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [],
   };
   const merged = mergeProductSelections({ ...empty, perk: ['무심사'] }, { perk: ['무심사', '만21세'], term: ['36'] });
   assert.deepEqual(merged.perk, ['무심사', '만21세']);

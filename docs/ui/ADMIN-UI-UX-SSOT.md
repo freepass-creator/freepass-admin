@@ -1,7 +1,7 @@
 # FreePass Admin UI/UX SSOT
 
 상태: **PRODUCT PROFILE / AI CORE CONSUMER**  
-기준일: 2026-09-18  
+기준일: 2026-09-21
 적용: `freepass-admin` 실제 관리자 화면  
 코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
@@ -39,7 +39,7 @@
 # 2. 전체 시각 위계
 
 ```
-L0  Brand / Global navigation
+L0  Status / Bottom navigation
     AdminChrome · desktop TopMenu · mobile MobileTabBar
 
 L1  Workspace
@@ -230,7 +230,7 @@ Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는
 - 달 넘기기 등 workspace 조작은 공통 `--ui-control-h` 40px를 사용한다.
 
 승인된 compact 예외:
-- Desktop global chrome의 TopMenu는 33px. 업무 Panel 내부 컨트롤과 다른 층이다.
+- Desktop 하단 TopMenu도 버튼 규격 44px를 사용한다(2026-09-21 개정).
 - 검색창 내부 `세부검색` 단추는 32px visual이지만 40px search box 안의 내부 조작이다.
 
 ---
@@ -439,6 +439,16 @@ Summary box는 `summary-grid` 규격을 사용한다.
 ---
 
 # 13. Navigation SSOT
+
+## 2026-09-21 사용자 결정 — 현재 기준
+- 상단은 상태바다. FreePass Admin 워드마크·업무 메뉴·실행 버튼을 넣지 않는다.
+- 데이터 설정 여부, 쓰기 허용 여부, 로그인 사용자만 표시한다. 설정 확인을 실시간 연결 성공으로 표현하지 않는다.
+- 상태 링크는 기존 데이터 진단 화면으로 이어진다. 로그아웃은 그 화면의 하단 공통 ActionBar로 이동한다.
+- Desktop 기존 업무 4축은 하단 44px 버튼으로 옮긴다. 패널별 실행은 기존 ActionBar와 실제 동작을 유지한다.
+- Mobile 기존 업무 5걸음은 버튼 면을 사용하며 depth 1/2에서는 숨기고 현재 판의 실행바만 보인다.
+- 제목 18 / 본문 14 / 보조 12, 라운드 4, 보조:주 3:7, 실행 높이 44는 유지한다.
+- 이 결정은 과거 CI 상단·상단 4메뉴·33px TopMenu 설명보다 우선한다. 로그인 화면의 BI는 대상이 아니다.
+
 
 ## Desktop — 업무 4축
 1. 상품찾기
@@ -691,3 +701,4 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 
 CSS import 순서는 **`globals.css → admin-final.css → _fn/fn.css`** 를 유지한다.
 이 순서를 바꾸는 것은 디자인 변경으로 취급한다.
+

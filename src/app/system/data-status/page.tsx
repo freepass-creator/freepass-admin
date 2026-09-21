@@ -1,5 +1,6 @@
 import { adminDataStatus } from '../../../server/data-status';
-import { PanelHeader, Notice } from '../../_design/Primitives';
+import { PanelHeader, Notice, ActionBar } from '../../_design/Primitives';
+import { logoutAction } from '../../login/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,9 @@ export default async function DataStatusPage() {
           </div>
         ))}
       </div>
+      <form action={logoutAction}>
+        <ActionBar><button type="submit" className="dz-bar-sub">로그아웃</button></ActionBar>
+      </form>
     </section>
   );
 }

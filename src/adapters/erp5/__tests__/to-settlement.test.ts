@@ -104,11 +104,12 @@ describe('margin — ★청구를 «모르면» 마진도 모른다', () => {
 
 describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나」', () => {
   const mk = (o: Record<string, unknown>) =>
-    toSettlementRow({ code: 'c', plate: '11가1111', supplier: '손오공', ...o }, 'd').row;
+    toSettlementRow({ code: 'c', plate: '11가1111', supplier: '손오공', channel: '영업사', ...o }, 'd').row;
 
-  it('열쇠부터 막는다', () => {
-    assert.equal(blockOf(toSettlementRow({ code: 'c' }, 'd').row), '차량번호 없음');
-    assert.equal(blockOf(toSettlementRow({ code: 'c', plate: 'p' }, 'd').row), '공급사 없음');
+  it('계약 → 차량번호 → 상대 정보 순서로 막는다', () => {
+    assert.equal(blockOf(toSettlementRow({ code: 'c' }, 'd').row), '계약서');
+    assert.equal(blockOf(toSettlementRow({ code: 'c', paper: true }, 'd').row), '차량번호 없음');
+    assert.equal(blockOf(toSettlementRow({ code: 'c', paper: true, plate: 'p' }, 'd').row), '공급사 없음');
   });
   it('계약서 → 인도 차례로 막는다', () => {
     assert.equal(blockOf(mk({})), '계약서');

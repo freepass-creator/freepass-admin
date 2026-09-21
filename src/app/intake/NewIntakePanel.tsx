@@ -61,7 +61,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
             ? <dl className="dz-picked-grid">
                 <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
                 <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}원</dd></div>
-                <div><dt>보증금</dt><dd>{won(offer.deposit)}원</dd></div>
+                <div><dt>보증금</dt><dd>{offer.deposit === undefined ? '미확인' : `${won(offer.deposit)}원`}</dd></div>
                 <div><dt>수수료</dt><dd>{
                   고를말.length ? <span className="dz-muted">상품구분을 고르면 섭니다</span>
                   : !수수료 ? '—'

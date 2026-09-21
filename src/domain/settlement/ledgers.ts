@@ -173,6 +173,11 @@ export function filterLedgerGroups(groups: readonly LedgerGroup[], mode: LedgerG
     && (!q || g.party.toLowerCase().includes(q)));
 }
 
+export function nextActionableLedgerParty(groups: readonly LedgerGroup[], currentParty: string): string | null {
+  return sortLedgerGroups([...groups])
+    .find((g) => g.party !== currentParty && ledgerGroupAttention(g) !== 'done')?.party ?? null;
+}
+
 export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
   return [...groups].sort((a, b) => {
     const aa = ledgerGroupAttention(a);

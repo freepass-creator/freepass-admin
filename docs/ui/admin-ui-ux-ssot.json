@@ -241,7 +241,7 @@
   "aiCore": {
     "consumerBinding": "docs/ui/ai-core-bindings.json",
     "upstreamRepository": "freepass-creator/ai-core",
-    "upstreamRevision": "a4a41a0664fbc2d4044841759af33e00b3ceb46b",
+    "upstreamRevision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
     "featureRegistryVersion": "1.8.0",
     "semanticAuthority": true
   },

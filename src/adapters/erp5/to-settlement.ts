@@ -87,6 +87,12 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     price: n(d.price) || null,
     payKind: s(d.payKind),
     paidRounds: n(d.paidRounds),
+    catalogRef: {
+      productId: s(d.sourceProductId),
+      productVersion: n(d.sourceProductVersion),
+      offerId: s(d.sourceOfferId),
+      sourceSnapshotId: s(d.sourceSnapshotId),
+    },
 
     progress: {
       paper: b(d.paper),

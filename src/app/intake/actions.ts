@@ -275,7 +275,7 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
  */
 export type FeePreview =
   | { status: 'AUTO'; claim: number; pay: number; ruleId: string; basis: string; version: string }
-  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; version: string }
+  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; basis?: string; version: string }
   | { status: 'ERROR'; why: string };
 export async function previewFeeAction(f: FormData): Promise<FeePreview> {
   { const g = await requireAdmin(); if (g) return { status: 'ERROR', why: g }; }
@@ -284,7 +284,12 @@ export async function previewFeeAction(f: FormData): Promise<FeePreview> {
     const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
     const r = feeOf(set, { supplier: S(f, 'supplier'), product: S(f, 'product'), model: S(f, 'model'), term: num('term'), rent: num('rent'), price: num('price') });
     if (r.status === 'AUTO') return { status: 'AUTO', claim: r.claim, pay: r.pay, ruleId: r.rule.id, basis: r.rule.basis, version: set.version };
-    return { status: r.status, why: r.why, ...('rule' in r ? { ruleId: r.rule.id } : {}), version: set.version };
+    return {
+      status: r.status,
+      why: r.why,
+      ...('rule' in r ? { ruleId: r.rule.id, basis: r.rule.basis } : {}),
+      version: set.version,
+    };
   } catch (e) {
     return { status: 'ERROR', why: (e as Error).message };
   }

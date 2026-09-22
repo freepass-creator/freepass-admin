@@ -147,7 +147,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
 
-  const events = await settlements.events(r.plate, r.receivedAt, r.catalogRef?.productId);
+  const events = await settlements.events(r.plate, r.receivedAt, r.catalogRef?.productId, raw.intakeRequestId);
   const 다음 = 다음블록 ?? (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>

@@ -187,7 +187,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
               </label>
               <label>모델<input name="model" defaultValue={defaults.model} /></label>
               <label>공급사 *<input name="supplier" list="dl-supplier" defaultValue={defaults.supplier} required
-                onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? supplierCode)} /></label>
+                onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? '')} /></label>
               <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>
             </div>
           ))}

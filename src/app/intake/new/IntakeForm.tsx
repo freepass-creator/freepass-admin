@@ -80,6 +80,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       : <p className="dz-fee-line warn">{미리.why} — 기준값을 채우거나 청구·지급 수수료를 직접 넣으세요.</p>;
   /* 표가 못 내면 수수료 칸이 앞에 선다(접혀 있으면 빠뜨린다) */
   const 직접 = !!미리 && 미리.status !== 'AUTO';
+  /** 상품 신차의 차량가가 SSOT에 없을 때만 접수자가 자동 수수료 기준값을 보충할 수 있다. */
+  const 차량가기준보충 = !!picked && !defaults.price && fee?.status === 'NO_BASE' && fee.basis === '차량가액';
 
   const sel = (name: string, list: string[], label: string, value = '') => (
     <label>{label}
@@ -154,9 +156,12 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       {picked ? (
         <>
           {/* 차에서 이미 정해진 것 — 판 위 카드가 보여 준다. 여기는 숨은 칸으로만 간다 */}
-          {(['plate', 'model', 'supplier', 'term', 'rent', 'deposit', 'price'] as const).map((k) => (
+          {(['plate', 'model', 'supplier', 'term', 'rent', 'deposit'] as const).map((k) => (
             <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
           ))}
+          {차량가기준보충
+            ? <label className="dz-fee-basis">차량가액 <small>자동 수수료 기준</small><input name="price" inputMode="numeric" placeholder="차량가액을 넣거나 수수료를 직접 입력" /></label>
+            : <input type="hidden" name="price" value={defaults.price ?? ''} />}
           <input type="hidden" name="supplierCode" value={supplierCode} />
           <input type="hidden" name="rentKind" value={defaults.rentKind ?? ''} />
           <input type="hidden" name="sourceProductId" value={defaults.sourceProductId ?? ''} />

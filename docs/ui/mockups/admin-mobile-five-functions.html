@@ -132,7 +132,7 @@
     .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:13px; }
     /* FreePass Sales 운영 규격: 웹/app.css의 타이포·간격·컨트롤 토큰만 공유한다. */
     :root {
-      --sales-head:18px; --sales-title:14px; --sales-body:13px;
+      --sales-head:17px; --sales-title:14px; --sales-body:13px;
       --sales-support:12px; --sales-meta:11px; --sales-tiny:10px;
       --sales-control-font:14px; --sales-control:44px; --sales-small:32px;
       --sales-space:14px; --sales-gap:8px; --sales-control-radius:6px;
@@ -141,7 +141,7 @@
       --sales-leading-head:1.25; --sales-leading-title:1.4;
       --sales-leading-body:1.55; --sales-leading-support:1.5; --sales-leading-meta:1.45;
     }
-    html,body { font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:15px; line-height:1.6; letter-spacing:-.012em; font-variant-numeric:tabular-nums; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
+    html,body { font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; line-height:1.55; letter-spacing:-.012em; font-variant-numeric:tabular-nums; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
     .statusbar { height:60px; padding:8px 16px 10px; }
     .statusbar h1 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
     .statusbar h1 span { font-size:var(--sales-title); font-weight:650; }
@@ -177,7 +177,7 @@
     .actionbar,.sheet-actions,.web-actions { gap:var(--sales-gap); }
     .actionbar button,.sheet-actions button,.web-actions button { min-height:var(--sales-control); padding:0 14px; border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); font-weight:650; line-height:1; }
     .sheet { border-radius:18px 18px 0 0; }
-    .sheet-head h3 { font-size:18px; font-weight:650; }
+    .sheet-head h3 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
     .filter-axes button,.filter-values strong,.filter-values label { font-size:var(--sales-body); }
     .desktop { display:none; }
     @media (min-width:901px) {
@@ -192,7 +192,7 @@
       .web-nav button.on { background:#fff; color:var(--navy); }
       .web-sync { color:#b9f5ca; }
       .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#eef0f2; }
-      .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:var(--ground); }
+      .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:var(--ground); font-size:var(--sales-body); }
       .web-panel-head { flex:none; min-height:44px; display:flex; align-items:baseline; gap:6px; }
       .web-panel-head h2 { margin:0; font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
       .web-panel-head span { color:var(--navy); font-size:var(--sales-title); font-weight:650; }

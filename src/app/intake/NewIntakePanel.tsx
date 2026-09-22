@@ -13,7 +13,8 @@ import { buildIntakeOptions } from './intake-options';
 export async function NewIntakePanel({ rows, productId, offerId, back }: {
   rows: SettlementRow[]; productId: string; offerId: string; back: string;
 }) {
-  const product = productId ? await productById(productId) : null;
+  const selectedProductPath = !!productId;
+  const product = selectedProductPath ? await productById(productId) : null;
   /* ★차의 상품구분 → 원장 상품구분 · 렌트구분(기능 ledgerKindOf) — 원장 말이 수수료 갈래를 정한다 */
   const 짝 = product ? ledgerKindOf(product.productKind) : null;
   const 고를말 = product ? (짝 ? (짝.certain ? [] : 짝.choices) : [...LEDGER_PRODUCTS]) : [];
@@ -73,11 +74,15 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
           {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
-      ) : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
+      ) : selectedProductPath
+        ? <Notice tone="warn">선택한 상품을 더 이상 찾을 수 없습니다 — 상품 목록에서 다시 골라 주세요.</Notice>
+        : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
       {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
       <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
-      <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
-        productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
+      {(!selectedProductPath || (product && offer)) && (
+        <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
+          productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
+      )}
     </>
   );
 }

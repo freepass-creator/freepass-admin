@@ -56,6 +56,19 @@
     .row:active { background:#e7eef6; }
     .context-card { margin-bottom:10px; }
     .context-card:hover { background:var(--card); transform:none; box-shadow:var(--card-shadow); }
+    .product-hero { margin-bottom:18px; overflow:hidden; border-radius:var(--sales-card-radius,12px); background:var(--card); box-shadow:var(--card-shadow); }
+    .product-photo { position:relative; height:180px; display:grid; place-items:center; overflow:hidden; background:linear-gradient(145deg,#e8edf2,#f8fafb); }
+    .product-photo svg { width:min(82%,300px); height:auto; }
+    .photo-count { position:absolute; right:10px; bottom:10px; padding:4px 8px; border-radius:999px; background:rgba(33,37,41,.72); color:#fff; font-size:var(--sales-meta,11px); line-height:1; }
+    .product-hero-body { padding:12px; }
+    .product-hero-title { display:flex; align-items:center; gap:6px; }
+    .product-hero-title h3 { margin:0; font-size:var(--sales-head,17px); font-weight:650; line-height:var(--sales-leading-head,1.25); letter-spacing:-.03em; }
+    .product-hero-body > p { margin:4px 0 0; color:var(--muted); font-size:var(--sales-support,12px); line-height:1.5; }
+    .product-rent { margin-top:10px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .product-rent span { color:var(--muted); font-size:var(--sales-meta,11px); }
+    .product-rent strong { color:var(--navy); font-size:var(--sales-head,17px); font-weight:650; }
+    .quick-specs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+    .quick-specs span { padding:8px 6px; border-radius:8px; background:var(--box); color:#4f5965; font-size:var(--sales-support,12px); text-align:center; }
     .thumb { width:72px; aspect-ratio:4/3; border-radius:10px; background:linear-gradient(145deg,#edf1f5,#f9fafb); display:grid; place-items:center; color:#667386; font-size:11px; font-weight:650; line-height:1; text-align:center; overflow:hidden; }
     .thumb.car::before { content:""; width:54px; height:22px; border-radius:13px 16px 6px 6px; background:linear-gradient(135deg,#40516b,#1b2a4a); box-shadow:0 16px 0 -7px #9aa6b5; }
     .row-body { min-width:0; display:grid; align-content:center; gap:5px; }
@@ -207,6 +220,7 @@
       .web-panel .row { min-height:80px; grid-template-columns:64px minmax(0,1fr); padding:var(--sales-card-inset); }
       .web-panel .thumb { width:64px; height:48px; }
       .web-panel .thumb.car::before { width:48px; }
+      .web-panel .product-photo { height:138px; }
       .web-panel .row.selected { background:var(--card-selected); transform:translateY(-1px); box-shadow:0 5px 14px rgba(33,37,41,.12),0 1px 3px rgba(33,37,41,.045); }
       .web-panel .row.selected:hover { background:#e8f0f8; }
       .web-panel .row.selected .row-title b { font-weight:650; }
@@ -291,6 +305,8 @@ const data={
 const $=s=>document.querySelector(s);
 function icon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`}
 function toolIcon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${TOOL_ICONS[k]}</svg>`}
+/* 기존 Admin 상품 목업의 검증된 차량 이미지 자리 컴포넌트를 재사용한다. */
+function carSvg(body='#263954'){return `<svg viewBox="0 0 168 78" role="img" aria-label="차량 대표사진"><ellipse cx="84" cy="70" rx="70" ry="4.5" fill="rgba(0,0,0,.09)"/><path d="M8 56V45c0-6 4-9 12-10.5L44 31c8-11 19-15 35-15h29c14 0 23 4 31 14l14 6c6 2 8 5 8 11v9Z" fill="${body}" stroke="rgba(0,0,0,.14)"/><path d="M50 31c7-9 15-12 28-12h7v13Z" fill="#8c99a3" opacity=".82"/><path d="M91 19h16c11 0 17 3 22 11l-38 2Z" fill="#8c99a3" opacity=".82"/><rect x="8" y="44" width="6" height="5" rx="2.5" fill="#fff0cf"/><circle cx="46" cy="56" r="12.5" fill="#1b2126"/><circle cx="46" cy="56" r="4.8" fill="#aeb7be"/><circle cx="129" cy="56" r="12.5" fill="#1b2126"/><circle cx="129" cy="56" r="4.8" fill="#aeb7be"/></svg>`}
 function current(){return data[state.module].find(x=>x.id===state.selected)||data[state.module][0]}
 function status(){
   const homeTitle={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
@@ -317,8 +333,9 @@ function list(prefix=''){
 function cardBody(x){return `<span class="thumb ${state.module==='product'?'car':''}">${state.module==='product'?'':LABEL[state.module]}</span><span class="row-body"><span class="row-title"><b>${x.title}</b><span class="tag ${x.tone}">${x.tag}</span></span><span class="meta">${x.meta}</span><span class="value">${x.value}</span></span>`}
 function row(x){return `<button class="row" data-id="${x.id}">${cardBody(x)}</button>`}
 function contextCard(x){return `<article class="row context-card" aria-label="선택 상품">${cardBody(x)}</article>`}
+function productHero(x){return `<article class="product-hero"><div class="product-photo">${carSvg()}<span class="photo-count">대표사진 · 1/6</span></div><div class="product-hero-body"><div class="product-hero-title"><h3>${x.title}</h3><span class="tag ${x.tone}">${x.tag}</span></div><p>${x.meta}</p><div class="product-rent"><span>선택 대여료</span><strong>월 920,000원</strong></div><div class="quick-specs"><span>하이브리드</span><span>2WD</span><span>5인승</span></div></div></article>`}
 function detail(){return ({product:productDetail,intake:intakeDetail,contract:contractDetail,performance:performanceDetail,settlement:settlementDetail}[state.module])()}
-function productDetail(){const x=current();return `${contextCard(x)}<div class="section"><h4>계약조건 선택</h4><button class="offer ${state.offer==='o24'?'on':''}" data-offer="o24"><strong>24개월 · 월 990,000원</strong><small>보증금 1,000,000원 · 연 20,000km · 카드결제</small></button><button class="offer ${state.offer==='o36'?'on':''}" data-offer="o36"><strong>36개월 · 월 920,000원</strong><small>무보증 · 연 20,000km · 만 21세 · 카드결제</small></button></div><div class="section"><h4>차량 정보</h4><div class="facts"><div class="fact"><span>차량</span><b>싼타페 MX5 캘리그래피</b></div><div class="fact"><span>연료 / 구동</span><b>하이브리드 / 2WD</b></div><div class="fact"><span>공급사</span><b>B렌터카</b></div></div></div>`}
+function productDetail(){const x=current();return `${productHero(x)}<div class="section"><h4>계약조건 선택</h4><button class="offer ${state.offer==='o24'?'on':''}" data-offer="o24"><strong>24개월 · 월 990,000원</strong><small>보증금 1,000,000원 · 연 20,000km · 카드결제</small></button><button class="offer ${state.offer==='o36'?'on':''}" data-offer="o36"><strong>36개월 · 월 920,000원</strong><small>무보증 · 연 20,000km · 만 21세 · 카드결제</small></button></div><div class="section"><h4>차량 정보</h4><div class="facts"><div class="fact"><span>차량</span><b>싼타페 MX5 캘리그래피</b></div><div class="fact"><span>연료 / 구동</span><b>하이브리드 / 2WD</b></div><div class="fact"><span>승차 / 연식</span><b>5인승 / 2025년형</b></div><div class="fact"><span>공급사</span><b>B렌터카</b></div></div></div>`}
 function intakeDetail(){const x=current();return `<div class="identity"><span class="tag warn">진행 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">월 920,000원</div></div><div class="section"><h4>진행 사실</h4><div class="timeline"><div class="step done"><i>✓</i><b>접수 완료</b><small>14:08</small></div><div class="step done"><i>✓</i><b>전자계약 발송</b><small>14:32</small></div><div class="step"><i></i><b>계약 완료</b><small>대기</small></div><div class="step"><i></i><b>인도 완료</b><small>대기</small></div></div></div><div class="section"><h4>담당</h4><div class="facts"><div class="fact"><span>영업채널</span><b>오토채널</b></div><div class="fact"><span>담당자</span><b>박지훈</b></div></div></div>`}
 function contractDetail(){const x=current();return `<div class="identity"><span class="tag warn">고객 서명 대기</span><h3>${x.title}</h3><p>${x.meta} · 문서 rev.3</p></div><div class="section"><h4>계약 흐름</h4><div class="timeline"><div class="step done"><i>✓</i><b>계약서 생성</b><small>14:30</small></div><div class="step done"><i>✓</i><b>서명 링크 발송</b><small>14:32</small></div><div class="step"><i></i><b>고객 서명</b><small>대기</small></div><div class="step"><i></i><b>관리자 검토·봉인</b><small>대기</small></div></div></div><div class="section"><div class="notice">주민번호는 전자계약 서비스에서 수집하며 관리자 화면에서는 표시하지 않습니다.</div></div>`}
 function performanceDetail(){const x=current();return `<div class="identity"><span class="tag warn">공급사 확인 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">마진 310,000원</div></div><div class="summary"><div><small>공급사 청구</small><b>1,240,000원</b></div><div><small>채널 지급</small><b>930,000원</b></div></div><div class="section"><h4>대조 단계</h4><div class="timeline"><div class="step done"><i>✓</i><b>영업자 확인</b><small>완료</small></div><div class="step"><i></i><b>공급사 Cross Check</b><small>진행 중</small></div><div class="step"><i></i><b>최종 확정</b><small>대기</small></div></div></div>`}

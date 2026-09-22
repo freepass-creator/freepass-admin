@@ -108,8 +108,6 @@ export async function ProductWorkspace({ q, mode, base }: {
   /* ★쪽을 나누지 않는다 — 목록은 쭉 구른다(대표 2026-09-18 「스크롤이 쭉쭉쭉 되어야 함」). 사진은 화면에 올 때 부른다(lazy) */
   const shown = sorted;
 
-  const statuses = vocab(rows.map((p) => p.status));
-  const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
   /**
    * ★교차 집계 — 원본 `shopFacets` 짜임: 줄(명단·차례)은 «전체»가 정하고, 숫자는 «제 축을 뺀 지금 조건»으로 센다.
    *   누를 때 줄이 안 사라지고 안 뛴다 — 숫자만 오르내린다(대표 2026-09-10 「0이라고 해줘야지」).
@@ -248,7 +246,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
-          <PanelHeader title="상품찾기" count={`${sorted.length.toLocaleString()}대`} />
+          <PanelHeader title="상품찾기" count={`${sorted.length.toLocaleString()}대`} subtitle="판매 가능" />
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
@@ -277,18 +275,15 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="quick-filters">
             <Link className={상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? 'active' : ''}
               href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), q: parsedSearch.text, page: '' })}>전체</Link>
-            {statuses.includes('즉시출고') && (
-              <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
-            )}
-            {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
-              <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
-            ))}
+            <Link className={explicitPsel.perk.includes('무보증') ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, '무보증'), page: '' })}>무보증</Link>
+            <Link className={explicitPsel.perk.includes('만21세') ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, '만21세'), page: '' })}>21세</Link>
+            <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
           </div>
           </div>
           <div className="list">
             {productErr ? <EmptyState>ERP5 상품을 불러오지 못했습니다 — {productErr}</EmptyState> : shown.map(({ product: p, lead: o }) => (
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
-                selected={!!sel && p.id === sel.product.id}
+                selected={!!selId && !!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
                 badge={p.perks?.[0] ?? p.productKind}
@@ -366,15 +361,12 @@ export async function ProductWorkspace({ q, mode, base }: {
 
         {/* 상품찾기 오른쪽 업무판 — 상세에서 접수하기를 누르면 이 판만 신규접수로 바뀐다. */}
         {mode === 'find' && <section className="panel work-panel">
-          {sp(q.w) === 'new' ? (
-            <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)}
-              back={keep({ w: '', product: '', offer: '', v: 'detail' })} />
-          ) : (
-            <>
-              <PanelHeader title="계약접수" />
-              <EmptyState>상품 상세에서 계약조건을 고른 뒤 접수하기를 누르면 여기에 접수 화면이 열립니다.</EmptyState>
-            </>
-          )}
+          <NewIntakePanel
+            rows={irows}
+            productId={sp(q.product) || car?.id || ''}
+            offerId={sp(q.offer) || chosenOffer?.id || ''}
+            back={keep({ w: '', product: '', offer: '', v: 'detail' })}
+          />
         </section>}
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}

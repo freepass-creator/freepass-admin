@@ -560,6 +560,7 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
 .fn-main .workspace .panel-head { min-height: 44px; margin-bottom: 0; align-items: baseline; }
 .fn-main .workspace .panel-head h1 { font-size: 17px; line-height: 1.25; font-weight: 650; letter-spacing: -.03em; }
 .fn-main .workspace .panel-head > .count { font-size: 14px !important; line-height: 1.4; color: var(--ci남색) !important; }
+.fn-main .workspace .panel-head .dz-panel-sub { display: block; margin-top: 4px; color: #5c6268; font-size: 12px; font-weight: 400; line-height: 1.45; }
 
 .fn-main .workspace .dz-searchbox {
   border: 1px solid #e1e4e7; border-radius: 6px; background: #fff;
@@ -590,6 +591,7 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   background: var(--ui-card-selected); transform: none; box-shadow: var(--ui-card-selected-shadow);
 }
 .fn-main .workspace .dz-row-thumb { border-radius: 10px; background: linear-gradient(145deg, #edf1f5, #f9fafb); }
+.fn-main .workspace .dz-row-badges svg { display: none; }
 .fn-main .workspace .fn-box,
 .fn-main .workspace .dz-picked,
 .fn-main .workspace .offer-picker button.active,
@@ -707,8 +709,8 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   .fn-main .workspace { padding: 0 0 var(--아래띠); gap: 0; }
   .fn-main .workspace > .panel { padding: 0 16px 16px; }
   .fn-main .workspace .panel-head {
-    height: 60px; min-height: 60px; margin: 0 -16px 10px; padding: 8px 16px 10px;
-    align-items: center; justify-content: flex-start; gap: 5px; background: var(--판);
+    height: 60px; min-height: 60px; margin: 0 -16px 14px; padding: 8px 16px 10px;
+    align-items: flex-start; justify-content: flex-start; gap: 5px; background: var(--판);
   }
   .fn-main .workspace .panel-head h1 { font-size: 17px; }
   .fn-main .workspace .panel-head > .count { font-size: 14px !important; color: #5c6268 !important; }

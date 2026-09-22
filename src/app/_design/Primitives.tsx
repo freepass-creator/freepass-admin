@@ -8,16 +8,17 @@ import { Icon } from './Icon';
  * 정본: docs/ui/ADMIN-UI-UX-SSOT.md
  */
 
-export function PanelHeader({ title, count, backHref, backLabel = '목록으로' }: {
+export function PanelHeader({ title, count, subtitle, backHref, backLabel = '목록으로' }: {
   title: ReactNode;
   count?: ReactNode;
+  subtitle?: ReactNode;
   backHref?: string;
   backLabel?: string;
 }) {
   return (
     <div className="panel-head">
       {backHref ? <Link className="dz-phone-back" href={backHref} aria-label={backLabel}>‹</Link> : null}
-      <div><h1>{title}</h1></div>
+      <div><h1>{title}</h1>{subtitle ? <small className="dz-panel-sub">{subtitle}</small> : null}</div>
       {count !== undefined && count !== null ? <span className="count">{count}</span> : null}
     </div>
   );

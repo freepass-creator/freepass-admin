@@ -22,7 +22,7 @@
     button,input,select { font:inherit; }
     button { cursor:pointer; }
     .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; }
-    .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
+    .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); position:sticky; top:0; z-index:20; }
     .statusbar > div { min-width:0; flex:1; }
     .statusbar h1 { margin:0; font-size:18px; line-height:1; }
     .statusbar h1 span { margin-left:5px; color:var(--muted); font-size:14px; }
@@ -70,7 +70,7 @@
     .summary div { min-height:66px; padding:10px; background:var(--box); border-radius:var(--radius); }
     .summary small { display:block; margin-bottom:5px; color:var(--muted); font-size:12px; }
     .summary b { font-size:14px; }
-    .section { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .section { margin-top:18px; padding-top:0; }
     .section h4 { margin:0 0 9px; font-size:14px; }
     .facts { display:grid; gap:8px; }
     .fact { display:flex; justify-content:space-between; gap:14px; font-size:13px; }
@@ -92,12 +92,12 @@
     .step small { color:var(--muted); }
     .notice { padding:10px; border-radius:var(--radius); background:var(--warn-bg); color:#725000; font-size:12px; line-height:1.5; }
     .bottom-nav,.actionbar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,430px); z-index:30; padding-bottom:env(safe-area-inset-bottom); }
-    .bottom-nav { height:calc(60px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); padding:0 4px env(safe-area-inset-bottom); background:var(--panel); border-top:1px solid var(--line); box-shadow:0 -2px 8px rgba(15,23,42,.05); }
+    .bottom-nav { height:calc(60px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); padding:0 4px env(safe-area-inset-bottom); background:var(--panel); box-shadow:0 -2px 8px rgba(15,23,42,.05); }
     .bottom-nav button { height:100%; padding:0 2px; border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:500; }
     .bottom-nav button.on { color:var(--navy); font-weight:700; }
     .bottom-nav svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.9; }
     .bottom-nav button.on svg { fill:rgba(27,42,74,.12); }
-    .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; border-top:1px solid var(--line); }
+    .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; }
     .actionbar.three { grid-template-columns:3fr 3fr 4fr; }
     .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
     .secondary { background:var(--box); color:var(--navy); }
@@ -105,7 +105,7 @@
     .sheet-wrap { position:fixed; inset:0; z-index:60; display:grid; align-items:end; }
     .scrim { position:absolute; inset:0; border:0; background:rgba(15,23,42,.42); }
     .sheet { position:relative; width:min(100%,430px); margin:0 auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); background:#fff; border-radius:12px 12px 0 0; box-shadow:0 -8px 30px rgba(15,23,42,.18); }
-    .sheet-head { display:flex; align-items:center; justify-content:space-between; min-height:44px; border-bottom:1px solid var(--line); }
+    .sheet-head { display:flex; align-items:center; justify-content:space-between; min-height:44px; margin-bottom:4px; }
     .sheet-head h3 { margin:0; font-size:17px; }
     .sheet-head button { width:44px; height:44px; border:0; background:transparent; font-size:22px; }
     .filter-body { height:280px; display:grid; grid-template-columns:116px 1fr; }

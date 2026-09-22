@@ -289,11 +289,10 @@ export async function ProductWorkspace({ q, mode, base }: {
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
                 selected={!!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
-                product
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
-                badges={[p.productKind, txt(p.status)]}
-                value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
-                chips={p.perks} />
+                badge={p.perks?.[0] ?? p.productKind}
+                meta={[p.supplierName ?? p.supplierId, txt(p.status)].filter(Boolean).join(' · ')}
+                value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원` : '요금 없음'} />
             ))}
             {!productErr && shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>

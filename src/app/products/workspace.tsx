@@ -97,6 +97,8 @@ export async function ProductWorkspace({ q, mode, base }: {
 
   const statuses = vocab(rows.map((p) => p.status));
   const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
+  /** "무보증"은 상품 badge가 아니라 실제 Offer 보증금 0원 조건이다. 검색창과 퀵필터가 같은 Offer 축을 써야 한다. */
+  const hasNoDepositOffer = pool.some((h) => h.matchedOffers.some((o) => o.deposit === 0));
   /**
    * ★교차 집계 — 원본 `shopFacets` 짜임: 줄(명단·차례)은 «전체»가 정하고, 숫자는 «제 축을 뺀 지금 조건»으로 센다.
    *   누를 때 줄이 안 사라지고 안 뛴다 — 숫자만 오르내린다(대표 2026-09-10 「0이라고 해줘야지」).
@@ -239,9 +241,13 @@ export async function ProductWorkspace({ q, mode, base }: {
             {statuses.includes('즉시출고') && (
               <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
-            {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
+            {['무심사', '만21세', '경력무관'].filter((x) => perkList.includes(x)).map((x) => (
               <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
             ))}
+            {hasNoDepositOffer && (
+              <Link className={explicitPsel.dep.includes('d0') ? 'active' : ''}
+                href={keep({ dep: 켜끔(explicitPsel.dep, 'd0'), page: '' })}>무보증</Link>
+            )}
           </div>
           </div>
           <div className="list">

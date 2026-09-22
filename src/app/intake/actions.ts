@@ -11,6 +11,7 @@ import { validateIntake, type IntakeInput, type ProgressChange } from '../../dom
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
+import { resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
 
 /**
  * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
@@ -75,12 +76,15 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     }
     const offer = product.offers.find((x) => x.id === input.sourceOfferId);
     if (!offer) return { errors: ['선택한 Offer가 더 이상 없습니다 — 기간/조건을 다시 골라 주세요'] };
+    const ledgerKind = resolveLedgerKindSelection(product.productKind, input.product, input.rentKind);
+    if (ledgerKind && !ledgerKind.ok) return { errors: [ledgerKind.error] };
     input = {
       ...input,
       plate: product.registration?.vehicleNumber ?? '',
       model: [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' '),
       supplier: product.supplierName ?? product.supplierId,
       supplierCode: product.supplierId,
+      ...(ledgerKind?.ok ? { product: ledgerKind.product, rentKind: ledgerKind.rentKind } : {}),
       term: offer.termMonths,
       rent: offer.monthlyRent,
       deposit: offer.deposit ?? null,

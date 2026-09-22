@@ -11,7 +11,7 @@ import { validateIntake, type IntakeInput, type ProgressChange } from '../../dom
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
-import { resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
+import { directIntakeRentKind, resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
 
 /**
  * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
@@ -58,6 +58,11 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     /* 수수료 직접 입력 — 비우면 표대로 */
     ...((S(f, 'feeClaim') || S(f, 'feePay')) ? { feeManual: { claim: N(f, 'feeClaim'), pay: N(f, 'feePay'), reason: S(f, 'feeReason') } } : {}),
   };
+  if (!input.sourceProductId && !input.sourceOfferId) {
+    const directRentKind = directIntakeRentKind(input.product);
+    if (directRentKind) input = { ...input, rentKind: directRentKind };
+  }
+
   /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
    * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */

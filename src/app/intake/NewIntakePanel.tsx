@@ -41,7 +41,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
    * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).
    *   기능 쪽 셈(feeOf · ERP5 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
    */
-  const 수수료 = product && offer && (!짝 || 짝.certain)
+  const 수수료 = product && offer && 짝?.certain
     ? await previewFeeAction((() => {
       const f = new FormData();
       for (const [k, v] of Object.entries({ supplier: defaults.supplier, product: defaults.product ?? '', model: defaults.model, term: defaults.term, rent: defaults.rent, price: defaults.price ?? '' })) f.set(k, v);

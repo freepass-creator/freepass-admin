@@ -34,3 +34,30 @@ export function ledgerKindOf(productKind: string | null | undefined): LedgerKind
 
 /** 원장 상품구분 전부 — 직접 접수의 고를 말 (실측 차례) */
 export const LEDGER_PRODUCTS = ['장기렌트', '오플구독', '선출고', '구독', '견적출고', '신차발주', '지원금'] as const;
+
+
+export type LedgerKindSelection =
+  | { ok: true; product: string; rentKind: string }
+  | { ok: false; error: string };
+
+/**
+ * 상품에서 시작한 접수의 원장 상품구분을 서버에서 다시 검증한다.
+ * - certain=true: 화면값을 믿지 않고 정해진 product/rentKind 로 덮는다.
+ * - certain=false: product 는 허용된 choices 중 하나여야 하고 rentKind 는 도메인 값으로 고정한다.
+ * - 모르는 상품구분은 기존 수동 처리 경로를 막지 않기 위해 여기서 판정하지 않는다.
+ */
+export function resolveLedgerKindSelection(
+  productKind: string | null | undefined,
+  selectedProduct: string,
+  selectedRentKind: string,
+): LedgerKindSelection | null {
+  const mapped = ledgerKindOf(productKind);
+  if (!mapped) return null;
+  if (mapped.certain) {
+    return { ok: true, product: mapped.product, rentKind: mapped.rentKind };
+  }
+  if (!mapped.choices.includes(selectedProduct)) {
+    return { ok: false, error: `상품구분이 맞지 않습니다 — ${mapped.choices.join(' / ')} 중에서 다시 골라 주세요` };
+  }
+  return { ok: true, product: selectedProduct, rentKind: mapped.rentKind };
+}

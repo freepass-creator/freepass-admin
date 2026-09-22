@@ -255,7 +255,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['q', 'id', 'offer'])}
-              <SearchField name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
+              <SearchField name="q" defaultValue={sp(q.q)} placeholder="차량·공급사·조건 검색" />
             </form>
             {/* ★세부검색 = 화이트라벨 두 칸 조건판(창 «안» 오른쪽 끝) — 고르면 바로 걸린다 */}
             <FilterSheet axes={상품판축} count={sorted.length} unit="대" />

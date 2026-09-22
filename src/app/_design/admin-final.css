@@ -696,6 +696,14 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
 }
 
 @media (max-width: 900px) {
+  /* 목업은 목록 카드가 현재 폰 폭을 그대로 쓴다. legacy 웹용 minmax(400px)가
+     좁은 화면을 416px로 밀어 필터 아이콘·배지·카드 오른쪽을 잘라내고 있었다. */
+  .fn-main .workspace[data-mode="find"] .list {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+  .fn-main .workspace[data-mode="find"] .dz-row { width: 100%; min-width: 0; }
   header.fn-top.dz-statusbar {
     position: absolute; inset: 0 0 auto; z-index: 20; height: 0; padding: 0; overflow: visible;
     background: transparent; color: var(--글); border: 0;

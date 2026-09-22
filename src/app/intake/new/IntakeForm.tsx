@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useRef, useState, type ReactNode } from 'react';
 import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../actions';
-import { directIntakeAllowsMissingPlate } from '../../../domain/settlement/intake';
+import { directIntakeAllowsMissingPlate } from '../../../domain/settlement/product-kind';
 
 export type IntakeDefaults = {
   receivedAt: string; plate: string; model: string; supplier: string; supplierCode: string;

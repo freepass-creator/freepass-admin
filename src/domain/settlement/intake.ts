@@ -97,7 +97,8 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
  *   가장 비슷한 규칙에 끼워 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
 export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
-  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId);
+  const identityMode = x.sourceProductId?.trim() ? 'product' : x.plate.trim() ? 'plate' : 'request';
+  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, identityMode);
   const iso = new Date(nowMs).toISOString();
   const auto = fee?.status === 'AUTO' ? fee : null;
   const m = x.feeManual;
@@ -119,6 +120,7 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     term: x.term, rent: x.rent, deposit: x.deposit, price: x.price,
     payKind: x.payKind.trim(),
     intakeRequestId: x.intakeRequestId?.trim() || null,
+    intakeIdentityMode: identityMode,
     sourceProductId: x.sourceProductId?.trim() || null,
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,

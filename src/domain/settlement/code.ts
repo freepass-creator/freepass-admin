@@ -31,28 +31,53 @@ export const eventDocId = (plate: unknown, receivedAt: unknown) =>
  * - 상품에서 온 접수: Product ID가 차량번호 배정 전후에도 변하지 않으므로 Product ID를 쓴다.
  * - 직접 접수: 기존처럼 차량번호를 쓴다.
  */
-export const intakeIdentity = (plate: unknown, sourceProductId: unknown, intakeRequestId?: unknown) => {
+export type IntakeIdentityMode = 'product' | 'plate' | 'request';
+
+export const intakeIdentity = (
+  plate: unknown,
+  sourceProductId: unknown,
+  intakeRequestId?: unknown,
+  mode?: unknown,
+) => {
   const product = String(sourceProductId ?? '').trim();
   if (product) return `product:${product}`;
+  const request = String(intakeRequestId ?? '').trim();
+  if (mode === 'request' && request) return `request:${request}`;
   const car = String(plate ?? '').replace(/\s/g, '');
   // 기존 차량번호 접수는 erp4/기존 ERP5 코드와 완전히 같은 identity를 유지한다.
   if (car) return car;
-  const request = String(intakeRequestId ?? '').trim();
   return request ? `request:${request}` : '';
 };
 
-export const intakeKey = (plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown) =>
-  `${intakeIdentity(plate, sourceProductId, intakeRequestId)}|${String(receivedAt ?? '').trim().slice(0, 10)}`;
+export const intakeKey = (
+  plate: unknown,
+  sourceProductId: unknown,
+  receivedAt: unknown,
+  intakeRequestId?: unknown,
+  mode?: unknown,
+) => `${intakeIdentity(plate, sourceProductId, intakeRequestId, mode)}|${String(receivedAt ?? '').trim().slice(0, 10)}`;
 
-export function intakeCode(plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown): string {
-  const identity = intakeKey(plate, sourceProductId, receivedAt, intakeRequestId);
+export function intakeCode(
+  plate: unknown,
+  sourceProductId: unknown,
+  receivedAt: unknown,
+  intakeRequestId?: unknown,
+  mode?: unknown,
+): string {
+  const identity = intakeKey(plate, sourceProductId, receivedAt, intakeRequestId, mode);
   const d = createHash('sha256').update(`settlement:${identity.trim()}`, 'utf8').digest();
   let t = '';
   for (let i = 0; i < 10; i += 1) t += ALPHABET[d[i] % ALPHABET.length];
   return `stl_${t}`;
 }
 
-export const intakeEventDocId = (plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown) => {
-  const identity = intakeIdentity(plate, sourceProductId, intakeRequestId);
+export const intakeEventDocId = (
+  plate: unknown,
+  sourceProductId: unknown,
+  receivedAt: unknown,
+  intakeRequestId?: unknown,
+  mode?: unknown,
+) => {
+  const identity = intakeIdentity(plate, sourceProductId, intakeRequestId, mode);
   return `${identity}|${String(receivedAt ?? '').trim()}`.replace(/[.$#[\]/\s|:]/g, '_');
 };

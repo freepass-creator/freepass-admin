@@ -22,7 +22,7 @@ const status=await read('src/server/data-status.ts');
 
 const must=(ok:boolean,msg:string)=>{if(!ok)errors.push(msg)};
 
-must(/redirect\(['\"]\/intake['\"]\)/.test(rootPage),'root route must enter the real /intake workspace');
+must(/redirect\(['\"]\/products['\"]\)/.test(rootPage),'root route must enter the real /products workspace');
 must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(rootPage),'root route must not contain local fake runtime data');
 must(/redirect\(['\"]\/intake['\"]\)/.test(designPage),'legacy /design route must redirect to /intake');
 must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(designPage),'legacy /design route must not contain fake runtime data');

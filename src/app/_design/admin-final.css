@@ -509,3 +509,93 @@ body > nav.fn-top :where(a, button):focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+/* 2026-09-22 상품찾기 실제 화면을 승인 목업의 표면 규격에 맞춘다.
+ * 상단은 상태 전용, 본문은 세 판, 목록은 서로 붙지 않은 개별 카드다. */
+:root {
+  --ui-page-ground: #eef0f2;
+  --ui-panel-ground: #f4f5f6;
+  --ui-card-ground: #fcfcfd;
+  --ui-card-hover: #f6f8fb;
+  --ui-card-selected: #edf3f9;
+  --ui-card-shadow: 0 2px 8px rgba(33, 37, 41, .075), 0 1px 2px rgba(33, 37, 41, .03);
+  --ui-card-selected-shadow: 0 0 0 1px rgba(27, 42, 74, .055), 0 2px 9px rgba(33, 37, 41, .085);
+  --ui-card-radius: 12px;
+}
+
+body:has(> .dz-statusbar) { background: var(--ui-page-ground); }
+header.fn-top.dz-statusbar {
+  background: var(--ci남색); color: #fff; border: 0;
+}
+header.dz-statusbar .dz-admin-brand {
+  font-size: 17px; line-height: 1; font-weight: 650; letter-spacing: -.03em; white-space: nowrap;
+}
+header.dz-statusbar .dz-admin-brand b { color: #b8c4d8; font-size: 12px; font-weight: 550; }
+header.dz-statusbar .fn-state {
+  margin-left: auto; color: #d5dce8; font-size: 11px; font-weight: 600;
+}
+header.dz-statusbar .fn-state::before {
+  content: ''; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #49a46f;
+}
+header.dz-statusbar .dz-me { color: #d5dce8; }
+
+.fn-main .workspace {
+  gap: 8px; padding: 8px; background: var(--ui-page-ground);
+}
+.fn-main .workspace > .panel {
+  padding: 16px; border: 0; border-radius: 0; background: var(--ui-panel-ground);
+}
+.fn-main .workspace .panel-head { min-height: 44px; margin-bottom: 0; align-items: baseline; }
+.fn-main .workspace .panel-head h1 { font-size: 17px; line-height: 1.25; font-weight: 650; letter-spacing: -.03em; }
+.fn-main .workspace .panel-head > .count { font-size: 14px !important; line-height: 1.4; color: var(--ci남색) !important; }
+
+.fn-main .workspace .dz-searchbox {
+  border: 1px solid #e1e4e7; border-radius: 6px; background: #fff;
+}
+.fn-main .workspace .quick-filters { gap: 6px; margin: 8px 0 14px; padding: 0; }
+.fn-main .workspace .quick-filters a {
+  min-height: 32px; height: 32px; padding: 0 11px; border-radius: 6px; background: #eceff2;
+  color: #445064; font-size: 12px; font-weight: 500;
+}
+.fn-main .workspace .quick-filters a:hover { background: #e6eaef; }
+.fn-main .workspace .quick-filters a.active {
+  background: #e6ecf5; color: var(--ci남색); font-weight: 650;
+  box-shadow: inset 0 0 0 1px rgba(27, 42, 74, .05);
+}
+
+.fn-main .workspace .dz-list,
+.fn-main .workspace[data-mode="find"] .list { gap: 12px; }
+.fn-main .workspace .dz-row {
+  padding: 12px; border: 0; border-radius: var(--ui-card-radius); background: var(--ui-card-ground);
+  box-shadow: var(--ui-card-shadow); transition: transform .16s, box-shadow .16s, background .16s;
+}
+.fn-main .workspace .dz-row:hover {
+  background: var(--ui-card-hover); transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(33, 37, 41, .095), 0 1px 3px rgba(33, 37, 41, .035);
+}
+.fn-main .workspace .dz-row.on,
+.fn-main .workspace .dz-row.on:hover {
+  background: var(--ui-card-selected); transform: none; box-shadow: var(--ui-card-selected-shadow);
+}
+.fn-main .workspace .dz-row-thumb { border-radius: 10px; background: linear-gradient(145deg, #edf1f5, #f9fafb); }
+.fn-main .workspace .fn-box,
+.fn-main .workspace .dz-picked,
+.fn-main .workspace .offer-picker button.active,
+.fn-main .workspace .offer-block,
+.fn-main .workspace .summary-grid > div,
+.fn-main .workspace .dz-empty {
+  border: 0; border-radius: var(--ui-card-radius);
+}
+
+@media (min-width: 901px) {
+  .dz-desktop-bottom .dz-menu { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  header.fn-top.dz-statusbar { background: var(--판); color: var(--글); border-bottom: 1px solid var(--선); }
+  header.dz-statusbar .dz-admin-brand { display: none; }
+  header.dz-statusbar .fn-state { margin-left: 0; color: #5c6268; }
+  header.dz-statusbar .dz-me { color: #5c6268; }
+  .fn-main .workspace { padding: 8px 8px var(--아래띠); gap: 8px; }
+  .fn-main .workspace > .panel { padding: 16px 8px; }
+}

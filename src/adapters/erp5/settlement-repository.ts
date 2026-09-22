@@ -30,7 +30,7 @@ const INVOICES = 'settlement_invoices';
 /** 실제 수금/지급 한 번 = 한 불변 거래. collectedAmt/paidAmt는 이 거래들의 빠른 projection이다. */
 const CASH_EVENTS = 'settlement_cash_events';
 const BY = 'freepass-admin';
-const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt, d.intakeRequestId);
+const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt, d.intakeRequestId, d.intakeIdentityMode);
 
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
@@ -191,7 +191,7 @@ export class Erp5SettlementRepository {
       const same = await tx.get(db.collection(ROWS).where('receivedAt', '==', input.receivedAt));
       const hit = same.docs.find((d) => {
         const x = d.data();
-        if (intakeKey(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId) === key) return true;
+        if (intakeKey(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, x.intakeIdentityMode) === key) return true;
         const sameProduct = !!input.sourceProductId && String(x.sourceProductId ?? '') === input.sourceProductId;
         const norm = (v: unknown) => String(v ?? '').replace(/\s/g, '');
         const samePlate = !!plate && norm(x.plate) === norm(plate);
@@ -201,7 +201,9 @@ export class Erp5SettlementRepository {
       const byId = await tx.get(db.collection(ROWS).doc(code));
       if (byId.exists) return { code, created: false };
       tx.create(db.collection(ROWS).doc(code), rec);
-      tx.set(db.collection(EVENTS).doc(intakeEventDocId(plate, input.sourceProductId, input.receivedAt, input.intakeRequestId)),
+      tx.set(db.collection(EVENTS).doc(intakeEventDocId(
+        plate, input.sourceProductId, input.receivedAt, input.intakeRequestId, rec.intakeIdentityMode,
+      )),
         { [audId()]: { at: rec.createdAt, by: BY, field: '접수', from: '', to: code } }, { merge: true });
       return { code, created: true };
     });
@@ -475,8 +477,16 @@ export class Erp5SettlementRepository {
   }
 
   /** 한 줄의 이력 — 최신이 앞. */
-  async events(plate: unknown, receivedAt: unknown, sourceProductId?: unknown, intakeRequestId?: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
-    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(plate, sourceProductId, receivedAt, intakeRequestId)).get();
+  async events(
+    plate: unknown,
+    receivedAt: unknown,
+    sourceProductId?: unknown,
+    intakeRequestId?: unknown,
+    intakeIdentityMode?: unknown,
+  ): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
+    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(
+      plate, sourceProductId, receivedAt, intakeRequestId, intakeIdentityMode,
+    )).get();
     if (!d.exists) return [];
     return Object.values(d.data()!)
       .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')

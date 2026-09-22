@@ -12,7 +12,7 @@ import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
-import { directIntakeAllowsMissingPlate } from './product-kind';
+import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-kind';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -70,11 +70,14 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   }
   if (!DAY.test(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 로 넣습니다');
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
+  const expectedDirectRentKind = directIntakeRentKind(x.product);
+  if (expectedDirectRentKind && x.rentKind !== expectedDirectRentKind) e.push(`렌트구분은 ${expectedDirectRentKind} 이어야 합니다`);
   if (!x.customer.trim()) e.push('고객명이 없습니다');
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
   /* 인도는 실제 관측 사실이라 계약서와 독립적으로 기록한다. 단, 날짜 없는 인도완료는 받지 않는다. */
+  if (x.delivered && !x.plate.trim()) e.push('차량번호를 배정한 뒤 인도완료할 수 있습니다');
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {

@@ -270,7 +270,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
-              <DetailTabs key={`상세-${car.id}`}
+              <DetailTabs key={`상세-${car.id}-${sel.matchedOfferIds.join('|')}`}
                 initialOffer={sel.matchedOffers.some((x) => x.id === sp(q.offer)) ? sp(q.offer) : sel.lead?.id}
                 /**
                  * ★접수하기 — 늘 켜져 있다 (대표 2026-09-18 「상품 상세가 나오는 거고 거기서 접수를 누르면
@@ -298,7 +298,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
-                  <OfferPicker key={`기간-${car.id}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                  <OfferPicker key={`기간-${car.id}-${sel.matchedOfferIds.join('|')}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     perks={car.perks} perksNote={정책말(car.policyState)} />
                 </>}
                 info={<>

@@ -22,7 +22,8 @@
     [hidden] { display:none !important; }
     html,body { margin:0; min-height:100%; background:#eef0f2; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
     button,input,select { font:inherit; }
-    button { cursor:pointer; }
+    button { cursor:pointer; transition:background .16s,color .16s,box-shadow .16s,transform .16s; }
+    button:disabled { cursor:not-allowed; opacity:.45; }
     .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; }
     .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); position:sticky; top:0; z-index:20; }
     .statusbar > div { min-width:0; flex:1; }
@@ -103,8 +104,15 @@
     .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; }
     .actionbar.three { grid-template-columns:3fr 3fr 4fr; }
     .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
-    .secondary { background:var(--box); color:var(--navy); }
-    .primary { background:var(--navy); color:#fff; }
+    .primary { background:var(--navy); color:#fff; box-shadow:0 2px 6px rgba(27,42,74,.18); }
+    .primary:hover { background:#14223f; box-shadow:0 4px 10px rgba(27,42,74,.22); }
+    .primary:active { background:#0f1b35; transform:translateY(1px); box-shadow:0 1px 3px rgba(27,42,74,.18); }
+    .secondary { background:#e6ecf5; color:var(--navy); }
+    .secondary:hover { background:#dce5f0; }
+    .secondary:active { background:#d2deeb; transform:translateY(1px); }
+    .tertiary { background:#eceff2; color:#4f5965; }
+    .tertiary:hover { background:#e3e7eb; color:var(--ink); }
+    .tertiary:active { background:#dbe0e5; transform:translateY(1px); }
     .sheet-wrap { position:fixed; inset:0; z-index:60; display:grid; align-items:end; }
     .scrim { position:absolute; inset:0; border:0; background:rgba(15,23,42,.42); }
     .sheet { position:relative; width:min(100%,430px); margin:0 auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); background:#fff; border-radius:12px 12px 0 0; box-shadow:0 -8px 30px rgba(15,23,42,.18); }
@@ -146,7 +154,8 @@
     .search-field input { font-size:var(--sales-control-font); line-height:1; }
     .chips { gap:6px; margin-bottom:var(--sales-space); }
     .chip { height:40px; padding:0 12px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; line-height:1; }
-    .chip.on { background:var(--picked); color:var(--navy); font-weight:650; }
+    .chip:hover { background:#e9edf2; color:var(--ink); }
+    .chip.on { background:var(--picked); color:var(--navy); font-weight:650; box-shadow:inset 0 0 0 1px rgba(27,42,74,.05); }
     .list { gap:12px; }
     .row { padding:var(--sales-card-inset); border:0; border-radius:var(--sales-card-radius); background:var(--card); }
     .row:active { background:#f2f3f5; }
@@ -323,7 +332,7 @@ function workPanel(){
 }
 function actions(){
  const el=$('#actions'); if(!state.depth){el.hidden=true;return} el.hidden=false; el.className='actionbar';
- if(state.depth===2){el.innerHTML='<button class="secondary" id="backAction">이전</button><button class="primary" id="save">접수 저장</button>';$('#backAction').onclick=()=>{state.depth=1;render()};$('#save').onclick=()=>{state.module='intake';state.depth=0;state.selected=null;render()};return}
+ if(state.depth===2){el.innerHTML='<button class="tertiary" id="backAction">이전</button><button class="primary" id="save">접수 저장</button>';$('#backAction').onclick=()=>{state.depth=1;render()};$('#save').onclick=()=>{state.module='intake';state.depth=0;state.selected=null;render()};return}
  const config={
   product:{secondary:'공유',primary:'접수하기'},
   intake:{primary:'전자계약'},
@@ -332,7 +341,7 @@ function actions(){
   settlement:{secondary:'지급 보기',primary:'수금 등록'}
  }[state.module];
  el.classList.toggle('three',!!config.secondary);
- el.innerHTML=`<button class="secondary" id="backAction">목록</button>${config.secondary?`<button class="secondary" id="secondaryAction">${config.secondary}</button>`:''}<button class="primary" id="primary">${config.primary}</button>`;
+ el.innerHTML=`<button class="tertiary" id="backAction">목록</button>${config.secondary?`<button class="secondary" id="secondaryAction">${config.secondary}</button>`:''}<button class="primary" id="primary">${config.primary}</button>`;
  $('#backAction').onclick=()=>{state.depth=0;state.selected=null;render()};
  if($('#secondaryAction')) $('#secondaryAction').onclick=()=>alert('목업 동작: '+config.secondary);
  $('#primary').onclick=()=>{if(state.module==='product'){state.depth=2;render()}else if(state.module==='intake'){state.module='contract';state.depth=1;state.selected='c1';render()}else alert('목업 동작: '+config.primary)};
@@ -346,7 +355,7 @@ function openFilter(){
   settlement:{axes:['정산단계','정산월','공급사','영업채널'],title:'정산단계',values:[['청구',7],['계산서',4],['수금',6],['지급',9]]}
  }[state.module];
  const sheet=$('#filterSheet'); sheet.hidden=false;
- sheet.innerHTML=`<button class="scrim" aria-label="세부필터 닫기"></button><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterTitle"><div class="sheet-head"><h3 id="filterTitle">상세 조건</h3><button id="closeFilter" aria-label="닫기">×</button></div><div class="filter-body"><nav class="filter-axes" aria-label="조건 항목">${facets.axes.map((x,i)=>`<button class="${i?'':'on'}">${x}</button>`).join('')}</nav><div class="filter-values"><strong>${facets.title}</strong>${facets.values.map(([x,n])=>`<label><input type="checkbox" ${state.filter===x?'checked':''}><span>${x}</span><small>${n}</small></label>`).join('')}</div></div><div class="sheet-actions"><button class="secondary" id="resetFilter">초기화</button><button class="primary" id="applyFilter">${data[state.module].length}${state.module==='product'?'대':'건'} 보기</button></div></section>`;
+ sheet.innerHTML=`<button class="scrim" aria-label="세부필터 닫기"></button><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterTitle"><div class="sheet-head"><h3 id="filterTitle">상세 조건</h3><button id="closeFilter" aria-label="닫기">×</button></div><div class="filter-body"><nav class="filter-axes" aria-label="조건 항목">${facets.axes.map((x,i)=>`<button class="${i?'':'on'}">${x}</button>`).join('')}</nav><div class="filter-values"><strong>${facets.title}</strong>${facets.values.map(([x,n])=>`<label><input type="checkbox" ${state.filter===x?'checked':''}><span>${x}</span><small>${n}</small></label>`).join('')}</div></div><div class="sheet-actions"><button class="tertiary" id="resetFilter">초기화</button><button class="primary" id="applyFilter">${data[state.module].length}${state.module==='product'?'대':'건'} 보기</button></div></section>`;
  const close=()=>{sheet.hidden=true;document.querySelector('.openFilter')?.focus()};
  sheet.querySelector('.scrim').onclick=close; $('#closeFilter').onclick=close; $('#resetFilter').onclick=()=>{state.filter='전체';close();render()}; $('#applyFilter').onclick=close;
  $('#closeFilter').focus();
@@ -368,8 +377,8 @@ function renderWeb(){
  $('#webDetailTitle').textContent=`${LABEL[state.module]} 상세`; $('#webDetailState').textContent=chosen.tag; $('#webDetail').innerHTML=detail();
  $('#webWorkTitle').textContent=state.module==='product'?'신규 계약접수':'현재 업무'; $('#webWorkState').textContent=state.module==='product'?'Snapshot 저장 전':'다음 단계'; $('#webWork').innerHTML=workPanel();
  const cfg={product:['공유','접수하기'],intake:['목록','전자계약'],contract:['다시 보내기','상태 확인'],performance:['이슈 등록','확인 완료'],settlement:['지급 보기','수금 등록']}[state.module];
- $('#webDetailActions').innerHTML=`<button class="secondary">${cfg[0]}</button><button class="primary">${cfg[1]}</button>`;
- $('#webWorkActions').innerHTML=`<button class="secondary">이전</button><button class="primary">${state.module==='product'?'접수 저장':cfg[1]}</button>`;
+ $('#webDetailActions').innerHTML=`<button class="${cfg[0]==='목록'?'tertiary':'secondary'}">${cfg[0]}</button><button class="primary">${cfg[1]}</button>`;
+ $('#webWorkActions').innerHTML=`<button class="tertiary">이전</button><button class="primary">${state.module==='product'?'접수 저장':cfg[1]}</button>`;
  document.querySelectorAll('#webList .row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;render()});
  document.querySelectorAll('#webList .chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
  $('#webopenFilter').onclick=openFilter;

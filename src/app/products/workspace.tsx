@@ -24,7 +24,7 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금, 정책말,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -79,7 +79,8 @@ export async function ProductWorkspace({ q, mode, base }: {
     요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k)))
     && offerWithinSearchLimits(o, parsedSearch.limits));
   const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
-    차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
+    productMeetsSearchRequirements(h.product, parsedSearch.requirements)
+    && 차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
     && 남은요금(h, skip).length > 0;
   const searched = text ? pool.filter(({ product: p }) =>
     `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
@@ -99,6 +100,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
   /** "무보증"은 상품 badge가 아니라 실제 Offer 보증금 0원 조건이다. 검색창과 퀵필터가 같은 Offer 축을 써야 한다. */
   const hasNoDepositOffer = pool.some((h) => h.matchedOffers.some((o) => o.deposit === 0));
+  /** "만21세" 퀵필터는 최소연령이 21세 이하인 상품 전체다. 정확히 "만21세" 라벨만 찾으면 18~20세 가능 상품을 놓친다. */
+  const age21Perks = perkList.filter((perk) => {
+    const m = /^만(\d{2})세$/.exec(perk);
+    const age = m ? Number(m[1]) : 0;
+    return age >= 18 && age <= 21;
+  });
   /**
    * ★교차 집계 — 원본 `shopFacets` 짜임: 줄(명단·차례)은 «전체»가 정하고, 숫자는 «제 축을 뺀 지금 조건»으로 센다.
    *   누를 때 줄이 안 사라지고 안 뛴다 — 숫자만 오르내린다(대표 2026-09-10 「0이라고 해줘야지」).
@@ -139,6 +146,10 @@ export async function ProductWorkspace({ q, mode, base }: {
   };
   /** 퀵 단추 — 그 축의 고른 값 안에서 하나를 켜고 끈다(세부검색과 같은 주소 칸을 쓴다) */
   const 켜끔 = (cur: string[], v: string) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]).join(',');
+  const 묶음켜끔 = (cur: string[], vals: string[]) => {
+    const on = vals.length > 0 && vals.every((v) => cur.includes(v));
+    return (on ? cur.filter((x) => !vals.includes(x)) : [...new Set([...cur, ...vals])]).join(',');
+  };
 
   let irows: SettlementRow[] = [];
   let intakeErr = '';
@@ -241,9 +252,13 @@ export async function ProductWorkspace({ q, mode, base }: {
             {statuses.includes('즉시출고') && (
               <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
-            {['무심사', '만21세', '경력무관'].filter((x) => perkList.includes(x)).map((x) => (
+            {['무심사', '경력무관'].filter((x) => perkList.includes(x)).map((x) => (
               <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
             ))}
+            {age21Perks.length > 0 && (
+              <Link className={age21Perks.every((x) => explicitPsel.perk.includes(x)) ? 'active' : ''}
+                href={keep({ perk: 묶음켜끔(explicitPsel.perk, age21Perks), page: '' })}>만21세</Link>
+            )}
             {hasNoDepositOffer && (
               <Link className={explicitPsel.dep.includes('d0') ? 'active' : ''}
                 href={keep({ dep: 켜끔(explicitPsel.dep, 'd0'), page: '' })}>무보증</Link>

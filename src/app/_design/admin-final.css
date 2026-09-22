@@ -467,12 +467,13 @@ header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
   fill: color-mix(in srgb, var(--ci남색) 15%, transparent); stroke-width: 2.1;
 }
 @media (max-width: 900px) {
+  html, body { scrollbar-width: auto; }
   :root { --아래띠: calc(var(--ui-shell-h) + env(safe-area-inset-bottom)); }
   /* 기존 depth 1/2 body 변수 override와 숨김 선택자는 그대로 사용한다. */
   .dz-tabbar {
     height: calc(var(--ui-shell-h) + env(safe-area-inset-bottom)); gap: 0;
     padding: 0 4px env(safe-area-inset-bottom); background: var(--판);
-    border-top: 1px solid var(--선); box-shadow: 0 -2px 8px rgba(15,23,42,.05);
+    border-top: 0; box-shadow: 0 -2px 8px rgba(15,23,42,.05);
   }
   .dz-tabbar a { min-height: var(--ui-touch-min); gap: 2px; background: none; color: #5c6268; font-weight: 500; }
   .dz-tabbar a.on { background: none; color: var(--ci남색); font-weight: 650; }
@@ -726,6 +727,17 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
     font-size: 11px; font-weight: 600; line-height: 1.45;
   }
   .fn-main .workspace .dz-row .dz-badge.good { color: #15803d; }
+  header.dz-statusbar .fn-state {
+    top: 20px; right: 16px; width: auto; height: auto; min-height: 0;
+    padding: 0; gap: 6px; font-size: 11px; line-height: 1.55;
+  }
+  header.dz-statusbar .fn-state::before { margin-right: 0; }
+  .dz-tabbar { height: calc(60px + env(safe-area-inset-bottom)); }
+  .dz-tabbar a {
+    height: 60px; min-height: 60px; padding: 0 2px;
+    font-size: 10px; line-height: 1.55; gap: 2px;
+  }
+  .dz-tabbar svg { width: 22px; height: 22px; }
   header.fn-top.dz-statusbar {
     position: absolute; inset: 0 0 auto; z-index: 20; height: 0; padding: 0; overflow: visible;
     background: transparent; color: var(--글); border: 0;
@@ -733,7 +745,9 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   header.dz-statusbar .dz-admin-brand { display: none; }
   header.dz-statusbar .dz-menu { display: none; }
   header.dz-statusbar .fn-state {
-    position: absolute; top: 8px; right: 16px; min-height: 44px; margin: 0; color: #15803d;
+    position: absolute; top: 20px; right: 16px; min-height: 0; height: auto;
+    margin: 0; padding: 0; color: #15803d; font-size: 11px; font-weight: 700;
+    line-height: 1.55; letter-spacing: -.012em;
   }
   header.dz-statusbar .dz-me { display: none; }
   .fn-main .workspace { padding: 0 0 var(--아래띠); gap: 0; }

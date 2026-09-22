@@ -475,8 +475,8 @@ export class Erp5SettlementRepository {
   }
 
   /** 한 줄의 이력 — 최신이 앞. */
-  async events(plate: unknown, receivedAt: unknown, sourceProductId?: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
-    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(plate, sourceProductId, receivedAt)).get();
+  async events(plate: unknown, receivedAt: unknown, sourceProductId?: unknown, intakeRequestId?: unknown): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
+    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(plate, sourceProductId, receivedAt, intakeRequestId)).get();
     if (!d.exists) return [];
     return Object.values(d.data()!)
       .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')

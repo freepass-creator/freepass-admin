@@ -31,26 +31,28 @@ export const eventDocId = (plate: unknown, receivedAt: unknown) =>
  * - 상품에서 온 접수: Product ID가 차량번호 배정 전후에도 변하지 않으므로 Product ID를 쓴다.
  * - 직접 접수: 기존처럼 차량번호를 쓴다.
  */
-export const intakeIdentity = (plate: unknown, sourceProductId: unknown) => {
+export const intakeIdentity = (plate: unknown, sourceProductId: unknown, intakeRequestId?: unknown) => {
   const product = String(sourceProductId ?? '').trim();
   if (product) return `product:${product}`;
   const car = String(plate ?? '').replace(/\s/g, '');
   // 기존 차량번호 접수는 erp4/기존 ERP5 코드와 완전히 같은 identity를 유지한다.
-  return car;
+  if (car) return car;
+  const request = String(intakeRequestId ?? '').trim();
+  return request ? `request:${request}` : '';
 };
 
-export const intakeKey = (plate: unknown, sourceProductId: unknown, receivedAt: unknown) =>
-  `${intakeIdentity(plate, sourceProductId)}|${String(receivedAt ?? '').trim().slice(0, 10)}`;
+export const intakeKey = (plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown) =>
+  `${intakeIdentity(plate, sourceProductId, intakeRequestId)}|${String(receivedAt ?? '').trim().slice(0, 10)}`;
 
-export function intakeCode(plate: unknown, sourceProductId: unknown, receivedAt: unknown): string {
-  const identity = intakeKey(plate, sourceProductId, receivedAt);
+export function intakeCode(plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown): string {
+  const identity = intakeKey(plate, sourceProductId, receivedAt, intakeRequestId);
   const d = createHash('sha256').update(`settlement:${identity.trim()}`, 'utf8').digest();
   let t = '';
   for (let i = 0; i < 10; i += 1) t += ALPHABET[d[i] % ALPHABET.length];
   return `stl_${t}`;
 }
 
-export const intakeEventDocId = (plate: unknown, sourceProductId: unknown, receivedAt: unknown) => {
-  const identity = intakeIdentity(plate, sourceProductId);
+export const intakeEventDocId = (plate: unknown, sourceProductId: unknown, receivedAt: unknown, intakeRequestId?: unknown) => {
+  const identity = intakeIdentity(plate, sourceProductId, intakeRequestId);
   return `${identity}|${String(receivedAt ?? '').trim()}`.replace(/[.$#[\]/\s|:]/g, '_');
 };

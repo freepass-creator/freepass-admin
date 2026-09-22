@@ -82,7 +82,7 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
       {thumb !== undefined && (
         <span className="dz-row-thumb">
           {thumb
-            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" loading="lazy" />
+            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" loading="lazy" decoding="async" width="82" height="64" />
             : <em>사진 없음</em>}
         </span>
       )}

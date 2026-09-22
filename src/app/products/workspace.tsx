@@ -20,11 +20,11 @@ import { 매칭, 매칭끝 } from '../_design/words';
 import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
-import { standingFixed, tallyMatch } from '../_design/facet-standing';
+import { standingFixed, tallyMany, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금, 정책말,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, vehicleFacetValue, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -44,6 +44,11 @@ type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
 const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
   status: (p, k) => p.status === k,
   kind: (p, k) => p.productKind === k,
+  origin: (p, k) => vehicleFacetValue(p, 'origin') === k,
+  maker: (p, k) => vehicleFacetValue(p, 'maker') === k,
+  model: (p, k) => vehicleFacetValue(p, 'model') === k,
+  sub: (p, k) => vehicleFacetValue(p, 'sub') === k,
+  trim: (p, k) => vehicleFacetValue(p, 'trim') === k,
   perk: (p, k) => (p.perks ?? []).includes(k),
   supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
   cls: (p, k) => p.vehicleClass === k,
@@ -83,9 +88,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
     차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
     && 남은요금(h, skip).length > 0;
-  const searched = text ? pool.filter(({ product: p }) =>
-    `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
-      .toLowerCase().includes(text)) : pool;
+  /** 차량명 조합과 문자열 정규화는 상품마다 한 번만 한다. facet 교차집계가 같은 문자열을 다시 만들지 않는다. */
+  const searchIndex = new Map(pool.map(({ product: p }) => [p, [
+    vehicleName(p), p.vehicle.manufacturerId, p.vehicle.modelId, p.vehicle.subModelId, p.vehicle.trimId,
+    p.registration?.vehicleNumber, p.supplierName, p.supplierId,
+  ].filter(Boolean).join(' ').normalize('NFKC').toLowerCase()]));
+  const searched = text ? pool.filter(({ product }) => searchIndex.get(product)?.includes(text)) : pool;
   const hits = searched.filter((h) => 통과(h)).map((h) => {
     const matchedOffers = 남은요금(h);
     return { ...h, matchedOffers, matchedOfferIds: matchedOffers.map((o) => o.id) };
@@ -107,6 +115,11 @@ export async function ProductWorkspace({ q, mode, base }: {
     status: 많은순(pool.map((h) => h.product.status ?? '')).sort((a, b) => (STATUS_ORDER[a] ?? 9) - (STATUS_ORDER[b] ?? 9))
       .map((k) => ({ k, label: k })),
     kind: 많은순(pool.map((h) => h.product.productKind ?? '')).map((k) => ({ k, label: k })),
+    origin: 많은순(pool.map((h) => vehicleFacetValue(h.product, 'origin'))).map((k) => ({ k, label: k })),
+    maker: 많은순(pool.map((h) => vehicleFacetValue(h.product, 'maker'))).map((k) => ({ k, label: k })),
+    model: 많은순(pool.map((h) => vehicleFacetValue(h.product, 'model'))).map((k) => ({ k, label: k })),
+    sub: 많은순(pool.map((h) => vehicleFacetValue(h.product, 'sub'))).map((k) => ({ k, label: k })),
+    trim: 많은순(pool.map((h) => vehicleFacetValue(h.product, 'trim'))).map((k) => ({ k, label: k })),
     perk: 많은순(pool.flatMap((h) => h.product.perks ?? [])).map((k) => ({ k, label: k })),
     term: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.termMonths)))].sort((a, b) => a - b)
       .map((m) => ({ k: String(m), label: `${m}개월` })),
@@ -118,13 +131,26 @@ export async function ProductWorkspace({ q, mode, base }: {
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
   };
-  const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
-    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축Type](o, k)) : 차맞음[a as 차축Type](h.product, k);
+  const 축값 = (a: 상품축, h: (typeof pool)[number], 요금: Offer[]): string[] => {
+    if (a === 'perk') return h.product.perks ?? [];
+    if (!(요금축 as readonly string[]).includes(a)) {
+      const product = h.product;
+      const one = a === 'status' ? product.status
+        : a === 'kind' ? product.productKind
+          : a === 'supplier' ? product.supplierName ?? product.supplierId
+            : a === 'cls' ? product.vehicleClass
+              : a === 'fuel' ? product.specs.fuel
+                : vehicleFacetValue(product, a as 'origin' | 'maker' | 'model' | 'sub' | 'trim');
+      return one ? [one] : [];
+    }
+    const keys = 값명단[a].map(({ k }) => k);
+    return keys.filter((k) => 요금.some((o) => 요금맞음[a as 요금축Type](o, k)));
+  };
   const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
     const keys = 값명단[a].map((x) => x.k);
     const name = new Map(값명단[a].map((x) => [x.k, x.label]));
-    const base = tallyMatch(pool, keys, (h, k) => 걸림(a, h, k, h.matchedOffers));
-    const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
+    const base = tallyMany(pool, (h) => 축값(a, h, h.matchedOffers));
+    const live = tallyMany(searched.filter((h) => 통과(h, a)), (h) => 축값(a, h, 남은요금(h, a)));
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
   });
 

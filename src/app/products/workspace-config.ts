@@ -1,4 +1,4 @@
-import type { Offer } from '../../domain/product/types';
+import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { won } from '../_fn/fmt';
 
 /** 목록 한 줄의 대표 요금 — 인수형은 가능하면 제외하고, 조건에 남은 Offer 중 최저 월 대여료. */
@@ -32,15 +32,33 @@ const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
 };
 
 export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
-export const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
+export const 차축 = [
+  'status', 'kind', 'origin', 'maker', 'model', 'sub', 'trim', 'perk', 'supplier', 'cls', 'fuel',
+] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
 export type 상품축 = 요금축 | 차축;
 
 export const 상품축이름: [상품축, string][] = [
-  ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
+  ['status', '출고상태'], ['kind', '상품구분'],
+  ['origin', '원산지'], ['maker', '제조사'], ['model', '모델'], ['sub', '세부모델'], ['trim', '세부트림'],
+  ['perk', '혜택'], ['term', '계약기간'],
   ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '약정주행'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
 ];
+
+/** 차종마스터에서 확정된 깊이까지만 필터값으로 쓴다. 원문에 글자가 있어도 미확정 하위축에는 세우지 않는다. */
+export function vehicleFacetValue(
+  product: Pick<CanonicalProduct, 'vehicle'>,
+  axis: 'origin' | 'maker' | 'model' | 'sub' | 'trim',
+): string {
+  const { vehicle } = product;
+  if (vehicle.matchLevel === 'UNMATCHED') return '';
+  if (axis === 'origin') return vehicle.originId;
+  if (axis === 'maker') return vehicle.manufacturerId;
+  if (axis === 'model') return vehicle.modelId;
+  if (axis === 'sub') return vehicle.matchLevel === 'SUB_MODEL' || vehicle.matchLevel === 'TRIM' ? vehicle.subModelId ?? '' : '';
+  return vehicle.matchLevel === 'TRIM' ? vehicle.trimId ?? '' : '';
+}
 
 export const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> = {
   term: (o, k) => String(o.termMonths) === k,

@@ -68,7 +68,7 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
         }}
         onPointerCancel={() => setX0(null)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photos[i]} alt={alt} draggable={false} />
+        <img src={photos[i]} alt={alt} draggable={false} decoding="async" fetchPriority="high" />
         {넘김}
         <small>{i + 1} / {n}</small>
       </div>
@@ -77,7 +77,7 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
           {photos.map((p, k) => (
             <button key={k} type="button" className={k === i ? 'on' : ''} onClick={() => setI(k)} aria-label={`사진 ${k + 1}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p} alt="" loading="lazy" draggable={false} />
+              <img src={p} alt="" loading="lazy" decoding="async" draggable={false} />
             </button>
           ))}
         </div>
@@ -85,7 +85,7 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
       {big && (
         <div className="dz-gal-big" role="dialog" aria-modal="true" aria-label="사진 크게 보기" onClick={() => setBig(false)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photos[i]} alt={alt} onClick={(e) => e.stopPropagation()} />
+          <img src={photos[i]} alt={alt} decoding="async" onClick={(e) => e.stopPropagation()} />
           {넘김}
           <button type="button" className="dz-gal-close" aria-label="닫기" onClick={() => setBig(false)}><Icon name="x" size={22} /></button>
           <small>{i + 1} / {n}</small>

@@ -102,3 +102,14 @@ export function tallyMatch<T>(
   for (const r of rows) for (const k of keys) if (hit(r, k)) m.set(k, (m.get(k) || 0) + 1);
   return m;
 }
+
+/** 한 줄이 여러 값에 걸리는 축을 값 목록 한 번으로 센다. 큰 차종 목록에서 keys 전체를 매번 훑지 않는다. */
+export function tallyMany<T>(rows: readonly T[], valuesOf: (row: T) => readonly string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    for (const value of new Set(valuesOf(row).filter(Boolean))) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  }
+  return counts;
+}

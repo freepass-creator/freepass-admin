@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
-import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금 } from './workspace-config';
+import { tallyMany } from '../_design/facet-standing';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, vehicleFacetValue, 보증금 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -54,11 +55,41 @@ test('natural product search keeps unknown words as free text', () => {
 
 test('parsed conditions merge with explicit facet state without duplicates', () => {
   const empty = {
-    status: [], kind: [], perk: [], term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [],
+    status: [], kind: [], origin: [], maker: [], model: [], sub: [], trim: [], perk: [],
+    term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [],
   };
   const merged = mergeProductSelections({ ...empty, perk: ['무심사'] }, { perk: ['무심사', '만21세'], term: ['36'] });
   assert.deepEqual(merged.perk, ['무심사', '만21세']);
   assert.deepEqual(merged.term, ['36']);
+});
+
+test('vehicle hierarchy facets expose only master-confirmed depth', () => {
+  const modelOnly = { vehicle: {
+    nodeId: 'model:k8', originId: '국산', manufacturerId: '기아', modelId: 'K8',
+    subModelId: 'K8 하이브리드', trimId: '노블레스', matchLevel: 'MODEL' as const,
+  } };
+  assert.equal(vehicleFacetValue(modelOnly, 'maker'), '기아');
+  assert.equal(vehicleFacetValue(modelOnly, 'model'), 'K8');
+  assert.equal(vehicleFacetValue(modelOnly, 'sub'), '');
+  assert.equal(vehicleFacetValue(modelOnly, 'trim'), '');
+
+  const trim = { vehicle: { ...modelOnly.vehicle, matchLevel: 'TRIM' as const } };
+  assert.equal(vehicleFacetValue(trim, 'sub'), 'K8 하이브리드');
+  assert.equal(vehicleFacetValue(trim, 'trim'), '노블레스');
+
+  const unmatched = { vehicle: { ...modelOnly.vehicle, matchLevel: 'UNMATCHED' as const } };
+  assert.equal(vehicleFacetValue(unmatched, 'maker'), '');
+});
+
+test('multi-value facet counting counts each product once per value', () => {
+  const counts = tallyMany([
+    ['무심사', '무보증', '무심사'],
+    ['무심사'],
+    ['경력무관'],
+  ], (values) => values);
+  assert.equal(counts.get('무심사'), 2);
+  assert.equal(counts.get('무보증'), 1);
+  assert.equal(counts.get('경력무관'), 1);
 });
 
 

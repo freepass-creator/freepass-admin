@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productById, settlements, today } from '../../server/erp5';
+import { productByIdFresh, settlements, today } from '../../server/erp5';
 import { requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
@@ -64,7 +64,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       return { errors: ['상품 접수의 Product/Version/Offer/Snapshot 정보가 불완전합니다 — 상품을 다시 골라 주세요'] };
     }
     let product;
-    try { product = await productById(input.sourceProductId); }
+    try { product = await productByIdFresh(input.sourceProductId); }
     catch (e) { return { errors: [`상품을 다시 확인하지 못했습니다 — ${(e as Error).message}`] }; }
     if (!product) return { errors: ['선택한 상품이 더 이상 없습니다 — 상품을 다시 골라 주세요'] };
     if (input.sourceProductVersion !== null && input.sourceProductVersion !== product.version) {

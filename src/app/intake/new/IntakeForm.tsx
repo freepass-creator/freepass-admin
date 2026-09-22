@@ -34,7 +34,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   fee?: FeePreview | null;
   /**
    * 차 골라 접수에서 상품구분을 «사람이 고를» 말들 — 비었으면 짝이 하나로 떨어진 것(숨은 칸으로 간다).
-   * ★원장 상품구분이 수수료 갈래를 정한다(기능 ledgerKindOf) — 신차렌트는 선출고/견적출고/신차발주 중 사람이 고른다.
+   * ★원장 상품구분이 수수료 갈래를 정한다(기능 ledgerKindOf).
+   * 상품 리스트의 신차렌트는 선출고로 확정된다. 견적출고/신차발주는 직접접수에서만 고른다.
    */
   productChoices?: string[];
   /** 원장 상품구분 전부(기능 LEDGER_PRODUCTS) — 직접 접수의 고를 말 */

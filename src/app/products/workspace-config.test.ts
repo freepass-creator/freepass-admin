@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
-import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금 } from './workspace-config';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -41,7 +41,8 @@ test('natural product search extracts arbitrary term and common business conditi
   assert.deepEqual(q.inferred.term, ['27']);
   assert.deepEqual(q.inferred.dep, ['d0']);
   assert.deepEqual(q.inferred.mile, ['20000']);
-  assert.deepEqual(q.inferred.perk, ['만21세']);
+  assert.deepEqual(q.inferred.perk, undefined);
+  assert.equal(q.requirements.driverAge, 21);
   assert.deepEqual(q.inferred.fuel, ['하이브리드']);
   assert.deepEqual(q.inferred.status, ['즉시출고']);
 });
@@ -64,13 +65,15 @@ test('parsed conditions merge with explicit facet state without duplicates', () 
 
 test('natural search supports canonical age perks and known perk words', () => {
   const q = parseProductSearch('20세 소득확인 분납가능');
-  assert.deepEqual(q.inferred.perk, ['만20세', '소득확인', '분납가능']);
+  assert.deepEqual(q.inferred.perk, undefined);
+  assert.deepEqual(q.requirements, { perks: ['소득확인', '분납가능'], driverAge: 20 });
   assert.equal(q.text, '');
 });
 
 test('age outside canonical perk range is not fabricated as a filter', () => {
   const q = parseProductSearch('26세');
   assert.equal(q.inferred.perk, undefined);
+  assert.deepEqual(q.requirements, { perks: [] });
   assert.equal(q.text, '26세');
 });
 
@@ -89,4 +92,22 @@ test('exact amount ceilings do not lose valid offers inside a coarse facet band'
   assert.equal(offerWithinSearchLimits({ monthlyRent: 560_000, deposit: 1_200_000 }, limits), false);
   assert.equal(offerWithinSearchLimits({ monthlyRent: 520_000, deposit: 1_600_000 }, limits), false);
   assert.equal(offerWithinSearchLimits({ monthlyRent: 520_000, deposit: undefined }, limits), false);
+});
+
+
+test('natural perk requirements are AND, not same-axis OR', () => {
+  const q = parseProductSearch('무심사 21세 경력무관');
+  assert.deepEqual(q.requirements, { perks: ['무심사', '경력무관'], driverAge: 21 });
+
+  assert.equal(productMeetsSearchRequirements({ perks: ['무심사', '만21세', '경력무관'] }, q.requirements), true);
+  assert.equal(productMeetsSearchRequirements({ perks: ['무심사', '만21세'] }, q.requirements), false);
+  assert.equal(productMeetsSearchRequirements({ perks: ['만21세', '경력무관'] }, q.requirements), false);
+});
+
+test('21-year-old search includes products with lower minimum driver age', () => {
+  const q = parseProductSearch('21세');
+  assert.equal(productMeetsSearchRequirements({ perks: ['만18세'] }, q.requirements), true);
+  assert.equal(productMeetsSearchRequirements({ perks: ['만20세'] }, q.requirements), true);
+  assert.equal(productMeetsSearchRequirements({ perks: ['만21세'] }, q.requirements), true);
+  assert.equal(productMeetsSearchRequirements({ perks: [] }, q.requirements), false);
 });

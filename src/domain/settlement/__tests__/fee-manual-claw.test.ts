@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
+import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
 import { clawbackId, clawbackRecord } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
@@ -13,6 +13,8 @@ const base: IntakeInput = {
 };
 const manualRule: FeeResult = { status: 'MANUAL', rule: { id: 'm', supplier: '손오공', kind: '신차', form: '발주', term: 0, basis: '범위', claim: '건별 책정', pay: '건별 책정', when: '', auto: false }, why: '표가 「건별 책정」 — 사람이 정한다' };
 const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '손오공', kind: '재렌트', form: '', term: 48, basis: '대여료×기간', claim: 0.0325, pay: 0.025, when: '', auto: true }, claim: 1_092_000, pay: 840_000 };
+const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '손오공', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
+const noRule: FeeResult = { status: 'NO_RULE', why: '표에 「새공급사 · 재렌트 48개월」 가 없다' };
 
 describe('수수료 직접 입력 — 대표 「직접접수하는 방식」', () => {
   it('★신차발주(주는 대로)는 사유 없이 넣어도 된다 · 넣은 값이 선다', () => {
@@ -29,6 +31,26 @@ describe('수수료 직접 입력 — 대표 「직접접수하는 방식」', (
   it('한쪽만 넣으면 다른 쪽은 표대로 · 표 요율은 표가 낸 쪽만', () => {
     const r = intakeRecord({ ...base, feeManual: { claim: 1_000_000, pay: null, reason: '협의' } }, 0, autoRule, 'v');
     assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [1_000_000, 840_000, 0, 0.025]);
+  });
+});
+
+describe('자동 기준값 또는 직접 수수료 중 하나는 반드시 완성한다', () => {
+  it('AUTO면 직접 수수료 없이도 통과한다', () => {
+    assert.deepEqual(feeCompletenessErrors(base, autoRule), []);
+  });
+  it('차량가액 기준인데 값이 없으면 기준값 또는 직접 입력을 요구한다', () => {
+    assert.match(feeCompletenessErrors({ ...base, price: null }, noBaseRule).join(), /차량가액/);
+    assert.deepEqual(feeCompletenessErrors({
+      ...base, price: null, feeManual: { claim: 1_000_000, pay: 800_000, reason: '' },
+    }, noBaseRule), []);
+  });
+  it('자동 규칙이 없거나 사람이 정하는 규칙이면 청구·지급을 둘 다 직접 넣는다', () => {
+    assert.equal(feeCompletenessErrors(base, manualRule).length, 1);
+    assert.equal(feeCompletenessErrors({ ...base, feeManual: { claim: 1_000_000, pay: null, reason: '' } }, manualRule).length, 1);
+    assert.deepEqual(feeCompletenessErrors({
+      ...base, feeManual: { claim: 1_000_000, pay: 800_000, reason: '' },
+    }, manualRule), []);
+    assert.equal(feeCompletenessErrors(base, noRule).length, 1);
   });
 });
 

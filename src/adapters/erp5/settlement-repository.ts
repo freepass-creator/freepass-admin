@@ -3,7 +3,7 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
-import { feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
@@ -184,8 +184,8 @@ export class Erp5SettlementRepository {
     /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
     const rules = await loadFeeRuleSet();
     const fee = feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price });
-    const manualErr = feeManualErrors(input, fee);
-    if (manualErr.length) throw new Error(manualErr.join(' · '));
+    const feeErr = [...feeCompletenessErrors(input, fee), ...feeManualErrors(input, fee)];
+    if (feeErr.length) throw new Error(feeErr.join(' · '));
     const rec = intakeRecord(input, Date.now(), fee, rules.version);
     const code = String(rec.code);
     const plate = String(rec.plate ?? '');

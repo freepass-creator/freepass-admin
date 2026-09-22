@@ -94,7 +94,8 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       term: offer.termMonths,
       rent: offer.monthlyRent,
       deposit: offer.deposit ?? null,
-      price: product.consumerPrice ?? null,
+      // ERP5 차량가가 있으면 정본이 이긴다. 없을 때만 접수 화면의 차량가액을 수수료 기준값으로 보충한다.
+      price: product.consumerPrice ?? input.price,
       sourceProductVersion: product.version,
       sourceSnapshotId: product.sourceSnapshotId,
       catalogSnapshot: {

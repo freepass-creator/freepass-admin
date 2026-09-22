@@ -73,7 +73,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
                 }</dd></div>
               </dl>
             : <Notice tone="warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</Notice>}
-          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
+          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · 기준 {수수료.basis}{수수료.basis === '차량가액' && product.consumerPrice !== undefined ? ` ${won(product.consumerPrice)}원` : ''} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : selectedProductPath

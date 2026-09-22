@@ -70,11 +70,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);
   let all: Awaited<ReturnType<typeof productList>>;
+  let productErr = '';
   try { all = await productList(); }
   catch (e) {
-    return <section data-ai-feature="form.search" data-ai-state="error" data-query-revision="HOLD_SOURCE_REVISION">
-      <h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p>
-    </section>;
+    productErr = (e as Error).message;
+    /* 데이터 오류여도 확정된 실제 업무 화면 골격은 유지한다. 빈 상품을 만들거나 목업 데이터로 대체하지 않는다. */
+    all = { at: Date.now(), rows: [], report: null };
   }
   const { rows } = all;
 
@@ -239,7 +240,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   return (
     <>
       <section className="workspace" data-phone={view} data-mode={performanceMode ? 'performance' : mode}
-        data-ai-feature="form.search" data-ai-state={sorted.length ? 'results' : 'empty'}
+        data-ai-feature="form.search" data-ai-state={productErr ? 'error' : sorted.length ? 'results' : 'empty'}
         data-query-revision={all.report?.queryRevision ?? 'HOLD_SOURCE_REVISION'}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
         <section className="panel product-panel">
@@ -283,7 +284,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           </div>
           </div>
           <div className="list">
-            {shown.map(({ product: p, lead: o }) => (
+            {productErr ? <EmptyState>ERP5 상품을 불러오지 못했습니다 — {productErr}</EmptyState> : shown.map(({ product: p, lead: o }) => (
               <ListRow key={p.id} href={keep({ id: p.id, offer: o?.id ?? '', v: 'detail' })}
                 selected={!!sel && p.id === sel.product.id}
                 thumb={사진(p) ?? null}
@@ -293,7 +294,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
                 chips={p.perks} />
             ))}
-            {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
+            {!productErr && shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>
         </section>
 

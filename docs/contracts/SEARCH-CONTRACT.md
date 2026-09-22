@@ -29,6 +29,11 @@ A Offer의 대여료와 B Offer의 보증금을 합쳐 실재하지 않는 조�
 **S-03 일치한 Offer는 끝까지 따라간다**
 결과는 조건을 만족한 `offerId` 전부를 싣는다. 카드 → 상세 → 접수는 이 id를 그대로 쓰며, 화면이 다시 고르지 않는다.
 
+**S-14 검색 한 판은 같은 query revision을 쓴다**
+검색 결과 · 결과 건수 · facet 숫자 · 카드의 대표 Offer는 같은 상품 집합 revision에서 계산한다.
+`queryRevision`은 ERP5 문서의 조회시각이 아니라 정렬된 `productId + sourceSnapshotId` 집합에서 만든다.
+동일 원본을 다시 읽었다는 이유만으로 revision이나 접수 가능 여부가 바뀌어서는 안 된다.
+
 ---
 
 ## 차종

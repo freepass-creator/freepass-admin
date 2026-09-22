@@ -65,7 +65,9 @@ export async function ProductWorkspace({ q, mode, base }: {
   let all: Awaited<ReturnType<typeof productList>>;
   try { all = await productList(); }
   catch (e) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
+    return <section data-ai-feature="form.search" data-ai-state="error" data-query-revision="HOLD_SOURCE_REVISION">
+      <h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p>
+    </section>;
   }
   const { rows } = all;
 
@@ -206,7 +208,9 @@ export async function ProductWorkspace({ q, mode, base }: {
   const car = sel?.product;
   return (
     <>
-      <section className="workspace" data-phone={view} data-mode={performanceMode ? 'performance' : mode}>
+      <section className="workspace" data-phone={view} data-mode={performanceMode ? 'performance' : mode}
+        data-ai-feature="form.search" data-ai-state={sorted.length ? 'results' : 'empty'}
+        data-query-revision={all.report?.queryRevision ?? 'HOLD_SOURCE_REVISION'}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
         <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}

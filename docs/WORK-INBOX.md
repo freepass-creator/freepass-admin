@@ -16,6 +16,7 @@
 - 접수/정산은 ERP5 live repository 기준으로 90점대 수준까지 올라왔다.
 - 과거의 "Settlement 상당 부분 Mockup" 판정은 current main 기준으로 폐기한다.
 - 전자계약은 ERP5 `contract / esign_session / esign_private / esign_event / Storage`에 연결되어 **고객 제출 → pending_review**까지 올라왔다.
+- 상품찾기의 동작 기준은 ERP4 MAIN의 현재 상품 조회 규격을 참고한다. 웹·모바일은 같은 query domain을 쓰고, 같은 축 OR/다른 축 AND, 동일 Offer 가격행 판정, 검색·필터·정렬·대표가격의 동일 revision 사용, 선택 Offer의 상세·접수 유지가 필수다.
 
 다음 Codex/Work P0는 정확히 두 개다.
 

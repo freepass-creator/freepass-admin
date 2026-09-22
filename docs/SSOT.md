@@ -18,7 +18,7 @@ FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터
 | 검색 의미 계약 | `docs/contracts/SEARCH-CONTRACT.md` + `src/domain/search/**` | ACTIVE |
 | 장기 R&D 배경 | `docs/memory/EMAIL-RND-CONSOLIDATED.md` | REFERENCE |
 | UI/UX 규격 | AI Core/DevCenter 공통 규격 확정 전 | HOLD |
-| 운영 Product DB | 없음 | NOT VERIFIED |
+| 운영 Product read model | `freepasserp5` Firestore `products` + `policy` | CODED · runtime credential verification required |
 | 운영 Application DB | 없음 | NOT VERIFIED |
 | 운영 Auth/Permission | 없음 | NOT VERIFIED |
 | 운영 Release target | 없음 | NOT VERIFIED |
@@ -58,7 +58,9 @@ Application Snapshot
 - 승인된 매핑은 재사용한다.
 - 미확인 하위 차량정보를 추측하지 않는다.
 - 서로 다른 Offer의 가격/기간/정책을 합쳐 존재하지 않는 상품을 만들지 않는다.
-- 접수 시점에는 선택한 Offer와 Product version을 Snapshot으로 보존한다.
+- 접수 시점에는 선택한 Offer와 Product version 및 `sourceSnapshotId`를 Snapshot으로 보존한다.
+- `sourceSnapshotId`는 조회 시각이 아니라 ERP5 원문과 Canonical 변환 결과의 SHA-256에 묶는다. 같은 상품을 다시 읽으면 유지되고, 가격·정책·차종 매핑 결과가 바뀌면 달라져야 한다.
+- 목록의 `queryRevision`은 정렬된 `productId + sourceSnapshotId` 집합으로 만든다. 검색 결과·건수·필터는 이 revision 하나를 함께 사용한다.
 
 ## 4. Persistence 상태
 현재 JSON file store는 개발 검증용 Adapter다. 운영 persistence 정본으로 선언하지 않는다.

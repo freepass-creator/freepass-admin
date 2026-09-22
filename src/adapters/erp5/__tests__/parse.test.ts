@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseAge, parseMileageKm, parseMoney, parsePriceKey, parseRate, parseYesNo } from '../parse.js';
 import { offersOf, policyValuesOf, toCanonicalProduct } from '../to-canonical.js';
+import { productSnapshotId } from '../product-repository.js';
 
 /* 값은 전부 ERP5(freepasserp5) 실측에서 그대로 딴 것이다. 지어낸 것이 없다. */
 
@@ -176,6 +177,18 @@ describe('toCanonicalProduct — ★버린 까닭을 반드시 돌려준다', ()
     assert.equal(r.product.supplierProductKey, '02하9092');
     assert.equal(r.product.offers.length, 1);
     assert.equal(r.product.vehicle.matchLevel, 'TRIM');
+    assert.equal(r.product.version, 1);
+    assert.equal(r.product.updatedAt, '');
+  });
+  it('원본 revision과 수정시각을 보존한다', () => {
+    const r = toCanonicalProduct(
+      { ...base, canonical_revision: 7, updated_at: '2026-09-21T03:04:05+09:00' },
+      'doc1', undefined, 'snap-1',
+    );
+    assert.equal(r.ok, true);
+    if (!r.ok) return;
+    assert.equal(r.product.version, 7);
+    assert.equal(r.product.updatedAt, '2026-09-20T18:04:05.000Z');
   });
   it('listable=false 는 «까닭과 함께» 뺀다', () => {
     const r = toCanonicalProduct({ ...base, listable: false }, 'doc1', undefined, 's');
@@ -209,5 +222,27 @@ describe('toCanonicalProduct — ★버린 까닭을 반드시 돌려준다', ()
     assert.equal(r.ok, true);
     if (!r.ok) return;
     assert.ok(r.warnings.some((w) => w.includes('정책이 안 붙어')));
+  });
+});
+
+describe('productSnapshotId — 조회시각이 아니라 ERP5 원문에 묶인다', () => {
+  const product = {
+    car_number: '02하9092',
+    price: { '36': { rent: 1_090_000, deposit: 0 } },
+    updated_at: '2026-09-21T03:04:05Z',
+  };
+
+  it('같은 내용은 키 순서가 달라도 같은 snapshotId다', () => {
+    const reordered = {
+      updated_at: product.updated_at,
+      price: { '36': { deposit: 0, rent: 1_090_000 } },
+      car_number: product.car_number,
+    };
+    assert.equal(productSnapshotId('doc1', product), productSnapshotId('doc1', reordered));
+  });
+
+  it('같은 문서의 가격이 바뀌면 snapshotId도 바뀐다', () => {
+    const changed = { ...product, price: { '36': { rent: 1_100_000, deposit: 0 } } };
+    assert.notEqual(productSnapshotId('doc1', product), productSnapshotId('doc1', changed));
   });
 });

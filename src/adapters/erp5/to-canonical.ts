@@ -175,6 +175,32 @@ function registrationOf(d: Erp5Doc): RegistrationInfo | undefined {
   return r.vehicleNumber || r.vin || r.firstRegistrationDate ? r : undefined;
 }
 
+function sourceVersionOf(d: Erp5Doc): number {
+  const value = [d.canonical_revision, d.canonicalRevision, d.version]
+    .map(N)
+    .find((candidate) => candidate !== undefined && Number.isSafeInteger(candidate) && candidate > 0);
+  return value ?? 1;
+}
+
+function sourceUpdatedAtOf(d: Erp5Doc): string {
+  const raw = [d.updatedAt, d.updated_at, d.source_updated_at]
+    .find((candidate) => candidate !== undefined && candidate !== null && candidate !== '');
+  if (raw instanceof Date) return raw.toISOString();
+  if (raw && typeof raw === 'object') {
+    const timestamp = raw as { toDate?: () => Date };
+    if (typeof timestamp.toDate === 'function') return timestamp.toDate().toISOString();
+  }
+  if (typeof raw === 'number') {
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+  }
+  if (typeof raw === 'string') {
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+  }
+  return '';
+}
+
 /**
  * ERP5 상품 한 문서를 우리 상품으로 옮긴다.
  *
@@ -213,7 +239,7 @@ export function toCanonicalProduct(
     warnings,
     product: {
       id,
-      version: 1,
+      version: sourceVersionOf(d),
       supplierId: S(d.provider_company_code) ?? S(d.partner_code) ?? '',
       /* ★이름과 코드를 «둘 다» 든다 — 사람은 이름을, 대조는 코드를 본다 */
       supplierName: S(d.provider_name),
@@ -239,7 +265,8 @@ export function toCanonicalProduct(
       offers,
       productPolicies,
       sourceSnapshotId: snapshotId,
-      updatedAt: new Date().toISOString(),
+      /* 매핑 시각을 원본 수정시각으로 만들지 않는다. 원천에 없으면 명시적으로 미상이다. */
+      updatedAt: sourceUpdatedAtOf(d),
     },
   };
 }

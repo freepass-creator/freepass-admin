@@ -66,3 +66,7 @@ export function resolveLedgerKindSelection(
 /** 직접접수에서 아직 차량번호가 없어도 성립하는 신차 업무. 상품 리스트 출발에는 쓰지 않는다. */
 export const directIntakeAllowsMissingPlate = (product: string | null | undefined) =>
   product === '견적출고' || product === '신차발주';
+
+/** 직접 신차 견적/발주는 원장 렌트구분도 신차렌트로 확정한다. */
+export const directIntakeRentKind = (product: string | null | undefined): string | null =>
+  directIntakeAllowsMissingPlate(product) ? '신차렌트' : null;

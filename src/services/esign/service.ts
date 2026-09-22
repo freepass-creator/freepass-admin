@@ -12,6 +12,7 @@ import type {
 } from '../../domain/esign/types';
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
+import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -520,6 +521,22 @@ export class EsignService {
     if (!claimed) throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
     await this.repo.updateContract(contractId, { sign_status: '미발송', sign_revoked_at: now, esign_progress: 0 });
     await this.repo.appendEvent(contractId, session.id, 'revoked', actor);
+  }
+
+  /**
+   * 고객이 서명 직전에 확인하는 계약서.
+   * signed 봉인본이 있으면 그 파일을 그대로 돌리고, 그 전에는 발행 시 고정한 snapshot으로
+   * 읽기 전용 작성본 HTML을 만든다. 최종 승인/PDF 봉인은 별도 단계에서 처리한다.
+   */
+  async publicDocument(token: string) {
+    const session = await this.byToken(token);
+    if (session.status === 'signed' && session.documentStoragePath && session.documentSha256) {
+      return this.assets.get(session.documentStoragePath, session.documentSha256);
+    }
+    let html: string;
+    try { html = await buildContractHtml(session.snapshot, { printButton: true }); }
+    catch { html = fallbackContractHtml(session.snapshot); }
+    return { bytes: new Uint8Array(Buffer.from(html, 'utf8')), contentType: 'text/html; charset=utf-8' };
   }
 
 }

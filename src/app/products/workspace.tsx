@@ -238,6 +238,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     .map(([k, v]) => <input key={k} type="hidden" name={k} value={sp(v)} />);
 
   const car = sel?.product;
+  const chosenOffer = sel?.matchedOffers.find((o) => o.id === sp(q.offer)) ?? sel?.lead;
   return (
     <>
       <section className="workspace" data-phone={view} data-mode={performanceMode ? 'performance' : mode}
@@ -314,6 +315,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 applyBase={keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' })}
                 backHref={keep({ v: 'list' })}
                 summary={<>
+                  <article className="dz-product-hero">
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
                     photos={(car.photos?.length ? car.photos : car.photoUrl ? [car.photoUrl] : []).filter((x) => x && x.trim()).map((x) => imgSrc(x)).filter((x): x is string => !!x)} />
@@ -327,11 +329,13 @@ export async function ProductWorkspace({ q, mode, base }: {
                     </div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</Tag>
                   </div>
+                  {chosenOffer && <div className="dz-hero-rent"><span>선택 대여료</span><strong>월 {won(chosenOffer.monthlyRent)}원</strong></div>}
                   <div className="dz-hero-facts">
                     <span>{txt(car.specs.fuel)}</span>
                     <span>{txt(car.specs.drivetrain)}</span>
                     <span>{car.specs.seats ? `${car.specs.seats}인승` : '승차 미확인'}</span>
                   </div>
+                  </article>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}

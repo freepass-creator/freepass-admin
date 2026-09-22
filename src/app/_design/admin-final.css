@@ -601,19 +601,25 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
 
 /* 승인 목업의 상품상세: 사진·신원·조건·차량정보를 한 흐름으로 읽는다. */
 .fn-main .workspace .detail-panel .dz-tabbody { display: grid; gap: 0; }
-.fn-main .workspace .detail-panel .dz-gal { border-radius: var(--ui-card-radius) var(--ui-card-radius) 0 0; overflow: hidden; }
+.dz-product-hero { margin-bottom: 18px; overflow: hidden; border-radius: var(--ui-card-radius); background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow); }
+.fn-main .workspace .detail-panel .dz-gal { border-radius: 0; overflow: hidden; }
 .fn-main .workspace .detail-panel .vehicle-title {
-  margin: 0; padding: 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow);
+  margin: 0; padding: 12px 12px 0; background: var(--ui-card-ground); box-shadow: none;
 }
+.fn-main .workspace .detail-panel .dz-hero-rent {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 12px 0; background: var(--ui-card-ground);
+}
+.fn-main .workspace .detail-panel .dz-hero-rent span { color: #5c6268; font-size: 11px; }
+.fn-main .workspace .detail-panel .dz-hero-rent strong { color: var(--ci남색); font-size: 17px; font-weight: 650; }
 .fn-main .workspace .detail-panel .dz-hero-facts {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
-  padding: 0 12px 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow);
+  padding: 10px 12px 12px; background: var(--ui-card-ground); box-shadow: none;
 }
 .fn-main .workspace .detail-panel .dz-hero-facts span {
   min-width: 0; padding: 8px 6px; border-radius: 8px; background: var(--ui-panel-ground);
   color: #4f5965; font-size: 12px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.dz-section-title { margin: 18px 0 9px; font-size: 14px; font-weight: 650; }
+.dz-section-title { margin: 0 0 9px; font-size: 14px; font-weight: 650; }
 .fn-main .workspace .dz-offer-cards { display: grid; gap: 8px; padding: 0; overflow: visible; }
 .fn-main .workspace .dz-offer-cards button {
   width: 100%; height: auto; min-height: 64px; padding: 11px 12px; border: 0;

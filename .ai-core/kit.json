@@ -1,16 +1,16 @@
 {
   "schema": "ai-core-starter-kit/v1",
-  "core_revision": "a73b9616592f71d0aea81d297ac48ffa273586dd",
-  "generated_at": "2026-09-22T00:00:49.993Z",
-  "task": "AI Core 규격과 전체 프로젝트 지식을 설치한다",
+  "core_revision": "87b0f4f6c75dbb313ec4684081b83b1ef0c53da2",
+  "generated_at": "2026-09-22T02:23:39.282Z",
+  "task": "최신 AI Core 규격과 GitHub 동기화 부트스트랩 적용",
   "track": "development",
   "target": {
     "project_id": "freepass-admin",
     "repository": "freepass-creator/freepass-admin",
-    "branch": "codex/ai-core-starter-kit-20260922",
-    "revision": "46b9e134bbae3d80dbb566bb7fff96e0396cdc6a",
-    "registry_revision": "2747ef32e96c550d7dea05c58ee012880cb42dd3",
-    "root": "C:\\dev\\freepass-admin",
+    "branch": "codex/refresh-ai-core-kit-v2-20260922",
+    "revision": "c0de112bf14088fd4411e311540400caf9359729",
+    "registry_revision": "c0de112bf14088fd4411e311540400caf9359729",
+    "root": "C:\\dev\\ai-core-kit-rollout-20260922-v2\\freepass-admin",
     "display_name": "freepass-admin"
   },
   "files": [
@@ -33,6 +33,11 @@
       "path": "standards/shared-services/SHARED_RELEASE_GATE.md",
       "sha256": "098ba568b40d6fcd7c5830e7a024048a52ad156ed7a6f0374af2a9ac545eb03b",
       "source": "docs/shared-services/SHARED_RELEASE_GATE.md"
+    },
+    {
+      "path": "session-bootstrap.mjs",
+      "sha256": "60b0ccc3a8217aa2b7415f3830fec94fd894fab294155e294d7ede71edd8c900",
+      "source": "generated:session-bootstrap/v2"
     }
   ],
   "verification": {

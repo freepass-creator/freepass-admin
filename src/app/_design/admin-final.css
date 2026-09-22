@@ -531,6 +531,16 @@ header.dz-statusbar .dz-admin-brand {
   font-size: 17px; line-height: 1; font-weight: 650; letter-spacing: -.03em; white-space: nowrap;
 }
 header.dz-statusbar .dz-admin-brand b { color: #b8c4d8; font-size: 12px; font-weight: 550; }
+header.dz-statusbar .dz-menu {
+  align-self: stretch; flex: 1; display: flex; align-items: center; justify-content: center; gap: 2px;
+}
+header.dz-statusbar .dz-menu a {
+  height: 36px; padding: 0 16px; border-radius: 6px; display: inline-flex; align-items: center;
+  color: #b8c4d8; font-size: 13px; font-weight: 600; line-height: 1; text-decoration: none;
+}
+header.dz-statusbar .dz-menu a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+header.dz-statusbar .dz-menu a.on { background: #fff; color: var(--ci남색); }
+header.dz-statusbar .dz-menu svg { display: none; }
 header.dz-statusbar .fn-state {
   margin-left: auto; color: #d5dce8; font-size: 11px; font-weight: 600;
 }
@@ -588,12 +598,15 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
 }
 
 @media (min-width: 901px) {
-  .dz-desktop-bottom .dz-menu { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  body:has(> .dz-statusbar) { padding-bottom: 0; }
+  body:has(> .dz-statusbar) .fn-main .workspace { height: calc(100dvh - var(--ui-shell-h)); }
+  .dz-desktop-bottom { display: none; }
 }
 
 @media (max-width: 900px) {
   header.fn-top.dz-statusbar { background: var(--판); color: var(--글); border-bottom: 1px solid var(--선); }
   header.dz-statusbar .dz-admin-brand { display: none; }
+  header.dz-statusbar .dz-menu { display: none; }
   header.dz-statusbar .fn-state { margin-left: 0; color: #5c6268; }
   header.dz-statusbar .dz-me { color: #5c6268; }
   .fn-main .workspace { padding: 8px 8px var(--아래띠); gap: 8px; }

@@ -26,8 +26,8 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 }
 
 /**
- * 기존 이름 TopMenu는 호환을 위해 유지한다. 현재 위치는 PC 하단 업무 버튼(2026-09-21).
- *   Sales 기준: 흰 바탕, 아이콘·라벨만 강조. 활성 메뉴에 진한 버튼 면을 칠하지 않는다.
+ * 기존 이름 TopMenu는 호환을 위해 유지한다. 웹에서는 상단 업무 전환 버튼으로 쓴다.
+ * 모바일은 별도 하단 탭을 쓴다.
  * PC와 폰은 같은 다섯 기능을 같은 순서로 쓴다.
  */
 export function TopMenu({ items }: { items: readonly (readonly [string, string])[] }) {

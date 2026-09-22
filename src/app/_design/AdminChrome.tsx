@@ -29,6 +29,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
     <>
       <header className="fn-top dz-statusbar" aria-label="관리자 상태">
         <span className="dz-admin-brand">FreePass <b>Admin</b></span>
+        <TopMenu items={MENU} />
         {/* 설정 확인은 실제 읽기 성공과 다르다. 상세 진단과 로그아웃은 상태 화면에서 제공한다. */}
         <a className="fn-state" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
           {data.ok ? '데이터 설정됨' : '데이터 설정 필요'} · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
@@ -36,11 +37,8 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         {나 && <span className="dz-me">{나.name}</span>}
       </header>
       <main className="fn-main">{children}</main>
-      <nav className="dz-desktop-bottom" aria-label="업무 이동">
-        <TopMenu items={MENU} />
-      </nav>
       {/*
-        ★폰 하단 — 다섯 기능(상품 · 접수 · 계약 · 실적 · 정산). 위 띠에는 이동 버튼을 두지 않는다
+        ★폰 하단 — 다섯 기능(상품 · 접수 · 계약 · 실적 · 정산). 모바일 위 띠에는 이동 버튼을 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
         depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
       */}

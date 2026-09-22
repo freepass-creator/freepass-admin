@@ -21,14 +21,17 @@ test('admin root enters the real product workspace and contains no demo runtime'
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
+test('admin chrome exposes web top navigation and mobile bottom navigation without a legacy left rail',()=>{
   assert.ok(chrome.includes("['/products', '상품찾기']"));
   assert.ok(chrome.includes("['/intake', '계약접수']"));
   assert.ok(chrome.includes("['/esign', '전자계약']"));
   assert.ok(chrome.includes("['/intake?scope=performance&iv=all&v=work', '실적관리']"));
   assert.ok(chrome.includes("['/settlement', '정산관리']"));
   assert.ok(chrome.includes('<MobileTabBar />'));
-  assert.ok(chrome.includes('dz-desktop-bottom'));
+  assert.ok(chrome.includes('<TopMenu items={MENU} />'));
+  assert.ok(css.includes('header.dz-statusbar .dz-menu'));
+  assert.ok(css.includes('header.dz-statusbar .dz-menu { display: none; }'));
+  assert.equal(chrome.includes('dz-desktop-bottom'),false);
   assert.equal(chrome.includes('className="rail"'),false);
 });
 

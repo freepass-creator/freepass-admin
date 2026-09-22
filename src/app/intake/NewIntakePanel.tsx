@@ -50,7 +50,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   return (
     <>
       {/* 폰 — 접수 목록(탭 홈)으로 뒤로. §14 개정 「하단은 홈 + 그 판 걸음」 — 이 판은 접수 tab 의 depth1 */}
-      <PanelHeader title="신규 접수" backHref={back} backLabel="접수 목록으로" />
+      <PanelHeader title="신규 계약접수" backHref={back} backLabel="접수 목록으로" />
       {product ? (
         /* ★차 골라 접수 — 차 · 기간 · 값 · 수수료는 이미 정해졌다(읽기). 바꾸려면 가운데 상세에서 기간을 다시 골라 「이 상품 접수하기」 */
         <div className="dz-picked">

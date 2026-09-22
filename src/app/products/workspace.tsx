@@ -247,7 +247,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
-          <PanelHeader title="상품 목록" count={`${sorted.length.toLocaleString()}대`} />
+          <PanelHeader title="상품찾기" count={`${sorted.length.toLocaleString()}대`} />
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).

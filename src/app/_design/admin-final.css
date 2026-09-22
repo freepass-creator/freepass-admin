@@ -383,7 +383,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   /* depth 1·2 — 다섯 걸음 바 대신 그 판의 하단바(§14-3)가 화면 맨 아래에 선다. 아래 띠는 safe-area 만 남긴다 */
   body:has(.workspace[data-phone="detail"]),
   body:has(.workspace[data-mode="settle"][data-phone="work"]),
-  body:has(.workspace[data-mode="intake"][data-phone="work"] .work-panel .dz-phone-back) {
+  body:has(.workspace[data-phone="work"] .work-panel .dz-phone-back) {
     --아래띠: env(safe-area-inset-bottom);
   }
   .dz-tabbar {
@@ -399,7 +399,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   .dz-tabbar a.on { color: var(--ci스카이); font-weight: 600; }
   body:has(.workspace[data-phone="detail"]) .dz-tabbar,
   body:has(.workspace[data-mode="settle"][data-phone="work"]) .dz-tabbar,
-  body:has(.workspace[data-mode="intake"][data-phone="work"] .work-panel .dz-phone-back) .dz-tabbar {
+  body:has(.workspace[data-phone="work"] .work-panel .dz-phone-back) .dz-tabbar {
     display: none;
   }
   /* 쪽 밑이 아래 띠에 안 가리게(depth0 이 아니면 --아래띠 가 이미 safe-area 로 줄어 있다) */
@@ -603,6 +603,43 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   body:has(> .dz-statusbar) { padding-bottom: 0; }
   body:has(> .dz-statusbar) .fn-main .workspace { height: calc(100dvh - var(--ui-shell-h)); }
   .dz-desktop-bottom { display: none; }
+
+  /* 승인 웹 목업의 세 판 밀도: 사진 138, 짧은 탭, 12 간격, 44 컨트롤. */
+  .fn-main .workspace .detail-panel .tabs {
+    min-height: 32px; margin: 0 0 10px; gap: 4px;
+  }
+  .fn-main .workspace .detail-panel .tabs button {
+    height: 32px; padding: 0 11px; font-size: 12px;
+  }
+  .fn-main .workspace .dz-gal-main {
+    height: 138px; aspect-ratio: auto; border-radius: var(--ui-card-radius);
+  }
+  .fn-main .workspace .dz-gal.many { grid-template-columns: minmax(0, 1fr) 54px; gap: 6px; }
+  .fn-main .workspace .dz-gal-thumbs button { border-radius: 8px; }
+  .fn-main .workspace .vehicle-title { padding: 12px 0 8px; }
+  .fn-main .workspace .vehicle-title h2 { margin-bottom: 3px; font-size: 17px; }
+  .fn-main .workspace .summary-grid { margin-top: 8px; }
+  .fn-main .workspace .summary-grid > div { padding: 9px 10px; }
+  .fn-main .workspace .offer-picker { padding-top: 10px; }
+  .fn-main .workspace .offer-block { margin-top: 8px; padding: 12px; }
+
+  .fn-main .workspace .work-panel > .panel-head {
+    position: sticky; top: -16px; margin: -16px -16px 10px; padding: 16px 16px 0;
+    background: var(--ui-panel-ground);
+  }
+  .fn-main .workspace .dz-picked { margin-bottom: 10px; padding: 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow); }
+  .fn-main .workspace .dz-picked-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+  .fn-main .workspace .dz-picked-grid > div { padding: 7px 8px; background: var(--ui-panel-ground); }
+  .fn-main .workspace .dz-picked-grid dt { font-size: 11px; }
+  .fn-main .workspace .dz-picked-grid dd { font-size: 12px; }
+  .fn-main .workspace .dz-picked-note { font-size: 11px; }
+  .fn-main .workspace .dz-intake-form { gap: 8px; }
+  .fn-main .workspace .dz-form-group { padding: 10px 12px; background: #eceff2; }
+  .fn-main .workspace .dz-form-group > legend { margin-bottom: 6px; font-size: 13px; }
+  .fn-main .workspace .dz-form-grid { gap: 8px; }
+  .fn-main .workspace .dz-form-grid label,
+  .fn-main .workspace .dz-intake-form label { font-size: 12px; }
+  .fn-main .workspace .dz-form-more > summary { font-size: 13px; }
 }
 
 @media (max-width: 900px) {
@@ -630,4 +667,8 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   .fn-main .workspace .dz-row-body { height: 64px; }
   .fn-main .workspace .dz-row-l1 { flex-wrap: nowrap; }
   .fn-main .workspace .dz-row-l1 > b { flex: 1 1 auto; }
+  .fn-main .workspace .dz-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .fn-main .workspace .dz-gal-main { height: 180px; aspect-ratio: auto; border-radius: var(--ui-card-radius); }
+  .fn-main .workspace .detail-panel .tabs { min-height: 44px; margin: 0 0 10px; }
+  .fn-main .workspace .vehicle-title { padding: 12px 0 8px; }
 }

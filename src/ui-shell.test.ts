@@ -22,11 +22,11 @@ test('admin root enters the real product workspace and contains no demo runtime'
 });
 
 test('admin chrome exposes web top navigation and mobile bottom navigation without a legacy left rail',()=>{
-  assert.ok(chrome.includes("['/products', '상품찾기']"));
-  assert.ok(chrome.includes("['/intake', '계약접수']"));
-  assert.ok(chrome.includes("['/esign', '전자계약']"));
-  assert.ok(chrome.includes("['/intake?scope=performance&iv=all&v=work', '실적관리']"));
-  assert.ok(chrome.includes("['/settlement', '정산관리']"));
+  assert.ok(chrome.includes("['/products', '상품']"));
+  assert.ok(chrome.includes("['/intake', '접수']"));
+  assert.ok(chrome.includes("['/esign', '계약']"));
+  assert.ok(chrome.includes("['/intake?scope=performance&iv=all&v=work', '실적']"));
+  assert.ok(chrome.includes("['/settlement', '정산']"));
   assert.ok(chrome.includes('<MobileTabBar />'));
   assert.ok(chrome.includes('<TopMenu items={MENU} />'));
   assert.ok(css.includes('header.dz-statusbar .dz-menu'));

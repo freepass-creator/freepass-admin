@@ -37,6 +37,7 @@ export function StatusTile({ s }: { s: RowStatus }) {
 
 /** 접수·실적 한 칸 — 끝 · 취소는 제 그림, 할 일이 남았으면(act) 기다림 */
 const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
+  if (/무심사/.test(text)) return { icon: 'shield-check' as const, good: true };
   const s = 신원(text);
   return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };

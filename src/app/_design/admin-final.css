@@ -704,6 +704,28 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
     min-width: 0;
   }
   .fn-main .workspace[data-mode="find"] .dz-row { width: 100%; min-width: 0; }
+  .fn-main .workspace > .panel > .dz-listtop {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+  .fn-main .workspace .dz-find { height: 44px; }
+  .fn-main .workspace .dz-fs-open {
+    top: 2px; right: 0; width: 40px; height: 40px; padding: 0;
+    display: grid; place-items: center; border-radius: 6px;
+  }
+  .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 44px; }
+  .fn-main .workspace .dz-row {
+    display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center;
+  }
+  .fn-main .workspace .dz-row-body {
+    height: auto; min-height: 78px; display: grid; align-content: center; gap: 5px;
+    justify-content: initial;
+  }
+  .fn-main .workspace .dz-row .dz-badge {
+    height: auto; padding: 0; border-radius: 0; background: transparent;
+    font-size: 11px; font-weight: 600; line-height: 1.45;
+  }
+  .fn-main .workspace .dz-row .dz-badge.good { color: #15803d; }
   header.fn-top.dz-statusbar {
     position: absolute; inset: 0 0 auto; z-index: 20; height: 0; padding: 0; overflow: visible;
     background: transparent; color: var(--글); border: 0;

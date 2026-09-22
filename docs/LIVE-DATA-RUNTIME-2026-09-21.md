@@ -35,9 +35,11 @@ No runtime mock/fixture fallback is permitted on these routes.
 
 Read:
 - `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` for hosted runtime, or
-- `ERP5_SERVICE_ACCOUNT_PATH` for local development.
+- `ERP5_SERVICE_ACCOUNT_PATH` for local development, or
+- Google Application Default Credentials for local development (`gcloud auth application-default login`).
 
-The credential must have `project_id=freepasserp5`. A different Firebase project fails closed.
+Service-account credentials must have `project_id=freepasserp5`. ADC also pins the Firebase app project to
+`freepasserp5`; it never follows the operator's current gcloud default project.
 
 Write:
 - `ERP5_WRITE=on`

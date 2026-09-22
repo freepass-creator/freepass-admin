@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { applicationDefault, cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 /**
@@ -26,7 +26,7 @@ type Sa = { project_id: string; client_email: string; private_key: string };
  * 자격증명을 찾는 차례 — 배포는 JSON 문자열, 개발은 파일 경로.
  * ⚠ 둘 다 없으면 지어내지 않고 «무엇을 채워야 하는지 이름을 대고» 던진다.
  */
-function credential(): Sa {
+function credential(): Sa | null {
   const raw = process.env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
   const path = process.env.ERP5_SERVICE_ACCOUNT_PATH?.trim();
   let parsed: Partial<Sa>;
@@ -37,10 +37,9 @@ function credential(): Sa {
     try { parsed = JSON.parse(readFileSync(path, 'utf8')) as Partial<Sa>; }
     catch { throw new Error(`ERP5_SERVICE_ACCOUNT_PATH 를 못 읽었다: ${path}`); }
   } else {
-    throw new Error(
-      'ERP5 자격증명이 없다 — ERP5_FIREBASE_SERVICE_ACCOUNT_JSON(배포) 또는 '
-      + 'ERP5_SERVICE_ACCOUNT_PATH(개발) 중 하나를 채워야 한다.',
-    );
+    /* 로컬 개발은 Google Application Default Credentials를 쓸 수 있다.
+     * 프로젝트는 아래 initializeApp에서 freepasserp5로 고정하므로 gcloud 기본 project를 따라가지 않는다. */
+    return null;
   }
   const project_id = String(parsed.project_id ?? '').trim();
   const client_email = String(parsed.client_email ?? '').trim();
@@ -64,8 +63,10 @@ function ensureErp5App(): App {
   if (!app) {
     const sa = credential();
     app = initializeApp({
-      credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
-      projectId: sa.project_id,
+      credential: sa
+        ? cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key })
+        : applicationDefault(),
+      projectId: ERP5_PROJECT_ID,
     }, APP_NAME);
   }
   return app;

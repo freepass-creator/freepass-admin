@@ -257,3 +257,21 @@ export function feeManualErrors(x: IntakeInput, fee: FeeResult): string[] {
   const differs = (m.claim !== null && m.claim !== fee.claim) || (m.pay !== null && m.pay !== fee.pay);
   return differs ? [`수수료표는 ${fee.claim.toLocaleString()}/${fee.pay.toLocaleString()} 입니다 — 다르게 넣으려면 사유를 적어야 합니다`] : [];
 }
+
+/**
+ * 자동 수수료가 성립하지 않으면 0원으로 조용히 접수하지 않는다.
+ * - AUTO: 표대로 저장 가능. 한쪽만 직접 덮어쓰는 것도 기존대로 허용.
+ * - MANUAL / NO_RULE / NO_BASE: 자동으로 채울 값이 없으므로 청구·지급을 둘 다 직접 넣어야 한다.
+ *   NO_BASE는 기준값(차량가액 또는 대여료·기간)을 채우면 AUTO로 돌아갈 수 있다.
+ */
+export function feeCompletenessErrors(x: IntakeInput, fee: FeeResult): string[] {
+  if (fee.status === 'AUTO') return [];
+  const m = x.feeManual;
+  if (m?.claim !== null && m?.claim !== undefined && m?.pay !== null && m?.pay !== undefined) return [];
+
+  if (fee.status === 'NO_BASE') {
+    const basis = fee.rule.basis === '차량가액' ? '차량가액' : '대여료·계약기간';
+    return [`자동 수수료 기준값(${basis})이 없습니다 — 기준값을 입력하거나 청구·지급 수수료를 직접 입력해 주세요`];
+  }
+  return [`${fee.why} — 청구·지급 수수료를 직접 입력해 주세요`];
+}

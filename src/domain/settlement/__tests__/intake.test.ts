@@ -61,7 +61,8 @@ describe('validateIntake — 최초 접수 필수값', () => {
   it('직접 신차 견적/발주는 차량번호 없이도 요청 ID로 접수한다', () => {
     for (const product of ['견적출고', '신차발주']) {
       const e = validateIntake({
-        ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef', product,
+        ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef',
+        product, rentKind: '신차렌트',
       }, '2026-09-18');
       assert.equal(e.some((x) => x.includes('차량번호')), false, product);
       assert.equal(e.some((x) => x.includes('요청 ID')), false, product);
@@ -69,13 +70,27 @@ describe('validateIntake — 최초 접수 필수값', () => {
   });
   it('차량번호 없는 직접 신차 견적/발주는 요청 ID가 없으면 막는다', () => {
     assert.match(validateIntake({
-      ...base, plate: '', sourceProductId: undefined, intakeRequestId: undefined, product: '신차발주',
+      ...base, plate: '', sourceProductId: undefined, intakeRequestId: undefined, product: '신차발주', rentKind: '신차렌트',
     }, '2026-09-18').join(), /요청 ID/);
   });
   it('그 밖 직접접수는 차량번호가 없으면 막는다', () => {
     assert.match(validateIntake({
       ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef', product: '장기렌트',
     }, '2026-09-18').join(), /차량번호/);
+  });
+  it('직접 신차 견적/발주는 렌트구분 신차렌트만 받는다', () => {
+    const e = validateIntake({
+      ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef',
+      product: '견적출고', rentKind: '재렌트',
+    }, '2026-09-18');
+    assert.match(e.join(), /렌트구분은 신차렌트/);
+  });
+  it('차량번호 없는 상태에서는 최초 접수에서도 인도완료를 못 건다', () => {
+    const e = validateIntake({
+      ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef',
+      product: '신차발주', rentKind: '신차렌트', delivered: true, deliveredAt: '2026-09-18',
+    }, '2026-09-18');
+    assert.match(e.join(), /차량번호를 배정한 뒤/);
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));

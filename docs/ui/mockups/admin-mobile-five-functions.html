@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>FreePass Admin · 웹·모바일 5기능 목업</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap">
+  <style>
+    :root {
+      --navy:#1b2a4a; --sky:#9ec5f3; --ground:#f4f5f6; --panel:#fff;
+      --box:#f2f3f5; --picked:#e6ecf5; --ink:#212529; --muted:#5c6268;
+      --line:#eceef0; --control-line:#e1e4e7; --control-bg:#fff; --good:#15803d; --good-bg:#f0fdf4;
+      --card:#fcfcfd; --card-hover:#f6f8fb; --card-selected:#edf3f9;
+      --card-shadow:0 2px 8px rgba(33,37,41,.075),0 1px 2px rgba(33,37,41,.03);
+      --selected-shadow:0 0 0 1px rgba(27,42,74,.055),0 2px 9px rgba(33,37,41,.085);
+      --warn:#9a6700; --warn-bg:#fff7db; --bad:#b42318; --bad-bg:#fff0ee;
+      --radius:4px; --control:40px; --action:44px;
+    }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    html,body { margin:0; min-height:100%; background:#eef0f2; color:var(--ink); font-family:Pretendard,"Malgun Gothic",sans-serif; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; transition:background .16s,color .16s,box-shadow .16s,transform .16s; }
+    button:disabled { cursor:not-allowed; opacity:.45; }
+    .phone { width:min(100%,430px); min-height:100dvh; margin:0 auto; background:var(--ground); position:relative; }
+    .statusbar { height:52px; padding:0 16px; display:flex; align-items:center; gap:10px; background:var(--panel); position:sticky; top:0; z-index:20; }
+    .statusbar > div { min-width:0; flex:1; }
+    .statusbar h1 { margin:0; font-size:18px; line-height:1; }
+    .statusbar h1 span { margin-left:5px; color:var(--muted); font-size:14px; }
+    .statusbar small { color:var(--muted); font-size:12px; }
+    .sync { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--good); font-weight:700; }
+    .sync::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--good); }
+    main { padding:12px 12px calc(76px + env(safe-area-inset-bottom)); }
+    #screen { min-height:calc(100dvh - 52px - 88px); }
+    .panel-head { min-height:32px; display:flex; align-items:flex-start; gap:8px; margin-bottom:12px; }
+    .panel-head h2 { margin:0; font-size:18px; line-height:1.25; }
+    .panel-head span { color:var(--muted); font-size:14px; font-weight:700; }
+    .panel-head p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .search { display:block; margin-bottom:10px; }
+    .search-field { height:44px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--control-line); border-radius:var(--radius); background:var(--control-bg); color:#8a939f; transition:border-color .16s,background .16s,box-shadow .16s; }
+    .search-field:focus-within { border-color:#aeb8c5; background:#fff; box-shadow:0 0 0 3px rgba(27,42,74,.05); }
+    .search-field input { width:100%; border:0; outline:0; color:var(--ink); font-size:16px; background:transparent; }
+    .search-field > svg { flex:none; width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .filter-trigger { flex:none; width:40px; height:40px; padding:0; border:0; border-radius:var(--radius); background:transparent; color:var(--muted); display:grid; place-items:center; }
+    .filter-trigger svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .filter-trigger:hover { background:var(--box); color:var(--navy); }
+    .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
+    .chips::-webkit-scrollbar { display:none; }
+    .chip { height:40px; padding:0 13px; border:0; border-radius:var(--radius); background:var(--box); color:#445064; font-size:13px; white-space:nowrap; }
+    .chip.on { background:var(--navy); color:#fff; font-weight:700; }
+    .list { display:grid; gap:12px; }
+    .row { width:100%; min-height:88px; padding:12px; border:0; border-radius:var(--radius); background:var(--card); color:inherit; text-align:left; display:grid; grid-template-columns:72px minmax(0,1fr); align-items:center; gap:12px; box-shadow:var(--card-shadow); transition:transform .16s,box-shadow .16s,background .16s; }
+    .row:hover { background:var(--card-hover); transform:translateY(-1px); box-shadow:0 4px 12px rgba(33,37,41,.095),0 1px 3px rgba(33,37,41,.035); }
+    .row:active { background:#e7eef6; }
+    .context-card { margin-bottom:10px; }
+    .context-card:hover { background:var(--card); transform:none; box-shadow:var(--card-shadow); }
+    .product-hero { margin-bottom:18px; overflow:hidden; border-radius:var(--sales-card-radius,12px); background:var(--card); box-shadow:var(--card-shadow); }
+    .product-photo { position:relative; height:180px; display:grid; place-items:center; overflow:hidden; background:linear-gradient(145deg,#e8edf2,#f8fafb); }
+    .product-photo svg { width:min(82%,300px); height:auto; }
+    .photo-count { position:absolute; right:10px; bottom:10px; padding:4px 8px; border-radius:999px; background:rgba(33,37,41,.72); color:#fff; font-size:var(--sales-meta,11px); line-height:1; }
+    .product-hero-body { padding:12px; }
+    .product-hero-title { display:flex; align-items:center; gap:6px; }
+    .product-hero-title h3 { margin:0; font-size:var(--sales-head,17px); font-weight:650; line-height:var(--sales-leading-head,1.25); letter-spacing:-.03em; }
+    .product-hero-body > p { margin:4px 0 0; color:var(--muted); font-size:var(--sales-support,12px); line-height:1.5; }
+    .product-rent { margin-top:10px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .product-rent span { color:var(--muted); font-size:var(--sales-meta,11px); }
+    .product-rent strong { color:var(--navy); font-size:var(--sales-head,17px); font-weight:650; }
+    .quick-specs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+    .quick-specs span { padding:8px 6px; border-radius:8px; background:var(--box); color:#4f5965; font-size:var(--sales-support,12px); text-align:center; }
+    .thumb { width:72px; aspect-ratio:4/3; border-radius:10px; background:linear-gradient(145deg,#edf1f5,#f9fafb); display:grid; place-items:center; color:#667386; font-size:11px; font-weight:650; line-height:1; text-align:center; overflow:hidden; }
+    .thumb.car::before { content:""; width:54px; height:22px; border-radius:13px 16px 6px 6px; background:linear-gradient(135deg,#40516b,#1b2a4a); box-shadow:0 16px 0 -7px #9aa6b5; }
+    .row-body { min-width:0; display:grid; align-content:center; gap:5px; }
+    .row-title { display:flex; align-items:center; gap:6px; min-width:0; }
+    .row-title b { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .meta,.sub { color:var(--muted); font-size:12px; line-height:1.3; }
+    .value { font-size:14px; font-weight:800; color:var(--navy); }
+    .tag { display:inline-flex; align-items:center; width:max-content; padding:5px 9px; border-radius:8px; background:#eaeef2; color:#525c68; font-size:12px; font-weight:700; }
+    .tag.good { background:var(--good-bg); color:var(--good); }
+    .tag.warn { background:var(--warn-bg); color:var(--warn); }
+    .tag.bad { background:var(--bad-bg); color:var(--bad); }
+    .identity { padding:14px; margin-bottom:10px; background:var(--card); border-radius:var(--radius); box-shadow:var(--card-shadow); }
+    .identity h3 { margin:0 0 4px; font-size:18px; }
+    .identity p { margin:0; color:var(--muted); font-size:12px; }
+    .money { margin-top:10px; color:var(--navy); font-size:20px; font-weight:900; }
+    .summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+    .summary div { min-height:66px; padding:10px; background:var(--card); border-radius:var(--radius); box-shadow:var(--card-shadow); }
+    .summary small { display:block; margin-bottom:5px; color:var(--muted); font-size:12px; }
+    .summary b { font-size:14px; }
+    .section { margin-top:18px; padding-top:0; }
+    .section h4 { margin:0 0 9px; font-size:14px; }
+    .facts { display:grid; gap:8px; padding:12px; border-radius:var(--sales-card-radius,12px); background:var(--card); box-shadow:var(--card-shadow); }
+    .fact { display:flex; justify-content:space-between; gap:14px; font-size:13px; }
+    .fact span { color:var(--muted); }
+    .fact b { text-align:right; }
+    .offer { width:100%; padding:12px; border:0; border-radius:var(--radius); background:var(--card); color:inherit; text-align:left; display:grid; gap:5px; box-shadow:var(--card-shadow); transition:transform .16s,background .16s,box-shadow .16s; }
+    .offer:hover { background:var(--card-hover); transform:translateY(-1px); }
+    .offer + .offer { margin-top:8px; }
+    .offer.on { background:var(--card-selected); box-shadow:var(--selected-shadow); }
+    .offer strong { font-size:14px; }
+    .offer small { color:var(--muted); font-size:12px; }
+    .form { display:grid; gap:10px; }
+    .form label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
+    .form input,.form select { height:40px; padding:0 11px; border:1px solid var(--control-line); border-radius:var(--radius); background:var(--control-bg); color:var(--ink); font-size:16px; outline:0; transition:border-color .16s,background .16s,box-shadow .16s; }
+    .form input:focus,.form select:focus { border-color:#aeb8c5; background:#fff; box-shadow:0 0 0 3px rgba(27,42,74,.05); }
+    .timeline { display:grid; gap:8px; }
+    .step { display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; min-height:44px; padding:8px 10px; background:var(--box); border-radius:var(--radius); font-size:13px; }
+    .step i { width:18px; height:18px; border-radius:50%; background:#cbd3dc; color:#fff; font-style:normal; display:grid; place-items:center; font-size:11px; }
+    .step.done i { background:var(--good); }
+    .step small { color:var(--muted); }
+    .notice { padding:10px; border-radius:var(--radius); background:var(--warn-bg); color:#725000; font-size:12px; line-height:1.5; }
+    .bottom-nav,.actionbar { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,430px); z-index:30; padding-bottom:env(safe-area-inset-bottom); }
+    .bottom-nav { height:calc(60px + env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); padding:0 4px env(safe-area-inset-bottom); background:var(--panel); box-shadow:0 -2px 8px rgba(15,23,42,.05); }
+    .bottom-nav button { height:100%; padding:0 2px; border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:500; }
+    .bottom-nav button.on { color:var(--navy); font-weight:700; }
+    .bottom-nav svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.9; }
+    .bottom-nav button.on svg { fill:rgba(27,42,74,.12); }
+    .actionbar { min-height:calc(68px + env(safe-area-inset-bottom)); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:var(--ground); display:grid; grid-template-columns:3fr 7fr; gap:8px; }
+    .actionbar.three { grid-template-columns:3fr 3fr 4fr; }
+    .actionbar button { min-height:44px; border:0; border-radius:var(--radius); font-size:14px; font-weight:800; }
+    .primary { background:var(--navy); color:#fff; box-shadow:0 2px 6px rgba(27,42,74,.18); }
+    .primary:hover { background:#14223f; box-shadow:0 4px 10px rgba(27,42,74,.22); }
+    .primary:active { background:#0f1b35; transform:translateY(1px); box-shadow:0 1px 3px rgba(27,42,74,.18); }
+    .secondary { background:#e6ecf5; color:var(--navy); }
+    .secondary:hover { background:#dce5f0; }
+    .secondary:active { background:#d2deeb; transform:translateY(1px); }
+    .tertiary { background:#eceff2; color:#4f5965; }
+    .tertiary:hover { background:#e3e7eb; color:var(--ink); }
+    .tertiary:active { background:#dbe0e5; transform:translateY(1px); }
+    .sheet-wrap { position:fixed; inset:0; z-index:60; display:grid; align-items:end; }
+    .scrim { position:absolute; inset:0; border:0; background:rgba(15,23,42,.42); }
+    .sheet { position:relative; width:min(100%,430px); margin:0 auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); background:#fff; border-radius:12px 12px 0 0; box-shadow:0 -8px 30px rgba(15,23,42,.18); }
+    .sheet-head { display:flex; align-items:center; justify-content:space-between; min-height:44px; margin-bottom:4px; }
+    .sheet-head h3 { margin:0; font-size:17px; }
+    .sheet-head button { width:44px; height:44px; border:0; background:transparent; font-size:22px; }
+    .filter-body { height:280px; display:grid; grid-template-columns:116px 1fr; }
+    .filter-axes { padding:4px 0; overflow:auto; background:var(--box); }
+    .filter-axes button { width:100%; min-height:50px; padding:0 12px; border:0; background:transparent; color:var(--muted); text-align:left; font-size:13px; }
+    .filter-axes button.on { background:#fff; color:var(--navy); font-weight:800; }
+    .filter-values { padding:12px 16px; overflow:auto; }
+    .filter-values strong { display:block; min-height:32px; font-size:13px; }
+    .filter-values label { min-height:44px; display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; font-size:13px; }
+    .filter-values small { color:var(--muted); font-variant-numeric:tabular-nums; }
+    .sheet-actions { display:grid; grid-template-columns:3fr 7fr; gap:8px; }
+    .sheet-actions button { min-height:44px; border:0; border-radius:var(--radius); font-weight:800; }
+    .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:13px; }
+    /* FreePass Sales 운영 규격: 웹/app.css의 타이포·간격·컨트롤 토큰만 공유한다. */
+    :root {
+      --sales-head:17px; --sales-title:14px; --sales-body:13px;
+      --sales-support:12px; --sales-meta:11px; --sales-tiny:10px;
+      --sales-control-font:14px; --sales-control:44px; --sales-small:32px;
+      --sales-space:14px; --sales-gap:8px; --sales-control-radius:6px;
+      --sales-card-radius:12px; --sales-tag-radius:8px;
+      --sales-card-inset:12px; --sales-control-inset:12px;
+      --sales-leading-head:1.25; --sales-leading-title:1.4;
+      --sales-leading-body:1.55; --sales-leading-support:1.5; --sales-leading-meta:1.45;
+    }
+    html,body { font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; line-height:1.55; letter-spacing:-.012em; font-variant-numeric:tabular-nums; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
+    .statusbar { height:60px; padding:8px 16px 10px; }
+    .statusbar h1 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
+    .statusbar h1 span { font-size:var(--sales-title); font-weight:650; }
+    .statusbar small,.sync { font-size:var(--sales-meta); }
+    main { padding:var(--sales-space) 16px calc(76px + env(safe-area-inset-bottom)); }
+    #screen { min-height:calc(100dvh - 60px - 88px); }
+    .search { gap:var(--sales-gap); margin-bottom:var(--sales-gap); }
+    .search-field { height:var(--sales-control); border-radius:var(--sales-control-radius); }
+    .search-field { padding-inline:var(--sales-control-inset); }
+    .search-field input { font-size:var(--sales-control-font); line-height:1; }
+    .chips { gap:6px; margin-bottom:var(--sales-space); }
+    .chip { height:40px; padding:0 12px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--sales-control-radius); font-size:var(--sales-body); font-weight:500; line-height:1; }
+    .chip:hover { background:#e9edf2; color:var(--ink); }
+    .chip.on { background:var(--picked); color:var(--navy); font-weight:650; box-shadow:inset 0 0 0 1px rgba(27,42,74,.05); }
+    .list { gap:12px; }
+    .row { padding:var(--sales-card-inset); border:0; border-radius:var(--sales-card-radius); background:var(--card); }
+    .row:active { background:#f2f3f5; }
+    .row-title b,.offer strong,.summary b { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
+    .meta,.sub,.offer small,.identity p,.fact,.notice { font-size:var(--sales-support); line-height:var(--sales-leading-support); }
+    .value { font-size:var(--sales-body); font-weight:650; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
+    .tag { padding:0; border-radius:0; background:transparent; font-size:var(--sales-meta); font-weight:600; line-height:var(--sales-leading-meta); letter-spacing:0; }
+    .tag.good,.tag.warn,.tag.bad { background:transparent; }
+    .identity,.summary div,.offer,.step { padding:var(--sales-card-inset); border-radius:var(--sales-card-radius); }
+    .offer.on { background:var(--card-selected); box-shadow:var(--selected-shadow); }
+    .identity h3 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
+    .money { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.02em; }
+    .section h4 { font-size:var(--sales-title); font-weight:600; line-height:var(--sales-leading-title); letter-spacing:-.01em; }
+    .form { gap:var(--sales-gap); }
+    .form label { gap:6px; font-size:var(--sales-support); font-weight:500; }
+    .form input,.form select { height:var(--sales-control); padding-inline:var(--sales-control-inset); border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); line-height:1.4; }
+    .step { min-height:var(--sales-control); font-size:var(--sales-body); line-height:var(--sales-leading-body); }
+    .bottom-nav button { font-size:var(--sales-tiny); font-weight:500; }
+    .actionbar,.sheet-actions,.web-actions { gap:var(--sales-gap); }
+    .actionbar button,.sheet-actions button,.web-actions button { min-height:var(--sales-control); padding:0 14px; border-radius:var(--sales-control-radius); font-size:var(--sales-control-font); font-weight:650; line-height:1; }
+    .sheet { border-radius:18px 18px 0 0; }
+    .sheet-head h3 { font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
+    .filter-axes button,.filter-values strong,.filter-values label { font-size:var(--sales-body); }
+    .desktop { display:none; }
+    @media (min-width:901px) {
+      html,body { height:100%; overflow:hidden; background:var(--ground); }
+      .phone { display:none; }
+      .desktop { display:grid; grid-template-rows:56px 1fr; height:100vh; }
+      .web-top { display:grid; grid-template-columns:220px 1fr auto; align-items:center; gap:20px; padding:0 20px; background:var(--navy); color:#fff; }
+      .web-brand { font-family:"Exo 2","Pretendard Variable",sans-serif; font-size:var(--sales-head); font-weight:600; letter-spacing:-.02em; }
+      .web-brand small { margin-left:7px; color:#b8c4d8; font-size:var(--sales-meta); font-weight:500; }
+      .web-nav { height:100%; display:flex; align-items:center; justify-content:center; gap:2px; }
+      .web-nav button { height:36px; padding:0 16px; border:0; border-radius:var(--sales-control-radius); background:transparent; color:#b8c4d8; font-size:var(--sales-body); font-weight:600; line-height:1; }
+      .web-nav button.on { background:#fff; color:var(--navy); }
+      .web-sync { color:#b9f5ca; }
+      .web-workspace { min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:8px; background:#eef0f2; }
+      .web-panel { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:16px; background:var(--ground); font-size:var(--sales-body); }
+      .web-panel-head { flex:none; min-height:44px; display:flex; align-items:baseline; gap:6px; }
+      .web-panel-head h2 { margin:0; font-size:var(--sales-head); font-weight:650; line-height:var(--sales-leading-head); letter-spacing:-.03em; }
+      .web-panel-head span { color:var(--navy); font-size:var(--sales-title); font-weight:650; }
+      .web-panel-head small { color:var(--muted); font-size:var(--sales-meta); }
+      .web-panel-head small { margin-left:auto; }
+      .web-scroll { min-height:0; flex:1; overflow:auto; padding-right:2px; }
+      .web-panel .search { margin-bottom:8px; }
+      .web-panel .search-field { height:var(--sales-control); }
+      .web-panel .chip { height:var(--sales-small); padding:0 11px; font-size:var(--sales-support); }
+      .web-panel .row { min-height:80px; grid-template-columns:64px minmax(0,1fr); padding:var(--sales-card-inset); }
+      .web-panel .thumb { width:64px; height:48px; }
+      .web-panel .thumb.car::before { width:48px; }
+      .web-panel .product-photo { height:138px; }
+      .web-panel .row.selected { background:var(--card-selected); transform:none; box-shadow:var(--selected-shadow); }
+      .web-panel .row.selected:hover { background:#e8f0f8; transform:none; box-shadow:var(--selected-shadow); }
+      .web-panel .row.selected .row-title b { font-weight:650; }
+      .web-panel .identity { margin-top:0; }
+      .web-actions { flex:none; display:grid; grid-template-columns:3fr 7fr; gap:8px; padding-top:12px; background:var(--ground); }
+      .web-actions.three { grid-template-columns:3fr 3fr 4fr; }
+      .web-actions button { border:0; }
+      .web-placeholder { height:100%; min-height:220px; display:grid; place-items:center; padding:24px; background:var(--box); color:var(--muted); text-align:center; font-size:13px; line-height:1.6; }
+      .sheet { width:min(640px,calc(100% - 32px)); }
+      .filter-body { height:360px; grid-template-columns:140px 1fr; }
+    }
+    :focus-visible { outline:2px solid var(--navy); outline-offset:2px; }
+  </style>
+</head>
+<body>
+<div class="phone">
+  <header class="statusbar" id="status"></header>
+  <main><section id="screen"></section></main>
+  <nav class="bottom-nav" id="nav" aria-label="주요 업무"></nav>
+  <div class="actionbar" id="actions" hidden></div>
+  <div class="sheet-wrap" id="filterSheet" hidden></div>
+</div>
+<div class="desktop">
+  <header class="web-top">
+    <div class="web-brand">FreePass Admin <small>업무 한 판</small></div>
+    <nav class="web-nav" id="webNav" aria-label="주요 업무"></nav>
+    <span class="sync web-sync">연결 정상</span>
+  </header>
+  <main class="web-workspace">
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webListTitle"></h2><span id="webCount"></span><small id="webListState"></small></header>
+      <div class="web-scroll" id="webList"></div>
+    </section>
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webDetailTitle">상세</h2><small id="webDetailState"></small></header>
+      <div class="web-scroll" id="webDetail"></div>
+      <div class="web-actions" id="webDetailActions"></div>
+    </section>
+    <section class="web-panel">
+      <header class="web-panel-head"><h2 id="webWorkTitle">현재 업무</h2><small id="webWorkState"></small></header>
+      <div class="web-scroll" id="webWork"></div>
+      <div class="web-actions" id="webWorkActions"></div>
+    </section>
+  </main>
+</div>
+<script>
+const ICONS={
+  product:'<path d="M4 7h16v12H4z"/><path d="M7 7V4h10v3M8 12h8"/>',
+  intake:'<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  contract:'<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h5M8 13h8M8 17h6"/>',
+  performance:'<path d="M4 19V9M10 19V5M16 19v-7M3 19h18"/>',
+  settlement:'<path d="M4 6h16v12H4z"/><path d="M4 10h16M8 15h3"/>'
+};
+const TOOL_ICONS={
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  filter:'<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>'
+};
+const LABEL={product:'상품',intake:'접수',contract:'계약',performance:'실적',settlement:'정산'};
+const state={module:'product',depth:0,selected:null,offer:'o36',filter:'전체',toast:''};
+const data={
+ product:[
+  {id:'p1',title:'싼타페 MX5 캘리그래피',meta:'B렌터카 · 즉시출고',value:'36개월 · 월 920,000원',tag:'무보증',tone:'good'},
+  {id:'p2',title:'더 뉴 K5 DL3 노블레스',meta:'C렌터카 · 차량번호 보유',value:'24개월 · 월 780,000원',tag:'카드결제',tone:''},
+  {id:'p3',title:'쏘나타 디 엣지',meta:'A렌터카 · 세부트림 미확인',value:'36개월 · 월 690,000원',tag:'21세 가능',tone:'warn'}],
+ intake:[
+  {id:'a1',title:'김민수 · 싼타페 MX5',meta:'A-260921-014 · 오토채널 · 박지훈',value:'계약 진행 중',tag:'서류 대기',tone:'warn'},
+  {id:'a2',title:'이서연 · 더 뉴 K5',meta:'A-260921-013 · 제휴영업 · 최유진',value:'접수 완료',tag:'계약 대기',tone:''},
+  {id:'a3',title:'정우진 · GV80',meta:'A-260920-041 · 직영 · 박지훈',value:'인도 완료',tag:'실적 생성',tone:'good'}],
+ contract:[
+  {id:'c1',title:'김민수 · 싼타페 MX5',meta:'E-260921-041 · 14:32 발송',value:'고객 서명 대기',tag:'발송',tone:'warn'},
+  {id:'c2',title:'이서연 · 더 뉴 K5',meta:'E-260921-040 · 제출 13:18',value:'관리자 검토 대기',tag:'검토',tone:'warn'},
+  {id:'c3',title:'정우진 · GV80',meta:'E-260920-122 · 완료 09:11',value:'계약 완료',tag:'봉인 완료',tone:'good'}],
+ performance:[
+  {id:'r1',title:'정우진 · GV80',meta:'P-260920-031 · D렌터카 · 직영',value:'마진 310,000원',tag:'공급사 확인',tone:'warn'},
+  {id:'r2',title:'한지우 · 쏘나타',meta:'P-260919-028 · A렌터카 · 오토채널',value:'마진 190,000원',tag:'완료',tone:'good'},
+  {id:'r3',title:'박서준 · K5',meta:'P-260918-017 · C렌터카 · 제휴영업',value:'마진 확인 필요',tag:'이슈',tone:'bad'}],
+ settlement:[
+  {id:'s1',title:'D렌터카 · 2026년 9월',meta:'실적 12건 · 청구 8건',value:'미수 3,240,000원',tag:'수금 대기',tone:'warn'},
+  {id:'s2',title:'오토채널 · 2026년 9월',meta:'지급 대상 7건',value:'미지급 2,030,000원',tag:'지급 대기',tone:'warn'},
+  {id:'s3',title:'A렌터카 · 2026년 8월',meta:'실적 18건 · 전액 수금',value:'마감 완료',tag:'완료',tone:'good'}]
+};
+const $=s=>document.querySelector(s);
+function icon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`}
+function toolIcon(k){return `<svg viewBox="0 0 24 24" aria-hidden="true">${TOOL_ICONS[k]}</svg>`}
+/* 기존 Admin 상품 목업의 검증된 차량 이미지 자리 컴포넌트를 재사용한다. */
+function carSvg(body='#263954'){return `<svg viewBox="0 0 168 78" role="img" aria-label="차량 대표사진"><ellipse cx="84" cy="70" rx="70" ry="4.5" fill="rgba(0,0,0,.09)"/><path d="M8 56V45c0-6 4-9 12-10.5L44 31c8-11 19-15 35-15h29c14 0 23 4 31 14l14 6c6 2 8 5 8 11v9Z" fill="${body}" stroke="rgba(0,0,0,.14)"/><path d="M50 31c7-9 15-12 28-12h7v13Z" fill="#8c99a3" opacity=".82"/><path d="M91 19h16c11 0 17 3 22 11l-38 2Z" fill="#8c99a3" opacity=".82"/><rect x="8" y="44" width="6" height="5" rx="2.5" fill="#fff0cf"/><circle cx="46" cy="56" r="12.5" fill="#1b2126"/><circle cx="46" cy="56" r="4.8" fill="#aeb7be"/><circle cx="129" cy="56" r="12.5" fill="#1b2126"/><circle cx="129" cy="56" r="4.8" fill="#aeb7be"/></svg>`}
+function current(){return data[state.module].find(x=>x.id===state.selected)||data[state.module][0]}
+function status(){
+  const homeTitle={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
+  const detailTitle={product:'상품 상세',intake:'접수 상세',contract:'전자계약 상세',performance:'실적 상세',settlement:'정산 상세'};
+  const title=state.depth===2?'신규 계약접수':(state.depth?detailTitle[state.module]:homeTitle[state.module]);
+  const homeState={product:['3대','판매 가능'],intake:['3건','할 일 2건'],contract:['3건','서명·검토 대기 2건'],performance:['3건','확인 필요 2건'],settlement:['3건','미수·미지급 2건']};
+  const detailState={product:'즉시출고 · Offer 선택',intake:'진행 중 · 다음 계약',contract:'고객 서명 대기',performance:'공급사 확인 중',settlement:'수금 대기'};
+  const count=state.depth?'':`<span>${homeState[state.module][0]}</span>`;
+  const sub=state.depth===2?'작성 중 · Snapshot 저장 전':(state.depth?detailState[state.module]:homeState[state.module][1]);
+  $('#status').innerHTML=`<div><h1>${title}${count}</h1><small>${sub}</small></div><span class="sync">연결 정상</span>`;
+}
+function nav(){
+  $('#nav').hidden=!!state.depth;
+  $('#nav').innerHTML=Object.keys(LABEL).map(k=>`<button data-k="${k}" class="${state.module===k?'on':''}">${icon(k)}<span>${LABEL[k]}</span></button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.module=b.dataset.k;state.depth=0;state.selected=null;render()});
+}
+function list(prefix=''){
+ const placeholders={product:'차량·공급사·조건 검색',intake:'고객·차량·접수번호 검색',contract:'고객·계약번호 검색',performance:'고객·차량번호·공급사 검색',settlement:'공급사·채널·정산월 검색'};
+ const chips={product:['전체','무보증','21세','즉시출고'],intake:['전체','할 일','진행 중','인도 완료'],contract:['전체','발송 대기','서명 대기','검토'],performance:['전체','할 일','이슈','완료'],settlement:['전체','청구','수금','지급']}[state.module];
+ return `<div class="search"><div class="search-field">${toolIcon('search')}<input aria-label="검색" placeholder="${placeholders[state.module]}"><button class="filter-trigger openFilter" id="${prefix}openFilter" aria-haspopup="dialog" aria-label="세부필터">${toolIcon('filter')}</button></div></div>
+ <div class="chips">${chips.map(x=>`<button class="chip ${state.filter===x?'on':''}" data-filter="${x}">${x}</button>`).join('')}</div>
+ <div class="list">${data[state.module].map(row).join('')}</div>`;
+}
+function cardBody(x){return `<span class="thumb ${state.module==='product'?'car':''}">${state.module==='product'?'':LABEL[state.module]}</span><span class="row-body"><span class="row-title"><b>${x.title}</b><span class="tag ${x.tone}">${x.tag}</span></span><span class="meta">${x.meta}</span><span class="value">${x.value}</span></span>`}
+function row(x){return `<button class="row" data-id="${x.id}">${cardBody(x)}</button>`}
+function contextCard(x){return `<article class="row context-card" aria-label="선택 상품">${cardBody(x)}</article>`}
+function productHero(x){return `<article class="product-hero"><div class="product-photo">${carSvg()}<span class="photo-count">대표사진 · 1/6</span></div><div class="product-hero-body"><div class="product-hero-title"><h3>${x.title}</h3><span class="tag ${x.tone}">${x.tag}</span></div><p>${x.meta}</p><div class="product-rent"><span>선택 대여료</span><strong>월 920,000원</strong></div><div class="quick-specs"><span>하이브리드</span><span>2WD</span><span>5인승</span></div></div></article>`}
+function detail(){return ({product:productDetail,intake:intakeDetail,contract:contractDetail,performance:performanceDetail,settlement:settlementDetail}[state.module])()}
+function productDetail(){const x=current();return `${productHero(x)}<div class="section"><h4>계약조건 선택</h4><button class="offer ${state.offer==='o24'?'on':''}" data-offer="o24"><strong>24개월 · 월 990,000원</strong><small>보증금 1,000,000원 · 연 20,000km · 카드결제</small></button><button class="offer ${state.offer==='o36'?'on':''}" data-offer="o36"><strong>36개월 · 월 920,000원</strong><small>무보증 · 연 20,000km · 만 21세 · 카드결제</small></button></div><div class="section"><h4>차량 정보</h4><div class="facts"><div class="fact"><span>차량</span><b>싼타페 MX5 캘리그래피</b></div><div class="fact"><span>연료 / 구동</span><b>하이브리드 / 2WD</b></div><div class="fact"><span>승차 / 연식</span><b>5인승 / 2025년형</b></div><div class="fact"><span>공급사</span><b>B렌터카</b></div></div></div>`}
+function intakeDetail(){const x=current();return `<div class="identity"><span class="tag warn">진행 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">월 920,000원</div></div><div class="section"><h4>진행 사실</h4><div class="timeline"><div class="step done"><i>✓</i><b>접수 완료</b><small>14:08</small></div><div class="step done"><i>✓</i><b>전자계약 발송</b><small>14:32</small></div><div class="step"><i></i><b>계약 완료</b><small>대기</small></div><div class="step"><i></i><b>인도 완료</b><small>대기</small></div></div></div><div class="section"><h4>담당</h4><div class="facts"><div class="fact"><span>영업채널</span><b>오토채널</b></div><div class="fact"><span>담당자</span><b>박지훈</b></div></div></div>`}
+function contractDetail(){const x=current();return `<div class="identity"><span class="tag warn">고객 서명 대기</span><h3>${x.title}</h3><p>${x.meta} · 문서 rev.3</p></div><div class="section"><h4>계약 흐름</h4><div class="timeline"><div class="step done"><i>✓</i><b>계약서 생성</b><small>14:30</small></div><div class="step done"><i>✓</i><b>서명 링크 발송</b><small>14:32</small></div><div class="step"><i></i><b>고객 서명</b><small>대기</small></div><div class="step"><i></i><b>관리자 검토·봉인</b><small>대기</small></div></div></div><div class="section"><div class="notice">주민번호는 전자계약 서비스에서 수집하며 관리자 화면에서는 표시하지 않습니다.</div></div>`}
+function performanceDetail(){const x=current();return `<div class="identity"><span class="tag warn">공급사 확인 중</span><h3>${x.title}</h3><p>${x.meta}</p><div class="money">마진 310,000원</div></div><div class="summary"><div><small>공급사 청구</small><b>1,240,000원</b></div><div><small>채널 지급</small><b>930,000원</b></div></div><div class="section"><h4>대조 단계</h4><div class="timeline"><div class="step done"><i>✓</i><b>영업자 확인</b><small>완료</small></div><div class="step"><i></i><b>공급사 Cross Check</b><small>진행 중</small></div><div class="step"><i></i><b>최종 확정</b><small>대기</small></div></div></div>`}
+function settlementDetail(){const x=current();return `<div class="identity"><span class="tag warn">수금 대기</span><h3>${x.title}</h3><p>${x.meta} · 확정금액 변경 금지</p><div class="money">미수 3,240,000원</div></div><div class="summary"><div><small>청구확정</small><b>8,760,000원</b></div><div><small>실제수금</small><b>5,520,000원</b></div></div><div class="section"><h4>처리 이력</h4><div class="timeline"><div class="step done"><i>✓</i><b>청구서 생성</b><small>9/20</small></div><div class="step done"><i>✓</i><b>계산서 증빙</b><small>9/21</small></div><div class="step"><i></i><b>잔여 수금</b><small>3,240,000원</small></div></div></div>`}
+function applicationForm(){return `${contextCard(current())}<div class="form"><label>영업채널<select><option>오토채널</option><option>제휴영업</option><option>직영</option></select></label><label>담당자<select><option>박지훈</option><option>최유진</option></select></label><label>고객명<input id="customer" placeholder="고객명을 입력하세요"></label><label>연락처 · 선택<input placeholder="010-0000-0000"></label></div>`}
+function workPanel(){
+ if(state.module==='product') return applicationForm();
+ const work={
+  intake:['다음 업무','전자계약 발송','접수 사실과 선택 Offer Snapshot을 확인한 뒤 계약서를 생성합니다.'],
+  contract:['서명 상태','고객 서명 대기','서명 완료 후 관리자 검토와 봉인 상태를 확인합니다.'],
+  performance:['대조 업무','공급사 Cross Check','공급사 청구와 영업채널 지급 근거를 확인합니다.'],
+  settlement:['정산 업무','잔여 수금 등록','청구 → 확인 → 계산서 → 수금 순서로 증빙을 남깁니다.']
+ }[state.module];
+ return `<div class="identity"><span class="tag warn">${work[0]}</span><h3>${work[1]}</h3><p>${work[2]}</p></div><div class="section"><h4>처리 기준</h4><div class="timeline"><div class="step done"><i>✓</i><b>선행 단계 확인</b><small>완료</small></div><div class="step"><i></i><b>${work[1]}</b><small>대기</small></div></div></div>`;
+}
+function actions(){
+ const el=$('#actions'); if(!state.depth){el.hidden=true;return} el.hidden=false; el.className='actionbar';
+ if(state.depth===2){el.innerHTML='<button class="tertiary" id="backAction">이전</button><button class="primary" id="save">접수 저장</button>';$('#backAction').onclick=()=>{state.depth=1;render()};$('#save').onclick=()=>{state.module='intake';state.depth=0;state.selected=null;render()};return}
+ const config={
+  product:{secondary:'공유',primary:'접수하기'},
+  intake:{primary:'전자계약'},
+  contract:{secondary:'다시 보내기',primary:'상태 확인'},
+  performance:{secondary:'이슈 등록',primary:'확인 완료'},
+  settlement:{secondary:'지급 보기',primary:'수금 등록'}
+ }[state.module];
+ el.classList.toggle('three',!!config.secondary);
+ el.innerHTML=`<button class="tertiary" id="backAction">목록</button>${config.secondary?`<button class="secondary" id="secondaryAction">${config.secondary}</button>`:''}<button class="primary" id="primary">${config.primary}</button>`;
+ $('#backAction').onclick=()=>{state.depth=0;state.selected=null;render()};
+ if($('#secondaryAction')) $('#secondaryAction').onclick=()=>alert('목업 동작: '+config.secondary);
+ $('#primary').onclick=()=>{if(state.module==='product'){state.depth=2;render()}else if(state.module==='intake'){state.module='contract';state.depth=1;state.selected='c1';render()}else alert('목업 동작: '+config.primary)};
+}
+function openFilter(){
+ const facets={
+  product:{axes:['출고상태','상품구분','혜택','계약기간'],title:'출고상태',values:[['즉시출고',128],['출고협의',12],['출고불가',0]]},
+  intake:{axes:['할 일','진행상태','담당자','접수일'],title:'할 일',values:[['서류 확인',8],['계약 대기',4],['실적 생성',2]]},
+  contract:{axes:['서명상태','발송상태','담당자','계약일'],title:'서명상태',values:[['발송 대기',3],['서명 대기',5],['완료',18]]},
+  performance:{axes:['확인상태','이슈','공급사','인도월'],title:'확인상태',values:[['확인 필요',6],['공급사 대기',3],['완료',21]]},
+  settlement:{axes:['정산단계','정산월','공급사','영업채널'],title:'정산단계',values:[['청구',7],['계산서',4],['수금',6],['지급',9]]}
+ }[state.module];
+ const sheet=$('#filterSheet'); sheet.hidden=false;
+ sheet.innerHTML=`<button class="scrim" aria-label="세부필터 닫기"></button><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="filterTitle"><div class="sheet-head"><h3 id="filterTitle">상세 조건</h3><button id="closeFilter" aria-label="닫기">×</button></div><div class="filter-body"><nav class="filter-axes" aria-label="조건 항목">${facets.axes.map((x,i)=>`<button class="${i?'':'on'}">${x}</button>`).join('')}</nav><div class="filter-values"><strong>${facets.title}</strong>${facets.values.map(([x,n])=>`<label><input type="checkbox" ${state.filter===x?'checked':''}><span>${x}</span><small>${n}</small></label>`).join('')}</div></div><div class="sheet-actions"><button class="tertiary" id="resetFilter">초기화</button><button class="primary" id="applyFilter">${data[state.module].length}${state.module==='product'?'대':'건'} 보기</button></div></section>`;
+ const close=()=>{sheet.hidden=true;document.querySelector('.openFilter')?.focus()};
+ sheet.querySelector('.scrim').onclick=close; $('#closeFilter').onclick=close; $('#resetFilter').onclick=()=>{state.filter='전체';close();render()}; $('#applyFilter').onclick=close;
+ $('#closeFilter').focus();
+}
+function bind(){
+ document.querySelectorAll('.list .row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;state.depth=1;render()});
+ document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
+ document.querySelectorAll('.offer').forEach(b=>b.onclick=()=>{state.offer=b.dataset.offer;render()});
+ document.querySelectorAll('.openFilter').forEach(b=>b.onclick=openFilter);
+}
+function renderWeb(){
+ const titles={product:'상품찾기',intake:'계약접수',contract:'전자계약',performance:'실적관리',settlement:'정산관리'};
+ const states={product:'판매 가능',intake:'할 일 2건',contract:'서명·검토 대기 2건',performance:'확인 필요 2건',settlement:'미수·미지급 2건'};
+ $('#webNav').innerHTML=Object.keys(LABEL).map(k=>`<button data-k="${k}" class="${state.module===k?'on':''}">${LABEL[k]}</button>`).join('');
+ $('#webNav').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.module=b.dataset.k;state.selected=null;state.depth=0;render()});
+ $('#webListTitle').textContent=titles[state.module]; $('#webCount').textContent=`${data[state.module].length}${state.module==='product'?'대':'건'}`; $('#webListState').textContent=states[state.module];
+ $('#webList').innerHTML=list('web');
+ const chosen=current(); document.querySelectorAll('#webList .row').forEach(b=>b.classList.toggle('selected',b.dataset.id===chosen.id));
+ $('#webDetailTitle').textContent=`${LABEL[state.module]} 상세`; $('#webDetailState').textContent=chosen.tag; $('#webDetail').innerHTML=detail();
+ $('#webWorkTitle').textContent=state.module==='product'?'신규 계약접수':'현재 업무'; $('#webWorkState').textContent=state.module==='product'?'Snapshot 저장 전':'다음 단계'; $('#webWork').innerHTML=workPanel();
+ const cfg={product:['공유','접수하기'],intake:['목록','전자계약'],contract:['다시 보내기','상태 확인'],performance:['이슈 등록','확인 완료'],settlement:['지급 보기','수금 등록']}[state.module];
+ $('#webDetailActions').innerHTML=`<button class="${cfg[0]==='목록'?'tertiary':'secondary'}">${cfg[0]}</button><button class="primary">${cfg[1]}</button>`;
+ $('#webWorkActions').innerHTML=`<button class="tertiary">이전</button><button class="primary">${state.module==='product'?'접수 저장':cfg[1]}</button>`;
+ document.querySelectorAll('#webList .row').forEach(b=>b.onclick=()=>{state.selected=b.dataset.id;render()});
+ document.querySelectorAll('#webList .chip').forEach(b=>b.onclick=()=>{state.filter=b.dataset.filter;render()});
+ $('#webopenFilter').onclick=openFilter;
+}
+function render(){status();nav();$('#screen').innerHTML=state.depth===2?applicationForm():(state.depth?detail():list());actions();bind();renderWeb()}
+render();
+</script>
+</body>
+</html>

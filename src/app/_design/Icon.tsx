@@ -35,6 +35,7 @@ const P: Record<string, ReactNode> = {
   alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4M12 17h.01" /></>,
   pause: <><rect x="14" y="4" width="4" height="16" rx="1" /><rect x="6" y="4" width="4" height="16" rx="1" /></>,
   search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
+  filter: <><line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" /><line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" /><line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" /><line x1="2" x2="6" y1="14" y2="14" /><line x1="10" x2="14" y1="8" y2="8" /><line x1="18" x2="22" y1="16" y2="16" /></>,
   'chevron-left': <path d="m15 18-6-6 6-6" />,
   'chevron-right': <path d="m9 18 6-6-6-6" />,
   'chevron-down': <path d="m6 9 6 6 6-6" />,
@@ -43,7 +44,9 @@ const P: Record<string, ReactNode> = {
 
 export type IconName = keyof typeof P;
 
-export function Icon({ name, size = 14, stroke = 2 }: { name: string; size?: number; stroke?: number }) {
+/* ★프리패스 세일즈 규격(app.css) — 선 굵기는 «전부 1.9」 하나다(대표 2026-09-22 「아이콘이 너무 크고 무디다」).
+ *   크기는 역할별 네 단계뿐: 행동 20 · 탭 22 · 빈 상태 28 · 브랜드 32. 글자 옆 작은 아이콘은 그 밖(13~16)이다. */
+export function Icon({ name, size = 14, stroke = 1.9 }: { name: string; size?: number; stroke?: number }) {
   const g = P[name];
   if (!g) return null;
   return (

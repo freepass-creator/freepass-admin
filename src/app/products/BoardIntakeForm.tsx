@@ -1,0 +1,97 @@
+'use client';
+
+import Link from 'next/link';
+import { startTransition, useActionState, useState, type ReactNode } from 'react';
+import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../intake/actions';
+import type { IntakeDefaults, IntakeOptions } from '../intake/new/IntakeForm';
+
+/**
+ * 상품판 접수 칸 — 목업 「신규 계약접수」 그대로: 영업채널 · 담당자 · 고객명 + [취소] [저장하기] (대표 2026-09-22)
+ *   ★저장은 /intake 신규 접수와 «같은» createIntakeAction — 차 · 요금은 숨은 칸, 서버가 Product/Offer 를 다시 읽어 묶는다.
+ *   ★채널·담당을 고르면 원장에 이미 있는 코드를 따라 채운다(지어내지 않는다) — IntakeForm 과 같은 규칙.
+ */
+export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, children }: {
+  defaults: IntakeDefaults; options: IntakeOptions; choices: string[]; cancelHref: string;
+  /** 서버가 미리 센 수수료(저장 때와 같은 셈 · ERP5 수수료표). 상품구분을 고르면 다시 센다 */
+  fee: FeePreview | null;
+  /** 선택 상품 카드 — 칸 위에 선다 */
+  children?: ReactNode;
+}) {
+  const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
+  const [channel, setChannel] = useState(defaults.channel ?? '');
+  const [agent, setAgent] = useState(defaults.agent ?? '');
+  const 채널코드 = options.channelCode[channel] ?? '';
+  const 담당코드 = options.agentCode[agent] ?? '';
+  /* ★수수료 — 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」(대표 2026-09-18). 상품구분이 갈리면 고른 뒤 다시 센다 */
+  const [미리, set미리] = useState<FeePreview | null>(fee);
+  const 다시셈 = async (product: string) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ supplier: defaults.supplier, product, model: defaults.model, term: defaults.term, rent: defaults.rent, price: defaults.price ?? '' })) fd.set(k, v);
+    set미리(await previewFeeAction(fd));
+  };
+  const 직접 = !!미리 && 미리.status !== 'AUTO' && 미리.status !== 'ERROR';
+  const 원 = (n: number) => `${n.toLocaleString('ko-KR')}원`;
+
+  return (
+    /* ★`action=` 로 넘기면 React 19 가 제출 뒤 칸을 비운다 — 틀려서 되돌아와도 쓴 것이 남게 손으로 넘긴다 */
+    <form className="pb-work-form" aria-busy={pending}
+      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
+      {(['receivedAt', 'plate', 'model', 'supplier', 'supplierCode', 'term', 'rent', 'deposit', 'price', 'rentKind',
+        'sourceProductId', 'sourceProductVersion', 'sourceOfferId', 'sourceSnapshotId'] as const).map((k) => (
+        <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
+      ))}
+      {!choices.length && <input type="hidden" name="product" value={defaults.product ?? ''} />}
+      <input type="hidden" name="channelCode" value={채널코드} />
+      <input type="hidden" name="agentCode" value={담당코드} />
+      <datalist id="pb-dl-channel">{options.channels.map((v) => <option key={v} value={v} />)}</datalist>
+      <datalist id="pb-dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
+
+      <div className="web-scroll">
+      {children}
+      <div className="form">
+        {choices.length > 0 && (
+          <fieldset className="pb-choice">
+            <legend>상품구분</legend>
+            <div className="chips" role="radiogroup" aria-label="상품구분">
+              {choices.map((c) => (
+                <label key={c} className="chip"><input type="radio" name="product" value={c} defaultChecked={c === defaults.product} required onChange={() => 다시셈(c)} /><span>{c}</span></label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        <label>영업채널<input name="channel" list="pb-dl-channel" value={channel} required autoComplete="off" placeholder="영업채널"
+          onChange={(e) => setChannel(e.target.value)} /></label>
+        <label>담당자<input name="agent" list="pb-dl-agent" value={agent} required autoComplete="off" placeholder="담당자 이름"
+          onChange={(e) => {
+            const a = e.target.value;
+            setAgent(a);
+            if (!channel && options.agentChannel[a]) setChannel(options.agentChannel[a]);
+          }} /></label>
+        <label>고객명<input name="customer" defaultValue={defaults.customer} required autoComplete="off" placeholder="고객명을 입력하세요" /></label>
+        <div className="pb-fee" aria-live="polite">
+          <span>수수료</span>
+          {!미리 ? <b className="muted">{choices.length ? '상품구분을 고르면 나옵니다' : '—'}</b>
+            : 미리.status === 'AUTO' ? <b>청구 {원(미리.claim)} · 지급 {원(미리.pay)}</b>
+              : 미리.status === 'ERROR' ? <b className="muted">수수료표를 못 읽음 — 저장 뒤 접수 화면에서 확인</b>
+                : <b className="warn">직접 넣어야 함 — {미리.why}</b>}
+        </div>
+        {직접 && (
+          <>
+            <label>청구 수수료<input name="feeClaim" inputMode="numeric" required placeholder="원" /></label>
+            <label>지급 수수료<input name="feePay" inputMode="numeric" required placeholder="원" /></label>
+            <label>수수료 사유<input name="feeReason" required placeholder="어떻게 정했는지" /></label>
+          </>
+        )}
+        {state.errors.length > 0 && (
+          <ul className="pb-errs" role="alert">{state.errors.map((m) => <li key={m}>{m}</li>)}</ul>
+        )}
+      </div>
+      </div>
+
+      <div className="web-actions">
+        <Link className="tertiary" href={cancelHref}>취소</Link>
+        <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '저장하기'}</button>
+      </div>
+    </form>
+  );
+}

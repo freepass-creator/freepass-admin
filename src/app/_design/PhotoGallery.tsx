@@ -50,9 +50,9 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
   const 넘김 = n > 1 && (
     <>
       <button type="button" className="dz-gal-step l" aria-label="이전 사진" onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); go(-1); }}><Icon name="chevron-left" size={20} stroke={2.5} /></button>
+        onClick={(e) => { e.stopPropagation(); go(-1); }}><Icon name="chevron-left" size={20} /></button>
       <button type="button" className="dz-gal-step r" aria-label="다음 사진" onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => { e.stopPropagation(); go(1); }}><Icon name="chevron-right" size={20} stroke={2.5} /></button>
+        onClick={(e) => { e.stopPropagation(); go(1); }}><Icon name="chevron-right" size={20} /></button>
     </>
   );
   return (

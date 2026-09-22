@@ -47,7 +47,7 @@ export function Tag({ children, tone = 'plain', icon, good }: {
 }) {
   return (
     <i className={`dz-badge ${tone}${good ? ' good' : ''}`}>
-      {icon ? <Icon name={icon} size={13} stroke={2} /> : null}{children}
+      {icon ? <Icon name={icon} size={13} /> : null}{children}
     </i>
   );
 }
@@ -68,7 +68,7 @@ export function PerkMarks({ marks, note, compact }: { marks: string[]; note?: st
         const kind = 심사(m) ? (/무심사/.test(m) ? 'good' : 'ask') : 'perk';
         return (
           <span key={m} className={`dz-perk ${kind}`}>
-            <Icon name={kind === 'perk' ? 'check' : 'shield-check'} size={compact ? 13 : 15} stroke={2} />{m}
+            <Icon name={kind === 'perk' ? 'check' : 'shield-check'} size={compact ? 13 : 15} />{m}
           </span>
         );
       })}

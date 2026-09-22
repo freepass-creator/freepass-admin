@@ -1,41 +1,25 @@
-import { productById, today } from '../../server/erp5';
+import { productById } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { txt, won } from '../_fn/fmt';
 import { vehicleName } from '../_fn/product';
-import IntakeForm, { type IntakeDefaults } from './new/IntakeForm';
+import IntakeForm from './new/IntakeForm';
+import { intakeDefaults } from './intake-defaults';
 import { EmptyState, Notice, PanelHeader } from '../_design/Primitives';
 import { previewFeeAction } from './actions';
-import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
+import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
 import { buildIntakeOptions } from './intake-options';
 
 /** 오른쪽 판 — 신규 접수. 상품에서 왔으면 차·요금이 미리 채워진다. */
-export async function NewIntakePanel({ rows, productId, offerId, back }: {
+export async function NewIntakePanel({ rows, productId, offerId, back, prefill }: {
   rows: SettlementRow[]; productId: string; offerId: string; back: string;
+  /** 상품판에서 먼저 넣고 넘어온 사람 칸(고객명 · 영업채널 · 영업담당) */
+  prefill?: { customer?: string; channel?: string; agent?: string };
 }) {
   const product = productId ? await productById(productId) : null;
   /* ★차의 상품구분 → 원장 상품구분 · 렌트구분(기능 ledgerKindOf) — 원장 말이 수수료 갈래를 정한다 */
-  const 짝 = product ? ledgerKindOf(product.productKind) : null;
-  const 고를말 = product ? (짝 ? (짝.certain ? [] : 짝.choices) : [...LEDGER_PRODUCTS]) : [];
-  const offer = product?.offers.find((o) => o.id === offerId);
+  const { defaults, choices: 고를말, offer, 짝 } = intakeDefaults(product, offerId, prefill);
   const options = buildIntakeOptions(rows);
-  const defaults: IntakeDefaults = {
-    receivedAt: today(),
-    plate: product?.registration?.vehicleNumber ?? '',
-    model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
-    supplier: product?.supplierName ?? '',
-    supplierCode: product?.supplierId ?? '',
-    term: offer ? String(offer.termMonths) : '',
-    rent: offer ? String(offer.monthlyRent) : '',
-    deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
-    product: 짝?.product ?? '',
-    rentKind: 짝?.rentKind ?? '',
-    price: product?.consumerPrice !== undefined ? String(product.consumerPrice) : '',
-    sourceProductId: product?.id ?? '',
-    sourceProductVersion: product ? String(product.version) : '',
-    sourceOfferId: offer?.id ?? '',
-    sourceSnapshotId: product?.sourceSnapshotId ?? '',
-  };
   /*
    * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).
    *   기능 쪽 셈(feeOf · ERP5 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
@@ -74,7 +58,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
-      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
+      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 「저장하기」는 저장되지 않습니다.</Notice>}
       <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
       <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
         productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>

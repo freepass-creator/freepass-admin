@@ -54,9 +54,8 @@ const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
 const 사진 = (p: { photoUrl?: string }): string | undefined =>
   p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
-export async function ProductWorkspace({ q, mode, base }: {
-  q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
-}) {
+/** 상품 목록·거름·세부필터 축 — 옛 판(ProductWorkspace)과 새 판(board.tsx)이 같이 쓴다. */
+export async function productView(q: Record<string, string | string[] | undefined>) {
   const parsedSearch = parseProductSearch(sp(q.q));
   const text = parsedSearch.text.toLowerCase();
   /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
@@ -65,7 +64,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   let all: Awaited<ReturnType<typeof productList>>;
   try { all = await productList(); }
   catch (e) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
+    return { error: (e as Error).message };
   }
   const { rows } = all;
 
@@ -125,6 +124,17 @@ export async function ProductWorkspace({ q, mode, base }: {
     const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
   });
+  return { rows, sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch };
+}
+
+export async function ProductWorkspace({ q, mode, base }: {
+  q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
+}) {
+  const pv = await productView(q);
+  if ('error' in pv) {
+    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {pv.error}</p></>;
+  }
+  const { sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch } = pv;
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
   const selId = sp(q.id);
@@ -213,7 +223,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
             *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
             */}
-          <div className="dz-find">
+          <div className="dz-find search-field">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['q', 'id', 'offer'])}
               <SearchField name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
@@ -234,13 +244,13 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   데이터에 없는 단추는 안 세운다(지어낸 단추가 없다). 두 화면 같은 줄이다.
             */}
           <div className="quick-filters">
-            <Link className={상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? 'active' : ''}
+            <Link className={`chip${상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? ' active' : ''}`}
               href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), q: parsedSearch.text, page: '' })}>전체</Link>
             {statuses.includes('즉시출고') && (
-              <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
+              <Link className={`chip${explicitPsel.status.includes('즉시출고') ? ' active' : ''}`} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
             {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
-              <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
+              <Link key={x} className={`chip${explicitPsel.perk.includes(x) ? ' active' : ''}`} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
             ))}
           </div>
           </div>
@@ -265,6 +275,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           {car ? (
             <>
               <DetailTabs key={`상세-${car.id}`}
+                backHref={keep({ v: 'list' })}
                 initialOffer={sel.matchedOffers.some((x) => x.id === sp(q.offer)) ? sp(q.offer) : sel.lead?.id}
                 /**
                  * ★접수하기 — 늘 켜져 있다 (대표 2026-09-18 「상품 상세가 나오는 거고 거기서 접수를 누르면
@@ -279,7 +290,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
                     photos={(car.photos?.length ? car.photos : car.photoUrl ? [car.photoUrl] : []).filter((x) => x && x.trim()).map((x) => imgSrc(x)).filter((x): x is string => !!x)} />
-                  <div className="vehicle-title">
+                  <div className="vehicle-title identity">
                     <div>
                       <h2>{vehicleName(car) || car.id}</h2>
                       <p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p>
@@ -296,7 +307,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                     perks={car.perks} perksNote={정책말(car.policyState)} />
                 </>}
                 info={<>
-                  <div className="vehicle-title">
+                  <div className="vehicle-title identity">
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}</Tag>
                   </div>
@@ -310,7 +321,8 @@ export async function ProductWorkspace({ q, mode, base }: {
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
         {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
-          <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
+          <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })}
+            prefill={{ customer: sp(q.customer), channel: sp(q.channel), agent: sp(q.agent) }} />
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}

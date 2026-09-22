@@ -9,6 +9,8 @@ export type IntakeDefaults = {
   /** 차에서 온 원장 상품구분 · 렌트구분(기능 ledgerKindOf) · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
   product?: string; rentKind?: string; price?: string;
   sourceProductId?: string; sourceProductVersion?: string; sourceOfferId?: string; sourceSnapshotId?: string;
+  /** 상품판(/products)의 접수 칸에서 먼저 넣고 넘어온 값 — 저장은 여기서만 한다 */
+  customer?: string; channel?: string; agent?: string;
 };
 export type IntakeOptions = {
   channels: string[]; channelCode: Record<string, string>;
@@ -41,9 +43,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   ledgerProducts?: readonly string[];
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
-  const [channel, setChannel] = useState('');
-  const [channelCode, setChannelCode] = useState('');
-  const [agentCode, setAgentCode] = useState('');
+  const [channel, setChannel] = useState(defaults.channel ?? '');
+  const [channelCode, setChannelCode] = useState(defaults.channel ? options.channelCode[defaults.channel] ?? '' : '');
+  const [agentCode, setAgentCode] = useState(defaults.agent ? options.agentCode[defaults.agent] ?? '' : '');
   const [supplierCode, setSupplierCode] = useState(defaults.supplierCode);
   const [delivered, setDelivered] = useState(false);
   /*
@@ -93,10 +95,10 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   /* 사람이 넣는 셋 — 두 갈래 모두 같은 칸 */
   const 사람 = (
     <>
-      <label>고객명 *<input name="customer" required autoComplete="off" /></label>
+      <label>고객명 *<input name="customer" defaultValue={defaults.customer} required autoComplete="off" /></label>
       <label>영업채널 *<input name="channel" list="dl-channel" value={channel} required autoComplete="off"
         onChange={(e) => { setChannel(e.target.value); setChannelCode(options.channelCode[e.target.value] ?? ''); }} /></label>
-      <label>영업담당 *<input name="agent" list="dl-agent" required autoComplete="off"
+      <label>영업담당 *<input name="agent" list="dl-agent" defaultValue={defaults.agent} required autoComplete="off"
         onChange={(e) => {
           const a = e.target.value;
           setAgentCode(options.agentCode[a] ?? '');
@@ -198,12 +200,12 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       )}
       {더}
 
-      {/* 하단바 규격(dz-bar) — 판 바닥. 신규 접수 중에는 [취소] [접수 저장] (대표 2026-09-18) */}
+      {/* 하단바 규격(dz-bar) — 판 바닥. 신규 접수 중에는 [취소] [저장하기] (대표 2026-09-18 · 2026-09-22 「취소 저장하기 2개」) */}
       <div className="dz-bar">
         {state.errors.length > 0 && <ul className="dz-errs">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <div className="dz-bar-go">
           {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
-          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '저장하기'}</button>
         </div>
       </div>
     </form>

@@ -8,9 +8,14 @@ const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
+const tabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+/* ★2026-09-22 판갈이 — 정산 = 거래처×달 묶음(settlement/board) · 실적 = 건별 대조(performance/board) · 접수 = intake/board */
+const settlementBoard=read('src/app/settlement/board.tsx');
+const performanceBoard=read('src/app/performance/board.tsx');
+const intakeBoard=read('src/app/intake/IntakeSide.tsx');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
@@ -22,9 +27,13 @@ test('admin root enters the real intake workspace and contains no demo runtime',
 });
 
 test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
-  assert.ok(chrome.includes("['/products', '상품찾기']"));
-  assert.ok(chrome.includes("['/intake', '계약접수']"));
-  assert.ok(chrome.includes("['/settlement', '정산관리']"));
+  /* ★2026-09-22 — PC 상단 메뉴와 폰 하단바는 같은 다섯 걸음 지도(MobileTabBar.TABS)를 쓴다 */
+  assert.ok(tabs.includes("['상품', '/products']"));
+  assert.ok(tabs.includes("['접수', '/intake?v=work']"));
+  assert.ok(tabs.includes("['계약', '/esign']"));
+  assert.ok(tabs.includes("['실적', '/performance']"));
+  assert.ok(tabs.includes("['정산', '/settlement']"));
+  assert.ok(chrome.includes('<TopMenu />'));
   assert.ok(chrome.includes('<MobileTabBar />'));
   assert.ok(chrome.includes('dz-desktop-bottom'));
   assert.equal(chrome.includes('className="rail"'),false);
@@ -63,63 +72,68 @@ test('legacy prototype and duplicate intake routes converge on canonical workspa
 });
 
 test('settlement guidance describes live actions instead of future placeholders',()=>{
-  assert.equal(settlementPage.includes('업무 규칙이 굳으면'),false);
-  assert.ok(settlementPage.includes('청구서·지급명세는 가운데 묶음에서 발행'));
-  assert.ok(settlementPage.includes('확인·정정·계산서·수금·지급'));
+  assert.equal(settlementBoard.includes('업무 규칙이 굳으면'),false);
+  /* 묶음(발행 · 청구 링크)은 정산, 건의 확인·정정·계산서·수금/지급은 실적 */
+  assert.ok(settlementBoard.includes('<IssueForm'));
+  assert.ok(settlementBoard.includes('확인·정정·수금/지급은 「실적」'));
+  assert.ok(performanceBoard.includes('확인 · 정정 · 계산서 · 수금/지급'));
 });
 
 
 test('intake settlement handoff carries focus and settlement resolves it',()=>{
-  assert.ok(intakeDetail.includes('focus=${encodeURIComponent(r.id)}'));
-  assert.ok(settlementPage.includes('locateSettlementFocus'));
-  assert.ok(settlementPage.includes("u.delete('focus')"));
+  assert.ok(intakeBoard.includes('/performance?ic=${encodeURIComponent(r.id)}'));
+  assert.ok(performanceBoard.includes('locateSettlementFocus'));
+  /* 옛 주소(?focus=)는 실적 대조로 넘긴다 */
+  assert.ok(settlementPage.includes("sp(q.focus)"));
+  assert.ok(settlementPage.includes('redirect(`/performance?ic='));
+  assert.ok(settlementBoard.includes("u.delete('focus')"));
 });
 
 
 test('settlement completed row offers next actionable work',()=>{
-  assert.ok(settlementPage.includes('nextActionablePerformanceCode'));
-  assert.ok(intakeDetail.includes('다음 할 일'));
-  assert.ok(intakeDetail.includes('life.nextHref'));
+  assert.ok(performanceBoard.includes('다음 할 일'));
+  assert.ok(performanceBoard.includes('다음건'));
 });
 
 
 test('settlement completed queue can continue to the next actionable party',()=>{
-  assert.ok(settlementPage.includes('nextActionableLedgerParty'));
-  assert.ok(intakeDetail.includes('다음 거래처'));
-  assert.ok(intakeDetail.includes('life.nextGroupHref'));
+  assert.ok(settlementBoard.includes('nextActionableLedgerParty'));
+  assert.ok(settlementBoard.includes('다음 거래처'));
 });
 
 
 test('focused settlement miss stays fail-closed and points back to intake',()=>{
-  assert.ok(settlementPage.includes('focusMiss'));
-  assert.ok(settlementPage.includes('접수 상세에서 막힘 확인'));
-  assert.ok(settlementPage.includes('/intake?ic='));
+  assert.ok(performanceBoard.includes('focusMiss'));
+  assert.ok(performanceBoard.includes('접수 상세에서 막힘 확인'));
+  assert.ok(performanceBoard.includes('/intake?ic='));
 });
 
 
 test('settlement supplier flow places invoice before collection',()=>{
-  assert.ok(intakeDetail.includes('settlementPrimaryAction'));
-  assert.ok(intakeDetail.includes("label: '계산서 끊기'"));
-  assert.ok(intakeDetail.includes('biz={life.invoiceBiz}'));
-  assert.ok(settlementPage.includes('invoiceBiz: 장?.partyBizNo'));
+  assert.ok(performanceBoard.includes('settlementPrimaryAction'));
+  assert.ok(performanceBoard.includes("primary === 'invoice'"));
+  assert.ok(performanceBoard.includes('계산서 끊기'));
+  assert.ok(performanceBoard.includes('biz={장?.partyBizNo}'));
 });
 
 
 test('supplier lifecycle renders invoice as an explicit step',()=>{
   assert.ok(intakeDetail.includes("['접수', '청구', '확인', '계산서', '수금']"));
   assert.ok(intakeDetail.includes("r.progress.invoiceIssued ? '수금' : '계산서'"));
+  assert.ok(performanceBoard.includes("['접수', '청구', '확인', '계산서', '수금']"));
+  assert.ok(performanceBoard.includes("r?.progress.invoiceIssued ? '수금' : '계산서'"));
 });
 
 
 test('settlement UI separates document progress from cash completion',()=>{
-  assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
-  assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
-  assert.ok(settlementPage.includes('g.completed'));
+  assert.ok(settlementBoard.includes("ax === 'claim' ? '청구서 보냄' : '지급 통보'"));
+  assert.ok(settlementBoard.includes("ax === 'claim' ? '수금 완료' : '지급 완료'"));
+  assert.ok(settlementBoard.includes('g.completed'));
 });
 
 
 test('claim rows stay active until collection completes',()=>{
-  assert.ok(settlementPage.includes("tab === 'claim' ? r.progress.collected : r.progress.paid"));
+  assert.ok(settlementBoard.includes("ax === 'claim' ? r.progress.collected : r.progress.paid"));
 });
 
 
@@ -128,5 +142,5 @@ test('claim link renders authoritative final response and lock state',()=>{
   assert.ok(claimDoor.includes('받은답.codes?.length'));
   assert.ok(claimLinkUi.includes('사업자번호 오입력'));
   assert.ok(claimLinkUi.includes('잠김'));
-  assert.ok(settlementPage.includes('locked={!!장.lockedUntil && 장.lockedUntil > Date.now()}'));
+  assert.ok(settlementBoard.includes('locked={!!장.lockedUntil && 장.lockedUntil > Date.now()}'));
 });

@@ -10,9 +10,8 @@
  * ⚠ 앞서 erp4 앱 아이콘(둥근 네모 + 체크)을 CI 마크처럼 붙였다 — 공식 CI 에는 없다. 걷었다.
  */
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Icon } from './Icon';
 import { Exo_2 } from 'next/font/google';
+import { TABS, TabIcon, useCurrentTab } from './MobileTabBar';
 
 const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
@@ -26,26 +25,20 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 }
 
 /**
- * 기존 이름 TopMenu는 호환을 위해 유지한다. 현재 위치는 PC 하단 업무 버튼(2026-09-21).
- *   Sales 기준: 흰 바탕, 아이콘·라벨만 강조. 활성 메뉴에 진한 버튼 면을 칠하지 않는다.
- * ★폰에서는 이 메뉴가 안 보인다 — `_design/MobileTabBar`의 다섯 걸음
- *   (상품 · 접수 · 계약 · 청구 · 지급)이 대신한다.
- *   Desktop 4축과 Mobile 5걸음은 같은 업무를 다른 깊이로 배열한 것이며,
- *   청구·지급은 Desktop의 「정산관리」 한 축을 모바일에서 두 입구로 나눈 것이다.
+ * ★2026-09-22 대표 — PC 상단 5개 페이지 전환 메뉴. 폰 하단(`MobileTabBar`)과 «같은 다섯 걸음»
+ *   (상품 · 접수 · 계약 · 실적 · 정산)을 쓴다 — 탭 지도·아이콘·「지금 탭」 판정을 `MobileTabBar`에서 그대로 가져온다(재사용).
+ *   위치는 관리자 띠(`.fn-top`) 바로 아래(`_design/AdminChrome`) — PC 전용, 폰에서는 안 보인다(`.dz-desktop-bottom` CSS).
  */
-export function TopMenu({ items }: { items: readonly (readonly [string, string])[] }) {
-  const path = usePathname() || '/';
+export function TopMenu() {
+  const now = useCurrentTab();
   return (
     <div className="dz-menu">
-      {items.map(([href, label]) => {
-        const 여기 = path === href || path.startsWith(`${href}/`);
-        return (
-          <Link key={href} href={href} className={여기 ? 'on' : undefined} aria-current={여기 ? 'page' : undefined}>
-            <Icon name={href === '/products' ? 'search' : href === '/intake' ? 'clipboard' : href === '/settlement' ? 'wallet' : 'file-text'} size={24} />
-            <span>{label}</span>
-          </Link>
-        );
-      })}
+      {TABS.map(([label, href]) => (
+        <Link key={label} href={href} className={now === label ? 'on' : undefined} aria-current={now === label ? 'page' : undefined}>
+          <TabIcon label={label} />
+          <span>{label}</span>
+        </Link>
+      ))}
     </div>
   );
 }

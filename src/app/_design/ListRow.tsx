@@ -30,7 +30,7 @@ export type RowStatus = { icon: IconName; label: string; tone: 'navy' | 'green' 
 export function StatusTile({ s }: { s: RowStatus }) {
   return (
     <span className={`dz-row-status ${s.tone}`} aria-label={s.label}>
-      <Icon name={s.icon} size={20} stroke={2} /><em>{s.label}</em>
+      <Icon name={s.icon} size={20} /><em>{s.label}</em>
     </span>
   );
 }
@@ -73,16 +73,16 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   return (
     <Link
       href={href}
-      className={`dz-row${selected ? ' on' : ''}`}
+      className={`dz-row row${selected ? ' on' : ''}`}
       aria-current={selected ? 'true' : undefined}
       data-ai-feature="data.list-presentation"
       data-ai-list-mode={product ? 'product-media-row' : 'business-row'}
     >
       {thumb === undefined && status && <StatusTile s={status} />}
       {thumb !== undefined && (
-        <span className="dz-row-thumb">
+        <span className="dz-row-thumb thumb">
           {thumb
-            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" loading="lazy" />
+            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={thumb} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
             : <em>사진 없음</em>}
         </span>
       )}

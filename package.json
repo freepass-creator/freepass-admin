@@ -13,6 +13,7 @@
     "data:check": "tsx scripts/check-live-data-wiring.mts"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "firebase-admin": "^14.4.0",
     "google-auth-library": "^10.9.1",
     "next": "16.1.6",

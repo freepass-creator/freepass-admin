@@ -3,10 +3,14 @@
  * 파일 분리 전 source order를 그대로 유지하기 위해 layout에서 globals.css 다음, _fn/fn.css 전에 import한다.
  */
 
-/* 현행: FreePass Sales 컨트롤 44 / 모서리 6 / 간격 8.
- * 패널·목록·정보 위계는 ADMIN-UI-UX-SSOT.md, 출처는 SALES-APP-BASELINE.md. */
+/* ★2026-09-22 대표 — 카드 스타일과 PC 상단바는 사용자 확인(AskUserQuestion)으로 최종 고정했다. 더는 바꾸지 않는다:
+ *   카드 = 세일즈 실물(`C:\dev\freepass-sales\웹\app.css` `.손님카드`) — 테두리 1px · 그림자 없음 · 라운드 16(--둥글).
+ *   PC 상단바 = 흰 띠 + 아이콘(세일즈에 PC 화면이 없어 폰 하단바 얼굴을 그대로 위로 올린다). */
 :root {
-  --컨트롤: 44px; --카드: #f6f7f9; --카드손: #eef1f4;
+  --컨트롤: 44px; --카드: #fff; --카드손: #f2f3f5; --고름카드: #e6ecf5;
+  --카드그림자: none;
+  --카드그림자손: none;
+  --고름그림자: inset 0 0 0 1px rgba(27, 42, 74, .18);
 
   /* ★공통 UI/UX SSOT aliases — 화면값은 안 바꾸고, 다음 화면이 같은 숫자를 재사용하게 이름만 세운다.
      현행 관리자 workspace 기준: 본문 컨트롤 44 · 주행동/모바일 터치 44 · 패널 라운드 4 · 컨트롤 라운드 6 · 글 18/14/12. */
@@ -16,6 +20,7 @@
   --ui-radius: var(--r);
   --ui-control-h: var(--컨트롤);
   --ui-control-radius: 6px;
+  --ui-card-radius: 16px;
   --ui-control-gap: 8px;
   --ui-shell-h: 60px;
   --ui-action-h: 44px;
@@ -26,14 +31,29 @@
   --ui-list-gap: 8px;
   --ui-item-pad: 12px;
   --ui-row-body-h: 64px;
-  --ui-thumb-w: 82px;
-  --ui-thumb-h: 64px;
+  --ui-product-row-body-h: 78px;
+  --ui-thumb-w: 72px;
+  --ui-thumb-h: 54px;
   --ui-status-tile: 64px;
+}
+/* ★2026-09-22 대표 — 목업(admin-mobile-five-functions.html) 규격: 좌우 여백 16 · 검색창 44 · 퀵필터 40.
+ *   상품카드만 약 102(패딩 12+12 + 본문 78) · 썸네일 72×54(사진 칸은 줄 높이보다 작게, 가운데로) —
+ *   사진 없는 목록(접수·정산·실적, StatusTile 64)은 손대지 않는다. `.dz-row-thumb` 유무로 가른다(상품 줄만 그 칸이 있다). */
+.dz-row:has(> .dz-row-thumb) { contain-intrinsic-size: auto 102px; }
+.dz-row:has(> .dz-row-thumb) .dz-row-body { height: var(--ui-product-row-body-h); }
+.dz-row-thumb { align-self: center; }
+/* ★2026-09-22 대표 「모든 패널이 다 모바일버전 같은 느낌」 — PC 판 셋(목업 `.web-panel`)은 폰보다 «한 단 작다».
+ *   같은 카드를 그대로 키우지 않는다: 썸네일 72×54→64×48 · 퀵필터 40→32 · 상품 줄 102→약 88. */
+@media (min-width: 901px) {
+  body:has(> .dz-statusbar) {
+    --ui-thumb-w: 64px; --ui-thumb-h: 48px; --ui-product-row-body-h: 64px;
+  }
+  .dz-row:has(> .dz-row-thumb) { contain-intrinsic-size: auto 88px; }
+  .fn-main .workspace .quick-filters a { height: 32px; padding: 0 11px; font-size: var(--글보조); }
 }
 
 /* Sales 공통 컨트롤 44 */
 .fn-main .workspace .dz-searchbox { height: var(--ui-control-h); padding: 0 4px 0 12px; gap: 8px; }
-.fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
 .fn-main .workspace .quick-filters a,
 .fn-main .workspace .tabs button, .fn-main .workspace .tabs a,
@@ -48,8 +68,6 @@
 }
 .dz-month > a, .dz-month > span:not(.dz-month-sum) { width: var(--ui-control-h); }
 .dz-fs-axis { height: var(--ui-control-h); }
-/* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
-.dz-fs-open { top: 6px; right: 4px; height: 32px; line-height: 16px; }
 /* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
 @media (max-width: 900px) {
   :root { --판탭: 56px; }
@@ -58,10 +76,13 @@
   .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */
 }
 
-/* 색 위계 — 카드 */
-.dz-row { background: var(--카드); }
+/* ★세일즈 실물 그대로(app.css `.손님카드`) — 카드는 흰 면 + 선 하나, 그림자 없음. 고른 카드만 옅은 남색 + 안쪽 테두리. */
+.dz-row {
+  border: 1px solid var(--선); border-radius: var(--ui-card-radius);
+  background: var(--카드); box-shadow: none; transition: background .16s, border-color .16s;
+}
 .dz-row:hover { background: var(--카드손); }
-.dz-row.on, .dz-row.on:hover { background: var(--고름); }
+.dz-row.on, .dz-row.on:hover { background: var(--고름카드); border-color: transparent; box-shadow: var(--고름그림자); }
 .dz-row .dz-badge.plain { background: #eaeef2; }
 .dz-row.on .dz-badge.plain { background: var(--판); }
 .dz-row .dz-row-thumb { background: #eceff3; }
@@ -344,8 +365,8 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 /* 폰 — 상품 줄은 네 줄(폭 375 에서 사진 82 + 칩 둘이면 이름이 「모…」로 잘렸다 · 실측):
    ① 세부모델 ② 상품구분 · 출고상태 칩 ③ 기간 · 월 · 보증금(넘치면 넘긴다) ④ 조건 */
 @media (max-width: 900px) {
-  .dz-row:has(.dz-row-l2.value) { contain-intrinsic-size: auto 104px; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-body { height: auto; min-height: 64px; gap: 4px; justify-content: flex-start; }
+  .dz-row:has(.dz-row-l2.value) { contain-intrinsic-size: auto 102px; }
+  .dz-row:has(.dz-row-l2.value) .dz-row-body { height: auto; min-height: var(--ui-product-row-body-h); gap: 4px; justify-content: flex-start; }
   .dz-row:has(.dz-row-l2.value) .dz-row-l1 { flex-wrap: wrap; row-gap: 4px; }
   .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 0 100%; }
   .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong { white-space: normal; }
@@ -406,7 +427,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   body > main.fn-main:not(:has(> .workspace)) { padding-bottom: calc(var(--아래띠) + 16px); }
   .fn-main:has(> .workspace) { padding-bottom: 0; }
   .fn-main .workspace { padding-bottom: var(--아래띠); }
-  .panel { min-height: calc(100dvh - 52px - var(--아래띠) - 16px); }
+  .panel { min-height: calc(100dvh - 28px - var(--아래띠) - 16px); }
 }
 
 
@@ -414,8 +435,13 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
  * source: freepass-sales@e2b7fb0077a23c9e9bb2db4635e80cd4ba175492 웹/app.css
  * .머리 / .탭바 / .기록바 / .바줄 및 공통 컨트롤 토큰. 운영 업무와 데이터는 Admin 소유. */
 body:has(> .dz-statusbar) {
+  /* ★2026-09-22 대표 확인(AskUserQuestion) — 바닥색은 세일즈 실물 `--판:#f7f8fa` 최종 고정 */
   --바닥: #f7f8fa; --박스: #f2f3f5; --글: #212529; --선: #eceef0;
   font-variant-numeric: tabular-nums;
+  /* ★2026-09-22 대표 「폰트 지금 뭐지??」 — globals.css 맨 위 legacy 줄이 `font-family: Inter, Pretendard...`를
+     이미 적어 뒀지만 불러오는 <link>가 없어 실제로는 시스템 대체 글꼴(윈도우 굵은 산세리프)로 그려지고 있었다.
+     `layout.tsx`에 Pretendard Variable CDN을 달고, 실제 불러온 이름을 1순위로 세운다(세일즈 app.css와 같은 이름). */
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 header.fn-top.dz-statusbar {
   height: var(--ui-shell-h); padding: 8px 16px 10px; gap: 10px; flex-wrap: nowrap;
@@ -430,6 +456,18 @@ header.dz-statusbar .dz-me {
   white-space: nowrap; font-size: var(--ui-text-support); color: #5c6268;
 }
 .dz-desktop-bottom { display: none; }
+/* ★BI(Brand)는 PC 상단 한 줄에서만 — 폰 흰 띠는 좁고 남색 글자용이 아니다(아래 min-width:901px 에서 되살린다) */
+header.dz-statusbar .dz-brand { display: none; }
+/* ★2026-09-22 대표 「왜 중복되게 상단바를 얹고 또 밑에 그걸 얹고 그러냐」 — 목업은 상단바가 «한 줄»
+ *   (제목+건수+연결상태가 한 자리)인데, 폰에서는 그 아래 판 머리(`.panel-head` = 「상품 목록 4대」)가
+ *   또 «다른 상단바처럼» 섰다. 관리자 진단 띠(데이터 상태·로그인 이름)는 없애지 않되 얇은 실선 하나로 접어,
+ *   눈에 먼저 걸리는 «진짜 머리»는 판 머리 하나가 되게 한다. */
+@media (max-width: 900px) {
+  header.fn-top.dz-statusbar {
+    height: 28px; padding: 0 16px; border-bottom: 0; background: transparent;
+  }
+  header.dz-statusbar .fn-state, header.dz-statusbar .dz-me { font-size: 10px; min-height: auto; }
+}
 header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
   outline: 2px solid var(--ci남색); outline-offset: -3px;
 }
@@ -444,23 +482,27 @@ header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
   height: var(--ui-action-h); border-radius: var(--ui-control-radius); box-shadow: none;
 }
 .fn-main .dz-bar-go > .dz-bar-sub { background: var(--박스); color: #5c6268; }
-/* 넓은 업무판의 배치는 보존하되, 이동 탭의 얼굴은 Sales와 같다. */
+/* ★2026-09-22 대표 확인(AskUserQuestion) — PC 상단바는 «흰 띠 + 아이콘» 최종 고정(세일즈엔 PC 화면이 없어
+ *   폰 하단바 `.dz-tabbar`의 얼굴을 그대로 위로 올린다). 흰 상태띠 + 남색 메뉴띠 두 줄이던 것을 흰 «한 줄»로 합친다. */
 @media (min-width: 901px) {
-  body:has(> .dz-statusbar) { --ui-desktop-bottom-h: var(--ui-shell-h); padding-bottom: var(--ui-desktop-bottom-h); }
-  body:has(> .dz-statusbar) .fn-main .workspace {
-    height: calc(100dvh - var(--ui-shell-h) - var(--ui-desktop-bottom-h));
+  header.fn-top.dz-statusbar {
+    display: flex; align-items: center; gap: 16px; padding: 0 16px;
+    background: var(--판); border-bottom: 1px solid var(--선); box-shadow: none;
   }
-  .dz-desktop-bottom {
-    display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    height: var(--ui-desktop-bottom-h); padding: 0 4px; background: var(--판);
-    border-top: 1px solid var(--선); box-shadow: 0 -2px 8px rgba(15,23,42,.05);
-  }
-  .dz-desktop-bottom .dz-menu { height: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+  header.dz-statusbar .dz-brand { display: inline-flex; }
+  header.dz-statusbar .dz-word b { color: var(--ci남색); }
+  header.dz-statusbar .dz-word i { color: #7f93b3; }
+  header.dz-statusbar .fn-state { flex: none; color: #8a929c; }
+  header.dz-statusbar .dz-me { flex: none; margin-left: 0; color: #8a929c; max-width: none; }
+  .dz-desktop-bottom { display: flex; flex: 1; min-width: 0; }
+  /* ★폰 하단바(`.dz-tabbar`)와 같은 얼굴 — 면을 안 칠한다, 색으로만 켜진 것을 말한다(규칙 ①④) */
+  .dz-desktop-bottom .dz-menu { height: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; }
   .dz-desktop-bottom .dz-menu a {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    min-height: var(--ui-touch-min); background: none; color: #5c6268;
+    display: flex; flex-direction: row; align-items: center; gap: 6px; height: 100%; padding: 0 14px;
+    border-radius: var(--ui-control-radius); background: none; color: #8a929c;
     font-size: var(--ui-text-support); font-weight: 500; text-decoration: none;
   }
+  .dz-desktop-bottom .dz-menu a svg { width: 20px; height: 20px; }
   .dz-desktop-bottom .dz-menu a.on { color: var(--ci남색); font-weight: 650; }
 }
 .dz-desktop-bottom a.on svg, .dz-tabbar a.on svg {
@@ -509,3 +551,19 @@ body > nav.fn-top :where(a, button):focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★★★ 굵기 — 프리패스 세일즈 실제 규격(app.css :root) 그대로 (대표 2026-09-22 「폰트랑도 잡고」)
+     세일즈의 굵기 최대는 650(--굵머리)이다 — 700·800은 없다. 어드민 workspace 는 그 위에 700·800이
+     30곳 넘게 남아 있었다(패널 머리 800 · 카드 제목·값·뱃지·단추 다수 700) — 실물보다 «한 단 세게» 읽혔다.
+     화면 전부를 훑어 고치는 대신, «눈에 가장 먼저 걸리는» 자리부터 세일즈 값으로 맞춘다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head h1 { font-weight: 650; letter-spacing: -.02em; }
+.fn-main .workspace .dz-row-l1 b { font-weight: 600; }
+.fn-main .workspace .dz-row-l2.value strong,
+.fn-main .workspace .dz-row-l3 strong { font-weight: 600; }
+.fn-main .workspace .quick-filters a.active { font-weight: 600; }
+.fn-main .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .primary,
+.dz-bar-go > .primary { font-weight: 600; }
+.fn-main .workspace .dz-fs-open.on, .dz-fs-check.on { font-weight: 600; }
+.fn-main .workspace .dz-menu a.on, .dz-tabbar a.on { font-weight: 600; }

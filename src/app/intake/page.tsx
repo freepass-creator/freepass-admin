@@ -1,12 +1,12 @@
-import { ProductWorkspace } from '../products/workspace';
+import { ProductsBoard } from '../products/board';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * 계약접수 — **메인**. 대표 2026-09-18 「이게 우리 메인인데 이거는 접수 화면이고」 · 「계약접수 → 메인」
- * 판 셋: 상품 목록 | 상품 상세 | 접수 목록. 차를 찾고 → 확인하고 → 기간 골라 접수 → 오른쪽에서 이어 간다.
- * ⓘ 접수 줄 전부(보기·거름)는 /intake/list 에 있다 — 오른쪽 판의 「전부 보기」가 그리로 간다.
+ * 계약접수 — **메인**. 판 셋: 상품 목록 | 상품 상세 | 접수(목록 → 상세 · [접수하기] = 신규 계약접수).
+ *   대표 2026-09-18 「이게 우리 메인」 · 2026-09-22 「접수는 상품 찾아서 선택해서 상세페이지 보고 접수하는 거」.
+ *   상품찾기(/products)는 상품만 — 판 둘(목록 | 상세), [접수하기]가 여기로 넘어온다.
  */
 export default async function IntakeMain({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <ProductWorkspace q={await searchParams} mode="intake" base="/intake" />;
+  return <ProductsBoard q={await searchParams} mode="intake" />;
 }

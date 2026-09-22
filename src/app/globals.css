@@ -75,20 +75,27 @@
 .form-stack input:focus { border: 0; background: var(--박스손); }
 
 /* ③ 단추는 글자만 — 평소엔 면도 선도 없다 */
-.quick-filters button, .work-tabs button, .offer-picker button, .icon-btn, .progress-actions button, .tabs button {
+.quick-filters button, .work-tabs button, .icon-btn, .progress-actions button, .tabs button {
   border: 0; border-radius: var(--r); background: transparent; color: #4f5862;
 }
-.quick-filters button:hover, .work-tabs button:hover, .offer-picker button:hover,
+.quick-filters button:hover, .work-tabs button:hover,
 .icon-btn:hover, .progress-actions button:hover, .tabs button:hover { background: var(--박스손); }
 .tabs { border-bottom: 0; gap: 4px; }
 /* 진행 단추(계약서·서류·인도)는 «상자 안의 칸»이라 옅은 면을 깐다 — 글자만이면 셋이 한 줄 글로 읽힌다 */
 .progress-actions button { background: var(--박스손); color: #7e878f; }
+/* ★기간(Offer) 단추는 목업 퀵필터 칩과 같은 얼굴 — 늘 옅은 박스 면, 켜지면 남색 */
+.offer-picker button {
+  height: 40px; padding: 0 13px; border: 0; border-radius: var(--ui-control-radius, 6px);
+  background: var(--박스); color: #445064;
+}
+.offer-picker button:hover { background: var(--박스손); }
 
-/* ④ 켜진 것은 검은 면 — 탭·필터·기간·완료가 같은 말을 쓴다 */
-.quick-filters button:first-child, .work-tabs button.active, .offer-picker button.active,
+/* ④ 켜진 것은 검은 면 — 탭·필터·완료가 같은 말을 쓴다 */
+.quick-filters button:first-child, .work-tabs button.active,
 .progress-actions button.done, .tabs button.active {
   border: 0; background: var(--켜짐); color: #fff;
 }
+.offer-picker button.active { border: 0; background: var(--ci남색); color: #fff; font-weight: 650; }
 
 /* 주 단추 — 검은 면 · 선 없음 · 라운드 4 */
 .primary, .new-app { border: 0; border-radius: var(--r); background: var(--켜짐); color: #fff; }
@@ -321,7 +328,14 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .list, .fn-main .workspace .application-list { display: flex; flex-direction: column; gap: var(--ui-list-gap); }
 
 /* 찾기 — 검색창은 선을 가진다(규칙 ①). 거름 칸은 선 없는 박스 */
-.fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
+/* ★2026-09-22 대표 — 목업(admin-mobile-five-functions.html, 웹·모바일판) 그대로:
+ *   검색 아이콘 · 입력칸 · 세부필터(아이콘 단추)가 «한 상자» 안에 나란하다. 상자 선은 여기 하나뿐(규칙 ①). */
+.fn-main .workspace .dz-find {
+  position: relative; display: flex; align-items: center; height: var(--ui-control-h, 44px);
+  border: 1px solid #e1e4e7; border-radius: var(--ui-control-radius, 6px); background: var(--판);
+  margin: 0 0 12px; transition: border-color .16s, box-shadow .16s;
+}
+.fn-main .workspace .dz-find:focus-within { border-color: #aeb8c5; box-shadow: 0 0 0 3px rgba(27, 42, 74, .05); }
 .fn-main .workspace label.searchbox {
   display: flex; flex-direction: row; align-items: center; gap: 8px;
   height: var(--ui-control-h,40px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
@@ -505,8 +519,12 @@ body { background: var(--바닥); }
  * ★넓은 목록의 카드 = «판 하나 폭» — 한 줄에 둘. 메인(판 셋)의 목록 줄과 같은 폭이라 같은 차가 같은 모양으로 선다.
  *   ⚠ 280px 칸이었을 때(한 줄에 셋, 325px) 혜택 칩이 하나밖에 안 들어가고 하나는 반쯤 잘렸다(실측).
  */
-.fn-main .workspace[data-mode="find"] .list {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 8px; align-content: start;
+/* ★2026-09-22 — 이 400 최소폭 격자는 PC(판 둘 폭)만을 위한 것. 폰은 실제 데이터로 렌더될 때까지
+ *   드러나지 않던 버그였다: 격자 최소폭이 375 뷰포트를 옆으로 밀어 가로 스크롤이 생겼다(실측). */
+@media (min-width: 901px) {
+  .fn-main .workspace[data-mode="find"] .list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 8px; align-content: start;
+  }
 }
 
 /**
@@ -609,8 +627,8 @@ body { background: var(--바닥); }
    ★ 검색 — 창 하나 · 창 안의 세부검색 · 창 밑 퀵 단추 (대표 2026-09-18)
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-searchbox {
-  position: relative; display: flex; align-items: center; gap: 8px;
-  height: var(--ui-control-h,40px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+  position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  height: 100%; padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace .dz-searchbox > input[name="q"] {
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;
@@ -621,15 +639,14 @@ body { background: var(--바닥); }
      원본 freepasserp4 ShopFilterSheet — 왼쪽 축 지도 · 오른쪽 값(네모 + 건수) · 바닥 「N대 보기」
      우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만 · 글 셋(제목 18 · 메인 14 · 보조 12)
    ═══════════════════════════════════════════════════════════════════ */
-.fn-main .workspace .dz-find { position: relative; }
-/* 창 «안» 오른쪽 끝 — 창(40) 안에 단추(33)가 가운데로 선다 */
-.fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
+/* ★세부필터 단추 — 검색창과 «한 상자» 안, 오른쪽 끝의 아이콘 단추(목업 `.filter-trigger`). 제 선·배경 없음 */
 .dz-fs-open {
-  position: absolute; top: 3.5px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
-  height: 33px; line-height: 15px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
-  color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
+  position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; margin: 0 4px; padding: 0; border: 0; border-radius: var(--r);
+  background: transparent; color: #6b7580; cursor: pointer;
 }
-.dz-fs-open:hover, .dz-fs-open.on { background: var(--박스손); }
+.dz-fs-open:hover, .dz-fs-open.on { background: var(--박스); color: var(--ci남색); }
+.dz-fs-open i { position: absolute; top: 2px; right: 2px; }
 /* 고른 개수 — 동그라미가 제 모양(원본) */
 .dz-fs-open i, .dz-fs-body nav i {
   font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
@@ -713,14 +730,14 @@ body { background: var(--바닥); }
        시트 바닥 「N대 보기」를 덮었다(실측). 시트가 열린 동안만 머리를 위로 올린다. */
   .fn-main .workspace > .panel > .dz-listtop:has(.dz-fs-back) { z-index: 70; }
 }
-/** 퀵 단추 — 목업의 퀵 필터 그대로(글자만 · 켜진 것 남색 면). 이제 링크라 모양을 한 번 더 세운다 */
-.fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; }
+/** 퀵 단추 — 목업의 퀵 필터 그대로: 늘 옅은 박스 면 · 40 · 켜진 것만 남색 면 */
+.fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
 .fn-main .workspace .quick-filters a {
-  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
-  border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
+  display: inline-flex; align-items: center; height: 40px; line-height: 15px; padding: 0 13px;
+  border-radius: var(--r); background: var(--박스); color: #445064; font-size: var(--글메인);
 }
 .fn-main .workspace .quick-filters a:hover { background: var(--박스손); }
-.fn-main .workspace .quick-filters a.active { background: var(--ci남색); color: #fff; }
+.fn-main .workspace .quick-filters a.active { background: var(--ci남색); color: #fff; font-weight: 700; }
 .fn-main .workspace .dz-find { margin: 0; }
 
 /* 상세정보 — 소제목은 크기 대신 남색(규칙 ④) */
@@ -805,10 +822,10 @@ body { background: var(--바닥); }
    월 값만 굵게, 보증금·선납·주행은 옆에 붙는다(제미나이: 월 값만 보이면 오접수 사고 — 빼지 않는다) */
 .dz-offer-line {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 12px 0 0;
-  padding: 10px 12px; border-radius: var(--r); background: var(--남색옅음);
+  padding: 10px 12px; border-radius: var(--ui-card-radius, 12px); background: var(--남색옅음);
   font-size: var(--글메인); color: #4f5862;
 }
-.dz-offer-line b { font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.dz-offer-line b { font-size: var(--글메인); font-weight: 650; color: var(--ci남색); }
 .dz-offer-line span + span::before, .dz-offer-line b + span::before { content: '|'; margin-right: 12px; color: #b8c2cf; }
 .fn-main .workspace button.primary, .fn-main .workspace a.primary { margin-top: 12px; width: 100%; border: 0; cursor: pointer; }
 
@@ -924,7 +941,7 @@ body { background: var(--바닥); }
     background: var(--판); border: 0; border-bottom: 1px solid var(--선); border-radius: 0;
   }
   .fn-main .workspace { padding-bottom: calc(var(--아래띠) + 8px); }
-  .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 16px); }
+  .panel { min-height: calc(100dvh - 28px - var(--판탭) - var(--아래띠) - 16px); }
   /* 틀고정 머리 — 판 탭 밑에 붙는다 */
   .fn-main .workspace > .panel > .dz-listtop,
   .fn-main .workspace > .work-panel:not(:has(> .list)) > .panel-head { top: var(--판탭); }
@@ -963,7 +980,7 @@ body { background: var(--바닥); }
 .dz-gal { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .dz-gal.many { grid-template-columns: minmax(0, 1fr) 64px; }
 .dz-gal-main {
-  position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--r);
+  position: relative; aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid var(--선); border-radius: var(--ui-card-radius);
   background: var(--박스); cursor: zoom-in; touch-action: pan-y; user-select: none;
 }
 .dz-gal-main img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
@@ -1016,7 +1033,19 @@ body { background: var(--바닥); }
      erp4 DetailTable 규격: 머리(아이콘 하나 + 이름 + 칸 수) → 같은 표(항목 │ 값). 칸 안에는 그림을 안 넣는다.
      머리 무게 = 중요도: main 남색 면 · sub 회색 면 · trace 면 없음. 선은 없다 — 표는 옅은 박스, 줄은 사이로.
    ═══════════════════════════════════════════════════════════════════ */
-.dz-secs { display: grid; gap: 12px; margin-top: 4px; }
+/* ★2026-09-22 대표 「저 컨셉으로 제대로 디자인해봐」 — 카드 개념을 구역 전체에 편다. 대표 확인(AskUserQuestion)으로
+   카드 얼굴은 세일즈 실물(테두리 1px · 그림자 없음)로 최종 고정 — .dz-row 와 같은 값을 그대로 쓴다.
+   구역 하나 = 카드 하나(머리 + 표를 한 상자 안에) · 표 안의 옅은 박스는 걷는다(카드 안에 또 카드를 안 그린다). */
+/* ★목업 `.identity`처럼 — 차명·상태 머리도 카드 하나 */
+.fn-main .workspace .vehicle-title {
+  padding: 14px; margin: 0 0 10px; border: 1px solid var(--선); border-radius: var(--ui-card-radius);
+  background: var(--카드); box-shadow: none;
+}
+.dz-secs { display: grid; gap: 10px; margin-top: 4px; }
+.dz-sec {
+  padding: 12px; border: 1px solid var(--선); border-radius: var(--ui-card-radius);
+  background: var(--카드); box-shadow: none;
+}
 .dz-sec > summary {
   list-style: none; display: flex; align-items: center; gap: 8px; min-height: 33px; cursor: pointer; user-select: none;
 }
@@ -1034,8 +1063,9 @@ body { background: var(--바닥); }
 .dz-sec[open] .dz-sec-fold { transform: rotate(180deg); }
 .dz-sec > summary:hover .dz-sec-fold { color: var(--글); }
 .dz-sec-hint { margin: 2px 0 0 34px; font-size: var(--글보조); color: #6b7580; }
-.dz-sec-table { margin: 8px 0 0; padding: 4px 12px; background: var(--박스); border-radius: var(--r); }
-.dz-sec-table > div { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); gap: 12px; padding: 7px 0; }
+.dz-sec-table { margin: 8px 0 0; padding: 0; background: none; border-radius: 0; }
+.dz-sec-table > div { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid var(--선); }
+.dz-sec-table > div:first-child { border-top: 0; }
 .dz-sec-table dt {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
   font-size: var(--글보조); line-height: 18px; color: #6b7580;
@@ -1074,6 +1104,8 @@ body { background: var(--바닥); }
 .dz-bar-go:has(> .dz-bar-sub) { grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); }
 /* 단추가 보조 하나뿐이면(정산관리 접수 상세의 「목록」) 한 줄을 다 쓴다 */
 .dz-bar-go:has(> .dz-bar-sub):not(:has(> .primary)) { grid-template-columns: minmax(0, 1fr); }
+/* ★셋(복귀 · 보조 · 주) — 목업(2026-09-22) 3:3:4. 첫 자리(보조 하나째)는 늘 복귀·이전·목록 고정 */
+.dz-bar-go:has(> .dz-bar-sub ~ .dz-bar-sub) { grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 4fr); }
 .fn-main .dz-bar-go .primary, .dz-bar-go .primary {
   /* ★주는 오른쪽(대표 2026-09-18) — 칸 비율은 .dz-bar-go 가 정한다 */
   min-width: 0; width: auto; height: var(--ui-action-h); margin: 0; border: 0; border-radius: var(--ui-radius);
@@ -1129,9 +1161,9 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
   background: var(--남색옅음); color: var(--ci남색); font-weight: 600;
 }
 /* 영업 전용 — 내부 값만 모인 구역: 호박색 결(내부 딱지와 같은 말) */
+.dz-sec.inner { background: #fdf7ef; }
 .dz-sec.inner .dz-sec-ico { background: #fbeedd; color: #94560f; }
 .dz-sec.inner .dz-sec-tag { background: #fbeedd; color: #94560f; }
-.dz-sec.inner .dz-sec-table { background: #fdf7ef; }
 /* 빈 칸 N개 — 구역 끝에 접혀 있다. 펼치면 흐린 칸들이 선다 */
 .dz-sec-empty { margin-top: 4px; }
 .dz-sec-empty > summary {
@@ -1226,7 +1258,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 @media (max-width: 900px) {
   /* 폰 — 판 바닥 = 아래 메뉴 띠 위(사이 0). 사이가 8 이면 짧은 판의 바가 긴 판의 바보다 8 높게 섰다(실측 732 ↔ 740) */
   .fn-main .workspace { padding-bottom: var(--아래띠); }
-  .fn-main .workspace > .panel { min-height: calc(100dvh - 52px - var(--판탭) - var(--아래띠) - 8px); }
+  .fn-main .workspace > .panel { min-height: calc(100dvh - 28px - var(--판탭) - var(--아래띠) - 8px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

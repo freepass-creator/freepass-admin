@@ -23,6 +23,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
 import { 고른값 } from './pick';
+import { Icon } from './Icon';
 
 export type FacetOption = { key: string; label: string; count: number };
 /** 축 하나 — key 는 곧 주소 칸 이름이다 */
@@ -85,9 +86,12 @@ export function FilterSheet({ axes, count, unit }: {
   const cur = shown.find((a) => a.key === active);
   return (
     <div className="dz-fs" ref={box}>
+      {/* ★아이콘 단추 — 목업(2026-09-22) `.filter-trigger`. 글자 대신 아이콘 + 고른 개수는 접근성 이름으로 */}
       <button ref={trigger} type="button" className={`dz-fs-open${open ? ' on' : ''}`}
-        onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-haspopup="dialog" aria-controls={dialogId}>
-        세부검색{total ? <i>{total}</i> : null}
+        onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-haspopup="dialog" aria-controls={dialogId}
+        aria-label={total ? `세부필터 · ${total}개 적용됨` : '세부필터'}>
+        <Icon name="filter" size={20} stroke={1.9} />
+        {total ? <i aria-hidden>{total}</i> : null}
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>

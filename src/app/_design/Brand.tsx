@@ -10,7 +10,7 @@
  * ⚠ 앞서 erp4 앱 아이콘(둥근 네모 + 체크)을 CI 마크처럼 붙였다 — 공식 CI 에는 없다. 걷었다.
  */
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Icon } from './Icon';
 import { Exo_2 } from 'next/font/google';
 
@@ -28,17 +28,19 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 /**
  * 기존 이름 TopMenu는 호환을 위해 유지한다. 현재 위치는 PC 하단 업무 버튼(2026-09-21).
  *   Sales 기준: 흰 바탕, 아이콘·라벨만 강조. 활성 메뉴에 진한 버튼 면을 칠하지 않는다.
- * ★폰에서는 이 메뉴가 안 보인다 — `_design/MobileTabBar`의 다섯 걸음
- *   (상품 · 접수 · 계약 · 청구 · 지급)이 대신한다.
- *   Desktop 4축과 Mobile 5걸음은 같은 업무를 다른 깊이로 배열한 것이며,
- *   청구·지급은 Desktop의 「정산관리」 한 축을 모바일에서 두 입구로 나눈 것이다.
+ * PC와 폰은 같은 다섯 기능을 같은 순서로 쓴다.
  */
 export function TopMenu({ items }: { items: readonly (readonly [string, string])[] }) {
   const path = usePathname() || '/';
+  const search = useSearchParams();
   return (
     <div className="dz-menu">
       {items.map(([href, label]) => {
-        const 여기 = path === href || path.startsWith(`${href}/`);
+        const [targetPath, targetQuery = ''] = href.split('?');
+        const target = new URLSearchParams(targetQuery);
+        const performance = search.get('scope') === 'performance';
+        const 여기 = (path === targetPath || path.startsWith(`${targetPath}/`))
+          && (target.get('scope') === 'performance' ? performance : !(targetPath === '/intake' && performance));
         return (
           <Link key={href} href={href} className={여기 ? 'on' : undefined} aria-current={여기 ? 'page' : undefined}>
             <Icon name={href === '/products' ? 'search' : href === '/intake' ? 'clipboard' : href === '/settlement' ? 'wallet' : 'file-text'} size={24} />

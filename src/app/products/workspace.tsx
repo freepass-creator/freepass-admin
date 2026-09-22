@@ -151,15 +151,19 @@ export async function ProductWorkspace({ q, mode, base }: {
    *   주소 칸은 i 로 시작한다(iq · iv · im · isup · ich) — 상품 쪽 거름과 안 섞이게.
    */
   const iq = sp(q.iq).trim().toLowerCase();
+  const performanceMode = mode === 'intake' && sp(q.scope) === 'performance';
   /**
    * ★접수 목록 칸 = 계약이 앉는 자리 다섯(기능 stage.ts · 대표 2026-09-18 「접수 → 분납실적/완납실적 → 완납·인도 기준 청구·지급」)
    *   당월접수 · 미완료 · 분납실적 · 완납실적 · 취소. 옛 「진행중 / 인도완료」 가름은 버렸다.
    *   처음 여는 칸 = 당월접수(이달의 일). ★미완료(지난달 이전 접수인데 아직 인도 전)는 오래 있을수록 위험 — 단추·줄을 붉게.
    */
-  const iv = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : '당월접수';
+  const iv = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : performanceMode ? 'all' : '당월접수';
   const 칸의 = new Map(irows.map((r) => [r, bucketOf(r)] as const));
   const 칸수 = Object.fromEntries(BUCKETS.map((b) => [b, irows.filter((r) => 칸의.get(r) === b).length])) as Record<Bucket, number>;
-  const 진행 = (r: SettlementRow) => iv === 'all' || 칸의.get(r) === iv;
+  const 실적칸 = (b?: Bucket) => b === '분납실적' || b === '완납실적';
+  const 진행 = (r: SettlementRow) => performanceMode
+    ? 실적칸(칸의.get(r)) && (iv === 'all' || 칸의.get(r) === iv)
+    : iv === 'all' || 칸의.get(r) === iv;
   /** 접수 줄의 상태 칸 — 칸(bucket)이 곧 상태. 당월접수는 인도 여부로 한 번 더 가른다 */
   const 접수상태 = (r: SettlementRow, b?: Bucket): RowStatus =>
     b === '취소' ? { icon: 'circle-slash', label: '취소', tone: 'grey' }
@@ -202,7 +206,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   const car = sel?.product;
   return (
     <>
-      <section className="workspace" data-phone={view} data-mode={mode}>
+      <section className="workspace" data-phone={view} data-mode={performanceMode ? 'performance' : mode}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
         <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
@@ -318,7 +322,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
-          <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
+          <PanelHeader title={performanceMode ? '실적 목록' : '접수 목록'} count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['iq'])}
@@ -328,7 +332,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           </div>
           <div className="quick-filters">
             <Link className={iv === 'all' ? 'active' : ''} href={keep({ iv: 'all' })}>전체</Link>
-            {BUCKETS.map((b) => (
+            {(performanceMode ? BUCKETS.filter(실적칸) : BUCKETS).map((b) => (
               <Link key={b} className={`${iv === b ? 'active' : ''}${b === '미완료' && 칸수[b] ? ' warn' : ''}`}
                 href={keep({ iv: b === '당월접수' ? '' : b })}>{b} <small>{칸수[b]}</small></Link>
             ))}
@@ -345,14 +349,14 @@ export async function ProductWorkspace({ q, mode, base }: {
                   meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}
-              {ishown.length === 0 && <EmptyState>조건에 맞는 접수가 없습니다.</EmptyState>}
+              {ishown.length === 0 && <EmptyState>조건에 맞는 {performanceMode ? '실적' : '접수'}이 없습니다.</EmptyState>}
             </div>
           )}
           {/* ★하단바 — 접수 목록에서는 [+ 신규 접수] 하나(대표 2026-09-18 「신규접수 버튼도 하단으로 옮기는 게 맞지 않나」)
                 누르면 같은 자리에 [취소] [접수 저장] 이 선다 — 판이 바뀌면 바도 따라 바뀐다 */}
-          <ActionBar>
+          {!performanceMode && <ActionBar>
             <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
-          </ActionBar>
+          </ActionBar>}
         </section>}
       </section>
 

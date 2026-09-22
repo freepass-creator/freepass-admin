@@ -5,13 +5,13 @@ import { TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { currentAdmin } from '../../server/require-admin';
 
-/** 기존 업무 4축 — 2026-09-21 결정에 따라 PC에서도 하단 버튼으로 배치.
- *   ★폰은 이 메뉴를 안 쓴다 — 다섯 걸음 하단바(`MobileTabBar`)가 대신한다(§14-8 개정, 아래 문서). */
+/** 관리자 업무 5축 — PC와 모바일에서 같은 순서와 같은 기능을 쓴다. */
 const MENU = [
   ['/products', '상품찾기'],
   ['/intake', '계약접수'],
-  ['/settlement', '정산관리'],
   ['/esign', '전자계약'],
+  ['/intake?scope=performance&iv=all&v=work', '실적관리'],
+  ['/settlement', '정산관리'],
 ] as const;
 
 /**
@@ -39,7 +39,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <TopMenu items={MENU} />
       </nav>
       {/*
-        ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
+        ★폰 하단 — 다섯 기능(상품 · 접수 · 계약 · 실적 · 정산). 위 띠에는 이동 버튼을 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
         depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
       */}

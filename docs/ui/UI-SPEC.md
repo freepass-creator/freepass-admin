@@ -11,12 +11,12 @@
 
 ### 현재 화면 체계
 
-- Desktop 상단 업무축: **상품찾기 / 계약접수 / 정산관리 / 전자계약**
-- Mobile depth 0 하단축: **상품 / 접수 / 계약 / 청구 / 지급**
-  - 청구·지급은 같은 정산관리 화면의 서로 다른 입구다.
+- Desktop·Mobile 업무축: **상품찾기 / 계약접수 / 전자계약 / 실적관리 / 정산관리**
+  - 모바일 표기는 **상품 / 접수 / 계약 / 실적 / 정산**으로 줄인다.
+  - 실적은 접수 원장의 분납실적·완납실적 보기이며, 청구·지급은 정산관리 안에서 가른다.
   - 상세(depth 1·2)에서는 5탭 대신 해당 판의 하단 action bar가 선다.
-- 첫 화면: `/` → `/intake`
-- 실제 route: `/products` · `/intake` · `/settlement` · `/esign`
+- 첫 화면: `/` → `/products`
+- 실제 route: `/products` · `/intake` · `/esign` · `/intake?scope=performance&iv=all&v=work` · `/settlement`
 
 ### 현재 시각 토큰
 

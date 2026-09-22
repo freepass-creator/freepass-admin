@@ -16,18 +16,26 @@ const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
 const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
 
-test('admin root enters the real intake workspace and contains no demo runtime',()=>{
-  assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
+test('admin root enters the real product workspace and contains no demo runtime',()=>{
+  assert.ok(/redirect\(['"]\/products['"]\)/.test(root));
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
 test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
   assert.ok(chrome.includes("['/products', '상품찾기']"));
   assert.ok(chrome.includes("['/intake', '계약접수']"));
+  assert.ok(chrome.includes("['/esign', '전자계약']"));
+  assert.ok(chrome.includes("['/intake?scope=performance&iv=all&v=work', '실적관리']"));
   assert.ok(chrome.includes("['/settlement', '정산관리']"));
   assert.ok(chrome.includes('<MobileTabBar />'));
   assert.ok(chrome.includes('dz-desktop-bottom'));
   assert.equal(chrome.includes('className="rail"'),false);
+});
+
+test('performance lane reuses only delivered installment and paid intake buckets',()=>{
+  assert.ok(workspace.includes("sp(q.scope) === 'performance'"));
+  assert.ok(workspace.includes("b === '분납실적' || b === '완납실적'"));
+  assert.ok(workspace.includes("performanceMode ? '실적 목록' : '접수 목록'"));
 });
 
 test('product workspace is bound to real repositories and whole-offer selection',()=>{

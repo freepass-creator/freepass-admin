@@ -12,7 +12,7 @@ import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
-import type { DocumentReference } from 'firebase-admin/firestore';
+import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
 
 /**
@@ -80,6 +80,11 @@ export class Erp5SettlementRepository {
     by: string = BY,
     operationId?: string,
     cash?: { axis: Axis; amount: number; day: string; kind: 'collected' | 'paid' },
+    guard?: (
+      tx: Transaction,
+      cur: Record<string, unknown>,
+      row: SettlementRow,
+    ) => Promise<{ ok: true } | { ok: false; error: string }>,
   ): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
@@ -114,6 +119,10 @@ export class Erp5SettlementRepository {
         if (cashInvoiceDoc?.exists && invoiceNeedsCashAllocation(cashInvoiceDoc.data() as IssuedInvoice)) {
           return { ok: false as const, error: '환수가 포함된 묶음 문서는 행별 수금·지급 배분 정책이 아직 확정되지 않았습니다 — 이 문서는 수동 정산 확인이 필요합니다' };
         }
+      }
+      if (guard) {
+        const checked = await guard(tx, cur, row);
+        if (!checked.ok) return checked;
       }
       const r = apply(cur, row);
       if (!r.ok) return r;
@@ -211,7 +220,30 @@ export class Erp5SettlementRepository {
 
   /** 계약서 · 인도 · 취소. ★바뀌는 칸만 쓰고 이력을 남긴다. 바뀔 게 없으면 안 쓴다. */
   async setProgress(code: string, change: ProgressChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    return this.mutateRow(code, (cur) => progressPatch(cur, change));
+    if (change.kind !== 'plate') return this.mutateRow(code, (cur) => progressPatch(cur, change));
+
+    const target = change.plate.replace(/\s/g, '').trim();
+    const db = erp5();
+    return this.mutateRow(
+      code,
+      (cur) => progressPatch(cur, change),
+      BY,
+      undefined,
+      undefined,
+      async (tx, _cur, row) => {
+        if (!target) return { ok: true as const }; // 빈 값 오류는 progressPatch가 같은 문구로 처리한다.
+        const sameDay = await tx.get(db.collection(ROWS).where('receivedAt', '==', row.receivedAt));
+        const norm = (v: unknown) => String(v ?? '').replace(/\s/g, '').trim();
+        const duplicate = sameDay.docs.find((d) => d.id !== code && norm(d.data().plate) === target);
+        if (duplicate) {
+          return {
+            ok: false as const,
+            error: `같은 접수일(${row.receivedAt})에 차량번호 ${target} 접수가 이미 있습니다 — 기존 접수를 확인해 주세요`,
+          };
+        }
+        return { ok: true as const };
+      },
+    );
   }
 
   /**

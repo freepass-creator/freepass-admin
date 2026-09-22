@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
 import { tallyMany } from '../_design/facet-standing';
-import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, vehicleFacetValue, 보증금 } from './workspace-config';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productQualityFlags, vehicleFacetValue, 보증금 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -56,7 +56,7 @@ test('natural product search keeps unknown words as free text', () => {
 test('parsed conditions merge with explicit facet state without duplicates', () => {
   const empty = {
     status: [], kind: [], origin: [], maker: [], model: [], sub: [], trim: [], perk: [],
-    term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [],
+    term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [], quality: [],
   };
   const merged = mergeProductSelections({ ...empty, perk: ['무심사'] }, { perk: ['무심사', '만21세'], term: ['36'] });
   assert.deepEqual(merged.perk, ['무심사', '만21세']);
@@ -90,6 +90,33 @@ test('multi-value facet counting counts each product once per value', () => {
   assert.equal(counts.get('무심사'), 2);
   assert.equal(counts.get('무보증'), 1);
   assert.equal(counts.get('경력무관'), 1);
+});
+
+test('admin quality flags expose missing source facts without inventing defaults', () => {
+  const flags = productQualityFlags({
+    vehicle: {
+      nodeId: '', originId: '', manufacturerId: '', modelId: '', matchLevel: 'UNMATCHED',
+    },
+    policyState: 'INFERRED',
+    offers: [{ id: 'P1#36', termMonths: 36, monthlyRent: 700_000, policyValues: [] }],
+  });
+  assert.deepEqual(flags, [
+    'PHOTO_MISSING', 'VEHICLE_UNMATCHED', 'POLICY_UNCONFIRMED', 'DEPOSIT_UNKNOWN', 'MILEAGE_UNKNOWN',
+  ]);
+});
+
+test('admin quality flags clear only when the source facts are confirmed', () => {
+  const flags = productQualityFlags({
+    photoUrl: 'https://example.com/car.jpg',
+    vehicle: {
+      nodeId: 'trim:k8', originId: '국산', manufacturerId: '기아', modelId: 'K8', matchLevel: 'TRIM',
+    },
+    policyState: 'CONFIRMED',
+    offers: [{
+      id: 'P1#36', termMonths: 36, monthlyRent: 700_000, deposit: 0, annualMileageKm: 20_000, policyValues: [],
+    }],
+  });
+  assert.deepEqual(flags, []);
 });
 
 

@@ -24,7 +24,8 @@ import { standingFixed, tallyMany, tallyMatch } from '../_design/facet-standing'
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, vehicleFacetValue, 보증금, 정책말,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productQualityFlags, 상품점검값,
+  vehicleFacetValue, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -53,6 +54,7 @@ const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
   supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
   cls: (p, k) => p.vehicleClass === k,
   fuel: (p, k) => p.specs.fuel === k,
+  quality: (p, k) => productQualityFlags(p).includes(k),
 };
 
 /** 사진 URL은 서버 proxy 규칙을 반드시 거친다. */
@@ -91,7 +93,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   /** 차량명 조합과 문자열 정규화는 상품마다 한 번만 한다. facet 교차집계가 같은 문자열을 다시 만들지 않는다. */
   const searchIndex = new Map(pool.map(({ product: p }) => [p, [
     vehicleName(p), p.vehicle.manufacturerId, p.vehicle.modelId, p.vehicle.subModelId, p.vehicle.trimId,
-    p.registration?.vehicleNumber, p.supplierName, p.supplierId,
+    p.id, p.supplierProductKey, p.registration?.vehicleNumber, p.registration?.vin, p.supplierName, p.supplierId,
   ].filter(Boolean).join(' ').normalize('NFKC').toLowerCase()]));
   const searched = text ? pool.filter(({ product }) => searchIndex.get(product)?.includes(text)) : pool;
   const hits = searched.filter((h) => 통과(h)).map((h) => {
@@ -130,9 +132,11 @@ export async function ProductWorkspace({ q, mode, base }: {
     supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
+    quality: 상품점검값.map(({ key: k, label }) => ({ k, label })),
   };
   const 축값 = (a: 상품축, h: (typeof pool)[number], 요금: Offer[]): string[] => {
     if (a === 'perk') return h.product.perks ?? [];
+    if (a === 'quality') return productQualityFlags(h.product);
     if (!(요금축 as readonly string[]).includes(a)) {
       const product = h.product;
       const one = a === 'status' ? product.status

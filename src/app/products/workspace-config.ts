@@ -33,7 +33,7 @@ const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
 
 export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
 export const 차축 = [
-  'status', 'kind', 'origin', 'maker', 'model', 'sub', 'trim', 'perk', 'supplier', 'cls', 'fuel',
+  'status', 'kind', 'origin', 'maker', 'model', 'sub', 'trim', 'perk', 'supplier', 'cls', 'fuel', 'quality',
 ] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
@@ -44,7 +44,28 @@ export const 상품축이름: [상품축, string][] = [
   ['origin', '원산지'], ['maker', '제조사'], ['model', '모델'], ['sub', '세부모델'], ['trim', '세부트림'],
   ['perk', '혜택'], ['term', '계약기간'],
   ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '약정주행'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
+  ['quality', '데이터 점검'],
 ];
+
+export const 상품점검값 = [
+  { key: 'PHOTO_MISSING', label: '사진 없음' },
+  { key: 'VEHICLE_UNMATCHED', label: '차종 미매칭' },
+  { key: 'POLICY_UNCONFIRMED', label: '정책 미확정' },
+  { key: 'DEPOSIT_UNKNOWN', label: '보증금 미확인' },
+  { key: 'MILEAGE_UNKNOWN', label: '약정주행 미확인' },
+] as const;
+
+/** 공개몰 노출조건이 아니라 Admin이 원본을 가져다 쓰기 전에 살펴야 할 점검 신호다. */
+export function productQualityFlags(product: Pick<CanonicalProduct,
+  'photoUrl' | 'photos' | 'vehicle' | 'policyState' | 'offers'>): string[] {
+  const flags: string[] = [];
+  if (!product.photoUrl && !product.photos?.length) flags.push('PHOTO_MISSING');
+  if (product.vehicle.matchLevel === 'UNMATCHED') flags.push('VEHICLE_UNMATCHED');
+  if (product.policyState !== 'CONFIRMED') flags.push('POLICY_UNCONFIRMED');
+  if (product.offers.some((offer) => offer.deposit === undefined)) flags.push('DEPOSIT_UNKNOWN');
+  if (product.offers.some((offer) => offer.annualMileageKm === undefined)) flags.push('MILEAGE_UNKNOWN');
+  return flags;
+}
 
 /** 차종마스터에서 확정된 깊이까지만 필터값으로 쓴다. 원문에 글자가 있어도 미확정 하위축에는 세우지 않는다. */
 export function vehicleFacetValue(

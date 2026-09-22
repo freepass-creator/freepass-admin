@@ -46,6 +46,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     product: S(f, 'product'), rentKind: S(f, 'rentKind'), contractType: S(f, 'contractType'),
     term: N(f, 'term'), rent: N(f, 'rent'), deposit: N(f, 'deposit'), price: N(f, 'price'),
     payKind: S(f, 'payKind'),
+    intakeRequestId: S(f, 'intakeRequestId') || undefined,
     sourceProductId: S(f, 'sourceProductId') || undefined,
     sourceProductVersion: N(f, 'sourceProductVersion'),
     sourceOfferId: S(f, 'sourceOfferId') || undefined,

@@ -12,6 +12,7 @@ import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
+import { directIntakeAllowsMissingPlate } from './product-kind';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -32,6 +33,8 @@ export interface IntakeInput {
   deposit: number | null;
   price: number | null;
   payKind: string;      // 일시납 · 2회분납 · 3회분납
+  /** 차량번호 없는 직접 신차 견적/발주를 같은 날 여러 건 안전하게 구분하는 요청 ID. */
+  intakeRequestId?: string;
   /** 상품에서 골라 들어온 접수만 채운다. 접수 당시 Product/Offer 원본을 되짚기 위한 provenance. */
   sourceProductId?: string;
   sourceProductVersion?: number | null;
@@ -61,7 +64,10 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  */
 export function validateIntake(x: IntakeInput, today: string): string[] {
   const e: string[] = [];
-  if (!x.plate.trim() && !x.sourceProductId?.trim()) e.push('차량번호 또는 상품 원본 ID가 없습니다');
+  if (!x.plate.trim() && !x.sourceProductId?.trim()) {
+    if (!directIntakeAllowsMissingPlate(x.product)) e.push('차량번호가 없습니다');
+    else if (!x.intakeRequestId?.trim()) e.push('차량번호 없는 직접접수의 요청 ID가 없습니다');
+  }
   if (!DAY.test(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 로 넣습니다');
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
   if (!x.customer.trim()) e.push('고객명이 없습니다');
@@ -89,7 +95,8 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
  *   가장 비슷한 규칙에 끼워 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
 export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
-  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt);
+  const identityMode = x.sourceProductId?.trim() ? 'product' : x.plate.trim() ? 'plate' : 'request';
+  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, identityMode);
   const iso = new Date(nowMs).toISOString();
   const auto = fee?.status === 'AUTO' ? fee : null;
   const m = x.feeManual;
@@ -110,6 +117,8 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     // ★미확인(null)을 0으로 바꾸지 않는다. 0원/무보증과 미확인은 전혀 다른 사실이다.
     term: x.term, rent: x.rent, deposit: x.deposit, price: x.price,
     payKind: x.payKind.trim(),
+    intakeRequestId: x.intakeRequestId?.trim() || null,
+    intakeIdentityMode: identityMode,
     sourceProductId: x.sourceProductId?.trim() || null,
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,

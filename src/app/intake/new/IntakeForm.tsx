@@ -2,12 +2,14 @@
 
 import { startTransition, useActionState, useRef, useState, type ReactNode } from 'react';
 import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../actions';
+import { directIntakeAllowsMissingPlate } from '../../../domain/settlement/product-kind';
 
 export type IntakeDefaults = {
   receivedAt: string; plate: string; model: string; supplier: string; supplierCode: string;
   term: string; rent: string; deposit: string;
   /** 차에서 온 원장 상품구분 · 렌트구분(기능 ledgerKindOf) · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
   product?: string; rentKind?: string; price?: string;
+  intakeRequestId?: string;
   sourceProductId?: string; sourceProductVersion?: string; sourceOfferId?: string; sourceSnapshotId?: string;
 };
 export type IntakeOptions = {
@@ -46,6 +48,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   const [channelCode, setChannelCode] = useState('');
   const [agentCode, setAgentCode] = useState('');
   const [supplierCode, setSupplierCode] = useState(defaults.supplierCode);
+  const [directProduct, setDirectProduct] = useState(defaults.product ?? '');
   const [delivered, setDelivered] = useState(false);
   /*
    * ★수수료 미리보기 — 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」(대표 2026-09-18)
@@ -145,6 +148,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <datalist id="dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dl-supplier">{options.suppliers.map((v) => <option key={v} value={v} />)}</datalist>
 
+      <input type="hidden" name="intakeRequestId" value={defaults.intakeRequestId ?? ''} />
       {picked ? (
         <>
           {/* 차에서 이미 정해진 것 — 판 위 카드가 보여 준다. 여기는 숨은 칸으로만 간다 */}
@@ -176,7 +180,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         <>
           {묶음('차량', (
             <div className="dz-form-grid">
-              <label>차량번호 *<input name="plate" defaultValue={defaults.plate} required /></label>
+              <label>차량번호{directIntakeAllowsMissingPlate(directProduct) ? ' (배정 후 입력)' : ' *'}
+                <input name="plate" defaultValue={defaults.plate} required={!directIntakeAllowsMissingPlate(directProduct)} />
+              </label>
               <label>모델<input name="model" defaultValue={defaults.model} /></label>
               <label>공급사 *<input name="supplier" list="dl-supplier" defaultValue={defaults.supplier} required
                 onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? supplierCode)} /></label>
@@ -187,7 +193,12 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           {묶음('조건', (
             <div className="dz-form-grid">
               <label>접수일 *<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>
-              {sel('product', [...(ledgerProducts ?? options.products)], '상품구분')}
+              <label>상품구분
+                <select name="product" value={directProduct} onChange={(e) => setDirectProduct(e.target.value)}>
+                  <option value="">—</option>
+                  {[...(ledgerProducts ?? options.products)].map((v) => <option key={v}>{v}</option>)}
+                </select>
+              </label>
               <label>계약기간(개월)<input name="term" defaultValue={defaults.term} inputMode="numeric" /></label>
               <label>렌탈료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
               <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>

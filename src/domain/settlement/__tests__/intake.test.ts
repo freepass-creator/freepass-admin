@@ -29,6 +29,20 @@ describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은
     assert.notEqual(intakeCode('', 'P-1', '2026-09-18'), intakeCode('', 'P-2', '2026-09-18'));
     assert.equal(intakeKey('', 'P-1', '2026-09-18'), 'product:P-1|2026-09-18');
   });
+  it('차량번호 없는 직접접수는 Request ID로 서로 다른 줄을 만든다', () => {
+    const a = intakeCode('', '', '2026-09-18', 'req-a');
+    const a2 = intakeCode('', '', '2026-09-18', 'req-a');
+    const b = intakeCode('', '', '2026-09-18', 'req-b');
+    assert.equal(a, a2);
+    assert.notEqual(a, b);
+    assert.equal(intakeKey('', '', '2026-09-18', 'req-a'), 'request:req-a|2026-09-18');
+  });
+  it('request identity는 나중에 차량번호가 생겨도 같은 identity를 유지한다', () => {
+    assert.equal(
+      intakeKey('', '', '2026-09-18', 'req-a', 'request'),
+      intakeKey('12가3456', '', '2026-09-18', 'req-a', 'request'),
+    );
+  });
   it('접수일이 다르면 다른 줄 (재계약)', () =>
     assert.notEqual(settlementCode('316라1593', '2026-08-06'), settlementCode('316라1593', '2026-08-13')));
   it('이력 문서 id 는 ERP5 실측 꼴 — 차번_접수일', () => assert.equal(eventDocId('99시험0001', '2026-08-26'), '99시험0001_2026-08-26'));
@@ -44,8 +58,24 @@ describe('validateIntake — 최초 접수 필수값', () => {
     const e = validateIntake({ ...base, plate: '', sourceProductId: 'P-NEW' }, '2026-09-18');
     assert.equal(e.some((x) => x.includes('차량번호')), false);
   });
-  it('직접접수는 차량번호도 Product ID도 없으면 막는다', () => {
-    assert.match(validateIntake({ ...base, plate: '', sourceProductId: undefined }, '2026-09-18').join(), /차량번호/);
+  it('직접 신차 견적/발주는 차량번호 없이도 요청 ID로 접수한다', () => {
+    for (const product of ['견적출고', '신차발주']) {
+      const e = validateIntake({
+        ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef', product,
+      }, '2026-09-18');
+      assert.equal(e.some((x) => x.includes('차량번호')), false, product);
+      assert.equal(e.some((x) => x.includes('요청 ID')), false, product);
+    }
+  });
+  it('차량번호 없는 직접 신차 견적/발주는 요청 ID가 없으면 막는다', () => {
+    assert.match(validateIntake({
+      ...base, plate: '', sourceProductId: undefined, intakeRequestId: undefined, product: '신차발주',
+    }, '2026-09-18').join(), /요청 ID/);
+  });
+  it('그 밖 직접접수는 차량번호가 없으면 막는다', () => {
+    assert.match(validateIntake({
+      ...base, plate: '', sourceProductId: undefined, intakeRequestId: 'req-1234567890abcdef', product: '장기렌트',
+    }, '2026-09-18').join(), /차량번호/);
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
@@ -69,6 +99,17 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
     assert.equal(row.money.claim, null);
   });
   it('인도 전이면 인도일을 안 박는다', () => assert.equal(r.deliveredAt, ''));
+  it('차량번호 없는 직접 신차발주는 request identity를 원장에 보존한다', () => {
+    const raw = intakeRecord({
+      ...base,
+      plate: '',
+      product: '신차발주',
+      intakeRequestId: 'req-direct-newcar',
+    }, 1_790_000_000_000);
+    assert.equal(raw.intakeRequestId, 'req-direct-newcar');
+    assert.equal(raw.intakeIdentityMode, 'request');
+    assert.equal(raw.code, intakeCode('', '', '2026-09-18', 'req-direct-newcar', 'request'));
+  });
   it('미확인 계약조건은 0으로 바꾸지 않는다', () => {
     const raw = intakeRecord({ ...base, term: null, rent: null, deposit: null, price: null }, 1_790_000_000_000);
     assert.equal(raw.term, null);

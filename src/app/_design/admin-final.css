@@ -599,24 +599,73 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   border: 0; border-radius: var(--ui-card-radius);
 }
 
+/* 승인 목업의 상품상세: 사진·신원·조건·차량정보를 한 흐름으로 읽는다. */
+.fn-main .workspace .detail-panel .dz-tabbody { display: grid; gap: 0; }
+.fn-main .workspace .detail-panel .dz-gal { border-radius: var(--ui-card-radius) var(--ui-card-radius) 0 0; overflow: hidden; }
+.fn-main .workspace .detail-panel .vehicle-title {
+  margin: 0; padding: 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow);
+}
+.fn-main .workspace .detail-panel .dz-hero-facts {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+  padding: 0 12px 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow);
+}
+.fn-main .workspace .detail-panel .dz-hero-facts span {
+  min-width: 0; padding: 8px 6px; border-radius: 8px; background: var(--ui-panel-ground);
+  color: #4f5965; font-size: 12px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dz-section-title { margin: 18px 0 9px; font-size: 14px; font-weight: 650; }
+.fn-main .workspace .dz-offer-cards { display: grid; gap: 8px; padding: 0; overflow: visible; }
+.fn-main .workspace .dz-offer-cards button {
+  width: 100%; height: auto; min-height: 64px; padding: 11px 12px; border: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; align-content: center; gap: 4px;
+  background: var(--ui-card-ground); color: var(--글); text-align: left; box-shadow: var(--ui-card-shadow);
+}
+.fn-main .workspace .dz-offer-cards button.active { background: var(--ui-card-selected); box-shadow: var(--ui-card-selected-shadow); }
+.fn-main .workspace .dz-offer-cards strong { font-size: 14px; font-weight: 650; }
+.fn-main .workspace .dz-offer-cards small { color: #5c6268; font-size: 12px; font-weight: 400; }
+.fn-main .workspace .detail-panel .dz-perks { margin-top: 8px; }
+.dz-vehicle-card { margin-top: 18px; }
+.dz-vehicle-card h3 { margin: 0 0 9px; font-size: 14px; font-weight: 650; }
+.dz-vehicle-card dl {
+  display: grid; gap: 8px; margin: 0; padding: 12px; border-radius: var(--ui-card-radius);
+  background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow);
+}
+.dz-vehicle-card dl > div { display: flex; justify-content: space-between; gap: 14px; font-size: 12px; }
+.dz-vehicle-card dt { color: #5c6268; }
+.dz-vehicle-card dd { margin: 0; font-weight: 650; text-align: right; }
+.dz-full-info { margin-top: 12px; }
+.dz-full-info > summary {
+  min-height: 44px; padding: 0 12px; display: flex; align-items: center;
+  border-radius: var(--ui-control-radius); background: #eceff2; font-size: 13px; font-weight: 650; cursor: pointer;
+}
+.dz-full-info > .vehicle-title { display: none; }
+.dz-full-info > .dz-secs { margin-top: 12px; }
+.dz-bar-go:has(> :nth-child(3)) { grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 4fr); }
+
+/* 계약접수는 목업의 선택상품 한 카드 뒤에 최소 입력만 이어진다. */
+.fn-main .workspace .dz-picked-product {
+  grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 12px; background: var(--ui-card-ground);
+}
+.dz-picked-thumb { width: 64px; height: 48px; border-radius: 10px; overflow: hidden; background: var(--ui-panel-ground); display: grid; place-items: center; }
+.dz-picked-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.dz-picked-thumb span { color: #8a939f; font-size: 11px; }
+.dz-picked-copy { min-width: 0; display: grid; gap: 3px; }
+.dz-picked-copy > b, .dz-picked-copy > p, .dz-picked-copy > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-picked-copy > strong { color: var(--ci남색); font-size: 13px; }
+.dz-picked-product > .dz-picked-note { grid-column: 1 / -1; }
+
 @media (min-width: 901px) {
   body:has(> .dz-statusbar) { padding-bottom: 0; }
   body:has(> .dz-statusbar) .fn-main .workspace { height: calc(100dvh - var(--ui-shell-h)); }
   .dz-desktop-bottom { display: none; }
 
   /* 승인 웹 목업의 세 판 밀도: 사진 138, 짧은 탭, 12 간격, 44 컨트롤. */
-  .fn-main .workspace .detail-panel .tabs {
-    min-height: 32px; margin: 0 0 10px; gap: 4px;
-  }
-  .fn-main .workspace .detail-panel .tabs button {
-    height: 32px; padding: 0 11px; font-size: 12px;
-  }
   .fn-main .workspace .dz-gal-main {
     height: 138px; aspect-ratio: auto; border-radius: var(--ui-card-radius);
   }
   .fn-main .workspace .dz-gal.many { grid-template-columns: minmax(0, 1fr) 54px; gap: 6px; }
   .fn-main .workspace .dz-gal-thumbs button { border-radius: 8px; }
-  .fn-main .workspace .vehicle-title { padding: 12px 0 8px; }
+  .fn-main .workspace .vehicle-title { padding: 12px; }
   .fn-main .workspace .vehicle-title h2 { margin-bottom: 3px; font-size: 17px; }
   .fn-main .workspace .summary-grid { margin-top: 8px; }
   .fn-main .workspace .summary-grid > div { padding: 9px 10px; }
@@ -628,10 +677,6 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
     background: var(--ui-panel-ground);
   }
   .fn-main .workspace .dz-picked { margin-bottom: 10px; padding: 12px; background: var(--ui-card-ground); box-shadow: var(--ui-card-shadow); }
-  .fn-main .workspace .dz-picked-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
-  .fn-main .workspace .dz-picked-grid > div { padding: 7px 8px; background: var(--ui-panel-ground); }
-  .fn-main .workspace .dz-picked-grid dt { font-size: 11px; }
-  .fn-main .workspace .dz-picked-grid dd { font-size: 12px; }
   .fn-main .workspace .dz-picked-note { font-size: 11px; }
   .fn-main .workspace .dz-intake-form { gap: 8px; }
   .fn-main .workspace .dz-form-group { padding: 10px 12px; background: #eceff2; }
@@ -669,6 +714,5 @@ header.dz-statusbar .dz-me { color: #d5dce8; }
   .fn-main .workspace .dz-row-l1 > b { flex: 1 1 auto; }
   .fn-main .workspace .dz-form-grid { grid-template-columns: minmax(0, 1fr); }
   .fn-main .workspace .dz-gal-main { height: 180px; aspect-ratio: auto; border-radius: var(--ui-card-radius); }
-  .fn-main .workspace .detail-panel .tabs { min-height: 44px; margin: 0 0 10px; }
-  .fn-main .workspace .vehicle-title { padding: 12px 0 8px; }
+  .fn-main .workspace .vehicle-title { padding: 12px; }
 }

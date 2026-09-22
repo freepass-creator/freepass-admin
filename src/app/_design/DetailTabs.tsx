@@ -11,38 +11,32 @@
  *   ⇒ 하단바([공유] [이 상품 접수하기])를 탭 «밖», 판 바닥에 둔다 — 어느 탭에서나, 어느 판에서나 같은 줄에 선다.
  *     기간 · 값 한 줄은 본문으로 돌아갔다(요약에서 구른다). 고른 요금은 OfferPicker 가 useChosenOffer 로 알려 준다.
  */
-import { useCallback, useId, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { Share } from './Share';
 import { ChosenOffer } from './chosen-offer';
 import { ActionBar } from './Primitives';
 
-export function DetailTabs({ summary, info, applyBase, initialOffer }: {
+export function DetailTabs({ summary, info, applyBase, initialOffer, backHref }: {
   summary: ReactNode; info: ReactNode;
   /** 처음 고른 요금 — 서버가 미리 알려 준다(안 주면 화면이 뜬 뒤에야 주 단추가 서서 바가 한 번 흔들린다) */
   initialOffer?: string;
   /** 계약접수만 — 오른쪽 판을 신규 접수로 바꾸는 주소 바탕(여기에 &offer= 를 붙인다). 없으면(상품찾기) 주 단추 없음 */
   applyBase?: string;
+  backHref?: string;
 }) {
-  const [tab, setTab] = useState<'summary' | 'info'>('summary');
-  const uid = useId();
-  const summaryTab = `${uid}-summary-tab`, infoTab = `${uid}-info-tab`;
-  const summaryPanel = `${uid}-summary-panel`, infoPanel = `${uid}-info-panel`;
   const [offer, setOffer] = useState(initialOffer ?? '');
   const 알림 = useCallback((id: string) => setOffer(id), []);
   return (
     <ChosenOffer.Provider value={알림}>
-      <div className="tabs" role="tablist" aria-label="상품 상세 보기">
-        <button id={summaryTab} role="tab" aria-selected={tab === 'summary'} aria-controls={summaryPanel}
-          type="button" className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
-        <button id={infoTab} role="tab" aria-selected={tab === 'info'} aria-controls={infoPanel}
-          type="button" className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>상세정보</button>
-      </div>
-      <div className="dz-tabbody">
-        <div id={summaryPanel} role="tabpanel" aria-labelledby={summaryTab} hidden={tab !== 'summary'}>{summary}</div>
-        <div id={infoPanel} role="tabpanel" aria-labelledby={infoTab} hidden={tab !== 'info'}>{info}</div>
-      </div>
+      <div className="dz-tabbody">{summary}</div>
+      <details className="dz-full-info">
+        <summary>전체 상세정보</summary>
+        {info}
+      </details>
       {/* ★하단바 — 판 바닥(§14-3): [공유 3] [이 상품 접수하기 7] */}
       <ActionBar>
+        {backHref && <Link className="dz-bar-sub" href={backHref}>목록</Link>}
         <Share />
         {applyBase && offer && (
           <a className="primary" href={`${applyBase}${applyBase.includes('?') ? '&' : '?'}offer=${encodeURIComponent(offer)}`}>이 상품 접수하기</a>

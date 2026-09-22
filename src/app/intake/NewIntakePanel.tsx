@@ -8,6 +8,7 @@ import { EmptyState, Notice, PanelHeader } from '../_design/Primitives';
 import { previewFeeAction } from './actions';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
 import { buildIntakeOptions } from './intake-options';
+import { imgSrc } from '../../server/image-proxy';
 
 /** 오른쪽 판 — 신규 접수. 상품에서 왔으면 차·요금이 미리 채워진다. */
 export async function NewIntakePanel({ rows, productId, offerId, back }: {
@@ -53,23 +54,18 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
       <PanelHeader title="신규 계약접수" backHref={back} backLabel="접수 목록으로" />
       {product ? (
         /* ★차 골라 접수 — 차 · 기간 · 값 · 수수료는 이미 정해졌다(읽기). 바꾸려면 가운데 상세에서 기간을 다시 골라 「이 상품 접수하기」 */
-        <div className="dz-picked">
-          <span className="dz-picked-label">접수 상품</span>
-          <b>{vehicleName(product)}</b>
-          <p>{txt(product.registration?.vehicleNumber)} · {product.supplierName ?? product.supplierId}{짝?.certain ? ` · ${짝.product}` : product.productKind ? ` · ${product.productKind}` : ''}</p>
+        <div className="dz-picked dz-picked-product">
+          <div className="dz-picked-thumb">
+            {(product.photos?.[0] || product.photoUrl) ? <img src={imgSrc(product.photos?.[0] || product.photoUrl!)} alt="" /> : <span>사진 없음</span>}
+          </div>
+          <div className="dz-picked-copy">
+            <span className="dz-picked-label">접수 상품</span>
+            <b>{vehicleName(product)}</b>
+            <p>{product.supplierName ?? product.supplierId} · {txt(product.status)}</p>
           {offer
-            ? <dl className="dz-picked-grid">
-                <div><dt>기간</dt><dd>{offer.termMonths}개월</dd></div>
-                <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}원</dd></div>
-                <div><dt>보증금</dt><dd>{offer.deposit === undefined ? '미확인' : `${won(offer.deposit)}원`}</dd></div>
-                <div><dt>수수료</dt><dd>{
-                  고를말.length ? <span className="dz-muted">상품구분을 고르면 섭니다</span>
-                  : !수수료 ? '—'
-                    : 수수료.status === 'AUTO' ? <>청구 <b>{won(수수료.claim)}</b> · 지급 <b>{won(수수료.pay)}</b></>
-                      : <span className="dz-warn-txt">직접 넣어야 함</span>
-                }</dd></div>
-              </dl>
+            ? <strong>{offer.termMonths}개월 · 월 {won(offer.monthlyRent)}원</strong>
             : <Notice tone="warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</Notice>}
+          </div>
           {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · {수수료.basis} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>

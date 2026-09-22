@@ -312,6 +312,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                  *   ⚠ keep() 은 base(`/products`)로 주소를 짓는다 — 상품찾기에서 그대로 쓰면 없는 주소가 된다.
                  */
                 applyBase={keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' })}
+                backHref={keep({ v: 'list' })}
                 summary={<>
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
@@ -326,11 +327,25 @@ export async function ProductWorkspace({ q, mode, base }: {
                     </div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}{car.statusReason ? ` · ${car.statusReason}` : ''}</Tag>
                   </div>
+                  <div className="dz-hero-facts">
+                    <span>{txt(car.specs.fuel)}</span>
+                    <span>{txt(car.specs.drivetrain)}</span>
+                    <span>{car.specs.seats ? `${car.specs.seats}인승` : '승차 미확인'}</span>
+                  </div>
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
                   <OfferPicker key={`기간-${car.id}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     perks={car.perks} perksNote={정책말(car.policyState)} />
+                  <section className="dz-vehicle-card">
+                    <h3>차량 정보</h3>
+                    <dl>
+                      <div><dt>차량</dt><dd>{vehicleName(car) || car.id}</dd></div>
+                      <div><dt>연료 / 구동</dt><dd>{txt(car.specs.fuel)} / {txt(car.specs.drivetrain)}</dd></div>
+                      <div><dt>승차 / 연식</dt><dd>{car.specs.seats ? `${car.specs.seats}인승` : '—'} / {car.specs.modelYear ? `${car.specs.modelYear}년형` : '—'}</dd></div>
+                      <div><dt>공급사</dt><dd>{car.supplierName ?? car.supplierId}</dd></div>
+                    </dl>
+                  </section>
                 </>}
                 info={<>
                   <div className="vehicle-title">

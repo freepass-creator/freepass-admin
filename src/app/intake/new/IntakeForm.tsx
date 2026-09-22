@@ -93,7 +93,6 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   /* 사람이 넣는 셋 — 두 갈래 모두 같은 칸 */
   const 사람 = (
     <>
-      <label>고객명 *<input name="customer" required autoComplete="off" /></label>
       <label>영업채널 *<input name="channel" list="dl-channel" value={channel} required autoComplete="off"
         onChange={(e) => { setChannel(e.target.value); setChannelCode(options.channelCode[e.target.value] ?? ''); }} /></label>
       <label>영업담당 *<input name="agent" list="dl-agent" required autoComplete="off"
@@ -102,6 +101,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           setAgentCode(options.agentCode[a] ?? '');
           if (!channel && options.agentChannel[a]) { setChannel(options.agentChannel[a]); setChannelCode(options.channelCode[options.agentChannel[a]] ?? ''); }
         }} /></label>
+      <label>고객명 *<input name="customer" required autoComplete="off" placeholder="고객명을 입력하세요" /></label>
     </>
   );
   /* 코드 — 이름을 고르면 원장의 코드로 저절로 찬다. 고칠 일이 드물어 뒤로 */

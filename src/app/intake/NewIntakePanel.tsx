@@ -26,7 +26,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     intakeRequestId: randomUUID(),
     plate: product?.registration?.vehicleNumber ?? '',
     model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
-    supplier: product?.supplierName ?? '',
+    supplier: product ? (product.supplierName ?? product.supplierId) : '',
     supplierCode: product?.supplierId ?? '',
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',

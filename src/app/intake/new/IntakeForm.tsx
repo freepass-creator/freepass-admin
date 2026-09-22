@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useRef, useState, type ReactNode } from 'react';
 import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../actions';
-import { directIntakeAllowsMissingPlate } from '../../../domain/settlement/product-kind';
+import { directIntakeAllowsMissingPlate, directIntakeRentKind } from '../../../domain/settlement/product-kind';
 
 export type IntakeDefaults = {
   receivedAt: string; plate: string; model: string; supplier: string; supplierCode: string;
@@ -121,7 +121,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <summary>더 넣기 <small>선택 — 없어도 접수됩니다</small></summary>
       <div className="dz-form-grid">
         {picked && <label>접수일<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>}
-        {!picked && sel('rentKind', options.rentKinds, '렌트구분')}
+        {!picked && (directIntakeRentKind(directProduct)
+          ? <input type="hidden" name="rentKind" value={directIntakeRentKind(directProduct) ?? ''} />
+          : sel('rentKind', options.rentKinds, '렌트구분'))}
         {sel('contractType', options.contractTypes, '계약방식')}
         {sel('payKind', options.payKinds, '분납여부')}
         {picked && 코드}

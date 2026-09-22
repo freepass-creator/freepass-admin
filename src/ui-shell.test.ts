@@ -45,6 +45,9 @@ test('product workspace is bound to real repositories and whole-offer selection'
   assert.ok(workspace.includes('<FilterSheet'));
   assert.ok(workspace.includes('quick-filters'));
   assert.ok(workspace.includes('matchedOffers'));
+  assert.ok(workspace.includes("mode === 'find' && <section className=\"panel work-panel\""));
+  assert.ok(workspace.includes("applyBase={keep({ w: 'new'"));
+  assert.equal(css.includes('.workspace[data-mode="find"] > .product-panel { grid-column: span 2; }'),false);
 });
 
 test('mobile workspace uses explicit list detail work depth',()=>{

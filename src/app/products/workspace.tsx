@@ -162,7 +162,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
   const selId = sp(q.id);
   const sel = sorted.find((h) => h.product.id === selId) ?? sorted[0];
-  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v) && (v !== 'work' || mode === 'intake')) ?? (selId ? 'detail' : 'list');
+  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v) && (v !== 'work' || mode === 'intake' || sp(q.w) === 'new'))
+    ?? (selId ? 'detail' : 'list');
   const keep = (extra: Record<string, string>) => {
     const u = new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])));
     for (const [k, v] of Object.entries(extra)) { if (v) u.set(k, v); else u.delete(k); }
@@ -173,7 +174,7 @@ export async function ProductWorkspace({ q, mode, base }: {
 
   let irows: SettlementRow[] = [];
   let intakeErr = '';
-  if (mode === 'intake') {
+  if (mode === 'intake' || sp(q.w) === 'new') {
     try { irows = (await settlements.list()).map((x) => x.row); } catch (e) { intakeErr = (e as Error).message; }
   }
   /**
@@ -311,9 +312,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                  *   같은 쪽 오른쪽 판만 바꾸고(keep), 상품찾기(mode==='find')면 «다른 쪽»으로 건너간다(cross).
                  *   ⚠ keep() 은 base(`/products`)로 주소를 짓는다 — 상품찾기에서 그대로 쓰면 없는 주소가 된다.
                  */
-                applyBase={mode === 'intake'
-                  ? keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' })
-                  : `/intake?${new URLSearchParams({ w: 'new', product: car.id, v: 'work' })}`}
+                applyBase={keep({ w: 'new', product: car.id, offer: '', ic: '', v: 'work' })}
                 summary={<>
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
@@ -346,6 +345,19 @@ export async function ProductWorkspace({ q, mode, base }: {
             </>
           ) : <EmptyState>왼쪽에서 차를 고르면 여기 뜹니다.</EmptyState>}
         </section>
+
+        {/* 상품찾기 오른쪽 업무판 — 상세에서 접수하기를 누르면 이 판만 신규접수로 바뀐다. */}
+        {mode === 'find' && <section className="panel work-panel">
+          {sp(q.w) === 'new' ? (
+            <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)}
+              back={keep({ w: '', product: '', offer: '', v: 'detail' })} />
+          ) : (
+            <>
+              <PanelHeader title="계약접수" />
+              <EmptyState>상품 상세에서 계약조건을 고른 뒤 접수하기를 누르면 여기에 접수 화면이 열립니다.</EmptyState>
+            </>
+          )}
+        </section>}
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
         {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">

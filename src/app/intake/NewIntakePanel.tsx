@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { productById, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import type { SettlementRow } from '../../domain/settlement/types';
@@ -22,6 +23,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   const options = buildIntakeOptions(rows);
   const defaults: IntakeDefaults = {
     receivedAt: today(),
+    intakeRequestId: randomUUID(),
     plate: product?.registration?.vehicleNumber ?? '',
     model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
     supplier: product?.supplierName ?? '',

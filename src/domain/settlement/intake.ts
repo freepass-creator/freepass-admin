@@ -12,6 +12,7 @@ import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
+import { directIntakeAllowsMissingPlate } from './product-kind';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -56,9 +57,6 @@ export interface IntakeInput {
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-
-export const directIntakeAllowsMissingPlate = (product: string | null | undefined) =>
-  product === '견적출고' || product === '신차발주';
 
 /**
  * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일.

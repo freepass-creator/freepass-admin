@@ -18,7 +18,7 @@ import { blockOf } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { IntakeProgress } from './IntakeProgress';
-import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
@@ -164,21 +164,6 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
           <Link className="erp-btn erp-btn--ghost" href="/settlement">정산관리</Link>
           <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
         </>} />
-      {perfView ? (
-        <Kpis items={[
-          { label: '완납실적', side: '건', value: String(n('완납실적')), unit: '건' },
-          { label: '분납실적', side: '건', value: String(n('분납실적')), unit: '건' },
-          { label: '청구 합계', side: '공급사', value: won0(sum(perfRows.map((r) => claimAmountOf(r, now)))), unit: '원' },
-          { label: '남는 것', side: '청구 − 지급', value: won0(sum(perfRows.map((r) => marginOf(r, now)))), unit: '원' },
-        ]} />
-      ) : (
-        <Kpis items={[
-          { label: '당월접수', side: today().slice(0, 7), value: String(n('당월접수')), unit: '건' },
-          { label: '미완료', side: '계약서 · 인도 대기', value: String(n('미완료')), unit: '건', alert: n('미완료') > 0 },
-          { label: '실적', side: '분납 + 완납', value: String(n('분납실적') + n('완납실적')), unit: '건' },
-          { label: '취소', side: '누적', value: String(n('취소')), unit: '건' },
-        ]} />
-      )}
       <section className="erp-card erp-card--fill">
         <SearchBar base={base} q={q} name="iq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['iv']} facets={[
           { key: 'isup', title: '공급사', options: suppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && inView(r)).length })) },

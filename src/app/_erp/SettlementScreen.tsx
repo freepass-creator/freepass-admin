@@ -11,12 +11,10 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger, type Clawback, type LedgerGroup } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
-const CLAIM = ['접수', '청구', '정정', '확인', '수금'] as const;
-const PAY = ['접수', '통보', '정정', '확인', '지급'] as const;
 const STAGE_TONE: Record<string, Tone> = { 접수: 'neutral', 청구: 'info', 통보: 'info', 정정: 'err', 확인: 'warn', 수금: 'ok', 지급: 'ok' };
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
@@ -31,7 +29,6 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const month = sp(q.month) || 달들.find((m) => m <= now) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
   const ct = ledgerTotals(claimG), pt = ledgerTotals(payG);
-  const 미정 = months.includes(NO_MONTH) ? claimLedger(rows, NO_MONTH, cb).reduce((n, g) => n + g.lines.length, 0) : 0;
   const groups: LedgerGroup[] = tab === 'claim' ? claimG : payG;
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 문서 = tab === 'claim' ? '청구서' : '지급명세';
@@ -40,10 +37,6 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const lines = (gSel ? [gSel] : groups.filter((g) => !gq || g.party.toLowerCase().includes(gq)))
     .flatMap((g) => g.lines.map((l) => ({ ...l, party: g.party })));
   const stageOf = (r: SettlementRow) => (tab === 'claim' ? r.claimStage : r.payStage);
-  const stageCount = (lineRows: SettlementRow[], stages: readonly string[], pick: (r: SettlementRow) => string) =>
-    stages.map((s) => ({ label: s, count: lineRows.filter((r) => pick(r) === s).length }));
-  const claimRows = claimG.flatMap((g) => g.lines.map((l) => l.row));
-  const payRows = payG.flatMap((g) => g.lines.map((l) => l.row));
   const sumAmt = lines.reduce((a, l) => a + (typeof l.amount === 'number' ? l.amount : 0), 0);
 
   const grid = (
@@ -98,16 +91,6 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
             ? <button className="erp-btn erp-btn--primary" type="submit" form="erp-issue-form">{gSel.party} {문서} 발행</button>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title={`${who}을 고르면 ${문서}를 발행할 수 있습니다`}>{문서} 발행</span>}
         </>} />
-      <Kpis items={[
-        { label: '청구 예정', side: `공급사 · ${month}`, value: won0(ct.net), unit: '원', delta: `청구 ${ct.rows}줄 · 수금 완료 ${ct.completed}줄` },
-        { label: '지급 예정', side: '영업채널', value: won0(pt.net), unit: '원', delta: `지급 ${pt.rows}줄 · 지급 완료 ${pt.completed}줄` },
-        { label: '남는 것', side: '청구 − 지급', value: won0(ct.net - pt.net), unit: '원', delta: ct.clawback ? `환수 −${won0(ct.clawback)}원 반영` : '환수 없음' },
-        { label: NO_MONTH, side: '달을 정해야 함', value: String(미정), unit: '줄', alert: 미정 > 0, delta: 미정 ? '인도됐는데 닫힌 달이라 못 들어간 줄' : '없음' },
-      ]} />
-      <div className="erp-cols erp-cols--half">
-        <section className="erp-card"><CardHead title="청구 흐름" sub="공급사 → 프리패스" /><div className="erp-card-body"><Steps current={-1} items={stageCount(claimRows, CLAIM, (r) => r.claimStage)} /></div></section>
-        <section className="erp-card"><CardHead title="지급 흐름" sub="프리패스 → 영업채널" /><div className="erp-card-body"><Steps current={-1} items={stageCount(payRows, PAY, (r) => r.payStage)} /></div></section>
-      </div>
       {gSel ? (
         <div className="erp-cols">
           {grid}

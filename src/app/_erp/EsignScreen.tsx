@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
-import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -84,12 +84,6 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
             ? <a className="erp-btn erp-btn--primary" href={sel.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title="서명이 끝나면 서명본을 열 수 있습니다">서명본 열기</span>}
         </> : <Link className="erp-btn erp-btn--ghost" href="/intake">계약접수</Link>} />
-      <Kpis items={[
-        { label: '전체 계약', side: '전자계약', value: String(all.length), unit: '건' },
-        { label: '서명 대기', side: '발행 · 열람 · 진행중', value: String(waiting), unit: '건', alert: waiting > 0 },
-        { label: '서명완료', side: '서명본 있음', value: String(all.filter((c) => c.signStatus === '서명완료').length), unit: '건' },
-        { label: '미연결', side: '전자서명 아님', value: String(all.filter((c) => !c.signStatus).length), unit: '건' },
-      ]} />
       {sel ? (
         <div className="erp-cols">
           {grid}

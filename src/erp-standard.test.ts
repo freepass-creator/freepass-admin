@@ -29,8 +29,8 @@ test('five desktop screens are built from the standard skeleton regions', () => 
   for (const [file, regions] of Object.entries(screens)) {
     const src = read(file);
     assert.ok(src.includes('<PageHeader'), `${file}: page header`);
-    // 상품찾기는 대수 KPI 를 두지 않는다(대표 2026-09-23 「위에 대수 … 필요 없어」)
-    assert.equal(src.includes('<Kpis'), !file.endsWith('ProductsScreen.tsx'), `${file}: KPI row`);
+    // 요약 카드는 두지 않는다 — 제목 밑에 검색창, 그 밑에 목록(대표 2026-09-23 「요약표는 필요 없어」)
+    assert.equal(src.includes('<Kpis'), false, `${file}: no summary cards`);
     assert.ok(src.includes('data-region="grid-toolbar"'), `${file}: status tabs on the toolbar row (standard)`);
     for (const r of regions) assert.ok(src.includes(`data-region="${r}"`), `${file}: region ${r}`);
     assert.equal(/style=\{\{/.test(src), false, `${file}: no inline style`);

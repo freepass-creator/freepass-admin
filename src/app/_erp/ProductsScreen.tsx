@@ -9,7 +9,7 @@ import { productList } from '../../server/erp5';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
 import { sp, txt } from '../_fn/fmt';
-import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
+import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 /** 차명 — 세부모델(없으면 모델)이 이름, 제조사 · 트림은 보조. 모델명을 두 번 찍지 않는다. */
@@ -56,7 +56,6 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
   const page = Math.max(1, Number(sp(q.page)) || 1);
   const pages = Math.max(1, Math.ceil(shown.length / PAGE));
   const slice = shown.slice((page - 1) * PAGE, page * PAGE);
-  const suppliers = new Set(rows.map((p) => p.supplierName ?? p.supplierId)).size;
 
   const selId = sp(q.id);
   const sel = shown.find((h) => h.p.id === selId) ?? (selId ? hits.find((h) => h.p.id === selId) : undefined);
@@ -65,11 +64,14 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
 
   const grid = (
     <section className="erp-card erp-card--fill">
-      <SearchBar base={base} q={q} placeholder="차량번호 · 차명 · 공급사" facets={facets} keep={['st']}
-        aside={<><Seg label="출고상태" items={[
+      <SearchBar base={base} q={q} placeholder="차량번호 · 차명 · 공급사" facets={facets} keep={['st']}/>
+      <div className="erp-toolbar" data-region="grid-toolbar">
+        <span className="erp-toolbar-spacer" />
+        <Seg label="출고상태" items={[
           { key: 'all', label: `전체 ${hits.length}`, href: hrefWith(base, q, { st: null, page: null, id: null }), on: !st },
           ...STATUS.map((s) => ({ key: s, label: `${s} ${count(s)}`, href: hrefWith(base, q, { st: s, page: null, id: null }), on: st === s })),
-        ]} /></>} />
+        ]} />
+      </div>
       <div className="erp-grid-scroll" data-region="grid">
         <table className="erp-grid">
           <thead><tr>
@@ -112,18 +114,13 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
   return (
     <Screen name="products">
       <PageHeader crumb={['홈', '업무', '상품찾기']} title="상품찾기"
+        desc="차량 · 가격 · 대여조건 · 정책을 조합해 실제로 함께 적용되는 상품을 찾습니다. 고른 요금 그대로 접수까지 이어집니다."
         actions={<>
           <Link className="erp-btn erp-btn--ghost" href="/intake">접수 목록</Link>
           {sel && selOffer
             ? <Link className="erp-btn erp-btn--primary" href={`/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}&v=work`}>이 상품 접수하기</Link>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title="목록에서 상품을 고르면 접수할 수 있습니다">이 상품 접수하기</span>}
         </>} />
-      <Kpis items={[
-        { label: '전체 상품', side: `${suppliers}개 공급사`, value: rows.length.toLocaleString('ko-KR'), unit: '대' },
-        { label: '즉시출고', side: '바로 계약 가능', value: String(rows.filter((p) => p.status === '즉시출고').length), unit: '대' },
-        { label: '출고협의', side: '공급사 회신 필요', value: String(rows.filter((p) => p.status === '출고협의').length), unit: '대' },
-        { label: '출고불가', side: '확인 필요', value: String(rows.filter((p) => p.status === '출고불가').length), unit: '대', alert: rows.some((p) => p.status === '출고불가') },
-      ]} />
       {sel && selOffer ? (
         <div className="erp-cols">
           {grid}

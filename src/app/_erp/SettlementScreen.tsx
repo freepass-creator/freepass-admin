@@ -49,12 +49,15 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const grid = (
     <section className="erp-card erp-card--fill">
       <SearchBar base={base} q={q} name="gq" placeholder={`${who} 이름`} keep={['tab']}
-        dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} 
-        aside={<><Seg label="정산 구분" items={[
+        dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} />
+      <div className="erp-toolbar" data-region="grid-toolbar">
+        <span className="erp-toolbar-spacer" />
+        <Seg label="정산 구분" items={[
           { key: 'claim', label: `청구 · 공급사 ${claimG.length}곳`, href: hrefWith(base, q, { tab: null, g: null }), on: tab === 'claim' },
           { key: 'pay', label: `지급 · 영업채널 ${payG.length}곳`, href: hrefWith(base, q, { tab: 'pay', g: null }), on: tab === 'pay' },
         ]} />
-        {gSel ? <Link className="erp-chip" href={hrefWith(base, q, { g: null })}>{who}: {gSel.party} ×</Link> : null}</>} />
+        {gSel ? <Link className="erp-chip" href={hrefWith(base, q, { g: null })}>{who}: {gSel.party} ×</Link> : null}
+      </div>
       <div className="erp-grid-scroll" data-region="grid">
         <table className="erp-grid">
           <thead><tr>
@@ -88,7 +91,9 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   return (
     <Screen name="settlement">
       <PageHeader crumb={['홈', '업무', '정산관리']} title="정산관리"
+        desc="공급사 청구와 영업채널 지급을 달마다 묶어 맞춥니다. 완납 · 인도 기준으로 줄이 서고, 끊긴 분납은 받은 만큼만 셉니다."
         actions={<>
+          <Link className="erp-btn erp-btn--ghost" href="/intake?iv=완납실적">실적</Link>
           {gSel
             ? <button className="erp-btn erp-btn--primary" type="submit" form="erp-issue-form">{gSel.party} {문서} 발행</button>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title={`${who}을 고르면 ${문서}를 발행할 수 있습니다`}>{문서} 발행</span>}

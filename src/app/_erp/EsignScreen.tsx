@@ -36,11 +36,14 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
   const grid = (
     <section className="erp-card erp-card--fill">
       <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" keep={['sign']}
-        dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} 
-        aside={<><Seg label="전자서명" items={[
+        dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} />
+      <div className="erp-toolbar" data-region="grid-toolbar">
+        <span className="erp-toolbar-spacer" />
+        <Seg label="전자서명" items={[
           { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { sign: null }), on: !sign },
           ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
-        ]} /></>} />
+        ]} />
+      </div>
       <div className="erp-grid-scroll" data-region="grid">
         <table className="erp-grid">
           <thead><tr>
@@ -74,12 +77,13 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
   return (
     <Screen name="esign">
       <PageHeader crumb={['홈', '계약서', '전자계약']} title="전자계약" badge={<Badge tone="neutral">업무 흐름과 별도</Badge>}
+        desc="전자계약서의 발행 · 열람 · 서명 상태를 확인합니다. 계약접수 · 정산과는 따로 다루는 문입니다."
         actions={sel ? <>
           {sel.signUrl ? <a className="erp-btn" href={sel.signUrl} target="_blank" rel="noreferrer">서명창 열기</a> : null}
           {sel.signedPdfUrl
             ? <a className="erp-btn erp-btn--primary" href={sel.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title="서명이 끝나면 서명본을 열 수 있습니다">서명본 열기</span>}
-        </> : undefined} />
+        </> : <Link className="erp-btn erp-btn--ghost" href="/intake">계약접수</Link>} />
       <Kpis items={[
         { label: '전체 계약', side: '전자계약', value: String(all.length), unit: '건' },
         { label: '서명 대기', side: '발행 · 열람 · 진행중', value: String(waiting), unit: '건', alert: waiting > 0 },

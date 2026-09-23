@@ -159,7 +159,9 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
   return (
     <Screen name={perfView ? 'performance' : 'intake'}>
       <PageHeader crumb={['홈', '업무', title]} title={title}
+        desc={perfView ? '인도된 계약 — 분납실적 · 완납실적. 청구 · 지급 · 남는 것을 한 줄로 봅니다.' : '접수부터 계약서 · 인도 · 취소까지 모든 접수의 진행을 봅니다. 새 접수는 상품찾기에서 차를 고르고 시작합니다.'}
         actions={<>
+          <Link className="erp-btn erp-btn--ghost" href="/settlement">정산관리</Link>
           <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
         </>} />
       {perfView ? (
@@ -181,11 +183,14 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
         <SearchBar base={base} q={q} name="iq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['iv']} facets={[
           { key: 'isup', title: '공급사', options: suppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && inView(r)).length })) },
           { key: 'ich', title: '영업채널', options: channels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && inView(r)).length })) },
-        ]} 
-        aside={<><Seg label="접수 칸" items={[
+        ]} />
+      <div className="erp-toolbar" data-region="grid-toolbar">
+        <span className="erp-toolbar-spacer" />
+        <Seg label="접수 칸" items={[
             { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { iv: 'all', page: null }), on: iv === 'all' },
             ...BUCKETS.map((b) => ({ key: b, label: `${b} ${n(b)}`, href: hrefWith(base, q, { iv: b === '당월접수' ? null : b, page: null }), on: iv === b })),
-          ]} /></>} />
+          ]} />
+      </div>
       <div className="erp-grid-scroll" data-region="grid">
           <table className="erp-grid">
             <thead>{perfView ? (

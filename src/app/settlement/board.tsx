@@ -139,8 +139,6 @@ export async function SettlementBoard({ q }: { q: Record<string, string | string
                 choices={[{ v: 'claim', label: '청구 · 공급사' }, { v: 'pay', label: '지급 · 영업채널' }]} />
               <SelectFilter name="g" value={sp(q.g)} label={who} all={`${who} 전체`} reset={[]}
                 choices={groups.map((x) => ({ v: x.party, label: x.party, count: x.lines.length }))} />
-              <SelectFilter name="gs" value={gs === 'all' ? '' : gs} label="상태" all="상태 전체" reset={['g']}
-                choices={상태보기.filter((b) => b.key !== 'all').map((b) => ({ v: b.key, label: b.label, count: 셈(b.key) }))} />
               {미정수 > 0 && <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH} {미정수}</Link>}
               <span className="tools-sum">{ax === 'claim' ? '청구' : '지급'} <b>{won(t.net)}원</b>
                 {t.clawback ? <> · 환수 −{won(t.clawback)}</> : null}{t.unknown ? <span className="warn"> · 모름 {t.unknown}</span> : null}</span>

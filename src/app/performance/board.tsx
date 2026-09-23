@@ -240,8 +240,6 @@ export async function PerformanceBoard({ q }: { q: Record<string, string | strin
                 choices={셈('supplier').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
               <SelectFilter name="channel" value={축.channel[0] ?? ''} label="영업채널" all="영업채널 전체"
                 choices={셈('channel').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
-              <SelectFilter name="f" value={mode === 'all' ? '' : mode} label="상태" all="상태 전체"
-                choices={보기.map((b) => ({ v: b.key, label: b.label, count: 거른.filter(구분맞음).filter((x) => 모드맞음(x, b.key)).length }))} reset={['ic']} />
               {months.includes(NO_MONTH) && (
                 <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH}</Link>
               )}

@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
-import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -44,16 +44,26 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
           ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
         ]} />
       </div>
-      <CardList label="전자계약 목록">
-        {shown.map((c) => (
-          <ListCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
-            title={txt(c.customer)} sub={`${txt(c.code)} · ${txt(c.vehicle)} · ${txt(c.plate)}`}
-            badge={c.signStatus ? <Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{c.signStatus}</Badge> : <Badge tone="neutral">미연결</Badge>}
-            pairs={[['계약일', txt(c.contractDate)], ['영업 담당', txt(c.agent)], ['기간', c.term ? `${c.term}개월` : '—'], ['양식', txt(c.kind)]]}
-            tags={c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : undefined}
-            amount={won0(c.rent)} unit="원/월" />
-        ))}
-      </CardList>
+      <RowCards label="전자계약 목록">
+        {shown.map((c) => {
+          const at = c.signStatus === '서명완료' ? SIGN.length : SIGN.indexOf(c.signStatus as (typeof SIGN)[number]);
+          return (
+            <RowCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
+              tone={SIGN_TONE[c.signStatus] ?? 'neutral'}
+              title={txt(c.customer)} badge={c.signStatus ? <Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{c.signStatus}</Badge> : <Badge tone="neutral">미연결</Badge>}
+              plate={txt(c.plate)} car={txt(c.vehicle)}
+              meta={`${txt(c.code)} · 계약일 ${txt(c.contractDate)}`}
+              steps={{ labels: [...SIGN], at }}
+              facts={[
+                ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],
+                ['영업 담당', txt(c.agent)],
+                ['기간', c.term ? `${c.term}개월` : '—'],
+                ['양식', txt(c.kind), txt(c.insurance)],
+              ]}
+              amount={won0(c.rent)} amountLabel="월 대여료" />
+          );
+        })}
+      </RowCards>
       <div className="erp-grid-foot"><span>총 <b>{shown.length}</b>건</span><span>·</span><span>서명 대기 <b>{waiting}</b>건</span></div>
     </section>
   );

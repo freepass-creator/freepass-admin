@@ -94,36 +94,44 @@ export function Props({ pairs }: { pairs: [string, ReactNode][] }) {
 }
 
 /**
- * 목록 카드 — 규격 §5-2. 표 한 줄이 카드 한 장이 된다(대표 2026-09-23 「목록을 카드 타입으로 … 모바일로 넘어가기 쉽게」).
- *   이름 링크가 카드 전체를 덮는다. pairs 는 표의 열, tags · amount 는 바닥.
+ * 긴 카드 — 규격 §5-3. 한 건 = 가로로 긴 카드 한 장(대표 2026-09-23 「줄 타입은 촌스럽다 … 카드를 기다랗게」 · 「그거 규격으로 다 해놓고」).
+ *   ① 누구 · 무슨 차 → ② 어디까지 왔나(steps) → ③ 조건(facts) → ④ 돈. 이름 링크가 카드 전체를 덮는다.
+ *   steps 가 없으면(상품) ③ 이 ② 자리까지 넓어진다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다.
  */
-export function ListCard({ href, title, sub, badge, pairs, tags, amount, unit = '원', current }: {
-  href: string; title: ReactNode; sub?: ReactNode; badge?: ReactNode; pairs: [string, ReactNode][];
-  tags?: ReactNode; amount?: ReactNode; unit?: string; current?: boolean;
+export type Fact = [label: string, value: ReactNode, sub?: ReactNode];
+export function RowCard({ href, tone, current, title, badge, plate, car, meta, steps, facts, amount, amountLabel, unit = '원' }: {
+  href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; plate?: ReactNode; car?: ReactNode; meta?: ReactNode;
+  /** labels · at: 지금 단계 번호(labels.length 면 다 끝, -1 이면 멈춤) */
+  steps?: { labels: string[]; at: number };
+  facts: Fact[]; amount?: ReactNode; amountLabel?: string; unit?: string;
 }) {
   return (
-    <article className="erp-listcard" role="listitem" aria-current={current ? 'true' : undefined}>
-      <div className="erp-listcard-head">
-        <h3 className="erp-listcard-title">
-          <Link className="erp-listcard-link" href={href}>{title}</Link>
-          {sub ? <span className="erp-listcard-sub">{sub}</span> : null}
-        </h3>
-        {badge}
+    <article className={`erp-rowcard${steps ? '' : ' erp-rowcard--no-steps'}`} role="listitem"
+      data-tone={tone && tone !== 'neutral' ? tone : undefined} aria-current={current ? 'true' : undefined}>
+      <div className="erp-rowcard-id">
+        <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href}>{title}</Link>{badge}</h3>
+        {plate || car ? <div className="erp-rowcard-car">{plate ? <b>{plate}</b> : null}{car}</div> : null}
+        {meta ? <div className="erp-rowcard-meta">{meta}</div> : null}
       </div>
-      <Props pairs={pairs} />
-      {tags || amount !== undefined ? (
-        <div className="erp-listcard-foot">
-          {tags ?? <span />}
-          {amount !== undefined ? <span className="erp-listcard-amount">{amount}<small>{unit}</small></span> : null}
-        </div>
+      {steps ? (
+        <ol className="erp-rowcard-steps" aria-label="진행">
+          {steps.labels.map((l, i) => (
+            <li key={l} data-state={steps.at >= 0 && i < steps.at ? 'done' : undefined} aria-current={i === steps.at ? 'step' : undefined}><i />{l}</li>
+          ))}
+        </ol>
       ) : null}
+      <dl className="erp-rowcard-facts">
+        {facts.map(([k, v, sub]) => <div key={k}><dt>{k}</dt><dd>{v}{sub ? <small>{sub}</small> : null}</dd></div>)}
+      </dl>
+      {amount !== undefined ? <div className="erp-rowcard-amount"><strong>{amount}<small>{unit}</small></strong>{amountLabel ? <span>{amountLabel}</span> : null}</div> : null}
+      <svg className="erp-rowcard-go" viewBox="0 0 24 24" aria-hidden><path d="m9 6 6 6-6 6" /></svg>
     </article>
   );
 }
 
-/** 카드 목록 — 그리드 자리(data-region="grid") */
-export function CardList({ children, label }: { children: ReactNode; label: string }) {
-  return <div className="erp-cardlist" data-region="grid" role="list" aria-label={label}>{children}</div>;
+/** 긴 카드 목록 — 그리드 자리(data-region="grid") */
+export function RowCards({ children, label }: { children: ReactNode; label: string }) {
+  return <div className="erp-rowcards" data-region="grid" role="list" aria-label={label}>{children}</div>;
 }
 
 /** 세그먼트(상태 탭) — 링크로 고른다 */

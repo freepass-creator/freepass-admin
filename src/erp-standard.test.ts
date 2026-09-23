@@ -33,8 +33,8 @@ test('five desktop screens are built from the standard skeleton regions', () => 
     assert.equal(src.includes('<Kpis'), false, `${file}: no summary cards`);
     assert.ok(src.includes('data-region="grid-toolbar"'), `${file}: status tabs on the toolbar row (standard)`);
     for (const r of regions) assert.ok(src.includes(`data-region="${r}"`), `${file}: region ${r}`);
-    // 목록은 카드형(규격 §5-2) — 폰으로 그대로 넘어간다(대표 2026-09-23 「목록을 카드 타입으로」)
-    assert.ok(src.includes('<CardList') && src.includes('<ListCard'), `${file}: card list`);
+    // 목록은 긴 카드(규격 §5-3) — 폰으로 그대로 넘어간다(대표 2026-09-23 「카드를 기다랗게 … 그거 규격으로 다 해놓고」)
+    assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), `${file}: long card list`);
     assert.equal(src.includes('erp-grid-scroll'), false, `${file}: no table list`);
     assert.equal(/style=\{\{/.test(src), false, `${file}: no inline style`);
     // 조회 = 검색창 + 상세 필터(규격 §5-1) — 라벨 드롭다운 바(erp-filter)를 늘어놓지 않는다
@@ -43,7 +43,7 @@ test('five desktop screens are built from the standard skeleton regions', () => 
     assert.ok((src.match(/<AutoSelect/g) ?? []).length <= 1, `${file}: at most one classification dropdown`);
   }
   const parts = read('src/app/_erp/parts.tsx');
-  assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-cardlist" data-region="grid"'));
+  assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-rowcards" data-region="grid"'));
   assert.ok(parts.includes('data-region="filter"') && parts.includes('data-region="grid-toolbar"') && parts.includes('erp-filter-more'));
   // 실적은 새 판이 아니라 접수 목록의 실적 칸
   assert.ok(read('src/app/_erp/IntakeScreen.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));

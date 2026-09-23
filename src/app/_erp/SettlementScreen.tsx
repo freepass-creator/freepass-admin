@@ -11,11 +11,14 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger, type Clawback, type LedgerGroup } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, won0, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
 const STAGE_TONE: Record<string, Tone> = { 접수: 'neutral', 청구: 'info', 통보: 'info', 정정: 'err', 확인: 'warn', 수금: 'ok', 지급: 'ok' };
+/** 목록 카드의 작은 진행 단계 — 청구 · 지급 단계 흐름(기능 쪽 단계값 그대로) */
+const CLAIM_FLOW = ['접수', '청구', '정정', '확인', '수금'];
+const PAY_FLOW = ['접수', '통보', '정정', '확인', '지급'];
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
   let rows: SettlementRow[]; let cb: Clawback[];
@@ -51,22 +54,27 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         ]} />
         {gSel ? <Link className="erp-chip" href={hrefWith(base, q, { g: null })}>{who}: {gSel.party} ×</Link> : null}
       </div>
-      <CardList label={`${tab === 'claim' ? '청구' : '지급'} 목록`}>
-        {lines.map(({ row: r, amount, broken, ratio, party }) => (
-          <ListCard key={`${party}-${r.id}`} href={`/intake?ic=${encodeURIComponent(r.id)}`}
-            title={txt(r.customer)} sub={`${txt(r.model)} · ${txt(r.plate)}`}
-            badge={<Badge tone={STAGE_TONE[stageOf(r)] ?? 'neutral'}>{stageOf(r)}</Badge>}
-            pairs={[
-              [who, <Link key="p" className="erp-row-link" href={hrefWith(base, q, { g: party })}>{party}</Link>],
-              ['인도일', txt(r.progress.deliveredAt)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`], ['결제', txt(r.payKind)],
-            ]}
-            tags={<span className="erp-tags">
-              {(tab === 'claim' ? r.progress.billed : r.payStage !== '접수') ? <span className="erp-tag erp-tag--primary">{문서} 보냄</span> : <span className="erp-tag">{문서} 안 나감</span>}
-              {broken ? <span className="erp-tag">끊김 · 받은 몫 {Math.round(ratio * 100)}%</span> : null}
-            </span>}
-            amount={won0(amount)} />
-        ))}
-      </CardList>
+      <RowCards label={`${tab === 'claim' ? '청구' : '지급'} 목록`}>
+        {lines.map(({ row: r, amount, broken, ratio, party }) => {
+          const flow = tab === 'claim' ? CLAIM_FLOW : PAY_FLOW;
+          const st = stageOf(r);
+          const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);
+          const sent = tab === 'claim' ? r.progress.billed : r.payStage !== '접수';
+          return (
+            <RowCard key={`${party}-${r.id}`} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
+              title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
+              plate={txt(r.plate)} car={txt(r.model)}
+              meta={`인도 ${txt(r.progress.deliveredAt)} · ${문서} ${sent ? '보냄' : '안 나감'}`}
+              steps={{ labels: flow, at }}
+              facts={[
+                [who, <Link key="p" className="erp-row-link" href={hrefWith(base, q, { g: party })}>{party}</Link>],
+                ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
+                ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
+              ]}
+              amount={won0(amount)} amountLabel={tab === 'claim' ? '청구금액' : '지급액'} />
+          );
+        })}
+      </RowCards>
       <div className="erp-grid-foot">
         <span>{month} · {who} <b>{groups.length}</b>곳 · <b>{lines.length}</b>줄 · {tab === 'claim' ? '청구금액' : '지급액'} 합계 <b>{won0(sumAmt)}</b>원</span><span>·</span>
         <span>청구 <b>{won0(ct.net)}</b>원 · 지급 <b>{won0(pt.net)}</b>원 · 남는 것 <b>{won0(ct.net - pt.net)}</b>원</span>

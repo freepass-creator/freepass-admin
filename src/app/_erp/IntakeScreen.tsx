@@ -18,11 +18,13 @@ import { blockOf } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { IntakeProgress } from './IntakeProgress';
-import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
 const TONE: Record<Bucket, Tone> = { 당월접수: 'info', 미완료: 'warn', 분납실적: 'neutral', 완납실적: 'ok', 취소: 'err' };
+/** 목록 카드의 작은 진행 단계 — 상세의 진행 단계와 같은 다섯 걸음 */
+const FLOW = ['접수', '계약서', '인도', '청구', '수금·지급'];
 const PAGE = 15;
 const sum = (xs: (number | null | undefined)[]) => xs.reduce<number>((a, b) => a + (typeof b === 'number' ? b : 0), 0);
 
@@ -176,35 +178,33 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
             ...BUCKETS.map((b) => ({ key: b, label: `${b} ${n(b)}`, href: hrefWith(base, q, { iv: b === '당월접수' ? null : b, page: null }), on: iv === b })),
           ]} />
       </div>
-      <CardList label={`${title} 목록`}>
+      <RowCards label={`${title} 목록`}>
         {slice.map((r) => {
           const b = bucket.get(r)!;
-          return perfView ? (
-            <ListCard key={r.id} href={hrefWith(base, q, { ic: r.id })}
-              title={txt(r.customer)} sub={`${txt(r.model)} · ${txt(r.plate)}`} badge={<Badge tone={TONE[b]}>{b}</Badge>}
-              pairs={[
-                ['인도일', txt(r.progress.deliveredAt)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`],
-                ['공급사', txt(r.supplier)], ['영업채널', txt(r.channel)],
-                ['청구액', `${won0(claimAmountOf(r, now))}원`], ['지급액', `${won0(payAmountOf(r, now))}원`],
+          const pg = r.progress;
+          const at = pg.cancelled ? -1 : !pg.paper ? 1 : !pg.delivered ? 2 : !pg.billed ? 3 : !(pg.collected && pg.paid) ? 4 : 5;
+          const todo = pg.cancelled ? '취소됨' : ['', '계약서 대기', '인도 대기', '청구 대기', pg.collected ? '지급 대기' : '수금 대기', '정산 끝'][at];
+          return (
+            <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} tone={TONE[b]}
+              title={txt(r.customer)} badge={<Badge tone={TONE[b]}>{b}</Badge>}
+              plate={txt(r.plate)} car={txt(r.model)}
+              meta={`접수 ${txt(r.receivedAt)}${perfView ? ` · 인도 ${txt(pg.deliveredAt)}` : ''} · ${todo}`}
+              steps={{ labels: FLOW, at }}
+              facts={perfView ? [
+                ['공급사', txt(r.supplier), `청구 ${r.claimStage}`],
+                ['영업채널', txt(r.channel), `지급 ${r.payStage}`],
+                ['청구액', `${won0(claimAmountOf(r, now))}원`],
+                ['지급액', `${won0(payAmountOf(r, now))}원`],
+              ] : [
+                ['공급사', txt(r.supplier)],
+                ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
+                ['영업채널', txt(r.channel), r.agent ? `담당 ${r.agent}` : undefined],
+                ['보증금', r.deposit ? `${won0(r.deposit)}원` : '무보증', txt(r.payKind)],
               ]}
-              tags={<span className="erp-muted">청구 {r.claimStage} · 지급 {r.payStage}</span>}
-              amount={won0(marginOf(r, now))} unit="원 남음" />
-          ) : (
-            <ListCard key={r.id} href={hrefWith(base, q, { ic: r.id })}
-              title={txt(r.customer)} sub={`${txt(r.model)} · ${txt(r.plate)}`} badge={<Badge tone={TONE[b]}>{b}</Badge>}
-              pairs={[
-                ['접수일', txt(r.receivedAt)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`],
-                ['공급사', txt(r.supplier)], ['영업채널 · 담당', `${txt(r.channel)} · ${txt(r.agent)}`],
-                ['보증금', r.deposit ? `${won0(r.deposit)}원` : '무보증'], ['청구 · 지급', `${r.claimStage} · ${r.payStage}`],
-              ]}
-              tags={<span className="erp-tags">
-                <span className={`erp-tag${r.progress.paper ? ' erp-tag--primary' : ''}`}>계약서 {r.progress.paper ? '받음' : '대기'}</span>
-                <span className={`erp-tag${r.progress.delivered ? ' erp-tag--primary' : ''}`}>인도 {r.progress.delivered ? '완료' : '대기'}</span>
-              </span>}
-              amount={won0(r.rent)} unit="원/월" />
+              amount={won0(perfView ? marginOf(r, now) : r.rent)} amountLabel={perfView ? '남는 것' : '월 대여료'} />
           );
         })}
-      </CardList>
+      </RowCards>
         <div className="erp-grid-foot">
           <span>총 <b>{shown.length}</b>건</span>
           {!perfView ? <><span>·</span><span>월 대여료 합계 <b>{won0(sum(shown.map((r) => r.rent)))}</b>원</span></> : null}

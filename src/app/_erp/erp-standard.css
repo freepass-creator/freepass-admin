@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ c13d862553f0817fa62862118bc6e3c831496f3a
+ * 정본: freepass-creator/ai-core @ c8647877553bec7b29a01d7bc2e86cd1bc77fb99
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -15,7 +15,7 @@
 .erp-std a.erp-facet-opt { color: var(--erp-color-text); font-weight: var(--erp-fw-regular); }
 .erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
 .erp-std a.erp-chip { color: var(--erp-color-text-2); font-weight: var(--erp-fw-regular); }
-.erp-std a.erp-listcard-link { color: var(--erp-color-text); text-decoration: none; }
+.erp-std a.erp-listcard-link, .erp-std a.erp-rowcard-link { color: var(--erp-color-text); text-decoration: none; }
 
 /* ── erp.css ───────────────────────────────────────────── */
 /* ERP 표준 UI 규격 v1 — 공통 스타일
@@ -366,6 +366,64 @@
 .erp-listcard-amount { margin-left: auto; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); white-space: nowrap; }
 .erp-listcard-amount small { margin-left: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
 
+/* ── 긴 카드 목록 — 한 건 = 가로로 긴 카드 한 장 (대표 2026-09-23 「줄 타입은 촌스럽다 … 카드를 기다랗게 해서 거기 정보를 넣는 방식」) ──
+ *   카드 한 장을 네 칸으로 나눈다: 누구·무슨 차(id) · 어디까지 왔나(steps) · 조건(facts) · 돈(amount) + 열기(go).
+ *   왼쪽 띠 색 = 상태(data-tone). 좁은 창 · 폰에서는 칸이 위아래로 쌓인다 — 같은 마크업이 폰까지 간다.
+ *   카드 전체를 누르면 열린다(.erp-rowcard-link 가 카드를 덮는다). 고른 카드는 aria-current="true". */
+.erp-rowcards { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: var(--erp-sp-4); background: var(--erp-color-sunken); }
+.erp-rowcards-group { margin: 6px 0 0; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-rowcards-group:first-child { margin-top: 0; }
+.erp-rowcards-group small { margin-left: 6px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-rowcard { position: relative; flex: none; display: grid; grid-template-columns: minmax(200px, 1.2fr) minmax(250px, 1.3fr) minmax(0, 2fr) 170px 20px; grid-template-areas: "id steps facts amount go"; align-items: center; gap: var(--erp-sp-6); padding: 16px var(--erp-sp-5) 16px var(--erp-sp-6); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); overflow: hidden; }
+.erp-rowcard::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--erp-color-line-strong); }
+.erp-rowcard[data-tone="ok"]::before { background: var(--erp-color-ok); }
+.erp-rowcard[data-tone="info"]::before { background: var(--erp-color-info); }
+.erp-rowcard[data-tone="warn"]::before { background: var(--erp-color-warn); }
+.erp-rowcard[data-tone="err"]::before { background: var(--erp-color-err-solid); }
+.erp-rowcard:hover { border-color: var(--erp-color-line-strong); box-shadow: 0 6px 16px -12px var(--erp-color-text-3); }
+.erp-rowcard[aria-current="true"] { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-rowcard .erp-rowcard-link { position: static; color: var(--erp-color-text); font-weight: var(--erp-fw-bold); text-decoration: none; }
+.erp-rowcard-link::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+.erp-rowcard a:not(.erp-rowcard-link), .erp-rowcard button { position: relative; z-index: 1; }
+/* 칸 1 — 누구 · 무슨 차 */
+.erp-rowcard-id { grid-area: id; min-width: 0; }
+.erp-rowcard-title { display: flex; align-items: center; gap: var(--erp-sp-2); margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-rowcard-car { margin-top: 4px; color: var(--erp-color-text); font-weight: var(--erp-fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-car b { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-rowcard-meta { margin-top: 3px; overflow: hidden; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); text-overflow: ellipsis; white-space: nowrap; }
+/* 칸 2 — 어디까지 왔나 (작은 진행 단계) */
+.erp-rowcard-steps { grid-area: steps; display: flex; margin: 0; padding: 0; list-style: none; }
+.erp-rowcard-steps li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); white-space: nowrap; }
+.erp-rowcard-steps li::before { content: ""; position: absolute; top: 4px; right: 50%; width: 100%; height: 2px; background: var(--erp-color-line); }
+.erp-rowcard-steps li:first-child::before { display: none; }
+.erp-rowcard-steps li i { position: relative; z-index: 1; width: 10px; height: 10px; border: 2px solid var(--erp-color-line-strong); border-radius: var(--erp-r-pill); background: var(--erp-color-surface); }
+.erp-rowcard-steps li[data-state="done"] { color: var(--erp-color-text-2); }
+.erp-rowcard-steps li[data-state="done"]::before, .erp-rowcard-steps li[aria-current="step"]::before { background: var(--erp-color-primary); }
+.erp-rowcard-steps li[data-state="done"] i { border-color: var(--erp-color-primary); background: var(--erp-color-primary); }
+.erp-rowcard-steps li[aria-current="step"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-rowcard-steps li[aria-current="step"] i { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-primary-weak); }
+/* 칸 3 — 조건 */
+.erp-rowcard-facts { grid-area: facts; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--erp-sp-4); margin: 0; }
+.erp-rowcard-facts div { min-width: 0; }
+.erp-rowcard-facts dt { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-rowcard-facts dd { margin: 3px 0 0; overflow: hidden; font-weight: var(--erp-fw-medium); text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-facts dd small { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+/* 칸 4 — 돈 */
+.erp-rowcard-amount { grid-area: amount; text-align: right; }
+.erp-rowcard-amount strong { display: block; font-size: var(--erp-fs-title); font-weight: var(--erp-fw-bold); line-height: 1.1; }
+.erp-rowcard-amount strong small { margin-left: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-rowcard-amount span { display: block; margin-top: 4px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-rowcard-go { grid-area: go; width: 20px; height: 20px; fill: none; stroke: var(--erp-color-text-3); stroke-width: 2; }
+.erp-rowcard:hover .erp-rowcard-go { stroke: var(--erp-color-primary); }
+/* 단계가 없는 목록(상품) — 조건 칸이 단계 자리까지 넓어진다 */
+.erp-rowcard--no-steps { grid-template-columns: minmax(200px, 1.2fr) minmax(0, 3.3fr) 170px 20px; grid-template-areas: "id facts amount go"; }
+.erp-rowcard--no-steps .erp-rowcard-facts { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+@media (max-width: 1100px) {
+  .erp-rowcard, .erp-rowcard--no-steps { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id amount" "steps steps" "facts facts"; gap: 14px var(--erp-sp-4); }
+  .erp-rowcard-facts, .erp-rowcard--no-steps .erp-rowcard-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px var(--erp-sp-4); }
+  .erp-rowcard-go { display: none; }
+}
+
 
 /* ── themes/retro.css ──────────────────────────────────── */
 /* 시안 B — 레트로 테마 «90년대 사무용 단말기»
@@ -528,3 +586,14 @@ body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard[aria-current="true
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-title { font-family: var(--retro-font-display); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-foot { border-top: 1px dashed var(--erp-color-line); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-amount { font-family: var(--retro-font-mono); }
+
+/* 긴 카드 목록 — 굵은 테두리 + 찍힌 그림자, 상태 띠는 굵게, 금액은 고정폭 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard { border: var(--retro-border) solid var(--erp-color-line-strong); box-shadow: var(--retro-shadow) var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard::before { width: 6px; }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard[aria-current="true"] { border-color: var(--erp-color-primary); box-shadow: var(--retro-shadow) var(--erp-color-primary); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-title, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcards-group { font-family: var(--retro-font-display); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-car b { border: 1.5px solid var(--erp-color-line-strong); background: var(--erp-color-surface); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-car b, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-amount strong, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-meta { font-family: var(--retro-font-mono); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li i { border-radius: var(--erp-r-sm); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li::before { height: 0; background: transparent; border-top: var(--retro-border) dashed var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li[data-state="done"]::before, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li[aria-current="step"]::before { border-top-style: solid; border-top-color: var(--erp-color-primary); }

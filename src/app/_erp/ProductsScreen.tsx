@@ -9,7 +9,7 @@ import { productList } from '../../server/erp5';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
 import { sp, txt } from '../_fn/fmt';
-import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 /** 차명 — 세부모델(없으면 모델)이 이름, 제조사 · 트림은 보조. 모델명을 두 번 찍지 않는다. */
@@ -72,20 +72,23 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
           ...STATUS.map((s) => ({ key: s, label: `${s} ${count(s)}`, href: hrefWith(base, q, { st: s, page: null, id: null }), on: st === s })),
         ]} />
       </div>
-      <CardList label="상품 목록">
+      <RowCards label="상품 목록">
         {slice.map(({ p, offer }) => (
-          <ListCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-            title={carName(p)} sub={`${txt(p.registration?.vehicleNumber)} · ${p.vehicle.manufacturerId} · ${txt(p.vehicle.trimId)}`}
-            badge={p.status ? <Badge tone={TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-            pairs={[
-              ['연식 · 주행', `${p.specs.modelYear ?? '—'} · ${typeof p.specs.mileageKm === 'number' ? `${p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'}`],
-              ['색상', txt(p.extColor)], ['공급사', txt(p.supplierName ?? p.supplierId)], ['상품구분', txt(p.productKind)],
-              ['기간', `${offer.termMonths}개월`], ['보증금', offer.deposit ? `${won0(offer.deposit)}원` : '무보증'],
+          <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
+            tone={TONE[p.status ?? ''] ?? 'neutral'}
+            title={carName(p)} badge={p.status ? <Badge tone={TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
+            plate={txt(p.registration?.vehicleNumber)} car={`${p.vehicle.manufacturerId} · ${txt(p.vehicle.trimId)}`}
+            meta={<span className="erp-tags">{(p.perks ?? []).slice(0, 4).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span>}
+            facts={[
+              ['연식', `${p.specs.modelYear ?? '—'}`, typeof p.specs.mileageKm === 'number' ? `${p.specs.mileageKm.toLocaleString('ko-KR')}km` : undefined],
+              ['색상', txt(p.extColor), p.intColor ? `실내 ${p.intColor}` : undefined],
+              ['공급사', txt(p.supplierName ?? p.supplierId)],
+              ['상품 · 기간', txt(p.productKind), `${offer.termMonths}개월`],
+              ['보증금', offer.deposit ? `${won0(offer.deposit)}원` : '무보증'],
             ]}
-            tags={<span className="erp-tags">{(p.perks ?? []).slice(0, 3).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span>}
-            amount={won0(offer.monthlyRent)} unit="원/월" />
+            amount={won0(offer.monthlyRent)} amountLabel="월 대여료" />
         ))}
-      </CardList>
+      </RowCards>
       <div className="erp-grid-foot">
         <span>총 <b>{shown.length}</b>대</span>
         <nav className="erp-pager" aria-label="페이지">

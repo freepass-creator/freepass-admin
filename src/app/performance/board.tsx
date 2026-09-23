@@ -227,22 +227,16 @@ export async function PerformanceBoard({ q }: { q: Record<string, string | strin
               </div>
               <FilterSheet axes={axes} count={sorted.length} unit="건" />
             </form>
-            {/* 한 줄 조건 — 월 · 구분 · 공급사 · 영업채널 · 상태 (대표 2026-09-23 「두 줄로 할 필요 없음」) */}
+            {/* 한 줄 조건 — 청구월 · 실적 전체 · 공급 전체 · 영업 전체 (대표 2026-09-23) */}
             <div className="tools-row">
-              <span className="monthbar" aria-label="정산월">
-                {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
-                <b>{month}</b>
-                {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
-              </span>
-              <SelectFilter name="st" value={구분} label="구분" all="전체"
+              <SelectFilter name="month" value={month} label="청구월" all={달들[0] ?? month} reset={['ic']}
+                choices={[...달들.map((m) => ({ v: m, label: m })), ...(months.includes(NO_MONTH) ? [{ v: NO_MONTH, label: NO_MONTH }] : [])]} />
+              <SelectFilter name="st" value={구분} label="실적 구분" all="실적 전체"
                 choices={실적구분.map((k) => ({ v: k, label: k, count: 거른.filter((x) => stageOf(x.row) === k).length }))} reset={['ic']} />
-              <SelectFilter name="supplier" value={축.supplier[0] ?? ''} label="공급사" all="공급사 전체"
+              <SelectFilter name="supplier" value={축.supplier[0] ?? ''} label="공급사" all="공급 전체"
                 choices={셈('supplier').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
-              <SelectFilter name="channel" value={축.channel[0] ?? ''} label="영업채널" all="영업채널 전체"
+              <SelectFilter name="channel" value={축.channel[0] ?? ''} label="영업채널" all="영업 전체"
                 choices={셈('channel').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
-              {months.includes(NO_MONTH) && (
-                <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH}</Link>
-              )}
               <span className="tools-sum">마진 <b>{won(마진합)}원</b>{모름수 ? <span className="warn"> · 모름 {모름수}</span> : null}</span>
             </div>
             {month === NO_MONTH && <p className="notice warn">인도됐는데 셈한 달이 이미 닫힌 달이라 못 들어간 건입니다 — 「다른 작업」에서 청구월을 정합니다.</p>}

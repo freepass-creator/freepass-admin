@@ -128,18 +128,14 @@ export async function SettlementBoard({ q }: { q: Record<string, string | string
                 <LiveSearch name="q" defaultValue={gq} label="검색" placeholder={`${who} 이름 검색`} reset={['g']} />
               </div>
             </form>
-            {/* 한 줄 조건 — 월 · 청구/지급 · 거래처 · 상태 (실적과 같은 줄, 대표 2026-09-23) */}
+            {/* 한 줄 조건 — 청구월 · 청구/지급 · 거래처 (실적과 같은 규격, 대표 2026-09-23) */}
             <div className="tools-row">
-              <span className="monthbar" aria-label="정산월">
-                {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
-                <b>{month}</b>
-                {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
-              </span>
+              <SelectFilter name="month" value={month} label="청구월" all={달들[0] ?? month} reset={['g']}
+                choices={[...달들.map((m) => ({ v: m, label: m })), ...(미정수 > 0 ? [{ v: NO_MONTH, label: NO_MONTH, count: 미정수 }] : [])]} />
               <SelectFilter name="ax" value={ax} label="청구 · 지급" all="청구" reset={['g']}
                 choices={[{ v: 'claim', label: '청구 · 공급사' }, { v: 'pay', label: '지급 · 영업채널' }]} />
-              <SelectFilter name="g" value={sp(q.g)} label={who} all={`${who} 전체`} reset={[]}
+              <SelectFilter name="g" value={sp(q.g)} label={who} all={ax === 'claim' ? '공급 전체' : '영업 전체'} reset={[]}
                 choices={groups.map((x) => ({ v: x.party, label: x.party, count: x.lines.length }))} />
-              {미정수 > 0 && <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH} {미정수}</Link>}
               <span className="tools-sum">{ax === 'claim' ? '청구' : '지급'} <b>{won(t.net)}원</b>
                 {t.clawback ? <> · 환수 −{won(t.clawback)}</> : null}{t.unknown ? <span className="warn"> · 모름 {t.unknown}</span> : null}</span>
             </div>

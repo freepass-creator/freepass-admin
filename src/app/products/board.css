@@ -356,7 +356,7 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
 .pb .dz-fs-head b { flex:1; font-size:var(--head); font-weight:600; }
 .pb .dz-fs-head button { height:var(--control); padding:0 12px; border:0; border-radius:var(--r-control); background:transparent; color:var(--sub); font-size:var(--body); cursor:pointer; }
 .pb .dz-fs-head button:hover { background:var(--box); }
-.pb .dz-fs-body { height:280px; min-height:0; display:grid !important; grid-template-columns:116px 1fr; border-radius:10px; overflow:hidden; }
+.pb .dz-fs-body { flex:none !important; height:300px; min-height:0; display:grid !important; grid-template-columns:116px 1fr; border-radius:10px; overflow:hidden; }   /* 어느 화면 · 어느 항목이든 같은 크기 */
 .pb .dz-fs-body nav { padding:4px 0; overflow:auto; background:var(--box); }
 .pb .dz-fs-body nav button { width:100%; min-height:50px; padding:0 12px; display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--muted); font-size:var(--body); text-align:left; cursor:pointer; }
 .pb .dz-fs-body nav button.on { background:#fff; color:var(--navy); font-weight:600; }
@@ -378,6 +378,7 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
 .pb .dz-fs-foot .dz-bar-sub { background:#fff; color:var(--sub); box-shadow:inset 0 0 0 1px var(--field); }
 @media (min-width:901px) {
   .pb .dz-fs-body { height:360px; grid-template-columns:140px 1fr; }
+  .pb .dz-fs-sheet { height:auto !important; }
 }
 
 /* ═══ 틀 고정 — 검색 · 퀵필터(· 걸린 조건 · 달)까지는 움직이지 않고, 목록만 구른다 (대표 2026-09-22 「틀고정」) ═══ */

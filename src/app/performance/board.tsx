@@ -7,6 +7,8 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { erp5Ready } from '../../adapters/erp5/firestore';
 import { claimLedger, ledgerMonths, locateSettlementFocus, NO_MONTH, payLedger, type LedgerLine } from '../../domain/settlement/ledgers';
 import { performanceDone, performanceIssue, performanceSearchText } from '../../domain/settlement/performance-filter';
+import { stageOf } from '../../domain/settlement/stage';
+import { SelectFilter } from '../products/SelectFilter';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { sp, txt, won } from '../_fn/fmt';
@@ -45,8 +47,10 @@ function 표(d: Deal): { t: string; tone: Tone } {
 const 길 = { 공급사: ['접수', '청구', '확인', '계산서', '수금'], 영업채널: ['접수', '통보', '확인', '지급'] } as const;
 
 const 보기: { key: Mode; label: string }[] = [
-  { key: 'all', label: '전체' }, { key: 'todo', label: '할 일' }, { key: 'issue', label: '이슈' }, { key: 'done', label: '완료' },
+  { key: 'todo', label: '할 일' }, { key: 'issue', label: '이슈' }, { key: 'done', label: '완료' },
 ];
+/** 구분 — 계약이 앉는 자리(기능 stage.ts): 분납실적 · 완납실적. 정산으로 넘어가는 것은 «완납실적 + 인도» 다 */
+const 실적구분 = ['분납실적', '완납실적'] as const;
 
 
 export async function PerformanceBoard({ q }: { q: Record<string, string | string[] | undefined> }) {
@@ -92,8 +96,10 @@ export async function PerformanceBoard({ q }: { q: Record<string, string | strin
     (Object.keys(축) as (keyof typeof 축)[]).every((a) => a === skip || !축[a].length || 축[a].includes(축값[a](d)));
   const 거른 = searched.filter((d) => 축맞음(d));
   const mode = focus ? 'all' : (보기.find((b) => b.key === sp(q.f))?.key ?? 'all');
+  const 구분 = (실적구분 as readonly string[]).includes(sp(q.st)) ? sp(q.st) : '';
+  const 구분맞음 = (x: Deal) => !구분 || stageOf(x.row) === 구분;
   const 순위 = (d: Deal) => (이슈(d) ? 0 : 끝남(d) ? 2 : 1);
-  const sorted = 거른.filter((d) => 모드맞음(d, mode))
+  const sorted = 거른.filter(구분맞음).filter((d) => 모드맞음(d, mode))
     .sort((a, b) => 순위(a) - 순위(b) || (b.row.progress.deliveredAt ?? '').localeCompare(a.row.progress.deliveredAt ?? '') || a.row.id.localeCompare(b.row.id));
   const 셈 = (a: keyof typeof 축) => {
     const m = new Map<string, number>();
@@ -221,33 +227,26 @@ export async function PerformanceBoard({ q }: { q: Record<string, string | strin
               </div>
               <FilterSheet axes={axes} count={sorted.length} unit="건" />
             </form>
-            <div className="monthbar" aria-label="정산월">
-              {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
-              <b>{month}</b>
-              {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
-              <span className="sum">마진 <b>{won(마진합)}원</b>{모름수 ? <span className="warn"> · 모름 {모름수}</span> : null}</span>
-            </div>
-            <div className="chips" role="group" aria-label="보기">
-              {보기.map((b) => {
-                const on = b.key === mode;
-                return (
-                  <Link key={b.key} className={`chip${on ? ' on' : ''}`} href={keep({ f: b.key === 'all' ? '' : b.key, ic: '', v: '' })} aria-current={on ? 'true' : undefined}>
-                    {b.label}{b.key !== 'all' ? ` ${거른.filter((x) => 모드맞음(x, b.key)).length}` : ''}{on && <span className="sr-only"> (선택됨)</span>}
-                  </Link>
-                );
-              })}
+            {/* 한 줄 조건 — 월 · 구분 · 공급사 · 영업채널 · 상태 (대표 2026-09-23 「두 줄로 할 필요 없음」) */}
+            <div className="tools-row">
+              <span className="monthbar" aria-label="정산월">
+                {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
+                <b>{month}</b>
+                {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
+              </span>
+              <SelectFilter name="st" value={구분} label="구분" all="전체"
+                choices={실적구분.map((k) => ({ v: k, label: k, count: 거른.filter((x) => stageOf(x.row) === k).length }))} reset={['ic']} />
+              <SelectFilter name="supplier" value={축.supplier[0] ?? ''} label="공급사" all="공급사 전체"
+                choices={셈('supplier').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
+              <SelectFilter name="channel" value={축.channel[0] ?? ''} label="영업채널" all="영업채널 전체"
+                choices={셈('channel').map((o) => ({ v: o.key, label: o.label, count: o.count }))} reset={['ic']} />
+              <SelectFilter name="f" value={mode === 'all' ? '' : mode} label="상태" all="상태 전체"
+                choices={보기.map((b) => ({ v: b.key, label: b.label, count: 거른.filter(구분맞음).filter((x) => 모드맞음(x, b.key)).length }))} reset={['ic']} />
               {months.includes(NO_MONTH) && (
                 <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH}</Link>
               )}
+              <span className="tools-sum">마진 <b>{won(마진합)}원</b>{모름수 ? <span className="warn"> · 모름 {모름수}</span> : null}</span>
             </div>
-            {걸린조건.length > 0 && (
-              <div className="applied" aria-label="걸어 둔 조건">
-                {걸린조건.map((x) => (
-                  <Link key={x.key} className="applied-chip" href={x.href} aria-label={`${x.label} 조건 풀기`}><span>{x.label}</span><span aria-hidden="true">✕</span></Link>
-                ))}
-                <Link className="applied-clear" href={keep({ supplier: '', channel: '', agent: '', q: '' })}>모두 지우기</Link>
-              </div>
-            )}
             {month === NO_MONTH && <p className="notice warn">인도됐는데 셈한 달이 이미 닫힌 달이라 못 들어간 건입니다 — 「다른 작업」에서 청구월을 정합니다.</p>}
             </div>
             <div className="web-scroll">

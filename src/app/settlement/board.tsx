@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LiveSearch } from '../products/LiveSearch';
+import { SelectFilter } from '../products/SelectFilter';
 import '../products/board.css';
 import { settlements, today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
@@ -127,32 +128,22 @@ export async function SettlementBoard({ q }: { q: Record<string, string | string
                 <LiveSearch name="q" defaultValue={gq} label="검색" placeholder={`${who} 이름 검색`} reset={['g']} />
               </div>
             </form>
-            <div className="monthbar" aria-label="정산월">
-              {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
-              <b>{month}</b>
-              {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
-              <span className="sum">{ax === 'claim' ? '청구' : '지급'} <b>{won(t.net)}원</b>
-                {t.clawback ? <> · 환수 −{won(t.clawback)}</> : null}{t.unknown ? <span className="warn"> · 모름 {t.unknown}</span> : null}</span>
-            </div>
-            <div className="chips" role="group" aria-label="청구 · 지급 · 상태">
-              {(['claim', 'pay'] as const).map((a) => {
-                const on = a === ax;
-                return (
-                  <Link key={a} className={`chip${on ? ' on' : ''}`} href={keep({ ax: a, g: '', v: 'list' })} aria-current={on ? 'true' : undefined}>
-                    {a === 'claim' ? '청구' : '지급'}{on && <span className="sr-only"> (선택됨)</span>}
-                  </Link>
-                );
-              })}
-              <span className="chip-sep" aria-hidden="true" />
-              {상태보기.map((b) => {
-                const on = b.key === gs;
-                return (
-                  <Link key={b.key} className={`chip${on ? ' on' : ''}`} href={keep({ gs: b.key === 'all' ? '' : b.key, g: '', v: 'list' })} aria-current={on ? 'true' : undefined}>
-                    {b.label} {셈(b.key)}{on && <span className="sr-only"> (선택됨)</span>}
-                  </Link>
-                );
-              })}
+            {/* 한 줄 조건 — 월 · 청구/지급 · 거래처 · 상태 (실적과 같은 줄, 대표 2026-09-23) */}
+            <div className="tools-row">
+              <span className="monthbar" aria-label="정산월">
+                {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span className="gap" />}
+                <b>{month}</b>
+                {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span className="gap" />}
+              </span>
+              <SelectFilter name="ax" value={ax} label="청구 · 지급" all="청구" reset={['g']}
+                choices={[{ v: 'claim', label: '청구 · 공급사' }, { v: 'pay', label: '지급 · 영업채널' }]} />
+              <SelectFilter name="g" value={sp(q.g)} label={who} all={`${who} 전체`} reset={[]}
+                choices={groups.map((x) => ({ v: x.party, label: x.party, count: x.lines.length }))} />
+              <SelectFilter name="gs" value={gs === 'all' ? '' : gs} label="상태" all="상태 전체" reset={['g']}
+                choices={상태보기.filter((b) => b.key !== 'all').map((b) => ({ v: b.key, label: b.label, count: 셈(b.key) }))} />
               {미정수 > 0 && <Link className={`chip${month === NO_MONTH ? ' on' : ''}`} href={달로(NO_MONTH)}>{NO_MONTH} {미정수}</Link>}
+              <span className="tools-sum">{ax === 'claim' ? '청구' : '지급'} <b>{won(t.net)}원</b>
+                {t.clawback ? <> · 환수 −{won(t.clawback)}</> : null}{t.unknown ? <span className="warn"> · 모름 {t.unknown}</span> : null}</span>
             </div>
             {month === NO_MONTH && <p className="notice warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 「실적」에서 사람이 달을 정합니다.</p>}
             </div>

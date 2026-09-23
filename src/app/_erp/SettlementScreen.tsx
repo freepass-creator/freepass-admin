@@ -11,7 +11,7 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { claimLedger, ledgerMonths, ledgerTotals, NO_MONTH, payLedger, type Clawback, type LedgerGroup } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Tone } from './parts';
+import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -51,31 +51,24 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         ]} />
         {gSel ? <Link className="erp-chip" href={hrefWith(base, q, { g: null })}>{who}: {gSel.party} ×</Link> : null}
       </div>
-      <div className="erp-grid-scroll" data-region="grid">
-        <table className="erp-grid">
-          <thead><tr>
-            <th>인도일</th><th>{who}</th><th>고객</th><th>차량 / 차량번호</th><th>상품 · 기간</th><th>결제</th>
-            <th className="erp-num">{tab === 'claim' ? '청구금액' : '지급액'}</th><th>{문서}</th><th>단계</th>
-          </tr></thead>
-          <tbody>
-            {lines.map(({ row: r, amount, broken, ratio, party }) => (
-              <tr key={`${party}-${r.id}`} data-href={`/intake?ic=${encodeURIComponent(r.id)}`}>
-                <td><Link className="erp-row-link" href={`/intake?ic=${encodeURIComponent(r.id)}`}>{txt(r.progress.deliveredAt)}</Link></td>
-                <td><Link className="erp-row-link" href={hrefWith(base, q, { g: party })}>{party}</Link></td><td>{txt(r.customer)}</td>
-                <td>{txt(r.model)}<span className="erp-cell-sub">{txt(r.plate)}</span></td>
-                <td>{txt(r.product)} · {r.term ?? '—'}개월</td>
-                <td>{txt(r.payKind)}{broken ? <> <span className="erp-tag">끊김 · 받은 몫 {Math.round(ratio * 100)}%</span></> : null}</td>
-                <td className="erp-num erp-strong">{won0(amount)}</td>
-                <td>{(tab === 'claim' ? r.progress.billed : r.payStage !== '접수') ? <span className="erp-tag erp-tag--primary">보냄</span> : <span className="erp-muted">안 나감</span>}</td>
-                <td><Badge tone={STAGE_TONE[stageOf(r)] ?? 'neutral'}>{stageOf(r)}</Badge></td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot><tr><td colSpan={6}>합계 ({lines.length}줄)</td><td className="erp-num">{won0(sumAmt)}</td><td /><td /></tr></tfoot>
-        </table>
-      </div>
+      <CardList label={`${tab === 'claim' ? '청구' : '지급'} 목록`}>
+        {lines.map(({ row: r, amount, broken, ratio, party }) => (
+          <ListCard key={`${party}-${r.id}`} href={`/intake?ic=${encodeURIComponent(r.id)}`}
+            title={txt(r.customer)} sub={`${txt(r.model)} · ${txt(r.plate)}`}
+            badge={<Badge tone={STAGE_TONE[stageOf(r)] ?? 'neutral'}>{stageOf(r)}</Badge>}
+            pairs={[
+              [who, <Link key="p" className="erp-row-link" href={hrefWith(base, q, { g: party })}>{party}</Link>],
+              ['인도일', txt(r.progress.deliveredAt)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`], ['결제', txt(r.payKind)],
+            ]}
+            tags={<span className="erp-tags">
+              {(tab === 'claim' ? r.progress.billed : r.payStage !== '접수') ? <span className="erp-tag erp-tag--primary">{문서} 보냄</span> : <span className="erp-tag">{문서} 안 나감</span>}
+              {broken ? <span className="erp-tag">끊김 · 받은 몫 {Math.round(ratio * 100)}%</span> : null}
+            </span>}
+            amount={won0(amount)} />
+        ))}
+      </CardList>
       <div className="erp-grid-foot">
-        <span>{month} · {who} <b>{groups.length}</b>곳 · <b>{lines.length}</b>줄</span><span>·</span>
+        <span>{month} · {who} <b>{groups.length}</b>곳 · <b>{lines.length}</b>줄 · {tab === 'claim' ? '청구금액' : '지급액'} 합계 <b>{won0(sumAmt)}</b>원</span><span>·</span>
         <span>청구 <b>{won0(ct.net)}</b>원 · 지급 <b>{won0(pt.net)}</b>원 · 남는 것 <b>{won0(ct.net - pt.net)}</b>원</span>
       </div>
     </section>

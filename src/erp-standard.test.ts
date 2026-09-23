@@ -21,10 +21,10 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
 
 test('five desktop screens are built from the standard skeleton regions', () => {
   const screens = {
-    'src/app/_erp/ProductsScreen.tsx': ['grid'],
-    'src/app/_erp/IntakeScreen.tsx': ['grid'],
-    'src/app/_erp/SettlementScreen.tsx': ['grid'],
-    'src/app/_erp/EsignScreen.tsx': ['grid'],
+    'src/app/_erp/ProductsScreen.tsx': [],
+    'src/app/_erp/IntakeScreen.tsx': [],
+    'src/app/_erp/SettlementScreen.tsx': [],
+    'src/app/_erp/EsignScreen.tsx': [],
   } as const;
   for (const [file, regions] of Object.entries(screens)) {
     const src = read(file);
@@ -33,6 +33,9 @@ test('five desktop screens are built from the standard skeleton regions', () => 
     assert.equal(src.includes('<Kpis'), false, `${file}: no summary cards`);
     assert.ok(src.includes('data-region="grid-toolbar"'), `${file}: status tabs on the toolbar row (standard)`);
     for (const r of regions) assert.ok(src.includes(`data-region="${r}"`), `${file}: region ${r}`);
+    // 목록은 카드형(규격 §5-2) — 폰으로 그대로 넘어간다(대표 2026-09-23 「목록을 카드 타입으로」)
+    assert.ok(src.includes('<CardList') && src.includes('<ListCard'), `${file}: card list`);
+    assert.equal(src.includes('erp-grid-scroll'), false, `${file}: no table list`);
     assert.equal(/style=\{\{/.test(src), false, `${file}: no inline style`);
     // 조회 = 검색창 + 상세 필터(규격 §5-1) — 라벨 드롭다운 바(erp-filter)를 늘어놓지 않는다
     assert.ok(src.includes('<SearchBar'), `${file}: search bar`);
@@ -40,7 +43,7 @@ test('five desktop screens are built from the standard skeleton regions', () => 
     assert.ok((src.match(/<AutoSelect/g) ?? []).length <= 1, `${file}: at most one classification dropdown`);
   }
   const parts = read('src/app/_erp/parts.tsx');
-  assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"'));
+  assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-cardlist" data-region="grid"'));
   assert.ok(parts.includes('data-region="filter"') && parts.includes('data-region="grid-toolbar"') && parts.includes('erp-filter-more'));
   // 실적은 새 판이 아니라 접수 목록의 실적 칸
   assert.ok(read('src/app/_erp/IntakeScreen.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));

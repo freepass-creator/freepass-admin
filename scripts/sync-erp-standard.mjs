@@ -61,6 +61,7 @@ const out = `/* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard
 .erp-std a.erp-facet-opt { color: var(--erp-color-text); font-weight: var(--erp-fw-regular); }
 .erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
 .erp-std a.erp-chip { color: var(--erp-color-text-2); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-listcard-link { color: var(--erp-color-text); text-decoration: none; }
 
 /* ── erp.css ───────────────────────────────────────────── */
 ${erp}

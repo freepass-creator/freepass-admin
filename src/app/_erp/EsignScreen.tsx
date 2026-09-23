@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
-import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -44,31 +44,16 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
           ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
         ]} />
       </div>
-      <div className="erp-grid-scroll" data-region="grid">
-        <table className="erp-grid">
-          <thead><tr>
-            <th>계약코드</th><th>계약일</th><th>고객</th><th>차량 / 차량번호</th><th>영업 담당</th>
-            <th className="erp-num">기간</th><th className="erp-num">월 대여료</th><th>전자서명</th><th>계약상태</th>
-          </tr></thead>
-          <tbody>
-            {shown.map((c) => {
-              const href = hrefWith(base, q, { id: c.id });
-              return (
-                <tr key={c.id} aria-selected={sel?.id === c.id} data-href={href}>
-                  <td><Link className="erp-row-link" href={href}>{txt(c.code)}</Link></td>
-                  <td>{txt(c.contractDate)}</td><td>{txt(c.customer)}</td>
-                  <td>{txt(c.vehicle)}<span className="erp-cell-sub">{txt(c.plate)}</span></td>
-                  <td>{txt(c.agent)}</td>
-                  <td className="erp-num">{c.term ? `${c.term}개월` : '—'}</td>
-                  <td className="erp-num erp-strong">{won0(c.rent)}</td>
-                  <td>{c.signStatus ? <Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{c.signStatus}</Badge> : <span className="erp-muted">미연결</span>}</td>
-                  <td>{c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <CardList label="전자계약 목록">
+        {shown.map((c) => (
+          <ListCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
+            title={txt(c.customer)} sub={`${txt(c.code)} · ${txt(c.vehicle)} · ${txt(c.plate)}`}
+            badge={c.signStatus ? <Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{c.signStatus}</Badge> : <Badge tone="neutral">미연결</Badge>}
+            pairs={[['계약일', txt(c.contractDate)], ['영업 담당', txt(c.agent)], ['기간', c.term ? `${c.term}개월` : '—'], ['양식', txt(c.kind)]]}
+            tags={c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : undefined}
+            amount={won0(c.rent)} unit="원/월" />
+        ))}
+      </CardList>
       <div className="erp-grid-foot"><span>총 <b>{shown.length}</b>건</span><span>·</span><span>서명 대기 <b>{waiting}</b>건</span></div>
     </section>
   );

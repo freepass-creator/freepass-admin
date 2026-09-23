@@ -9,7 +9,7 @@ import { productList } from '../../server/erp5';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
 import { sp, txt } from '../_fn/fmt';
-import { Badge, CardHead, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
+import { Badge, CardHead, CardList, hrefWith, ListCard, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 /** 차명 — 세부모델(없으면 모델)이 이름, 제조사 · 트림은 보조. 모델명을 두 번 찍지 않는다. */
@@ -72,34 +72,20 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
           ...STATUS.map((s) => ({ key: s, label: `${s} ${count(s)}`, href: hrefWith(base, q, { st: s, page: null, id: null }), on: st === s })),
         ]} />
       </div>
-      <div className="erp-grid-scroll" data-region="grid">
-        <table className="erp-grid">
-          <thead><tr>
-            <th>차량번호</th><th>차명 / 트림</th><th>연식 · 주행</th><th>색상</th><th>공급사</th><th>상품구분</th>
-            <th className="erp-num">기간</th><th className="erp-num">월 대여료</th><th className="erp-num">보증금</th><th>우대조건</th><th>출고상태</th>
-          </tr></thead>
-          <tbody>
-            {slice.map(({ p, offer }) => {
-              const href = hrefWith(base, q, { id: p.id, offer: offer.id });
-              return (
-                <tr key={p.id} aria-selected={sel?.p.id === p.id} data-href={href}>
-                  <td><Link className="erp-row-link" href={href}>{txt(p.registration?.vehicleNumber)}</Link></td>
-                  <td>{carName(p)}<span className="erp-cell-sub">{p.vehicle.manufacturerId} · {txt(p.vehicle.trimId)}</span></td>
-                  <td>{p.specs.modelYear ?? '—'} · {typeof p.specs.mileageKm === 'number' ? `${p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'}</td>
-                  <td>{txt(p.extColor)}</td>
-                  <td>{txt(p.supplierName ?? p.supplierId)}</td>
-                  <td>{txt(p.productKind)}</td>
-                  <td className="erp-num">{offer.termMonths}개월</td>
-                  <td className="erp-num erp-strong">{won0(offer.monthlyRent)}</td>
-                  <td className="erp-num">{offer.deposit ? won0(offer.deposit) : <span className="erp-tag erp-tag--primary">무보증</span>}</td>
-                  <td><span className="erp-tags">{(p.perks ?? []).slice(0, 3).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span></td>
-                  <td>{p.status ? <Badge tone={TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <CardList label="상품 목록">
+        {slice.map(({ p, offer }) => (
+          <ListCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
+            title={carName(p)} sub={`${txt(p.registration?.vehicleNumber)} · ${p.vehicle.manufacturerId} · ${txt(p.vehicle.trimId)}`}
+            badge={p.status ? <Badge tone={TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
+            pairs={[
+              ['연식 · 주행', `${p.specs.modelYear ?? '—'} · ${typeof p.specs.mileageKm === 'number' ? `${p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'}`],
+              ['색상', txt(p.extColor)], ['공급사', txt(p.supplierName ?? p.supplierId)], ['상품구분', txt(p.productKind)],
+              ['기간', `${offer.termMonths}개월`], ['보증금', offer.deposit ? `${won0(offer.deposit)}원` : '무보증'],
+            ]}
+            tags={<span className="erp-tags">{(p.perks ?? []).slice(0, 3).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span>}
+            amount={won0(offer.monthlyRent)} unit="원/월" />
+        ))}
+      </CardList>
       <div className="erp-grid-foot">
         <span>총 <b>{shown.length}</b>대</span>
         <nav className="erp-pager" aria-label="페이지">

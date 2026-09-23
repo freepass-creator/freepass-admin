@@ -93,6 +93,39 @@ export function Props({ pairs }: { pairs: [string, ReactNode][] }) {
   return <dl className="erp-props">{pairs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
 }
 
+/**
+ * 목록 카드 — 규격 §5-2. 표 한 줄이 카드 한 장이 된다(대표 2026-09-23 「목록을 카드 타입으로 … 모바일로 넘어가기 쉽게」).
+ *   이름 링크가 카드 전체를 덮는다. pairs 는 표의 열, tags · amount 는 바닥.
+ */
+export function ListCard({ href, title, sub, badge, pairs, tags, amount, unit = '원', current }: {
+  href: string; title: ReactNode; sub?: ReactNode; badge?: ReactNode; pairs: [string, ReactNode][];
+  tags?: ReactNode; amount?: ReactNode; unit?: string; current?: boolean;
+}) {
+  return (
+    <article className="erp-listcard" role="listitem" aria-current={current ? 'true' : undefined}>
+      <div className="erp-listcard-head">
+        <h3 className="erp-listcard-title">
+          <Link className="erp-listcard-link" href={href}>{title}</Link>
+          {sub ? <span className="erp-listcard-sub">{sub}</span> : null}
+        </h3>
+        {badge}
+      </div>
+      <Props pairs={pairs} />
+      {tags || amount !== undefined ? (
+        <div className="erp-listcard-foot">
+          {tags ?? <span />}
+          {amount !== undefined ? <span className="erp-listcard-amount">{amount}<small>{unit}</small></span> : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+/** 카드 목록 — 그리드 자리(data-region="grid") */
+export function CardList({ children, label }: { children: ReactNode; label: string }) {
+  return <div className="erp-cardlist" data-region="grid" role="list" aria-label={label}>{children}</div>;
+}
+
 /** 세그먼트(상태 탭) — 링크로 고른다 */
 export function Seg({ label, items }: { label: string; items: { key: string; label: ReactNode; href: string; on: boolean }[] }) {
   return (

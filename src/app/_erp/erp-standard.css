@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ a58a59373822881014ac1bdec50f7bbc5c0c0c05
+ * 정본: freepass-creator/ai-core @ c13d862553f0817fa62862118bc6e3c831496f3a
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -15,6 +15,7 @@
 .erp-std a.erp-facet-opt { color: var(--erp-color-text); font-weight: var(--erp-fw-regular); }
 .erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
 .erp-std a.erp-chip { color: var(--erp-color-text-2); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-listcard-link { color: var(--erp-color-text); text-decoration: none; }
 
 /* ── erp.css ───────────────────────────────────────────── */
 /* ERP 표준 UI 규격 v1 — 공통 스타일
@@ -343,6 +344,28 @@
 .erp-inline-form:last-child { border-bottom: 0; padding-bottom: 0; }
 .erp-inline-form .erp-field { flex: 1; }
 
+/* ── 목록 카드 — 표 대신 카드로 늘어놓는 목록 (대표 2026-09-23 「목록을 카드 타입으로 … 모바일로 넘어가기 쉽게」) ──
+ *   한 건 = 카드 한 장: 머리(이름 + 보조 줄 · 상태 뱃지) → 값 묶음(.erp-props) → 바닥(태그 · 금액).
+ *   카드는 넓이에 맞춰 칸 수가 저절로 줄어든다 — PC 여러 칸, 좁은 창 · 폰은 한 칸. 같은 마크업이 폰까지 간다.
+ *   카드 전체를 누르면 열린다: 이름 링크(.erp-listcard-link)가 카드를 덮고, 카드 안의 다른 링크는 그 위에 뜬다.
+ *   고른 카드는 aria-current="true". 합계는 카드 목록 아래 .erp-grid-foot 에 둔다. */
+.erp-cardlist { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); align-content: start; gap: var(--erp-sp-3); padding: var(--erp-sp-4); background: var(--erp-color-sunken); }
+.erp-listcard { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); }
+.erp-listcard:hover { border-color: var(--erp-color-line-strong); }
+.erp-listcard[aria-current="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-row-selected); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-listcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--erp-sp-2); }
+.erp-listcard-title { min-width: 0; margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-listcard-link { color: var(--erp-color-text); text-decoration: none; }
+.erp-listcard-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--erp-r-lg); }
+.erp-listcard-link:focus-visible { outline: 0; }
+.erp-listcard-link:focus-visible::after { box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-listcard a:not(.erp-listcard-link) { position: relative; z-index: 1; }
+.erp-listcard-sub { display: block; margin-top: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-listcard .erp-props { gap: var(--erp-sp-2) var(--erp-sp-3); }
+.erp-listcard-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--erp-sp-2); margin-top: auto; padding-top: 10px; border-top: 1px solid var(--erp-color-line-row); }
+.erp-listcard-amount { margin-left: auto; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); white-space: nowrap; }
+.erp-listcard-amount small { margin-left: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+
 
 /* ── themes/retro.css ──────────────────────────────────── */
 /* 시안 B — 레트로 테마 «90년대 사무용 단말기»
@@ -498,3 +521,10 @@ body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-opt { border: 1.5px s
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-opt[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-text); border-color: var(--erp-color-line-strong); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-title { font-family: var(--retro-font-display); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-inline-form { border-bottom: 1px dashed var(--erp-color-line); }
+
+/* 목록 카드 — 굵은 테두리 + 찍힌 그림자, 금액은 고정폭 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard { border: var(--retro-border) solid var(--erp-color-line-strong); box-shadow: var(--retro-shadow) var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard[aria-current="true"] { border-color: var(--erp-color-primary); box-shadow: var(--retro-shadow) var(--erp-color-primary); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-title { font-family: var(--retro-font-display); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-foot { border-top: 1px dashed var(--erp-color-line); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-amount { font-family: var(--retro-font-mono); }

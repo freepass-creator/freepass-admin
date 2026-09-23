@@ -266,7 +266,10 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
               {mode === 'find'
                 ? <Link className="primary" href={접수로}>접수하기</Link>
                 : 접수중
-                  ? <Link className="secondary is-on" href={keep({ v: 'work' })} aria-current="step">접수 중<span className="sr-only"> (오른쪽 접수 칸)</span></Link>
+                  ? /* 다시 누르면 접수를 닫는다 — 켜고 끄는 한 단추 (대표 2026-09-23) */
+                  <Link className="secondary is-on" href={keep({ w: '', v: 'detail' })} aria-current="step" aria-label="접수 취소">
+                    접수 중<span aria-hidden="true"> ✕</span><span className="sr-only"> — 누르면 접수를 닫습니다</span>
+                  </Link>
                   : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}>접수하기</Link>}
             </div>
           )}

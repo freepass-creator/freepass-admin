@@ -54,7 +54,7 @@
 .pb .search-field:hover { border-color:var(--field-hover); }
 .pb .search-field:focus-within { border-color:var(--navy); box-shadow:0 0 0 3px rgba(27,42,74,.12); color:var(--navy); }
 .pb .search-field > svg { flex:none; width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
-.pb .search-field > input { flex:1; min-width:0; height:100%; padding:0; border:0 !important; background:transparent !important; box-shadow:none !important; color:var(--ink); font-size:14px; outline:0; }
+.pb.pb .search-field > input { flex:1; min-width:0; height:100%; padding:0; border:0 !important; background:transparent !important; box-shadow:none !important; color:var(--ink); font-size:14px; outline:0; }
 .pb .dz-fs { flex:none; display:flex; position:static; }
 .pb .dz-fs-open { position:relative !important; width:var(--control) !important; height:var(--control) !important; margin:0 !important; padding:0 !important;
   display:grid !important; place-items:center; border:1px solid var(--field) !important; border-radius:var(--r-control) !important;
@@ -194,27 +194,27 @@
 /* ── 8. 입력칸 한 벌 — 글 · 숫자 · 날짜 · 달 · 고르기 · 긴 글: 종류가 달라도 모양은 같다 ── */
 .pb .form, .pb .dz-life-form { display:grid; gap:var(--gap); }
 .pb .pb-work-form { display:contents; }
-.pb label { color:var(--sub); font-size:13px; font-weight:500; }
+.pb.pb label { color:var(--sub); font-size:13px; font-weight:500; }
 .pb .form label, .pb .dz-life-form label, .pb .dz-money label { display:grid; gap:6px; }
 .pb .pb-choice { margin:0; padding:0; border:0; }
 .pb .pb-choice legend { margin-bottom:6px; padding:0; color:var(--sub); font-size:13px; font-weight:500; }
 .pb .pb-choice .chips { margin:0; }
-.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"],[type="submit"],[type="button"])), .pb select, .pb textarea {
+.pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"],[type="submit"],[type="button"])), .pb.pb select, .pb.pb textarea {
   width:100%; min-width:0; height:var(--control); margin:0; padding:0 12px;
   border:1px solid var(--field) !important; border-radius:var(--r-control) !important; background-color:#fff !important;
   color:var(--ink); font-size:14px; font-weight:400; outline:0; box-shadow:none; -webkit-appearance:none; appearance:none;
   transition:border-color .12s, box-shadow .12s;
 }
-.pb textarea { height:auto; min-height:88px; padding:10px 12px; resize:vertical; }
-.pb select { padding-right:36px; cursor:pointer; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center !important; }
-.pb input::placeholder, .pb textarea::placeholder { color:#98a2b3; opacity:1; }
-.pb input[type="date"]::-webkit-calendar-picker-indicator, .pb input[type="month"]::-webkit-calendar-picker-indicator { opacity:.55; cursor:pointer; }
-.pb input[list]::-webkit-calendar-picker-indicator { display:none !important; }   /* 목록 붙은 칸의 ▼ 만 */
-.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):hover, .pb select:hover, .pb textarea:hover { border-color:var(--field-hover) !important; }
-.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):focus, .pb select:focus, .pb textarea:focus { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(27,42,74,.12); }
-.pb input:user-invalid { border-color:#d92d20 !important; }
-.pb input:disabled, .pb select:disabled, .pb textarea:disabled, .pb input[readonly] { background-color:var(--box) !important; color:var(--muted); cursor:not-allowed; }
-.pb input[type="checkbox"], .pb input[type="radio"] { width:20px; height:20px; accent-color:var(--navy); }
+.pb.pb textarea { height:auto; min-height:88px; padding:10px 12px; resize:vertical; }
+.pb.pb select { padding-right:36px; cursor:pointer; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center !important; }
+.pb.pb input::placeholder, .pb.pb textarea::placeholder { color:#98a2b3; opacity:1; }
+.pb.pb input[type="date"]::-webkit-calendar-picker-indicator, .pb.pb input[type="month"]::-webkit-calendar-picker-indicator { opacity:.55; cursor:pointer; }
+.pb.pb input[list]::-webkit-calendar-picker-indicator { display:none !important; }   /* 목록 붙은 칸의 ▼ 만 */
+.pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):hover, .pb.pb select:hover, .pb.pb textarea:hover { border-color:var(--field-hover) !important; }
+.pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):focus, .pb.pb select:focus, .pb.pb textarea:focus { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(27,42,74,.12); }
+.pb.pb input:user-invalid { border-color:#d92d20 !important; }
+.pb.pb input:disabled, .pb.pb select:disabled, .pb.pb textarea:disabled, .pb input[readonly] { background-color:var(--box) !important; color:var(--muted); cursor:not-allowed; }
+.pb.pb input[type="checkbox"], .pb.pb input[type="radio"] { width:20px; height:20px; accent-color:var(--navy); }
 
 /* ── 9. 단추 — 주(남색) · 곁(옅은 남색) · 셋째(회색) · 작은 단추 ───────── */
 .pb .web-actions { flex:none; display:grid; grid-template-columns:3fr 7fr; gap:var(--gap); padding-top:12px; background:var(--ground); }

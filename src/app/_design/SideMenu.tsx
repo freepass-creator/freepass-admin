@@ -1,8 +1,8 @@
 'use client';
 /**
  * ★PC 왼쪽 업무 메뉴 — AI Core «ERP 표준 UI 규격 v1» 골격 ② (대표 2026-09-23 「이 컨셉으로 프리패스 어드민에 적용」)
- *   메뉴는 폰 하단 다섯 걸음(`MobileTabBar`)과 같은 업무를 같은 차례로 놓는다 — 상품 · 접수 · 계약 · 청구 · 지급.
- *   정산관리(청구 · 지급)는 같은 판을 tab= 으로 가른다. 새 갈래를 만들지 않는다.
+ *   차례는 상품 · 접수 · 실적 · 정산, 그리고 따로 떼어 둔 전자계약(대표 2026-09-23). 새 판을 만들지 않고
+ *   있는 판으로 간다 — 실적은 접수 목록의 실적 칸, 정산은 청구 · 지급을 판 안에서 가른다.
  *   폰에서는 이 메뉴가 안 보인다(CSS) — 다섯 걸음 하단바가 대신한다.
  */
 import Link from 'next/link';
@@ -10,53 +10,57 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Icon } from './Icon';
 
 type Item = { key: string; label: string; href: string; icon: string };
-const GROUPS: { title: string; items: Item[] }[] = [
-  { title: '영업', items: [
-    { key: '상품', label: '상품찾기', href: '/products', icon: 'search' },
-    { key: '접수', label: '계약접수', href: '/intake', icon: 'clipboard' },
-  ] },
-  { title: '계약', items: [
-    { key: '계약', label: '전자계약', href: '/esign', icon: 'file-text' },
-  ] },
-  { title: '정산관리', items: [
-    { key: '청구', label: '청구 (공급사)', href: '/settlement?tab=claim', icon: 'building' },
-    { key: '지급', label: '지급 (영업자)', href: '/settlement?tab=pay', icon: 'wallet' },
-  ] },
+/**
+ * ★업무 차례 — 대표 2026-09-23 「순서는 상품, 접수, 실적, 정산, 계약이야. 전자계약은 약간 별도로 취급」
+ *   실적은 따로 판이 없다 — 접수 목록의 실적 칸(분납실적 · 완납실적)이 곧 실적이다(대표 「정산 가면 거기가 실적」).
+ *   정산은 한 판에서 청구 · 지급을 가른다(판 안의 탭). 전자계약은 업무 흐름 밖의 따로 된 문으로 떼어 둔다.
+ */
+const FLOW: Item[] = [
+  { key: '상품', label: '상품찾기', href: '/products', icon: 'search' },
+  { key: '접수', label: '계약접수', href: '/intake', icon: 'clipboard' },
+  { key: '실적', label: '실적', href: '/intake?iv=완납실적', icon: 'circle-check' },
+  { key: '정산', label: '정산관리', href: '/settlement', icon: 'wallet' },
 ];
+const ESIGN: Item = { key: '계약', label: '전자계약', href: '/esign', icon: 'file-text' };
+const 실적칸 = ['분납실적', '완납실적'];
 
-/** 지금 자리 — 경로 + (정산만) tab= 로 가른다. MobileTabBar 와 같은 판정. */
+/** 지금 자리 — 경로 + (접수만) 실적 칸이면 «실적». */
 function useCurrent(): string {
   const path = usePathname() || '/';
   const sp = useSearchParams();
-  if (path.startsWith('/settlement')) return sp.get('tab') === 'pay' ? '지급' : '청구';
+  if (path.startsWith('/settlement')) return '정산';
   if (path.startsWith('/products')) return '상품';
-  if (path.startsWith('/intake')) return '접수';
+  if (path.startsWith('/intake')) return 실적칸.includes(sp.get('iv') ?? '') ? '실적' : '접수';
   if (path.startsWith('/esign')) return '계약';
   if (path.startsWith('/system')) return '시스템';
   return '';
+}
+
+function MenuLink({ it, now }: { it: Item; now: string }) {
+  return (
+    <Link href={it.href} className="erp-nav-item" aria-current={now === it.key ? 'page' : undefined}>
+      <Icon name={it.icon} size={18} />
+      <span>{it.label}</span>
+    </Link>
+  );
 }
 
 export function SideMenu() {
   const now = useCurrent();
   return (
     <>
-      {GROUPS.map((g) => (
-        <div key={g.title} className="erp-nav-block">
-          <div className="erp-nav-group">{g.title}</div>
-          {g.items.map((it) => (
-            <Link key={it.key} href={it.href} className="erp-nav-item" aria-current={now === it.key ? 'page' : undefined}>
-              <Icon name={it.icon} size={18} />
-              <span>{it.label}</span>
-            </Link>
-          ))}
-        </div>
-      ))}
+      <div className="erp-nav-block">
+        <div className="erp-nav-group">업무</div>
+        {FLOW.map((it) => <MenuLink key={it.key} it={it} now={now} />)}
+      </div>
+      {/* 전자계약 — 업무 흐름과 따로 다루는 문. 구분선으로 떼어 둔다. */}
+      <div className="erp-nav-block erp-nav-block--apart">
+        <div className="erp-nav-group">계약서</div>
+        <MenuLink it={ESIGN} now={now} />
+      </div>
       <div className="erp-nav-block">
         <div className="erp-nav-group">시스템</div>
-        <Link href="/system/data-status" className="erp-nav-item" aria-current={now === '시스템' ? 'page' : undefined}>
-          <Icon name="gauge" size={18} />
-          <span>데이터 상태</span>
-        </Link>
+        <MenuLink it={{ key: '시스템', label: '데이터 상태', href: '/system/data-status', icon: 'gauge' }} now={now} />
       </div>
     </>
   );

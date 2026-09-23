@@ -96,6 +96,8 @@ body:has(> .erp-theme-flag) {
   }
   .erp-side .erp-nav-group { margin: 14px 10px 6px; color: var(--erp-nav-muted); font-size: var(--글보조); font-weight: 600; }
   .erp-side .erp-nav-block:first-child .erp-nav-group { margin-top: 6px; }
+  /* 전자계약 — 업무 흐름과 따로 다루는 문: 구분선으로 뗀다 */
+  .erp-side .erp-nav-block--apart { margin-top: 14px; padding-top: 4px; border-top: 1px dashed var(--erp-nav-line); }
   .erp-side .erp-nav-item {
     display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px;
     border-radius: var(--erp-r-md); color: var(--erp-side-text); text-decoration: none; font-size: var(--글메인);

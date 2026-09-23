@@ -6,7 +6,8 @@
 import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
-import { Badge, CardHead, Field, hrefWith, Kpis, PageHeader, Props, Screen, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
 type 계약 = Awaited<ReturnType<typeof contracts.list>>[number];
@@ -34,25 +35,12 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
 
   const grid = (
     <section className="erp-card erp-card--fill">
-      <form className="erp-filter" data-region="filter" role="search" action={base}>
-        <Field label="고객 / 차번 / 계약코드 / 담당"><input className="erp-input" name="q" defaultValue={sp(q.q)} placeholder="고객 · 차번 · 계약코드 · 담당" /></Field>
-        <Field label="계약상태">
-          <select className="erp-input" name="status" defaultValue={status}><option value="">전체</option>{statuses.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-        </Field>
-        {sign ? <input type="hidden" name="sign" value={sign} /> : null}
-        <div className="erp-filter-actions">
-          <Link className="erp-btn erp-btn--ghost" href={base}>초기화</Link>
-          <button className="erp-btn erp-btn--primary" type="submit">조회</button>
-        </div>
-      </form>
-      <div className="erp-toolbar" data-region="grid-toolbar">
-        {status ? <Link className="erp-chip" href={hrefWith(base, q, { status: null })}>계약상태: {status} ×</Link> : <span className="erp-chip">계약 {all.length}건</span>}
-        <span className="erp-toolbar-spacer" />
-        <Seg label="전자서명" items={[
+      <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" keep={['sign']}
+        dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} 
+        aside={<><Seg label="전자서명" items={[
           { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { sign: null }), on: !sign },
           ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
-        ]} />
-      </div>
+        ]} /></>} />
       <div className="erp-grid-scroll" data-region="grid">
         <table className="erp-grid">
           <thead><tr>
@@ -86,13 +74,12 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
   return (
     <Screen name="esign">
       <PageHeader crumb={['홈', '계약서', '전자계약']} title="전자계약" badge={<Badge tone="neutral">업무 흐름과 별도</Badge>}
-        desc="전자계약서의 발행 · 열람 · 서명 상태를 확인합니다. 계약접수 · 정산과는 따로 다루는 문입니다."
         actions={sel ? <>
           {sel.signUrl ? <a className="erp-btn" href={sel.signUrl} target="_blank" rel="noreferrer">서명창 열기</a> : null}
           {sel.signedPdfUrl
             ? <a className="erp-btn erp-btn--primary" href={sel.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title="서명이 끝나면 서명본을 열 수 있습니다">서명본 열기</span>}
-        </> : <Link className="erp-btn erp-btn--ghost" href="/intake">계약접수</Link>} />
+        </> : undefined} />
       <Kpis items={[
         { label: '전체 계약', side: '전자계약', value: String(all.length), unit: '건' },
         { label: '서명 대기', side: '발행 · 열람 · 진행중', value: String(waiting), unit: '건', alert: waiting > 0 },

@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ b13d4a926f81d37c876fc9d321716e999cbeea12
+ * 정본: freepass-creator/ai-core @ 37ea0172038dcf2bce928820a4414ee4d5b8ef90
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -12,6 +12,9 @@
 .erp-std a.erp-btn--danger-text { color: var(--erp-color-err); }
 .erp-std a.erp-company, .erp-std a.erp-iconbtn { color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
 .erp-std a.erp-nav-item { color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-facet-opt { color: var(--erp-color-text); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-std a.erp-chip { color: var(--erp-color-text-2); font-weight: var(--erp-fw-regular); }
 
 /* ── erp.css ───────────────────────────────────────────── */
 /* ERP 표준 UI 규격 v1 — 공통 스타일
@@ -311,6 +314,35 @@
 .erp-tag { padding: 1px 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); }
 .erp-tag--primary { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); }
 
+/* ── 조회 — 검색창 + 상세 필터 (대표 2026-09-23 「검색창이랑 상세 필터를 최대한 쓴다 · 드롭다운은 최소화」) ──
+ *   목록 조회의 기본은 «검색창 하나 + 상세 필터 하나». 조건은 드롭다운을 늘어놓지 않고 상세 필터 안의
+ *   선택지(건수 붙은 칩)로 고른다. 상태 분류는 세그먼트 탭. 드롭다운은 분류가 꼭 필요한 화면(계약 · 정산 · 실적)에서만 1~2개.
+ *   상세 필터는 <details> 로 연다 — 스크립트 없이도 열리고 닫힌다. */
+.erp-searchbar { display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+.erp-search { display: flex; flex-direction: row; align-items: center; gap: var(--erp-sp-2); flex: 0 1 460px; height: var(--erp-btn-h); padding: 0 var(--erp-sp-3); border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text-3); }
+.erp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); }
+.erp-search:focus-within { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-filter-more { position: relative; }
+.erp-filter-more > summary { list-style: none; }
+.erp-filter-more > summary::-webkit-details-marker { display: none; }
+.erp-filter-more > summary b { min-width: 18px; padding: 0 5px; border-radius: var(--erp-r-pill); background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-bold); text-align: center; }
+.erp-filter-panel { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: 520px; max-height: 60vh; overflow: auto; padding: var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3); }
+.erp-facet + .erp-facet { margin-top: 14px; }
+.erp-facet-title { margin: 0 0 var(--erp-sp-2); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-facet-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.erp-facet-opt { display: inline-flex; align-items: center; gap: var(--erp-sp-1); height: var(--erp-btn-h-sm); padding: 0 10px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text); font-size: var(--erp-fs-label); text-decoration: none; }
+.erp-facet-opt small { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-facet-opt[aria-pressed="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-filter-panel-foot { display: flex; justify-content: flex-end; gap: var(--erp-sp-2); margin-top: var(--erp-sp-4); padding-top: var(--erp-sp-3); border-top: 1px solid var(--erp-color-line); }
+.erp-searchbar .erp-chip { text-decoration: none; }
+/* 분류 드롭다운 — 계약 · 정산 · 실적 조회에서만, 검색창 앞에 1~2개 */
+.erp-dd { flex: none; width: auto; min-width: 120px; height: var(--erp-btn-h); }
+/* 한 줄 처리 폼 — 상세의 «처리» 카드: 값 한 칸 + 그 값을 바꾸는 단추(차량번호 저장 · 인도 완료 · 취소 …) */
+.erp-inline-form { display: flex; align-items: flex-end; gap: var(--erp-sp-2); padding: var(--erp-sp-3) 0; border-bottom: 1px solid var(--erp-color-line-row); }
+.erp-inline-form:first-child { padding-top: 0; }
+.erp-inline-form:last-child { border-bottom: 0; padding-bottom: 0; }
+.erp-inline-form .erp-field { flex: 1; }
+
 
 /* ── themes/retro.css ──────────────────────────────────── */
 /* 시안 B — 레트로 테마 «90년대 사무용 단말기»
@@ -457,3 +489,12 @@ body:has(> .erp-theme-flag[data-theme="retro"]) .erp-form-footer { border-top: v
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-statusbar { background: var(--erp-color-nav); color: var(--erp-color-nav-text); border-top: 0; font-family: var(--retro-font-mono); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-statusbar-ok { color: var(--erp-color-nav-active); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-statusbar kbd { padding: 0 5px; margin-right: 3px; border: 1px solid var(--erp-color-nav-text); border-radius: var(--erp-r-sm); background: var(--erp-color-nav-raised); color: var(--erp-color-nav-text-strong); font-family: var(--retro-font-mono); font-size: var(--erp-fs-caption); }
+
+/* 조회 — 검색창 · 상세 필터 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-search { border: var(--retro-border) solid var(--erp-color-line-strong); box-shadow: inset 2px 2px 0 var(--erp-color-line); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-searchbar { border-bottom: var(--retro-border) solid var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-filter-panel { border: var(--retro-border) solid var(--erp-color-line-strong); box-shadow: var(--retro-shadow-lg) var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-opt { border: 1.5px solid var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-opt[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-text); border-color: var(--erp-color-line-strong); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-facet-title { font-family: var(--retro-font-display); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-inline-form { border-bottom: 1px dashed var(--erp-color-line); }

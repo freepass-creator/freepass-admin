@@ -21,10 +21,10 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
 
 test('five desktop screens are built from the standard skeleton regions', () => {
   const screens = {
-    'src/app/_erp/ProductsScreen.tsx': ['filter', 'grid-toolbar', 'grid'],
-    'src/app/_erp/IntakeScreen.tsx': ['filter', 'grid-toolbar', 'grid'],
-    'src/app/_erp/SettlementScreen.tsx': ['filter', 'grid-toolbar', 'grid'],
-    'src/app/_erp/EsignScreen.tsx': ['filter', 'grid-toolbar', 'grid'],
+    'src/app/_erp/ProductsScreen.tsx': ['grid'],
+    'src/app/_erp/IntakeScreen.tsx': ['grid'],
+    'src/app/_erp/SettlementScreen.tsx': ['grid'],
+    'src/app/_erp/EsignScreen.tsx': ['grid'],
   } as const;
   for (const [file, regions] of Object.entries(screens)) {
     const src = read(file);
@@ -32,9 +32,14 @@ test('five desktop screens are built from the standard skeleton regions', () => 
     assert.ok(src.includes('<Kpis'), `${file}: KPI row`);
     for (const r of regions) assert.ok(src.includes(`data-region="${r}"`), `${file}: region ${r}`);
     assert.equal(/style=\{\{/.test(src), false, `${file}: no inline style`);
+    // 조회 = 검색창 + 상세 필터(규격 §5-1) — 라벨 드롭다운 바(erp-filter)를 늘어놓지 않는다
+    assert.ok(src.includes('<SearchBar'), `${file}: search bar`);
+    assert.equal(src.includes('className="erp-filter"'), false, `${file}: no dropdown filter bar`);
+    assert.ok((src.match(/<AutoSelect/g) ?? []).length <= 1, `${file}: at most one classification dropdown`);
   }
   const parts = read('src/app/_erp/parts.tsx');
   assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"'));
+  assert.ok(parts.includes('data-region="filter"') && parts.includes('data-region="grid-toolbar"') && parts.includes('erp-filter-more'));
   // 실적은 새 판이 아니라 접수 목록의 실적 칸
   assert.ok(read('src/app/_erp/IntakeScreen.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));
 });

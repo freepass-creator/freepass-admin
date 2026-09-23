@@ -3,7 +3,7 @@
  *   목록: ④ 헤더 → ⑤ KPI → [⑥ 조회조건 · ⑦ 상태 탭 · 그리드 · 바닥] 한 카드.
  *   상세(?ic=): ④ 헤더(고객 + 상태 뱃지) → 진행 단계 카드 → 2단(왼쪽 고객 · 차량 · 조건 · 금액 / 오른쪽 처리).
  *   실적은 따로 판이 없다 — 실적 칸(분납실적 · 완납실적)을 고르면 같은 판이 «실적» 이 되고 금액 열이 선다(대표 2026-09-23).
- *   처리(저장 · 인도 · 취소 …)는 기능 쪽 IntakeDetailPanel 을 그대로 쓴다 — 업무 규칙을 새로 짜지 않는다.
+ *   처리(차량번호 · 계약서 · 인도 · 취소)는 규격 부품(IntakeProgress)으로 그리고, 하는 일은 기능 쪽 progressAction 그대로다.
  */
 import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
@@ -11,9 +11,14 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
-import { sp, txt } from '../_fn/fmt';
-import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
-import { Badge, CardHead, Field, hrefWith, Kpis, PageHeader, Props, Screen, Seg, Select, Steps, won0, type Tone } from './parts';
+import { sp, txt, when } from '../_fn/fmt';
+import { NewIntakePanel } from '../intake/panels';
+import { writeEnabled } from '../../adapters/erp5/settlement-repository';
+import { blockOf } from '../../domain/settlement/types';
+import { intakeNextAction } from '../intake/next-action';
+import { progressFormId } from '../intake/progress-form-id';
+import { IntakeProgress } from './IntakeProgress';
+import { Badge, CardHead, hrefWith, Kpis, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
@@ -51,6 +56,17 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
     const p = cur.progress;
     const step = p.cancelled ? -1 : !p.paper ? 1 : !p.delivered ? 2 : !p.billed ? 3 : !p.collected ? 4 : 5;
     const claim = claimAmountOf(cur, now), pay = payAmountOf(cur, now), margin = marginOf(cur, now);
+    const hit = await settlements.get(cur.id);
+    const raw = (hit?.raw ?? {}) as Record<string, unknown>;
+    const events = hit ? await settlements.events(cur.plate, cur.receivedAt, cur.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode) : [];
+    /* 머리의 주 단추 = 이 접수의 다음 걸음(기능 쪽 intakeNextAction 그대로) */
+    const next = intakeNextAction(blockOf(cur), p.cancelled, p.delivered);
+    const primary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
+      : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
+      : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
+      : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
+      : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
+      : <span className="erp-btn erp-btn--primary" aria-disabled="true">{next.label}</span>;
     return (
       <Screen name="intake-detail">
         <PageHeader crumb={['홈', '업무', 실적칸.includes(b) ? '실적' : '계약접수', txt(cur.customer)]}
@@ -58,7 +74,7 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
           desc={`${txt(cur.model)} · ${txt(cur.supplier)} · ${txt(cur.channel)}${cur.agent ? ` · 담당 ${cur.agent}` : ''} · 접수 ${txt(cur.receivedAt)}`}
           actions={<>
             <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, { ic: null })}>목록으로</Link>
-            <Link className="erp-btn" href={`/settlement?focus=${encodeURIComponent(cur.id)}`}>정산관리에서 보기</Link>
+            {primary}
           </>} />
         <section className="erp-card">
           <div className="erp-card-body">
@@ -96,10 +112,23 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
             </section>
           </div>
           <div className="erp-stack">
-            <section className="erp-card erp-embed">
-              <CardHead title="처리" sub="저장 · 계약서 · 인도 · 취소" />
+            <section className="erp-card">
+              <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
               <div className="erp-card-body">
-                <IntakeDetailPanel code={cur.id} back={hrefWith(base, q, { ic: null })} newHref="/products" />
+                <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
+                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+              </div>
+            </section>
+            <section className="erp-card">
+              <CardHead title="처리 이력" sub={`${events.length}건`} />
+              <div className="erp-card-body">
+                {events.length ? (
+                  <ul className="erp-timeline">
+                    {events.slice(0, 8).map((e, i) => (
+                      <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
+                    ))}
+                  </ul>
+                ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
               </div>
             </section>
           </div>
@@ -130,9 +159,7 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
   return (
     <Screen name={perfView ? 'performance' : 'intake'}>
       <PageHeader crumb={['홈', '업무', title]} title={title}
-        desc={perfView ? '인도된 계약 — 분납실적 · 완납실적. 청구 · 지급 · 남는 것을 한 줄로 봅니다.' : '접수부터 계약서 · 인도 · 취소까지 모든 접수의 진행을 봅니다. 새 접수는 상품찾기에서 차를 고르고 시작합니다.'}
         actions={<>
-          <Link className="erp-btn erp-btn--ghost" href="/settlement">정산관리</Link>
           <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
         </>} />
       {perfView ? (
@@ -151,26 +178,15 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
         ]} />
       )}
       <section className="erp-card erp-card--fill">
-        <form className="erp-filter" data-region="filter" role="search" action={base}>
-          <Field label="고객 / 차번 / 모델"><input className="erp-input" name="iq" defaultValue={sp(q.iq)} placeholder="고객 · 차번 · 모델" /></Field>
-          <Field label="공급사"><Select name="isup" value={sup} options={suppliers} /></Field>
-          <Field label="영업채널"><Select name="ich" value={ch} options={channels} /></Field>
-          <input type="hidden" name="iv" value={iv === '당월접수' ? '' : iv} />
-          <div className="erp-filter-actions">
-            <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, {}, { iv: iv === '당월접수' ? null : iv })}>초기화</Link>
-            <button className="erp-btn erp-btn--primary" type="submit">조회</button>
-          </div>
-        </form>
-        <div className="erp-toolbar" data-region="grid-toolbar">
-          {sup ? <Link className="erp-chip" href={hrefWith(base, q, { isup: null, page: null })}>공급사: {sup} ×</Link> : null}
-          {ch ? <Link className="erp-chip" href={hrefWith(base, q, { ich: null, page: null })}>영업채널: {ch} ×</Link> : null}
-          <span className="erp-toolbar-spacer" />
-          <Seg label="접수 칸" items={[
+        <SearchBar base={base} q={q} name="iq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['iv']} facets={[
+          { key: 'isup', title: '공급사', options: suppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && inView(r)).length })) },
+          { key: 'ich', title: '영업채널', options: channels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && inView(r)).length })) },
+        ]} 
+        aside={<><Seg label="접수 칸" items={[
             { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { iv: 'all', page: null }), on: iv === 'all' },
             ...BUCKETS.map((b) => ({ key: b, label: `${b} ${n(b)}`, href: hrefWith(base, q, { iv: b === '당월접수' ? null : b, page: null }), on: iv === b })),
-          ]} />
-        </div>
-        <div className="erp-grid-scroll" data-region="grid">
+          ]} /></>} />
+      <div className="erp-grid-scroll" data-region="grid">
           <table className="erp-grid">
             <thead>{perfView ? (
               <tr><th>인도일</th><th>고객</th><th>차량 / 차량번호</th><th>공급사</th><th>영업채널</th><th>상품 · 기간</th>

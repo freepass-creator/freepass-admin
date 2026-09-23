@@ -132,3 +132,63 @@ export function hrefWith(base: string, q: Record<string, string | string[] | und
 
 export const won0 = (n: number | null | undefined) => (typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR') : '—');
 export const man = (n: number | null | undefined) => (typeof n === 'number' && Number.isFinite(n) ? `${Math.round(n / 1000).toLocaleString('ko-KR')}` : '—');
+
+export type Facet = { key: string; title: string; options: { value: string; label?: string; count?: number }[] };
+
+/**
+ * ⑥ 조회 — 검색창 하나 + 상세 필터 하나 (규격 §5-1 «미니멀»).
+ *   조건은 상세 필터 안의 건수 칩으로 고르고(주소 한 칸씩), 고른 조건은 검색창 옆 칩(×)으로 보인다.
+ *   드롭다운은 분류가 꼭 필요한 화면에서만(dropdown) — 고르면 바로 조회.
+ */
+export function SearchBar({ base, q, name = 'q', placeholder, facets = [], dropdown, keep = [], aside }: {
+  base: string; q: Record<string, string | string[] | undefined>; name?: string; placeholder: string;
+  facets?: Facet[]; dropdown?: ReactNode; keep?: string[];
+  /** 상태 탭 — 검색 줄 오른쪽. 툴바 줄은 일괄 작업이 있을 때만 따로 둔다(규격 §5-1) */
+  aside?: ReactNode;
+}) {
+  const val = (k: string) => { const v = q[k]; return (Array.isArray(v) ? v[0] : v) ?? ''; };
+  const active = facets.flatMap((f) => (val(f.key) ? [{ f, v: val(f.key) }] : []));
+  const hidden = [...keep, ...facets.map((f) => f.key)].filter((k) => k !== name && val(k));
+  return (
+    <form className="erp-searchbar" data-region="filter" role="search" action={base}>
+      {dropdown}
+      {hidden.map((k) => <input key={k} type="hidden" name={k} value={val(k)} />)}
+      <label className="erp-search">
+        <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+        <input name={name} defaultValue={val(name)} placeholder={placeholder} aria-label={placeholder} />
+      </label>
+      {facets.length ? (
+        <details className="erp-filter-more">
+          <summary className="erp-btn">상세 필터{active.length ? <> <b>{active.length}</b></> : null}</summary>
+          <div className="erp-filter-panel">
+            {facets.map((f) => (
+              <div className="erp-facet" key={f.key}>
+                <p className="erp-facet-title">{f.title}</p>
+                <div className="erp-facet-opts">
+                  {f.options.map((o) => {
+                    const on = val(f.key) === o.value;
+                    return (
+                      <Link key={o.value} className="erp-facet-opt" aria-pressed={on}
+                        href={hrefWith(base, q, { [f.key]: on ? null : o.value, page: null })}>
+                        {o.label ?? o.value}{o.count !== undefined ? <small>{o.count}</small> : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="erp-filter-panel-foot">
+              <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, Object.fromEntries([...facets.map((f) => [f.key, null]), ['page', null]]))}>조건 모두 지우기</Link>
+            </div>
+          </div>
+        </details>
+      ) : null}
+      {active.map(({ f, v }) => (
+        <Link key={f.key} className="erp-chip" href={hrefWith(base, q, { [f.key]: null, page: null })}>
+          {f.title}: {f.options.find((o) => o.value === v)?.label ?? v} ×
+        </Link>
+      ))}
+      {aside ? <><span className="erp-toolbar-spacer" /><div data-region="grid-toolbar">{aside}</div></> : null}
+    </form>
+  );
+}

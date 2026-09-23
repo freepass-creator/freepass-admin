@@ -4,7 +4,7 @@ AI Core «ERP 표준 UI 규격 v1» 을 관리자 **PC 화면**에 그대로 적
 
 | 파일 | 화면 | 규격 구성 |
 |---|---|---|
-| `*-1-products` | 상품찾기 (+ 상세 패널) | platform/inventory.html |
+| `*-1-products` · `*-1b-filter` | 상품찾기 (+ 상세 패널) · 상세 필터 열림 | platform/inventory.html |
 | `*-2-intake` · `*-2b-intake-detail` | 계약접수 목록 · 접수 상세 | platform/contracts.html · contract-detail.html |
 | `*-3-perf` | 실적 (접수 목록의 실적 칸) | platform/contracts.html + 금액 열 · 합계 |
 | `*-4-settle` | 정산관리 | platform/settlements.html |
@@ -12,5 +12,7 @@ AI Core «ERP 표준 UI 규격 v1» 을 관리자 **PC 화면**에 그대로 적
 
 - 규격 CSS 는 손으로 옮기지 않는다 — `node scripts/sync-erp-standard.mjs <ai-core>` 가 ai-core 정본에서 `src/app/_erp/erp-standard.css` 를 만든다(출처 revision 은 `erp-standard.source.json`).
 - **데이터는 가상 예시**다 — `FPA_DEMO=on npm run dev` (개발 · 미리보기 전용, 운영에서는 강제로 꺼짐, 읽기 전용, 화면에 «가상 데이터» 표시).
+- 조회는 **검색창 + 상세 필터**(규격 §5-1). 드롭다운은 정산관리(정산월) · 전자계약(계약상태)에 하나씩만. 상태 탭은 검색 줄 오른쪽.
+- 접수 상세의 «처리»는 규격 부품으로 다시 그렸다(하는 일은 기능 쪽 progressAction 그대로).
 - 폰(≤900px)은 기존 판 그대로다.
 - 상태: CODED · STATIC CHECKED · TESTED. USER APPROVED / Design Hub Visual QA 는 아직이다.

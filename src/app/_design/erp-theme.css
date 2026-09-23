@@ -125,6 +125,53 @@ body:has(> .erp-theme-flag) {
   .erp-status .erp-theme-switch a:focus-visible { outline: 2px solid var(--erp-primary); outline-offset: 1px; }
 }
 
+/* ══ 테마 2 · retro 의 결 — 색만으로는 레트로가 안 된다. 잉크 테두리 · 딱 떨어지는 그림자 · 픽셀 제목 · 고정폭 숫자
+ *   (ai-core themes/retro.css 와 같은 표현을 관리자 부품 이름에 옮긴다. 크기는 건드리지 않는다.) ═══════ */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .workspace {
+  background-color: var(--erp-bg);
+  background-image: radial-gradient(var(--erp-line) 1px, transparent 1px); background-size: 16px 16px;
+}
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .workspace > .panel,
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .panel {
+  border: var(--erp-border) solid var(--erp-line-strong); box-shadow: var(--erp-card-shadow);
+}
+body:has(> .erp-theme-flag[data-theme="retro"]) .panel-head :is(h1, h2),
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main :is(.panel h1, .panel h2, .vehicle-title h2) { font-family: var(--erp-font-display); letter-spacing: 0; }
+/* ⚠ 워드마크(freepass admin)는 공식 CI(Exo 2) 그대로 — 테마가 바꾸지 않는다. */
+body:has(> .erp-theme-flag[data-theme="retro"]) .panel-head .count,
+/* 목록 줄 금액은 폭이 좁아 고정폭을 쓰지 않는다(말줄임 방지) */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main :is(.summary-grid dd, .dz-money, .offer-block strong),
+body:has(> .erp-theme-flag[data-theme="retro"]) > footer.erp-status { font-family: var(--erp-font-mono); }
+/* 목록 한 줄 — 잉크 테두리, 고른 줄은 형광 노랑 + 그림자 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .dz-row { border: 1.5px solid var(--erp-line); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .dz-row.on { border-color: var(--erp-line-strong); box-shadow: 3px 3px 0 var(--erp-line-strong); }
+/* 단추 — 눌리는 키 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .workspace .panel :is(button, a.primary, a.dz-bar-sub, .quick-filters a, .tabs a) {
+  border: var(--erp-border) solid var(--erp-line-strong);
+}
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main :is(.primary, .dz-bar-go > .primary, .quick-filters a.active, .tabs a.active) {
+  box-shadow: var(--erp-btn-shadow);
+}
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main :is(.primary, button):active { transform: translate(2px, 2px); box-shadow: none; }
+/* 입력 — 움푹 들어간 칸 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .dz-searchbox) {
+  border: var(--erp-border) solid var(--erp-line-strong); box-shadow: inset 2px 2px 0 var(--erp-line);
+}
+/* 검색 칸 안의 입력 · 단추는 칸 하나로 읽히게 — 안쪽 테두리를 겹치지 않는다 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .panel .dz-searchbox :is(input:not([type="checkbox"]):not([type="radio"]), button) { border: 0; box-shadow: none; }
+/* 요약 칸 — 점선 칸 */
+body:has(> .erp-theme-flag[data-theme="retro"]) .fn-main .summary-grid div { border: 1px dashed var(--erp-line-strong); }
+/* 상태줄 — DOS 단말기 */
+@media (min-width: 901px) {
+  body:has(> .erp-theme-flag[data-theme="retro"]) > footer.erp-status { background: var(--erp-nav); color: var(--erp-nav-text); border-top: 0; }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-status .erp-status-ok[data-ok="true"] { color: var(--erp-nav-active); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-status .erp-theme-switch a { color: var(--erp-nav-text); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-status .erp-theme-switch a[aria-pressed="true"] { background: var(--erp-nav-active); color: var(--erp-nav); border-color: var(--erp-nav-text-strong); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-side .erp-nav-item[aria-current="page"] { border: 2px solid var(--erp-line-strong); box-shadow: 3px 3px 0 var(--erp-line-strong); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) > nav.erp-side { border-right: 2px solid var(--erp-line-strong); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-side .erp-nav-group { font-family: var(--erp-font-display); }
+}
+
 /* 폰(~900px) — 틀은 그대로. 왼쪽 메뉴와 상태줄만 숨긴다(다섯 걸음 하단바가 이동을 맡는다). */
 @media (max-width: 900px) {
   body:has(> .erp-theme-flag) > nav.erp-side, body:has(> .erp-theme-flag) > footer.erp-status { display: none; }

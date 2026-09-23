@@ -18,6 +18,7 @@ import { BoardList } from './BoardList';
 import { PAGE, firstWindow, flat, productRows, 이름, 공급사, 요금줄, 사진들 } from './list-rows';
 import { moreProductRows } from './list-actions';
 import { IntakeDetail, IntakeList } from '../intake/IntakeSide';
+import { NewIntakePanel } from '../intake/panels';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { previewFeeAction, type FeePreview } from '../intake/actions';
 
@@ -91,6 +92,8 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
     ?? (mode === 'intake' && (ic || sp(q.w)) ? 'work' : selId ? 'detail' : 'list');
   /* 접수 칸은 [접수하기]를 눌러야 열린다 — PC 에서 두 판에 주 버튼이 같이 서지 않게(AI Core: 판마다 주 버튼 하나) */
   const 접수중 = (mode === 'intake' ? sp(q.w) === 'new' : view === 'work') && !!car && !!chosen;
+  /* 차 없이 직접 접수 — 상품 목록을 거치지 않는 견적출고 · 신차발주(기능 쪽 NewIntakePanel 그대로) */
+  const 직접접수 = mode === 'intake' && sp(q.w) === 'direct';
   /* 계약접수 메인 — 오른쪽 접수 목록 · 상세가 원장 줄을 쓴다(신규 접수의 채널·담당 선택지도 같은 줄에서) */
   let 원장: SettlementRow[] = [];
   let 원장오류 = '';
@@ -157,7 +160,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
     return `/intake?${u}`;
   })();
   /* 폰 — 계약접수의 «접수 목록»도 탭 홈이다(하단 메뉴가 선다) */
-  const 탭홈 = mode === 'intake' && view === 'work' && !ic && !접수중;
+  const 탭홈 = mode === 'intake' && view === 'work' && !ic && !접수중 && !직접접수;
 
   return (
     <div className="pb" data-phone={view} data-mode={mode} data-home={탭홈 ? 'true' : undefined}>
@@ -273,11 +276,16 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
         {mode === 'intake' && (
           <section className="web-panel pb-work">
             <header className="web-panel-head">
-              {접수중 ? <><h2>신규 계약접수</h2><small>작성 중 · 저장 전</small></>
+              {직접접수 ? <><h2>직접 접수</h2><small>차 없이 · 견적출고 · 신차발주</small></>
+                : 접수중 ? <><h2>신규 계약접수</h2><small>작성 중 · 저장 전</small></>
                 : ic ? <><h2>접수 상세</h2><small>진행 · 다음 업무</small></>
                   : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
             </header>
-            {접수중 && 접수 && 접수선택지 ? (
+            {직접접수 ? (
+              <div className="web-scroll pb-legacy">
+                <NewIntakePanel rows={원장} productId="" offerId="" back={keep({ w: '', ic: '', v: 'work' })} />
+              </div>
+            ) : 접수중 && 접수 && 접수선택지 ? (
               <BoardIntakeForm key={`${car.id}:${chosen.id}`} defaults={접수.defaults} options={접수선택지} choices={접수.choices}
                 cancelHref={keep({ w: '', v: 'detail' })} fee={수수료}>
                 <article className="row context-card" aria-label="선택 상품">

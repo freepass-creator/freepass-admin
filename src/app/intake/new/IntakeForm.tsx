@@ -2,12 +2,14 @@
 
 import { startTransition, useActionState, useRef, useState, type ReactNode } from 'react';
 import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../actions';
+import { directIntakeAllowsMissingPlate, directIntakeRentKind } from '../../../domain/settlement/product-kind';
 
 export type IntakeDefaults = {
   receivedAt: string; plate: string; model: string; supplier: string; supplierCode: string;
   term: string; rent: string; deposit: string;
   /** 차에서 온 원장 상품구분 · 렌트구분(기능 ledgerKindOf) · 차량가(수수료 밑값) — 차 골라 접수일 때만 */
   product?: string; rentKind?: string; price?: string;
+  intakeRequestId?: string;
   sourceProductId?: string; sourceProductVersion?: string; sourceOfferId?: string; sourceSnapshotId?: string;
   /** 상품판(/products)의 접수 칸에서 먼저 넣고 넘어온 값 — 저장은 여기서만 한다 */
   customer?: string; channel?: string; agent?: string;
@@ -36,7 +38,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   fee?: FeePreview | null;
   /**
    * 차 골라 접수에서 상품구분을 «사람이 고를» 말들 — 비었으면 짝이 하나로 떨어진 것(숨은 칸으로 간다).
-   * ★원장 상품구분이 수수료 갈래를 정한다(기능 ledgerKindOf) — 신차렌트는 선출고/견적출고/신차발주 중 사람이 고른다.
+   * ★원장 상품구분이 수수료 갈래를 정한다(기능 ledgerKindOf).
+   * 상품 리스트의 신차렌트는 선출고로 확정된다. 견적출고/신차발주는 직접접수에서만 고른다.
    */
   productChoices?: string[];
   /** 원장 상품구분 전부(기능 LEDGER_PRODUCTS) — 직접 접수의 고를 말 */
@@ -47,6 +50,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   const [channelCode, setChannelCode] = useState(defaults.channel ? options.channelCode[defaults.channel] ?? '' : '');
   const [agentCode, setAgentCode] = useState(defaults.agent ? options.agentCode[defaults.agent] ?? '' : '');
   const [supplierCode, setSupplierCode] = useState(defaults.supplierCode);
+  const [directProduct, setDirectProduct] = useState(defaults.product ?? '');
   const [delivered, setDelivered] = useState(false);
   /*
    * ★수수료 미리보기 — 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」(대표 2026-09-18)
@@ -73,11 +77,13 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <label className="wide">수수료 사유<input name="feeReason" placeholder={표값 ? '표와 다르게 넣을 때만' : '어떻게 정했는지'} /></label>
     </>
   );
-  const 미리글 = !미리 ? <p className="dz-fee-line dz-muted">공급사 · 상품구분 · 기간 · 대여료를 넣으면 수수료가 섭니다.</p>
-    : 미리.status === 'AUTO' ? <p className="dz-fee-line">표대로 청구 <b>{미리.claim.toLocaleString('ko-KR')}원</b> · 지급 <b>{미리.pay.toLocaleString('ko-KR')}원</b> <small>{미리.basis} · 비우면 이 값</small></p>
-      : <p className="dz-fee-line warn">{미리.why} — 수수료를 직접 넣으세요.</p>;
+  const 미리글 = !미리 ? <p className="dz-fee-line dz-muted">공급사 · 상품구분과 수수료 기준값을 넣으면 자동 계산합니다.</p>
+    : 미리.status === 'AUTO' ? <p className="dz-fee-line">표대로 청구 <b>{미리.claim.toLocaleString('ko-KR')}원</b> · 지급 <b>{미리.pay.toLocaleString('ko-KR')}원</b> <small>기준 {미리.basis} · 비우면 이 값</small></p>
+      : <p className="dz-fee-line warn">{미리.why} — 기준값을 채우거나 청구·지급 수수료를 직접 넣으세요.</p>;
   /* 표가 못 내면 수수료 칸이 앞에 선다(접혀 있으면 빠뜨린다) */
   const 직접 = !!미리 && 미리.status !== 'AUTO';
+  /** 상품 신차의 차량가가 SSOT에 없을 때만 접수자가 자동 수수료 기준값을 보충할 수 있다. */
+  const 차량가기준보충 = !!picked && !defaults.price && fee?.status === 'NO_BASE' && fee.basis === '차량가액';
 
   const sel = (name: string, list: string[], label: string, value = '') => (
     <label>{label}
@@ -119,7 +125,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <summary>더 넣기 <small>선택 — 없어도 접수됩니다</small></summary>
       <div className="dz-form-grid">
         {picked && <label>접수일<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>}
-        {!picked && sel('rentKind', options.rentKinds, '렌트구분')}
+        {!picked && (directIntakeRentKind(directProduct)
+          ? <input type="hidden" name="rentKind" value={directIntakeRentKind(directProduct) ?? ''} />
+          : sel('rentKind', options.rentKinds, '렌트구분'))}
         {sel('contractType', options.contractTypes, '계약방식')}
         {sel('payKind', options.payKinds, '분납여부')}
         {picked && 코드}
@@ -146,12 +154,16 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <datalist id="dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dl-supplier">{options.suppliers.map((v) => <option key={v} value={v} />)}</datalist>
 
+      <input type="hidden" name="intakeRequestId" value={defaults.intakeRequestId ?? ''} />
       {picked ? (
         <>
           {/* 차에서 이미 정해진 것 — 판 위 카드가 보여 준다. 여기는 숨은 칸으로만 간다 */}
-          {(['plate', 'model', 'supplier', 'term', 'rent', 'deposit', 'price'] as const).map((k) => (
+          {(['plate', 'model', 'supplier', 'term', 'rent', 'deposit'] as const).map((k) => (
             <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
           ))}
+          {차량가기준보충
+            ? <label className="dz-fee-basis">차량가액 <small>자동 수수료 기준</small><input name="price" inputMode="numeric" placeholder="차량가액을 넣거나 수수료를 직접 입력" /></label>
+            : <input type="hidden" name="price" value={defaults.price ?? ''} />}
           <input type="hidden" name="supplierCode" value={supplierCode} />
           <input type="hidden" name="rentKind" value={defaults.rentKind ?? ''} />
           <input type="hidden" name="sourceProductId" value={defaults.sourceProductId ?? ''} />
@@ -177,10 +189,12 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         <>
           {묶음('차량', (
             <div className="dz-form-grid">
-              <label>차량번호 *<input name="plate" defaultValue={defaults.plate} required /></label>
+              <label>차량번호{directIntakeAllowsMissingPlate(directProduct) ? ' (배정 후 입력)' : ' *'}
+                <input name="plate" defaultValue={defaults.plate} required={!directIntakeAllowsMissingPlate(directProduct)} />
+              </label>
               <label>모델<input name="model" defaultValue={defaults.model} /></label>
               <label>공급사 *<input name="supplier" list="dl-supplier" defaultValue={defaults.supplier} required
-                onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? supplierCode)} /></label>
+                onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? '')} /></label>
               <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>
             </div>
           ))}
@@ -188,14 +202,19 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           {묶음('조건', (
             <div className="dz-form-grid">
               <label>접수일 *<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>
-              {sel('product', [...(ledgerProducts ?? options.products)], '상품구분')}
+              <label>상품구분
+                <select name="product" value={directProduct} onChange={(e) => setDirectProduct(e.target.value)}>
+                  <option value="">—</option>
+                  {[...(ledgerProducts ?? options.products)].map((v) => <option key={v}>{v}</option>)}
+                </select>
+              </label>
               <label>계약기간(개월)<input name="term" defaultValue={defaults.term} inputMode="numeric" /></label>
               <label>렌탈료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
               <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>
-              <label>차량가액 (신차만)<input name="price" inputMode="numeric" /></label>
+              <label>차량가액 <small>신차 자동수수료 기준</small><input name="price" inputMode="numeric" /></label>
             </div>
           ))}
-          {묶음('수수료', <>{미리글}<div className="dz-form-grid">{수수료칸}</div></>)}
+          {묶음('수수료', <>{미리글}<p className="dz-fee-line dz-muted">자동 수수료는 기본 대여료·기간 또는 차량가액 기준입니다. 연령 하향·추가운전자 요금은 별도 계약조건으로 봅니다.</p><div className="dz-form-grid">{수수료칸}</div></>)}
         </>
       )}
       {더}

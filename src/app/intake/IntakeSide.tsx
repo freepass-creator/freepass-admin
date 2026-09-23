@@ -37,6 +37,10 @@ export function IntakeList({ q, keep, all }: { q: Record<string, string | string
             <LiveSearch name="iq" defaultValue={sp(q.iq)} label="접수 검색" placeholder="고객·차량·접수번호 검색" />
           </div>
           <FilterSheet axes={axes} count={rows.length} unit="건" />
+          {/* 차 없이 직접 접수 — 견적출고 · 신차발주는 차량번호 전에도 접수한다(#87) */}
+          <Link className="new-intake" href={keep({ w: 'direct', ic: '', v: 'work' })} aria-label="차 없이 직접 접수" title="차 없이 직접 접수">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          </Link>
         </form>
         <div className="chips" role="group" aria-label="접수 칸">
           {보기.map((b) => {

@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productById, settlements, today } from '../../server/erp5';
+import { productByIdFresh, settlements, today } from '../../server/erp5';
 import { requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
@@ -11,6 +11,7 @@ import { validateIntake, type IntakeInput, type ProgressChange } from '../../dom
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
+import { directIntakeRentKind, resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
 
 /**
  * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
@@ -45,6 +46,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     product: S(f, 'product'), rentKind: S(f, 'rentKind'), contractType: S(f, 'contractType'),
     term: N(f, 'term'), rent: N(f, 'rent'), deposit: N(f, 'deposit'), price: N(f, 'price'),
     payKind: S(f, 'payKind'),
+    intakeRequestId: S(f, 'intakeRequestId') || undefined,
     sourceProductId: S(f, 'sourceProductId') || undefined,
     sourceProductVersion: N(f, 'sourceProductVersion'),
     sourceOfferId: S(f, 'sourceOfferId') || undefined,
@@ -56,6 +58,11 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     /* 수수료 직접 입력 — 비우면 표대로 */
     ...((S(f, 'feeClaim') || S(f, 'feePay')) ? { feeManual: { claim: N(f, 'feeClaim'), pay: N(f, 'feePay'), reason: S(f, 'feeReason') } } : {}),
   };
+  if (!input.sourceProductId && !input.sourceOfferId) {
+    const directRentKind = directIntakeRentKind(input.product);
+    if (directRentKind) input = { ...input, rentKind: directRentKind };
+  }
+
   /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
    * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
@@ -64,7 +71,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       return { errors: ['상품 접수의 Product/Version/Offer/Snapshot 정보가 불완전합니다 — 상품을 다시 골라 주세요'] };
     }
     let product;
-    try { product = await productById(input.sourceProductId); }
+    try { product = await productByIdFresh(input.sourceProductId); }
     catch (e) { return { errors: [`상품을 다시 확인하지 못했습니다 — ${(e as Error).message}`] }; }
     if (!product) return { errors: ['선택한 상품이 더 이상 없습니다 — 상품을 다시 골라 주세요'] };
     if (input.sourceProductVersion !== null && input.sourceProductVersion !== product.version) {
@@ -75,16 +82,20 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     }
     const offer = product.offers.find((x) => x.id === input.sourceOfferId);
     if (!offer) return { errors: ['선택한 Offer가 더 이상 없습니다 — 기간/조건을 다시 골라 주세요'] };
+    const ledgerKind = resolveLedgerKindSelection(product.productKind, input.product, input.rentKind);
+    if (ledgerKind && !ledgerKind.ok) return { errors: [ledgerKind.error] };
     input = {
       ...input,
       plate: product.registration?.vehicleNumber ?? '',
       model: [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' '),
       supplier: product.supplierName ?? product.supplierId,
       supplierCode: product.supplierId,
+      ...(ledgerKind?.ok ? { product: ledgerKind.product, rentKind: ledgerKind.rentKind } : {}),
       term: offer.termMonths,
       rent: offer.monthlyRent,
       deposit: offer.deposit ?? null,
-      price: product.consumerPrice ?? null,
+      // ERP5 차량가가 있으면 정본이 이긴다. 없을 때만 접수 화면의 차량가액을 수수료 기준값으로 보충한다.
+      price: product.consumerPrice ?? input.price,
       sourceProductVersion: product.version,
       sourceSnapshotId: product.sourceSnapshotId,
       catalogSnapshot: {
@@ -265,7 +276,7 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
  */
 export type FeePreview =
   | { status: 'AUTO'; claim: number; pay: number; ruleId: string; basis: string; version: string }
-  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; version: string }
+  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; basis?: string; version: string }
   | { status: 'ERROR'; why: string };
 export async function previewFeeAction(f: FormData): Promise<FeePreview> {
   { const g = await requireAdmin(); if (g) return { status: 'ERROR', why: g }; }
@@ -274,7 +285,12 @@ export async function previewFeeAction(f: FormData): Promise<FeePreview> {
     const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
     const r = feeOf(set, { supplier: S(f, 'supplier'), product: S(f, 'product'), model: S(f, 'model'), term: num('term'), rent: num('rent'), price: num('price') });
     if (r.status === 'AUTO') return { status: 'AUTO', claim: r.claim, pay: r.pay, ruleId: r.rule.id, basis: r.rule.basis, version: set.version };
-    return { status: r.status, why: r.why, ...('rule' in r ? { ruleId: r.rule.id } : {}), version: set.version };
+    return {
+      status: r.status,
+      why: r.why,
+      ...('rule' in r ? { ruleId: r.rule.id, basis: r.rule.basis } : {}),
+      version: set.version,
+    };
   } catch (e) {
     return { status: 'ERROR', why: (e as Error).message };
   }

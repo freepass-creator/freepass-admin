@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { today } from '../../server/erp5';
 import type { CanonicalProduct } from '../../domain/product/types';
 import { LEDGER_PRODUCTS, ledgerKindOf } from '../../domain/settlement/product-kind';
@@ -15,14 +16,16 @@ export function intakeDefaults(product: CanonicalProduct | null, offerId: string
   const offer = product?.offers.find((o) => o.id === offerId);
   const defaults: IntakeDefaults = {
     receivedAt: today(),
+    /* 차량번호 없는 직접 신차(견적출고·신차발주)를 같은 날 여러 건 구분하는 요청 ID (#87) */
+    intakeRequestId: randomUUID(),
     plate: product?.registration?.vehicleNumber ?? '',
     model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
-    supplier: product?.supplierName ?? '',
+    supplier: product ? (product.supplierName ?? product.supplierId) : '',   /* 이름이 없으면 코드로 (#89) */
     supplierCode: product?.supplierId ?? '',
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
-    product: 짝?.product ?? '',
+    product: 짝?.certain ? 짝.product : '',   /* 안 떨어지면 사람이 고르기 전까지 비워 둔다 (#81) */
     rentKind: 짝?.rentKind ?? '',
     price: product?.consumerPrice !== undefined ? String(product.consumerPrice) : '',
     sourceProductId: product?.id ?? '',

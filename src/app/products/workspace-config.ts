@@ -68,6 +68,8 @@ export type ParsedProductSearch = {
   inferred: Partial<Record<상품축, string[]>>;
   tokens: { axis: 상품축; key: string; label: string }[];
   limits: { rentMax?: number; depositMax?: number };
+  /** 검색창에서 따로 적은 혜택조건은 각각 AND다. facet의 같은 축 OR 규칙과 섞지 않는다. */
+  requirements: { perks: string[]; driverAge?: number };
 };
 
 /**
@@ -80,6 +82,7 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   const inferred: Partial<Record<상품축, string[]>> = {};
   const tokens: ParsedProductSearch['tokens'] = [];
   const limits: ParsedProductSearch['limits'] = {};
+  const requirements: ParsedProductSearch['requirements'] = { perks: [] };
   const infer = (axis: 상품축, key: string) => {
     const a = inferred[axis] ?? [];
     if (!a.includes(key)) a.push(key);
@@ -91,6 +94,10 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   };
   const token = (axis: 상품축, key: string, label: string) => {
     if (!tokens.some((x) => x.axis === axis && x.key === key)) tokens.push({ axis, key, label });
+  };
+  const requirePerk = (key: string, label = key) => {
+    if (!requirements.perks.includes(key)) requirements.perks.push(key);
+    token('perk', `required:${key}`, label);
   };
   const eat = (re: RegExp, axis: 상품축, key: string, label: string) => {
     if (!re.test(rest)) return;
@@ -128,26 +135,48 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
   });
 
   eat(/무\s*보증|보증금\s*(?:0|없음?)/, 'dep', 'd0', '무보증');
-  eat(/무\s*심사/, 'perk', '무심사', '무심사');
+  if (/무\s*심사/.test(rest)) {
+    rest = rest.replace(/무\s*심사/, ' ');
+    requirePerk('무심사');
+  }
   rest = rest.replace(/(?:만\s*)?(\d{2})\s*세|([2-9]\d)살/g, (matched, a: string, b: string) => {
     const age = Number(a || b);
-    // ERP5 canonical perksOf()가 실제로 세우는 연령 혜택 범위와 같게 둔다.
+    // 혜택의 만N세는 «최소 운전자 연령». 21세 고객은 최소연령 18~21 상품을 모두 탈 수 있다.
     if (age >= 18 && age <= 21) {
-      add('perk', `만${age}세`, `만${age}세`);
+      requirements.driverAge = age;
+      token('perk', `driver-age:${age}`, `만${age}세`);
       return ' ';
     }
     return matched;
   });
   for (const perk of ['경력무관', '소득확인', '신용조회', '분납가능', '무사고']) {
     const re = new RegExp(perk.replace(/(.{2})/, '$1\\s*'));
-    if (re.test(rest)) { rest = rest.replace(re, ' '); add('perk', perk, perk); }
+    if (re.test(rest)) { rest = rest.replace(re, ' '); requirePerk(perk); }
   }
   eat(/즉시\s*출고/, 'status', '즉시출고', '즉시출고');
   eat(/하이브리드|하브|\bHEV\b/i, 'fuel', '하이브리드', '하이브리드');
   eat(/디젤/, 'fuel', '디젤', '디젤');
   eat(/가솔린|휘발유/, 'fuel', '가솔린', '가솔린');
 
-  return { text: rest.replace(/\s+/g, ' ').trim(), inferred, tokens, limits };
+  return { text: rest.replace(/\s+/g, ' ').trim(), inferred, tokens, limits, requirements };
+}
+
+export function minimumDriverAge(perks: readonly string[] | undefined): number | undefined {
+  const ages = (perks ?? []).map((perk) => /^만(\d{2})세$/.exec(perk)?.[1]).filter((v): v is string => !!v).map(Number);
+  return ages.length ? Math.min(...ages) : undefined;
+}
+
+export function productMeetsSearchRequirements(
+  product: { perks?: string[] },
+  requirements: ParsedProductSearch['requirements'],
+): boolean {
+  const perks = product.perks ?? [];
+  if (!requirements.perks.every((perk) => perks.includes(perk))) return false;
+  if (requirements.driverAge !== undefined) {
+    const minAge = minimumDriverAge(perks);
+    if (minAge === undefined || minAge > requirements.driverAge) return false;
+  }
+  return true;
 }
 
 export function mergeProductSelections(

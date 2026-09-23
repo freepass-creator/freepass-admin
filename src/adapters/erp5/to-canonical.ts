@@ -184,7 +184,7 @@ function registrationOf(d: Erp5Doc): RegistrationInfo | undefined {
  * @param snapshotId  이 스냅샷이 언제 것인지 — 접수가 이 값을 물고 간다
  */
 export function toCanonicalProduct(
-  d: Erp5Doc, docId: string, policy: Erp5Doc | undefined, snapshotId: string, master?: MasterIndex,
+  d: Erp5Doc, docId: string, policy: Erp5Doc | undefined, snapshotId: string, master?: MasterIndex, version = 1,
 ): MapResult {
   const key = S(d.car_number) ?? docId;
 
@@ -213,7 +213,7 @@ export function toCanonicalProduct(
     warnings,
     product: {
       id,
-      version: 1,
+      version,
       supplierId: S(d.provider_company_code) ?? S(d.partner_code) ?? '',
       /* ★이름과 코드를 «둘 다» 든다 — 사람은 이름을, 대조는 코드를 본다 */
       supplierName: S(d.provider_name),

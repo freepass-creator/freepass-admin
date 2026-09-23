@@ -12,6 +12,7 @@ import type { FeeResult } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
+import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-kind';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -32,6 +33,8 @@ export interface IntakeInput {
   deposit: number | null;
   price: number | null;
   payKind: string;      // 일시납 · 2회분납 · 3회분납
+  /** 차량번호 없는 직접 신차 견적/발주를 같은 날 여러 건 안전하게 구분하는 요청 ID. */
+  intakeRequestId?: string;
   /** 상품에서 골라 들어온 접수만 채운다. 접수 당시 Product/Offer 원본을 되짚기 위한 provenance. */
   sourceProductId?: string;
   sourceProductVersion?: number | null;
@@ -61,14 +64,20 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  */
 export function validateIntake(x: IntakeInput, today: string): string[] {
   const e: string[] = [];
-  if (!x.plate.trim() && !x.sourceProductId?.trim()) e.push('차량번호 또는 상품 원본 ID가 없습니다');
+  if (!x.plate.trim() && !x.sourceProductId?.trim()) {
+    if (!directIntakeAllowsMissingPlate(x.product)) e.push('차량번호가 없습니다');
+    else if (!x.intakeRequestId?.trim()) e.push('차량번호 없는 직접접수의 요청 ID가 없습니다');
+  }
   if (!DAY.test(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 로 넣습니다');
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
+  const expectedDirectRentKind = directIntakeRentKind(x.product);
+  if (expectedDirectRentKind && x.rentKind !== expectedDirectRentKind) e.push(`렌트구분은 ${expectedDirectRentKind} 이어야 합니다`);
   if (!x.customer.trim()) e.push('고객명이 없습니다');
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
   /* 인도는 실제 관측 사실이라 계약서와 독립적으로 기록한다. 단, 날짜 없는 인도완료는 받지 않는다. */
+  if (x.delivered && !x.plate.trim()) e.push('차량번호를 배정한 뒤 인도완료할 수 있습니다');
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {
@@ -89,7 +98,8 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
  *   가장 비슷한 규칙에 끼워 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
 export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
-  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt);
+  const identityMode = x.sourceProductId?.trim() ? 'product' : x.plate.trim() ? 'plate' : 'request';
+  const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, identityMode);
   const iso = new Date(nowMs).toISOString();
   const auto = fee?.status === 'AUTO' ? fee : null;
   const m = x.feeManual;
@@ -110,6 +120,8 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     // ★미확인(null)을 0으로 바꾸지 않는다. 0원/무보증과 미확인은 전혀 다른 사실이다.
     term: x.term, rent: x.rent, deposit: x.deposit, price: x.price,
     payKind: x.payKind.trim(),
+    intakeRequestId: x.intakeRequestId?.trim() || null,
+    intakeIdentityMode: identityMode,
     sourceProductId: x.sourceProductId?.trim() || null,
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,
@@ -244,4 +256,22 @@ export function feeManualErrors(x: IntakeInput, fee: FeeResult): string[] {
   if (!m || fee.status !== 'AUTO' || m.reason.trim()) return [];
   const differs = (m.claim !== null && m.claim !== fee.claim) || (m.pay !== null && m.pay !== fee.pay);
   return differs ? [`수수료표는 ${fee.claim.toLocaleString()}/${fee.pay.toLocaleString()} 입니다 — 다르게 넣으려면 사유를 적어야 합니다`] : [];
+}
+
+/**
+ * 자동 수수료가 성립하지 않으면 0원으로 조용히 접수하지 않는다.
+ * - AUTO: 표대로 저장 가능. 한쪽만 직접 덮어쓰는 것도 기존대로 허용.
+ * - MANUAL / NO_RULE / NO_BASE: 자동으로 채울 값이 없으므로 청구·지급을 둘 다 직접 넣어야 한다.
+ *   NO_BASE는 기준값(차량가액 또는 대여료·기간)을 채우면 AUTO로 돌아갈 수 있다.
+ */
+export function feeCompletenessErrors(x: IntakeInput, fee: FeeResult): string[] {
+  if (fee.status === 'AUTO') return [];
+  const m = x.feeManual;
+  if (m?.claim !== null && m?.claim !== undefined && m?.pay !== null && m?.pay !== undefined) return [];
+
+  if (fee.status === 'NO_BASE') {
+    const basis = fee.rule.basis === '차량가액' ? '차량가액' : '대여료·계약기간';
+    return [`자동 수수료 기준값(${basis})이 없습니다 — 기준값을 입력하거나 청구·지급 수수료를 직접 입력해 주세요`];
+  }
+  return [`${fee.why} — 청구·지급 수수료를 직접 입력해 주세요`];
 }

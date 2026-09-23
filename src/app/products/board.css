@@ -429,3 +429,20 @@ body:has(.pb) { background:#dde3ea !important; }
 .pb .search-field > svg.busy { color:var(--navy); animation:pb-pulse .8s ease-in-out infinite alternate; }
 @keyframes pb-pulse { from { opacity:1; } to { opacity:.35; } }
 .pb .chip.alert:not(.on) { color:var(--bad); }
+
+/* 차 없이 직접 접수 단추(검색 줄 끝) · 수수료 기준 · 옛 폼을 판 안에 담을 때 */
+.pb .new-intake { flex:none; width:var(--control); height:var(--control); display:grid; place-items:center; border:1px solid var(--field); border-radius:var(--r-control); background:#fff; color:var(--navy); }
+.pb .new-intake:hover { border-color:var(--field-hover); background:#f9fafb; }
+.pb .new-intake svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; }
+.pb .pb-hint { color:var(--muted); font-size:var(--meta); font-weight:400; }
+.pb .pb-basis { margin-left:6px; color:var(--muted); font-size:var(--meta); font-weight:500; }
+.pb .pb-legacy { font-size:var(--body); }
+.pb .pb-legacy .dz-bar { position:static; padding:12px 0 0; background:transparent; }
+.pb .pb-legacy .dz-bar-go { display:grid; grid-template-columns:3fr 7fr; gap:var(--gap); }
+.pb .pb-legacy .dz-bar-go > * { min-height:var(--control); display:flex; align-items:center; justify-content:center; border:0; border-radius:var(--r-control); font-size:14px; font-weight:600; }
+.pb .pb-legacy .dz-form-group { margin:0 0 12px; padding:12px; border:0; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+.pb .pb-legacy .dz-form-group > legend { padding:0 0 8px; font-size:var(--title); font-weight:600; }
+.pb .pb-legacy .dz-form-grid { display:grid; gap:var(--gap); }
+.pb .pb-legacy .dz-picked, .pb .pb-legacy .dz-fee-line { padding:12px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+/* 옛 폼의 제 머리는 판 머리와 겹친다 — 판 머리 하나만 둔다 */
+@media (min-width:901px) { .pb .pb-legacy > .panel-head { display:none; } }

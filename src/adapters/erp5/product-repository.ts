@@ -33,6 +33,13 @@ export type Erp5ReadReport = {
 
 const 빈셈 = (): SkipTally => ({ NOT_LISTABLE: 0, NO_CAR_NUMBER: 0, NO_PRICE: 0, NO_VALID_OFFER: 0 });
 
+type PolicySource = { data: Erp5Doc; revision: number };
+
+/** 같은 원천이면 같은 값, 상품/정책 문서가 바뀌면 다른 값이어야 한다. 읽은 시각은 lineage가 아니다. */
+export function productSourceRevision(productRevision: number, policyRevision?: number): string {
+  return `erp5-product-${productRevision}-policy-${policyRevision ?? 0}`;
+}
+
 export class Erp5ProductRepository implements ProductRepository {
   /** 마지막으로 읽은 결과 — 화면이 「몇 대 중 몇 대인지」 를 말할 수 있게 들고 있는다. */
   private lastReport: Erp5ReadReport | null = null;
@@ -42,7 +49,6 @@ export class Erp5ProductRepository implements ProductRepository {
   async list(): Promise<CanonicalProduct[]> {
     const db = erp5();
     const readAt = new Date().toISOString();
-    const snapshotId = `erp5-${readAt.replace(/[-:T]/g, '').slice(0, 14)}`;
 
     /**
      * 정책을 «한 번에» 읽어 둔다 — 상품마다 부르면 1,615번 왕복한다.
@@ -53,8 +59,14 @@ export class Erp5ProductRepository implements ProductRepository {
       db.collection('policy').get(),
       loadMasterIndex(),
     ]);
-    const policyBy = new Map<string, Erp5Doc>();
-    for (const d of policies.docs) policyBy.set(d.id, d.data() as Erp5Doc);
+    const policyBy = new Map<string, PolicySource>();
+    for (const d of policies.docs) {
+      const data = d.data() as Erp5Doc;
+      const source = { data, revision: d.updateTime?.toMillis() ?? 0 };
+      policyBy.set(d.id, source);
+      const code = typeof data.policy_code === 'string' ? data.policy_code.trim() : '';
+      if (code) policyBy.set(code, source);
+    }
 
     const rows: CanonicalProduct[] = [];
     const skipped = 빈셈();
@@ -63,7 +75,10 @@ export class Erp5ProductRepository implements ProductRepository {
     for (const d of products.docs) {
       const data = d.data() as Erp5Doc;
       const code = typeof data.policy_code === 'string' ? data.policy_code.trim() : '';
-      const result = toCanonicalProduct(data, d.id, code ? policyBy.get(code) : undefined, snapshotId, master);
+      const policy = code ? policyBy.get(code) : undefined;
+      const version = d.updateTime?.toMillis() ?? 0;
+      const sourceSnapshotId = productSourceRevision(version, policy?.revision);
+      const result = toCanonicalProduct(data, d.id, policy?.data, sourceSnapshotId, master, version);
       if (!result.ok) { skipped[result.reason] += 1; continue; }
       if (result.warnings.length) warnings += 1;
       rows.push(result.product);
@@ -83,23 +98,33 @@ export class Erp5ProductRepository implements ProductRepository {
      *   ★없으면 null 이다. 「못 찾았다」 를 빈 상품으로 지어내지 않는다.
      */
     const db = erp5();
-    const readAt = new Date().toISOString();
-    const snapshotId = `erp5-${readAt.replace(/[-:T]/g, '').slice(0, 14)}`;
 
     let docId = id;
-    let data: Erp5Doc | null = null;
-    const direct = await db.collection('products').doc(id).get();
-    if (direct.exists) data = direct.data() as Erp5Doc;
-    else {
+    let productDoc = await db.collection('products').doc(id).get();
+    if (!productDoc.exists) {
       const hit = await db.collection('products').where('product_code', '==', id).limit(1).get();
       if (hit.empty) return null;
-      docId = hit.docs[0].id;
-      data = hit.docs[0].data() as Erp5Doc;
+      productDoc = hit.docs[0];
+      docId = productDoc.id;
     }
-
+    const data = productDoc.data() as Erp5Doc;
     const code = typeof data.policy_code === 'string' ? data.policy_code.trim() : '';
-    const policy = code ? (await db.collection('policy').doc(code).get()).data() as Erp5Doc | undefined : undefined;
-    const result = toCanonicalProduct(data, docId, policy, snapshotId, await loadMasterIndex());
+    let policy: Erp5Doc | undefined;
+    let policyRevision = 0;
+    if (code) {
+      let policyDoc = await db.collection('policy').doc(code).get();
+      if (!policyDoc.exists) {
+        const byCode = await db.collection('policy').where('policy_code', '==', code).limit(1).get();
+        policyDoc = byCode.docs[0] ?? policyDoc;
+      }
+      if (policyDoc.exists) {
+        policy = policyDoc.data() as Erp5Doc;
+        policyRevision = policyDoc.updateTime?.toMillis() ?? 0;
+      }
+    }
+    const version = productDoc.updateTime?.toMillis() ?? 0;
+    const sourceSnapshotId = productSourceRevision(version, policyRevision);
+    const result = toCanonicalProduct(data, docId, policy, sourceSnapshotId, await loadMasterIndex(), version);
     return result.ok ? result.product : null;
   }
 

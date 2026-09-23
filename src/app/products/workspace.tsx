@@ -24,7 +24,7 @@ import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, 보증금, 정책말,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -54,7 +54,10 @@ const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
 const 사진 = (p: { photoUrl?: string }): string | undefined =>
   p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
 
-/** 상품 목록·거름·세부필터 축 — 옛 판(ProductWorkspace)과 새 판(board.tsx)이 같이 쓴다. */
+/**
+ * 상품 목록 «셈» — 거름 · 차례 · 교차집계. 새 판(products/board.tsx · intake)과 옛 판(ProductWorkspace)이 같은 함수를 쓴다.
+ *   ★규칙은 여기 한 곳: 요금 축은 한 요금이 모두 만족(S-02) · 무보증은 Offer 보증금 0(#79) · 만21세는 최소연령 21 이하(#84).
+ */
 export async function productView(q: Record<string, string | string[] | undefined>) {
   const parsedSearch = parseProductSearch(sp(q.q));
   const text = parsedSearch.text.toLowerCase();
@@ -78,7 +81,8 @@ export async function productView(q: Record<string, string | string[] | undefine
     요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k)))
     && offerWithinSearchLimits(o, parsedSearch.limits));
   const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
-    차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
+    productMeetsSearchRequirements(h.product, parsedSearch.requirements)
+    && 차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
     && 남은요금(h, skip).length > 0;
   const searched = text ? pool.filter(({ product: p }) =>
     `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
@@ -96,6 +100,14 @@ export async function productView(q: Record<string, string | string[] | undefine
 
   const statuses = vocab(rows.map((p) => p.status));
   const perkList = vocab(rows.flatMap((p) => p.perks ?? []));
+  /** "무보증"은 상품 badge가 아니라 실제 Offer 보증금 0원 조건이다. 검색창과 퀵필터가 같은 Offer 축을 써야 한다. */
+  const hasNoDepositOffer = pool.some((h) => h.matchedOffers.some((o) => o.deposit === 0));
+  /** "만21세" 퀵필터는 최소연령이 21세 이하인 상품 전체다. 정확히 "만21세" 라벨만 찾으면 18~20세 가능 상품을 놓친다. */
+  const age21Perks = perkList.filter((perk) => {
+    const m = /^만(\d{2})세$/.exec(perk);
+    const age = m ? Number(m[1]) : 0;
+    return age >= 18 && age <= 21;
+  });
   /**
    * ★교차 집계 — 원본 `shopFacets` 짜임: 줄(명단·차례)은 «전체»가 정하고, 숫자는 «제 축을 뺀 지금 조건»으로 센다.
    *   누를 때 줄이 안 사라지고 안 뛴다 — 숫자만 오르내린다(대표 2026-09-10 「0이라고 해줘야지」).
@@ -124,17 +136,16 @@ export async function productView(q: Record<string, string | string[] | undefine
     const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
   });
-  return { rows, sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch };
+
+  return { rows, pool, sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch, hasNoDepositOffer, age21Perks };
 }
 
 export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
   const pv = await productView(q);
-  if ('error' in pv) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {pv.error}</p></>;
-  }
-  const { sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch } = pv;
+  if ('error' in pv) return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {pv.error}</p></>;
+  const { sorted, shown, 상품판축, statuses, perkList, explicitPsel, parsedSearch, hasNoDepositOffer, age21Perks } = pv;
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
   const selId = sp(q.id);
@@ -147,6 +158,10 @@ export async function ProductWorkspace({ q, mode, base }: {
   };
   /** 퀵 단추 — 그 축의 고른 값 안에서 하나를 켜고 끈다(세부검색과 같은 주소 칸을 쓴다) */
   const 켜끔 = (cur: string[], v: string) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]).join(',');
+  const 묶음켜끔 = (cur: string[], vals: string[]) => {
+    const on = vals.length > 0 && vals.every((v) => cur.includes(v));
+    return (on ? cur.filter((x) => !vals.includes(x)) : [...new Set([...cur, ...vals])]).join(',');
+  };
 
   let irows: SettlementRow[] = [];
   let intakeErr = '';
@@ -223,7 +238,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
             *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
             */}
-          <div className="dz-find search-field">
+          <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['q', 'id', 'offer'])}
               <SearchField name="q" defaultValue={sp(q.q)} placeholder="차번 · 모델 · 공급사" />
@@ -244,14 +259,22 @@ export async function ProductWorkspace({ q, mode, base }: {
             *   데이터에 없는 단추는 안 세운다(지어낸 단추가 없다). 두 화면 같은 줄이다.
             */}
           <div className="quick-filters">
-            <Link className={`chip${상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? ' active' : ''}`}
+            <Link className={상품축이름.every(([a]) => !explicitPsel[a].length) && parsedSearch.tokens.length === 0 ? 'active' : ''}
               href={keep({ ...Object.fromEntries(상품축이름.map(([a]) => [a, ''])), q: parsedSearch.text, page: '' })}>전체</Link>
             {statuses.includes('즉시출고') && (
-              <Link className={`chip${explicitPsel.status.includes('즉시출고') ? ' active' : ''}`} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
+              <Link className={explicitPsel.status.includes('즉시출고') ? 'active' : ''} href={keep({ status: 켜끔(explicitPsel.status, '즉시출고'), page: '' })}>즉시출고</Link>
             )}
-            {['무심사', '만21세', '경력무관', '무보증'].filter((x) => perkList.includes(x)).map((x) => (
-              <Link key={x} className={`chip${explicitPsel.perk.includes(x) ? ' active' : ''}`} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
+            {['무심사', '경력무관'].filter((x) => perkList.includes(x)).map((x) => (
+              <Link key={x} className={explicitPsel.perk.includes(x) ? 'active' : ''} href={keep({ perk: 켜끔(explicitPsel.perk, x), page: '' })}>{x}</Link>
             ))}
+            {age21Perks.length > 0 && (
+              <Link className={age21Perks.every((x) => explicitPsel.perk.includes(x)) ? 'active' : ''}
+                href={keep({ perk: 묶음켜끔(explicitPsel.perk, age21Perks), page: '' })}>만21세</Link>
+            )}
+            {hasNoDepositOffer && (
+              <Link className={explicitPsel.dep.includes('d0') ? 'active' : ''}
+                href={keep({ dep: 켜끔(explicitPsel.dep, 'd0'), page: '' })}>무보증</Link>
+            )}
           </div>
           </div>
           <div className="list">
@@ -274,8 +297,7 @@ export async function ProductWorkspace({ q, mode, base }: {
           <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
-              <DetailTabs key={`상세-${car.id}`}
-                backHref={keep({ v: 'list' })}
+              <DetailTabs key={`상세-${car.id}-${sel.matchedOfferIds.join('|')}`}
                 initialOffer={sel.matchedOffers.some((x) => x.id === sp(q.offer)) ? sp(q.offer) : sel.lead?.id}
                 /**
                  * ★접수하기 — 늘 켜져 있다 (대표 2026-09-18 「상품 상세가 나오는 거고 거기서 접수를 누르면
@@ -290,7 +312,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* 사진 — 큰 사진 + 넘기기(erp4 상세 사진 칸). 주소는 여기서 imgSrc 로 감싸 준다 */}
                   <PhotoGallery key={`사진-${car.id}`} alt={vehicleName(car) || car.id} link={car.photoLink}
                     photos={(car.photos?.length ? car.photos : car.photoUrl ? [car.photoUrl] : []).filter((x) => x && x.trim()).map((x) => imgSrc(x)).filter((x): x is string => !!x)} />
-                  <div className="vehicle-title identity">
+                  <div className="vehicle-title">
                     <div>
                       <h2>{vehicleName(car) || car.id}</h2>
                       <p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p>
@@ -303,11 +325,11 @@ export async function ProductWorkspace({ q, mode, base }: {
                   {/* ★검색 조건이 걸렸으면 그 조건을 만족한 요금만 — 기능 쪽 규칙(S-03, matchedOffers) 그대로 */}
                   {/* ★key = 차 — 차를 바꾸면 기간 고르기를 새로 세운다.
                         ⚠ 없으면 앞 차의 고른 요금을 쥔 채 남아, 새 차에서 아무 기간도 안 켜지고 값 한 줄·접수하기가 사라졌다(실측). */}
-                  <OfferPicker key={`기간-${car.id}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
+                  <OfferPicker key={`기간-${car.id}-${sel.matchedOfferIds.join('|')}`} offers={sel.matchedOffers} initial={sp(q.offer) || sel.lead?.id}
                     perks={car.perks} perksNote={정책말(car.policyState)} />
                 </>}
                 info={<>
-                  <div className="vehicle-title identity">
+                  <div className="vehicle-title">
                     <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}</Tag>
                   </div>
@@ -321,8 +343,7 @@ export async function ProductWorkspace({ q, mode, base }: {
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
         {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
-          <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })}
-            prefill={{ customer: sp(q.customer), channel: sp(q.channel), agent: sp(q.agent) }} />
+          <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}

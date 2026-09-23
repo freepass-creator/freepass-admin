@@ -148,5 +148,6 @@ export async function signOut(cookie: string | undefined): Promise<void> {
 /** 로그인 없이 열리는 길 — 청구 링크 · 사진 · 로그인 자체 · Next 내부 */
 export function isPublicPath(path: string): boolean {
   return path === '/login' || path.startsWith('/login/google') || path.startsWith('/c/') || path.startsWith('/api/img')
+    || path.startsWith('/sign/') || path.startsWith('/api/esign/public/')
     || path.startsWith('/_next/') || path === '/favicon.ico' || /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(path);
 }

@@ -3,9 +3,31 @@ import assert from 'node:assert/strict';
 import { isPublicPath } from '../auth.js';
 
 describe('로그인 없이 열리는 길', () => {
-  it('청구 링크 · 사진 · 로그인만', () => {
-    for (const p of ['/c/abc', '/api/img', '/login', '/_next/static/x.js', '/favicon.ico']) assert.ok(isPublicPath(p), p);
-    for (const p of ['/', '/intake', '/settlement', '/products', '/esign', '/c', '/login2', '/api/other', '/design']) assert.ok(!isPublicPath(p), p);
+  it('청구 링크 · 고객 전자계약 · 사진 · 로그인은 공개한다', () => {
+    for (const p of [
+      '/c/abc',
+      '/sign/token-123',
+      '/api/esign/public/token-123',
+      '/api/esign/public/token-123/asset',
+      '/api/img',
+      '/login',
+      '/_next/static/x.js',
+      '/favicon.ico',
+    ]) assert.ok(isPublicPath(p), p);
+
+    for (const p of [
+      '/',
+      '/intake',
+      '/settlement',
+      '/products',
+      '/esign',
+      '/api/esign/asset/session/id_card',
+      '/api/esign/document/session',
+      '/c',
+      '/login2',
+      '/api/other',
+      '/design',
+    ]) assert.ok(!isPublicPath(p), p);
   });
 });
 

@@ -33,6 +33,17 @@ export async function productById(id: string) {
   return rows.find((p) => p.id === id) ?? (await products.get(id));
 }
 
+/**
+ * 저장/상태변경 경계에서 쓰는 상품 단건 조회.
+ *
+ * 목록용 60초 캐시는 화면 성능을 위한 것이므로 mutation 검증에는 사용하지 않는다.
+ * 접수 화면을 연 뒤 상품/Offer가 바뀐 경우, 저장 직전에 ERP5 정본을 다시 읽어
+ * productVersion/sourceSnapshotId/Offer drift를 fail-closed 한다.
+ */
+export async function productByIdFresh(id: string) {
+  return products.get(id);
+}
+
 export const today = () => {
   const d = new Date(Date.now() + 9 * 3600_000);   // ★접수일은 한국 날짜다
   return d.toISOString().slice(0, 10);

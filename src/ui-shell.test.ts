@@ -14,20 +14,38 @@ const settlementPage=read('src/app/settlement/page.tsx');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
-const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css')].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
-  assert.ok(chrome.includes("['/products', '상품찾기']"));
-  assert.ok(chrome.includes("['/intake', '계약접수']"));
-  assert.ok(chrome.includes("['/settlement', '정산관리']"));
+// DEC-2026-09-23-01 — PC 는 AI Core ERP 표준 골격(왼쪽 업무 메뉴), 폰은 다섯 걸음 하단바 그대로.
+test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab bar on phone, no top actions',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/esign','전자계약'],['/settlement?tab=claim','청구'],['/settlement?tab=pay','지급']]) {
+    assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
+    assert.ok(side.includes(label),`side menu missing ${label}`);
+  }
+  assert.ok(chrome.includes('<SideMenu />'));
   assert.ok(chrome.includes('<MobileTabBar />'));
-  assert.ok(chrome.includes('dz-desktop-bottom'));
+  assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
+  // 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18)
+  const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
+  assert.equal(/<button|<form/.test(top),false);
+  assert.ok(css.includes('@media (max-width: 900px)') && /erp-side[^}]*display:\s*none/.test(read('src/app/_design/erp-theme.css')));
+});
+
+test('theme choice is limited to the registered ERP themes and never redirects off-site',async()=>{
+  const { themeOf, safeBack, THEMES } = await import('./app/_design/theme');
+  assert.deepEqual([...THEMES],['classic','retro']);
+  assert.equal(themeOf('retro'),'retro');
+  assert.equal(themeOf('neon'),'classic');
+  assert.equal(themeOf(undefined),'classic');
+  assert.equal(safeBack('/products?id=1'),'/products?id=1');
+  for (const bad of ['//evil.example','https://evil.example','/\\evil','javascript:alert(1)','']) assert.equal(safeBack(bad),'/');
 });
 
 test('product workspace is bound to real repositories and whole-offer selection',()=>{

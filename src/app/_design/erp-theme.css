@@ -1,0 +1,130 @@
+/* ══════════════════════════════════════════════════════════════════════
+ * ERP 표준 UI 규격 v1 — 관리자 테마 2종 (대표 2026-09-23)
+ *   「1번 테마, 2번 테마 다 저장해서 제대로 규격화 하고 … 프리패스 어드민에 적용」
+ *
+ * 정본: ai-core `design/erp-standard/` — tokens.json(테마 1 classic) · themes/retro.json(테마 2 retro)
+ *       · themes/index.json(등록부). 값은 거기서 옮겨 적는다 — 새로 짓지 않는다.
+ * 켜는 법: AdminChrome 이 `<i class="erp-theme-flag" data-theme="classic|retro">` 를 body 바로 아래에 둔다.
+ *       청구 링크(/c/…)에는 표지가 없어 테마를 타지 않는다.
+ * 지키는 것: 테마는 색 · 선 · 모서리 · 글꼴 · 그림자만 바꾼다. 크기 기준(글 18/14/12 · 컨트롤 44)과
+ *       판 셋(목록 | 상세 | 업무) 배치는 그대로다 — `npm run ui:check` 가 지킨다.
+ *       폰(≤900px)은 틀을 바꾸지 않는다 — 왼쪽 메뉴·상태줄을 숨기고 다섯 걸음 하단바가 선다.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 테마 1 · classic — tokens.json ───────────────────────────────── */
+body:has(> .erp-theme-flag[data-theme="classic"]) {
+  --erp-primary: #1D4ED8; --erp-primary-hover: #1E40AF; --erp-primary-weak: #EFF4FF; --erp-focus-ring: #D1E0FF; --erp-on-primary: #FFFFFF;
+  --erp-nav: #0F1B2D; --erp-nav-raised: #1A2940; --erp-nav-line: #26374F; --erp-nav-text: #AEB9CA; --erp-nav-text-strong: #FFFFFF;
+  --erp-nav-muted: #6B7A91; --erp-nav-active: #1E3A6E; --erp-nav-indicator: #60A5FA;
+  --erp-side-bg: var(--erp-nav); --erp-side-text: var(--erp-nav-text); --erp-side-active-bg: var(--erp-nav-active); --erp-side-active-text: var(--erp-nav-text-strong);
+  --erp-bg: #F4F6F9; --erp-surface: #FFFFFF; --erp-sunken: #F8FAFC; --erp-line: #E3E8EF; --erp-line-row: #EEF1F5; --erp-line-strong: #CDD5DF;
+  --erp-text: #101828; --erp-text-2: #475467; --erp-text-3: #98A2B3;
+  --erp-row-selected: #F5F8FF; --erp-row-hover: #FAFBFC;
+  --erp-ok: #067647; --erp-ok-bg: #ECFDF3; --erp-info: #175CD3; --erp-info-bg: #EFF8FF; --erp-warn: #B54708; --erp-warn-bg: #FFFAEB;
+  --erp-err: #B42318; --erp-err-bg: #FEF3F2; --erp-neutral-bg: #F2F4F7;
+  --erp-r-md: 6px; --erp-r-lg: 8px;
+  --erp-border: 1px; --erp-card-shadow: none; --erp-btn-shadow: none;
+  --erp-font-display: inherit; --erp-font-mono: inherit;
+}
+
+/* ── 테마 2 · retro — themes/retro.json «90년대 사무용 단말기» ───────── */
+body:has(> .erp-theme-flag[data-theme="retro"]) {
+  --erp-primary: #1E4FA0; --erp-primary-hover: #163C7C; --erp-primary-weak: #DDE6F5; --erp-focus-ring: #BFD0EE; --erp-on-primary: #FFF8E7;
+  --erp-nav: #1C1A17; --erp-nav-raised: #2E2A24; --erp-nav-line: #47413A; --erp-nav-text: #D8CFBC; --erp-nav-text-strong: #FFF8E7;
+  --erp-nav-muted: #9A907E; --erp-nav-active: #F2C14E; --erp-nav-indicator: #E4572E;
+  --erp-side-bg: #EBE4D3; --erp-side-text: #1C1A17; --erp-side-active-bg: #F2C14E; --erp-side-active-text: #1C1A17;
+  --erp-bg: #F2EDE0; --erp-surface: #FFFDF6; --erp-sunken: #EBE4D3; --erp-line: #CFC6B2; --erp-line-row: #E2DBC9; --erp-line-strong: #1C1A17;
+  --erp-text: #1C1A17; --erp-text-2: #4A453C; --erp-text-3: #7D7566;
+  --erp-row-selected: #FFF1B8; --erp-row-hover: #F7F1E2;
+  --erp-ok: #2F6B2F; --erp-ok-bg: #DCEBCF; --erp-info: #1E4FA0; --erp-info-bg: #DDE6F5; --erp-warn: #8A5100; --erp-warn-bg: #FBE7B5;
+  --erp-err: #B3261E; --erp-err-bg: #F8D8D2; --erp-neutral-bg: #E6DFCF;
+  --erp-r-md: 2px; --erp-r-lg: 2px;
+  --erp-border: 2px; --erp-card-shadow: 4px 4px 0 var(--erp-line-strong); --erp-btn-shadow: 3px 3px 0 var(--erp-line-strong);
+  --erp-font-display: Galmuri11, "Pretendard Variable", Pretendard, monospace;
+  --erp-font-mono: "IBM Plex Mono", "Pretendard Variable", Pretendard, monospace;
+}
+
+/* ── 관리자 의미 변수 → ERP 토큰 (두 테마 공통 다리) ─────────────────
+ *   관리자 CSS 는 이미 의미 변수(바닥 · 판 · 박스 · 고름 · 켜짐 · 글 · 선 · ci남색)로 칠한다.
+ *   그 변수를 ERP 토큰에 물리면 판 · 목록 · 단추가 한 번에 테마를 탄다. */
+body:has(> .erp-theme-flag) {
+  --바닥: var(--erp-bg); --판: var(--erp-surface); --박스: var(--erp-sunken); --박스손: var(--erp-row-hover);
+  --고름: var(--erp-row-selected); --남색옅음: var(--erp-primary-weak);
+  --켜짐: var(--erp-primary); --켜짐깊이: var(--erp-nav); --ci남색: var(--erp-primary);
+  --글: var(--erp-text); --선: var(--erp-line);
+  --ui-radius: var(--erp-r-lg); --ui-control-radius: var(--erp-r-md);
+  background: var(--erp-bg); color: var(--erp-text);
+}
+
+/* ══ PC 틀 (901px~) — ① 상단 정보줄 ② 왼쪽 메뉴 ③ 본문 ④ 상태줄 ═══════ */
+@media (min-width: 901px) {
+  body:has(> .erp-theme-flag) {
+    --erp-top-h: 56px; --erp-side-w: 232px; --erp-status-h: 28px;
+    --ui-desktop-bottom-h: 0px;
+    display: grid;
+    grid-template-columns: var(--erp-side-w) minmax(0, 1fr);
+    grid-template-rows: var(--erp-top-h) minmax(0, 1fr) var(--erp-status-h);
+    grid-template-areas: "top top" "side main" "side status";
+    height: 100dvh; padding-bottom: 0; overflow: hidden;
+  }
+  body:has(> .erp-theme-flag) > .erp-top { grid-area: top; }
+  body:has(> .erp-theme-flag) > .erp-side { grid-area: side; }
+  body:has(> .erp-theme-flag) > main.fn-main { grid-area: main; min-height: 0; overflow: auto; }
+  body:has(> .erp-theme-flag) > .erp-status { grid-area: status; }
+  body:has(> .erp-theme-flag) > .dz-tabbar, body:has(> .erp-theme-flag) > .dz-desktop-bottom { display: none; }
+  body:has(> .erp-theme-flag) .fn-main .workspace { height: calc(100dvh - var(--erp-top-h) - var(--erp-status-h)); }
+
+  /* ① 상단 정보줄 — 네이비 띠 위 워드마크 · 데이터 상태 · 사람. 실행 버튼 없음 */
+  body:has(> .erp-theme-flag) > header.erp-top {
+    height: var(--erp-top-h); padding: 0 20px; gap: 16px; display: flex; align-items: center;
+    background: var(--erp-nav); color: var(--erp-nav-text-strong); border-bottom: 0;
+  }
+  body:has(> .erp-theme-flag) > header.erp-top .dz-brand { width: calc(var(--erp-side-w) - 20px); color: var(--erp-nav-text-strong); }
+  body:has(> .erp-theme-flag) > header.erp-top .dz-word i { color: var(--erp-nav-text); }
+  body:has(> .erp-theme-flag) > header.erp-top .fn-state {
+    min-height: 0; height: 32px; padding: 0 12px; border-radius: var(--erp-r-md);
+    background: var(--erp-nav-raised); color: var(--erp-nav-text); font-size: var(--글보조);
+  }
+  body:has(> .erp-theme-flag) > header.erp-top .dz-me {
+    margin-left: auto; color: var(--erp-nav-text-strong); font-size: var(--글보조);
+    padding-left: 14px; border-left: 1px solid var(--erp-nav-line);
+  }
+
+  /* ② 왼쪽 업무 메뉴 — 그룹 › 메뉴, 현재 메뉴는 면 + 굵기 + 표시줄 (색 하나로만 가르지 않는다) */
+  body:has(> .erp-theme-flag) > nav.erp-side {
+    display: block; overflow-y: auto; padding: 8px 12px; background: var(--erp-side-bg); color: var(--erp-side-text);
+  }
+  .erp-side .erp-nav-group { margin: 14px 10px 6px; color: var(--erp-nav-muted); font-size: var(--글보조); font-weight: 600; }
+  .erp-side .erp-nav-block:first-child .erp-nav-group { margin-top: 6px; }
+  .erp-side .erp-nav-item {
+    display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px;
+    border-radius: var(--erp-r-md); color: var(--erp-side-text); text-decoration: none; font-size: var(--글메인);
+  }
+  .erp-side .erp-nav-item:hover { background: color-mix(in srgb, var(--erp-side-active-bg) 35%, transparent); }
+  .erp-side .erp-nav-item[aria-current="page"] {
+    background: var(--erp-side-active-bg); color: var(--erp-side-active-text); font-weight: 700;
+    box-shadow: inset 3px 0 0 var(--erp-nav-indicator);
+  }
+  .erp-side .erp-nav-item:focus-visible { outline: 2px solid var(--erp-nav-indicator); outline-offset: -2px; }
+
+  /* ④ 상태줄 */
+  body:has(> .erp-theme-flag) > footer.erp-status {
+    display: flex; align-items: center; gap: 18px; padding: 0 16px; height: var(--erp-status-h);
+    background: var(--erp-surface); color: var(--erp-text-3); border-top: 1px solid var(--erp-line); font-size: var(--글보조);
+  }
+  .erp-status .erp-status-ok[data-ok="true"] { color: var(--erp-ok); }
+  .erp-status .erp-status-ok[data-ok="false"] { color: var(--erp-warn); }
+  .erp-status .erp-theme-switch { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+  .erp-status .erp-theme-label { margin-right: 4px; }
+  .erp-status .erp-theme-switch a {
+    padding: 1px 8px; border-radius: var(--erp-r-md); color: var(--erp-text-2); text-decoration: none; border: 1px solid transparent;
+  }
+  .erp-status .erp-theme-switch a[aria-pressed="true"] { background: var(--erp-primary-weak); color: var(--erp-primary); font-weight: 700; border-color: var(--erp-primary); }
+  .erp-status .erp-theme-switch a:focus-visible { outline: 2px solid var(--erp-primary); outline-offset: 1px; }
+}
+
+/* 폰(~900px) — 틀은 그대로. 왼쪽 메뉴와 상태줄만 숨긴다(다섯 걸음 하단바가 이동을 맡는다). */
+@media (max-width: 900px) {
+  body:has(> .erp-theme-flag) > nav.erp-side, body:has(> .erp-theme-flag) > footer.erp-status { display: none; }
+}
+.erp-theme-flag { display: none; }

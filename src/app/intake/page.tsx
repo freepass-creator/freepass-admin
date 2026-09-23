@@ -1,4 +1,5 @@
 import { ProductWorkspace } from '../products/workspace';
+import { IntakeScreen } from '../_erp/IntakeScreen';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,5 +9,7 @@ export const dynamic = 'force-dynamic';
  * ⓘ 접수 줄 전부(보기·거름)는 /intake/list 에 있다 — 오른쪽 판의 「전부 보기」가 그리로 간다.
  */
 export default async function IntakeMain({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <ProductWorkspace q={await searchParams} mode="intake" base="/intake" />;
+  const q = await searchParams;
+  /* PC = ERP 표준 화면(DEC-2026-09-23-01), 폰 = 기존 판 — CSS(_erp/shell.css)가 폭으로 가른다 */
+  return <><IntakeScreen q={q} /><ProductWorkspace q={q} mode="intake" base="/intake" /></>;
 }

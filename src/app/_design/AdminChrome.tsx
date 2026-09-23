@@ -2,11 +2,16 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { erp5Ready } from '../../adapters/erp5/firestore';
+import { demoMode } from '../../adapters/erp5/demo';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
-import { SideMenu, ThemeSwitch } from './SideMenu';
+import { SideMenu, ThemeSwitch, WorkTabs } from './SideMenu';
+import { Icon } from './Icon';
 import { THEME_COOKIE, THEME_LABEL, themeOf } from './theme';
 import { currentAdmin } from '../../server/require-admin';
+
+/** 규격 기본 글꼴 — Pretendard Variable (OFL). 규격 erp.css 의 --erp-font-family 첫 글꼴. */
+const PRETENDARD = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
 /** 레트로 테마만 쓰는 글꼴 — 픽셀 제목(Galmuri11) · 고정폭 숫자(IBM Plex Mono). 둘 다 OFL. */
 const RETRO_FONTS = [
@@ -34,27 +39,59 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
   const theme = themeOf((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <>
+      <link rel="stylesheet" href={PRETENDARD} precedence="default" />
       {theme === 'retro' && RETRO_FONTS.map((href) => <link key={href} rel="stylesheet" href={href} precedence="default" />)}
-      {/* 테마 표지 — 틀은 body 바로 아래 형제들로 선다(폰 규칙이 `body > main` 을 본다). 그래서 감싸지 않고
-          표지 하나로 테마를 건다: `body:has(> .erp-theme-flag[data-theme=…])` (erp-theme.css). */}
+      {/* 테마 표지 — 틀은 body 바로 아래 형제들로 선다(폰 규칙이 `body > main` 을 본다). 감싸지 않고 표지 하나로
+          테마와 PC 격자를 건다: `body:has(> .erp-theme-flag…)` (_erp/shell.css · _erp/erp-standard.css). */}
       <i className="erp-theme-flag" data-theme={theme} hidden />
-      <header className="fn-top dz-statusbar erp-top" aria-label="관리자 상태">
-        <Brand />
-        {/* 설정 확인은 실제 읽기 성공과 다르다. 상세 진단과 로그아웃은 상태 화면에서 제공한다. */}
+
+      {/* ── 폰 머리(그대로) ── */}
+      <header className="fn-top dz-statusbar" aria-label="관리자 상태">
         <a className="fn-state" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
           {data.ok ? '데이터 설정됨' : '데이터 설정 필요'} · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
         </a>
         {나 && <span className="dz-me">{나.name}</span>}
       </header>
-      <nav className="erp-side" aria-label="업무 이동">
+
+      {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
+      <header className="erp-topbar erp-std" data-region="topbar">
+        <div className="erp-brand"><Brand /></div>
+        <a className="erp-company" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
+          <Icon name="building" size={16} />프리패스 본사 · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
+        </a>
+        <form className="erp-gsearch" action="/products" role="search">
+          <Icon name="search" size={16} />
+          <input name="q" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
+          <kbd>Enter</kbd>
+        </form>
+        {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}
+        <div className="erp-topbar-right">
+          <a className="erp-iconbtn" href="/system/data-status" aria-label={data.ok ? '데이터 설정됨' : '데이터 설정 필요'} {...(data.ok ? {} : { 'data-alert': true })}>
+            <Icon name="gauge" size={18} />
+          </a>
+          <div className="erp-user"><span className="erp-avatar">{(나?.name ?? '관').slice(0, 1)}</span><div>{나?.name ?? '관리자'}<small>관리자 · 본사</small></div></div>
+        </div>
+      </header>
+
+      {/* ── PC ② 좌측 메뉴 ── */}
+      <nav className="erp-sidenav erp-std" data-region="sidenav" aria-label="업무 이동">
         <SideMenu />
       </nav>
-      <main className="fn-main">{children}</main>
-      <footer className="erp-status" aria-label="상태줄">
-        <span className="erp-status-ok" data-ok={data.ok ? 'true' : 'false'}>● ERP5 {data.ok ? '설정됨' : '설정 필요'}</span>
+
+      {/* ── 본문: PC 는 ③ 작업 탭 + 규격 화면(.erp-screen), 폰은 기존 판(그대로) ── */}
+      <main className="fn-main">
+        <div className="erp-main erp-std erp-tabs-bar"><WorkTabs /></div>
+        {children}
+      </main>
+
+      {/* ── PC ⑧ 상태바 ── */}
+      <footer className="erp-statusbar erp-std" data-region="statusbar">
+        <span className={data.ok ? 'erp-statusbar-ok' : ''}>● ERP5 {data.ok ? '데이터 설정됨' : '데이터 설정 필요'}</span>
         <span>{writeEnabled() ? '쓰기 허용' : '조회 전용'}</span>
-        <ThemeSwitch current={theme} labels={THEME_LABEL} />
+        {demoMode() && <span>가상 데이터 · 화면 확인용</span>}
+        <span className="erp-statusbar-keys"><ThemeSwitch current={theme} labels={THEME_LABEL} /></span>
       </footer>
+
       {/*
         ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).

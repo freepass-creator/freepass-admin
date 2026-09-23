@@ -65,6 +65,21 @@ Admin chrome also displays:
 - read credential state
 - write gate state
 
+## Demo data mode (`FPA_DEMO=on`) — screen review only
+
+When the ERP5 credentials are not available, the admin screens can be reviewed with **fictional** data:
+
+```bash
+FPA_DEMO=on npx next dev --webpack -p 4300
+```
+
+- Gate: `demoMode()` in `src/adapters/erp5/demo.ts` = `FPA_DEMO=on` **and** `VERCEL_ENV !== 'production'`. It is off by default and is forced off in a production deployment, whatever the env says. Use it only in local dev or a preview deployment.
+- `erp5()` returns an in-memory, read-only fake of the Firestore read surface; it never connects to the real `freepasserp5` project, even if credentials are present. `erp5App()` (Storage) throws, so e-sign files and photos read as absent.
+- Read-only: every write on the fake (`set` / `update` / `create` / `delete` / `add` / `batch` / transaction writes) throws `데모 데이터 모드는 읽기 전용입니다`, and `writeEnabled()` returns false even with `ERP5_WRITE=on`.
+- Data: `src/adapters/erp5/demo-fixtures.ts` — 24 products, 22 settlement rows across 당월접수/미완료/분납실적/완납실적/취소, 1 clawback, 11 contracts. Every name, plate, supplier (한빛렌터카 등) and customer (masked) is invented. Dates are relative to today (KST).
+- `erp5Ready()` reports `{ ok: true, project: 'demo' }`; the product read report also says `project: 'demo'`. The UI should show a «가상 데이터» badge using `demoMode()`.
+- Guard: `src/adapters/erp5/__tests__/demo.test.ts`.
+
 ## Regression guard
 
 `npm run data:check`

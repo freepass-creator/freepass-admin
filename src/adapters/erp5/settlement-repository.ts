@@ -14,6 +14,7 @@ import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, planInvoice, type Ax
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
+import { demoMode } from './demo';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -35,7 +36,8 @@ const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.so
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
 }
-export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on';
+/** ★가상 데이터 모드(FPA_DEMO=on)에서는 열쇠가 있어도 닫혀 있다 — 가짜 원장은 읽기 전용이다. */
+export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on' && !demoMode();
 const mustWrite = () => { if (!writeEnabled()) throw new WriteDisabledError(); };
 
 const audId = () => {

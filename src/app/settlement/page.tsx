@@ -8,6 +8,7 @@ import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecyc
 import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
 import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { SettlementScreen } from '../_erp/SettlementScreen';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,13 @@ export const dynamic = 'force-dynamic';
  *   가운데 묶음 판 = [청구서/지급명세 발행] · 오른쪽 접수 상세 = 그 줄의 다음 걸음(확인 · 정정 · 수금/지급). 곁 걸음(보류 · 청구월 · 계산서)은 본문.
  *   ⚠ 운영 원장에 바로 쓴다 — 모양 확인 때 누르지 않는다.
  */
-export default async function SettlementPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function SettlementPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const q = await props.searchParams;
+  /* PC = ERP 표준 화면(DEC-2026-09-23-01), 폰 = 기존 판 — CSS(_erp/shell.css)가 폭으로 가른다 */
+  return <><SettlementScreen q={q} /><SettlementBoards searchParams={props.searchParams} /></>;
+}
+
+async function SettlementBoards({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
   const requestedTab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 

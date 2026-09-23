@@ -101,6 +101,15 @@ Firebase, Google, GitHub, Vercel, HTTP/DB transport 등.
   정산관리는 한 판에서 청구 · 지급을 가른다.
 - 테마 2종을 사람별로 고른다(상태줄 「테마」, 쿠키 `fpa-theme`, 기본 classic): 테마 1 classic(테두리형 표준) · 테마 2 retro(90년대 사무용 단말기).
 
+### 추가 (같은 날) — «흉내가 아니라 규격 그대로»
+대표 2026-09-23: 「할 거면 아까 전에 네가 규격한 디자인이랑 완전 동일하게 구성을 해야지 어정쩡하게 흉내내면 어떡하냐」 ·
+「데이터가 안 땡겨지는 상황이니까 가짜 데이터를 넣어서 화면 구성을 보려고 하는 거잖아」
+- PC 다섯 화면(상품찾기 · 계약접수 · 실적 · 정산관리 · 전자계약)을 규격 `platform/*.html` 구성 그대로 다시 세웠다:
+  헤더 → KPI → 조회조건 · 상태 탭 · 그리드 · 합계 → (고르면) 상세 패널. 부품은 규격 클래스(`erp-*`)만 쓴다(`src/app/_erp/`).
+- 규격 CSS 는 ai-core 정본 생성물(`scripts/sync-erp-standard.mjs` → `_erp/erp-standard.css`)이다 — 손 복사 금지(`src/erp-standard.test.ts`).
+- 데이터 · 업무 규칙 · 처리(저장 · 인도 · 취소 · 청구서 발행)는 기능 쪽 그대로 쓴다(접수 처리 = IntakeDetailPanel, 발행 = IssueForm).
+- 가상 데이터 모드 `FPA_DEMO=on` — 화면 확인 전용. `VERCEL_ENV=production` 이면 강제로 꺼지고, 읽기 전용이며, 상단바에 «가상 데이터» 가 늘 보인다.
+
 ### 대체하는 결정
 - 2026-09-21 「PC 에서도 하단 업무 버튼」(`dz-desktop-bottom`) → PC 이동은 왼쪽 메뉴. `ui-shell.test.ts` 의 해당 단정을 이 결정으로 바꿨다.
 - 승인 시각 기준 rev 5(`docs/ui/mockups/admin-product-to-application.html`)의 «색 · 선 · 틀»을 ERP 표준으로 바꾼다. 판 셋(목록 | 상세 | 업무) 배치는 rev 5 그대로다.

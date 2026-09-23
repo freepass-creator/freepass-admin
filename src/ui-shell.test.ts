@@ -32,7 +32,7 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   const order=['상품찾기','계약접수','실적','정산관리','전자계약'].map((w)=>side.indexOf(`label: '${w}'`));
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
-  assert.ok(side.includes('erp-nav-block--apart'));
+  assert.ok(side.includes('erp-nav-group--apart'));
   assert.ok(chrome.includes('<SideMenu />'));
   assert.ok(chrome.includes('<MobileTabBar />'));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
@@ -40,7 +40,7 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   // 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18)
   const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
   assert.equal(/<button|<form/.test(top),false);
-  assert.ok(css.includes('@media (max-width: 900px)') && /erp-side[^}]*display:\s*none/.test(read('src/app/_design/erp-theme.css')));
+  assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
 });
 
 test('theme choice is limited to the registered ERP themes and never redirects off-site',async()=>{

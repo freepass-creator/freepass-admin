@@ -1,0 +1,85 @@
+/* ══════════════════════════════════════════════════════════════════════
+ * 관리자 PC 틀 — AI Core «ERP 표준 UI 규격 v1» 골격을 body 에 세운다 (DEC-2026-09-23-01)
+ *   부품 모양은 전부 규격(_erp/erp-standard.css — ai-core 정본 생성물)이 그린다. 여기는 «자리»만 잡는다:
+ *   규격 main.html 의 .erp-app 격자(상단바 56 · 좌측 240 · 상태바 26)를 body 에 그대로 옮긴 것.
+ *   폰(≤900px)은 기존 틀 그대로 — 규격 부품(.erp-std)과 PC 화면(.erp-screen)을 숨기고 기존 판 · 하단바가 선다.
+ * ══════════════════════════════════════════════════════════════════════ */
+.erp-theme-flag { display: none; }
+
+@media (min-width: 901px) {
+  body:has(> .erp-theme-flag) {
+    display: grid;
+    grid-template-columns: var(--erp-sidenav-w) minmax(0, 1fr);
+    grid-template-rows: var(--erp-topbar-h) minmax(0, 1fr) var(--erp-statusbar-h);
+    grid-template-areas: "top top" "side main" "side status";
+    height: 100dvh; min-width: var(--erp-app-min-w); margin: 0; padding: 0; overflow: hidden;
+    background: var(--erp-color-bg); color: var(--erp-color-text);
+    font-family: var(--erp-font-family);
+  }
+  body:has(> .erp-theme-flag) > .erp-topbar { grid-area: top; }
+  body:has(> .erp-theme-flag) > .erp-sidenav { grid-area: side; }
+  body:has(> .erp-theme-flag) > .erp-statusbar { grid-area: status; }
+  body:has(> .erp-theme-flag) > main.fn-main {
+    grid-area: main; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+    padding: 0; background: var(--erp-color-bg);
+  }
+  /* PC 에서는 규격 화면만 — 기존 판 · 폰 머리 · 하단바는 숨긴다 */
+  body:has(> .erp-theme-flag) > header.fn-top,
+  body:has(> .erp-theme-flag) > .dz-tabbar,
+  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen):not(.erp-tabs-bar) { display: none !important; }
+  body:has(> .erp-theme-flag) > main.fn-main > .erp-tabs-bar { flex: none; overflow: visible; }
+  body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  /* 규격 부품이 <a> · <form> 으로 설 때의 기본값만 맞춘다(모양은 규격 그대로) */
+  .erp-std a.erp-tab, .erp-std a.erp-company, .erp-std a.erp-iconbtn { text-decoration: none; }
+  .erp-std a.erp-tab { color: var(--erp-color-text-2); }
+  .erp-std a.erp-tab[aria-selected="true"] { color: var(--erp-color-text); }
+  .erp-std .erp-gsearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-nav-text-strong); font: inherit; }
+  .erp-std .erp-gsearch input::placeholder { color: var(--erp-color-nav-text); }
+  .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
+  /* 전자계약 — 업무 흐름과 따로 다루는 문: 구분선으로 뗀다(대표 2026-09-23) */
+  .erp-std .erp-nav-group--apart { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--erp-color-nav-line); }
+  .erp-std .erp-statusbar-keys a { margin-left: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); color: inherit; text-decoration: none; }
+  .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-bold); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-nav); }
+  /* 목록 한 줄 전체가 링크 — 줄을 누르면 오른쪽 상세가 선다 */
+  .erp-std .erp-grid tr[data-href] { cursor: pointer; }
+  .erp-std .erp-grid td > a.erp-row-link { color: var(--erp-color-primary); }
+  .erp-std .erp-seg a { display: inline-flex; align-items: center; padding: 6px var(--erp-sp-3); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); text-decoration: none; }
+  .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-text); color: var(--erp-color-surface); }
+  .erp-std .erp-pager a { min-width: 30px; height: 30px; display: grid; place-items: center; padding: 0 6px; border-radius: var(--erp-r-md); color: var(--erp-color-text-2); text-decoration: none; }
+  .erp-std .erp-pager a[aria-current="page"] { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std a.erp-btn { text-decoration: none; }
+  .erp-std select.erp-input { appearance: auto; }
+  /* 가상 데이터 표지 — 운영 데이터로 오해하지 않게 상단바에 늘 보인다 */
+  .erp-std .erp-demo-flag { padding: 3px 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-warn-bg); color: var(--erp-color-warn); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
+  /* 규격 카드 안에 기능 쪽 판(접수 양식 · 처리)을 앉힐 때 — 판의 겉틀만 걷는다(안의 입력 · 단추는 기능 쪽 그대로) */
+  .erp-std .erp-embed .panel { border: 0; box-shadow: none; padding: 0; background: transparent; min-height: 0; overflow: visible; }
+  .erp-std .erp-embed .panel-head { display: none; }
+  .erp-std .erp-embed .dz-bar { position: static; padding: 0; background: transparent; border: 0; box-shadow: none; }
+  .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
+  /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
+  .erp-screen .erp-content > * { flex-shrink: 0; }
+  .erp-screen .erp-content > .erp-card--fill, .erp-screen .erp-content > .erp-cols:has(> .erp-card--fill) { flex: 1 0 420px; }
+  .erp-screen .erp-cols > .erp-card--fill { min-height: 420px; }
+  .erp-std .erp-chip[aria-current="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std a.erp-chip { text-decoration: none; }
+  /* 기능 쪽 판 안의 입력 · 단추를 규격 치수로(데스크톱에서만 — 폰 판은 그대로 44) */
+  .erp-std .erp-embed :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) {
+    height: var(--erp-input-h); padding: 0 10px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md);
+    background: var(--erp-color-surface); color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body);
+  }
+  .erp-std .erp-embed textarea { height: auto; padding: 8px 10px; }
+  .erp-std .erp-embed :is(button, a.primary, a.dz-bar-sub) {
+    display: inline-flex; align-items: center; justify-content: center; height: var(--erp-btn-h); padding: 0 14px;
+    border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
+    color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold); text-decoration: none; cursor: pointer;
+  }
+  .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child) { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
+  .erp-std .erp-embed label { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+}
+
+@media (max-width: 900px) {
+  .erp-std, .erp-screen, .erp-tabs-bar { display: none !important; }
+}

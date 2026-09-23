@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { DEMO_PROJECT, demoFirestore, demoMode } from './demo';
+
+export { demoMode } from './demo';
 
 /**
  * **ERP5 SSOT 로 가는 문** — 대표 2026-09-18
@@ -73,16 +76,21 @@ function ensureErp5App(): App {
 
 /** ERP5 Admin app — Firestore와 Storage가 반드시 같은 자격증명/프로젝트를 공유한다. */
 export function erp5App(): App {
+  /* ★가상 데이터 모드에서는 실제 프로젝트(Storage 포함)에 붙지 않는다 — 사진·서명 파일은 «없다» 로 읽힌다. */
+  if (demoMode()) throw new Error('가상 데이터 모드(FPA_DEMO=on)에서는 ERP5 Storage 를 쓰지 않습니다');
   return ensureErp5App();
 }
 
 /** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
 export function erp5(): Firestore {
+  /* ★가상 데이터 모드 — 실 ERP5 대신 읽기 전용 가짜(src/adapters/erp5/demo.ts). 운영 배포에서는 켜지지 않는다. */
+  if (demoMode()) return demoFirestore();
   return getFirestore(ensureErp5App());
 }
 
 /** 붙었나 — 화면·상태줄이 「어디를 보고 있나」 를 말할 수 있게. */
 export function erp5Ready(): { ok: true; project: string } | { ok: false; project: string; why: string } {
+  if (demoMode()) return { ok: true, project: DEMO_PROJECT };
   try { erp5(); return { ok: true, project: ERP5_PROJECT_ID }; }
   catch (e) { return { ok: false, project: ERP5_PROJECT_ID, why: (e as Error).message }; }
 }

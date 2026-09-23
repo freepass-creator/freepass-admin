@@ -3,6 +3,7 @@ import { contracts } from '../../server/erp5';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
+import { EsignScreen } from '../_erp/EsignScreen';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,13 @@ function 서명상태(c: 계약): RowStatus {
   return { icon: 'file-text', label: '미연결', tone: 'grey' };
 }
 
-export default async function EsignPage({ searchParams }: {
+export default async function EsignPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const q = await props.searchParams;
+  /* PC = ERP 표준 화면(DEC-2026-09-23-01), 폰 = 기존 판 — CSS(_erp/shell.css)가 폭으로 가른다 */
+  return <><EsignScreen q={q} /><EsignBoards searchParams={props.searchParams} /></>;
+}
+
+async function EsignBoards({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const q = await searchParams;

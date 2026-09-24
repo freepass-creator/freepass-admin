@@ -17,6 +17,7 @@
   --ui-control-h: var(--컨트롤);
   --ui-control-radius: 6px;
   --ui-control-gap: 8px;
+  --ui-quick-filter-h: 34px;
   --ui-shell-h: 60px;
   --ui-action-h: 44px;
   --ui-touch-min: 44px;
@@ -35,7 +36,6 @@
 .fn-main .workspace .dz-searchbox { height: var(--ui-control-h); padding: 0 4px 0 12px; gap: 8px; }
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
-.fn-main .workspace .quick-filters a,
 .fn-main .workspace .tabs button, .fn-main .workspace .tabs a,
 .fn-main .workspace .offer-picker button,
 .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub,
@@ -1760,5 +1760,47 @@ body > nav.fn-top :where(a, button):focus-visible,
     border-color: transparent !important;
     background: var(--ui-selected);
     box-shadow: inset 0 1px 2px rgba(27,42,74,.14);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Slim mobile QuickFilter
+   visual pill 34px / touch row 44px. 액션버튼처럼 뚱뚱하게 만들지 않는다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .quick-filters {
+    min-height: var(--ui-touch-min);
+    display: flex;
+    align-items: center;
+    gap: var(--ui-control-gap);
+  }
+
+  .fn-main .workspace .quick-filters a {
+    height: var(--ui-quick-filter-h);
+    min-height: var(--ui-quick-filter-h);
+    padding-inline: 12px;
+    border: 0 !important;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    line-height: 1;
+    font-size: var(--ui-text-main);
+    font-weight: 600;
+    background: var(--ui-surface-soft);
+    color: var(--ui-text-secondary-color);
+    box-shadow: none;
+  }
+
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]) {
+    background: var(--ci남색);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .fn-main .workspace .quick-filters a:active {
+    transform: translateY(var(--ui-press-y));
   }
 }

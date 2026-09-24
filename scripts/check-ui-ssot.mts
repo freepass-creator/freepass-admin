@@ -15,12 +15,26 @@ const coreFiles = [
   'src/app/_design/FilterSheet.tsx',
 ];
 
-const noInlineStyleFiles = [
+const internalAdminUiFiles = [
   ...coreFiles,
+  'src/app/system/data-status/page.tsx',
   'src/app/intake/MoneyForm.tsx',
   'src/app/intake/PaidRounds.tsx',
   'src/app/intake/[code]/Progress.tsx',
   'src/app/settlement/LifeForms.tsx',
+];
+
+const noInlineStyleFiles = internalAdminUiFiles;
+
+/**
+ * 명시적 예외 — 관리자 내부 화면이 아니라 별도 사용자 여정이다.
+ * 이 셋을 내부 Admin 공통 UI 검사에서 빼는 것은 “페이지별 독자 디자인 허용”이 아니라
+ * audience/shell 자체가 다른 surface라서다. 공통 interaction 원칙은 별도 검증 대상으로 올린다.
+ */
+const explicitSurfaceExceptions = [
+  'src/app/login/LoginForm.tsx',
+  'src/app/c/[token]/ClaimDoor.tsx',
+  'src/app/sign/[token]/SignClient.tsx',
 ];
 
 const forbidden = [
@@ -59,6 +73,24 @@ for (const file of coreFiles) {
 for (const file of noInlineStyleFiles) {
   const src = await readFile(path.join(root, file), 'utf8');
   if (/style=\{\{/.test(src)) errors.push(`${file}: inline visual style found; move stable UI values to globals.css / SSOT tokens`);
+  if (/<style[\s>]/.test(src)) errors.push(`${file}: page-local <style> found; internal admin visuals must come from shared CSS/tokens`);
+  if (/\b(?:borderRadius|boxShadow|backgroundColor|fontSize|padding|margin)\s*:/.test(src)) {
+    errors.push(`${file}: page-local visual constant found; use shared component/token instead`);
+  }
+}
+
+/* 내부 Admin route가 자기 시각 체계를 새로 만들지 못하게 한다.
+ * 도메인 class(dz-money 등)는 허용하지만 stable visual 값은 shared CSS/token에서만 온다. */
+for (const file of internalAdminUiFiles) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (/className=["'`]\s*(?:lg|cl|sg)-/.test(src)) {
+    errors.push(`${file}: public/login surface class prefix used inside internal Admin UI`);
+  }
+}
+
+/* 예외는 닫힌 목록이다. 새 공개/독립 surface가 생기면 이유를 문서와 여기 둘 다 갱신해야 한다. */
+for (const file of explicitSurfaceExceptions) {
+  if (!await readFile(path.join(root, file), 'utf8').catch(() => '')) errors.push(`explicit UI exception missing: ${file}`);
 }
 
 const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
@@ -152,6 +184,7 @@ if (errors.length) {
   console.log('- visual baseline: 18/14/12 · Sales control/action 44 · control radius 6 · gap 8 · panel radius 4');
   console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
-  console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);
+  console.log(`- internal Admin UI guard files: ${internalAdminUiFiles.length}`);
+  console.log(`- explicit separate-surface exceptions: ${explicitSurfaceExceptions.length} (login / supplier claim / public e-sign)`);
 }
 

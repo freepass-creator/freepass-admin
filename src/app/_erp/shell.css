@@ -363,3 +363,25 @@
     border-top-color: transparent;
   }
 }
+
+
+/* 2026-09-24 — Borderless search.
+ * 크기·padding·radius·배치는 그대로. 보이는 선만 없애고 surface + focus elevation으로 입력 affordance를 만든다. */
+@media (min-width: 901px) {
+  .erp-std .erp-search {
+    border-color: transparent;
+    background: var(--erp-color-sunken);
+    box-shadow: var(--fp-elevation-base);
+  }
+  .erp-std .erp-search:hover {
+    background: color-mix(in srgb, var(--erp-color-sunken) 82%, var(--erp-color-surface));
+  }
+  .erp-std .erp-search:focus-within {
+    border-color: transparent;
+    background: var(--erp-color-surface);
+    box-shadow: var(--fp-elevation-hover);
+  }
+  .erp-std .erp-search input:focus-visible {
+    outline: none;
+  }
+}

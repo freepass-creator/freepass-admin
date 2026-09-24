@@ -1134,3 +1134,47 @@
     cursor: default;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Form validation & submit UX
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std input[inputmode="numeric"],
+  .erp-std input[inputmode="decimal"] {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std :is(input,select,textarea)[aria-invalid="true"] {
+    background: var(--erp-color-err-bg);
+    color: #7A271A;
+    box-shadow: 0 0 0 3px rgba(180,35,24,.12);
+  }
+
+  .erp-std .dz-errs {
+    margin: 0;
+    padding: var(--erp-sp-3);
+    list-style: none;
+    border: 0;
+    border-radius: var(--erp-r-md);
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+    font-size: var(--erp-fs-label);
+    line-height: 1.5;
+  }
+  .erp-std .dz-errs li + li {
+    margin-top: var(--erp-sp-1);
+  }
+
+  .erp-std form[aria-busy="true"] {
+    cursor: progress;
+  }
+  .erp-std form[aria-busy="true"] :is(button[type="submit"],input[type="submit"]) {
+    pointer-events: none;
+  }
+
+  .erp-std form > :is(.erp-state-ok,.erp-state-warn,.erp-state-error,.dz-errs) {
+    margin-bottom: var(--erp-sp-2);
+  }
+}

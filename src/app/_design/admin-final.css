@@ -1076,3 +1076,50 @@ body > nav.fn-top :where(a, button):focus-visible,
   background: var(--ci남색);
   color: #fff;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Interaction state consistency (live Admin)
+   접근성 focus는 유지하되 visible border/outline 대신 soft halo를 사용한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub,
+  .dz-row
+):focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-halo), var(--ui-elevation-base);
+}
+
+/* selected + focus = selected 상태를 유지하고 halo만 더한다. */
+.fn-main .workspace :is(
+  .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+  .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+  .offer-picker button.active,
+  .dz-fs-open.on,
+  .dz-row.on
+):focus-visible {
+  outline: none;
+  box-shadow:
+    var(--ui-focus-halo),
+    inset 0 1px 2px rgba(27,42,74,.12);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* disabled는 움직이지 않고 시각 강도만 낮춘다. */
+.fn-main .workspace :is(button,a)[aria-disabled="true"]:focus-visible,
+.fn-main .workspace button:disabled:focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Signal은 interaction surface가 아니다. */
+.fn-main .workspace :is(.dz-badge,.dz-perk,.dz-row-status):focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}

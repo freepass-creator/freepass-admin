@@ -11,7 +11,8 @@
     "uiux:map": "node scripts/check-uiux-consumer.mjs",
     "ui:check": "tsx scripts/check-ui-ssot.mts",
     "data:check": "tsx scripts/check-live-data-wiring.mts",
-    "visual:qa": "node scripts/visual-qa.cjs"
+    "visual:qa": "node scripts/visual-qa.cjs",
+    "visual:qa:cloud": "bash scripts/visual-qa-cloud.sh"
   },
   "dependencies": {
     "firebase-admin": "^14.4.0",

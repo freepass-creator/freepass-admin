@@ -217,7 +217,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     <>
       <section className="workspace" data-phone={view} data-mode={mode}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
-        <section className="panel product-panel">
+        <section className="panel product-panel" data-panel-role="list">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
           <PanelHeader title="상품 목록" count={`${sorted.length.toLocaleString()}대`} />
@@ -281,7 +281,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>
 
         {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
-        <section className="panel detail-panel">
+        <section className="panel detail-panel" data-panel-role="detail">
           <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
@@ -330,14 +330,14 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
-        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel" data-panel-role="work">
           <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}
             newHref={keep({ w: 'new', product: '', offer: '', ic: '', created: '', exists: '', v: 'work' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
           <div className="dz-listtop">
           <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">

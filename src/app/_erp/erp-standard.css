@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ de2a4f1203f8902b07a1824f5b62edda7c9c026e
+ * 정본: freepass-creator/ai-core @ b845130bdc37efa3e5492f1683d815a616043784
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -320,8 +320,10 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 /* 셀 안 두 줄 — 주 텍스트 + 보조 텍스트 */
 .erp-cell-sub { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
 .erp-muted { margin: 0; color: var(--erp-color-text-3); }
-.erp-tags { display: inline-flex; gap: var(--erp-sp-1); }
-.erp-tag { padding: 1px 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); }
+.erp-tags { display: flex; flex-wrap: wrap; gap: var(--erp-sp-1); }
+/* flex-shrink:0 + nowrap — 안 그러면 좁은 판(3패널 계약접수 등)에서 알약이 줄어들며 글자가
+   가운데서 꺾인다(「무심 사」·「분납가 능」) — 알약은 통째로 다음 줄로 넘어가야 한다. */
+.erp-tag { flex: none; padding: 1px 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); white-space: nowrap; }
 .erp-tag--primary { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); }
 
 /* ── 조회 — 검색창 + 상세 필터 (대표 2026-09-23 「검색창이랑 상세 필터를 최대한 쓴다 · 드롭다운은 최소화」) ──

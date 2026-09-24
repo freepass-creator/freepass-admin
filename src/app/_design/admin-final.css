@@ -1617,3 +1617,73 @@ body > nav.fn-top :where(a, button):focus-visible,
   box-shadow: none;
   transform: none;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Motion & immediate feedback contract (live Admin)
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-motion-press: 80ms;
+  --ui-motion-state: 120ms;
+  --ui-motion-float: 160ms;
+  --ui-motion-ease: ease-out;
+  --ui-busy-opacity: .72;
+}
+
+.fn-main .workspace :is(
+  button,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-row,
+  a.primary,
+  a.dz-bar-sub
+) {
+  transition:
+    transform var(--ui-motion-press) var(--ui-motion-ease),
+    box-shadow var(--ui-motion-state) var(--ui-motion-ease),
+    background-color var(--ui-motion-state) var(--ui-motion-ease),
+    color var(--ui-motion-state) var(--ui-motion-ease);
+}
+
+/* 모바일 타격감: 눌렀을 때 1px sink. 크기 변화/scale은 사용하지 않는다. */
+.fn-main .workspace :is(
+  button,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-row,
+  a.primary,
+  a.dz-bar-sub
+):active {
+  transform: translateY(var(--ui-press-y));
+}
+
+/* pending: 위치/크기는 그대로, 상태만 즉시 보인다. */
+.fn-main .workspace [aria-busy="true"] {
+  opacity: var(--ui-busy-opacity);
+}
+.fn-main .workspace [aria-busy="true"] :is(button,a,input,select,textarea) {
+  cursor: progress;
+}
+
+/* 필터 값 갱신 중에는 우측 값 영역만 약하게 눌린다. */
+.fn-main .workspace .dz-fs-vals.wait {
+  opacity: .62;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-main .workspace *,
+  .fn-main .workspace *::before,
+  .fn-main .workspace *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

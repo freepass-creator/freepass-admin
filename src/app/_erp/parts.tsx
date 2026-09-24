@@ -243,36 +243,38 @@ export function SearchBar({ base, q, name = 'q', placeholder, facets = [], filte
     <form className="erp-searchbar" data-region="filter" role="search" action={base}>
       {dropdown}
       {hidden.map((k) => <input key={k} type="hidden" name={k} value={val(k)} />)}
-      <label className="erp-search">
-        <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-        <input name={name} defaultValue={val(name)} placeholder={placeholder} aria-label={placeholder} />
-      </label>
-      {filter ?? (facets.length ? (
-        <details className="erp-filter-more">
-          <summary className="erp-btn">필터{active.length ? <> <b>{active.length}</b></> : null}</summary>
-          <div className="erp-filter-panel">
-            {facets.map((f) => (
-              <div className="erp-facet" key={f.key}>
-                <p className="erp-facet-title">{f.title}</p>
-                <div className="erp-facet-opts">
-                  {f.options.map((o) => {
-                    const on = val(f.key) === o.value;
-                    return (
-                      <Link key={o.value} className="erp-facet-opt" aria-pressed={on}
-                        href={hrefWith(base, q, { [f.key]: on ? null : o.value, page: null })}>
-                        {o.label ?? o.value}{o.count !== undefined ? <small>{o.count}</small> : null}
-                      </Link>
-                    );
-                  })}
+      <div className="erp-searchgroup">
+        <label className="erp-search">
+          <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          <input name={name} defaultValue={val(name)} placeholder={placeholder} aria-label={placeholder} />
+        </label>
+        {filter ?? (facets.length ? (
+          <details className="erp-filter-more">
+            <summary className="erp-btn">필터{active.length ? <> <b>{active.length}</b></> : null}</summary>
+            <div className="erp-filter-panel">
+              {facets.map((f) => (
+                <div className="erp-facet" key={f.key}>
+                  <p className="erp-facet-title">{f.title}</p>
+                  <div className="erp-facet-opts">
+                    {f.options.map((o) => {
+                      const on = val(f.key) === o.value;
+                      return (
+                        <Link key={o.value} className="erp-facet-opt" aria-pressed={on}
+                          href={hrefWith(base, q, { [f.key]: on ? null : o.value, page: null })}>
+                          {o.label ?? o.value}{o.count !== undefined ? <small>{o.count}</small> : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
+              ))}
+              <div className="erp-filter-panel-foot">
+                <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, Object.fromEntries([...facets.map((f) => [f.key, null]), ['page', null]]))}>조건 모두 지우기</Link>
               </div>
-            ))}
-            <div className="erp-filter-panel-foot">
-              <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, Object.fromEntries([...facets.map((f) => [f.key, null]), ['page', null]]))}>조건 모두 지우기</Link>
             </div>
-          </div>
-        </details>
-      ) : null)}
+          </details>
+        ) : null)}
+      </div>
       {active.map(({ f, v }) => (
         <Link key={f.key} className="erp-chip" href={hrefWith(base, q, { [f.key]: null, page: null })}>
           {f.title}: {f.options.find((o) => o.value === v)?.label ?? v} ×

@@ -1733,3 +1733,32 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace .dz-bar-go[data-action-balance]:has(> :first-child:last-child) > * {
   flex: 1 1 100%;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Card breathing room & selected-state refinement
+   카드↔카드=12px, 섹션↔섹션=16px.
+   selected card는 border 없이 tint + inset.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-card-gap: 12px;
+  --ui-section-rhythm: 16px;
+}
+
+.fn-main .workspace .list {
+  gap: var(--ui-card-gap);
+}
+
+.fn-main .workspace .dz-row.on {
+  border-color: transparent !important;
+  background: var(--ui-selected);
+  box-shadow: inset 0 1px 2px rgba(27,42,74,.11);
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-row.on:hover {
+    border-color: transparent !important;
+    background: var(--ui-selected);
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.14);
+  }
+}

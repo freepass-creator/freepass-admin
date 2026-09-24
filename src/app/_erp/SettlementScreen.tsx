@@ -9,6 +9,7 @@
  *   셈은 기능 쪽 그대로(claimLedger · payLedger — 완납 · 인도 기준, 끊긴 분납은 받은 만큼).
  *   발행은 기능 쪽 IssueForm 그대로 — ⚠ 운영 원장에 쓴다(쓰기 꺼짐 · 가상 데이터에서는 저장되지 않는다).
  */
+import type { ReactNode } from 'react';
 import { settlements, today } from '../../server/erp5';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
@@ -25,6 +26,17 @@ const CLAIM_FLOW = ['접수', '청구', '정정', '확인', '수금'];
 const PAY_FLOW = ['접수', '통보', '정정', '확인', '지급'];
 const ATTN_TONE: Record<string, Tone> = { issue: 'err', todo: 'info', done: 'ok' };
 const ATTN_LABEL: Record<string, string> = { issue: '이슈', todo: '미처리', done: '완료' };
+/** 목록 카드 썸네일 — §5-4 규격대로 상태 아이콘 + 짧은 두 글자(대표 2026-09-24 「목록 줄 카드 규격도
+ *  … 상태 아이콘 또는 분류 아이콘이 있고 두줄」, 접수목록의 StatusIcon·INTAKE_SHORT 와 같은 결). */
+const ATTN_SHORT: Record<string, string> = { issue: '이슈', todo: '대기', done: '완료' };
+const ATTN_ICON_PATH: Record<string, ReactNode> = {
+  issue: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4M12 17h.01" /></>,
+  todo: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  done: <><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></>,
+};
+function AttnIcon({ attn }: { attn: string }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{ATTN_ICON_PATH[attn]}</svg>;
+}
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
   let rows: SettlementRow[]; let cb: Clawback[];
@@ -68,7 +80,8 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         const attn = ledgerGroupAttention(g);
         return (
           <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
-            tone={ATTN_TONE[attn]} title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
+            tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
+            title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
             facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
             amount={won0(g.net)} amountLabel="정산액" />
         );

@@ -1262,3 +1262,44 @@
     }
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — PanelFoot ratio & primary-right contract
+ * 1=100, 2(primary)=3:7, 2(equal)=5:5, 3=3:3:4.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-foot[data-action-balance] {
+    display: flex;
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"] > .erp-btn {
+    flex: 3 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"] > .erp-btn--primary {
+    order: 2;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"]:has(> .erp-btn:nth-child(2):last-child)
+    > .erp-btn--primary {
+    flex: 7 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"]:has(> .erp-btn:nth-child(3):last-child)
+    > .erp-btn--primary {
+    flex: 4 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="equal"]:has(> .erp-btn:nth-child(2):last-child)
+    > .erp-btn {
+    flex: 1 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance]:has(> .erp-btn:first-child:last-child)
+    > .erp-btn {
+    flex: 1 1 100%;
+  }
+}

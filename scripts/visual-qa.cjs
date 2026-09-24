@@ -93,6 +93,68 @@ async function inspect(page) {
   });
 }
 
+async function captureState(page, caseName, stateName, selector, action = 'click') {
+  const el = page.locator(selector).first();
+  if (!(await el.count())) {
+    return { state: stateName, status: 'SKIP', reason: `selector not found: ${selector}` };
+  }
+
+  try {
+    if (action === 'click') {
+      await el.click({ timeout: 5000 });
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(200);
+    }
+
+    const shot = path.join(outDir, `${caseName}--${stateName}.png`);
+    await page.screenshot({ path: shot, fullPage: true });
+    const info = await inspect(page);
+    return {
+      state: stateName,
+      status: 'PASS',
+      screenshot: path.relative(process.cwd(), shot),
+      selected: info.selected,
+      primary: info.primary,
+      url: info.url,
+    };
+  } catch (err) {
+    return {
+      state: stateName,
+      status: 'FAIL',
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+async function runInteractiveStates(page, c) {
+  const states = [];
+
+  if (c.route === '/products') {
+    states.push(await captureState(page, c.name, 'product-selected', '.erp-rowcard-link, .dz-row'));
+    await page.goto(base + c.route, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+    const filter = page.locator('.dz-fs-open').first();
+    if (await filter.count()) {
+      states.push(await captureState(page, c.name, 'filter-open', '.dz-fs-open'));
+    } else {
+      states.push({ state: 'filter-open', status: 'SKIP', reason: 'filter trigger not found' });
+    }
+  }
+
+  if (c.route === '/intake') {
+    states.push(await captureState(page, c.name, 'intake-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+  }
+
+  if (c.route === '/settlement') {
+    states.push(await captureState(page, c.name, 'settlement-party-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+  }
+
+  if (c.route === '/esign') {
+    states.push(await captureState(page, c.name, 'esign-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+  }
+
+  return states;
+}
+
 (async () => {
   fs.mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch({
@@ -120,6 +182,7 @@ async function inspect(page) {
       await page.screenshot({ path: shot, fullPage: true });
 
       const info = await inspect(page);
+      const interactiveStates = await runInteractiveStates(page, c);
       const problems = [];
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
@@ -139,12 +202,17 @@ async function inspect(page) {
         problems.push('products desktop has no visible primary action to inspect');
       }
 
+      for (const state of interactiveStates) {
+        if (state.status === 'FAIL') problems.push(`interactive state ${state.state} failed: ${state.reason}`);
+      }
+
       const item = {
         ...c,
         url: info.url,
         screenshot: path.relative(process.cwd(), shot),
         selected: info.selected,
         primary: info.primary,
+        interactiveStates,
         problems,
       };
       report.cases.push(item);

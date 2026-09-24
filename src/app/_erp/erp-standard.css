@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 0a8f47c1d1f29d2d035838ce8a6cde37c192acfc
+ * 정본: freepass-creator/ai-core @ aac6380e9b97b3a4433bc016e2e3734559d29627
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -337,6 +337,9 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 .erp-panel--wide .erp-search { max-width: none; }
 .erp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); }
 .erp-search:focus-within { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+/* 돋보기 아이콘도 포커스에 반응한다 — 화이트라벨(freepasserp4) SearchInput 이 흐린 색 ↔ accent 로
+ * 바꾸는 것과 같다(대표 2026-09-24 「검색창을 화이트 라벨로 한번 바꿔봐」). */
+.erp-search:focus-within svg { color: var(--erp-color-primary); }
 /* 검색창 + 필터를 한 줄 하나의 컨트롤처럼 붙인다 — 화이트라벨(freepasserp4) SearchInput 참고(대표
  * 2026-09-24 「밋밋함을 좀 없애보려고 … 화이트라벨 거를 참조 … ERP4 검색창 한번 보라고」, 원본 comment
  * 「검색줄이 두 컨트롤로 갈리지 않고 한 줄이 되어 입력 폭이 그만큼 넓어진다」). 테두리를 겹쳐 붙는 자리의

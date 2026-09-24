@@ -128,7 +128,7 @@
     "outerPaddingPx": 12,
     "bodyHeightPx": 64,
     "renderedHeightApproxPx": 88,
-    "gapPx": 8,
+    "gapPx": 12,
     "productThumb": {
       "widthPx": 82,
       "heightPx": 64
@@ -746,7 +746,7 @@
     "visualQa": "fail when first visible panel/card computed backgrounds are identical"
   },
   "cardRhythm": {
-    "gapPx": 8,
+    "gapPx": 12,
     "paddingPx": 12,
     "desktop": {
       "compactMinHeightPx": 64,
@@ -912,13 +912,31 @@
     }
   },
   "spacingHierarchy": {
-    "cardGapPx": 8,
+    "cardGapPx": 12,
     "sectionGapPx": 16,
     "examples": {
-      "rentalOfferTiles": "8px",
-      "listCards": "8px",
+      "rentalOfferTiles": "12px",
+      "listCards": "12px",
       "detailSections": "16px"
     },
     "rule": "Card-to-card spacing and section-to-section spacing use separate tokens."
+  },
+  "selectionStyle": {
+    "cards": {
+      "visibleBorder": false,
+      "resting": "component-surface",
+      "hover": "subtle-surface+elevation",
+      "selected": "primary-tint+shallow-inset",
+      "selectedHover": "keep-selected-tint",
+      "focus": "soft-halo"
+    },
+    "compactControls": {
+      "selected": "solid-brand+on-primary"
+    },
+    "spacing": {
+      "controlGapPx": 8,
+      "cardGapPx": 12,
+      "sectionGapPx": 16
+    }
   }
 }

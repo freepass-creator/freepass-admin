@@ -385,3 +385,82 @@
     outline: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Line-free UI standard
+ *
+ * visible border는 쓰지 않는다.
+ * hierarchy는 surface + elevation + spacing + state로 만든다.
+ * Web Panel은 canvas 위의 surface island, Mobile Panel은 screen surface.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* Panel: 큰 surface island. 선 없이 배경과 elevation으로만 경계를 만든다. */
+  .erp-std .erp-panel {
+    border-color: transparent !important;
+    background: var(--erp-color-surface);
+    box-shadow: var(--fp-elevation-base);
+  }
+
+  /* Panel 내부 구획선 제거. */
+  .erp-std :is(
+    .erp-panel-head,
+    .erp-panel-foot,
+    .erp-searchbar,
+    .erp-toolbar,
+    .erp-filter-panel-foot,
+    .erp-inline-form,
+    .erp-embed .dz-bar,
+    .dz-fs-head,
+    .dz-fs-foot
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 모든 조작 컨트롤은 line-free. */
+  .erp-std :is(
+    .erp-btn,
+    .erp-facet-opt,
+    .erp-dd,
+    .dz-fs-open,
+    .erp-input,
+    .erp-search,
+    select,
+    textarea
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 입력/드롭다운은 surface가 affordance를 담당한다. */
+  .erp-std :is(.erp-input, .erp-dd, select, textarea) {
+    background: var(--erp-color-sunken);
+    box-shadow: var(--fp-elevation-base);
+  }
+  .erp-std :is(.erp-input, .erp-dd, select, textarea):focus,
+  .erp-std :is(.erp-input, .erp-dd, select, textarea):focus-visible {
+    outline: none;
+    background: var(--erp-color-surface);
+    box-shadow: var(--fp-elevation-hover);
+  }
+
+  /* Dropdown / filter sheet / popover는 선 대신 높은 elevation. */
+  .erp-std :is(.erp-filter-panel, .dz-fs-sheet) {
+    border-color: transparent !important;
+    box-shadow: var(--fp-elevation-float);
+  }
+
+  /* 표/그리드도 line-free: header surface + hover/selected가 구분을 맡는다. */
+  .erp-std .erp-grid :is(th, td),
+  .erp-std .erp-grid tfoot td {
+    border-color: transparent !important;
+  }
+  .erp-std .erp-grid tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--erp-color-sunken) 55%, transparent);
+  }
+  .erp-std .erp-grid tbody tr:hover td {
+    background: var(--erp-color-row-hover);
+  }
+  .erp-std .erp-grid tbody tr[aria-selected="true"] td {
+    background: var(--erp-color-row-selected);
+  }
+}

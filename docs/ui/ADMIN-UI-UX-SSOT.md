@@ -413,49 +413,107 @@ semantic tone은 제한한다.
 
 ---
 
-# 11. Typography
+# 11. Typography — normalized scale
 
-현재 ERP standard token이 정본이다.
+FreePass Admin의 실제 Product Scale은 아래 6단계로 제한한다.
 
-주요 단계:
-
-- screen title: 22px
-- panel title: **17px**
-- section: 15px
-- body: 13px
-- label: 12px
-- caption: 11.5px
-
-## 원칙
-
-- 계층을 만들기 위해 임의 font-size를 추가하지 않는다.
-- 크기보다 weight / spacing / surface로 먼저 해결한다.
-- Panel title을 Page title 크기로 반복하지 않는다.
-- 숫자는 tabular alignment를 유지한다.
-
----
-
-# 12. Spacing / Radius / Control
-
-현재 값은 `erp-standard.css` token을 정본으로 한다.
-
-핵심 token:
-
-- spacing: 4 / 8 / 12 / 16 / 20 / 24
-- radius: 4 / 6 / 8 / pill
-- topbar: 56
-- sidenav: 240
-- statusbar: 26
-- input: 32
-- button: 34
-- small button/dropdown: 28
-- desktop grid row: 40
+| 단계 | 값 | 용도 |
+|---|---:|---|
+| KPI | 24px | 큰 숫자·핵심 KPI만 |
+| Screen | 20px | 정말 필요한 화면 단위 제목 |
+| Panel | 18px | Panel / local screen title |
+| Section | 16px | section heading이 필요한 경우 |
+| Body | 14px | 본문·값·버튼·입력 |
+| Support | 12px | label·meta·caption·보조정보 |
 
 ### 원칙
 
-- 화면마다 임의 숫자를 추가하지 않는다.
-- “조금 더 넓게/조금 더 둥글게”를 개별 CSS로 해결하지 않는다.
-- 새로운 안정값이 필요하면 token layer에서 결정한다.
+- 새 UI에서 **11.5 / 13 / 15 / 17 / 22px 위계를 만들지 않는다.**
+- Panel title을 Screen title 크기로 반복하지 않는다.
+- 계층이 필요하면 font-size를 늘리기 전에 weight / spacing / surface를 먼저 사용한다.
+- 숫자는 tabular alignment를 유지한다.
+- 예외는 로그인 BI, 브라우저 zoom 방지용 모바일 input 16px 등 명시된 경우만 허용한다.
+
+### 구현
+
+PC 최신 ERP는 generated `erp-standard.css`를 직접 수정하지 않고
+`src/app/_erp/shell.css`에서 Product Scale로 override한다.
+
+Mobile/legacy Admin은 기존 18 / 14 / 12 체계를 유지하며,
+향후 공통 component 통합 시 동일 semantic scale로 수렴한다.
+
+---
+
+# 12. Spacing / Radius / Control — normalized scale
+
+## Spacing
+
+기본 scale:
+
+`4 / 8 / 12 / 16 / 20 / 24 / 32`
+
+- 4: label ↔ value처럼 아주 가까운 관계
+- 8: control/card 내부 기본 gap
+- 12: compact item/panel 내부 간격
+- 16: section/panel 기본 rhythm
+- 20: desktop panel outer padding / 넓은 내부 여백
+- 24: 큰 section 분리
+- 32: 큰 화면 수준 여백이 정말 필요할 때
+
+### 금지
+
+- 새 안정값으로 10 / 14 / 18 / 22 같은 off-scale spacing 생성
+- page별 독자 padding/gap
+- optical correction을 일반 layout token처럼 확대
+
+## Radius
+
+`4 / 6 / 8 / pill`
+
+- 4: 작은 구조요소
+- 6: control
+- 8: card/panel/badge
+- pill: 의미상 capsule인 selection/status만
+
+새 radius 단계는 만들지 않는다.
+
+## Desktop control
+
+| 단계 | 높이 |
+|---|---:|
+| Small control | 32px |
+| Standard control | 36px |
+| Data row | 40px |
+| Topbar | 56px |
+
+검색/버튼/셀렉트가 같은 줄에 서면 같은 height tier를 사용한다.
+QuickFilter처럼 의도적으로 작은 control만 32px을 사용한다.
+
+## Mobile control
+
+- Standard control: **44px**
+- Action: **44px**
+- Touch minimum: **44px**
+- Bottom navigation: **56~60px**
+
+## Action 비율
+
+- 1개: 100%
+- 2개: 3 : 7
+- 3개: 3 : 3 : 4
+
+Primary의 우선순위는 높이/elevation 차이가 아니라 색·weight·위치로 표현한다.
+
+## Elevation
+
+`0 / base / hover / float`
+
+- 0: screen / signal
+- base: card / button / field
+- hover: interactive hover/focus
+- float: dropdown / sheet / popover
+
+그 이상 elevation 단계는 만들지 않는다.
 
 ---
 
@@ -673,10 +731,10 @@ Panel role과 1:1로 같다고 가정하지 않는다.
 
 | Type | 기본 상태 | 외곽선 | Hover |
 |---|---|---|---|
-| Card / Box | elevation-base | 아주 약한 card line | interactive일 때만 |
-| Button / Control | elevation-base | card보다 조금 또렷한 control line | 있음 |
-| Input / Search | elevation보다 입력경계 우선 | input line | focus 중심 |
-| Panel | elevation-base | 구조 경계 | 없음 |
+| Card / Box | elevation-base | 없음 | interactive일 때만 |
+| Button / Control | elevation-base | 없음 | 있음 |
+| Input / Search | elevation-base | 없음 | focus 중심 |
+| Panel | Web=base / Mobile=0 | 없음 | 없음 |
 
 핵심:
 - **Card와 Button은 같은 기본 elevation 선상에서 시작한다.**

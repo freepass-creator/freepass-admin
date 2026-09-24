@@ -30,7 +30,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   catch (e) {
     return (
       <Screen name="settlement-workspace">
-        <Panel><PanelHead kind="목록" title="정산관리" count="오류" />
+        <Panel compact><PanelHead kind="목록" title="정산관리" count="오류" />
           <PanelBody><p className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></PanelBody></Panel>
       </Screen>
     );
@@ -56,6 +56,8 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
 
   const ic = sp(q.ic);
   const cur = ic ? rows.find((r) => r.id === ic) : undefined;
+  const lq = sp(q.lq).trim().toLowerCase();
+  const shownLines = gSel ? gSel.lines.filter((l) => !lq || [l.row.customer, l.row.plate, l.row.model].filter(Boolean).join(' ').toLowerCase().includes(lq)) : [];
 
   return (
     <Screen name="settlement-workspace">
@@ -83,14 +85,15 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         </PanelBody>
       </Panel>
 
-      <Panel>
+      <Panel compact>
         {gSel ? (
           <>
-            <PanelHead kind="목록" title={gSel.party} count={`${gSel.lines.length}줄`} />
+            <PanelHead kind="목록" title={gSel.party} count={`${shownLines.length}줄`} />
+            <SearchBar base={base} q={q} name="lq" placeholder="고객 · 차번 · 모델" keep={['tab', 'month', 'g']} />
             <PanelBody>
               <IssueForm id="erp-issue-form" month={month} axis={axis} party={gSel.party} />
               <RowCards label="실적 줄">
-                {gSel.lines.map(({ row: r, amount, broken, ratio }) => {
+                {shownLines.map(({ row: r, amount, broken, ratio }) => {
                   const flow = tab === 'claim' ? CLAIM_FLOW : PAY_FLOW;
                   const st = tab === 'claim' ? r.claimStage : r.payStage;
                   const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);
@@ -122,7 +125,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         )}
       </Panel>
 
-      <Panel compact>
+      <Panel>
         {cur ? (
           <SettlementDetail cur={cur} base={base} q={q} now={nowDate} />
         ) : (

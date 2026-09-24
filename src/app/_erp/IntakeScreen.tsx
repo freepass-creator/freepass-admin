@@ -1,9 +1,8 @@
 /**
- * PC 계약접수 · 실적 — 규격 `platform/contracts.html`(목록) · `platform/contract-detail.html`(상세) 구성 그대로
- *   목록: ④ 헤더 → ⑤ KPI → [⑥ 조회조건 · ⑦ 상태 탭 · 그리드 · 바닥] 한 카드.
- *   상세(?ic=): ④ 헤더(고객 + 상태 뱃지) → 진행 단계 카드 → 2단(왼쪽 고객 · 차량 · 조건 · 금액 / 오른쪽 처리).
+ * PC 계약접수 · 실적 — 전체 훑어보기 전용 단독 목록(페이지네이션 있음). ④ 헤더 → 한 목록 판
+ * (⑥ 조회조건 · ⑦ 상태 탭 · 그리드 · 바닥). 접수 상세(?ic=) · 신규 접수 폼(?w=new)은 여기 없다 —
+ * 그건 WorkspaceScreen(3패널, 가운데 판이 등힘)이 맡는다(대표 2026-09-24 스스로 정정).
  *   실적은 따로 판이 없다 — 실적 칸(분납실적 · 완납실적)을 고르면 같은 판이 «실적» 이 되고 금액 열이 선다(대표 2026-09-23).
- *   처리(차량번호 · 계약서 · 인도 · 취소)는 규격 부품(IntakeProgress)으로 그리고, 하는 일은 기능 쪽 progressAction 그대로다.
  */
 import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
@@ -11,14 +10,8 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
-import { sp, txt, when } from '../_fn/fmt';
-import { NewIntakePanel } from '../intake/panels';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { blockOf } from '../../domain/settlement/types';
-import { intakeNextAction } from '../intake/next-action';
-import { progressFormId } from '../intake/progress-form-id';
-import { IntakeProgress } from './IntakeProgress';
-import { Badge, CardHead, Panel, PanelBody, PanelFoot, PanelHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { sp, txt } from '../_fn/fmt';
+import { Badge, Panel, PanelBody, PanelFoot, PanelHead, RowCard, RowCards, hrefWith, PageHeader, Screen, SearchBar, Seg, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
@@ -34,119 +27,6 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
   catch (e) { return <Screen name="intake"><PageHeader crumb={['홈', '계약접수']} title="계약접수" desc={<span className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</span>} /></Screen>; }
   const now = new Date(`${today()}T12:00:00+09:00`);
   const bucket = new Map(rows.map((r) => [r, bucketOf(r, now)]));
-
-  /* ── 신규 접수(?w=new) — 기능 쪽 접수 양식을 규격 폼 화면에 앉힌다 ── */
-  if (sp(q.w) === 'new') {
-    return (
-      <Screen name="intake-new">
-        <PageHeader crumb={['홈', '업무', '계약접수', '신규 접수']} title="신규 접수" badge={<Badge tone="neutral">작성중</Badge>}
-          desc="상품찾기에서 고른 차와 요금이 그대로 들어옵니다. 저장하면 접수 당시 상품 · 요금이 스냅샷으로 남습니다."
-          actions={<Link className="erp-btn" href="/products">상품 다시 고르기</Link>} />
-        <Panel>
-          <PanelHead kind="입력" title="접수 내용" count={writeEnabled() ? '저장 가능' : '저장 꺼짐'} />
-          <PanelBody>
-            <div className="erp-embed">
-              <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)} back={base} hideHeader />
-            </div>
-          </PanelBody>
-        </Panel>
-      </Screen>
-    );
-  }
-
-  /* ── 접수 상세(?ic=) ── */
-  const ic = sp(q.ic);
-  const cur = ic ? rows.find((r) => r.id === ic) : undefined;
-  if (cur) {
-    const b = bucket.get(cur)!;
-    const p = cur.progress;
-    const step = p.cancelled ? -1 : !p.paper ? 1 : !p.delivered ? 2 : !p.billed ? 3 : !p.collected ? 4 : 5;
-    const claim = claimAmountOf(cur, now), pay = payAmountOf(cur, now), margin = marginOf(cur, now);
-    const hit = await settlements.get(cur.id);
-    const raw = (hit?.raw ?? {}) as Record<string, unknown>;
-    const events = hit ? await settlements.events(cur.plate, cur.receivedAt, cur.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode) : [];
-    /* 머리의 주 단추 = 이 접수의 다음 걸음(기능 쪽 intakeNextAction 그대로) */
-    const next = intakeNextAction(blockOf(cur), p.cancelled, p.delivered);
-    const primary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
-      : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
-      : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
-      : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
-      : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
-      : <span className="erp-btn erp-btn--primary" aria-disabled="true">{next.label}</span>;
-    return (
-      <Screen name="intake-detail">
-        <PageHeader crumb={['홈', '업무', 실적칸.includes(b) ? '실적' : '계약접수', txt(cur.customer)]}
-          title={`${txt(cur.customer)} · ${txt(cur.plate)}`} badge={<Badge tone={TONE[b]}>{b}</Badge>}
-          desc={`${txt(cur.model)} · ${txt(cur.supplier)} · ${txt(cur.channel)}${cur.agent ? ` · 담당 ${cur.agent}` : ''} · 접수 ${txt(cur.receivedAt)}`}
-          actions={<>
-            <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, { ic: null })}>목록으로</Link>
-            {primary}
-          </>} />
-        <Panel>
-          <PanelHead kind="상세내용" title={txt(cur.customer)} count={b} />
-          <PanelBody>
-            <section className="erp-card">
-              <div className="erp-card-body">
-                <Steps current={step} items={[
-                  { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
-                  { label: '계약서', count: p.paper ? '받음' : '—' },
-                  { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
-                  { label: '청구', count: p.billMonth ?? '—' },
-                  { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
-                ]} />
-              </div>
-            </section>
-            <div className="erp-cols erp-cols--detail">
-              <div className="erp-stack">
-                <section className="erp-section">
-                  <h2 className="erp-section-title">고객 · 차량</h2>
-                  <Props pairs={[['고객', txt(cur.customer)], ['차량번호', txt(cur.plate)], ['차량', txt(cur.model)], ['공급사', txt(cur.supplier)],
-                    ['영업채널', txt(cur.channel)], ['영업 담당', txt(cur.agent)]]} />
-                </section>
-                <section className="erp-section">
-                  <h2 className="erp-section-title">계약 조건</h2>
-                  <Props pairs={[['상품구분', txt(cur.product)], ['계약기간', cur.term ? `${cur.term}개월` : '—'], ['보증금', won0(cur.deposit)],
-                    ['월 대여료', won0(cur.rent)], ['결제', txt(cur.payKind)], ['계약 방식', txt(cur.contractType)]]} />
-                </section>
-                <section className="erp-section">
-                  <h2 className="erp-section-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h2>
-                  <table className="erp-grid erp-grid--dense">
-                    <thead><tr><th>구분</th><th>상대</th><th>단계</th><th className="erp-num">금액</th></tr></thead>
-                    <tbody>
-                      <tr><td>청구</td><td>{txt(cur.supplier)}</td><td>{cur.claimStage}</td><td className="erp-num erp-strong">{won0(claim)}</td></tr>
-                      <tr><td>지급</td><td>{txt(cur.channel)}</td><td>{cur.payStage}</td><td className="erp-num erp-strong">{won0(pay)}</td></tr>
-                    </tbody>
-                    <tfoot><tr><td>남는 것</td><td /><td /><td className="erp-num">{won0(margin)}</td></tr></tfoot>
-                  </table>
-                </section>
-              </div>
-              <div className="erp-stack">
-                <section className="erp-card">
-                  <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
-                  <div className="erp-card-body">
-                    <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
-                      cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
-                  </div>
-                </section>
-                <section className="erp-card">
-                  <CardHead title="처리 이력" sub={`${events.length}건`} />
-                  <div className="erp-card-body">
-                    {events.length ? (
-                      <ul className="erp-timeline">
-                        {events.slice(0, 8).map((e, i) => (
-                          <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
-                        ))}
-                      </ul>
-                    ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
-                  </div>
-                </section>
-              </div>
-            </div>
-          </PanelBody>
-        </Panel>
-      </Screen>
-    );
-  }
 
   /* ── 목록 ── */
   const iv = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : '당월접수';
@@ -196,7 +76,8 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
               const at = pg.cancelled ? -1 : !pg.paper ? 1 : !pg.delivered ? 2 : !pg.billed ? 3 : !(pg.collected && pg.paid) ? 4 : 5;
               const todo = pg.cancelled ? '취소됨' : ['', '계약서 대기', '인도 대기', '청구 대기', pg.collected ? '지급 대기' : '수금 대기', '정산 끝'][at];
               return (
-                <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} tone={TONE[b]}
+                /* ic 는 WorkspaceScreen(가운데 판)의 몫 — iv/iq 등을 지운 깨끗한 주소라야 거기로 간다(intake/page.tsx 갈림) */
+                <RowCard key={r.id} href={`${base}?ic=${encodeURIComponent(r.id)}`} tone={TONE[b]}
                   title={txt(r.customer)} badge={<Badge tone={TONE[b]}>{b}</Badge>}
                   plate={txt(r.plate)} car={txt(r.model)}
                   meta={`접수 ${txt(r.receivedAt)}${perfView ? ` · 인도 ${txt(pg.deliveredAt)}` : ''} · ${todo}`}

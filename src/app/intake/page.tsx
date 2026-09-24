@@ -6,14 +6,15 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 계약접수 — **메인**. 대표 2026-09-18 「이게 우리 메인인데 이거는 접수 화면이고」 · 「계약접수 → 메인」
- * 판 셋: 상품 목록 | 상품 상세 | 접수 목록. 차를 찾고 → 확인하고 → 기간 골라 접수 → 오른쪽에서 이어 간다.
- *   (대표 2026-09-24 「새로 만들지 말고 공통 규격을 활용해서 프리패스 어드민 구성해보자」 — ai-core
- *   side-by-side 레퍼런스의 판 셋을 WorkspaceScreen 으로 그대로 옮겨 이 주석이 말하는 기본 화면을 채웠다.)
- * 접수 상세(?ic=) · 실적 보기(?iv=) · 검색/거름(?iq= 등) · 신규 접수 폼(?w=new)은 전부 그대로 IntakeScreen
- * 이 맡는다 — WorkspaceScreen 은 그 중 아무 파라미터도 없을 때(또는 WorkspaceScreen 자신의 pq·id·offer만
- * 있을 때)만 서는 기본 landing 이다. ⓘ 접수 줄 전부(보기·거름)는 /intake/list 에 있다.
+ * 판 셋: 상품 목록 | 상품 상세 · 접수 상세 · 입력(신규접수 폼) 이 등히는 가운데 판 | 접수 목록.
+ * 차를 찾고 → 확인하고 → 기간 골라 접수하거나, 접수 목록에서 줄을 눌러 상세를 본다 — 어느 쪽이든
+ * 이 3패널 화면을 벗어나지 않고 가운데 판만 바뀐다(대표 2026-09-24 「그 패널이 어딘가엔 두 개, 어딘가에는
+ * 세개 이렇게 들어갈 수 있는 거야」 — 접수 상세(?ic=) · 신규 접수 폼(?w=new)도 WorkspaceScreen 이 맡는다).
+ * 실적 보기(?iv=) · 전체 목록 검색/거름(?iq= 등, 페이지네이션 있는 넓은 목록)만 따로 IntakeScreen 의
+ * 단독 목록 화면으로 간다 — 그건 «고르러 온다»가 아니라 «전부 훑어본다»가 목적이라 다른 화면이다.
+ * ⓘ 접수 줄 전부(보기·거름)는 /intake/list 에 있다.
  */
-const INTAKE_SCREEN_PARAMS = ['ic', 'w', 'iv', 'iq', 'isup', 'ich', 'page'] as const;
+const INTAKE_SCREEN_PARAMS = ['iv', 'iq', 'isup', 'ich', 'page'] as const;
 
 export default async function IntakeMain({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;

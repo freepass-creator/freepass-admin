@@ -23,8 +23,8 @@ export function Screen({ name, children, footer }: { name: string; children: Rea
  * 좁은 폭에 맞춰 두 줄로 접힌다(erp-panel--compact — SearchBar · RowCards · RowCard 는 이 클래스가
  * 부모에 있으면 저절로 좁은 모양으로 바뀐다, 부품 쪽에서 따로 안 챙겨도 된다).
  */
-export function Panel({ compact, children }: { compact?: boolean; children: ReactNode }) {
-  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}`}>{children}</section>;
+export function Panel({ compact, flip, children }: { compact?: boolean; flip?: boolean; children: ReactNode }) {
+  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}${flip ? ' erp-panel--flip' : ''}`}>{children}</section>;
 }
 
 /** 패널 머리 — 왼쪽 이름표 칩 + 제목, 오른쪽 칩(§5-4 「전체 N건」/「고른 <대상>」). */

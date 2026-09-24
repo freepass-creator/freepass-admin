@@ -14,9 +14,16 @@ import type { CanonicalProduct } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
 import { bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
-import { sp, txt } from '../_fn/fmt';
+import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
+import { blockOf } from '../../domain/settlement/types';
+import { intakeNextAction } from '../intake/next-action';
+import { progressFormId } from '../intake/progress-form-id';
+import { NewIntakePanel } from '../intake/panels';
+import { writeEnabled } from '../../adapters/erp5/settlement-repository';
+import { sp, txt, when } from '../_fn/fmt';
+import { IntakeProgress } from './IntakeProgress';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Tile, TileGroup, won0, type Tone,
+  Badge, CardHead, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, Props, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, Tile, TileGroup, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -78,6 +85,100 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
   const thisMonthCount = iSearched.filter((r) => bucketOf(r, now) === '당월접수').length;
   const iShown = sortIntakeRows(iBucket ? iSearched.filter((r) => bucketOf(r, now) === iBucket) : iSearched, iBucket ? (iBucket as Bucket) : '당월접수');
 
+  /*
+   * 가운데 판 — 상품상세 ↔ 접수상세 ↔ 입력·저장(신규접수 폼) 셋 중 하나로 등힌다(erp-panel--flip, §5-4).
+   * 접수목록에서 줄을 클릭(?ic=)하거나 상품상세에서 접수하기(?w=new)를 눌러도 이 3패널 화면을 벗어나지
+   * 않는다(대표 2026-09-24 「그 패널이 어딘가엔 두 개, 어딘가에는 세개 이렇게 들어갈 수 있는 거야」).
+   */
+  const icId = sp(q.ic);
+  const cur = icId ? rows.find((r) => r.id === icId) : undefined;
+  const newMode = !cur && sp(q.w) === 'new';
+  let curDetail: ReactNode = null;
+  let curFoot: ReactNode = null;
+  if (cur) {
+    const b = bucketOf(cur, now);
+    const p = cur.progress;
+    const step = p.cancelled ? -1 : !p.paper ? 1 : !p.delivered ? 2 : !p.billed ? 3 : !p.collected ? 4 : 5;
+    const claim = claimAmountOf(cur, now), pay = payAmountOf(cur, now), margin = marginOf(cur, now);
+    const hit = await settlements.get(cur.id);
+    const raw = (hit?.raw ?? {}) as Record<string, unknown>;
+    const events = hit ? await settlements.events(cur.plate, cur.receivedAt, cur.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode) : [];
+    const next = intakeNextAction(blockOf(cur), p.cancelled, p.delivered);
+    const primary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
+      : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
+      : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
+      : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
+      : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href={hrefWith(base, q, { ic: null, w: 'new' })}>신규 접수</Link>
+      : <span className="erp-btn erp-btn--primary" aria-disabled="true">{next.label}</span>;
+    curDetail = (
+      <>
+        <section className="erp-card">
+          <div className="erp-card-body">
+            <Steps current={step} items={[
+              { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
+              { label: '계약서', count: p.paper ? '받음' : '—' },
+              { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
+              { label: '청구', count: p.billMonth ?? '—' },
+              { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
+            ]} />
+          </div>
+        </section>
+        <div className="erp-cols erp-cols--detail">
+          <div className="erp-stack">
+            <section className="erp-section">
+              <h2 className="erp-section-title">고객 · 차량</h2>
+              <Props pairs={[['고객', txt(cur.customer)], ['차량번호', txt(cur.plate)], ['차량', txt(cur.model)], ['공급사', txt(cur.supplier)],
+                ['영업채널', txt(cur.channel)], ['영업 담당', txt(cur.agent)]]} />
+            </section>
+            <section className="erp-section">
+              <h2 className="erp-section-title">계약 조건</h2>
+              <Props pairs={[['상품구분', txt(cur.product)], ['계약기간', cur.term ? `${cur.term}개월` : '—'], ['보증금', won0(cur.deposit)],
+                ['월 대여료', won0(cur.rent)], ['결제', txt(cur.payKind)], ['계약 방식', txt(cur.contractType)]]} />
+            </section>
+            <section className="erp-section">
+              <h2 className="erp-section-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h2>
+              <table className="erp-grid erp-grid--dense">
+                <thead><tr><th>구분</th><th>상대</th><th>단계</th><th className="erp-num">금액</th></tr></thead>
+                <tbody>
+                  <tr><td>청구</td><td>{txt(cur.supplier)}</td><td>{cur.claimStage}</td><td className="erp-num erp-strong">{won0(claim)}</td></tr>
+                  <tr><td>지급</td><td>{txt(cur.channel)}</td><td>{cur.payStage}</td><td className="erp-num erp-strong">{won0(pay)}</td></tr>
+                </tbody>
+                <tfoot><tr><td>남는 것</td><td /><td /><td className="erp-num">{won0(margin)}</td></tr></tfoot>
+              </table>
+            </section>
+          </div>
+          <div className="erp-stack">
+            <section className="erp-card">
+              <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
+              <div className="erp-card-body">
+                <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
+                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+              </div>
+            </section>
+            <section className="erp-card">
+              <CardHead title="처리 이력" sub={`${events.length}건`} />
+              <div className="erp-card-body">
+                {events.length ? (
+                  <ul className="erp-timeline">
+                    {events.slice(0, 8).map((e, i) => (
+                      <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
+                    ))}
+                  </ul>
+                ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
+              </div>
+            </section>
+          </div>
+        </div>
+      </>
+    );
+    curFoot = (
+      <>
+        <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, { ic: null })}>목록으로</Link>
+        {primary}
+      </>
+    );
+  }
+
   return (
     <Screen name="intake-workspace">
     <div className="sbs-main">
@@ -102,53 +203,72 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
         </PanelBody>
       </Panel>
 
-      <Panel>
-        <PanelHead kind="상세내용" title={sel ? `${txt(sel.p.registration?.vehicleNumber)} ${carName(sel.p)}` : '상품상세'} count="고른 상품" />
-        <PanelBody>
-          {sel ? (
-            <div className="sv-detail-body">
-              <div className="sv-car-card erp-tile">
-                <div className="photo"><CarIcon /></div>
-                <div className="sv-detail-info">
-                  <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
-                  <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>
-                  <p className="sv-car-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
-                </div>
+      <Panel flip={!!cur || newMode}>
+        {cur ? (
+          <>
+            <PanelHead kind="상세내용" title={txt(cur.customer)} count={bucketOf(cur, now)} />
+            <PanelBody>{curDetail}</PanelBody>
+            <PanelFoot>{curFoot}</PanelFoot>
+          </>
+        ) : newMode ? (
+          <>
+            <PanelHead kind="입력" title="접수 내용" count={writeEnabled() ? '저장 가능' : '저장 꺼짐'} />
+            <PanelBody>
+              <div className="erp-embed">
+                <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)} back={hrefWith(base, q, { w: null, product: null, offer: null })} hideHeader />
               </div>
-
-              <div className="sv-terms-main">
-                <p className="sv-section-title sv-section-title--main">대여료</p>
-                <TileGroup>
-                  {selOffers.map((o) => (
-                    <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={selOffer?.id === o.id}
-                      lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
-                      note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
-                  ))}
-                </TileGroup>
-              </div>
-
-              {(sel.p.perks ?? []).length ? (
-                <div className="sv-staff-ref">
-                  <p className="sv-section-title">담당자 참고</p>
-                  <div className="sv-ref-list erp-tile-group">
-                    <div className="sv-ref-card erp-tile">
-                      <h3 className="sv-ref-card-title erp-tile-title">우대조건 · 정책</h3>
-                      <dl>
-                        <div><dt>우대조건</dt><dd><span className="erp-tags">{(sel.p.perks ?? []).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span></dd></div>
-                        <div><dt>공급사</dt><dd>{txt(sel.p.supplierName ?? sel.p.supplierId)}</dd></div>
-                      </dl>
+            </PanelBody>
+          </>
+        ) : (
+          <>
+            <PanelHead kind="상세내용" title={sel ? `${txt(sel.p.registration?.vehicleNumber)} ${carName(sel.p)}` : '상품상세'} count="고른 상품" />
+            <PanelBody>
+              {sel ? (
+                <div className="sv-detail-body">
+                  <div className="sv-car-card erp-tile">
+                    <div className="photo"><CarIcon /></div>
+                    <div className="sv-detail-info">
+                      <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
+                      <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>
+                      <p className="sv-car-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
                     </div>
                   </div>
+
+                  <div className="sv-terms-main">
+                    <p className="sv-section-title sv-section-title--main">대여료</p>
+                    <TileGroup>
+                      {selOffers.map((o) => (
+                        <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={selOffer?.id === o.id}
+                          lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
+                          note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
+                      ))}
+                    </TileGroup>
+                  </div>
+
+                  {(sel.p.perks ?? []).length ? (
+                    <div className="sv-staff-ref">
+                      <p className="sv-section-title">담당자 참고</p>
+                      <div className="sv-ref-list erp-tile-group">
+                        <div className="sv-ref-card erp-tile">
+                          <h3 className="sv-ref-card-title erp-tile-title">우대조건 · 정책</h3>
+                          <dl>
+                            <div><dt>우대조건</dt><dd><span className="erp-tags">{(sel.p.perks ?? []).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span></dd></div>
+                            <div><dt>공급사</dt><dd>{txt(sel.p.supplierName ?? sel.p.supplierId)}</dd></div>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          ) : <p className="erp-muted">왼쪽에서 상품을 고르세요.</p>}
-        </PanelBody>
-        <PanelFoot>
-          {sel && selOffer
-            ? <Link className="erp-btn erp-btn--primary" href={`/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}`}>접수하기</Link>
-            : <span className="erp-btn erp-btn--primary" aria-disabled="true">접수하기</span>}
-        </PanelFoot>
+              ) : <p className="erp-muted">왼쪽에서 상품을 고르세요.</p>}
+            </PanelBody>
+            <PanelFoot>
+              {sel && selOffer
+                ? <Link className="erp-btn erp-btn--primary" href={hrefWith(base, q, { w: 'new', product: sel.p.id, offer: selOffer.id, ic: null })}>접수하기</Link>
+                : <span className="erp-btn erp-btn--primary" aria-disabled="true">접수하기</span>}
+            </PanelFoot>
+          </>
+        )}
       </Panel>
 
       <Panel compact>
@@ -163,7 +283,7 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
             {iShown.slice(0, 40).map((r) => {
               const b = bucketOf(r, now);
               return (
-                <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={INTAKE_TONE[b]}
+                <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id, w: null })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
                   thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
                   plate={txt(r.plate)} car={txt(r.model)}

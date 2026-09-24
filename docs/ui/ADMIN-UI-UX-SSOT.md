@@ -579,7 +579,67 @@ semantic tone은 제한한다.
 
 ---
 
-# 16. Interaction state — 반드시 완성해야 하는 규격
+# 16. Interaction / Elevation hierarchy — 2026-09-24 확정
+
+보이는 것과 누르는 것을 같은 평면으로 만들지 않는다.
+
+**Elevation은 장식이 아니라 조작 가능성을 알려주는 신호다.**
+
+| Level | 의미 | 예 |
+|---|---|---|
+| L0 Flat | 읽기 전용 | facts, text, passive info |
+| L1 Surface | 영역/읽기용 container | Panel, passive box |
+| L2 Interactive | 고르거나 누를 수 있음 | RowCard, Offer Tile, Filter, QuickFilter |
+| L3 Action | 실제 업무 실행 | Primary action |
+
+### 원칙
+
+- 읽기 전용은 평평하다.
+- 누를 수 있는 surface는 아주 약하게 떠 있다.
+- hover는 한 단계 올라오는 느낌을 준다.
+- pressed는 shadow가 줄고 1px 내려앉는 느낌을 준다.
+- **selected는 더 떠오르는 상태가 아니다. 눌려 고정된 상태다.**
+- 선택 상태는 surface/color + weight로 표현하고 elevation을 강화하지 않는다.
+- disabled/ghost/read-only는 elevation을 제거한다.
+- Primary action이 가장 강한 tactile affordance를 가진다.
+- 그림자가 먼저 눈에 띄면 과하다. “눌러보면 물성이 느껴지는 정도”를 기준으로 한다.
+
+### QuickFilter / Filter
+
+QuickFilter는 특히 selected/pressed 문법을 통일한다.
+
+```
+default   = 살짝 떠 있음
+hover     = 조금 올라옴
+pressed   = 내려앉음
+selected  = primary surface + 내려앉은 상태 유지
+```
+
+- selected와 hover를 같은 표현으로 쓰지 않는다.
+- selected QuickFilter는 `aria-pressed="true"`가 visual state의 SSOT다.
+- 월/분류 dropdown도 QuickFilter line에 있을 때 같은 tactile level을 쓴다.
+- FilterSheet check 선택도 “더 튀어오름”이 아니라 selected surface로 고정한다.
+
+### Card selection
+
+- RowCard / pressable Tile은 default에서 interactive affordance를 가진다.
+- 선택되면 primary-weak surface로 고정한다.
+- 선택 상태에 decorative left bar / 두꺼운 outline을 추가하지 않는다.
+- selected + hover에서도 다시 들리지 않는다.
+
+### 구현 위치
+
+FreePass Admin 선행 구현:
+- `src/app/_erp/shell.css`
+- token: `--fp-elevation-0..3`
+- 적용: RowCard / pressable Tile / Filter / QuickFilter / Button / FilterSheet
+
+AI Core로 바로 복사하지 않는다.
+FreePass Admin에서 visual QA 후 공통 가치가 확인되면 승격한다.
+
+---
+
+# 16-A. Interaction state — 반드시 완성해야 하는 규격
 
 모든 interactive component는 다음 상태를 고려한다.
 

@@ -81,6 +81,10 @@
   }
   .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child) { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
   .erp-std .erp-embed label { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+  /* 입력 패널(§5-4 입력·저장) — 한 줄에 한 칸씩(대표 2026-09-24 「입력도 한줄한줄 한 줄」). 기능 쪽
+   * dz-form-grid 는 원래 폰 자동열(auto-fill)이라 데스크톱 넓은 칸에서 여러 칸이 한 줄에 늘어섰다. */
+  .erp-std .erp-embed .dz-form-grid { grid-template-columns: 1fr; gap: var(--erp-sp-3); }
+  .erp-std .erp-embed .dz-form-group { padding: var(--erp-sp-4); background: var(--erp-color-sunken); border-radius: var(--erp-r-md); }
 }
 
 @media (max-width: 900px) {

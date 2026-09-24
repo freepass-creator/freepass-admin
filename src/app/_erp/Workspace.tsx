@@ -23,7 +23,7 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt, when } from '../_fn/fmt';
 import { IntakeProgress } from './IntakeProgress';
 import {
-  Badge, CardHead, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, Props, QuickFilter, RowCard, RowCards, Screen, SearchBar, Seg, Steps, Tile, TileGroup, won0, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Seg, Steps, Tile, TileGroup, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -128,66 +128,72 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
       : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
       : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href={hrefWith(base, q, { ic: null, w: 'new' })}>신규 접수</Link>
       : <span className="erp-btn erp-btn--primary" aria-disabled="true">{next.label}</span>;
+    /*
+     * §5-4 상세내용 패널 규격 — 이 판 안의 모든 내용은 카드(erp-tile) 안에만 들어간다(대표 2026-09-24
+     * 「상세 내용창 다 카드로만 구성이 돼있어 카드 없이 내용이 들어가진 않아」). erp-section·erp-card·
+     * Props·table 조합(§4, 예전 풀페이지 규격)은 여기 쓰지 않는다 — sv-car-card/sv-ref-card 와 같은
+     * dl 카드 · erp-tile-row 로만 짠다(product-detail 판과 같은 결).
+     */
     curDetail = (
-      <>
-        <section className="erp-card">
-          <div className="erp-card-body">
-            <Steps current={step} items={[
-              { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
-              { label: '계약서', count: p.paper ? '받음' : '—' },
-              { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
-              { label: '청구', count: p.billMonth ?? '—' },
-              { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
-            ]} />
+      <div className="sv-detail-body">
+        <div className="erp-tile">
+          <h3 className="erp-tile-title">진행</h3>
+          <Steps current={step} items={[
+            { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
+            { label: '계약서', count: p.paper ? '받음' : '—' },
+            { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
+            { label: '청구', count: p.billMonth ?? '—' },
+            { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
+          ]} />
+        </div>
+        <div className="sv-ref-list erp-tile-group">
+          <div className="sv-ref-card erp-tile">
+            <h3 className="erp-tile-title">고객 · 차량</h3>
+            <dl>
+              <div><dt>고객</dt><dd>{txt(cur.customer)}</dd></div>
+              <div><dt>차량번호</dt><dd>{txt(cur.plate)}</dd></div>
+              <div><dt>차량</dt><dd>{txt(cur.model)}</dd></div>
+              <div><dt>공급사</dt><dd>{txt(cur.supplier)}</dd></div>
+              <div><dt>영업채널</dt><dd>{txt(cur.channel)}</dd></div>
+              <div><dt>영업 담당</dt><dd>{txt(cur.agent)}</dd></div>
+            </dl>
           </div>
-        </section>
-        <div className="erp-cols erp-cols--detail">
-          <div className="erp-stack">
-            <section className="erp-section">
-              <h2 className="erp-section-title">고객 · 차량</h2>
-              <Props pairs={[['고객', txt(cur.customer)], ['차량번호', txt(cur.plate)], ['차량', txt(cur.model)], ['공급사', txt(cur.supplier)],
-                ['영업채널', txt(cur.channel)], ['영업 담당', txt(cur.agent)]]} />
-            </section>
-            <section className="erp-section">
-              <h2 className="erp-section-title">계약 조건</h2>
-              <Props pairs={[['상품구분', txt(cur.product)], ['계약기간', cur.term ? `${cur.term}개월` : '—'], ['보증금', won0(cur.deposit)],
-                ['월 대여료', won0(cur.rent)], ['결제', txt(cur.payKind)], ['계약 방식', txt(cur.contractType)]]} />
-            </section>
-            <section className="erp-section">
-              <h2 className="erp-section-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h2>
-              <table className="erp-grid erp-grid--dense">
-                <thead><tr><th>구분</th><th>상대</th><th>단계</th><th className="erp-num">금액</th></tr></thead>
-                <tbody>
-                  <tr><td>청구</td><td>{txt(cur.supplier)}</td><td>{cur.claimStage}</td><td className="erp-num erp-strong">{won0(claim)}</td></tr>
-                  <tr><td>지급</td><td>{txt(cur.channel)}</td><td>{cur.payStage}</td><td className="erp-num erp-strong">{won0(pay)}</td></tr>
-                </tbody>
-                <tfoot><tr><td>남는 것</td><td /><td /><td className="erp-num">{won0(margin)}</td></tr></tfoot>
-              </table>
-            </section>
-          </div>
-          <div className="erp-stack">
-            <section className="erp-card">
-              <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
-              <div className="erp-card-body">
-                <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
-                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
-              </div>
-            </section>
-            <section className="erp-card">
-              <CardHead title="처리 이력" sub={`${events.length}건`} />
-              <div className="erp-card-body">
-                {events.length ? (
-                  <ul className="erp-timeline">
-                    {events.slice(0, 8).map((e, i) => (
-                      <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
-                    ))}
-                  </ul>
-                ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
-              </div>
-            </section>
+          <div className="sv-ref-card erp-tile">
+            <h3 className="erp-tile-title">계약 조건</h3>
+            <dl>
+              <div><dt>상품구분</dt><dd>{txt(cur.product)}</dd></div>
+              <div><dt>계약기간</dt><dd>{cur.term ? `${cur.term}개월` : '—'}</dd></div>
+              <div><dt>보증금</dt><dd>{won0(cur.deposit)}</dd></div>
+              <div><dt>월 대여료</dt><dd>{won0(cur.rent)}</dd></div>
+              <div><dt>결제</dt><dd>{txt(cur.payKind)}</dd></div>
+              <div><dt>계약 방식</dt><dd>{txt(cur.contractType)}</dd></div>
+            </dl>
           </div>
         </div>
-      </>
+        <div className="erp-tile">
+          <h3 className="erp-tile-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h3>
+          <div className="erp-tile-group">
+            <div className="erp-tile-row"><b>청구 · {txt(cur.supplier)} · {cur.claimStage}</b><strong>{won0(claim)}원</strong></div>
+            <div className="erp-tile-row"><b>지급 · {txt(cur.channel)} · {cur.payStage}</b><strong>{won0(pay)}원</strong></div>
+            <div className="erp-tile-row"><b>남는 것</b><strong>{won0(margin)}원</strong></div>
+          </div>
+        </div>
+        <div className="erp-tile">
+          <h3 className="erp-tile-title">처리 — 차량번호 · 계약서 · 인도 · 취소</h3>
+          <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
+            cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+        </div>
+        <div className="erp-tile">
+          <h3 className="erp-tile-title">처리 이력 {events.length}건</h3>
+          {events.length ? (
+            <ul className="erp-timeline">
+              {events.slice(0, 8).map((e, i) => (
+                <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
+              ))}
+            </ul>
+          ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
+        </div>
+      </div>
     );
     curFoot = (
       <>
@@ -295,10 +301,12 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
           { key: 'wisup', title: '공급사', options: isuppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && iInView(r)).length })) },
           { key: 'wich', title: '영업채널', options: ichannels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && iInView(r)).length })) },
         ]} />
-        <Seg label="접수 칸" items={[
-          { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
-          ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
-        ]} />
+        <div className="erp-toolbar" data-region="grid-toolbar">
+          <Seg label="접수 칸" items={[
+            { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
+            ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
+          ]} />
+        </div>
         <PanelBody>
           <RowCards label={`${iTitle} 목록`}>
             {islice.map((r) => {

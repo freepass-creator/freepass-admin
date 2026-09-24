@@ -21,9 +21,3 @@
 
 .sv-section-title { margin: 0 0 8px; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
 .sv-section-title--main { color: var(--erp-color-text); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
-
-/* 가운데 판이 접수상세로 등힐 때(erp-panel--flip) — erp-cols--detail 의 고정 440px 오른쪽 칸은 풀페이지
- * 폭을 전제한 값이라, 판 폭(3분의 1)에서는 넘친다. 이 조합에서만 한 줄로 접는다(§5-4 상세내용 패널은
- * 원래도 세로로 쌓는 모양 — sv-detail-body 와 같은 결). */
-.sbs-main .erp-panel .erp-cols--detail { display: flex; flex-direction: column; padding: var(--erp-sp-4); gap: var(--erp-sp-5); }
-.sbs-main .erp-panel .erp-cols--detail > .erp-stack { gap: var(--erp-sp-4); }

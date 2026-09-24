@@ -807,3 +807,85 @@
     gap: var(--fp-section-rhythm);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Alignment & information hierarchy
+ * text=left, numeric/money=right, status=compact, actions=foot.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* PanelHead는 좌측 정체성 + 우측 count. 중간 액션을 넣지 않는다. */
+  .erp-std .erp-panel-head h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .erp-std .erp-panel-count {
+    flex: none;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 숫자/금액은 우측 정렬 + tabular. */
+  .erp-std :is(
+    .erp-num,
+    .erp-rowcard-amount,
+    .erp-kpi-value,
+    .erp-props dd[data-type="number"],
+    .erp-props dd[data-type="money"]
+  ) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-rowcard-amount {
+    justify-self: end;
+    min-width: 0;
+  }
+  .erp-std .erp-rowcard-amount strong,
+  .erp-std .erp-rowcard-amount span {
+    display: block;
+    text-align: right;
+  }
+
+  /* label/value pair는 label이 왼쪽, 값은 오른쪽으로 읽히게. */
+  .erp-std .erp-rowcard-facts > div,
+  .erp-std .erp-tile-row {
+    min-width: 0;
+  }
+  .erp-std .erp-rowcard-facts dt {
+    color: var(--erp-color-text-3);
+    text-align: left;
+  }
+  .erp-std .erp-rowcard-facts dd {
+    min-width: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 카드 1행 식별 정보는 항상 좌측 기준. */
+  .erp-std :is(.erp-rowcard-id,.erp-rowcard-title,.erp-rowcard-sub,.erp-rowcard-meta) {
+    text-align: left;
+  }
+
+  /* 긴 값은 줄바꿈보다 말줄임 우선, 좁은 panel에서 레이아웃을 깨지 않는다. */
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-rowcard-facts dd
+  ) {
+    min-width: 0;
+  }
+  .erp-std .erp-panel--compact :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta
+  ) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

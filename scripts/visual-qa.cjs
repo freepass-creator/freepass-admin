@@ -108,6 +108,23 @@ async function inspect(page) {
           amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
         };
       })(),
+      scrollTopology: (() => {
+        const panels = [...document.querySelectorAll('.erp-panel, .panel')].filter(visible).slice(0, 6);
+        return panels.map((panel, index) => {
+          const nodes = [panel, ...panel.querySelectorAll('*')];
+          const verticalScrollers = nodes.filter((el) => {
+            const s = getComputedStyle(el);
+            const oy = s.overflowY;
+            return (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1;
+          }).map((el) => ({
+            tag: el.tagName,
+            className: typeof el.className === 'string' ? el.className.slice(0, 120) : '',
+            scrollHeight: el.scrollHeight,
+            clientHeight: el.clientHeight,
+          }));
+          return { index, verticalScrollers };
+        });
+      })(),
       cardInteraction: (() => {
         const row = [...document.querySelectorAll('.erp-rowcard, .dz-row')].find(visible);
         const passive = [...document.querySelectorAll('.erp-tile:not(.erp-tile--pressable)')].find(visible);
@@ -244,6 +261,14 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      if (Array.isArray(info.scrollTopology)) {
+        for (const p of info.scrollTopology) {
+          if (p.verticalScrollers.length > 1) {
+            problems.push(`nested vertical scroll containers in panel ${p.index}: ${JSON.stringify(p.verticalScrollers)}`);
+          }
+        }
+      }
+
       const interaction = info.cardInteraction;
       if (interaction?.rowHit?.length) {
         const misses = interaction.rowHit.filter((x) => !x.link);
@@ -300,6 +325,7 @@ async function runInteractiveStates(page, c) {
         surfaceSamples: info.surfaceSamples,
         cardMetrics: info.cardMetrics,
         cardInteraction: info.cardInteraction,
+        scrollTopology: info.scrollTopology,
         interactiveStates,
         problems,
       };

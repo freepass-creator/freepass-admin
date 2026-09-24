@@ -573,5 +573,25 @@
       }
     },
     "rule": "Use strong/secondary/muted text hierarchy; semantic color always pairs text meaning with a soft surface."
+  },
+  "icons": {
+    "desktop": {
+      "smallPx": 16,
+      "navPx": 18,
+      "iconOnlyGlyphPx": 18,
+      "iconOnlyHitPx": 36
+    },
+    "mobile": {
+      "smallPx": 16,
+      "actionGlyphPx": 20,
+      "bottomNavGlyphPx": 24,
+      "iconOnlyHitMinPx": 44
+    },
+    "accessibility": {
+      "iconOnlyAccessibleNameRequired": true,
+      "decorativeAriaHidden": true,
+      "signalPointer": false
+    },
+    "rule": "Glyph size and hit area are independent. Mobile icon-only actions require at least 44x44 hit area."
   }
 }

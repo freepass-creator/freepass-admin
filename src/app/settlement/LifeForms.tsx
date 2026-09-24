@@ -16,7 +16,7 @@ const 보냄 = (act: (f: FormData) => void) => (e: React.FormEvent<HTMLFormEleme
   if (btn?.name) fd.set(btn.name, btn.value);
   startTransition(() => act(fd));
 };
-const 오류 = (s: FormState) => (s.errors.length ? <ul className="dz-errs">{s.errors.map((x) => <li key={x}>{x}</li>)}</ul> : null);
+const 오류 = (s: FormState) => (s.errors.length ? <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((x) => <li key={x}>{x}</li>)}</ul> : null);
 
 /** 발행 — 한 달 · 한 축 · 한 상대. 칸은 숨은 셋뿐, 단추는 하단바 */
 export function IssueForm({ id, month, axis, party }: { id: string; month: string; axis: '공급사' | '영업채널'; party: string }) {

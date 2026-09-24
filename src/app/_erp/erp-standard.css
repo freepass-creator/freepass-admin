@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ eefa08761ca2dce06b538059b15bae07b851d30e
+ * 정본: freepass-creator/ai-core @ 55886bc56a7779e8f290248ffbbaab8dc8e48824
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -67,6 +67,7 @@
   --erp-font-family: "Pretendard Variable", Pretendard, -apple-system, "Malgun Gothic", sans-serif;
   --erp-fs-kpi: 24px;
   --erp-fs-title: 22px;
+  --erp-fs-panel: 17px;
   --erp-fs-section: 15px;
   --erp-fs-body: 13px;
   --erp-fs-label: 12px;
@@ -454,9 +455,10 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 /* 패널 머리 제목은 그 패널 안에서 가장 큰 글자다(대표 2026-09-24 「패널 헤드의 텍스트랑 그 패널
  * 내용이랑 같을 순 없지 … 패널 헤드가 제일 크면 그거보다 좀 작고」). 패널 안 강조 글자(대여료·금액
  * 같은 erp-tile-row strong, 좁은 목록의 rowcard 제목·금액, 히어로 카드 이름, 진행 카운트)는 전부
- * fs-section(15px) 한 단인데, 패널 머리가 같은 fs-section 을 쓰면 위계가 없었다 — erp-page-title(페이지
- * 제목)과 같은 fs-title(22px) 로 올려 패널 안 어떤 글자보다도 늘 위에 서게 한다. */
-.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-title); font-weight: var(--erp-fw-bold); }
+ * fs-section(15px) 한 단이라 그보다는 커야 하지만, 한 화면에 패널이 셋 나란히 서면 그때마다 fs-title
+ * (22px, 화면 전체에 하나뿐인 erp-page-title 몫)을 세 번 반복하는 건 과하다(대표 2026-09-24 「전체적으로
+ * 좀 분위기 맞춰야지」) — 페이지 제목보다는 작고 섹션 제목보다는 큰 전용 단(fs-panel, 17px)을 쓴다. */
+.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-panel); font-weight: var(--erp-fw-bold); }
 .erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
 .erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
 /* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */

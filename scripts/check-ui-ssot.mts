@@ -187,11 +187,20 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const quickFilterVisualBaseline = [
+  [/--ui-quick-filter-h:\s*34px/, 'mobile quick filter visual height 34px'],
+  [/\.quick-filters[\s\S]*?min-height:\s*var\(--ui-touch-min\)/, 'quick filter row touch height 44px'],
+  [/\.quick-filters a[\s\S]*?border-radius:\s*999px/, 'mobile quick filter pill radius'],
+] as const;
+for (const [re, label] of quickFilterVisualBaseline) {
+  if (!re.test(cssFinal)) errors.push(`quick filter visual contract missing: ${label}`);
+}
+
 const cardRhythmBaseline = [
   [/--fp-row-compact-min-h:\s*64px/, 'desktop compact card min 64px'],
   [/--fp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
   [/--ui-row-min-h:\s*88px/, 'mobile card min 88px'],
-  [/--ui-list-gap:\s*8px/, 'mobile list gap 8px'],
+  [/--ui-list-gap:\s*12px/, 'mobile list gap 12px'],
 ] as const;
 for (const [re, label] of cardRhythmBaseline) {
   const target = label.startsWith('desktop') ? desktopCss : cssFinal;
@@ -424,7 +433,7 @@ for (const [file, rules] of pageQaRules) {
 const liveAdminScaleBaseline = [
   [/--ui-panel-pad:\s*20px/, 'shared panel padding 20px'],
   [/--ui-panel-pad-mobile:\s*16px/, 'mobile panel padding 16px'],
-  [/--ui-list-gap:\s*8px/, 'list gap 8px'],
+  [/--ui-list-gap:\s*12px/, 'list gap 12px'],
   [/--ui-item-pad:\s*12px/, 'item padding 12px'],
   [/\.dz-picked-grid > div \{[^}]*padding:\s*8px 12px/s, 'picked-grid padding 8/12'],
   [/--ui-space-7:\s*32px/, 'current-route 4pt spacing scale through 32px'],

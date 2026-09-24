@@ -129,7 +129,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
     <>
       <section className="workspace" data-phone={view} data-mode="settle">
         {/* ── 묶음 — 공급사(청구) / 영업채널(지급) ─────────────────── */}
-        <section className="panel product-panel">
+        <section className="panel product-panel" data-panel-role="list">
           <div className="dz-listtop">
             {focusMiss && (
               <Notice tone="warn">
@@ -183,7 +183,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
         </section>
 
         {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
-        <section className="panel detail-panel st-lines">
+        <section className="panel detail-panel st-lines" data-panel-role="list">
           <div className="dz-listtop">
             <PanelHeader title={gSel ? gSel.party : '실적 줄'} count={gSel ? `${performanceLines.length} / ${gSel.lines.length}줄` : undefined}
               backHref={keep({ v: 'list' })} backLabel="묶음으로" />
@@ -269,7 +269,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
         </section>
 
         {/* ── 접수 상세 — 계약접수와 같은 판 ─────────────────── */}
-        <section className="panel work-panel">
+        <section className="panel work-panel" data-panel-role="work">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
                 life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined, invoiceBiz: 장?.partyBizNo }} />

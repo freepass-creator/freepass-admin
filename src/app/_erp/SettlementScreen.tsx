@@ -67,7 +67,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
               meta={`인도 ${txt(r.progress.deliveredAt)} · ${문서} ${sent ? '보냄' : '안 나감'}`}
               steps={{ labels: flow, at }}
               facts={[
-                [who, <Link key="p" className="erp-row-link" href={hrefWith(base, q, { g: party })}>{party}</Link>],
+                [who, <Link key="p" href={hrefWith(base, q, { g: party })}>{party}</Link>],
                 ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                 ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
               ]}

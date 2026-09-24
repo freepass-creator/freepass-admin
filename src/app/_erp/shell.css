@@ -33,9 +33,7 @@
   body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
   /* 규격 부품이 <a> · <form> 으로 설 때의 기본값만 맞춘다(모양은 규격 그대로) */
-  .erp-std a.erp-tab, .erp-std a.erp-company, .erp-std a.erp-iconbtn { text-decoration: none; }
-  .erp-std a.erp-tab { color: var(--erp-color-text-2); }
-  .erp-std a.erp-tab[aria-selected="true"] { color: var(--erp-color-text); }
+  .erp-std a.erp-company, .erp-std a.erp-iconbtn { text-decoration: none; }
   .erp-std .erp-gsearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-nav-text-strong); font: inherit; }
   .erp-std .erp-gsearch input::placeholder { color: var(--erp-color-nav-text); }
   .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
@@ -44,9 +42,6 @@
   .erp-std .erp-statusbar-keys a { margin-left: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); color: inherit; text-decoration: none; }
   .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-bold); }
   body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-nav); }
-  /* 목록 한 줄 전체가 링크 — 줄을 누르면 오른쪽 상세가 선다 */
-  .erp-std .erp-grid tr[data-href] { cursor: pointer; }
-  .erp-std .erp-grid td > a.erp-row-link { color: var(--erp-color-primary); }
   .erp-std .erp-seg a { display: inline-flex; align-items: center; padding: 6px var(--erp-sp-3); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); text-decoration: none; }
   .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
   body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-text); color: var(--erp-color-surface); }
@@ -84,7 +79,6 @@
   /* 단추 셋일 때는 3:3:4(erp.css .erp-panel-foot 과 같은 규칙, 대표 2026-09-24 「패널에 버튼이 3개
    * 들어갈 때는 334」) — 주 단추 몫만 4로 준다. */
   .erp-std .erp-embed .dz-bar-go:has(> :nth-child(3)):not(:has(> :nth-child(4))) > .primary { flex: 4; }
-  .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }
   .erp-screen .erp-content > .erp-card--fill, .erp-screen .erp-content > .erp-cols:has(> .erp-card--fill),

@@ -38,7 +38,7 @@
   .erp-std .erp-gsearch input::placeholder { color: var(--erp-color-nav-text); }
   .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
   /* 전자계약 — 업무 흐름과 따로 다루는 문: 구분선으로 뗀다(대표 2026-09-23) */
-  .erp-std .erp-nav-group--apart { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--erp-color-nav-line); }
+  .erp-std .erp-nav-group--apart { margin-top: var(--erp-sp-5); padding-top: 12px; border-top: 1px dashed var(--erp-color-nav-line); }
   .erp-std .erp-statusbar-keys a { margin-left: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); color: inherit; text-decoration: none; }
   .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-bold); }
   body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-nav); }
@@ -92,12 +92,12 @@
   .erp-std a.erp-chip { text-decoration: none; }
   /* 기능 쪽 판 안의 입력 · 단추를 규격 치수로(데스크톱에서만 — 폰 판은 그대로 44) */
   .erp-std .erp-embed :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) {
-    height: var(--erp-input-h); padding: 0 10px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md);
+    height: var(--erp-input-h); padding: 0 var(--erp-sp-3); border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md);
     background: var(--erp-color-surface); color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body);
   }
-  .erp-std .erp-embed textarea { height: auto; padding: 8px 10px; }
+  .erp-std .erp-embed textarea { height: auto; padding: var(--erp-sp-2) var(--erp-sp-3); }
   .erp-std .erp-embed :is(button, a.primary, a.dz-bar-sub) {
-    display: inline-flex; align-items: center; justify-content: center; height: var(--erp-btn-h); padding: 0 14px;
+    display: inline-flex; align-items: center; justify-content: center; height: var(--erp-btn-h); padding: 0 var(--erp-sp-4);
     border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
     color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold); text-decoration: none; cursor: pointer;
   }
@@ -114,7 +114,7 @@
    * — 예전엔 .dz-find 안 절대좌표였다)와 옷(규격 색·글자)만 규격에 맞춘다. */
   .erp-std .erp-searchbar { position: relative; }
   .erp-std .dz-fs-open {
-    position: static; display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 14px;
+    position: static; display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 var(--erp-sp-4);
     border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
     color: var(--erp-color-text); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
   }

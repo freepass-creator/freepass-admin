@@ -169,15 +169,24 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
             {month === NO_MONTH && <Notice tone="warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</Notice>}
           </div>
           <div className="list">
-            {shownGroups.map((g) => (
-              <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
-                status={묶음상태(g)}
-                title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
-                tone={묶음톤(g)}
-                meta={[`${g.lines.length}줄`, `${tab === 'claim' ? '수금' : '지급'} ${g.completed}/${g.lines.length}`, g.unknown ? `금액 모름 ${g.unknown}` : '', g.hold ? `보류 ${g.hold}` : '', g.broken ? `끊김 ${g.broken}` : '',
-                  g.clawbacks.length ? `환수 ${g.clawbacks.length}` : ''].filter(Boolean).join(' · ')}
-                value={`${won(g.net)}원`} aside={who} />
-            ))}
+            {shownGroups.map((g) => {
+              const 위험 = [
+                g.unknown ? `금액 모름 ${g.unknown}` : '',
+                g.hold ? `보류 ${g.hold}` : '',
+                g.broken ? `끊김 ${g.broken}` : '',
+                g.clawbacks.length ? `환수 ${g.clawbacks.length}` : '',
+              ].filter(Boolean);
+              const 위험표시 = 위험.length > 2 ? `${위험.slice(0, 2).join(' · ')} · 외 ${위험.length - 2}` : 위험.join(' · ');
+              return (
+                <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
+                  status={묶음상태(g)}
+                  title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
+                  tone={묶음톤(g)}
+                  flag={위험표시 || undefined}
+                  meta={`${g.lines.length}줄 · ${tab === 'claim' ? '수금' : '지급'} ${g.completed}/${g.lines.length}`}
+                  value={`${won(g.net)}원`} aside={who} />
+              );
+            })}
             {shownGroups.length === 0 && <EmptyState>이 달에 선 {who}가 없습니다.</EmptyState>}
           </div>
         </section>
@@ -240,7 +249,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
                   title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
                   tone={r.progress.billHold || !끝 ? 'act' : 'plain'}
                   flag={broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined}
-                  meta={[r.plate, r.model, tab === 'claim' ? r.channel : r.supplier, r.progress.deliveredAt ? `인도 ${r.progress.deliveredAt}` : ''].filter(Boolean).join(' · ') || '—'}
+                  meta={[r.plate, r.model, tab === 'claim' ? r.channel : r.supplier].filter(Boolean).join(' · ') || '—'}
                   value={금액(amount)} aside={txt(r.payKind)} />
               );
             })}

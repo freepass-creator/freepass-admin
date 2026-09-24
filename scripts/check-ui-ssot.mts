@@ -162,6 +162,17 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const cardRhythmBaseline = [
+  [/--fp-row-compact-min-h:\s*64px/, 'desktop compact card min 64px'],
+  [/--fp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
+  [/--ui-row-min-h:\s*88px/, 'mobile card min 88px'],
+  [/--ui-list-gap:\s*8px/, 'mobile list gap 8px'],
+] as const;
+for (const [re, label] of cardRhythmBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`card rhythm mismatch: ${label}`);
+}
+
 const panelCardSurfaceBaseline = [
   [/--fp-component-surface:\s*#F7F9FC/i, 'desktop card surface #F7F9FC'],
   [/--ui-component-surface:\s*#F7F9FC/i, 'mobile card surface #F7F9FC'],

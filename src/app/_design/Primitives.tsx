@@ -36,8 +36,12 @@ export function SearchField({ name, defaultValue, placeholder }: {
   );
 }
 
-export function ActionBar({ children }: { children: ReactNode }) {
-  return <div className="dz-bar"><div className="dz-bar-go">{children}</div></div>;
+export function ActionBar({ children, balance = 'primary' }: {
+  children: ReactNode;
+  /** primary: 2개 3:7 / 3개 3:3:4. equal: 동급 2개 5:5 */
+  balance?: 'primary' | 'equal';
+}) {
+  return <div className="dz-bar"><div className="dz-bar-go" data-action-balance={balance}>{children}</div></div>;
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {

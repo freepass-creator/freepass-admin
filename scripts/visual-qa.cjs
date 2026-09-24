@@ -108,6 +108,28 @@ async function inspect(page) {
           amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
         };
       })(),
+      actionBars: (() => {
+        const bars = [...document.querySelectorAll(
+          '.erp-panel-foot[data-action-balance], .dz-bar-go[data-action-balance]'
+        )].filter(visible);
+        return bars.map((bar, index) => {
+          const balance = bar.getAttribute('data-action-balance') || 'primary';
+          const actions = [...bar.children].filter((el) =>
+            visible(el) && el.matches('.erp-btn, .primary, .dz-bar-sub, button, a')
+          ).map((el, i) => {
+            const r = el.getBoundingClientRect();
+            return {
+              index: i,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+              width: Math.round(r.width),
+              left: Math.round(r.left),
+              right: Math.round(r.right),
+              primary: el.classList.contains('erp-btn--primary') || el.classList.contains('primary'),
+            };
+          });
+          return { index, balance, actions };
+        }).filter((x) => x.actions.length > 0);
+      })(),
       panelWidths: (() => {
         const panels = [...document.querySelectorAll('.erp-workspace > .erp-panel, .workspace > .panel')].filter(visible);
         return panels.map((panel, index) => {
@@ -299,6 +321,46 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      if (Array.isArray(info.actionBars)) {
+        for (const bar of info.actionBars) {
+          const a = bar.actions;
+          const primary = a.find((x) => x.primary);
+
+          if (primary && primary.right !== Math.max(...a.map((x) => x.right))) {
+            problems.push(`primary action is not rightmost: ${JSON.stringify(bar)}`);
+          }
+
+          if (a.length === 2 && bar.balance === 'equal') {
+            const ratio = Math.max(a[0].width, a[1].width) / Math.max(1, Math.min(a[0].width, a[1].width));
+            if (ratio > 1.06) problems.push(`equal 2-action bar is not 5:5: ${JSON.stringify(bar)}`);
+          }
+
+          if (a.length === 2 && bar.balance === 'primary' && primary) {
+            const secondary = a.find((x) => !x.primary);
+            if (secondary) {
+              const ratio = primary.width / Math.max(1, secondary.width);
+              if (ratio < 2.15 || ratio > 2.55) {
+                problems.push(`primary 2-action bar is not 3:7: ratio ${ratio.toFixed(2)} ${JSON.stringify(bar)}`);
+              }
+            }
+          }
+
+          if (a.length === 3 && bar.balance === 'primary' && primary) {
+            const total = a.reduce((sum, x) => sum + x.width, 0);
+            const pShare = primary.width / Math.max(1, total);
+            const secondaries = a.filter((x) => !x.primary);
+            if (pShare < 0.37 || pShare > 0.43) {
+              problems.push(`3-action primary share is not ~40%: ${pShare.toFixed(2)} ${JSON.stringify(bar)}`);
+            }
+            if (secondaries.length === 2) {
+              const sRatio = Math.max(secondaries[0].width, secondaries[1].width) /
+                Math.max(1, Math.min(secondaries[0].width, secondaries[1].width));
+              if (sRatio > 1.06) problems.push(`3-action secondary widths differ: ${JSON.stringify(bar)}`);
+            }
+          }
+        }
+      }
+
       if (Array.isArray(info.panelWidths) && c.width >= 1280 && info.panelWidths.length >= 2) {
         const widths = info.panelWidths.map((p) => p.width);
         const wide = info.panelWidths.find((p) => p.wide);
@@ -404,6 +466,7 @@ async function runInteractiveStates(page, c) {
         scrollTopology: info.scrollTopology,
         panelRhythm: info.panelRhythm,
         panelWidths: info.panelWidths,
+        actionBars: info.actionBars,
         interactiveStates,
         problems,
       };

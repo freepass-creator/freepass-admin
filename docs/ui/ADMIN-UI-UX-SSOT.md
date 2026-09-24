@@ -1391,3 +1391,27 @@ Line-free UI에서 shadow만으로 위계를 만들지 않는다.
 - Selected는 회색을 더 진하게 하는 것이 아니라 primary tint로 표현한다.
 - Web Panel은 Canvas 위에서 base elevation.
 - Mobile Panel은 screen surface이므로 shadow 없음; child card만 component surface를 쓴다.
+
+
+# 27. Interaction state matrix — final
+
+Line-free UI에서도 접근성 상태는 반드시 보인다.
+다만 focus만 예전 outline 문법으로 돌아가지 않는다.
+
+| Role | Default | Hover | Pressed | Selected | Focus | Disabled |
+|---|---|---|---|---|---|---|
+| Badge / Signal | semantic surface | 없음 | 없음 | 해당 없음 | control 아님 | 의미 약화만 |
+| Button | base elevation | hover elevation | sink | 해당 없음 | soft halo | flat + opacity |
+| QuickFilter / Toggle | soft surface | hover elevation | sink | brand surface + locked | selected 유지 + halo | flat + opacity |
+| Interactive Card | component surface | hover elevation | sink | primary tint + locked | state 유지 + halo | flat |
+| Field / Search / Select | soft surface | 선택적 | 해당 없음 | 해당 없음 | white surface + halo | muted |
+| Popup / Sheet | white + float | 내부 항목만 | 내부 항목만 | 내부 항목만 | 내부 항목 halo | - |
+
+## Focus 규칙
+
+- keyboard focus-visible은 제거하지 않는다.
+- solid outline/border를 기본 focus 표현으로 쓰지 않는다.
+- soft halo를 사용한다.
+- selected + focus에서는 selected 상태를 유지하고 halo만 추가한다.
+- disabled는 focus/hover/press elevation을 갖지 않는다.
+- Badge/Tag/Signal은 focusable control처럼 보이지 않는다.

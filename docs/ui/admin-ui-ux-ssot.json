@@ -339,5 +339,34 @@
       "elevation": "float"
     },
     "rule": "Focus-visible remains accessible but uses soft halo rather than a persistent solid outline in internal Admin."
+  },
+  "density": {
+    "desktop": {
+      "panelHeadPx": 48,
+      "queryRowPx": 52,
+      "quickFilterRowPx": 48,
+      "panelFootPx": 60,
+      "compactRowMinPx": 64,
+      "standardRowMinPx": 72,
+      "standardControlPx": 36,
+      "smallControlPx": 32,
+      "dataRowPx": 40
+    },
+    "mobile": {
+      "panelHeadPx": 56,
+      "standardControlPx": 44,
+      "actionPx": 44,
+      "rowMinPx": 88,
+      "navigationPx": "56-60"
+    },
+    "rhythm": {
+      "sectionPx": 16,
+      "listGapPx": 8,
+      "controlGapPx": 8,
+      "itemPaddingPx": 12,
+      "panelPaddingPx": "16-20"
+    },
+    "exception": "32px embedded control allowed only inside a larger search/control surface",
+    "rule": "Density is role-driven and fixed; do not create page-specific height tiers."
   }
 }

@@ -91,22 +91,43 @@ Mobile:
 - visual QA가 실패하면 규칙을 더 추가하기 전에 실제 렌더링 원인을 먼저 고친다.
 
 
-## GitHub Actions에서 실행
+## 클라우드 작업공간에서 실행 — 기본 경로
 
-Preview/배포 URL이 있으면 GitHub Actions의 **Visual QA** workflow를 수동 실행한다.
+GitHub Actions는 필요하지 않다.
 
-입력:
-- `base_url`: 확인할 Preview 또는 배포 URL
+권장 실행 흐름:
 
-동작:
-1. 프로젝트 의존성 설치
-2. Visual QA 전용 Playwright/Chromium 설치
-3. harness 문법 검사
-4. 고정 route/viewport 전체 캡처
-5. 실패 여부와 관계없이 `freepass-admin-visual-qa` artifact 업로드
+```
+GitHub private repo
+→ 클라우드 작업공간 checkout
+→ 대상 branch checkout
+→ npm ci
+→ npm run dev
+→ npm run visual:qa
+→ PNG / report.json 직접 검토
+```
 
-artifact에는:
-- PNG 스크린샷
-- `report.json`
+작업공간이 repo를 checkout한 뒤:
 
-이 workflow는 자동 배포/운영 데이터를 변경하지 않는다. 화면 검증 전용이다.
+```bash
+npm ci
+npm run dev
+```
+
+별도 터미널에서:
+
+```bash
+NODE_PATH=/opt/node22/lib/node_modules \
+npm run visual:qa -- http://localhost:3000
+```
+
+환경에 Playwright가 전역 설치되어 있지 않다면 해당 작업공간에서만 설치해 사용한다.
+프로젝트 runtime dependency로 강제하지 않는다.
+
+## 운영 원칙
+
+- Visual QA의 정식 경로는 **클라우드 작업공간에서 실제 앱을 실행하고 Chromium으로 확인하는 것**이다.
+- GitHub Actions 결제/쿼터 상태와 무관하게 QA가 가능해야 한다.
+- Actions가 사용 가능하더라도 Visual QA의 필수 전제조건으로 두지 않는다.
+- CSS/state 변경 후 실제 PNG 확인 없이 완료 처리하지 않는다.
+- generated `erp-standard.css`는 직접 수정하지 않는다.

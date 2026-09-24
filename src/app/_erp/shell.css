@@ -75,6 +75,11 @@
     padding: var(--erp-sp-3) var(--erp-sp-4); background: var(--erp-color-surface);
     border-top: 1px solid var(--erp-color-line); box-shadow: none;
   }
+  /* 발치 단추 줄 — 다른 두 패널(erp-panel-foot .erp-btn { flex:1 })처럼 취소 · 저장이 같은 폭으로
+   * 나뉜다(대표 2026-09-24 「하단에 버튼이랑 … 간격도 맞춰야 되고 … 다 통일」). 기능 쪽 dz-bar-go 는
+   * 폰에서 주(70%) · 보조(30%) 비율 그리드였다 — 데스크톱만 반반으로 편다. */
+  .erp-std .erp-embed .dz-bar-go { display: flex; gap: var(--erp-sp-2); }
+  .erp-std .erp-embed .dz-bar-go > * { flex: 1; }
   .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }

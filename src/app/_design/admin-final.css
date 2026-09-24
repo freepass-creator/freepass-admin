@@ -1687,3 +1687,49 @@ body > nav.fn-top :where(a, button):focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — ActionBar ratio & primary-right contract
+   1=100, 2(primary)=3:7, 2(equal)=5:5, 3=3:3:4.
+   Primary는 항상 시각적으로 가장 오른쪽.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-bar-go[data-action-balance] {
+  display: flex;
+  gap: var(--ui-control-gap);
+}
+
+/* 기본: 자식 하나면 자동으로 전체 폭, 둘 이상이면 secondary 기본 몫 3 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"] > * {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
+/* primary는 오른쪽 끝 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"] > .primary {
+  order: 2;
+}
+
+/* 2개 + primary = 3:7 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]
+  > .primary:nth-last-child(1):nth-child(2),
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]:has(> :nth-child(2):last-child)
+  > .primary {
+  flex: 7 1 0;
+}
+
+/* 3개 = 3:3:4 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]:has(> :nth-child(3):last-child)
+  > .primary {
+  flex: 4 1 0;
+}
+
+/* 동급 2개 = 5:5 */
+.fn-main .workspace .dz-bar-go[data-action-balance="equal"]:has(> :nth-child(2):last-child) > * {
+  flex: 1 1 0;
+}
+
+/* 1개는 종류와 무관하게 전체 폭 */
+.fn-main .workspace .dz-bar-go[data-action-balance]:has(> :first-child:last-child) > * {
+  flex: 1 1 100%;
+}

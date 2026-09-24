@@ -174,6 +174,23 @@ for (const [re, label] of liveAdminScaleBaseline) {
   if (!re.test(cssFinal)) errors.push(`live Admin scale mismatch or missing: ${label}`);
 }
 
+const surfaceDepthBaseline = [
+  [/--ui-canvas:\s*#F2F6FC/i, 'mobile canvas #F2F6FC'],
+  [/--ui-component-surface:\s*#F7F9FC/i, 'mobile component surface #F7F9FC'],
+  [/--fp-canvas:\s*#F2F6FC/i, 'desktop canvas #F2F6FC'],
+  [/--fp-component-surface:\s*#F7F9FC/i, 'desktop component surface #F7F9FC'],
+] as const;
+for (const [re, label] of surfaceDepthBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`surface hierarchy mismatch or missing: ${label}`);
+}
+
+/* current internal Admin layer may not introduce a raw 13px text tier again.
+ * Explicit public/login surfaces are outside this guard. */
+if (/\.dz-perk\s*\{[^}]*font-size:\s*13px/s.test(cssFinal)) {
+  errors.push('live Admin typography: dz-perk reintroduced legacy 13px tier');
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

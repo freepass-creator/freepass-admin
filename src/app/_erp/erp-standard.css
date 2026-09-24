@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 28f807249bcf3c2bef789e98fa3130a3dfa802bc
+ * 정본: freepass-creator/ai-core @ 9cbf4762ec9601c625c228e8be2410e67070a7b6
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -335,7 +335,13 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 .erp-filter-more > summary { list-style: none; }
 .erp-filter-more > summary::-webkit-details-marker { display: none; }
 .erp-filter-more > summary b { min-width: 18px; padding: 0 5px; border-radius: var(--erp-r-pill); background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-bold); text-align: center; }
-.erp-filter-panel { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: 520px; max-height: 60vh; overflow: auto; padding: var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3); }
+/* 왼쪽이 아니라 오른쪽 끝을 자기 자리로 잡고 왼쪽으로 편다(대표 2026-09-24 「간격 … 정확하게」) — 필터
+ * 단추는 검색창 뒤, 그 줄의 오른쪽 끝에 있다. left:0(단추 왼쪽에서 시작해 오른쪽으로 폄)이면 판 폭이
+ * 좁을 때(§5-4 compact, 특히 맨 오른쪽 목록 패널) 뷰포트 밖으로 넘친다. */
+.erp-filter-panel { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 520px; max-width: calc(100vw - 2 * var(--erp-sp-5)); max-height: 60vh; overflow: auto; padding: var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3); }
+/* compact 판은 폭 자체가 520px 보다 좁을 때가 많다 — 오른쪽 정렬(right:0)만으로는 못 막는다, 판 폭
+ * 안에 실제로 들어가는 값으로 줄인다. */
+.erp-panel--compact .erp-filter-panel { width: 280px; }
 .erp-facet + .erp-facet { margin-top: 14px; }
 .erp-facet-title { margin: 0 0 var(--erp-sp-2); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
 .erp-facet-opts { display: flex; flex-wrap: wrap; gap: 6px; }

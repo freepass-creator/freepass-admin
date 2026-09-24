@@ -13,12 +13,14 @@ import type { ReactNode } from 'react';
 import { settlements, today } from '../../server/erp5';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
-  claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, NO_MONTH, payLedger,
+  claimLedger, ledgerGroupAttention, ledgerMonths, NO_MONTH, payLedger,
   type Clawback, type LedgerGroup, type LedgerGroupFilter,
 } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Tone } from './parts';
+import {
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
+} from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -58,19 +60,42 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
 
   /*
-   * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「목록 카드는 …
-   * 왜 규격화를 안 하고 자꾸 맘대로 만드냐」). 퀵 필터는 새로 짓지 않고 이미 있던 유틸(filterLedgerGroups
-   * · ledgerGroupAttention — 예전 폰 SettlementBoards 의 gs 상태 그대로)을 청구 · 지급 각자의 파라미터
-   * (cgs/pgs)로 재사용한다.
+   * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「검색창 옆에 또
+   * 필터 없잖아 제발 좀 규격통일 좀 해라 전수조사해」). 퀵 필터(정산 상태)는 새로 짓지 않고 이미
+   * 있던 유틸(ledgerGroupAttention — 예전 폰 SettlementBoards 의 gs 상태 그대로)을 청구 · 지급 각자의
+   * 파라미터(cgs/pgs)로 재사용한다. 검색창 옆 필터 버튼은 그 묶음(공급사/영업채널)이 다루는 상품구분
+   * — 이름은 이미 검색창이 걸러 주니, 겹치지 않는 축으로 상품구분을 쓴다(ProductsScreen 의 facets 와
+   * 같은 결, 여기서는 «그 묶음의 줄 중 하나라도 그 상품구분이면» 걸린다).
    */
   const cq = sp(q.cq).trim().toLowerCase();
   const pq = sp(q.pq).trim().toLowerCase();
   const cgs: LedgerGroupFilter = (['issue', 'todo', 'done'] as const).includes(sp(q.cgs) as never) ? sp(q.cgs) as LedgerGroupFilter : 'all';
   const pgs: LedgerGroupFilter = (['issue', 'todo', 'done'] as const).includes(sp(q.pgs) as never) ? sp(q.pgs) as LedgerGroupFilter : 'all';
-  const shownClaim = filterLedgerGroups(claimG, cgs, cq);
-  const shownPay = filterLedgerGroups(payG, pgs, pq);
-  const claimCount = (mode: LedgerGroupFilter) => filterLedgerGroups(claimG, mode, cq).length;
-  const payCount = (mode: LedgerGroupFilter) => filterLedgerGroups(payG, mode, pq).length;
+  const ckind = sp(q.ckind);
+  const pkind = sp(q.pkind);
+  const groupKinds = (g: LedgerGroup) => [...new Set(g.lines.map((l) => l.row.product).filter((v): v is string => !!v))];
+  const claimPass = (g: LedgerGroup, skip?: 'cgs' | 'ckind') =>
+    (!cq || g.party.toLowerCase().includes(cq))
+    && (skip === 'cgs' || cgs === 'all' || ledgerGroupAttention(g) === cgs)
+    && (skip === 'ckind' || !ckind || groupKinds(g).includes(ckind));
+  const payPass = (g: LedgerGroup, skip?: 'pgs' | 'pkind') =>
+    (!pq || g.party.toLowerCase().includes(pq))
+    && (skip === 'pgs' || pgs === 'all' || ledgerGroupAttention(g) === pgs)
+    && (skip === 'pkind' || !pkind || groupKinds(g).includes(pkind));
+  const shownClaim = claimG.filter((g) => claimPass(g));
+  const shownPay = payG.filter((g) => payPass(g));
+  const claimCount = (mode: LedgerGroupFilter) => claimG.filter((g) => claimPass(g, 'cgs') && (mode === 'all' || ledgerGroupAttention(g) === mode)).length;
+  const payCount = (mode: LedgerGroupFilter) => payG.filter((g) => payPass(g, 'pgs') && (mode === 'all' || ledgerGroupAttention(g) === mode)).length;
+  const claimKindFacet: Facet = {
+    key: 'ckind', title: '상품구분',
+    options: [...new Set(claimG.flatMap(groupKinds))].sort()
+      .map((v) => ({ value: v, count: claimG.filter((g) => claimPass(g, 'ckind') && groupKinds(g).includes(v)).length })),
+  };
+  const payKindFacet: Facet = {
+    key: 'pkind', title: '상품구분',
+    options: [...new Set(payG.flatMap(groupKinds))].sort()
+      .map((v) => ({ value: v, count: payG.filter((g) => payPass(g, 'pkind') && groupKinds(g).includes(v)).length })),
+  };
 
   /* 고른 묶음 — 청구 · 지급 어느 목록에서 눌렀는지로 축(문서 · 사람 이름)을 가른다 */
   const gp = sp(q.g);
@@ -105,7 +130,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
-        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month', 'cgs']} />
+        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" facets={[claimKindFacet]} keep={['month', 'cgs']} />
         <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
           { key: 'issue', label: `이슈 ${claimCount('issue')}`, href: hrefWith(base, q, { cgs: 'issue' }), on: cgs === 'issue' },
@@ -166,7 +191,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
 
       <Panel compact>
         <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
-        <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" keep={['month', 'pgs']} />
+        <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" facets={[payKindFacet]} keep={['month', 'pgs']} />
         <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${payCount('all')}`, href: hrefWith(base, q, { pgs: null }), on: pgs === 'all' },
           { key: 'issue', label: `이슈 ${payCount('issue')}`, href: hrefWith(base, q, { pgs: 'issue' }), on: pgs === 'issue' },

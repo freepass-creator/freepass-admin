@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
-import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Facet, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -22,25 +22,34 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
   catch (e) { return <Screen name="esign"><PageHeader crumb={['홈', '전자계약']} title="전자계약" desc={<span className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</span>} /></Screen>; }
 
   const text = sp(q.q).trim().toLowerCase();
-  const status = sp(q.status), sign = sp(q.sign);
+  const status = sp(q.status), sign = sp(q.sign), agent = sp(q.agent);
   const statuses = [...new Set(all.map((c) => c.status).filter(Boolean))].sort();
-  const searched = all
-    .filter((c) => !status || c.status === status)
-    .filter((c) => !text || [c.code, c.plate, c.vehicle, c.customer, c.agent].join(' ').toLowerCase().includes(text));
-  const shown = searched.filter((c) => !sign || signOf(c) === sign)
+  /* 검색창 옆 필터 버튼 — 담당 축(§5-1, 대표 2026-09-24 「검색창 옆에 또 필터 없잖아 제발 좀
+   * 규격통일 좀 해라 전수조사해」). 계약상태는 이미 위 드롭다운이 다루니 겹치지 않는 축을 쓴다. */
+  const pass = (c: 계약, skip?: 'agent') =>
+    (!status || c.status === status)
+    && (!text || [c.code, c.plate, c.vehicle, c.customer, c.agent].join(' ').toLowerCase().includes(text))
+    && (skip === 'agent' || !agent || c.agent === agent);
+  const searched = all.filter((c) => pass(c, 'agent'));
+  const shown = searched.filter((c) => (!sign || signOf(c) === sign) && (!agent || c.agent === agent))
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-  const n = (s: string) => searched.filter((c) => signOf(c) === s).length;
+  const n = (s: string) => searched.filter((c) => (!agent || c.agent === agent) && signOf(c) === s).length;
   const sel = all.find((c) => c.id === sp(q.id));
   const waiting = all.filter((c) => ['발행', '열람', '진행중'].includes(c.signStatus)).length;
+  const agentFacet: Facet = {
+    key: 'agent', title: '영업 담당',
+    options: [...new Set(all.map((c) => c.agent).filter(Boolean))].sort()
+      .map((v) => ({ value: v as string, count: all.filter((c) => pass(c) && c.agent === v).length })),
+  };
 
   const grid = (
     <section className="erp-card erp-card--fill">
-      <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" keep={['sign']}
+      <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" facets={[agentFacet]} keep={['sign']}
         dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} />
       <div className="erp-toolbar" data-region="grid-toolbar">
         <span className="erp-toolbar-spacer" />
         <Seg label="전자서명" items={[
-          { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { sign: null }), on: !sign },
+          { key: 'all', label: `전체 ${searched.filter((c) => !agent || c.agent === agent).length}`, href: hrefWith(base, q, { sign: null }), on: !sign },
           ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
         ]} />
       </div>

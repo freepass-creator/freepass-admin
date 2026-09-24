@@ -86,9 +86,43 @@ async function inspect(page) {
       bodyWidth: document.body.scrollWidth,
       viewportWidth: innerWidth,
       selected: pick('[aria-pressed="true"], [aria-current="true"], [aria-current="page"]'),
+      selectedCards: (() => {
+        const nodes = [...document.querySelectorAll(
+          '.erp-rowcard[aria-current="true"], .erp-tile--pressable[aria-pressed="true"], .dz-row.on'
+        )].filter(visible);
+        return nodes.slice(0, 20).map((el) => {
+          const s = getComputedStyle(el);
+          return {
+            text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+            backgroundColor: s.backgroundColor,
+            borderTopWidth: s.borderTopWidth,
+            borderRightWidth: s.borderRightWidth,
+            borderBottomWidth: s.borderBottomWidth,
+            borderLeftWidth: s.borderLeftWidth,
+            borderTopColor: s.borderTopColor,
+            borderRightColor: s.borderRightColor,
+            borderBottomColor: s.borderBottomColor,
+            borderLeftColor: s.borderLeftColor,
+            boxShadow: s.boxShadow,
+          };
+        });
+      })(),
       primary: pick('.erp-btn--primary, button.primary, a.primary'),
       panels: pick('.erp-panel, .panel'),
       cards: pick('.erp-rowcard, .erp-tile, .dz-row'),
+      cardGapMetrics: (() => {
+        const containers = [...document.querySelectorAll('.erp-rowcards, .erp-cardlist, .erp-tile-group, .list')]
+          .filter(visible)
+          .slice(0, 12);
+        return containers.map((el) => {
+          const s = getComputedStyle(el);
+          return {
+            className: typeof el.className === 'string' ? el.className : '',
+            rowGap: parseFloat(s.rowGap || s.gap) || 0,
+            columnGap: parseFloat(s.columnGap || s.gap) || 0,
+          };
+        });
+      })(),
       cardMetrics: (() => {
         const card = [...document.querySelectorAll('.erp-rowcard, .dz-row')].find(visible);
         const amount = card?.querySelector('.erp-rowcard-amount, .dz-row-l3 > strong, .dz-row-l2.value strong');
@@ -421,6 +455,29 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (Array.isArray(info.selectedCards)) {
+        for (const card of info.selectedCards) {
+          const widths = [card.borderTopWidth, card.borderRightWidth, card.borderBottomWidth, card.borderLeftWidth]
+            .map((v) => parseFloat(v) || 0);
+          const colors = [card.borderTopColor, card.borderRightColor, card.borderBottomColor, card.borderLeftColor];
+          const visibleBorder = widths.some((w, i) =>
+            w > 0 && colors[i] !== 'rgba(0, 0, 0, 0)' && colors[i] !== 'transparent'
+          );
+          if (visibleBorder) {
+            problems.push(`selected card has visible border: ${JSON.stringify(card)}`);
+          }
+        }
+      }
+
+      if (Array.isArray(info.cardGapMetrics)) {
+        for (const g of info.cardGapMetrics) {
+          const isCardContainer = /erp-rowcards|erp-cardlist|erp-tile-group|list/.test(g.className);
+          if (isCardContainer && g.rowGap > 0 && (g.rowGap < 10 || g.rowGap > 14)) {
+            problems.push(`card gap outside 12px rhythm: ${JSON.stringify(g)}`);
+          }
+        }
+      }
+
       const interaction = info.cardInteraction;
       if (interaction?.rowHit?.length) {
         const misses = interaction.rowHit.filter((x) => !x.link);
@@ -476,6 +533,8 @@ async function runInteractiveStates(page, c) {
         primary: info.primary,
         surfaceSamples: info.surfaceSamples,
         cardMetrics: info.cardMetrics,
+        cardGapMetrics: info.cardGapMetrics,
+        selectedCards: info.selectedCards,
         cardInteraction: info.cardInteraction,
         scrollTopology: info.scrollTopology,
         panelRhythm: info.panelRhythm,

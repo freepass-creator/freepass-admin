@@ -162,6 +162,45 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+/* Page QA structural invariants — prevent accidental redesign of core workflows. */
+const pageQaRules = [
+  ['src/app/_erp/ProductsScreen.tsx', [
+    /<Panel compact wide>/,
+    /<SearchBar/,
+    /<QuickFilter/,
+    /<RowCards label="상품 목록">/,
+    /<ProductDetail/,
+  ]],
+  ['src/app/_erp/Workspace.tsx', [
+    /products-workspace|intake-workspace/,
+    /<ProductDetail/,
+    /<SettlementDetail/,
+    /<SearchBar/,
+    /<QuickFilter/,
+  ]],
+  ['src/app/_erp/SettlementScreen.tsx', [
+    /title="청구목록"/,
+    /title="지급목록"/,
+    /title="정산상세"/,
+    /<SearchBar/,
+    /<QuickFilter/,
+  ]],
+  ['src/app/_erp/EsignScreen.tsx', [
+    /전자계약 목록|전자계약목록/,
+    /<SearchBar/,
+    /<QuickFilter/,
+    /<PanelFoot>/,
+  ]],
+] as const;
+
+for (const [file, rules] of pageQaRules) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: page QA structural invariant missing: ${re}`);
+  }
+}
+
+
 const liveAdminScaleBaseline = [
   [/--ui-panel-pad:\s*20px/, 'shared panel padding 20px'],
   [/--ui-panel-pad-mobile:\s*16px/, 'mobile panel padding 16px'],

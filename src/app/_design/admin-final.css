@@ -866,3 +866,118 @@ body > nav.fn-top :where(a, button):focus-visible,
     border-color: transparent !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Final line-free semantic hierarchy (mobile)
+   같은 의미, 다른 shell: Panel은 화면 자체이고 child component만 물성을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-canvas: #F2F6FC;
+  --ui-surface: #FFFFFF;
+  --ui-surface-soft: #F5F7FA;
+  --ui-surface-hover: #EEF2F7;
+  --ui-selected: #EAF1FF;
+  --ui-focus-halo: 0 0 0 3px rgba(27,42,74,.14);
+}
+
+@media (max-width: 900px) {
+  body:has(> .erp-theme-flag),
+  body:has(> .erp-theme-flag) > main.fn-main {
+    background: var(--ui-canvas);
+  }
+
+  /* Panel = 현재 screen. */
+  .fn-main .workspace > .panel[data-panel-role] {
+    background: var(--ui-surface);
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Badge/Tag/Perk = signal only. 눌리는 물건처럼 보이지 않는다. */
+  .fn-main .workspace :is(.dz-badge,.dz-perk,.dz-row-status) {
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: default;
+    transition: none;
+  }
+
+  /* Action / selection controls. */
+  .fn-main .workspace :is(
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    background-color: var(--ui-surface-soft);
+    box-shadow: var(--ui-elevation-base);
+    cursor: pointer;
+  }
+
+  /* Primary는 색으로 우선순위 표현 — 기본 높이는 동일. */
+  .fn-main .workspace .dz-bar-go > .primary {
+    background: var(--ci남색);
+    color: #fff;
+  }
+
+  /* 선택 control은 눌려 고정. */
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+  .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+  .fn-main .workspace .offer-picker button.active,
+  .fn-main .workspace .dz-fs-open.on {
+    background: var(--ci남색);
+    color: #fff;
+    box-shadow: inset 0 1px 2px rgba(15,23,42,.14);
+    transform: translateY(var(--ui-press-y));
+  }
+
+  /* Card: 기본적으로 떠 있음. interactive card만 hover/press. */
+  .fn-main .workspace .dz-row {
+    background: var(--ui-surface);
+    box-shadow: var(--ui-elevation-base);
+  }
+  .fn-main .workspace .dz-row.on {
+    background: var(--ui-selected);
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.11);
+    transform: translateY(var(--ui-press-y));
+  }
+
+  /* Field/search/select: line-free surface. */
+  .fn-main .workspace :is(
+    .dz-searchbox,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+    background: var(--ui-surface-soft);
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-base);
+  }
+  .fn-main .workspace :is(
+    .dz-searchbox:focus-within,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
+    select:focus,
+    textarea:focus
+  ) {
+    outline: none;
+    background: var(--ui-surface);
+    box-shadow: var(--ui-focus-halo), var(--ui-elevation-hover);
+  }
+
+  .fn-main .workspace :is(button,a)[aria-disabled="true"],
+  .fn-main .workspace button:disabled {
+    opacity: .52;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed;
+  }
+
+  .fn-main .workspace .dz-fs-sheet {
+    background: var(--ui-surface);
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-float);
+  }
+}

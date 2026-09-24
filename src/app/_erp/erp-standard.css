@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 9cbf4762ec9601c625c228e8be2410e67070a7b6
+ * 정본: freepass-creator/ai-core @ ba0fcdc23f5e6624ea5908823baa757ae5b9d634
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -455,7 +455,11 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 .erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
 .erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
 /* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */
-.erp-panel-foot { flex: none; display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+/* 바 자체(틀)는 하나뿐 — 안에 든 게 단추 두 개든, 단추 하나든, 「총 N건 + 페이지」든 바 높이는
+ * 늘 같다(대표 2026-09-24 「상단 패널 헤드를 똑같이 맞췄듯이 하단에도 … 내용물만 달라지는 거지」).
+ * 단추 높이(erp-btn-h)를 기준 삼아 min-height 로 고정 — 페이저(30px)처럼 더 낮은 내용은 가운데 정렬로
+ * 앉는다(align-items:center, 위에서 이미 줌). */
+.erp-panel-foot { flex: none; min-height: calc(var(--erp-btn-h) + 2 * var(--erp-sp-3)); display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
 .erp-panel-foot .erp-btn { flex: 1; justify-content: center; }
 /* 목록 패널 발치의 합계 글(예: 「총 N건」) — erp-grid-foot 과 같은 톤(대표 2026-09-24 「간격 … 정확하게」,
  * 버튼 없이 맨 글자만 두면 색·크기가 안 정해져 있었다). */

@@ -209,7 +209,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
                   </div>
                 </form>
                 <div className="quick-filters">
-                  <Link className={ls === 'todo' ? 'active' : ''} href={keep({ ls: 'todo', ic: '', v: 'detail' })}>할일 <small>{performanceCount('todo')}</small></Link>
+                  <Link className={ls === 'todo' ? 'active' : ''} href={keep({ ls: 'todo', ic: '', v: 'detail' })}>할 일 <small>{performanceCount('todo')}</small></Link>
                   <Link className={ls === 'issue' ? 'active' : ''} href={keep({ ls: 'issue', ic: '', v: 'detail' })}>이슈 <small>{performanceCount('issue')}</small></Link>
                   <Link className={ls === 'done' ? 'active' : ''} href={keep({ ls: 'done', ic: '', v: 'detail' })}>완료 <small>{performanceCount('done')}</small></Link>
                   <Link className={ls === 'all' ? 'active' : ''} href={keep({ ls: 'all', ic: '', v: 'detail' })}>전체 <small>{performanceCount('all')}</small></Link>

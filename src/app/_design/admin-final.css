@@ -1520,3 +1520,62 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace :is(.dz-badge,.dz-row-status,.dz-perk) {
   cursor: default;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Form validation & submit UX
+   required/error/numeric/pending semantics를 같은 문법으로 맞춘다.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 숫자·금액 입력은 우측 정렬 + tabular. type=number를 강제하지 않는다. */
+.fn-main .workspace input[inputmode="numeric"],
+.fn-main .workspace input[inputmode="decimal"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* required 표시는 텍스트 별표를 유지하되 과장하지 않는다. */
+.fn-main .workspace label:has(> input[required]),
+.fn-main .workspace label:has(> select[required]),
+.fn-main .workspace label:has(> textarea[required]) {
+  color: var(--ui-text-secondary-color);
+}
+.fn-main .workspace label:has(> :is(input,select,textarea)[required]) > :is(input,select,textarea) {
+  background: var(--ui-surface-soft);
+}
+
+/* field-specific invalid일 때만 semantic error surface/halo. */
+.fn-main .workspace :is(input,select,textarea)[aria-invalid="true"] {
+  background: #FEF3F2;
+  color: #7A271A;
+  box-shadow: 0 0 0 3px rgba(180,35,24,.12);
+}
+
+/* 서버 validation error summary */
+.fn-main .workspace .dz-errs {
+  margin: 0;
+  padding: var(--ui-space-3);
+  list-style: none;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: #FDEEEE;
+  color: #A12A2A;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+.fn-main .workspace .dz-errs li + li {
+  margin-top: var(--ui-space-1);
+}
+
+/* pending form은 geometry를 유지하고 중복 interaction을 막는다. */
+.fn-main .workspace form[aria-busy="true"] {
+  cursor: progress;
+}
+.fn-main .workspace form[aria-busy="true"] :is(button[type="submit"],input[type="submit"]) {
+  pointer-events: none;
+}
+
+/* 성공/실패 피드백은 해당 form/action 근처에 둔다. */
+.fn-main .workspace form > :is(.dz-ok,.dz-warn,.dz-errs) {
+  margin-bottom: var(--ui-space-2);
+}

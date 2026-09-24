@@ -2125,3 +2125,44 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 - amount alignment
 
 를 검사한다.
+
+
+# 44. Card role & hit-area contract
+
+카드는 역할에 따라 interaction을 명확히 나눈다.
+
+## Interactive card
+
+예:
+- 상품 RowCard
+- 접수 RowCard
+- 실적 RowCard
+- 정산 거래처 RowCard
+- 전자계약 RowCard
+- 선택 가능한 Tile
+
+규칙:
+- 카드 전체가 클릭/탭 영역
+- 제목 텍스트만 링크가 되어서는 안 된다
+- hover / press / selected feedback 있음
+- pointer cursor 사용
+- selected 상태는 `aria-current` 또는 `aria-pressed`
+
+## Passive card
+
+예:
+- 정보 요약 Tile
+- KPI
+- 읽기 전용 정보 그룹
+
+규칙:
+- hover / press 없음
+- pointer cursor 없음
+- click handler 없음
+- elevation은 있어도 action처럼 보이면 안 된다
+
+## Visual QA
+
+실제 브라우저에서:
+- interactive RowCard의 중앙/모서리 hit-test가 링크로 연결되는지 검사
+- passive Tile의 computed cursor가 `pointer`면 실패

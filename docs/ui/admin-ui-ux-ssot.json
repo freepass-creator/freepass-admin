@@ -768,5 +768,31 @@
       "renderedHeight",
       "amountAlignment"
     ]
+  },
+  "cardInteraction": {
+    "interactive": {
+      "fullCardHitArea": true,
+      "cursor": "pointer",
+      "hover": true,
+      "press": true,
+      "selectedState": [
+        "aria-current",
+        "aria-pressed"
+      ]
+    },
+    "passive": {
+      "cursor": "default",
+      "hover": false,
+      "press": false,
+      "click": false
+    },
+    "visualQa": {
+      "rowHitTestPoints": [
+        "center",
+        "top-left inset",
+        "bottom-right inset"
+      ],
+      "passivePointerForbidden": true
+    }
   }
 }

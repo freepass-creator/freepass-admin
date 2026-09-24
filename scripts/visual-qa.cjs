@@ -174,6 +174,23 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      radiusSamples: (() => {
+        const pickRadius = (selector, limit = 12) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const s = getComputedStyle(el);
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              radius: parseFloat(s.borderTopLeftRadius) || 0,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            };
+          });
+        return {
+          panels: pickRadius('.erp-panel, .panel'),
+          cards: pickRadius('.erp-rowcard, .erp-tile, .dz-row'),
+          controls: pickRadius('.erp-btn, .primary, .dz-bar-sub, button'),
+          quickFilters: pickRadius('.erp-facet-opt, .quick-filters a'),
+        };
+      })(),
       workspaceFill: (() => {
         const ws = document.querySelector('.erp-workspace, .workspace');
         if (!ws || !visible(ws)) return null;
@@ -428,6 +445,17 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.radiusSamples) {
+        for (const x of [...info.radiusSamples.panels, ...info.radiusSamples.cards]) {
+          if (x.radius > 8.5) problems.push(`oversized panel/card radius: ${JSON.stringify(x)}`);
+        }
+        for (const x of info.radiusSamples.controls) {
+          if (x.radius > 8.5 && !/quick|facet|chip|badge/i.test(x.className)) {
+            problems.push(`oversized action/control radius: ${JSON.stringify(x)}`);
+          }
+        }
+      }
+
       if (info.workspaceFill?.visibleChildren) {
         const expectedLeft = info.workspaceFill.left + info.workspaceFill.paddingLeft;
         const expectedRight = info.workspaceFill.right - info.workspaceFill.paddingRight;
@@ -578,6 +606,7 @@ async function runInteractiveStates(page, c) {
         panelRhythm: info.panelRhythm,
         panelWidths: info.panelWidths,
         workspaceFill: info.workspaceFill,
+        radiusSamples: info.radiusSamples,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

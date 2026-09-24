@@ -108,6 +108,34 @@ async function inspect(page) {
           amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
         };
       })(),
+      cardInteraction: (() => {
+        const row = [...document.querySelectorAll('.erp-rowcard, .dz-row')].find(visible);
+        const passive = [...document.querySelectorAll('.erp-tile:not(.erp-tile--pressable)')].find(visible);
+        let rowHit = null;
+        if (row) {
+          const r = row.getBoundingClientRect();
+          const points = [
+            [r.left + r.width / 2, r.top + r.height / 2],
+            [r.left + 8, r.top + 8],
+            [r.right - 8, r.bottom - 8],
+          ];
+          rowHit = points.map(([x, y]) => {
+            const hit = document.elementFromPoint(x, y);
+            const a = hit?.closest?.('a');
+            return {
+              x: Math.round(x),
+              y: Math.round(y),
+              tag: hit?.tagName ?? null,
+              link: a?.getAttribute('href') ?? null,
+              insideRow: !!hit && row.contains(hit),
+            };
+          });
+        }
+        return {
+          rowHit,
+          passiveCursor: passive ? getComputedStyle(passive).cursor : null,
+        };
+      })(),
       surfaceSamples: {
         panel: pick('.erp-panel, .panel').slice(0, 4),
         card: pick('.erp-rowcard, .erp-tile, .dz-row').slice(0, 8),
@@ -216,6 +244,17 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      const interaction = info.cardInteraction;
+      if (interaction?.rowHit?.length) {
+        const misses = interaction.rowHit.filter((x) => !x.link);
+        if (misses.length) {
+          problems.push(`interactive row card does not expose full-card link hit area: ${JSON.stringify(misses)}`);
+        }
+      }
+      if (interaction?.passiveCursor && interaction.passiveCursor === 'pointer') {
+        problems.push('passive tile exposes pointer cursor');
+      }
+
       const cm = info.cardMetrics;
       if (cm) {
         const minPad = c.width <= 900 ? 8 : 12;
@@ -260,6 +299,7 @@ async function runInteractiveStates(page, c) {
         primary: info.primary,
         surfaceSamples: info.surfaceSamples,
         cardMetrics: info.cardMetrics,
+        cardInteraction: info.cardInteraction,
         interactiveStates,
         problems,
       };

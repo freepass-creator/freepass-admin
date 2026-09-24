@@ -136,7 +136,7 @@ export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge,
       data-tone={tone && tone !== 'neutral' ? tone : undefined} aria-current={current ? 'true' : undefined}>
       {thumb ? <div className={`erp-rowcard-thumb${thumbStatus ? ' erp-rowcard-thumb--status' : ''}`}>{thumb}</div> : null}
       <div className="erp-rowcard-id">
-        <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href}>{title}</Link>{badge}</h3>
+        <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href} aria-current={current ? 'true' : undefined}>{title}</Link>{badge}</h3>
         {subId || sub ? <div className="erp-rowcard-sub">{subId ? <b>{subId}</b> : null}{sub}</div> : null}
         {meta ? <div className="erp-rowcard-meta">{meta}</div> : null}
       </div>

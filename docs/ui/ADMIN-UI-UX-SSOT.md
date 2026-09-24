@@ -1704,3 +1704,38 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - 모바일에서 44px touch target 축소
 - 긴 문자열 때문에 viewport 자체가 넓어지는 것
 - 금액을 줄바꿈해 카드 높이를 예측 불가하게 만드는 것
+
+
+# 34. Color contrast & semantic palette
+
+## Text contrast
+
+- strong text: `#101828` / mobile equivalent dark text
+- secondary text: `#475467`
+- muted/support text: **`#667085` 이상**
+- 12px support/meta에 `#98A2B3`처럼 너무 옅은 색을 기본값으로 쓰지 않는다
+
+## Navigation
+
+- dark nav background 유지
+- inactive nav text는 충분한 대비를 가진 neutral
+- active는 brand/navy surface + white text
+- active indicator는 보조 역할이며 선택 의미의 유일한 신호가 아니다
+
+## Semantic colors
+
+- Success: green text + green soft surface
+- Info: blue text + blue soft surface
+- Warning: amber text + amber soft surface
+- Error: red text + red soft surface
+- Neutral: gray text + neutral soft surface
+
+색 하나만으로 의미를 전달하지 않는다.
+Badge/Notice에는 반드시 텍스트 의미가 함께 있어야 한다.
+
+## 원칙
+
+- 대비가 부족하다고 모든 텍스트를 진하게 만들지 않는다
+- body/secondary/muted 세 단계만 유지
+- 상태색 saturation을 과하게 올리지 않는다
+- dark nav와 light workspace는 brand blue 계열로 연결한다

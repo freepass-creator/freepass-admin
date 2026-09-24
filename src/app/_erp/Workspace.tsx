@@ -70,13 +70,33 @@ async function IntakeWorkspace({ q }: { q: Q }) {
   catch { products = []; }
   const text = sp(q.pq).trim().toLowerCase();
   const pst = sp(q.pst);
-  const all = products
+  /*
+   * 상세 필터 — 접수목록과 같은 규칙(FilterSheet · facet-standing · 많은순, §5-1 「검색창 옆에는
+   * 필터 버튼」). 상품찾기도 목록 판이니 똑같이 공급사 · 상품구분 두 축을 고른다(대표 2026-09-24
+   * 「목록 카드는 … 왜 규격화를 안 하고 자꾸 맘대로 만드냐」).
+   */
+  const 상품축: [string, string, (p: CanonicalProduct) => string][] = [
+    ['psup', '공급사', (p) => p.supplierName ?? p.supplierId ?? ''],
+    ['pkind', '상품구분', (p) => p.productKind ?? ''],
+  ];
+  const pSel = Object.fromEntries(상품축.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
+  const p통과 = (p: CanonicalProduct, skip?: string) => 상품축.every(([a, , of]) => a === skip || !pSel[a].length || pSel[a].includes(of(p)));
+  const textFiltered = products
     .filter((p) => !text || [carName(p), p.registration?.vehicleNumber, p.supplierName ?? p.supplierId].filter(Boolean).join(' ').toLowerCase().includes(text))
     .filter((p) => lead(p.offers))
-    .map((p) => ({ p, offer: lead(p.offers)! }))
+    .map((p) => ({ p, offer: lead(p.offers)! }));
+  const all = textFiltered
+    .filter((h) => p통과(h.p))
     .sort((a, b) => (STATUS_ORDER[a.p.status ?? ''] ?? 9) - (STATUS_ORDER[b.p.status ?? ''] ?? 9) || a.offer.monthlyRent - b.offer.monthlyRent);
   const readyCount = all.filter((h) => h.p.status === '즉시출고').length;
   const hits = pst ? all.filter((h) => h.p.status === pst) : all;
+  const 상품전체 = products.filter((p) => lead(p.offers));
+  const 상품판축: FacetAxis[] = 상품축.map(([a, label, of]) => {
+    const keys = 많은순(상품전체.map(of));
+    const base = tallyMatch(상품전체, keys, (p, k) => of(p) === k);
+    const live = tallyMatch(textFiltered.map((h) => h.p).filter((p) => p통과(p, a)), keys, (p, k) => of(p) === k);
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
+  });
   const selId = sp(q.id);
   const sel = hits.find((h) => h.p.id === selId) ?? hits[0];
   const selOffers = sel ? sel.p.offers.slice().sort((a, b) => a.termMonths - b.termMonths) : [];
@@ -137,7 +157,8 @@ async function IntakeWorkspace({ q }: { q: Q }) {
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="상품찾기" count={`전체 ${hits.length}건`} />
-        <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']} />
+        <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']}
+          filter={<FilterSheet axes={상품판축} count={hits.length} unit="대" label="필터" />} />
         <QuickFilter label="퀵 필터" items={[
           { key: 'all', label: `전체 ${all.length}`, href: hrefWith(base, q, { pst: null, id: null }), on: !pst },
           { key: 'ready', label: `즉시출고 ${readyCount}`, href: hrefWith(base, q, { pst: '즉시출고', id: null }), on: pst === '즉시출고' },
@@ -274,10 +295,45 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
   const now = new Date(`${today()}T12:00:00+09:00`);
   const itext = sp(q.wiq).trim().toLowerCase();
   const searched = rows.filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(itext));
-  const 분납 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적');
-  const 완납 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적');
   const icId = sp(q.ic);
   const cur = icId ? rows.find((r) => r.id === icId) : undefined;
+
+  /*
+   * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「목록 카드는 …
+   * 왜 규격화를 안 하고 자꾸 맘대로 만드냐」). 분납·완납은 늘 같이 보여야 해서 필터 축 이름(dsup/dch ·
+   * fsup/fch)과 확인 필요 퀵 필터(dqs/fqs)를 각자 따로 둔다 — 한쪽에서 골라도 다른 쪽이 안 바뀐다.
+   */
+  const 실적문제 = (r: SettlementRow) => r.progress.billHold || r.claimStage === '정정' || r.payStage === '정정';
+  const dAxis: [string, string, (r: SettlementRow) => string][] = [['dsup', '공급사', (r) => r.supplier ?? ''], ['dch', '영업채널', (r) => r.channel ?? '']];
+  const fAxis: [string, string, (r: SettlementRow) => string][] = [['fsup', '공급사', (r) => r.supplier ?? ''], ['fch', '영업채널', (r) => r.channel ?? '']];
+  const dSel = Object.fromEntries(dAxis.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
+  const fSel = Object.fromEntries(fAxis.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
+  const d통과 = (r: SettlementRow, skip?: string) => dAxis.every(([a, , of]) => a === skip || !dSel[a].length || dSel[a].includes(of(r)));
+  const f통과 = (r: SettlementRow, skip?: string) => fAxis.every(([a, , of]) => a === skip || !fSel[a].length || fSel[a].includes(of(r)));
+  const dqs = sp(q.dqs) === 'issue' ? 'issue' : 'all';
+  const fqs = sp(q.fqs) === 'issue' ? 'issue' : 'all';
+
+  const 분납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적').filter((r) => d통과(r));
+  const 완납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적').filter((r) => f통과(r));
+  const dIssueCount = 분납전체.filter(실적문제).length;
+  const fIssueCount = 완납전체.filter(실적문제).length;
+  const 분납 = dqs === 'issue' ? 분납전체.filter(실적문제) : 분납전체;
+  const 완납 = fqs === 'issue' ? 완납전체.filter(실적문제) : 완납전체;
+
+  const dFacets: FacetAxis[] = dAxis.map(([a, label, of]) => {
+    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적');
+    const keys = 많은순(universe.map(of));
+    const base = tallyMatch(universe, keys, (r, k) => of(r) === k);
+    const live = tallyMatch(universe.filter((r) => d통과(r, a)), keys, (r, k) => of(r) === k);
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
+  });
+  const fFacets: FacetAxis[] = fAxis.map(([a, label, of]) => {
+    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적');
+    const keys = 많은순(universe.map(of));
+    const base = tallyMatch(universe, keys, (r, k) => of(r) === k);
+    const live = tallyMatch(universe.filter((r) => f통과(r, a)), keys, (r, k) => of(r) === k);
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
+  });
 
   const list = (title: string, items: SettlementRow[], b: Bucket) => (
     <RowCards label={`${title} 목록`}>
@@ -297,7 +353,12 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="분납실적" count={`전체 ${분납.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'dqs']}
+          filter={<FilterSheet axes={dFacets} count={분납.length} unit="건" label="필터" />} />
+        <QuickFilter label="확인 필요" items={[
+          { key: 'all', label: `전체 ${분납전체.length}`, href: hrefWith(base, q, { dqs: null }), on: dqs === 'all' },
+          { key: 'issue', label: `확인필요 ${dIssueCount}`, href: hrefWith(base, q, { dqs: 'issue' }), on: dqs === 'issue' },
+        ]} />
         <PanelBody>{list('분납실적', 분납, '분납실적')}</PanelBody>
       </Panel>
 
@@ -314,7 +375,12 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
 
       <Panel compact>
         <PanelHead kind="목록" title="완납실적" count={`전체 ${완납.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'fqs']}
+          filter={<FilterSheet axes={fFacets} count={완납.length} unit="건" label="필터" />} />
+        <QuickFilter label="확인 필요" items={[
+          { key: 'all', label: `전체 ${완납전체.length}`, href: hrefWith(base, q, { fqs: null }), on: fqs === 'all' },
+          { key: 'issue', label: `확인필요 ${fIssueCount}`, href: hrefWith(base, q, { fqs: 'issue' }), on: fqs === 'issue' },
+        ]} />
         <PanelBody>{list('완납실적', 완납, '완납실적')}</PanelBody>
       </Panel>
     </div>

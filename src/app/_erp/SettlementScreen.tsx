@@ -13,11 +13,12 @@ import type { ReactNode } from 'react';
 import { settlements, today } from '../../server/erp5';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
-  claimLedger, ledgerGroupAttention, ledgerMonths, NO_MONTH, payLedger, type Clawback, type LedgerGroup,
+  claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, NO_MONTH, payLedger,
+  type Clawback, type LedgerGroup, type LedgerGroupFilter,
 } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, RowCard, RowCards, Screen, SearchBar, won0, type Tone } from './parts';
+import { Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -56,10 +57,20 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const month = sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
 
+  /*
+   * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「목록 카드는 …
+   * 왜 규격화를 안 하고 자꾸 맘대로 만드냐」). 퀵 필터는 새로 짓지 않고 이미 있던 유틸(filterLedgerGroups
+   * · ledgerGroupAttention — 예전 폰 SettlementBoards 의 gs 상태 그대로)을 청구 · 지급 각자의 파라미터
+   * (cgs/pgs)로 재사용한다.
+   */
   const cq = sp(q.cq).trim().toLowerCase();
   const pq = sp(q.pq).trim().toLowerCase();
-  const shownClaim = claimG.filter((g) => !cq || g.party.toLowerCase().includes(cq));
-  const shownPay = payG.filter((g) => !pq || g.party.toLowerCase().includes(pq));
+  const cgs: LedgerGroupFilter = (['issue', 'todo', 'done'] as const).includes(sp(q.cgs) as never) ? sp(q.cgs) as LedgerGroupFilter : 'all';
+  const pgs: LedgerGroupFilter = (['issue', 'todo', 'done'] as const).includes(sp(q.pgs) as never) ? sp(q.pgs) as LedgerGroupFilter : 'all';
+  const shownClaim = filterLedgerGroups(claimG, cgs, cq);
+  const shownPay = filterLedgerGroups(payG, pgs, pq);
+  const claimCount = (mode: LedgerGroupFilter) => filterLedgerGroups(claimG, mode, cq).length;
+  const payCount = (mode: LedgerGroupFilter) => filterLedgerGroups(payG, mode, pq).length;
 
   /* 고른 묶음 — 청구 · 지급 어느 목록에서 눌렀는지로 축(문서 · 사람 이름)을 가른다 */
   const gp = sp(q.g);
@@ -94,8 +105,14 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
-        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month']}
+        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month', 'cgs']}
           dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} />
+        <QuickFilter label="정산 상태" items={[
+          { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
+          { key: 'issue', label: `이슈 ${claimCount('issue')}`, href: hrefWith(base, q, { cgs: 'issue' }), on: cgs === 'issue' },
+          { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
+          { key: 'done', label: `완료 ${claimCount('done')}`, href: hrefWith(base, q, { cgs: 'done' }), on: cgs === 'done' },
+        ]} />
         <PanelBody>{list('청구', shownClaim, '청구서')}</PanelBody>
       </Panel>
 
@@ -150,7 +167,13 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
 
       <Panel compact>
         <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
-        <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" keep={['month']} />
+        <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" keep={['month', 'pgs']} />
+        <QuickFilter label="정산 상태" items={[
+          { key: 'all', label: `전체 ${payCount('all')}`, href: hrefWith(base, q, { pgs: null }), on: pgs === 'all' },
+          { key: 'issue', label: `이슈 ${payCount('issue')}`, href: hrefWith(base, q, { pgs: 'issue' }), on: pgs === 'issue' },
+          { key: 'todo', label: `미처리 ${payCount('todo')}`, href: hrefWith(base, q, { pgs: 'todo' }), on: pgs === 'todo' },
+          { key: 'done', label: `완료 ${payCount('done')}`, href: hrefWith(base, q, { pgs: 'done' }), on: pgs === 'done' },
+        ]} />
         <PanelBody>{list('지급', shownPay, '지급명세')}</PanelBody>
       </Panel>
     </div>

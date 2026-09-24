@@ -89,3 +89,24 @@ Mobile:
 - `:is()` 안에 복잡한 `:not()` 가지를 섞은 변경은 반드시 selected 상태를 캡처한다.
 - generated `erp-standard.css`는 직접 수정하지 않는다.
 - visual QA가 실패하면 규칙을 더 추가하기 전에 실제 렌더링 원인을 먼저 고친다.
+
+
+## GitHub Actions에서 실행
+
+Preview/배포 URL이 있으면 GitHub Actions의 **Visual QA** workflow를 수동 실행한다.
+
+입력:
+- `base_url`: 확인할 Preview 또는 배포 URL
+
+동작:
+1. 프로젝트 의존성 설치
+2. Visual QA 전용 Playwright/Chromium 설치
+3. harness 문법 검사
+4. 고정 route/viewport 전체 캡처
+5. 실패 여부와 관계없이 `freepass-admin-visual-qa` artifact 업로드
+
+artifact에는:
+- PNG 스크린샷
+- `report.json`
+
+이 workflow는 자동 배포/운영 데이터를 변경하지 않는다. 화면 검증 전용이다.

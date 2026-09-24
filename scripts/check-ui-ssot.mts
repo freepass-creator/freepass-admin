@@ -88,6 +88,21 @@ for (const file of internalAdminUiFiles) {
   }
 }
 
+/* 모바일/기존 board의 Panel도 역할 contract를 반드시 가진다.
+ * Web의 Panel 역할(List/Detail/Work)과 같은 semantics를 공유하되 shell만 다르다. */
+for (const file of [
+  'src/app/products/workspace.tsx',
+  'src/app/settlement/page.tsx',
+  'src/app/esign/page.tsx',
+]) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  const rawPanels = [...src.matchAll(/<section className="[^"]*\bpanel\b[^"]*"(?![^>]*data-panel-role=)/g)];
+  if (rawPanels.length) errors.push(`${file}: ${rawPanels.length} panel(s) missing data-panel-role=list|detail|work`);
+  for (const m of src.matchAll(/data-panel-role="([^"]+)"/g)) {
+    if (!['list','detail','work'].includes(m[1])) errors.push(`${file}: invalid data-panel-role=${m[1]}`);
+  }
+}
+
 /* 예외는 닫힌 목록이다. 새 공개/독립 surface가 생기면 이유를 문서와 여기 둘 다 갱신해야 한다. */
 for (const file of explicitSurfaceExceptions) {
   if (!await readFile(path.join(root, file), 'utf8').catch(() => '')) errors.push(`explicit UI exception missing: ${file}`);

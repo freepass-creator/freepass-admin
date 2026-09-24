@@ -1409,3 +1409,52 @@ body > nav.fn-top :where(a, button):focus-visible,
     padding-inline: 8px;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Color contrast refinement (live Admin)
+   12px support/meta는 #667085 계열 이상으로 유지한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-text-strong-color: #212529;
+  --ui-text-secondary-color: #475467;
+  --ui-text-muted-color: #667085;
+}
+
+/* 현재 내부 Admin의 support/meta를 너무 옅게 두지 않는다. */
+.fn-main .workspace :is(
+  .dz-row-l2,
+  .dz-row-l3 small,
+  .summary-grid dt,
+  .dz-picked-grid dt,
+  .dz-picked-note,
+  .dz-muted,
+  .dz-month-sum,
+  .panel-head > .count
+) {
+  color: var(--ui-text-muted-color);
+}
+
+/* body-value 계층 */
+.fn-main .workspace :is(
+  .dz-row-l1,
+  .summary-grid dd,
+  .dz-picked-grid dd
+) {
+  color: var(--ui-text-strong-color);
+}
+
+/* nav active uses brand/navy, inactive remains readable neutral */
+.dz-tabbar a,
+.dz-desktop-bottom .dz-menu a {
+  color: #667085;
+}
+.dz-tabbar a.on,
+.dz-desktop-bottom .dz-menu a.on {
+  color: var(--ci남색);
+}
+
+/* semantic badge colors stay restrained and readable */
+.fn-main .workspace .dz-badge.good { color: #15803D !important; background: #F0FDF4; }
+.fn-main .workspace .dz-badge.act { color: var(--ci남색) !important; background: #EEF3FA; }
+.fn-main .workspace .dz-badge.warn { color: #A24612 !important; background: #FFF4E5; }

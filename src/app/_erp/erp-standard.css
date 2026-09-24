@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 370eed00534a08954341fba7d7ebb35891d2c6b3
+ * 정본: freepass-creator/ai-core @ 28f807249bcf3c2bef789e98fa3130a3dfa802bc
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -449,8 +449,11 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 .erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
 .erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
 /* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */
-.erp-panel-foot { flex: none; display: flex; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); }
+.erp-panel-foot { flex: none; display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
 .erp-panel-foot .erp-btn { flex: 1; justify-content: center; }
+/* 목록 패널 발치의 합계 글(예: 「총 N건」) — erp-grid-foot 과 같은 톤(대표 2026-09-24 「간격 … 정확하게」,
+ * 버튼 없이 맨 글자만 두면 색·크기가 안 정해져 있었다). */
+.erp-panel-foot b { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
 
 /* 타일 — 테두리 선 없이 그림자로만 구분되는 공통 규격(대표 2026-09-24 「그런 위계를 임기응변으로 하지
  * 말고 규격으로 공통 css에다가 규격으로 둬야 돼」). 상품상세 레퍼런스 페이지(sv-term · sv-ref-card ·

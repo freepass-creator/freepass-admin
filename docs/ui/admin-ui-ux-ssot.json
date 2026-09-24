@@ -1,97 +1,113 @@
 {
-  "version": "2026-09-21",
-  "status": "PRODUCT_PROFILE / AI_CORE_CONSUMER",
+  "version": "2026-09-24",
+  "status": "CURRENT_PRODUCT_STANDARD / AI_CORE_PROMOTION_CANDIDATE",
   "authority": [
     "latest-user-decision",
-    "docs/ui/ai-core-bindings.json",
-    "freepass-creator/ai-core UI/UX registry + interaction contracts",
+    "current-freepass-admin-implementation",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
-    "src/app/_design/*",
-    "src/app/globals.css final rules",
+    "src/app/_erp/shell.css",
+    "src/app/_erp/parts.tsx",
+    "src/app/_design/admin-final.css",
+    "docs/ui/ai-core-bindings.json",
     "mockups-and-history"
   ],
   "typography": {
-    "title": {
-      "px": 18,
-      "token": "--글제목"
+    "kpi": {
+      "px": 24,
+      "usage": "large numeric KPI only"
     },
-    "main": {
+    "screen": {
+      "px": 20,
+      "usage": "rare screen-level title"
+    },
+    "panel": {
+      "px": 18,
+      "usage": "panel/local screen title"
+    },
+    "section": {
+      "px": 16,
+      "usage": "section heading only when needed"
+    },
+    "body": {
       "px": 14,
-      "token": "--글메인"
+      "usage": "body, controls, values"
     },
     "support": {
       "px": 12,
-      "token": "--글보조"
+      "usage": "labels, metadata, captions"
     },
+    "scalePx": [
+      12,
+      14,
+      16,
+      18,
+      20,
+      24
+    ],
+    "rule": "Do not create 11.5/13/15/17/22px hierarchy levels in new UI.",
     "approvedExceptions": {
-      "ciWordmark": "~20px",
       "loginBrand": "24px",
-      "mobileTextInput": "16px",
-      "whiteLabelPerkDetail": "13px",
-      "whiteLabelPerkCompact": "12px"
+      "mobileTextInput": "16px minimum when browser zoom prevention requires it",
+      "whiteLabelPerkDetail": "13px legacy shared component; migrate when component contract is promoted"
     }
   },
   "radii": {
-    "defaultPx": 4,
-    "whiteLabelIdentityBadgePx": 8
+    "scalePx": [
+      4,
+      6,
+      8
+    ],
+    "defaultPanelPx": 8,
+    "controlPx": 6,
+    "smallPx": 4,
+    "pill": "999px",
+    "rule": "Do not add new radius levels without updating SSOT."
   },
   "surfaces": {
-    "ground": "#eef1f4",
-    "panel": "#ffffff",
-    "box": "--박스",
-    "listCard": "--카드",
-    "hover": [
-      "--박스손",
-      "--카드손"
-    ],
-    "selected": "--고름",
-    "brand": "#1B2A4A"
+    "canvas": "#F2F6FC",
+    "panel": "#FFFFFF",
+    "soft": "#F5F7FA",
+    "hover": "#EEF2F7",
+    "selected": "#EAF1FF",
+    "brand": "#1B2A4A",
+    "lineFree": true,
+    "hierarchy": "canvas -> panel -> component surface -> state"
   },
   "controls": {
-    "standard": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-control-h"
+    "desktop": {
+      "smallHeightPx": 32,
+      "standardHeightPx": 36,
+      "rowHeightPx": 40,
+      "topbarHeightPx": 56,
+      "bodyFontPx": 14
     },
-    "searchField": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-control-h"
-    },
-    "primary": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-action-h"
-    },
-    "mobileTouchMinimumPx": 44,
-    "whiteLabelIdentityBadge": {
-      "fontPx": 12,
-      "paddingY": 5,
-      "paddingX": 10,
-      "radiusPx": 8
-    },
-    "searchEmbeddedFacet": {
-      "visualHeightPx": 32,
-      "note": "inside 40px search box; not a standalone workspace control"
-    },
-    "desktopGlobalNavigation": {
-      "heightPx": 60,
+    "mobile": {
+      "standardHeightPx": 44,
+      "actionHeightPx": 44,
       "touchMinimumPx": 44,
-      "note": "Sales white icon/label tabs; no filled active background"
+      "navigationHeightPx": "56-60",
+      "bodyFontPx": 14
     },
     "radiusPx": 6,
-    "gapPx": 8
+    "gapPx": 8,
+    "rule": "Controls sharing a row use the same height tier. Primary priority is color/weight, not extra elevation."
   },
   "panels": {
     "desktop": {
-      "workspaceGapPx": 12,
-      "workspacePaddingPx": 12,
-      "panelPaddingPx": 22
+      "workspaceGapPx": 16,
+      "workspacePaddingXpx": 20,
+      "workspacePaddingYpx": 16,
+      "panelSurface": "#FFFFFF",
+      "border": false,
+      "elevation": "base"
     },
     "mobile": {
       "workspaceGapPx": 8,
       "workspacePaddingPx": 8,
-      "panelPaddingPx": 16
+      "panelPaddingPx": 16,
+      "border": false,
+      "elevation": "0",
+      "behavior": "panel is the current screen surface"
     },
     "roles": [
       "LIST",
@@ -99,10 +115,11 @@
       "WORK"
     ],
     "layouts": {
-      "products": "2/3 list + 1/3 detail",
+      "products": "wide list (2 columns) + detail",
       "intake": "product list + product detail + intake/work",
-      "settlement": "group + performance lines + intake detail",
-      "esign": "2/3 list + 1/3 detail"
+      "performance": "installment performance + detail + paid performance",
+      "settlement": "billing list + settlement detail + payout list",
+      "esign": "contract list + contract detail"
     }
   },
   "listRow": {
@@ -118,126 +135,103 @@
     "statusTile": {
       "widthPx": 64,
       "heightPx": 64
-    }
+    },
+    "stateRule": "base elevation; hover/press only when interactive; selected uses tint + inset pressed state"
   },
   "navigation": {
-    "desktop": [
-      "상품찾기",
-      "계약접수",
-      "정산관리",
-      "전자계약"
-    ],
-    "mobile": [
-      "상품",
-      "접수",
-      "계약",
-      "청구",
-      "지급"
-    ],
-    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar",
-    "desktopPosition": "bottom",
-    "header": {
-      "role": "status-only",
-      "brand": false,
-      "menu": false,
-      "actions": false,
-      "statusLink": "/system/data-status",
-      "logoutLocation": "data-status ActionBar"
+    "desktop": {
+      "topbar": true,
+      "sidenav": true,
+      "statusbar": true,
+      "duplicateTopTaskTabs": false
     },
-    "visualReference": {
-      "repository": "freepass-creator/freepass-sales",
-      "revision": "e2b7fb0077a23c9e9bb2db4635e80cd4ba175492",
-      "paths": [
-        "docs/UI-STANDARD.md",
-        "웹/app.css",
-        "웹/index.html"
-      ],
-      "headerSurface": "white",
-      "bottomSurface": "white",
-      "activeTab": "icon tint + label weight, no filled background",
-      "barHeightPx": 60
-    }
+    "mobile": {
+      "topbar": false,
+      "sidenav": false,
+      "statusbar": false,
+      "depth0": "current panel + global bottom tabs",
+      "depth1Plus": "current panel + local ActionBar"
+    },
+    "shellRule": "Same component semantics, adaptive shell composition."
   },
   "components": {
     "canonical": [
-      "AdminChrome",
-      "TopMenu",
-      "MobileTabBar",
+      "Screen",
+      "Panel",
+      "PanelHead",
+      "PanelBody",
+      "PanelFoot",
+      "SearchBar",
+      "QuickFilter",
+      "AutoSelect",
+      "RowCards",
+      "RowCard",
+      "Tile",
+      "TileGroup",
+      "Badge",
+      "ProductDetail",
+      "SettlementDetail",
+      "FilterSheet",
+      "ActionBar",
+      "PanelHeader",
       "ListRow",
-      "StatusTile",
       "Tag",
       "PerkMarks",
-      "Icon",
-      "FilterSheet",
       "OfferPicker",
-      "DetailTabs",
-      "PhotoGallery",
-      "PanelHeader",
-      "SearchField",
-      "ActionBar",
-      "EmptyState",
-      "SummaryGrid",
-      "SummaryItem",
-      "Notice"
+      "DetailTabs"
     ],
-    "extractionCandidates": [
-      "SearchBox",
-      "Notice"
-    ]
+    "rule": "New screens start by composing canonical components; page-local visual systems are prohibited."
   },
   "colorSemantics": {
-    "selected": "navy",
-    "primary": "navy",
+    "selected": "primary tint / solid primary for compact selection controls",
+    "primary": "brand/navy",
     "success": "green",
-    "warning": "amber/red with text",
-    "destructive": "red with explicit text"
+    "info": "blue",
+    "warning": "amber",
+    "destructive": "red",
+    "neutral": "gray"
   },
   "rules": {
     "onePrimaryPerPanel": true,
-    "bordersMostly": [
-      "panel",
-      "search"
-    ],
+    "visibleBorders": false,
     "listSelectionBySurface": true,
+    "badgeIsSignalNotControl": true,
+    "passiveCardHasNoHover": true,
+    "interactiveOnlyHoverPress": true,
     "mobileOnePanelAtATime": true,
     "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true,
-    "salesAppIsVisualBaseline": true
+    "geometryFreezeForPolish": true
   },
   "knownDebt": [
-    "globals.css contains legacy rules overridden later by final rules",
-    "UI-SPEC still contains historical specs below the current-baseline section",
-    "row body height 64 vs rendered row about 88 needs explicit terminology",
-    "--박스 and --카드 must keep separate roles: info box vs list row"
+    "globals.css still contains historical/legacy visual values below the current final layer",
+    "generated erp-standard.css still contains upstream 22/17/15/13/11.5 and 28/32/34 values; FreePass Admin overrides them in shell.css while validating the new product scale",
+    "PC _erp and mobile _design remain two implementation generations sharing one semantic contract",
+    "some legacy public/login surfaces retain their own shells and are explicit exceptions"
   ],
   "implementedFixes": [
-    "CSS exposes shared --ui-* aliases without changing current visual values",
-    "ListRow dimensions route through shared UI tokens",
-    "support text outliers in status/internal/article labels normalized to 12px",
-    "mobile back visual remains 32px but hit area is expanded to 44px",
-    "core products/intake/settlement/esign routes use shared visual primitives",
-    "CI runs typecheck, tests, and UI SSOT regression check",
-    "globals.css legacy base layer is explicitly marked as non-authoritative",
-    "shared primitives replace repeated markup across core routes",
-    "FilterSheet restores focus to trigger and uses per-instance dialog ids",
-    "DetailTabs exposes tab semantics",
-    "ListRow exposes selected state semantics",
-    "pending forms expose busy state and side-step buttons prevent duplicate submission",
-    "PhotoGallery arrow pointer event no longer opens lightbox accidentally",
-    "PhotoGallery and global CSS honor reduced motion",
-    "global focus-visible treatment is standardized",
-    "stable inline visual styles moved to shared CSS classes",
-    "badge/list/section icon names are partially compile-time constrained with IconName",
-    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT"
+    "Line-free surface hierarchy: canvas #F2F6FC, white web panels, screen-flat mobile panels",
+    "Signal/action/selection semantics separated for Badge, Button, QuickFilter and Card",
+    "Desktop typography normalized to 24/20/18/16/14/12 through consumer override",
+    "Desktop control tiers normalized to 32 small / 36 standard / 40 row / 56 topbar",
+    "Mobile controls remain 44px with 44px minimum touch target",
+    "Spacing uses 4/8/12/16/20/24/32 scale; shared panel padding normalized from 22 to 20",
+    "Radius scale remains 4/6/8/pill",
+    "Elevation remains 0/base/hover/float",
+    "Web shell uses topbar + sidenav + multi-panel workspace + statusbar",
+    "Mobile shell has no global topbar and uses panel-first navigation",
+    "Internal Admin pages are guarded from page-local visual systems"
   ],
   "automation": {
     "command": "npm run ui:check",
     "workflow": ".github/workflows/ci.yml",
     "checks": [
-      "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
-      "required --ui-* CSS tokens exist",
-      "machine SSOT baseline remains 18/14/12, control 40, primary/touch 44, radius 4",
-      "stable core UI files do not reintroduce inline visual styles",
-      "focus-visible and reduced-motion rules exist"
+      "shared markup primitives are not reimplemented in core routes",
+      "internal Admin files do not add stable inline visual values or page-local style blocks",
+      "mobile panels declare list/detail/work semantic roles",
+      "mobile baseline remains 18/14/12 with 44px control/action/touch",
+      "desktop normalized scale remains 24/20/18/16/14/12 and 32/36/40/56",
+      "spacing/radius/elevation token scales remain constrained",
+      "focus-visible and reduced-motion behavior remain present"
     ]
   },
   "accessibility": {
@@ -283,5 +277,30 @@
       "denseComparison": "data-table"
     },
     "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
+  },
+  "spacing": {
+    "scalePx": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      32
+    ],
+    "basePx": 4,
+    "rule": "Stable layout spacing must use the scale. Optical exceptions require an explicit documented reason."
+  },
+  "elevation": {
+    "levels": [
+      "0",
+      "base",
+      "hover",
+      "float"
+    ],
+    "base": "0 1px 2px rgba(16,24,40,.07)",
+    "hover": "0 3px 7px rgba(16,24,40,.12)",
+    "float": "0 8px 22px rgba(16,24,40,.14)",
+    "rule": "Passive cards keep base elevation; only interactive components hover/press."
   }
 }

@@ -368,5 +368,23 @@
     },
     "exception": "32px embedded control allowed only inside a larger search/control surface",
     "rule": "Density is role-driven and fixed; do not create page-specific height tiers."
+  },
+  "alignment": {
+    "text": "left",
+    "number": "right",
+    "money": "right",
+    "numericVariant": "tabular-nums",
+    "panelHead": {
+      "left": "kind+title",
+      "right": "count/status-summary",
+      "actions": "PanelFoot"
+    },
+    "rowCard": {
+      "row1": "identity + status",
+      "row2": "metadata / conditions",
+      "row3": "result / money",
+      "overflow": "ellipsis identity/meta before breaking layout"
+    },
+    "rule": "Same data type keeps the same alignment across all internal Admin routes."
   }
 }

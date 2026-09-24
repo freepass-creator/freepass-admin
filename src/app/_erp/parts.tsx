@@ -248,13 +248,16 @@ export const man = (n: number | null | undefined) => (typeof n === 'number' && N
 export type Facet = { key: string; title: string; options: { value: string; label?: string; count?: number }[] };
 
 /**
- * ⑥ 조회 — 검색창 하나 + 상세 필터 하나 (규격 §5-1 «미니멀»).
- *   조건은 상세 필터 안의 건수 칩으로 고르고(주소 한 칸씩), 고른 조건은 검색창 옆 칩(×)으로 보인다.
+ * ⑥ 조회 — 검색창 하나 + 필터 하나 (규격 §5-1 «미니멀»).
+ *   조건은 필터 안의 건수 칩으로 고르고(주소 한 칸씩), 고른 조건은 검색창 옆 칩(×)으로 보인다.
  *   드롭다운은 분류가 꼭 필요한 화면에서만(dropdown) — 고르면 바로 조회.
  */
-export function SearchBar({ base, q, name = 'q', placeholder, facets = [], dropdown, keep = [], aside }: {
+export function SearchBar({ base, q, name = 'q', placeholder, facets = [], filter, dropdown, keep = [], aside }: {
   base: string; q: Record<string, string | string[] | undefined>; name?: string; placeholder: string;
   facets?: Facet[]; dropdown?: ReactNode; keep?: string[];
+  /** 필터 — 화이트라벨·레트로의 두 칸 조건판(FilterSheet). 주면 이걸 쓰고, facets 의 단일값 칩 필터는 안 그린다
+   *  (검색창 옆에는 늘 필터 하나 — 규격 §5-1, 대표 2026-09-24 「검색창 옆에는 필터 버튼이 있다」). */
+  filter?: ReactNode;
   /** 상태 탭 — 검색 줄 오른쪽. 툴바 줄은 일괄 작업이 있을 때만 따로 둔다(규격 §5-1) */
   aside?: ReactNode;
 }) {
@@ -269,9 +272,9 @@ export function SearchBar({ base, q, name = 'q', placeholder, facets = [], dropd
         <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
         <input name={name} defaultValue={val(name)} placeholder={placeholder} aria-label={placeholder} />
       </label>
-      {facets.length ? (
+      {filter ?? (facets.length ? (
         <details className="erp-filter-more">
-          <summary className="erp-btn">상세 필터{active.length ? <> <b>{active.length}</b></> : null}</summary>
+          <summary className="erp-btn">필터{active.length ? <> <b>{active.length}</b></> : null}</summary>
           <div className="erp-filter-panel">
             {facets.map((f) => (
               <div className="erp-facet" key={f.key}>
@@ -294,7 +297,7 @@ export function SearchBar({ base, q, name = 'q', placeholder, facets = [], dropd
             </div>
           </div>
         </details>
-      ) : null}
+      ) : null)}
       {active.map(({ f, v }) => (
         <Link key={f.key} className="erp-chip" href={hrefWith(base, q, { [f.key]: null, page: null })}>
           {f.title}: {f.options.find((o) => o.value === v)?.label ?? v} ×

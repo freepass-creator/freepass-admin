@@ -111,6 +111,50 @@
    * dz-form-grid 는 원래 폰 자동열(auto-fill)이라 데스크톱 넓은 칸에서 여러 칸이 한 줄에 늘어섰다. */
   .erp-std .erp-embed .dz-form-grid { grid-template-columns: 1fr; gap: var(--erp-sp-3); }
   .erp-std .erp-embed .dz-form-group { padding: var(--erp-sp-4); background: var(--erp-color-sunken); border-radius: var(--erp-r-md); }
+
+  /* 필터 — 화이트라벨·레트로의 두 칸 조건판(FilterSheet)을 규격 검색창 줄 안에 앉힌다(대표 2026-09-24
+   * 「검색창 옆에는 필터 버튼이 있다 … 필터는 화이트 라벨 열리는 방식 … 좌측에 항목 있고 그 항목 누르면
+   * 체크박스」). 부품(FilterSheet.tsx · dz-fs-*)은 그대로 재사용하고, 여기서는 자리(검색창 줄의 한 칸
+   * — 예전엔 .dz-find 안 절대좌표였다)와 옷(규격 색·글자)만 규격에 맞춘다. */
+  .erp-std .erp-searchbar { position: relative; }
+  .erp-std .dz-fs-open {
+    position: static; display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 14px;
+    border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
+    color: var(--erp-color-text); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
+  }
+  .erp-std .dz-fs-open:hover, .erp-std .dz-fs-open.on { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-open i { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); }
+  .erp-std .dz-fs-sheet {
+    position: absolute; top: calc(100% + 6px); right: 0; left: auto; z-index: 20; width: 480px; max-width: calc(100vw - 2 * var(--erp-sp-5));
+    height: min(480px, 60vh); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg);
+    background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3);
+  }
+  .erp-panel--compact .dz-fs-sheet { width: 280px; }
+  .erp-std .dz-fs-head { padding: var(--erp-sp-3) var(--erp-sp-3) var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+  .erp-std .dz-fs-head b { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+  .erp-std .dz-fs-head button, .erp-std .dz-fs-axis button, .erp-std .dz-fs-more {
+    color: var(--erp-color-text-2); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md);
+  }
+  .erp-std .dz-fs-head button:hover, .erp-std .dz-fs-axis button:hover, .erp-std .dz-fs-more:hover { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-body nav { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-body nav button { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+  .erp-std .dz-fs-body nav button:hover { color: var(--erp-color-text); }
+  .erp-std .dz-fs-body nav button.on { background: var(--erp-color-surface); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std .dz-fs-body nav i { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); }
+  .erp-std .dz-fs-axis b { font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+  .erp-std .dz-fs-check { color: var(--erp-color-text); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md); }
+  .erp-std .dz-fs-check:hover { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-check .box { border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); }
+  .erp-std .dz-fs-check.on .box { background: var(--erp-color-primary); }
+  .erp-std .dz-fs-check .n { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+  .erp-std .dz-fs-foot { border-top: 1px solid var(--erp-color-line); }
+  .erp-std .dz-fs-foot .primary {
+    border: 1px solid var(--erp-color-primary); border-radius: var(--erp-r-md); background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
+  }
+  .erp-std .dz-fs-foot.dz-bar-go { display: flex; }
+  .erp-std .dz-fs-foot .dz-bar-sub { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md); }
+  .erp-std .dz-fs-foot .dz-bar-sub:hover { background: var(--erp-color-sunken); }
 }
 
 @media (max-width: 900px) {

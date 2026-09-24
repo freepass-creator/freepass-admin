@@ -11,7 +11,10 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { productList, settlements, today } from '../../server/erp5';
 import type { CanonicalProduct } from '../../domain/product/types';
-import { lead, STATUS_ORDER } from '../products/workspace-config';
+import { lead, STATUS_ORDER, 많은순 } from '../products/workspace-config';
+import { standingFixed, tallyMatch } from '../_design/facet-standing';
+import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
+import { 고른값 } from '../_design/pick';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
@@ -87,20 +90,34 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
    * erp-panel--compact CSS 가 카드의 facts · steps 는 이미 숨긴다 — 여기 남는 차이는 금액 뿐이다.
    */
   const itext = sp(q.wiq).trim().toLowerCase();
-  const isup = sp(q.wisup), ich = sp(q.wich);
   const iv = (BUCKETS as string[]).includes(sp(q.wiv)) || sp(q.wiv) === 'all' ? sp(q.wiv) : '당월접수';
   const perfView = 실적칸.includes(iv as Bucket);
-  const iSearched = rows
-    .filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(itext))
-    .filter((r) => !isup || r.supplier === isup).filter((r) => !ich || r.channel === ich);
+  /*
+   * 상세 필터 — 화이트라벨·레트로의 두 칸 조건판(FilterSheet, §5-1 「검색창 옆에는 필터 버튼」)을
+   * 그대로 쓴다(대표 2026-09-24 「필터는 화이트 라벨 열리는 방식 있잖아 … 좌측에 항목 있고 그 항목
+   * 누르면 체크박스」) — 새로 짓지 않고 ProductWorkspace 가 이미 쓰는 규칙(facet-standing · 많은순)
+   * 그대로 옮긴다. 여러 값을 고르는 축이라 단일값 대신 고른값(콤마 조인)으로 받는다.
+   */
+  const 접수축: [string, string, (r: SettlementRow) => string][] = [
+    ['wisup', '공급사', (r) => r.supplier ?? ''],
+    ['wich', '영업채널', (r) => r.channel ?? ''],
+  ];
+  const iSel = Object.fromEntries(접수축.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
+  const i통과 = (r: SettlementRow, skip?: string) => 접수축.every(([a, , of]) => a === skip || !iSel[a].length || iSel[a].includes(of(r)));
+  const iTextSearched = rows.filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(itext));
+  const iSearched = iTextSearched.filter((r) => i통과(r));
   const iInView = (r: SettlementRow) => iv === 'all' || bucketOf(r, now) === iv;
   const iShown = sortIntakeRows(iSearched.filter(iInView), iv as Bucket | 'all');
   const ipage = Math.max(1, Number(sp(q.wpage)) || 1);
   const ipages = Math.max(1, Math.ceil(iShown.length / IPAGE));
   const islice = iShown.slice((ipage - 1) * IPAGE, ipage * IPAGE);
   const iCount = (b: Bucket) => iSearched.filter((r) => bucketOf(r, now) === b).length;
-  const isuppliers = [...new Set(rows.map((r) => r.supplier).filter(Boolean) as string[])].sort();
-  const ichannels = [...new Set(rows.map((r) => r.channel).filter(Boolean) as string[])].sort();
+  const 접수판축: FacetAxis[] = 접수축.map(([a, label, of]) => {
+    const keys = 많은순(rows.map(of));
+    const base = tallyMatch(rows, keys, (r, k) => of(r) === k);
+    const live = tallyMatch(iTextSearched.filter((r) => i통과(r, a)), keys, (r, k) => of(r) === k);
+    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
+  });
   const iTitle = perfView ? '실적' : '접수목록';
 
   /*
@@ -297,10 +314,8 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
 
       <Panel compact>
         <PanelHead kind="목록" title={iTitle} count={`전체 ${iShown.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} facets={[
-          { key: 'wisup', title: '공급사', options: isuppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && iInView(r)).length })) },
-          { key: 'wich', title: '영업채널', options: ichannels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && iInView(r)).length })) },
-        ]} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']}
+          filter={<FilterSheet axes={접수판축} count={iShown.length} unit="건" label="필터" />} />
         <QuickFilter label="접수 칸" items={[
           { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
           ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),

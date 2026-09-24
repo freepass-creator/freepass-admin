@@ -1021,3 +1021,59 @@
     flex-shrink: 0;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Color contrast refinement
+ * small/support text는 너무 옅지 않게, semantic colors는 의미를 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-text-strong: #101828;
+    --fp-text-secondary: #475467;
+    --fp-text-muted: #667085;
+    --fp-nav-text: #AEB9CA;
+    --fp-nav-muted: #8492A6;
+    --fp-nav-active: #1D355A;
+  }
+
+  .erp-std {
+    color: var(--fp-text-strong);
+  }
+
+  .erp-std :is(
+    .erp-muted,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-label,
+    .erp-kpi-label,
+    .erp-kpi-delta,
+    .erp-panel-count
+  ) {
+    color: var(--fp-text-muted);
+  }
+
+  .erp-std :is(.erp-rowcard-sub,.erp-panel-foot,.erp-chip) {
+    color: var(--fp-text-secondary);
+  }
+
+  .erp-std :is(.erp-nav-item,.erp-company,.erp-iconbtn) {
+    color: var(--fp-nav-text);
+  }
+
+  .erp-std .erp-nav-group {
+    color: var(--fp-nav-muted);
+  }
+
+  .erp-std .erp-nav-item[aria-current="page"],
+  .erp-std .erp-nav-sub a[aria-current="page"] {
+    background: var(--fp-nav-active);
+    color: #FFFFFF;
+  }
+
+  /* semantic signal colors stay text+surface, not decorative saturation */
+  .erp-std .erp-badge--ok { color: #067647; background: #ECFDF3; }
+  .erp-std .erp-badge--info { color: #175CD3; background: #EFF8FF; }
+  .erp-std .erp-badge--warn { color: #B54708; background: #FFFAEB; }
+  .erp-std .erp-badge--err { color: #B42318; background: #FEF3F2; }
+}

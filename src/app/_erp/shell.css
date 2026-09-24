@@ -889,3 +889,55 @@
     white-space: nowrap;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Async / empty / error / readonly state surfaces
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.erp-muted,.erp-field-error,.erp-state-empty,.erp-state-warn,.erp-state-ok,.erp-state-error) {
+    margin: 0;
+    padding: var(--erp-sp-3);
+    border: 0;
+    border-radius: var(--erp-r-md);
+    box-shadow: none;
+    font-size: var(--erp-fs-label);
+    line-height: 1.5;
+  }
+
+  .erp-std :is(.erp-muted,.erp-state-empty) {
+    background: var(--fp-component-surface);
+    color: var(--erp-color-text-2);
+  }
+  .erp-std .erp-state-warn {
+    background: var(--erp-color-warn-bg);
+    color: var(--erp-color-warn);
+  }
+  .erp-std .erp-state-ok {
+    background: var(--erp-color-ok-bg);
+    color: var(--erp-color-ok);
+  }
+  .erp-std :is(.erp-field-error,.erp-state-error) {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+  }
+
+  .erp-std :is(.erp-input[readonly],.erp-input--readonly,[aria-readonly="true"]) {
+    background: var(--erp-color-neutral-bg);
+    color: var(--erp-color-text-2);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .erp-std [aria-busy="true"] {
+    opacity: .72;
+    pointer-events: none;
+    cursor: progress;
+  }
+
+  .erp-std :is([data-ui-state="stale"],[data-ui-state="offline"]) {
+    background: var(--fp-surface-hover);
+    color: var(--erp-color-text-2);
+    box-shadow: none;
+  }
+}

@@ -1449,7 +1449,7 @@ FreePass Admin은 사용자 선택형 density switch보다
 ## Rhythm
 
 - section separation: 16px
-- list/card gap: 8px
+- list/card gap: 12px
 - control gap: 8px
 - compact item inner gap: 8px
 - card/item padding: 12px
@@ -2094,7 +2094,7 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 ## 기본값
 
-- card gap: 8px
+- card gap: 12px
 - card padding: 12px
 - compact desktop card min-height: 64px
 - standard desktop card min-height: 72px
@@ -2325,14 +2325,43 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 
 카드 간격과 섹션 간격은 다른 계층이다.
 
-- 같은 섹션 안 Card ↔ Card: **8px**
+- 같은 섹션 안 Card ↔ Card: **12px**
 - 서로 다른 Section ↔ Section: **16px**
 
 예:
-- 상품상세의 `대여료` 기간별 Tile들: 8px
+- 상품상세의 `대여료` 기간별 Tile들: 12px
 - 차량요약 ↔ 대여료 ↔ 담당자 참고: 16px
-- 일반 목록 RowCard들: 8px
+- 일반 목록 RowCard들: 12px
 
 금지:
 - TileGroup에 section rhythm 16px를 적용
 - 카드 간격과 섹션 간격을 같은 토큰으로 묶기
+
+
+# 50. Selection styling audit
+
+카드 선택 상태는 **visible border를 사용하지 않는다.**
+
+## Card
+- resting: component surface
+- hover: subtle surface/elevation
+- selected: primary tint + shallow inset
+- selected + hover: selected tint 유지
+- focus: soft halo 추가
+- selected border: transparent
+
+## Compact selection control
+QuickFilter / Tab / segmented control처럼 작은 control은
+solid brand surface + on-primary text를 사용할 수 있다.
+
+## 금지
+- 카드 선택에 2px/3px primary outline
+- 선택 카드만 갑자기 테두리가 생겨 box size가 달라지는 것
+- hover와 selected가 같은 그림자
+- selected card를 더 높이 띄우는 것
+- 카드마다 서로 다른 selected 문법
+
+## Spacing hierarchy
+- control gap: 8px
+- card gap: 12px
+- section gap: 16px

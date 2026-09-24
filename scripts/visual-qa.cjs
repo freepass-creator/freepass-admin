@@ -89,6 +89,25 @@ async function inspect(page) {
       primary: pick('.erp-btn--primary, button.primary, a.primary'),
       panels: pick('.erp-panel, .panel'),
       cards: pick('.erp-rowcard, .erp-tile, .dz-row'),
+      cardMetrics: (() => {
+        const card = [...document.querySelectorAll('.erp-rowcard, .dz-row')].find(visible);
+        const amount = card?.querySelector('.erp-rowcard-amount, .dz-row-l3 > strong, .dz-row-l2.value strong');
+        if (!card) return null;
+        const cs = getComputedStyle(card);
+        const as = amount ? getComputedStyle(amount) : null;
+        const r = card.getBoundingClientRect();
+        return {
+          paddingTop: parseFloat(cs.paddingTop) || 0,
+          paddingRight: parseFloat(cs.paddingRight) || 0,
+          paddingBottom: parseFloat(cs.paddingBottom) || 0,
+          paddingLeft: parseFloat(cs.paddingLeft) || 0,
+          rowGap: parseFloat(cs.rowGap) || 0,
+          columnGap: parseFloat(cs.columnGap) || 0,
+          height: Math.round(r.height),
+          amountTextAlign: as?.textAlign ?? null,
+          amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
+        };
+      })(),
       surfaceSamples: {
         panel: pick('.erp-panel, .panel').slice(0, 4),
         card: pick('.erp-rowcard, .erp-tile, .dz-row').slice(0, 8),
@@ -197,6 +216,23 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      const cm = info.cardMetrics;
+      if (cm) {
+        const minPad = c.width <= 900 ? 8 : 12;
+        if (Math.min(cm.paddingTop, cm.paddingRight, cm.paddingBottom, cm.paddingLeft) < minPad) {
+          problems.push(`card padding below ${minPad}px: ${JSON.stringify(cm)}`);
+        }
+        if (c.width <= 900 && cm.height < 88) {
+          problems.push(`mobile card height below 88px: ${cm.height}px`);
+        }
+        if (c.width > 900 && cm.height < 64) {
+          problems.push(`desktop card height below 64px: ${cm.height}px`);
+        }
+        if (cm.amountTextAlign && cm.amountTextAlign !== 'right' && cm.amountTextAlign !== 'end') {
+          problems.push(`card amount is not right aligned: ${cm.amountTextAlign}`);
+        }
+      }
+
       for (const [kind, list] of [['selected', info.selected], ['primary', info.primary]]) {
         for (const el of list) {
           const ratio = contrast(el.color, el.backgroundColor);
@@ -223,6 +259,7 @@ async function runInteractiveStates(page, c) {
         selected: info.selected,
         primary: info.primary,
         surfaceSamples: info.surfaceSamples,
+        cardMetrics: info.cardMetrics,
         interactiveStates,
         problems,
       };

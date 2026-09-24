@@ -638,3 +638,42 @@ body > nav.fn-top :where(a, button):focus-visible,
     transition: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Responsive shell contract
+   Web  = topbar + sidenav + multi-panel + statusbar
+   Mobile = NO global topbar/sidenav/statusbar. Current panel starts at the top.
+   Same business components, different shell composition.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* 과거 모바일 상태바가 남아 있어도 보이지 않게 fail-closed. */
+  header.fn-top.dz-statusbar,
+  body > .erp-topbar,
+  body > .erp-sidenav,
+  body > .erp-statusbar {
+    display: none !important;
+  }
+
+  /* 모바일은 전역 머리 높이를 계산에 넣지 않는다. */
+  body {
+    padding-top: 0;
+  }
+  .fn-main {
+    min-height: 100dvh;
+  }
+  .fn-main .workspace {
+    min-height: 100dvh;
+  }
+
+  /* depth 0: 하단 global tab만 빼고 panel이 화면 전체를 쓴다.
+   * depth 1+: 기존 규칙이 --아래띠를 safe-area/action boundary로 줄인다. */
+  .fn-main .workspace > .panel {
+    min-height: calc(100dvh - var(--판탭) - var(--아래띠) - 8px);
+  }
+
+  /* Panel 자체가 모바일의 header 역할을 한다. 별도 app header를 다시 만들지 않는다. */
+  .fn-main .workspace > .panel > .panel-head {
+    margin-top: 0;
+  }
+}

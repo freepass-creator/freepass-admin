@@ -1366,3 +1366,28 @@ solid outline/border 대신 **soft focus halo**를 기본으로 한다.
 - page별 shadow 강도 생성
 - page별 focus style 생성
 - line을 다시 기본 hierarchy 수단으로 사용
+
+
+# 26. Surface depth hierarchy — Canvas / Panel / Card
+
+Line-free UI에서 shadow만으로 위계를 만들지 않는다.
+색의 밝기 단계와 elevation을 함께 쓴다.
+
+| Layer | Surface | 역할 |
+|---|---|---|
+| Canvas | `#F2F6FC` | 가장 바깥 작업 배경 |
+| Panel | `#FFFFFF` | 하나의 업무 surface |
+| Component / Card | `#F7F9FC` | Panel 내부 entity / info 단위 |
+| Hover | `#F3F6FA` | interactive 순간 상태 |
+| Selected | `#EAF1FF` | 선택 고정 상태 |
+| Popup / Sheet | `#FFFFFF` + float elevation | 떠 있는 transient surface |
+
+## 원칙
+
+- Panel과 Card가 같은 resting surface를 쓰지 않는다.
+- 위계가 약하다고 shadow를 더 세게 하지 않는다.
+- Card/Field/Secondary control은 같은 cool surface family를 쓸 수 있다.
+- 역할 차이는 interaction semantics로 구분한다.
+- Selected는 회색을 더 진하게 하는 것이 아니라 primary tint로 표현한다.
+- Web Panel은 Canvas 위에서 base elevation.
+- Mobile Panel은 screen surface이므로 shadow 없음; child card만 component surface를 쓴다.

@@ -162,6 +162,24 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const riskActionBaseline = [
+  ['src/app/intake/[code]/Progress.tsx', [
+    /className="dz-action-danger"/,
+    /data-confirm="인도 완료 상태를 되돌릴까요\?/,
+    /data-confirm="이 접수를 취소할까요\?/,
+    /window\.confirm/,
+  ]],
+  ['src/app/settlement/LifeForms.tsx', [
+    /className="dz-action-caution"/,
+  ]],
+] as const;
+for (const [file, rules] of riskActionBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: action risk contract missing: ${re}`);
+  }
+}
+
 const formContractBaseline = [
   ['src/app/intake/new/IntakeForm.tsx', [
     /className="dz-errs" role="alert" aria-live="assertive"/,

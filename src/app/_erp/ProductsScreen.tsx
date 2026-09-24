@@ -9,7 +9,7 @@ import { productList } from '../../server/erp5';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
 import { sp, txt } from '../_fn/fmt';
-import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, won0, type Facet, type Tone } from './parts';
+import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Tile, TileGroup, won0, type Facet, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 /** 차명 — 세부모델(없으면 모델)이 이름, 제조사 · 트림은 보조. 모델명을 두 번 찍지 않는다. */
@@ -126,18 +126,15 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
             </section>
             <section className="erp-card">
               <CardHead title="요금" sub={term || rentMax ? '조건에 맞는 요금만' : '기간별'} />
-              <table className="erp-grid erp-grid--dense">
-                <thead><tr><th>기간</th><th className="erp-num">월 대여료</th><th className="erp-num">보증금</th></tr></thead>
-                <tbody>
+              <div className="erp-card-body">
+                <TileGroup>
                   {selOffers.map((o) => (
-                    <tr key={o.id} aria-selected={o.id === selOffer.id}>
-                      <td><Link className="erp-row-link" href={hrefWith(base, q, { offer: o.id })}>{o.termMonths}개월</Link></td>
-                      <td className="erp-num erp-strong">{won0(o.monthlyRent)}</td>
-                      <td className="erp-num">{o.deposit ? won0(o.deposit) : '0'}</td>
-                    </tr>
+                    <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={o.id === selOffer.id}
+                      lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
+                      note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
                   ))}
-                </tbody>
-              </table>
+                </TileGroup>
+              </div>
             </section>
             <section className="erp-card">
               <CardHead title="우대조건 · 정책" />

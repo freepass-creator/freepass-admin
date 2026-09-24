@@ -94,6 +94,32 @@ export function Props({ pairs }: { pairs: [string, ReactNode][] }) {
 }
 
 /**
+ * 타일 — 규격 §5-4/§5-6. 테두리 없이 그림자로만 뜨는 낱장 카드 — 핵심 정보를 2행으로 보여준다
+ *   (메인 행: 이름 + 강조 값, 보조 행: 라벨 + 강조 보조값). href 를 주면 고르는 타일(A. 누르는 카드,
+ *   aria-pressed)이 되고, 안 주면 그냥 읽는 타일(B. 설명하는 카드)이 된다. §4 `erp-card`(테두리 있는
+ *   큰 구획 카드)와는 다른 부품이다 — 헷갈리지 않게 이름을 다르게 뒀다(erp.css 참고).
+ */
+export function Tile({ href, pressed, lede, figure, note, noteAccent }: {
+  href?: string; pressed?: boolean; lede: ReactNode; figure: ReactNode; note?: ReactNode; noteAccent?: ReactNode;
+}) {
+  const cls = `erp-tile${href ? ' erp-tile--pressable' : ''}`;
+  const body = <>
+    <div className="erp-tile-row"><b>{lede}</b><strong>{figure}</strong></div>
+    {note !== undefined || noteAccent !== undefined ? (
+      <div className="erp-tile-row"><span>{note}</span><span className="erp-tile-note--accent">{noteAccent}</span></div>
+    ) : null}
+  </>;
+  return href
+    ? <Link className={cls} aria-pressed={pressed} href={href}>{body}</Link>
+    : <div className={cls}>{body}</div>;
+}
+
+/** 타일 목록 — 카드 사이 간격(§5-4 표) */
+export function TileGroup({ children }: { children: ReactNode }) {
+  return <div className="erp-tile-group">{children}</div>;
+}
+
+/**
  * 긴 카드 — 규격 §5-3. 한 건 = 가로로 긴 카드 한 장(대표 2026-09-23 「줄 타입은 촌스럽다 … 카드를 기다랗게」 · 「그거 규격으로 다 해놓고」).
  *   ① 누구 · 무슨 차 → ② 어디까지 왔나(steps) → ③ 조건(facts) → ④ 돈. 이름 링크가 카드 전체를 덮는다.
  *   steps 가 없으면(상품) ③ 이 ② 자리까지 넓어진다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다.

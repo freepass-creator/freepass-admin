@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 0bed71388eb16584b272d116f80e910613e232b8
+ * 정본: freepass-creator/ai-core @ 0909af73acd20c643b36bace649e5fe1c986a0fa
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -463,6 +463,17 @@
 .erp-tile--pressable { cursor: pointer; }
 .erp-tile--pressable:hover { box-shadow: 0 0 0 1px var(--erp-color-line-strong), 0 4px 10px -3px var(--erp-color-text-3); }
 .erp-tile--pressable[aria-pressed="true"] { background: var(--erp-color-primary-weak); box-shadow: 0 0 0 2px var(--erp-color-primary); }
+/* 타일 안 내용 — 핵심 정보 2행(freepass-admin 실제 적용 때 일반화, 대표 2026-09-24 「기간 대여료
+ * 보증금이 가장 핵심 정보지」의 카드 안 배치를 상품상세 레퍼런스 전용 클래스(sv-term-main 등)로 남기지
+ * 않고 모든 타일이 쓸 수 있게 올렸다) — 한 줄에 굵은 이름(b) + 강조 값(strong)을 양 끝으로, 보조 줄은
+ * 옅은 라벨(span) + 강조 보조값(erp-tile-note--accent)을 양 끝으로 둔다. 골랐을 때(aria-pressed)는
+ * 메인 줄이 Primary 색으로 바뀐다. */
+.erp-tile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.erp-tile-row b { font-weight: var(--erp-fw-bold); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-tile-row strong { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+.erp-tile-row span { font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); color: var(--erp-color-text-2); }
+.erp-tile-row .erp-tile-note--accent { color: var(--erp-color-ok); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+.erp-tile--pressable[aria-pressed="true"] .erp-tile-row b, .erp-tile--pressable[aria-pressed="true"] .erp-tile-row strong { color: var(--erp-color-primary); }
 /* 목록 패널 안 — 좁은 폭에서도 서는 작은 긴 카드(§5-3 erp-rowcard 를 그대로 쓰되 칸을 좁힌다)
  * 눌러야 상세내용 패널이 열리므로(대표 2026-09-24 「누르면 상세가 보이는데 계속 보고 있을 것도 아니고」),
  * 여기서는 상태(뱃지)와 고르는 데 필요한 최소 식별 정보 + 금액까지만 — steps 트래커 · facts 는 상세내용 패널 몫이라 뺀다.

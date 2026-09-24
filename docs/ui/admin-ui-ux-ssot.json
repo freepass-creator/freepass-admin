@@ -744,5 +744,29 @@
     "selected": "primary-tint",
     "equalRestingSurfaceAllowed": false,
     "visualQa": "fail when first visible panel/card computed backgrounds are identical"
+  },
+  "cardRhythm": {
+    "gapPx": 8,
+    "paddingPx": 12,
+    "desktop": {
+      "compactMinHeightPx": 64,
+      "standardMinHeightPx": 72
+    },
+    "mobile": {
+      "minHeightPx": 88
+    },
+    "amount": {
+      "align": "right",
+      "numericVariant": "tabular-nums"
+    },
+    "overflow": {
+      "identity": "ellipsis",
+      "meta": "ellipsis"
+    },
+    "visualQa": [
+      "padding",
+      "renderedHeight",
+      "amountAlignment"
+    ]
   }
 }

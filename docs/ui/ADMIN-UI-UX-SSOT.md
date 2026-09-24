@@ -1812,3 +1812,39 @@ Badge/Notice에는 반드시 텍스트 의미가 함께 있어야 한다.
 - focus-visible은 soft halo로 명확히 표시
 - icon-only action은 accessible name 필수
 - 키보드로 도달할 수 없는 핵심 action 금지
+
+
+# 37. Form validation & submit contract
+
+## Required
+- 실제 필수값은 native `required`를 사용한다.
+- 시각적 별표는 보조 표기다.
+- 필수 여부를 색만으로 표현하지 않는다.
+
+## Error
+- 서버 validation error summary는 `role="alert"` + `aria-live="assertive"`.
+- field-specific error가 특정될 때만 해당 control에 `aria-invalid="true"`.
+- 전체 폼 오류를 모든 입력에 `aria-invalid`로 뿌리지 않는다.
+- 오류 surface는 red-soft + readable text, visible border 없음.
+
+## Numeric / Money
+- `inputmode="numeric|decimal"` 사용 가능.
+- 숫자·금액은 우측 정렬.
+- tabular-nums 사용.
+- spinner가 필요하지 않은 업무 금액 입력에 `type=number`를 강제하지 않는다.
+
+## Pending / Submit
+- form은 `aria-busy="true"`로 pending을 표시.
+- 실제 submit control은 disabled 또는 동등하게 중복 제출 방지.
+- 버튼 문구는 가능하면 `저장 중…`, `만드는 중…`처럼 현재 상태를 말한다.
+- pending 때문에 layout geometry가 바뀌지 않는다.
+
+## Success
+- 성공 메시지는 해당 action/form 근처에 표시.
+- green soft surface + 텍스트 의미.
+- 성공했다고 자동으로 상세 정보를 숨기지 않는다.
+
+## Retry / Failure
+- 서버 오류 시 사용자가 입력한 값을 가능한 한 보존한다.
+- 실패 후 재시도 경로가 사라지지 않는다.
+- destructive action은 일반 저장과 시각적으로 구분한다.

@@ -753,3 +753,57 @@
     box-shadow: none !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Density contract
+ * 실제 업무 화면의 세로 리듬을 padding 우연값이 아니라 명시적인 tier로 고정한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-panel-head-h: 48px;
+    --fp-query-row-h: 52px;
+    --fp-quick-row-h: 48px;
+    --fp-panel-foot-h: 60px;
+    --fp-row-compact-min-h: 64px;
+    --fp-row-standard-min-h: 72px;
+    --fp-section-rhythm: 16px;
+  }
+
+  .erp-std .erp-panel-head {
+    min-height: var(--fp-panel-head-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-searchbar {
+    min-height: var(--fp-query-row-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-toolbar {
+    min-height: var(--fp-quick-row-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-panel-foot {
+    min-height: var(--fp-panel-foot-h);
+    padding-block: var(--erp-sp-3);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    min-height: var(--fp-row-compact-min-h);
+  }
+
+  .erp-std .erp-rowcard:not(.erp-panel--compact .erp-rowcard) {
+    min-height: var(--fp-row-standard-min-h);
+  }
+
+  /* 상세/업무 안의 section 간 리듬은 16px 한 단계로 통일 */
+  .erp-std :is(.erp-tile-group,.erp-form,.erp-section-group) {
+    gap: var(--fp-section-rhythm);
+  }
+}

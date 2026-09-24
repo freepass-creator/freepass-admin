@@ -21,10 +21,13 @@ export function Screen({ name, children, footer }: { name: string; children: Rea
 /**
  * 패널 — 규격 §5-4. 판 셋(목록 | 상세내용 | 목록)을 나란히 조립하는 자족 카드. `compact` 면 카드가
  * 좁은 폭에 맞춰 두 줄로 접힌다(erp-panel--compact — SearchBar · RowCards · RowCard 는 이 클래스가
- * 부모에 있으면 저절로 좁은 모양으로 바뀐다, 부품 쪽에서 따로 안 챙겨도 된다).
+ * 부모에 있으면 저절로 좁은 모양으로 바뀐다, 부품 쪽에서 따로 안 챙겨도 된다). `wide` 는 판이 셋일
+ * 필요 없는 화면(목록 + 상세 둘뿐)에서 목록 판을 다른 목록 판 두 개 폭으로 넓힌다(erp-panel--wide) —
+ * compact 와 같이 쓰면 좁은 카드가 두 칸 그리드로 깐다(대표 2026-09-24 「패널 두 개를 합쳐서 … 목록
+ * 패널이 1 곱하기 2짜리가 들어가」).
  */
-export function Panel({ compact, flip, children }: { compact?: boolean; flip?: boolean; children: ReactNode }) {
-  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}${flip ? ' erp-panel--flip' : ''}`}>{children}</section>;
+export function Panel({ compact, wide, flip, children }: { compact?: boolean; wide?: boolean; flip?: boolean; children: ReactNode }) {
+  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}${wide ? ' erp-panel--wide' : ''}${flip ? ' erp-panel--flip' : ''}`}>{children}</section>;
 }
 
 /** 패널 머리 — 왼쪽 이름표 칩 + 제목, 오른쪽 칩(§5-4 「전체 N건」/「고른 <대상>」). */

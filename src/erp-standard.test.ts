@@ -36,9 +36,23 @@ test('settlement is panelized like the intake workspace, not a standalone §4 pa
   assert.equal(/style=\{\{/.test(src), false, 'no inline style');
 });
 
-test('two desktop screens are still built from the older §4 skeleton regions', () => {
+test('products is a two-panel wide-list + detail workspace, not a standalone §4 page', () => {
+  // 대표 2026-09-24 「상품 찾기 페이지가 메인이야 … 패널 두 개를 합쳐서 상품 목록을 두 줄로 깔면 돼
+  // … 상품 찾기는 목록 패널이 1 곱하기 2짜리가 들어가. 그리고 상세 패널은 계약 접수 페이지에도 있는
+  // 그 패널이 동일하게」 — §4 erp-cols(「저 화면은 안 쓰는 거야」)를 걷어내고 §5-4 erp-panel 둘
+  // (목록 1×2 wide | 상품상세)로 다시 짰다. 상세 판은 계약접수와 같은 부품(ProductDetail)을 쓴다.
+  const src = read('src/app/_erp/ProductsScreen.tsx');
+  assert.equal(src.includes('<PageHeader'), false, 'no standalone page header — panels carry their own PanelHead');
+  assert.equal(src.includes('erp-cols'), false, 'no §4 two-column card grid');
+  assert.ok(src.includes('<Panel compact wide>'), '목록 판은 compact + wide(1×2)');
+  assert.ok(src.includes('<ProductDetail'), '상품상세 판은 계약접수와 같은 부품을 재사용, 새로 안 그린다');
+  assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), 'long card list');
+  assert.ok(src.includes('<SearchBar') && src.includes('filter={<FilterSheet'), 'search bar with filter button');
+  assert.equal(/style=\{\{/.test(src), false, 'no inline style');
+});
+
+test('one desktop screen is still built from the older §4 skeleton regions', () => {
   const screens = {
-    'src/app/_erp/ProductsScreen.tsx': [],
     'src/app/_erp/EsignScreen.tsx': [],
   } as const;
   for (const [file, regions] of Object.entries(screens)) {

@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 0504a5c3d5272afddfc852d87efea65ec8497dde
+ * 정본: freepass-creator/ai-core @ 7386533d95628ae5ae21a705b9abfa5766d4b08b
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -573,6 +573,14 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 전용 CSS 로 다시 베끼지 않는다(대표 2026-09-24 「공통 CSS랑 … 절대로 그 페이지 전용을 만들지 마」). */
 .erp-workspace { display: flex; min-height: 0; padding: var(--erp-sp-4) var(--erp-sp-5); gap: var(--erp-sp-4); }
 .erp-workspace .erp-panel { flex: 1 1 0; min-width: 0; }
+/* 패널 둘을 하나로 합친 폭(1×2) — 판이 셋일 필요 없는 화면(예: 상품찾기 = 목록 하나 + 상세 하나)에서
+ * 목록 판이 다른 목록 판 둘만큼 넓게 선다(대표 2026-09-24 「패널 두 개를 합쳐서 상품 목록을 두 줄로
+ * 깔면 돼. 넓게 두 줄로 … 상품 찾기는 목록 패널이 1 곱하기 2짜리가 들어가」). */
+.erp-workspace .erp-panel--wide { flex: 2 1 0; }
+/* compact(좁은 카드) + wide(패널 두 개 폭)를 같이 쓰면 좁은 카드 그대로 두 칸 그리드로 깐다 —
+ * 「두 줄로」(대표 2026-09-24, 위 인용) = 좁은 카드(erp-panel--compact) × 두 배 폭(erp-panel--wide). */
+.erp-panel--compact.erp-panel--wide .erp-rowcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+.erp-panel--compact.erp-panel--wide .erp-rowcards-group { grid-column: 1 / -1; }
 
 /* 상세내용 패널 몸 — 세로로 쌓는다. 안의 카드는 §5-4 카드 규격(erp-tile · erp-tile-group · erp-tile-row)
  * 그대로다. */

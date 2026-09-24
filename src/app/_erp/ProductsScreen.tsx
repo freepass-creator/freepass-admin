@@ -1,148 +1,65 @@
 /**
- * PC 상품찾기 — 규격 `platform/inventory.html`(목록) + `platform/contract-detail.html`(상세 패널) 구성 그대로
- *   ④ 헤더 → ⑤ KPI → [⑥ 조회조건 · ⑦ 툴바 · 그리드 · 바닥] 한 카드 → (고르면) 오른쪽 상세 패널.
- *   데이터는 기능 쪽 그대로(productList · lead). 요금 조건(기간 · 월 대여료)은 «한 요금이 모두» 만족해야 걸리고,
- *   그 요금(Offer)이 상세와 접수까지 이어진다(AGENTS §5 — 요금을 섞지 않는다).
+ * PC 상품찾기 — 상품찾기가 메인인 화면이라 판 둘뿐: 목록 판(넓게, 1×2) | 상품상세 판(1) (§5-4,
+ *   대표 2026-09-24 「상품 찾기 페이지가 메인이야 … 패널 두 개를 합쳐서 상품 목록을 두 줄로 깔면 돼.
+ *   넓게 두 줄로 … 상품 찾기는 목록 패널이 1 곱하기 2짜리가 들어가. 그리고 상세 패널은 계약 접수
+ *   페이지에도 있는 그 패널이 동일하게 우측에」). 예전 §4 두 칸 카드 화면(단독 페이지, 「저 화면은 안
+ *   쓰는 거야」)을 걷어내고 계약접수(Workspace.tsx)와 같은 목록 계산(productList.ts)·같은 상세
+ *   부품(ProductDetail)을 그대로 쓴다.
  */
-import Link from 'next/link';
 import { productList } from '../../server/erp5';
-import type { CanonicalProduct, Offer } from '../../domain/product/types';
-import { lead, STATUS_ORDER } from '../products/workspace-config';
+import type { CanonicalProduct } from '../../domain/product/types';
 import { sp, txt } from '../_fn/fmt';
-import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Tile, TileGroup, won0, type Facet, type Tone } from './parts';
+import { FilterSheet } from '../_design/FilterSheet';
+import { buildProductList } from './productList';
+import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
+import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
-/** 차명 — 세부모델(없으면 모델)이 이름, 제조사 · 트림은 보조. 모델명을 두 번 찍지 않는다. */
-const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
-const carFull = (p: CanonicalProduct) => [p.vehicle.manufacturerId, carName(p), p.vehicle.trimId].filter(Boolean).join(' ');
-const STATUS: string[] = ['즉시출고', '출고가능', '출고협의', '출고불가'];
-const TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
-const TERMS = ['12', '24', '36', '48', '60'];
-const RENTS: [string, number][] = [['50만원 이하', 500_000], ['80만원 이하', 800_000], ['100만원 이하', 1_000_000], ['150만원 이하', 1_500_000]];
-const PAGE = 15;
-
-const offersFor = (p: CanonicalProduct, term: string, rentMax: number) =>
-  p.offers.filter((o) => (!term || String(o.termMonths) === term) && (!rentMax || o.monthlyRent <= rentMax));
 
 export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: string }) {
-  let rows: CanonicalProduct[];
-  try { rows = (await productList()).rows; }
-  catch (e) { return <Screen name="products"><PageHeader crumb={['홈', '상품찾기']} title="상품찾기" desc={<span className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</span>} /></Screen>; }
+  let products: CanonicalProduct[];
+  try { products = (await productList()).rows; }
+  catch (e) {
+    return (
+      <Screen name="products-workspace">
+        <Panel compact><PanelHead kind="목록" title="상품찾기" count="오류" />
+          <PanelBody><p className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></PanelBody></Panel>
+      </Screen>
+    );
+  }
 
-  const text = sp(q.q).trim().toLowerCase();
-  const kind = sp(q.kind), st = sp(q.st), term = sp(q.term), perk = sp(q.perk), sup = sp(q.sup);
-  const rentMax = Number(sp(q.rent)) || 0;
-  const supplierOf = (p: CanonicalProduct) => p.supplierName ?? p.supplierId;
-  /** 한 축만 빼고 나머지 조건을 다 건 결과 — 상세 필터의 건수는 «그 축을 바꾸면 몇 대인가»다 */
-  const pass = (p: CanonicalProduct, skip?: string) =>
-    (!text || [carFull(p), p.registration?.vehicleNumber, supplierOf(p), p.productKind, p.extColor].join(' ').toLowerCase().includes(text))
-    && (skip === 'kind' || !kind || p.productKind === kind)
-    && (skip === 'perk' || !perk || (p.perks ?? []).includes(perk))
-    && (skip === 'sup' || !sup || supplierOf(p) === sup)
-    && !!lead(offersFor(p, skip === 'term' ? '' : term, skip === 'rent' ? 0 : rentMax));
-  const hits = rows.filter((p) => pass(p))
-    .map((p) => ({ p, offer: lead(offersFor(p, term, rentMax))! }));
-  const n = (skip: string, ok: (p: CanonicalProduct) => boolean) => rows.filter((p) => pass(p, skip) && ok(p)).length;
-  const facets: Facet[] = [
-    { key: 'kind', title: '상품구분', options: [...new Set(rows.map((p) => p.productKind).filter(Boolean) as string[])].sort().map((v) => ({ value: v, count: n('kind', (p) => p.productKind === v) })) },
-    { key: 'term', title: '계약기간', options: TERMS.map((t) => ({ value: t, label: `${t}개월`, count: n('term', (p) => !!lead(offersFor(p, t, rentMax))) })) },
-    { key: 'rent', title: '월 대여료', options: RENTS.map(([l, v]) => ({ value: String(v), label: l, count: n('rent', (p) => !!lead(offersFor(p, term, v))) })) },
-    { key: 'perk', title: '우대조건', options: [...new Set(rows.flatMap((p) => p.perks ?? []))].sort().map((v) => ({ value: v, count: n('perk', (p) => (p.perks ?? []).includes(v)) })) },
-    { key: 'sup', title: '공급사', options: [...new Set(rows.map(supplierOf))].sort().map((v) => ({ value: v, count: n('sup', (p) => supplierOf(p) === v) })) },
-  ];
-  const count = (s: string) => hits.filter((h) => (h.p.status ?? '') === s).length;
-  const shown = hits.filter((h) => !st || h.p.status === st)
-    .sort((a, b) => (STATUS_ORDER[a.p.status ?? ''] ?? 9) - (STATUS_ORDER[b.p.status ?? ''] ?? 9) || a.offer.monthlyRent - b.offer.monthlyRent);
-  const page = Math.max(1, Number(sp(q.page)) || 1);
-  const pages = Math.max(1, Math.ceil(shown.length / PAGE));
-  const slice = shown.slice((page - 1) * PAGE, page * PAGE);
-
-  const selId = sp(q.id);
-  const sel = shown.find((h) => h.p.id === selId) ?? (selId ? hits.find((h) => h.p.id === selId) : undefined);
-  const selOffers = sel ? offersFor(sel.p, term, rentMax).sort((a, b) => a.termMonths - b.termMonths) : [];
-  const selOffer = sel ? (selOffers.find((o) => o.id === sp(q.offer)) ?? sel.offer) : undefined;
-
-  const grid = (
-    <section className="erp-card erp-card--fill">
-      <SearchBar base={base} q={q} placeholder="차량번호 · 차명 · 공급사" facets={facets} keep={['st']}/>
-      <div className="erp-toolbar" data-region="grid-toolbar">
-        <span className="erp-toolbar-spacer" />
-        <Seg label="출고상태" items={[
-          { key: 'all', label: `전체 ${hits.length}`, href: hrefWith(base, q, { st: null, page: null, id: null }), on: !st },
-          ...STATUS.map((s) => ({ key: s, label: `${s} ${count(s)}`, href: hrefWith(base, q, { st: s, page: null, id: null }), on: st === s })),
-        ]} />
-      </div>
-      <RowCards label="상품 목록">
-        {slice.map(({ p, offer }) => (
-          <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-            tone={TONE[p.status ?? ''] ?? 'neutral'}
-            title={carName(p)} badge={p.status ? <Badge tone={TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-            plate={txt(p.registration?.vehicleNumber)} car={`${p.vehicle.manufacturerId} · ${txt(p.vehicle.trimId)}`}
-            meta={<span className="erp-tags">{(p.perks ?? []).slice(0, 4).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span>}
-            facts={[
-              ['연식', `${p.specs.modelYear ?? '—'}`, typeof p.specs.mileageKm === 'number' ? `${p.specs.mileageKm.toLocaleString('ko-KR')}km` : undefined],
-              ['색상', txt(p.extColor), p.intColor ? `실내 ${p.intColor}` : undefined],
-              ['공급사', txt(p.supplierName ?? p.supplierId)],
-              ['상품 · 기간', txt(p.productKind), `${offer.termMonths}개월`],
-              ['보증금', offer.deposit ? `${won0(offer.deposit)}원` : '무보증'],
-            ]}
-            amount={won0(offer.monthlyRent)} amountLabel="월 대여료" />
-        ))}
-      </RowCards>
-      <div className="erp-grid-foot">
-        <span>총 <b>{shown.length}</b>대</span>
-        <nav className="erp-pager" aria-label="페이지">
-          {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-            <Link key={n} href={hrefWith(base, q, { page: String(n) })} aria-current={n === page ? 'page' : undefined}>{n}</Link>
-          ))}
-        </nav>
-      </div>
-    </section>
-  );
+  const { all, hits, readyCount, facets, sel, selOffers, selOffer } = buildProductList(products, q);
+  const pst = sp(q.pst);
 
   return (
-    <Screen name="products">
-      <PageHeader crumb={['홈', '업무', '상품찾기']} title="상품찾기"
-        desc="차량 · 가격 · 대여조건 · 정책을 조합해 실제로 함께 적용되는 상품을 찾습니다. 고른 요금 그대로 접수까지 이어집니다."
-        actions={<>
-          <Link className="erp-btn erp-btn--ghost" href="/intake">접수 목록</Link>
-          {sel && selOffer
-            ? <Link className="erp-btn erp-btn--primary" href={`/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}&v=work`}>이 상품 접수하기</Link>
-            : <span className="erp-btn erp-btn--primary" aria-disabled="true" title="목록에서 상품을 고르면 접수할 수 있습니다">이 상품 접수하기</span>}
-        </>} />
-      {sel && selOffer ? (
-        <div className="erp-cols">
-          {grid}
-          <div className="erp-stack">
-            <section className="erp-card">
-              <CardHead title={carFull(sel.p) || sel.p.id} right={sel.p.status ? <Badge tone={TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null} />
-              <div className="erp-card-body">
-                <Props pairs={[
-                  ['차량번호', txt(sel.p.registration?.vehicleNumber)], ['공급사', txt(sel.p.supplierName ?? sel.p.supplierId)],
-                  ['상품구분', txt(sel.p.productKind)], ['연식 · 주행', `${sel.p.specs.modelYear ?? '—'} · ${typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'}`],
-                  ['연료', txt(sel.p.specs.fuel)], ['색상', `${txt(sel.p.extColor)} / ${txt(sel.p.intColor)}`],
-                ]} />
-              </div>
-            </section>
-            <section className="erp-card">
-              <CardHead title="요금" sub={term || rentMax ? '조건에 맞는 요금만' : '기간별'} />
-              <div className="erp-card-body">
-                <TileGroup>
-                  {selOffers.map((o) => (
-                    <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={o.id === selOffer.id}
-                      lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
-                      note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
-                  ))}
-                </TileGroup>
-              </div>
-            </section>
-            <section className="erp-card">
-              <CardHead title="우대조건 · 정책" />
-              <div className="erp-card-body"><span className="erp-tags">{(sel.p.perks ?? []).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}{!(sel.p.perks ?? []).length ? <span className="erp-muted">표시할 조건 없음</span> : null}</span></div>
-            </section>
-          </div>
-        </div>
-      ) : grid}
+    <Screen name="products-workspace">
+    <div className="erp-workspace">
+      <Panel compact wide>
+        <PanelHead kind="목록" title="상품찾기" count={`전체 ${hits.length}건`} />
+        <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']}
+          filter={<FilterSheet axes={facets} count={hits.length} unit="대" label="필터" />} />
+        <QuickFilter label="퀵 필터" items={[
+          { key: 'all', label: `전체 ${all.length}`, href: hrefWith(base, q, { pst: null, id: null }), on: !pst },
+          { key: 'ready', label: `즉시출고 ${readyCount}`, href: hrefWith(base, q, { pst: '즉시출고', id: null }), on: pst === '즉시출고' },
+        ]} />
+        <PanelBody>
+          <RowCards label="상품 목록">
+            {hits.map(({ p, offer }) => (
+              <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
+                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
+                title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
+                plate={txt(p.registration?.vehicleNumber)} car={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
+                facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
+                amount={won0(offer.monthlyRent)} unit="원/월" />
+            ))}
+          </RowCards>
+        </PanelBody>
+      </Panel>
+
+      <Panel>
+        <ProductDetail sel={sel} selOffers={selOffers} selOffer={selOffer} base={base} q={q} />
+      </Panel>
+    </div>
     </Screen>
   );
 }

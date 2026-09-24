@@ -11,7 +11,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { productList, settlements, today } from '../../server/erp5';
 import type { CanonicalProduct } from '../../domain/product/types';
-import { lead, STATUS_ORDER, 많은순 } from '../products/workspace-config';
+import { 많은순 } from '../products/workspace-config';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
@@ -24,27 +24,19 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt } from '../_fn/fmt';
 import { SettlementDetail } from './SettlementDetail';
 import { AutoSelect } from './AutoSelect';
+import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
+import { buildProductList } from './productList';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Tile, TileGroup, won0, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
-const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
-const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
 const INTAKE_TONE: Record<Bucket, Tone> = { 당월접수: 'info', 미완료: 'warn', 분납실적: 'neutral', 완납실적: 'ok', 취소: 'err' };
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
 const IPAGE = 15;
 /** 44px 정사각 썸네일 안 보조 글씨 — §5-4 규격대로 「당월」·「미완」처럼 짧은 두 글자만 쓴다. */
 const INTAKE_SHORT: Record<Bucket, string> = { 당월접수: '당월', 미완료: '미완', 완납실적: '완납', 분납실적: '분납', 취소: '취소' };
 
-/** 차 아이콘 — ai-core 레퍼런스 side-by-side.html 의 svg path 그대로(새로 그리지 않는다). */
-function CarIcon() {
-  return (
-    <svg viewBox="0 0 120 60" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M8 42h104M14 42l6-14c2-5 6-8 12-9l22-3c8-1 16 1 22 6l12 10 14 3c4 1 6 4 6 7M30 42a8 8 0 1 0 16 0M78 42a8 8 0 1 0 16 0M40 20l4 14h24l-6-15" />
-    </svg>
-  );
-}
 /** 접수 상태 썸네일 아이콘 — 레퍼런스는 당월(반짝임) · 미완(시계) 둘만 그렸다. 완납/분납/취소는 같은
  *  획 규칙(24 격자 · 획 없이 stroke)으로 새 상태에 맞춰 하나씩 늘린다(레퍼런스 주석의 안내 그대로). */
 const INTAKE_ICON_PATH: Record<Bucket, ReactNode> = {
@@ -69,39 +61,10 @@ async function IntakeWorkspace({ q }: { q: Q }) {
   let products: CanonicalProduct[];
   try { products = (await productList()).rows; }
   catch { products = []; }
-  const text = sp(q.pq).trim().toLowerCase();
+  /* 상품목록 계산(검색 · FilterSheet 축 · 즉시출고 퀵 필터 · 고른 상품)은 상품찾기(ProductsScreen)와
+   * 같이 쓰는 한 곳(productList.ts)에서 — 화면마다 새로 짜지 않는다. */
+  const { all, hits, readyCount, facets: 상품판축, sel, selOffers, selOffer } = buildProductList(products, q);
   const pst = sp(q.pst);
-  /*
-   * 상세 필터 — 접수목록과 같은 규칙(FilterSheet · facet-standing · 많은순, §5-1 「검색창 옆에는
-   * 필터 버튼」). 상품찾기도 목록 판이니 똑같이 공급사 · 상품구분 두 축을 고른다(대표 2026-09-24
-   * 「목록 카드는 … 왜 규격화를 안 하고 자꾸 맘대로 만드냐」).
-   */
-  const 상품축: [string, string, (p: CanonicalProduct) => string][] = [
-    ['psup', '공급사', (p) => p.supplierName ?? p.supplierId ?? ''],
-    ['pkind', '상품구분', (p) => p.productKind ?? ''],
-  ];
-  const pSel = Object.fromEntries(상품축.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<string, string[]>;
-  const p통과 = (p: CanonicalProduct, skip?: string) => 상품축.every(([a, , of]) => a === skip || !pSel[a].length || pSel[a].includes(of(p)));
-  const textFiltered = products
-    .filter((p) => !text || [carName(p), p.registration?.vehicleNumber, p.supplierName ?? p.supplierId].filter(Boolean).join(' ').toLowerCase().includes(text))
-    .filter((p) => lead(p.offers))
-    .map((p) => ({ p, offer: lead(p.offers)! }));
-  const all = textFiltered
-    .filter((h) => p통과(h.p))
-    .sort((a, b) => (STATUS_ORDER[a.p.status ?? ''] ?? 9) - (STATUS_ORDER[b.p.status ?? ''] ?? 9) || a.offer.monthlyRent - b.offer.monthlyRent);
-  const readyCount = all.filter((h) => h.p.status === '즉시출고').length;
-  const hits = pst ? all.filter((h) => h.p.status === pst) : all;
-  const 상품전체 = products.filter((p) => lead(p.offers));
-  const 상품판축: FacetAxis[] = 상품축.map(([a, label, of]) => {
-    const keys = 많은순(상품전체.map(of));
-    const base = tallyMatch(상품전체, keys, (p, k) => of(p) === k);
-    const live = tallyMatch(textFiltered.map((h) => h.p).filter((p) => p통과(p, a)), keys, (p, k) => of(p) === k);
-    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
-  });
-  const selId = sp(q.id);
-  const sel = hits.find((h) => h.p.id === selId) ?? hits[0];
-  const selOffers = sel ? sel.p.offers.slice().sort((a, b) => a.termMonths - b.termMonths) : [];
-  const selOffer = sel ? (selOffers.find((o) => o.id === sp(q.offer)) ?? sel.offer) : undefined;
 
   let intake: Awaited<ReturnType<typeof settlements.list>>;
   try { intake = await settlements.list(); }
@@ -191,54 +154,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
             </PanelBody>
           </>
         ) : (
-          <>
-            <PanelHead kind="상세내용" title={sel ? `${txt(sel.p.registration?.vehicleNumber)} ${carName(sel.p)}` : '상품상세'} count="고른 상품" />
-            <PanelBody>
-              {sel ? (
-                <div className="erp-detail-body">
-                  <div className="erp-hero-tile erp-tile">
-                    <div className="photo"><CarIcon /></div>
-                    <div className="erp-hero-info">
-                      <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
-                      <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>
-                      <p className="erp-hero-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="erp-subtitle erp-subtitle--lead">대여료</p>
-                    <TileGroup>
-                      {selOffers.map((o) => (
-                        <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={selOffer?.id === o.id}
-                          lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
-                          note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
-                      ))}
-                    </TileGroup>
-                  </div>
-
-                  {(sel.p.perks ?? []).length ? (
-                    <div>
-                      <p className="erp-subtitle">담당자 참고</p>
-                      <div className="erp-tile-group">
-                        <div className="erp-info-card erp-tile">
-                          <h3 className="erp-tile-title">우대조건 · 정책</h3>
-                          <dl>
-                            <div><dt>우대조건</dt><dd><span className="erp-tags">{(sel.p.perks ?? []).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span></dd></div>
-                            <div><dt>공급사</dt><dd>{txt(sel.p.supplierName ?? sel.p.supplierId)}</dd></div>
-                          </dl>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : <p className="erp-muted">왼쪽에서 상품을 고르세요.</p>}
-            </PanelBody>
-            <PanelFoot>
-              {sel && selOffer
-                ? <Link className="erp-btn erp-btn--primary" href={hrefWith(base, q, { w: 'new', product: sel.p.id, offer: selOffer.id, ic: null })}>접수하기</Link>
-                : <span className="erp-btn erp-btn--primary" aria-disabled="true">접수하기</span>}
-            </PanelFoot>
-          </>
+          <ProductDetail sel={sel} selOffers={selOffers} selOffer={selOffer} base={base} q={q} />
         )}
       </Panel>
 

@@ -187,6 +187,17 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const fullWidthLayoutBaseline = [
+  [/--fp-workspace-gutter-x:\s*20px/, 'desktop standard gutter 20px'],
+  [/--fp-workspace-gutter-y:\s*16px/, 'desktop standard gutter y 16px'],
+  [/--ui-screen-gutter:\s*16px/, 'mobile gutter 16px'],
+  [/--ui-screen-gutter-narrow:\s*12px/, 'mobile narrow gutter 12px'],
+] as const;
+for (const [re, label] of fullWidthLayoutBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`full-width layout contract missing: ${label}`);
+}
+
 const quickFilterVisualBaseline = [
   [/--ui-quick-filter-h:\s*34px/, 'mobile quick filter visual height 34px'],
   [/\.quick-filters[\s\S]*?min-height:\s*var\(--ui-touch-min\)/, 'quick filter row touch height 44px'],

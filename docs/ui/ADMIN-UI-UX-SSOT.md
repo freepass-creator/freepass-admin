@@ -661,63 +661,102 @@ Panel role과 1:1로 같다고 가정하지 않는다.
 
 ---
 
-# 16. Interaction / Elevation hierarchy — 2026-09-24 확정
+# 16. Surface type / Interaction hierarchy — 2026-09-24 확정
 
-보이는 것과 누르는 것을 같은 평면으로 만들지 않는다.
+**물성은 타입이 정하고, 상호작용은 hover/press가 정한다.**
 
-**Elevation은 장식이 아니라 조작 가능성을 알려주는 신호다.**
+카드가 읽기 전용이라고 바닥에 붙이지 않는다.
+카드면 카드답게 기본적으로 한 단계 떠 있어야 하고,
+버튼이면 버튼답게 기본적으로 한 단계 떠 있어야 한다.
 
-| Level | 의미 | 예 |
-|---|---|---|
-| L0 Flat | 읽기 전용 | facts, text, passive info |
-| L1 Surface | 영역/읽기용 container | Panel, passive box |
-| L2 Interactive | 고르거나 누를 수 있음 | RowCard, Offer Tile, Filter, QuickFilter |
-| L3 Action | 실제 업무 실행 | Primary action |
+## 16-1. 기본 높이
 
-### 원칙
+| Type | 기본 상태 | 외곽선 | Hover |
+|---|---|---|---|
+| Card / Box | elevation-base | 아주 약한 card line | interactive일 때만 |
+| Button / Control | elevation-base | card보다 조금 또렷한 control line | 있음 |
+| Input / Search | elevation보다 입력경계 우선 | input line | focus 중심 |
+| Panel | elevation-base | 구조 경계 | 없음 |
 
-- 읽기 전용은 평평하다.
-- 누를 수 있는 surface는 아주 약하게 떠 있다.
-- hover는 한 단계 올라오는 느낌을 준다.
-- pressed는 shadow가 줄고 1px 내려앉는 느낌을 준다.
-- **selected는 더 떠오르는 상태가 아니다. 눌려 고정된 상태다.**
-- 선택 상태는 surface/color + weight로 표현하고 elevation을 강화하지 않는다.
-- disabled/ghost/read-only는 elevation을 제거한다.
-- Primary action이 가장 강한 tactile affordance를 가진다.
-- 그림자가 먼저 눈에 띄면 과하다. “눌러보면 물성이 느껴지는 정도”를 기준으로 한다.
+핵심:
+- **Card와 Button은 같은 기본 elevation 선상에서 시작한다.**
+- Primary라고 기본 높이를 더 올리지 않는다.
+- 우선순위는 색·weight·위치가 말한다.
+- elevation은 “누를 수 있음”의 유일한 신호가 아니다.
 
-### QuickFilter / Filter
+## 16-2. Card line / Control line / Input line
 
-QuickFilter는 특히 selected/pressed 문법을 통일한다.
+외곽선을 전부 없애지 않는다.
+
+### Card line
+- 목록 카드가 텍스트 묶음처럼 사라지지 않도록 존재만 느껴지는 정도
+- 가장 약한 경계
+- shadow와 함께 surface의 범위를 알려준다
+
+### Control line
+- 버튼·필터·드롭다운
+- Card line보다 조금 더 명확
+- “조작 가능한 물건”이라는 affordance를 보조한다
+
+### Input line
+- 검색·입력·선택 field
+- 입력 가능한 영역을 명확히 보여주는 경계
+- focus 시 가장 명확해진다
+
+## 16-3. Interactive vs Passive
+
+### Passive card
+- 기본 elevation 유지
+- hover 없음
+- pressed 없음
+
+### Interactive card / button
+- 기본 elevation은 passive card와 동일
+- hover 시 한 단계 올라감
+- press 시 shadow가 사라지며 1px 내려앉음
+
+즉:
 
 ```
-default   = 살짝 떠 있음
-hover     = 조금 올라옴
-pressed   = 내려앉음
-selected  = primary surface + 내려앉은 상태 유지
+같은 타입 = 같은 기본 물성
+interactive 여부 = hover / press 존재 여부
 ```
 
-- selected와 hover를 같은 표현으로 쓰지 않는다.
-- selected QuickFilter는 `aria-pressed="true"`가 visual state의 SSOT다.
-- 월/분류 dropdown도 QuickFilter line에 있을 때 같은 tactile level을 쓴다.
-- FilterSheet check 선택도 “더 튀어오름”이 아니라 selected surface로 고정한다.
+## 16-4. Selected
 
-### Card selection
+selected는 더 떠오르는 상태가 아니다.
 
-- RowCard / pressable Tile은 default에서 interactive affordance를 가진다.
-- 선택되면 primary-weak surface로 고정한다.
-- 선택 상태에 decorative left bar / 두꺼운 outline을 추가하지 않는다.
-- selected + hover에서도 다시 들리지 않는다.
+```
+default  = elevation-base
+hover    = elevation-hover
+pressed  = 내려앉음
+selected = 눌려 고정된 surface
+```
 
-### 구현 위치
+- selected에서 elevation을 강화하지 않는다.
+- selected + hover에서도 다시 올라오지 않는다.
+- QuickFilter / Filter / Offer / RowCard가 같은 selected 문법을 쓴다.
+- decorative left bar / 두꺼운 outline 추가 금지.
 
-FreePass Admin 선행 구현:
-- `src/app/_erp/shell.css`
-- token: `--fp-elevation-0..3`
-- 적용: RowCard / pressable Tile / Filter / QuickFilter / Button / FilterSheet
+## 16-5. Token
 
-AI Core로 바로 복사하지 않는다.
-FreePass Admin에서 visual QA 후 공통 가치가 확인되면 승격한다.
+Desktop:
+- `--fp-elevation-base`
+- `--fp-elevation-hover`
+- `--fp-elevation-float`
+- `--fp-line-card`
+- `--fp-line-control`
+- `--fp-line-input`
+
+Mobile/legacy Admin:
+- `--ui-elevation-base`
+- `--ui-elevation-hover`
+- `--ui-elevation-float`
+- `--ui-line-card`
+- `--ui-line-control`
+- `--ui-line-input`
+
+FreePass Admin에서 검증한 뒤 AI Core 승격 후보로 삼는다.
 
 ---
 

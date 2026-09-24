@@ -221,7 +221,7 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                 plate={txt(p.registration?.vehicleNumber)} car={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
                 facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
-                amount={won0(offer.monthlyRent)} amountLabel="원/월" />
+                amount={won0(offer.monthlyRent)} unit="원/월" />
             ))}
           </RowCards>
         </PanelBody>
@@ -315,7 +315,8 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
                   plate={txt(r.plate)} car={txt(r.model)}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-                  amount={won0(perfView ? marginOf(r, now) : r.rent)} amountLabel={perfView ? '남는 것' : '원/월'} />
+                  amount={won0(perfView ? marginOf(r, now) : r.rent)}
+                  {...(perfView ? { amountLabel: '남는 것' } : { unit: '원/월' })} />
               );
             })}
           </RowCards>

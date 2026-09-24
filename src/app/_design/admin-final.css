@@ -680,22 +680,13 @@ body > nav.fn-top :where(a, button):focus-visible,
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   2026-09-24 — Panel role selectors are the responsive contract.
-   화면 이름(product/detail/work)이 아니라 역할(list/detail/work)로 모바일 규격을 적용한다.
+   2026-09-24 — Panel role is the visual/semantic contract.
+   ★ role(list/detail/work)와 navigation depth(list/detail/work query)는 별개다.
+   예: 정산 가운데 «실적 줄»은 화면 depth는 detail이지만 역할은 LIST.
+   따라서 어떤 panel을 보여줄지는 기존 route/data-phone 로직이 결정하고,
+   data-panel-role은 공통 density/visual/action 규격만 결정한다.
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .fn-main .workspace > .panel[data-panel-role] {
-    display: none;
-  }
-
-  /* URL/data-phone이 고른 현재 surface만 보인다.
-   * 같은 role이라도 여러 panel이 있을 수 있으므로 기존 위치 선택과 함께 쓴다. */
-  .fn-main .workspace[data-phone="list"] > .panel[data-panel-role="list"]:first-of-type,
-  .fn-main .workspace[data-phone="detail"] > .panel[data-panel-role="detail"],
-  .fn-main .workspace[data-phone="work"] > .panel[data-panel-role="work"] {
-    display: flex;
-  }
-
   .fn-main .workspace > .panel[data-panel-role="list"] {
     --panel-density: compact;
   }

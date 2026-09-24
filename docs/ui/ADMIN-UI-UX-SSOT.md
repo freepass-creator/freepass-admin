@@ -623,6 +623,7 @@ semantic tone은 제한한다.
 - `Tile`
 - `TileGroup`
 - `Badge`
+- `AutoSelect` (QuickFilter 안 월/분류 드롭다운 — 새 조건 셀렉트가 필요하면 이것부터 재사용)
 - `ProductDetail`
 - `SettlementDetail`
 

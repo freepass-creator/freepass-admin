@@ -51,27 +51,6 @@ export function PanelFoot({ children }: { children: ReactNode }) {
   return <div className="erp-panel-foot">{children}</div>;
 }
 
-/** ④ 페이지 헤더 — 경로 · 제목(+뱃지) · 설명 · 액션(Primary 는 맨 오른쪽 하나) */
-export function PageHeader({ crumb, title, badge, desc, actions }: {
-  crumb: string[]; title: ReactNode; badge?: ReactNode; desc?: ReactNode; actions?: ReactNode;
-}) {
-  return (
-    <section data-region="page-header">
-      <div className="erp-crumb">
-        {crumb.slice(0, -1).map((c) => <span key={c}>{c} › </span>)}
-        <span aria-current="page">{crumb[crumb.length - 1]}</span>
-      </div>
-      <div className="erp-page-header">
-        <div>
-          <h1 className="erp-page-title">{title}{badge ? <> {badge}</> : null}</h1>
-          {desc ? <p className="erp-page-desc">{desc}</p> : null}
-        </div>
-        {actions ? <div className="erp-actions">{actions}</div> : null}
-      </div>
-    </section>
-  );
-}
-
 export type Kpi = { label: string; side?: string; value: string; unit?: string; delta?: ReactNode; alert?: boolean };
 /** ⑤ 요약 KPI — 4열 */
 export function Kpis({ items }: { items: Kpi[] }) {
@@ -109,21 +88,6 @@ export function Steps({ items, current }: { items: { label: string; count?: Reac
       })}
     </ol>
   );
-}
-
-/** 카드 머리 */
-export function CardHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="erp-card-head">
-      <h2 className="erp-card-title">{title}{sub ? <small>{sub}</small> : null}</h2>
-      {right}
-    </div>
-  );
-}
-
-/** 값 묶음 */
-export function Props({ pairs }: { pairs: [string, ReactNode][] }) {
-  return <dl className="erp-props">{pairs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
 }
 
 /**

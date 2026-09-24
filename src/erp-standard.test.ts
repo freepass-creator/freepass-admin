@@ -74,7 +74,11 @@ test('no page renders the older §4 skeleton (PageHeader/erp-cols) any more', ()
     assert.equal(src.includes('erp-cols'), false, `${file}: no §4 two-column card grid`);
   }
   const parts = read('src/app/_erp/parts.tsx');
-  assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-rowcards" data-region="grid"'));
+  // PageHeader/CardHead/Props(§4 전용 부품)는 부품 목록에서도 걷어냈다 — 화면뿐 아니라 부품도 §4 흔적이 없다.
+  assert.equal(parts.includes('export function PageHeader'), false, '§4 PageHeader 부품 자체를 제거');
+  assert.equal(parts.includes('export function CardHead'), false, '§4 CardHead 부품 자체를 제거');
+  assert.equal(parts.includes('export function Props'), false, '§4 Props 부품 자체를 제거');
+  assert.ok(parts.includes('data-region="kpi"') && parts.includes('className="erp-rowcards" data-region="grid"'));
   assert.ok(parts.includes('data-region="filter"') && parts.includes('data-region="grid-toolbar"') && parts.includes('erp-filter-more'));
   // 실적은 새 판이 아니라 접수 목록(3패널 Workspace 세 번째 판)의 실적 칸
   assert.ok(read('src/app/_erp/Workspace.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));

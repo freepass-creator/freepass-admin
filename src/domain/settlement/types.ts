@@ -242,3 +242,45 @@ export function intakeTaskOf(r: SettlementRow): IntakeTask {
   if (block === '인도') return '인도';
   return '정산';
 }
+
+/**
+ * FreePass Admin의 상위 업무 흐름.
+ * 화면이 각자 상태를 해석하지 않고 이 한 함수로
+ * 접수 → 공급사 청구/수금 → 영업자 지급 → 완료 위치를 말한다.
+ */
+export type AdminWorkflowPhase =
+  | '접수 진행'
+  | '공급사 청구'
+  | '공급사 수금'
+  | '영업자 지급'
+  | '완료'
+  | '취소';
+
+export function adminWorkflowPhaseOf(r: SettlementRow): AdminWorkflowPhase {
+  if (r.progress.cancelled) return '취소';
+
+  const block = blockOf(r);
+  if (!block) return '완료';
+
+  if (block === '계약서' || block === '차량번호 없음' || block === '공급사 없음' || block === '인도') {
+    return '접수 진행';
+  }
+
+  if (block === '청구금액 모름' || block === '청구') return '공급사 청구';
+  if (block === '계산서' || block === '수금') return '공급사 수금';
+
+  /* 공급-only 건은 공급사 수금이 끝나면 blockOf가 null이라 위에서 완료된다.
+   * 영업-only/양쪽 건은 여기서 지급 축으로 이어진다. */
+  if (block === '영업채널 없음' || block === '지급금액 모름' || block === '지급') return '영업자 지급';
+
+  return '접수 진행';
+}
+
+/** raw blocker를 버튼/표시에 바로 노출하지 않고 사람이 다음 행동으로 읽게 바꾼다. */
+export function adminBlockLabel(block: Block): string {
+  if (block === '공급사 없음') return '공급사 입력 필요';
+  if (block === '영업채널 없음') return '영업채널 입력 필요';
+  if (block === '청구금액 모름') return '청구금액 확인 필요';
+  if (block === '지급금액 모름') return '지급금액 확인 필요';
+  return block;
+}

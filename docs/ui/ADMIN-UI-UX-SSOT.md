@@ -684,24 +684,32 @@ Panel role과 1:1로 같다고 가정하지 않는다.
 - 우선순위는 색·weight·위치가 말한다.
 - elevation은 “누를 수 있음”의 유일한 신호가 아니다.
 
-## 16-2. Card line / Control line / Input line
+## 16-2. Borderless polish — 2026-09-24
 
-외곽선을 전부 없애지 않는다.
+현재 확정 레이아웃·크기·간격·타이포·라운드는 **변경하지 않는다.**
+이 단계는 리디자인이 아니라 **보이는 외곽선만 걷는 polish**다.
 
-### Card line
-- 목록 카드가 텍스트 묶음처럼 사라지지 않도록 존재만 느껴지는 정도
-- 가장 약한 경계
-- shadow와 함께 surface의 범위를 알려준다
+### Card / Panel
+- visible border 없음
+- 기존 box model은 유지
+- surface 색 + elevation으로 경계를 읽는다
+- 목록 카드가 텍스트로 사라지지 않도록 기본 elevation은 유지한다
 
-### Control line
-- 버튼·필터·드롭다운
-- Card line보다 조금 더 명확
-- “조작 가능한 물건”이라는 affordance를 보조한다
+### Button / QuickFilter / Control
+- visible border 없음
+- 버튼 크기·padding·radius는 그대로
+- surface 색 + elevation으로 조작물임을 표현
+- interactive일 때만 hover / press가 생긴다
 
-### Input line
-- 검색·입력·선택 field
-- 입력 가능한 영역을 명확히 보여주는 경계
-- focus 시 가장 명확해진다
+### Input / Search
+- 예외적으로 입력 affordance를 유지한다
+- Search는 현재 확정된 돋보기 + 밑줄 규격 유지
+- input/select/textarea는 입력 가능한 영역이 분명해야 하므로 필요한 경계를 유지한다
+
+### Geometry 보호
+- border 제거 때문에 1px씩 크기가 변하지 않게 한다
+- 가능하면 `border: 0` 대신 기존 border box를 유지한 채 `border-color: transparent`를 쓴다
+- 이 polish를 이유로 width/height/padding/gap/font-size/radius를 바꾸지 않는다
 
 ## 16-3. Interactive vs Passive
 

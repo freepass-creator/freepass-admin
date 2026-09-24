@@ -539,5 +539,39 @@
       "narrow360Rule": "reduce horizontal padding only; do not reduce touch height"
     },
     "rule": "Same shell structure; viewport changes density and overflow behavior, not workflow composition."
+  },
+  "contrast": {
+    "text": {
+      "strong": "#101828",
+      "secondary": "#475467",
+      "muted": "#667085",
+      "rule": "12px support/meta must not default to very low-contrast #98A2B3-class text."
+    },
+    "navigation": {
+      "background": "#0F1B2D",
+      "inactive": "#AEB9CA",
+      "muted": "#8492A6",
+      "activeBackground": "#1D355A",
+      "activeText": "#FFFFFF"
+    },
+    "semantic": {
+      "success": {
+        "text": "#067647",
+        "surface": "#ECFDF3"
+      },
+      "info": {
+        "text": "#175CD3",
+        "surface": "#EFF8FF"
+      },
+      "warning": {
+        "text": "#B54708",
+        "surface": "#FFFAEB"
+      },
+      "error": {
+        "text": "#B42318",
+        "surface": "#FEF3F2"
+      }
+    },
+    "rule": "Use strong/secondary/muted text hierarchy; semantic color always pairs text meaning with a soft surface."
   }
 }

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
 import { bucketOf } from '../../domain/settlement/stage';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
-import { blockOf, type SettlementRow } from '../../domain/settlement/types';
+import { adminBlockLabel, adminWorkflowPhaseOf, blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
@@ -25,21 +25,23 @@ export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementR
   const hit = await settlements.get(cur.id);
   const raw = (hit?.raw ?? {}) as Record<string, unknown>;
   const events = hit ? await settlements.events(cur.plate, cur.receivedAt, cur.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode) : [];
-  const next = intakeNextAction(blockOf(cur), p.cancelled, p.delivered);
+  const block = blockOf(cur);
+  const phase = adminWorkflowPhaseOf(cur);
+  const next = intakeNextAction(block, p.cancelled, p.delivered);
   const primary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
     : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
     : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
     : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
     : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href="/intake?w=new">신규 접수</Link>
-    : <span className="erp-btn erp-btn--primary" aria-disabled="true">{next.label}</span>;
+    : <span className="erp-btn erp-btn--primary" aria-disabled="true">{adminBlockLabel(next.label)}</span>;
 
   return (
     <>
-      <PanelHead kind="상세내용" title={txt(cur.customer)} count={b} />
+      <PanelHead kind="상세내용" title={txt(cur.customer)} count={`${b} · ${phase}`} />
       <PanelBody>
         <div className="erp-detail-body">
           <div className="erp-tile">
-            <h3 className="erp-tile-title">진행</h3>
+            <h3 className="erp-tile-title">진행 <span className="erp-docstate">{phase}</span></h3>
             <Steps current={step} items={[
               { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
               { label: '계약서', count: p.paper ? '받음' : '—' },

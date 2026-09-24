@@ -828,5 +828,48 @@
       "quickTop",
       "footBottom"
     ]
+  },
+  "panelWidths": {
+    "equalThree": {
+      "ratio": [
+        1,
+        1,
+        1
+      ],
+      "maxDriftRatio": 1.08,
+      "pages": [
+        "intake",
+        "performance",
+        "settlement"
+      ]
+    },
+    "wideListDetail": {
+      "ratio": [
+        2,
+        1
+      ],
+      "tolerance": [
+        1.85,
+        2.15
+      ],
+      "pages": [
+        "products"
+      ]
+    },
+    "twoPanel": {
+      "ratio": [
+        1,
+        1
+      ],
+      "pages": [
+        "esign"
+      ]
+    },
+    "responsive": {
+      "compactDesktop": "1280-1439",
+      "standardDesktop": "1440+",
+      "mobile": "single-panel"
+    },
+    "rule": "Panel width is role-driven, not page-specific visual improvisation."
   }
 }

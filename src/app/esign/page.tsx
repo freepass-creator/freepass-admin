@@ -162,9 +162,9 @@ async function EsignBoards({ searchParams }: {
               <SummaryItem label="양식">{txt(selected.kind)}</SummaryItem>
               <SummaryItem label="보험">{txt(selected.insurance)}</SummaryItem>
               <SummaryItem label="계약일">{txt(selected.contractDate)}</SummaryItem>
-              <SummaryItem label="만든 때">{when(selected.createdAt)}</SummaryItem>
-              <SummaryItem label="발송">{when(selected.signSentAt)}</SummaryItem>
-              <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
+              <SummaryItem label="생성일">{when(selected.createdAt)}</SummaryItem>
+              <SummaryItem label="발송일">{when(selected.signSentAt)}</SummaryItem>
+              <SummaryItem label="서명일">{when(selected.signedAt)}</SummaryItem>
             </SummaryGrid>
 
             <ActionBar>

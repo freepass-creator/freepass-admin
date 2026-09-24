@@ -941,3 +941,83 @@
     box-shadow: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Responsive width QA
+ * 구조는 유지하고 1280대 웹에서만 workspace density를 한 단계 압축한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1280~1439: 3-panel이 가장 빡빡한 구간. shell은 그대로, gap/padding만 compact tier. */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-3);
+    padding: var(--erp-sp-3) var(--erp-sp-4);
+  }
+
+  .erp-std .erp-panel {
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(84px, auto);
+    gap: 2px var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount {
+    min-width: 0;
+    max-width: 112px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount strong,
+  .erp-std .erp-panel--compact .erp-rowcard-amount span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-panel--compact .erp-searchbar {
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel--compact .erp-search {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-facet-opts {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .erp-std .erp-panel--compact .erp-facet-opts::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 1440+: standard density. explicit reset so future compact overrides do not leak upward. */
+@media (min-width: 1440px) {
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-4);
+    padding: var(--erp-sp-4) var(--erp-sp-5);
+  }
+}
+
+/* Desktop text/content overflow safety shared by all widths. */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-panel,
+    .erp-panel-body,
+    .erp-searchbar,
+    .erp-toolbar,
+    .erp-rowcards,
+    .erp-rowcard-id,
+    .erp-rowcard-facts
+  ) {
+    min-width: 0;
+  }
+
+  .erp-std :is(.erp-panel-count,.erp-badge,.erp-tag,.erp-facet-opt) {
+    flex-shrink: 0;
+  }
+}

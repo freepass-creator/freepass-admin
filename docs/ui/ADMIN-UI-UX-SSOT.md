@@ -1897,3 +1897,39 @@ Badge/Notice에는 반드시 텍스트 의미가 함께 있어야 한다.
 - destructive는 하단 primary와 경쟁하지 않게 별도 위험 표현을 사용한다.
 - 복구 액션(예: 취소 풀기)은 danger로 칠하지 않는다.
 - 위험 액션도 disabled/pending 규칙을 동일하게 따른다.
+
+
+# 39. Motion & immediate feedback
+
+업무 UI의 모션은 장식이 아니라 **입력 확인 피드백**만 담당한다.
+
+## Timing
+- press: 80ms
+- hover / selected / focus state: 120ms
+- popup / sheet: 160ms
+- easing: ease-out
+- press sink: 1px
+
+## 원칙
+- scale 확대/축소로 타격감을 만들지 않는다.
+- 눌림은 1px sink + elevation 변화 정도로 충분하다.
+- hover가 없는 모바일에서도 active feedback은 유지한다.
+- pending 시 geometry를 바꾸지 않는다.
+- pending opacity는 약 0.72.
+- pointer interaction은 잠근다.
+- 진행 중인 버튼은 가능하면 텍스트로 현재 상태를 말한다.
+
+## Filter / async
+- 필터 결과 갱신 중에는 값 영역만 약하게 dim.
+- 전체 화면을 불필요하게 막지 않는다.
+- skeleton/spinner는 장시간 로딩에서만 필요할 때 사용한다.
+
+## Reduced motion
+`prefers-reduced-motion: reduce`에서는 transition/animation을 사실상 제거한다.
+
+## 금지
+- 200~300ms 이상의 장식성 page transition
+- bounce / spring
+- 버튼 scale-up
+- loading 때문에 layout이 움직이는 것
+- 화면별 임의 transition duration

@@ -211,6 +211,22 @@ for (const [re, label] of mobileDensityBaseline) {
   if (!re.test(cssFinal)) errors.push(`density mismatch or missing: ${label}`);
 }
 
+const alignmentBaseline = [
+  [/Alignment & information hierarchy/, 'desktop alignment contract'],
+  [/\.erp-rowcard-amount\s*\{[^}]*text-align:\s*right/s, 'desktop amount right alignment'],
+  [/font-variant-numeric:\s*tabular-nums/, 'desktop tabular numeric alignment'],
+] as const;
+for (const [re, label] of alignmentBaseline) {
+  if (!re.test(desktopCss)) errors.push(`alignment mismatch or missing: ${label}`);
+}
+const mobileAlignmentBaseline = [
+  [/Alignment & information hierarchy \(live Admin\)/, 'mobile alignment contract'],
+  [/\.dz-row-l3 > :is\(strong,b\)[^}]*text-align:\s*right/s, 'mobile result right alignment'],
+] as const;
+for (const [re, label] of mobileAlignmentBaseline) {
+  if (!re.test(cssFinal)) errors.push(`alignment mismatch or missing: ${label}`);
+}
+
 const stateContractBaseline = [
   [/Interaction state consistency/, 'desktop interaction state contract'],
   [/--fp-focus-halo:/, 'desktop soft focus halo token'],

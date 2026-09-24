@@ -128,7 +128,7 @@ async function EsignBoards({ searchParams }: {
               badge={txt(c.signStatus) === '—' ? '미연결' : txt(c.signStatus)}
               tone={c.signStatus === '서명완료' ? 'plain' : 'act'}
               flag={c.status && c.status !== '완료' ? txt(c.status) : undefined}
-              meta={[c.plate, c.vehicle, c.agent, c.code].filter(Boolean).join(' · ') || '—'}
+              meta={[c.plate, c.vehicle].filter(Boolean).join(' · ') || '—'}
               value={c.rent === null || c.rent === undefined ? '대여료 미확인' : `${won(c.rent)}원`}
               aside={c.term === null || c.term === undefined ? '기간 미확인' : `${num(c.term)}개월`}
             />

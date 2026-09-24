@@ -702,9 +702,13 @@ Panel role과 1:1로 같다고 가정하지 않는다.
 - interactive일 때만 hover / press가 생긴다
 
 ### Input / Search
-- 예외적으로 입력 affordance를 유지한다
-- Search는 현재 확정된 돋보기 + 밑줄 규격 유지
-- input/select/textarea는 입력 가능한 영역이 분명해야 하므로 필요한 경계를 유지한다
+- 일반 input/select/textarea는 입력 가능한 영역이 분명해야 하므로 필요한 경계를 유지할 수 있다
+- **Search는 borderless**를 기본으로 한다
+- 검색 구조와 크기·padding·radius는 그대로 유지한다
+- 평소: 돋보기 + 옅은 neutral surface + base elevation
+- hover: surface만 미세하게 변함
+- focus: 선/밑줄/사각 ring 대신 surface + elevation이 한 단계 또렷해짐
+- 검색창을 라인으로 둘러싸서 카드/버튼 체계와 다른 시각 언어를 만들지 않는다
 
 ### Geometry 보호
 - border 제거 때문에 1px씩 크기가 변하지 않게 한다

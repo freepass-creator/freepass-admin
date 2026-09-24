@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 4211249c4a79601ed76b52ec7506f6d03b96494c
+ * 정본: freepass-creator/ai-core @ 8b2e99862cd74f5b6466ffe99341a88399156887
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -465,7 +465,10 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 단추 높이(erp-btn-h)를 기준 삼아 min-height 로 고정 — 페이저(30px)처럼 더 낮은 내용은 가운데 정렬로
  * 앉는다(align-items:center, 위에서 이미 줌). */
 .erp-panel-foot { flex: none; min-height: calc(var(--erp-btn-h) + 2 * var(--erp-sp-3)); display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
-.erp-panel-foot .erp-btn { flex: 1; justify-content: center; }
+/* 주 단추(erp-btn--primary) 7 : 보조 단추 3 — 이미 기능 쪽 dz-bar-go 가 쓰던 비율(대표 2026-09-24
+ * 「주 버튼 7 보조 버튼 3 그 비율로」). 바 폭을 항상 꽉 채운다 — 단추 하나뿐이면 그 하나가 다 찬다. */
+.erp-panel-foot .erp-btn { flex: 3; justify-content: center; }
+.erp-panel-foot .erp-btn--primary { flex: 7; }
 /* 목록 패널 발치의 합계 글(예: 「총 N건」) — erp-grid-foot 과 같은 톤(대표 2026-09-24 「간격 … 정확하게」,
  * 버튼 없이 맨 글자만 두면 색·크기가 안 정해져 있었다). */
 .erp-panel-foot b { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }

@@ -75,11 +75,12 @@
     padding: var(--erp-sp-3) var(--erp-sp-4); background: var(--erp-color-surface);
     border-top: 1px solid var(--erp-color-line); box-shadow: none;
   }
-  /* 발치 단추 줄 — 다른 두 패널(erp-panel-foot .erp-btn { flex:1 })처럼 취소 · 저장이 같은 폭으로
-   * 나뉜다(대표 2026-09-24 「하단에 버튼이랑 … 간격도 맞춰야 되고 … 다 통일」). 기능 쪽 dz-bar-go 는
-   * 폰에서 주(70%) · 보조(30%) 비율 그리드였다 — 데스크톱만 반반으로 편다. */
+  /* 발치 단추 줄 — 다른 패널(erp-panel-foot)과 같은 비율로 통일한다(대표 2026-09-24 「하단에 버튼이랑
+   * … 다 통일 … 주 버튼 7 보조 버튼 3 그 비율로」). 기능 쪽 dz-bar-go 는 이미 같은 7:3 그리드였다 —
+   * 데스크톱에서는 폭만 바(발치) 전체로 꽉 채운다(폰은 그대로 44 높이 그리드). */
   .erp-std .erp-embed .dz-bar-go { display: flex; gap: var(--erp-sp-2); }
-  .erp-std .erp-embed .dz-bar-go > * { flex: 1; }
+  .erp-std .erp-embed .dz-bar-go > * { flex: 3; }
+  .erp-std .erp-embed .dz-bar-go > .primary { flex: 7; }
   .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }
@@ -147,12 +148,15 @@
   .erp-std .dz-fs-check .box { border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); }
   .erp-std .dz-fs-check.on .box { background: var(--erp-color-primary); }
   .erp-std .dz-fs-check .n { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
-  .erp-std .dz-fs-foot { border-top: 1px solid var(--erp-color-line); }
+  /* 발치 바 — erp-panel-foot 과 같은 틀(패딩 sp-3/sp-4 · 단추 높이 erp-btn-h) · 같은 비율(주 7 : 보조 3,
+   * 대표 2026-09-24 「버튼은 그 나온 패널 크기만큼을 꽉 채워가지고 … 주 버튼 7 보조 버튼 3」). */
+  .erp-std .dz-fs-foot { padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); }
+  .erp-std .dz-fs-foot.dz-bar-go { display: flex; gap: var(--erp-sp-2); }
+  .erp-std .dz-fs-foot.dz-bar-go > * { flex: 3; height: var(--erp-btn-h); }
   .erp-std .dz-fs-foot .primary {
-    border: 1px solid var(--erp-color-primary); border-radius: var(--erp-r-md); background: var(--erp-color-primary);
+    flex: 7; border: 1px solid var(--erp-color-primary); border-radius: var(--erp-r-md); background: var(--erp-color-primary);
     color: var(--erp-color-on-primary); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
   }
-  .erp-std .dz-fs-foot.dz-bar-go { display: flex; }
   .erp-std .dz-fs-foot .dz-bar-sub { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md); }
   .erp-std .dz-fs-foot .dz-bar-sub:hover { background: var(--erp-color-sunken); }
 }

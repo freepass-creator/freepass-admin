@@ -509,3 +509,132 @@ body > nav.fn-top :where(a, button):focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — 공통 Interaction Elevation (mobile/legacy admin board)
+   PC ERP shell의 동일 원칙을 기존 모바일 공통부품에도 적용한다.
+   페이지별로 그림자/눌림/선택 상태를 따로 만들지 않는다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-elevation-0: none;
+  --ui-elevation-1: 0 1px 2px rgba(16,24,40,.06);
+  --ui-elevation-2: 0 2px 5px rgba(16,24,40,.10);
+  --ui-elevation-3: 0 3px 8px rgba(16,24,40,.14);
+  --ui-press-y: 1px;
+}
+
+/* 읽기용 surface는 평평하게. */
+.fn-main .workspace :is(.dz-form-group, .summary-grid, .dz-warn, .dz-ok) {
+  box-shadow: var(--ui-elevation-0);
+}
+
+/* 누를 수 있는 공통 surface는 살짝 떠 있다. */
+.fn-main .workspace :is(
+  .dz-row,
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  box-shadow: var(--ui-elevation-1);
+  transition:
+    transform 90ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+/* hover = 조금 올라옴. */
+@media (hover:hover) {
+  .fn-main .workspace :is(
+    .dz-row,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ):hover {
+    box-shadow: var(--ui-elevation-2);
+    transform: translateY(-1px);
+  }
+}
+
+/* pressed = 내려앉음. */
+.fn-main .workspace :is(
+  .dz-row,
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+):active {
+  box-shadow: var(--ui-elevation-0);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* selected = 더 뜨는 상태가 아니라 눌려 고정된 상태. */
+.fn-main .workspace .dz-row.on,
+.fn-main .workspace .quick-filters a:is(.on,[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .offer-picker button.active,
+.fn-main .workspace .dz-fs-open.on {
+  box-shadow: inset 0 1px 2px rgba(27,42,74,.12);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* 선택된 surface는 hover해도 다시 떠오르지 않는다. */
+@media (hover:hover) {
+  .fn-main .workspace .dz-row.on:hover,
+  .fn-main .workspace .quick-filters a:is(.on,[aria-pressed="true"],[aria-current="true"]):hover,
+  .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]):hover,
+  .fn-main .workspace .offer-picker button.active:hover,
+  .fn-main .workspace .dz-fs-open.on:hover {
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.16);
+    transform: translateY(var(--ui-press-y));
+  }
+}
+
+/* Primary action = 가장 강한 tactile affordance. */
+.fn-main .workspace .dz-bar-go > .primary {
+  box-shadow: var(--ui-elevation-2);
+}
+@media (hover:hover) {
+  .fn-main .workspace .dz-bar-go > .primary:hover {
+    box-shadow: var(--ui-elevation-3);
+    transform: translateY(-1px);
+  }
+}
+.fn-main .workspace .dz-bar-go > .primary:active {
+  box-shadow: var(--ui-elevation-0);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* disabled는 물성을 제거한다. */
+.fn-main .workspace :is(button,a)[aria-disabled="true"],
+.fn-main .workspace button:disabled {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-main .workspace :is(
+    .dz-row,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    transition: none;
+  }
+}

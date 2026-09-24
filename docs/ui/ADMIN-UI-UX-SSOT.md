@@ -1739,3 +1739,42 @@ Badge/Notice에는 반드시 텍스트 의미가 함께 있어야 한다.
 - body/secondary/muted 세 단계만 유지
 - 상태색 saturation을 과하게 올리지 않는다
 - dark nav와 light workspace는 brand blue 계열로 연결한다
+
+
+# 35. Icon & touch target contract
+
+아이콘 크기와 누르는 영역은 별개다.
+
+## Desktop
+
+| 용도 | Glyph | Hit area |
+|---|---:|---:|
+| Small inline icon | 16px | parent control |
+| Navigation icon | 18px | nav item |
+| Icon-only action | 18px | 36×36px |
+| Large/status icon | 20px | component-defined |
+
+## Mobile
+
+| 용도 | Glyph | Hit area |
+|---|---:|---:|
+| Small inline icon | 16px | parent control |
+| Standard action icon | 20px | 최소 44×44px |
+| Bottom navigation icon | 24px | 최소 44×44px |
+| Status/display icon | 20px | non-interactive |
+
+## 원칙
+
+- glyph 크기로 touch target을 대신하지 않는다.
+- 모바일 icon-only action은 최소 44×44px.
+- 상태/배지/장식 icon은 pointer interaction을 갖지 않는다.
+- 클릭 가능한 카드/버튼/선택 control만 pointer cursor를 사용한다.
+- icon-only action에는 접근 가능한 이름(aria-label 또는 동등한 accessible name)이 있어야 한다.
+- decorative icon은 aria-hidden 처리한다.
+
+## 금지
+
+- 모바일 32×32 icon-only action
+- Badge/Status에 pointer cursor
+- 장식 icon에 click handler
+- 같은 역할의 icon 크기를 화면마다 임의로 바꾸기

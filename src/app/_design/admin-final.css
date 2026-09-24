@@ -1300,3 +1300,33 @@ body > nav.fn-top :where(a, button):focus-visible,
   color: #5B6472;
   box-shadow: none;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Page QA residual cleanup
+   Line-free 철학을 shell/navigation/error fallback까지 끝까지 유지한다.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 전역/모바일 하단 navigation도 visible divider를 쓰지 않는다. */
+.dz-tabbar,
+.dz-desktop-bottom {
+  border-top-color: transparent !important;
+}
+
+/* route-level fetch error도 일반 빨간 글 한 줄이 아니라 semantic surface로 보인다. */
+.fn-main > .fn-err,
+.fn-main > :is(h1,h2) + .fn-err {
+  margin: 12px 16px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: #FDEEEE;
+  color: #A12A2A;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+
+/* 연속 QuickFilter 줄은 동일 높이를 유지하되 과밀해 보이지 않게 행간만 공통 gap으로 제한한다. */
+.fn-main .workspace .quick-filters + .quick-filters {
+  margin-top: var(--ui-control-gap);
+}

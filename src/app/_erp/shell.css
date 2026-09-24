@@ -59,7 +59,22 @@
   /* 규격 카드 안에 기능 쪽 판(접수 양식 · 처리)을 앉힐 때 — 판의 겉틀만 걷는다(안의 입력 · 단추는 기능 쪽 그대로) */
   .erp-std .erp-embed .panel { border: 0; box-shadow: none; padding: 0; background: transparent; min-height: 0; overflow: visible; }
   .erp-std .erp-embed .panel-head { display: none; }
-  .erp-std .erp-embed .dz-bar { position: static; padding: 0; background: transparent; border: 0; box-shadow: none; }
+  /* 입력 패널 발치 — 목록·상세내용 패널처럼 PanelFoot 이 스크롤과 무관하게 늘 보여야 한다(대표 2026-09-24
+   * 「패널 규격 … 좌우로 넓냐 좁냐의 문제」 — 셋 다 같은 셸이다). 기능 쪽 dz-bar 는 원래 폰의 고정 높이
+   * work-panel 안에서 margin-top:auto 로 바닥에 붙는 판이라, 스크롤 칸(erp-panel-body)이 늘어나면 그냥
+   * 맨 아래로 밀려 스크롤해야만 보였다 — 스크롤 칸을 폼 자신(dz-intake-form)으로 옮기고 dz-bar 를 그
+   * 칸 안에서 sticky bottom 으로 고정한다. */
+  .erp-std .erp-panel-body:has(> .erp-embed) { overflow: hidden; }
+  .erp-std .erp-embed { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .erp-std .erp-embed > *:not(.dz-form) { flex-shrink: 0; }
+  .erp-std .erp-embed > .dz-form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .erp-std .erp-embed .dz-intake-form { flex: 1; min-height: 0; overflow-y: auto; padding: var(--erp-sp-4); }
+  .erp-std .erp-embed .dz-bar {
+    position: sticky; bottom: 0; z-index: 1;
+    margin: var(--erp-sp-3) calc(var(--erp-sp-4) * -1) calc(var(--erp-sp-4) * -1);
+    padding: var(--erp-sp-3) var(--erp-sp-4); background: var(--erp-color-surface);
+    border-top: 1px solid var(--erp-color-line); box-shadow: none;
+  }
   .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }

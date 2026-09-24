@@ -162,6 +162,17 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const panelCardSurfaceBaseline = [
+  [/--fp-component-surface:\s*#F7F9FC/i, 'desktop card surface #F7F9FC'],
+  [/--ui-component-surface:\s*#F7F9FC/i, 'mobile card surface #F7F9FC'],
+  [/--fp-surface:\s*#FFFFFF/i, 'desktop panel surface #FFFFFF'],
+  [/--ui-surface:\s*#FFFFFF/i, 'mobile panel surface #FFFFFF'],
+] as const;
+for (const [re, label] of panelCardSurfaceBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`panel/card surface mismatch: ${label}`);
+}
+
 const businessFlowBaseline = [
   ['src/domain/settlement/types.ts', [
     /export function adminWorkflowPhaseOf/,

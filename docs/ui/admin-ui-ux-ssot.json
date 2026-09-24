@@ -938,5 +938,29 @@
       "cardGapPx": 12,
       "sectionGapPx": 16
     }
+  },
+  "visualSlimness": {
+    "principle": "Keep touch targets comfortable while reducing visible bulk by role.",
+    "spacing": {
+      "controlGapPx": 8,
+      "cardGapPx": 12,
+      "sectionGapPx": 16,
+      "cardPaddingPx": 12
+    },
+    "mobileQuickFilter": {
+      "touchRowPx": 44,
+      "visualHeightPx": 34,
+      "paddingInlinePx": 12,
+      "gapPx": 8,
+      "radius": "pill",
+      "selected": "brand-solid+white",
+      "unselected": "soft-neutral",
+      "visibleBorder": false,
+      "horizontalScroll": true
+    },
+    "cards": {
+      "selectedVisibleBorder": false,
+      "selected": "primary-tint+shallow-inset"
+    }
   }
 }

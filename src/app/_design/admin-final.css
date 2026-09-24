@@ -1458,3 +1458,65 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace .dz-badge.good { color: #15803D !important; background: #F0FDF4; }
 .fn-main .workspace .dz-badge.act { color: var(--ci남색) !important; background: #EEF3FA; }
 .fn-main .workspace .dz-badge.warn { color: #A24612 !important; background: #FFF4E5; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Icon & touch target contract
+   아이콘 크기와 누르는 영역을 분리한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-icon-sm: 16px;
+  --ui-icon-md: 20px;
+  --ui-icon-lg: 24px;
+  --ui-icon-action: 20px;
+}
+
+@media (max-width: 900px) {
+  /* icon-only action은 최소 44x44. 아이콘 자체는 20px. */
+  .fn-main .workspace .dz-phone-back {
+    width: var(--ui-touch-min);
+    height: var(--ui-touch-min);
+    min-width: var(--ui-touch-min);
+    min-height: var(--ui-touch-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    flex: none;
+  }
+
+  .fn-main .workspace .dz-phone-back {
+    font-size: var(--ui-icon-action);
+    line-height: 1;
+  }
+
+  /* 하단 navigation: 24px glyph + 44px 이상 hit area */
+  .dz-tabbar svg {
+    width: var(--ui-icon-lg);
+    height: var(--ui-icon-lg);
+  }
+
+  /* 표시용 icon은 touch target 규칙 대상이 아니다. */
+  .fn-main .workspace :is(.dz-search-ico,.dz-row-status,.dz-badge .dz-ico) {
+    pointer-events: none;
+  }
+}
+
+/* 클릭 가능한 control의 cursor만 pointer. signal/status는 pointer 금지. */
+.fn-main .workspace :is(
+  button,
+  a.primary,
+  a.dz-bar-sub,
+  .quick-filters a,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-phone-back,
+  .dz-row
+) {
+  cursor: pointer;
+}
+
+.fn-main .workspace :is(.dz-badge,.dz-row-status,.dz-perk) {
+  cursor: default;
+}

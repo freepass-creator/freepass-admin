@@ -1238,3 +1238,65 @@ body > nav.fn-top :where(a, button):focus-visible,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Async / empty / error / readonly state surfaces
+   line-free 상태 표현: semantic soft surface + text, border 없음.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(.dz-empty, .dz-warn, .dz-ok, .fn-err) {
+  margin: 0;
+  padding: var(--ui-space-3);
+  border: 0;
+  border-radius: var(--ui-radius);
+  box-shadow: none;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+
+.fn-main .workspace .dz-empty {
+  background: var(--ui-component-surface);
+  color: #6b7580;
+}
+
+.fn-main .workspace .dz-warn {
+  background: #FFF7E8;
+  color: #8A4B08;
+}
+
+.fn-main .workspace .dz-ok {
+  background: #EDF8F1;
+  color: #176B3A;
+}
+
+.fn-main .workspace .fn-err {
+  background: #FDEEEE;
+  color: #A12A2A;
+}
+
+.fn-main .workspace :is(
+  input[readonly],
+  textarea[readonly],
+  select[aria-readonly="true"],
+  [aria-readonly="true"].dz-searchbox
+) {
+  background: #EEF2F6;
+  color: #667085;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Busy는 geometry를 유지한다. */
+.fn-main .workspace [aria-busy="true"] {
+  opacity: .72;
+  pointer-events: none;
+  cursor: progress;
+}
+
+/* stale/offline은 error보다 약한 주의 상태 */
+.fn-main .workspace [data-ui-state="stale"],
+.fn-main .workspace [data-ui-state="offline"] {
+  background: #F3F6FA;
+  color: #5B6472;
+  box-shadow: none;
+}

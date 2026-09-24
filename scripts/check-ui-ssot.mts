@@ -162,6 +162,33 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const formContractBaseline = [
+  ['src/app/intake/new/IntakeForm.tsx', [
+    /className="dz-errs" role="alert" aria-live="assertive"/,
+    /aria-busy=\{pending\}/,
+    /disabled=\{pending\}/,
+    /저장 중…/,
+  ]],
+  ['src/app/settlement/LifeForms.tsx', [
+    /className="dz-errs" role="alert" aria-live="assertive"/,
+    /aria-busy=\{pending\}/,
+  ]],
+] as const;
+for (const [file, rules] of formContractBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: form contract missing: ${re}`);
+  }
+}
+
+const formCssBaseline = [
+  [/input\[inputmode="numeric"\][\s\S]*?text-align:\s*right/, 'mobile numeric right alignment'],
+  [/\.dz-errs[\s\S]*?background:\s*#FDEEEE/i, 'mobile error summary surface'],
+] as const;
+for (const [re, label] of formCssBaseline) {
+  if (!re.test(cssFinal)) errors.push(`form UX mismatch or missing: ${label}`);
+}
+
 const accessibilityBehaviorBaseline = [
   ['src/app/_design/DetailTabs.tsx', [
     /tabIndex=\{tab === 'summary' \? 0 : -1\}/,

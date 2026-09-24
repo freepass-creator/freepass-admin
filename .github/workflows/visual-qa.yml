@@ -1,0 +1,51 @@
+name: Visual QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Preview/base URL to inspect (for example https://preview.example.com)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Playwright for visual QA only
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Syntax-check visual QA harness
+        run: node --check scripts/visual-qa.cjs
+
+      - name: Run visual QA
+        env:
+          VISUAL_QA_OUT: artifacts/visual-qa
+        run: npm run visual:qa -- "${{ inputs.base_url }}"
+
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: freepass-admin-visual-qa
+          path: artifacts/visual-qa/
+          if-no-files-found: warn
+          retention-days: 14

@@ -191,7 +191,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         items: 구역.flatMap((x) => x.items.filter((it) => it.pinned)) }]} />
 
       {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
-      <h3 className="dz-sub">돈 고치기 — 수수료 · 프로모션 · 가감</h3>
+      <h3 className="dz-sub">금액 조정 — 수수료 · 프로모션 · 가감</h3>
       <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled} />
       {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</Notice>}
       <MoneyForm code={r.id}

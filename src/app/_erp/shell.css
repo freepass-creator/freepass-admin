@@ -167,39 +167,63 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════
- * 2026-09-24 — Minimal Operational UI / Interaction Elevation
+ * 2026-09-24 — Surface type / Interaction hierarchy
  *
- * 목적:
- * - 읽기 전용 = 평평함
- * - 누를 수 있음 = 살짝 떠 있음
- * - 선택됨 = 떠 있는 정도를 키우지 않고 «눌린 면»으로 상태를 표시
- * - 실행 버튼 = 가장 분명한 촉각 affordance
- *
- * elevation 은 장식이 아니라 interactivity 신호다.
- * selection/state 는 elevation 이 아니라 surface/color 로 말한다.
- * FreePass Admin에서 먼저 검증한 뒤 AI Core 승격 후보로 삼는다.
+ * 물성은 타입이 정하고, 상호작용은 hover가 정한다.
+ * - Card/Box/Button = 같은 기본 높이(elevation-1)에서 시작
+ * - Passive card = 떠 있지만 hover 없음
+ * - Interactive card/button = 같은 기본 높이 + hover/press
+ * - Selected = 더 뜨지 않고 눌려 고정
+ * - Card line / Control line / Input line 은 서로 다른 역할 토큰
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
   :root {
     --fp-elevation-0: none;
-    --fp-elevation-1: 0 1px 2px rgba(16, 24, 40, 0.06);
-    --fp-elevation-2: 0 2px 5px rgba(16, 24, 40, 0.10);
-    --fp-elevation-3: 0 3px 8px rgba(16, 24, 40, 0.14);
+    --fp-elevation-base: 0 1px 2px rgba(16, 24, 40, 0.07);
+    --fp-elevation-hover: 0 3px 7px rgba(16, 24, 40, 0.12);
+    --fp-elevation-float: 0 8px 22px rgba(16, 24, 40, 0.14);
     --fp-press-y: 1px;
+
+    --fp-line-card: rgba(16, 24, 40, 0.08);
+    --fp-line-control: rgba(16, 24, 40, 0.14);
+    --fp-line-input: var(--erp-color-line-strong);
   }
 
-  /* L0 — 단순 표시. 읽기 전용 정보는 떠 보이지 않는다. */
-  .erp-std :is(.erp-info-card, .erp-hero-tile):not(a):not(button) {
-    box-shadow: var(--fp-elevation-0);
+  /* 모든 card/box surface는 같은 기준 높이에서 시작한다. */
+  .erp-std :is(
+    .erp-panel,
+    .erp-rowcard,
+    .erp-tile,
+    .erp-kpi
+  ) {
+    box-shadow: var(--fp-elevation-base);
+    border-color: var(--fp-line-card);
   }
 
-  /* L1 — Panel/읽기용 container. «면이 한 단계 위»라는 정도만. */
-  .erp-std .erp-panel {
-    box-shadow: var(--fp-elevation-1);
+  /* 카드 타입의 얇은 외곽선 — 텍스트 묶음으로 보이지 않게 하되 선이 주인공은 아니다. */
+  .erp-std .erp-rowcard,
+  .erp-std .erp-tile,
+  .erp-std .erp-kpi {
+    border: 1px solid var(--fp-line-card);
   }
 
-  /* L2 — 누를 수 있는 surface.
-   * RowCard는 article이지만 내부 링크가 카드 전체 클릭영역을 만들므로 interactive surface로 취급한다. */
+  /* 버튼/필터/드롭다운은 같은 elevation이지만 control line은 카드보다 조금 더 또렷하다. */
+  .erp-std :is(
+    .erp-btn:not(.erp-btn--ghost),
+    .erp-facet-opt,
+    .dz-fs-open,
+    .erp-dd
+  ) {
+    box-shadow: var(--fp-elevation-base);
+    border-color: var(--fp-line-control);
+  }
+
+  /* 입력은 elevation보다 입력 경계를 우선한다. */
+  .erp-std :is(.erp-input, .erp-search) {
+    border-color: var(--fp-line-input);
+  }
+
+  /* interactive만 움직인다. passive card는 같은 높이에 그대로 있다. */
   .erp-std :is(
     .erp-rowcard,
     .erp-tile--pressable,
@@ -208,15 +232,14 @@
     .erp-dd,
     .erp-btn:not(.erp-btn--ghost):not([aria-disabled="true"]):not(:disabled)
   ) {
-    box-shadow: var(--fp-elevation-1);
     transition:
       transform 90ms ease,
       box-shadow 120ms ease,
       background-color 120ms ease,
-      color 120ms ease;
+      color 120ms ease,
+      border-color 120ms ease;
   }
 
-  /* hover = 살짝 올라옴. 선택과는 별도 축이다. */
   @media (hover: hover) {
     .erp-std :is(
       .erp-rowcard,
@@ -226,12 +249,11 @@
       .erp-dd,
       .erp-btn:not(.erp-btn--ghost):not([aria-disabled="true"]):not(:disabled)
     ):hover {
-      box-shadow: var(--fp-elevation-2);
+      box-shadow: var(--fp-elevation-hover);
       transform: translateY(-1px);
     }
   }
 
-  /* pressed = 실제로 눌리는 느낌. shadow를 줄이고 원위치보다 1px 내려앉힌다. */
   .erp-std :is(
     .erp-rowcard,
     .erp-tile--pressable,
@@ -244,8 +266,7 @@
     transform: translateY(var(--fp-press-y));
   }
 
-  /* 선택 = «눌려 고정된 면».
-   * 떠오름을 강화하지 않는다. selected는 elevation이 아니라 surface/state다. */
+  /* selected = 눌려 고정된 상태. */
   .erp-std .erp-facet-opt[aria-pressed="true"],
   .erp-std .erp-tile--pressable[aria-pressed="true"],
   .erp-std .erp-rowcard[aria-current="true"] {
@@ -253,24 +274,20 @@
     transform: translateY(var(--fp-press-y));
   }
 
-  /* a.erp-facet-opt[aria-pressed="true"] 로도 적어야 한다 — sync-erp-standard.mjs 가 넣는 링크색
-   * 되돌림(.erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary) })이
-   * 태그 한 단계만큼 더 구체적이라 이 규칙(클래스만)을 조용히 이겨서 버튼 글자가 파랑-위에-파랑으로
-   * 안 보였다 — 실제 화면 스크린샷으로 찾음(대표 2026-09-24 「화이트라벨 검색창」 점검 중 발견). */
   .erp-std a.erp-facet-opt[aria-pressed="true"],
   .erp-std .erp-facet-opt[aria-pressed="true"] {
     background: var(--erp-color-primary);
     color: var(--erp-color-on-primary);
     font-weight: var(--erp-fw-semibold);
+    border-color: var(--erp-color-primary);
   }
 
   .erp-std .erp-tile--pressable[aria-pressed="true"],
   .erp-std .erp-rowcard[aria-current="true"] {
     background: var(--erp-color-primary-weak);
+    border-color: color-mix(in srgb, var(--erp-color-primary) 20%, transparent);
   }
 
-  /* 선택된 filter/tile/card는 hover해도 다시 «떠오르지» 않는다.
-   * 선택됨과 hover됨을 한 효과로 섞지 않는다. */
   @media (hover: hover) {
     .erp-std .erp-facet-opt[aria-pressed="true"]:hover,
     .erp-std .erp-tile--pressable[aria-pressed="true"]:hover,
@@ -280,18 +297,18 @@
     }
   }
 
-  /* L3 — 실제 업무 실행. Primary가 가장 명확하게 떠 있어야 한다. */
+  /* Primary도 기본 높이는 다른 버튼과 같다. 색/weight가 우선순위를 말한다. */
   .erp-std .erp-btn--primary:not([aria-disabled="true"]):not(:disabled),
   .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child),
   .erp-std .dz-fs-foot .primary {
-    box-shadow: var(--fp-elevation-2);
+    box-shadow: var(--fp-elevation-base);
   }
 
   @media (hover: hover) {
     .erp-std .erp-btn--primary:not([aria-disabled="true"]):not(:disabled):hover,
     .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child):hover,
     .erp-std .dz-fs-foot .primary:hover {
-      box-shadow: var(--fp-elevation-3);
+      box-shadow: var(--fp-elevation-hover);
       transform: translateY(-1px);
     }
   }
@@ -303,7 +320,6 @@
     transform: translateY(var(--fp-press-y));
   }
 
-  /* Ghost/disabled/read-only는 물성을 제거한다. */
   .erp-std .erp-btn--ghost,
   .erp-std :is(.erp-btn, .erp-tile--pressable, .erp-facet-opt)[aria-disabled="true"],
   .erp-std :is(.erp-btn, .erp-tile--pressable, .erp-facet-opt):disabled {
@@ -311,7 +327,6 @@
     transform: none;
   }
 
-  /* FilterSheet 체크 항목: 선택은 올라오는 게 아니라 눌려 고정되는 상태. */
   .erp-std .dz-fs-check {
     transition: transform 90ms ease, background-color 120ms ease;
   }
@@ -319,9 +334,6 @@
     background: var(--erp-color-primary-weak);
     color: var(--erp-color-primary);
     font-weight: var(--erp-fw-semibold);
-    transform: translateY(var(--fp-press-y));
-  }
-  .erp-std .dz-fs-check:active {
     transform: translateY(var(--fp-press-y));
   }
 
@@ -339,3 +351,4 @@
     }
   }
 }
+

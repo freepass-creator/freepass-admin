@@ -464,3 +464,128 @@
     background: var(--erp-color-row-selected);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Final line-free semantic hierarchy
+ * canvas → panel → component → state.
+ * Badge(signal)와 Control(action/selection)을 절대 같은 물성으로 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-canvas: #F2F6FC;
+    --fp-surface: #FFFFFF;
+    --fp-surface-soft: #F7F9FC;
+    --fp-surface-hover: #F3F6FA;
+    --fp-selected: #EAF1FF;
+    --fp-focus-halo: 0 0 0 3px rgba(29,78,216,.14);
+  }
+
+  body:has(> .erp-theme-flag),
+  body:has(> .erp-theme-flag) > main.fn-main {
+    background: var(--fp-canvas);
+  }
+
+  /* Shell도 line-free: 구조는 면/간격으로만 구분한다. */
+  body:has(> .erp-theme-flag) > :is(.erp-topbar,.erp-sidenav,.erp-statusbar),
+  .erp-std :is(.erp-user,.erp-nav-group--apart) {
+    border-color: transparent !important;
+  }
+
+  /* Panel = canvas 위 흰 surface island. */
+  .erp-std .erp-panel {
+    background: var(--fp-surface);
+    box-shadow: var(--fp-elevation-base);
+  }
+
+  /* Passive signal — Badge/Tag는 상태를 보여주기만 한다.
+   * elevation/hover/press/cursor 금지: 버튼처럼 오인되면 안 된다. */
+  .erp-std :is(.erp-badge,.erp-tag,.erp-chip:not(a)) {
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: default;
+    transition: none;
+  }
+
+  /* Action / Selection controls — 누를 수 있는 물건. */
+  .erp-std :is(
+    .erp-btn:not(.erp-btn--ghost),
+    .erp-facet-opt,
+    .erp-dd,
+    .dz-fs-open
+  ) {
+    background-color: var(--fp-surface-soft);
+    box-shadow: var(--fp-elevation-base);
+    cursor: pointer;
+  }
+
+  @media (hover:hover) {
+    .erp-std :is(
+      .erp-btn:not(.erp-btn--ghost):not(:disabled):not([aria-disabled="true"]),
+      .erp-facet-opt:not([aria-pressed="true"]),
+      .erp-dd:not(:disabled),
+      .dz-fs-open:not(.on)
+    ):hover {
+      background-color: var(--fp-surface-hover);
+      box-shadow: var(--fp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Selected controls — 올라오는 게 아니라 눌려 고정. */
+  .erp-std .erp-facet-opt[aria-pressed="true"],
+  .erp-std .erp-seg :is(a,button)[aria-pressed="true"],
+  .erp-std .erp-statusbar-keys a[aria-pressed="true"] {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+    box-shadow: inset 0 1px 2px rgba(16,24,40,.14);
+    transform: translateY(var(--fp-press-y));
+  }
+
+  /* Selectable card — 카드 물성 + hover, 선택 시 primary tint. */
+  .erp-std .erp-rowcard {
+    background: var(--fp-surface);
+  }
+  .erp-std .erp-rowcard[aria-current="true"],
+  .erp-std .erp-tile--pressable[aria-pressed="true"] {
+    background: var(--fp-selected);
+    box-shadow: inset 0 1px 2px rgba(29,78,216,.11);
+    transform: translateY(var(--fp-press-y));
+  }
+
+  /* Passive tile/card는 떠 있지만 hover하지 않는다. */
+  .erp-std .erp-tile:not(.erp-tile--pressable),
+  .erp-std .erp-kpi {
+    background: var(--fp-surface);
+    cursor: default;
+  }
+
+  /* Input/Search/Select — line-free field surface. */
+  .erp-std :is(.erp-input,.erp-search,.erp-dd,select,textarea) {
+    background: var(--fp-surface-soft);
+    border-color: transparent !important;
+  }
+  .erp-std :is(.erp-input,.erp-search,.erp-dd,select,textarea):focus,
+  .erp-std :is(.erp-input,.erp-dd,select,textarea):focus-visible,
+  .erp-std .erp-search:focus-within {
+    outline: none;
+    background: var(--fp-surface);
+    box-shadow: var(--fp-focus-halo), var(--fp-elevation-hover);
+  }
+
+  /* disabled는 hover/press가 없고 한 단계 가라앉는다. */
+  .erp-std :is(button,.erp-btn,.erp-facet-opt,.erp-dd)[disabled],
+  .erp-std :is(.erp-btn,.erp-facet-opt)[aria-disabled="true"] {
+    opacity: .52;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed;
+  }
+
+  /* Popup/dropdown sheet = 가장 높은 floating surface. */
+  .erp-std :is(.erp-filter-panel,.dz-fs-sheet) {
+    background: var(--fp-surface);
+    box-shadow: var(--fp-elevation-float);
+    border-color: transparent !important;
+  }
+}

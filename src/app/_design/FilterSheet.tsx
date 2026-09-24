@@ -48,6 +48,7 @@ export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const dialogId = useId();
   const close = useCallback(() => {
     setOpen(false);
@@ -60,6 +61,15 @@ export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
   const total = shown.reduce((n, a) => n + sel(a.key).length, 0);
   const [active, setActive] = useState(() => (shown.find((a) => sel(a.key).length) ?? shown[0])?.key ?? '');
   useEffect(() => { if (shown.length && !shown.some((a) => a.key === active)) setActive(shown[0].key); }, [shown, active]);
+
+  /* 열리면 실제 dialog 안으로 focus를 옮긴다. 닫으면 close()가 trigger로 되돌린다. */
+  useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => {
+      const first = dialog.current?.querySelector<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      (first ?? dialog.current)?.focus();
+    });
+  }, [open]);
 
   /* 닫기 — 바깥을 누르거나 Esc */
   useEffect(() => {
@@ -94,7 +104,8 @@ export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건"
+            tabIndex={-1} onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>

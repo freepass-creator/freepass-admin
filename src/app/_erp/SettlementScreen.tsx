@@ -1,9 +1,12 @@
 /**
- * PC 정산관리 — 판 셋: 정산묶음 | 실적 줄 | 접수상세 (§5-4, 대표 2026-09-24 「모든 페이지는 다
- *   패널화 돼 있다」 — 단독 페이지(§4 두 칸 카드 골격 · Props · CardHead)로 두지 않는다). 계약접수
- *   (Workspace.tsx)와 같은 erp-panel 셋으로 짠다 — 접수상세 판은 그 화면과 똑같은 부품(SettlementDetail)
- *   을 쓴다(같은 접수는 어느 화면에서 열어도 같은 판).
- *   셈은 기능 쪽 그대로(claimLedger · payLedger · ledgerTotals — 완납 · 인도 기준, 끊긴 분납은 받은 만큼).
+ * PC 정산관리 — 판 셋: 청구목록(왼쪽) | 정산상세(가운데) | 지급목록(오른쪽) (§5-4, 대표 2026-09-24
+ *   「정산관리는 왼쪽 패널에다가 청구, 가운데 상세, 오른쪽에 지급이야. 다 목록이니까 목록 쓰면 되고,
+ *   목록 규격」). 청구·지급을 한 판 안 탭으로 가르던 것(정산묶음)을 걷어내고, 실적 화면(분납실적|
+ *   실적상세|완납실적)과 같은 결로 둘을 늘 같이 보이는 목록 판 둘로 나눈다 — 목록 판은 전부 compact +
+ *   SearchBar(§5-1)로 같은 틀이다. 가운데는 상세내용 kind(목록이 아니라 compact 가 없다) — 고른 묶음의
+ *   정산상세(총 · 환수 · 순액 · 발행) + 그 줄들을 보여준다. 줄을 누르면 그 접수 자체의 상세(계약접수
+ *   워크스페이스)로 건너간다 — 정산상세는 «그 묶음»의 요약이지 개별 접수상세의 자리가 아니다.
+ *   셈은 기능 쪽 그대로(claimLedger · payLedger — 완납 · 인도 기준, 끊긴 분납은 받은 만큼).
  *   발행은 기능 쪽 IssueForm 그대로 — ⚠ 운영 원장에 쓴다(쓰기 꺼짐 · 가상 데이터에서는 저장되지 않는다).
  */
 import { settlements, today } from '../../server/erp5';
@@ -13,9 +16,8 @@ import {
 } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
-import { Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Tone } from './parts';
+import { Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, RowCard, RowCards, Screen, SearchBar, won0, type Tone } from './parts';
 import { AutoSelect } from './AutoSelect';
-import { SettlementDetail } from './SettlementDetail';
 
 type Q = Record<string, string | string[] | undefined>;
 const STAGE_TONE: Record<string, Tone> = { 접수: 'neutral', 청구: 'info', 통보: 'info', 정정: 'err', 확인: 'warn', 수금: 'ok', 지급: 'ok' };
@@ -36,69 +38,77 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     );
   }
 
-  const tab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
   const nowMonth = today().slice(0, 7);
-  const nowDate = new Date(`${today()}T12:00:00+09:00`);
   const months = ledgerMonths(rows, cb);
   const 달들 = months.filter((m) => m !== NO_MONTH);
   const month = sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
-  const groups: LedgerGroup[] = tab === 'claim' ? claimG : payG;
+
+  const cq = sp(q.cq).trim().toLowerCase();
+  const pq = sp(q.pq).trim().toLowerCase();
+  const shownClaim = claimG.filter((g) => !cq || g.party.toLowerCase().includes(cq));
+  const shownPay = payG.filter((g) => !pq || g.party.toLowerCase().includes(pq));
+
+  /* 고른 묶음 — 청구 · 지급 어느 목록에서 눌렀는지로 축(문서 · 사람 이름)을 가른다 */
+  const gp = sp(q.g);
+  const claimSel = claimG.find((g) => g.party === gp);
+  const paySel = !claimSel ? payG.find((g) => g.party === gp) : undefined;
+  const gSel = claimSel ?? paySel;
+  const tab: 'claim' | 'pay' = claimSel ? 'claim' : 'pay';
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 문서 = tab === 'claim' ? '청구서' : '지급명세';
-  const gq = sp(q.gq).trim().toLowerCase();
-  const shownGroups = groups.filter((g) => !gq || g.party.toLowerCase().includes(gq));
-  const gSel = groups.find((g) => g.party === sp(q.g));
-
-  const 장부 = month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const axis = tab === 'claim' ? '공급사' as const : '영업채널' as const;
+
+  const 장부 = gSel && month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
 
-  const ic = sp(q.ic);
-  const cur = ic ? rows.find((r) => r.id === ic) : undefined;
-  const lq = sp(q.lq).trim().toLowerCase();
-  const shownLines = gSel ? gSel.lines.filter((l) => !lq || [l.row.customer, l.row.plate, l.row.model].filter(Boolean).join(' ').toLowerCase().includes(lq)) : [];
+  const list = (title: string, items: LedgerGroup[], name: string) => (
+    <RowCards label={`${title} 목록`}>
+      {items.map((g) => {
+        const attn = ledgerGroupAttention(g);
+        return (
+          <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
+            tone={ATTN_TONE[attn]} title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
+            facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
+            amount={won0(g.net)} amountLabel="정산액" />
+        );
+      })}
+    </RowCards>
+  );
 
   return (
     <Screen name="settlement-workspace">
     <div className="erp-workspace">
       <Panel compact>
-        <PanelHead kind="목록" title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳`} />
-        <SearchBar base={base} q={q} name="gq" placeholder={`${who} 이름`} keep={['tab', 'month']}
+        <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
+        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month']}
           dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} />
-        <QuickFilter label="정산 구분" items={[
-          { key: 'claim', label: `청구 · 공급사 ${claimG.length}곳`, href: hrefWith(base, q, { tab: null, g: null, ic: null }), on: tab === 'claim' },
-          { key: 'pay', label: `지급 · 영업채널 ${payG.length}곳`, href: hrefWith(base, q, { tab: 'pay', g: null, ic: null }), on: tab === 'pay' },
-        ]} />
-        <PanelBody>
-          <RowCards label={`${who} 목록`}>
-            {shownGroups.map((g) => {
-              const attn = ledgerGroupAttention(g);
-              return (
-                <RowCard key={g.party} href={hrefWith(base, q, { g: g.party, ic: null })} current={g.party === gSel?.party}
-                  tone={ATTN_TONE[attn]} title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
-                  facts={[[문서, `${g.done}/${g.lines.length}`], [tab === 'claim' ? '수금' : '지급', `${g.completed}/${g.lines.length}`]]}
-                  amount={won0(g.net)} amountLabel="정산액" />
-              );
-            })}
-          </RowCards>
-        </PanelBody>
+        <PanelBody>{list('청구', shownClaim, '청구서')}</PanelBody>
       </Panel>
 
-      <Panel compact>
+      <Panel>
         {gSel ? (
           <>
-            <PanelHead kind="목록" title={gSel.party} count={`${shownLines.length}줄`} />
-            <SearchBar base={base} q={q} name="lq" placeholder="고객 · 차번 · 모델" keep={['tab', 'month', 'g']} />
+            <PanelHead kind="상세내용" title={gSel.party} count={`${who} · ${month}`} />
             <PanelBody>
               <IssueForm id="erp-issue-form" month={month} axis={axis} party={gSel.party} />
+              <div className="erp-tile">
+                <h3 className="erp-tile-title">정산 요약</h3>
+                <div className="erp-tile-group">
+                  <div className="erp-tile-row"><b>합</b><strong>{won0(gSel.total)}원</strong></div>
+                  <div className="erp-tile-row"><b>환수</b><strong>{gSel.clawbackTotal ? `−${won0(gSel.clawbackTotal)}원` : '—'}</strong></div>
+                  <div className="erp-tile-row"><b>정산액</b><strong>{won0(gSel.net)}원</strong></div>
+                  <div className="erp-tile-row"><b>{문서} 보냄</b><strong>{gSel.done} / {gSel.lines.length}</strong></div>
+                  <div className="erp-tile-row"><b>완료</b><strong>{gSel.completed} / {gSel.lines.length}</strong></div>
+                </div>
+              </div>
               <RowCards label="실적 줄">
-                {shownLines.map(({ row: r, amount, broken, ratio }) => {
+                {gSel.lines.map(({ row: r, amount, broken, ratio }) => {
                   const flow = tab === 'claim' ? CLAIM_FLOW : PAY_FLOW;
                   const st = tab === 'claim' ? r.claimStage : r.payStage;
                   const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);
                   return (
-                    <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} current={r.id === ic} tone={STAGE_TONE[st] ?? 'neutral'}
+                    <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
                       title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
                       plate={txt(r.plate)} car={txt(r.model)} steps={{ labels: flow, at }}
                       facts={[
@@ -119,21 +129,16 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           </>
         ) : (
           <>
-            <PanelHead kind="목록" title="실적 줄" count="묶음 선택" />
-            <PanelBody><p className="erp-muted">왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</p></PanelBody>
+            <PanelHead kind="상세내용" title="정산상세" count="묶음 선택" />
+            <PanelBody><p className="erp-muted">왼쪽 청구목록이나 오른쪽 지급목록에서 고르세요.</p></PanelBody>
           </>
         )}
       </Panel>
 
-      <Panel>
-        {cur ? (
-          <SettlementDetail cur={cur} base={base} q={q} now={nowDate} />
-        ) : (
-          <>
-            <PanelHead kind="상세내용" title="접수상세" count="고른 접수" />
-            <PanelBody><p className="erp-muted">가운데 실적 줄을 고르세요.</p></PanelBody>
-          </>
-        )}
+      <Panel compact>
+        <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
+        <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" keep={['month']} />
+        <PanelBody>{list('지급', shownPay, '지급명세')}</PanelBody>
       </Panel>
     </div>
     </Screen>

@@ -21,14 +21,18 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
 
 test('settlement is panelized like the intake workspace, not a standalone §4 page', () => {
   // 대표 2026-09-24 「모든 페이지는 다 패널화 돼 있다 … 정산관리는 이거 공통규격이 아니잖아」 — §4
-  // PageHeader/erp-cols 골격을 걷어내고 §5-4 erp-panel 셋(정산묶음 | 실적 줄 | 접수상세)으로 다시 짰다.
+  // PageHeader/erp-cols 골격을 걷어내고 §5-4 erp-panel 셋(청구목록 | 정산상세 | 지급목록)으로 다시 짰다
+  // (대표 2026-09-24 「왼쪽 패널에다가 청구, 가운데 상세, 오른쪽에 지급이야」 — 실적 화면과 같은 결).
   const src = read('src/app/_erp/SettlementScreen.tsx');
   assert.equal(src.includes('<PageHeader'), false, 'no standalone page header — panels carry their own PanelHead');
   assert.equal(src.includes('erp-cols'), false, 'no §4 two-column card grid');
   assert.ok(src.includes('<Panel') && src.includes('<PanelHead') && src.includes('<PanelBody') && src.includes('<PanelFoot'), 'built from §5-4 panel parts');
   assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), 'long card list');
   assert.ok(src.includes('<SearchBar'), 'search bar');
-  assert.ok(src.includes('<SettlementDetail'), '접수상세 판 reuses the shared detail component, not a copy');
+  // 목록 kind 판(청구목록 · 지급목록)은 둘 다 compact — 다른 목록 판과 같은 규격(대표 2026-09-24
+  // 「목록 패널은 좀 제발 좀 목록 패널에 맞게끔 하라고」)
+  assert.equal((src.match(/<Panel compact>/g) ?? []).length, 3, '청구목록·지급목록 목록 판(+오류 화면)이 compact');
+  assert.ok(src.includes('<IssueForm'), '발행 폼은 가운데 정산상세 판에 있다');
   assert.equal(/style=\{\{/.test(src), false, 'no inline style');
 });
 

@@ -103,12 +103,13 @@
       "elevation": "base"
     },
     "mobile": {
-      "workspaceGapPx": 8,
-      "workspacePaddingPx": 8,
+      "workspaceGapPx": 0,
       "panelPaddingPx": 16,
       "border": false,
       "elevation": "0",
-      "behavior": "panel is the current screen surface"
+      "behavior": "panel is the current screen surface",
+      "screenGutterPx": 16,
+      "screenGutterNarrowPx": 12
     },
     "roles": [
       "LIST",
@@ -962,5 +963,31 @@
       "selectedVisibleBorder": false,
       "selected": "primary-tint+shallow-inset"
     }
+  },
+  "fullWidthLayout": {
+    "desktop": {
+      "compact": {
+        "min": 1280,
+        "max": 1439,
+        "gutterXpx": 16,
+        "gutterYpx": 12,
+        "panelGapPx": 12
+      },
+      "standard": {
+        "min": 1440,
+        "gutterXpx": 20,
+        "gutterYpx": 16,
+        "panelGapPx": 16
+      }
+    },
+    "mobile": {
+      "standardGutterPx": 16,
+      "narrowUnder380GutterPx": 12,
+      "workspaceWidth": "100%",
+      "panelWidth": "100%",
+      "contentWidth": "100%"
+    },
+    "noArbitraryMaxWidth": true,
+    "rule": "Use fixed outer gutters; workspace, panels and cards consume the remaining available width."
   }
 }

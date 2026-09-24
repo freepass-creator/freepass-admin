@@ -704,3 +704,52 @@
     background: var(--fp-component-surface);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Interaction state consistency
+ * focus-visible도 line-free 문법 안에서 soft halo로 통일한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-btn,
+    .erp-facet-opt,
+    .erp-dd,
+    .dz-fs-open,
+    .erp-tile--pressable,
+    .erp-rowcard,
+    .erp-seg a,
+    .erp-statusbar-keys a
+  ):focus-visible {
+    outline: none;
+    box-shadow: var(--fp-focus-halo), var(--fp-elevation-base);
+  }
+
+  /* selected/pressed 상태의 focus는 선택 상태를 깨지 않고 halo만 추가한다. */
+  .erp-std :is(
+    .erp-facet-opt[aria-pressed="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-rowcard[aria-current="true"],
+    .erp-seg a[aria-pressed="true"],
+    .erp-statusbar-keys a[aria-pressed="true"]
+  ):focus-visible {
+    outline: none;
+    box-shadow:
+      var(--fp-focus-halo),
+      inset 0 1px 2px rgba(29,78,216,.12);
+    transform: translateY(var(--fp-press-y));
+  }
+
+  /* Badge/Tag는 focusable control이 아니다. */
+  .erp-std :is(.erp-badge,.erp-tag):focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* disabled는 focus/hover/press elevation을 절대 갖지 않는다. */
+  .erp-std :is(.erp-btn,.erp-facet-opt,.erp-dd)[aria-disabled="true"]:focus-visible,
+  .erp-std :is(.erp-btn,.erp-dd):disabled:focus-visible {
+    outline: none;
+    box-shadow: none !important;
+  }
+}

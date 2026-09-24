@@ -207,7 +207,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
                 </select>
               </label>
               <label>계약기간(개월)<input name="term" defaultValue={defaults.term} inputMode="numeric" /></label>
-              <label>렌탈료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
+              <label>월 대여료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
               <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>
               <label>차량가액 <small>신차 자동수수료 기준</small><input name="price" inputMode="numeric" /></label>
             </div>

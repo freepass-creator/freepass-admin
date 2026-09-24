@@ -386,5 +386,24 @@
       "overflow": "ellipsis identity/meta before breaking layout"
     },
     "rule": "Same data type keeps the same alignment across all internal Admin routes."
+  },
+  "informationBudget": {
+    "listCard": {
+      "identity": 1,
+      "status": 1,
+      "metaLines": 1,
+      "primaryValue": 1,
+      "riskFlagMax": 1,
+      "desktopWideFactsMax": 2
+    },
+    "moveToDetail": [
+      "secondary dates",
+      "internal codes when not needed for identification",
+      "form/insurance/configuration details",
+      "duplicate status metrics",
+      "secondary actors already represented in meta"
+    ],
+    "riskRule": "Do not hide operational risk. Compress multiple risks into one flag; show up to two key items and optionally '외 N'.",
+    "rule": "List is for decision; Detail is for verification."
   }
 }

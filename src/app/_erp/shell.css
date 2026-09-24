@@ -63,7 +63,8 @@
   .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }
-  .erp-screen .erp-content > .erp-card--fill, .erp-screen .erp-content > .erp-cols:has(> .erp-card--fill) { flex: 1 0 420px; }
+  .erp-screen .erp-content > .erp-card--fill, .erp-screen .erp-content > .erp-cols:has(> .erp-card--fill),
+  .erp-screen .erp-content > .erp-panel { flex: 1 0 420px; }
   .erp-screen .erp-cols > .erp-card--fill { min-height: 420px; }
   .erp-std .erp-chip[aria-current="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
   .erp-std a.erp-chip { text-decoration: none; }

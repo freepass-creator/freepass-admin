@@ -18,7 +18,7 @@ import { blockOf } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { IntakeProgress } from './IntakeProgress';
-import { Badge, CardHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
+import { Badge, CardHead, Panel, PanelBody, PanelFoot, PanelHead, RowCard, RowCards, hrefWith, PageHeader, Props, Screen, SearchBar, Seg, Steps, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
@@ -42,10 +42,14 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
         <PageHeader crumb={['홈', '업무', '계약접수', '신규 접수']} title="신규 접수" badge={<Badge tone="neutral">작성중</Badge>}
           desc="상품찾기에서 고른 차와 요금이 그대로 들어옵니다. 저장하면 접수 당시 상품 · 요금이 스냅샷으로 남습니다."
           actions={<Link className="erp-btn" href="/products">상품 다시 고르기</Link>} />
-        <section className="erp-section erp-embed">
-          <h2 className="erp-section-title">접수 내용</h2>
-          <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)} back={base} />
-        </section>
+        <Panel>
+          <PanelHead kind="입력" title="접수 내용" count={writeEnabled() ? '저장 가능' : '저장 꺼짐'} />
+          <PanelBody>
+            <div className="erp-embed">
+              <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)} back={base} hideHeader />
+            </div>
+          </PanelBody>
+        </Panel>
       </Screen>
     );
   }
@@ -78,63 +82,68 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
             <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, { ic: null })}>목록으로</Link>
             {primary}
           </>} />
-        <section className="erp-card">
-          <div className="erp-card-body">
-            <Steps current={step} items={[
-              { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
-              { label: '계약서', count: p.paper ? '받음' : '—' },
-              { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
-              { label: '청구', count: p.billMonth ?? '—' },
-              { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
-            ]} />
-          </div>
-        </section>
-        <div className="erp-cols erp-cols--detail">
-          <div className="erp-stack">
-            <section className="erp-section">
-              <h2 className="erp-section-title">고객 · 차량</h2>
-              <Props pairs={[['고객', txt(cur.customer)], ['차량번호', txt(cur.plate)], ['차량', txt(cur.model)], ['공급사', txt(cur.supplier)],
-                ['영업채널', txt(cur.channel)], ['영업 담당', txt(cur.agent)]]} />
-            </section>
-            <section className="erp-section">
-              <h2 className="erp-section-title">계약 조건</h2>
-              <Props pairs={[['상품구분', txt(cur.product)], ['계약기간', cur.term ? `${cur.term}개월` : '—'], ['보증금', won0(cur.deposit)],
-                ['월 대여료', won0(cur.rent)], ['결제', txt(cur.payKind)], ['계약 방식', txt(cur.contractType)]]} />
-            </section>
-            <section className="erp-section">
-              <h2 className="erp-section-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h2>
-              <table className="erp-grid erp-grid--dense">
-                <thead><tr><th>구분</th><th>상대</th><th>단계</th><th className="erp-num">금액</th></tr></thead>
-                <tbody>
-                  <tr><td>청구</td><td>{txt(cur.supplier)}</td><td>{cur.claimStage}</td><td className="erp-num erp-strong">{won0(claim)}</td></tr>
-                  <tr><td>지급</td><td>{txt(cur.channel)}</td><td>{cur.payStage}</td><td className="erp-num erp-strong">{won0(pay)}</td></tr>
-                </tbody>
-                <tfoot><tr><td>남는 것</td><td /><td /><td className="erp-num">{won0(margin)}</td></tr></tfoot>
-              </table>
-            </section>
-          </div>
-          <div className="erp-stack">
+        <Panel>
+          <PanelHead kind="상세내용" title={txt(cur.customer)} count={b} />
+          <PanelBody>
             <section className="erp-card">
-              <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
               <div className="erp-card-body">
-                <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
-                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+                <Steps current={step} items={[
+                  { label: '접수', count: cur.receivedAt?.slice(5) ?? '—' },
+                  { label: '계약서', count: p.paper ? '받음' : '—' },
+                  { label: '인도', count: p.deliveredAt?.slice(5) ?? '—' },
+                  { label: '청구', count: p.billMonth ?? '—' },
+                  { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
+                ]} />
               </div>
             </section>
-            <section className="erp-card">
-              <CardHead title="처리 이력" sub={`${events.length}건`} />
-              <div className="erp-card-body">
-                {events.length ? (
-                  <ul className="erp-timeline">
-                    {events.slice(0, 8).map((e, i) => (
-                      <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
-                    ))}
-                  </ul>
-                ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
+            <div className="erp-cols erp-cols--detail">
+              <div className="erp-stack">
+                <section className="erp-section">
+                  <h2 className="erp-section-title">고객 · 차량</h2>
+                  <Props pairs={[['고객', txt(cur.customer)], ['차량번호', txt(cur.plate)], ['차량', txt(cur.model)], ['공급사', txt(cur.supplier)],
+                    ['영업채널', txt(cur.channel)], ['영업 담당', txt(cur.agent)]]} />
+                </section>
+                <section className="erp-section">
+                  <h2 className="erp-section-title">계약 조건</h2>
+                  <Props pairs={[['상품구분', txt(cur.product)], ['계약기간', cur.term ? `${cur.term}개월` : '—'], ['보증금', won0(cur.deposit)],
+                    ['월 대여료', won0(cur.rent)], ['결제', txt(cur.payKind)], ['계약 방식', txt(cur.contractType)]]} />
+                </section>
+                <section className="erp-section">
+                  <h2 className="erp-section-title">금액 <span className="erp-docstate">청구(공급사) − 지급(영업채널) = 남는 것</span></h2>
+                  <table className="erp-grid erp-grid--dense">
+                    <thead><tr><th>구분</th><th>상대</th><th>단계</th><th className="erp-num">금액</th></tr></thead>
+                    <tbody>
+                      <tr><td>청구</td><td>{txt(cur.supplier)}</td><td>{cur.claimStage}</td><td className="erp-num erp-strong">{won0(claim)}</td></tr>
+                      <tr><td>지급</td><td>{txt(cur.channel)}</td><td>{cur.payStage}</td><td className="erp-num erp-strong">{won0(pay)}</td></tr>
+                    </tbody>
+                    <tfoot><tr><td>남는 것</td><td /><td /><td className="erp-num">{won0(margin)}</td></tr></tfoot>
+                  </table>
+                </section>
               </div>
-            </section>
-          </div>
-        </div>
+              <div className="erp-stack">
+                <section className="erp-card">
+                  <CardHead title="처리" sub="차량번호 · 계약서 · 인도 · 취소" />
+                  <div className="erp-card-body">
+                    <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
+                      cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+                  </div>
+                </section>
+                <section className="erp-card">
+                  <CardHead title="처리 이력" sub={`${events.length}건`} />
+                  <div className="erp-card-body">
+                    {events.length ? (
+                      <ul className="erp-timeline">
+                        {events.slice(0, 8).map((e, i) => (
+                          <li key={i} data-state={i === 0 ? 'current' : undefined}><strong>{e.field}</strong> {txt(e.from)} → {txt(e.to)}<time>{when(e.at)}</time></li>
+                        ))}
+                      </ul>
+                    ) : <span className="erp-muted">남은 이력이 없습니다.</span>}
+                  </div>
+                </section>
+              </div>
+            </div>
+          </PanelBody>
+        </Panel>
       </Screen>
     );
   }
@@ -166,46 +175,49 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
           <Link className="erp-btn erp-btn--ghost" href="/settlement">정산관리</Link>
           <Link className="erp-btn erp-btn--primary" href="/products">신규 접수</Link>
         </>} />
-      <section className="erp-card erp-card--fill">
-        <SearchBar base={base} q={q} name="iq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['iv']} facets={[
-          { key: 'isup', title: '공급사', options: suppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && inView(r)).length })) },
-          { key: 'ich', title: '영업채널', options: channels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && inView(r)).length })) },
-        ]} />
-      <div className="erp-toolbar" data-region="grid-toolbar">
-        <span className="erp-toolbar-spacer" />
-        <Seg label="접수 칸" items={[
-            { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { iv: 'all', page: null }), on: iv === 'all' },
-            ...BUCKETS.map((b) => ({ key: b, label: `${b} ${n(b)}`, href: hrefWith(base, q, { iv: b === '당월접수' ? null : b, page: null }), on: iv === b })),
+      <Panel>
+        <PanelHead kind="목록" title={title} count={`전체 ${shown.length}건`} />
+        <PanelBody>
+          <SearchBar base={base} q={q} name="iq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['iv']} facets={[
+            { key: 'isup', title: '공급사', options: suppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && inView(r)).length })) },
+            { key: 'ich', title: '영업채널', options: channels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && inView(r)).length })) },
           ]} />
-      </div>
-      <RowCards label={`${title} 목록`}>
-        {slice.map((r) => {
-          const b = bucket.get(r)!;
-          const pg = r.progress;
-          const at = pg.cancelled ? -1 : !pg.paper ? 1 : !pg.delivered ? 2 : !pg.billed ? 3 : !(pg.collected && pg.paid) ? 4 : 5;
-          const todo = pg.cancelled ? '취소됨' : ['', '계약서 대기', '인도 대기', '청구 대기', pg.collected ? '지급 대기' : '수금 대기', '정산 끝'][at];
-          return (
-            <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} tone={TONE[b]}
-              title={txt(r.customer)} badge={<Badge tone={TONE[b]}>{b}</Badge>}
-              plate={txt(r.plate)} car={txt(r.model)}
-              meta={`접수 ${txt(r.receivedAt)}${perfView ? ` · 인도 ${txt(pg.deliveredAt)}` : ''} · ${todo}`}
-              steps={{ labels: FLOW, at }}
-              facts={perfView ? [
-                ['공급사', txt(r.supplier), `청구 ${r.claimStage}`],
-                ['영업채널', txt(r.channel), `지급 ${r.payStage}`],
-                ['청구액', `${won0(claimAmountOf(r, now))}원`],
-                ['지급액', `${won0(payAmountOf(r, now))}원`],
-              ] : [
-                ['공급사', txt(r.supplier)],
-                ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
-                ['영업채널', txt(r.channel), r.agent ? `담당 ${r.agent}` : undefined],
-                ['보증금', r.deposit ? `${won0(r.deposit)}원` : '무보증', txt(r.payKind)],
-              ]}
-              amount={won0(perfView ? marginOf(r, now) : r.rent)} amountLabel={perfView ? '남는 것' : '월 대여료'} />
-          );
-        })}
-      </RowCards>
-        <div className="erp-grid-foot">
+          <div className="erp-toolbar" data-region="grid-toolbar">
+            <span className="erp-toolbar-spacer" />
+            <Seg label="접수 칸" items={[
+                { key: 'all', label: `전체 ${searched.length}`, href: hrefWith(base, q, { iv: 'all', page: null }), on: iv === 'all' },
+                ...BUCKETS.map((b) => ({ key: b, label: `${b} ${n(b)}`, href: hrefWith(base, q, { iv: b === '당월접수' ? null : b, page: null }), on: iv === b })),
+              ]} />
+          </div>
+          <RowCards label={`${title} 목록`}>
+            {slice.map((r) => {
+              const b = bucket.get(r)!;
+              const pg = r.progress;
+              const at = pg.cancelled ? -1 : !pg.paper ? 1 : !pg.delivered ? 2 : !pg.billed ? 3 : !(pg.collected && pg.paid) ? 4 : 5;
+              const todo = pg.cancelled ? '취소됨' : ['', '계약서 대기', '인도 대기', '청구 대기', pg.collected ? '지급 대기' : '수금 대기', '정산 끝'][at];
+              return (
+                <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} tone={TONE[b]}
+                  title={txt(r.customer)} badge={<Badge tone={TONE[b]}>{b}</Badge>}
+                  plate={txt(r.plate)} car={txt(r.model)}
+                  meta={`접수 ${txt(r.receivedAt)}${perfView ? ` · 인도 ${txt(pg.deliveredAt)}` : ''} · ${todo}`}
+                  steps={{ labels: FLOW, at }}
+                  facts={perfView ? [
+                    ['공급사', txt(r.supplier), `청구 ${r.claimStage}`],
+                    ['영업채널', txt(r.channel), `지급 ${r.payStage}`],
+                    ['청구액', `${won0(claimAmountOf(r, now))}원`],
+                    ['지급액', `${won0(payAmountOf(r, now))}원`],
+                  ] : [
+                    ['공급사', txt(r.supplier)],
+                    ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
+                    ['영업채널', txt(r.channel), r.agent ? `담당 ${r.agent}` : undefined],
+                    ['보증금', r.deposit ? `${won0(r.deposit)}원` : '무보증', txt(r.payKind)],
+                  ]}
+                  amount={won0(perfView ? marginOf(r, now) : r.rent)} amountLabel={perfView ? '남는 것' : '월 대여료'} />
+              );
+            })}
+          </RowCards>
+        </PanelBody>
+        <PanelFoot>
           <span>총 <b>{shown.length}</b>건</span>
           {!perfView ? <><span>·</span><span>월 대여료 합계 <b>{won0(sum(shown.map((r) => r.rent)))}</b>원</span></> : null}
           {perfView ? <><span>·</span><span>청구 <b>{won0(sum(shown.map((r) => claimAmountOf(r, now))))}</b>원 · 지급 <b>{won0(sum(shown.map((r) => payAmountOf(r, now))))}</b>원 · 남는 것 <b>{won0(sum(shown.map((r) => marginOf(r, now))))}</b>원</span></> : null}
@@ -214,8 +226,8 @@ export async function IntakeScreen({ q, base = '/intake' }: { q: Q; base?: strin
               <Link key={k} href={hrefWith(base, q, { page: String(k) })} aria-current={k === page ? 'page' : undefined}>{k}</Link>
             ))}
           </nav>
-        </div>
-      </section>
+        </PanelFoot>
+      </Panel>
     </Screen>
   );
 }

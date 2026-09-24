@@ -129,6 +129,25 @@ const cssBaseline = [
 for (const [re, label] of cssBaseline) {
   if (!re.test(css)) errors.push(`admin CSS: baseline mismatch or missing: ${label}`);
 }
+
+const desktopCss = await readFile(path.join(root, 'src/app/_erp/shell.css'), 'utf8');
+const desktopScaleBaseline = [
+  [/--erp-fs-kpi:\s*24px/, 'desktop KPI 24px'],
+  [/--erp-fs-title:\s*20px/, 'desktop screen title 20px'],
+  [/--erp-fs-panel:\s*18px/, 'desktop panel title 18px'],
+  [/--erp-fs-section:\s*16px/, 'desktop section title 16px'],
+  [/--erp-fs-body:\s*14px/, 'desktop body 14px'],
+  [/--erp-fs-label:\s*12px/, 'desktop label 12px'],
+  [/--erp-fs-caption:\s*12px/, 'desktop caption 12px'],
+  [/--erp-btn-h-sm:\s*32px/, 'desktop small control 32px'],
+  [/--erp-btn-h:\s*36px/, 'desktop standard control 36px'],
+  [/--erp-input-h:\s*36px/, 'desktop input 36px'],
+  [/--erp-grid-row-h:\s*40px/, 'desktop row 40px'],
+  [/--erp-section-gap:\s*16px/, 'desktop section gap 16px'],
+] as const;
+for (const [re, label] of desktopScaleBaseline) {
+  if (!re.test(desktopCss)) errors.push(`desktop scale mismatch or missing: ${label}`);
+}
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
@@ -139,9 +158,19 @@ const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindi
 };
 
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
-  typography?: { title?: { px?: number }; main?: { px?: number }; support?: { px?: number } };
-  controls?: { standard?: { heightPx?: number }; primary?: { heightPx?: number }; mobileTouchMinimumPx?: number; radiusPx?: number; gapPx?: number };
-  radii?: { defaultPx?: number };
+  typography?: {
+    kpi?: { px?: number }; screen?: { px?: number }; panel?: { px?: number }; section?: { px?: number };
+    body?: { px?: number }; support?: { px?: number }; scalePx?: number[];
+  };
+  spacing?: { scalePx?: number[] };
+  controls?: {
+    desktop?: { smallHeightPx?: number; standardHeightPx?: number; rowHeightPx?: number; topbarHeightPx?: number };
+    mobile?: { standardHeightPx?: number; actionHeightPx?: number; touchMinimumPx?: number };
+    radiusPx?: number; gapPx?: number;
+  };
+  radii?: { scalePx?: number[]; smallPx?: number; controlPx?: number; defaultPanelPx?: number };
+  surfaces?: { canvas?: string; lineFree?: boolean };
+  elevation?: { levels?: string[] };
   aiCore?: { upstreamRepository?: string; upstreamRevision?: string; featureRegistryVersion?: string; semanticAuthority?: boolean };
   listPresentation?: { authorityFeature?: string; modes?: Record<string,string> };
 };
@@ -173,20 +202,34 @@ if (!/product-media-row/.test(listRow) || !/business-row/.test(listRow)) errors.
 if (!/data-ai-list-mode="variant-card"/.test(offerPicker)) errors.push('OfferPicker: missing AI Core variant-card mode');
 
 const expected = [
-  ['typography.title.px', ssot.typography?.title?.px, 18],
-  ['typography.main.px', ssot.typography?.main?.px, 14],
+  ['typography.kpi.px', ssot.typography?.kpi?.px, 24],
+  ['typography.screen.px', ssot.typography?.screen?.px, 20],
+  ['typography.panel.px', ssot.typography?.panel?.px, 18],
+  ['typography.section.px', ssot.typography?.section?.px, 16],
+  ['typography.body.px', ssot.typography?.body?.px, 14],
   ['typography.support.px', ssot.typography?.support?.px, 12],
-  ['controls.standard.heightPx', ssot.controls?.standard?.heightPx, 44],
+  ['controls.desktop.smallHeightPx', ssot.controls?.desktop?.smallHeightPx, 32],
+  ['controls.desktop.standardHeightPx', ssot.controls?.desktop?.standardHeightPx, 36],
+  ['controls.desktop.rowHeightPx', ssot.controls?.desktop?.rowHeightPx, 40],
+  ['controls.desktop.topbarHeightPx', ssot.controls?.desktop?.topbarHeightPx, 56],
+  ['controls.mobile.standardHeightPx', ssot.controls?.mobile?.standardHeightPx, 44],
+  ['controls.mobile.actionHeightPx', ssot.controls?.mobile?.actionHeightPx, 44],
+  ['controls.mobile.touchMinimumPx', ssot.controls?.mobile?.touchMinimumPx, 44],
   ['controls.radiusPx', ssot.controls?.radiusPx, 6],
   ['controls.gapPx', ssot.controls?.gapPx, 8],
-  ['controls.primary.heightPx', ssot.controls?.primary?.heightPx, 44],
-  ['controls.mobileTouchMinimumPx', ssot.controls?.mobileTouchMinimumPx, 44],
-  ['radii.defaultPx', ssot.radii?.defaultPx, 4],
+  ['surfaces.canvas', ssot.surfaces?.canvas, '#F2F6FC'],
+  ['surfaces.lineFree', ssot.surfaces?.lineFree, true],
 ] as const;
 
 for (const [name, actual, want] of expected) {
   if (actual !== want) errors.push(`docs/ui/admin-ui-ux-ssot.json: ${name}=${String(actual)}; expected ${want}`);
 }
+
+const sameArray = (a: unknown, b: unknown[]) => Array.isArray(a) && a.length === b.length && a.every((v, i) => v === b[i]);
+if (!sameArray(ssot.typography?.scalePx, [12,14,16,18,20,24])) errors.push('machine SSOT: typography scale must be 12/14/16/18/20/24');
+if (!sameArray(ssot.spacing?.scalePx, [4,8,12,16,20,24,32])) errors.push('machine SSOT: spacing scale must be 4/8/12/16/20/24/32');
+if (!sameArray(ssot.radii?.scalePx, [4,6,8])) errors.push('machine SSOT: radius scale must be 4/6/8');
+if (!sameArray(ssot.elevation?.levels, ['0','base','hover','float'])) errors.push('machine SSOT: elevation levels must be 0/base/hover/float');
 
 if (errors.length) {
   console.error('UI/UX SSOT check FAILED');
@@ -196,7 +239,8 @@ if (errors.length) {
   console.log('UI/UX SSOT check PASS');
   console.log(`- checked UI files: ${coreFiles.length}`);
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
-  console.log('- visual baseline: 18/14/12 · Sales control/action 44 · control radius 6 · gap 8 · panel radius 4');
+  console.log('- mobile baseline: 18/14/12 · control/action/touch 44 · radius 6 · gap 8');
+  console.log('- desktop normalized scale: 24/20/18/16/14/12 · controls 32/36 · row 40 · topbar 56');
   console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
   console.log(`- internal Admin UI guard files: ${internalAdminUiFiles.length}`);

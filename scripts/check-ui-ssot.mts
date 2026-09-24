@@ -162,6 +162,31 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const actionRatioBaseline = [
+  ['src/app/_design/Primitives.tsx', [
+    /data-action-balance=\{balance\}/,
+    /balance\?: 'primary' \| 'equal'/,
+  ]],
+  ['src/app/_erp/parts.tsx', [
+    /data-action-balance=\{balance\}/,
+    /balance\?: 'primary' \| 'equal'/,
+  ]],
+] as const;
+for (const [file, rules] of actionRatioBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: action ratio contract missing: ${re}`);
+  }
+}
+
+const actionRatioCss = [
+  [/data-action-balance="primary"[\s\S]*?> \.primary[\s\S]*?order:\s*2/, 'mobile primary rightmost'],
+  [/data-action-balance="equal"[\s\S]*?flex:\s*1 1 0/, 'mobile equal 5:5'],
+] as const;
+for (const [re, label] of actionRatioCss) {
+  if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
+}
+
 const cardRhythmBaseline = [
   [/--fp-row-compact-min-h:\s*64px/, 'desktop compact card min 64px'],
   [/--fp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],

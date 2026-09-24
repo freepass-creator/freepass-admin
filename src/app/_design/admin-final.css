@@ -1330,3 +1330,82 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace .quick-filters + .quick-filters {
   margin-top: var(--ui-control-gap);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Mobile width QA (360 / 390 / 412)
+   한 패널 구조는 유지하고 가로 overflow만 fail-closed 한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main,
+  .fn-main .workspace,
+  .fn-main .workspace > .panel,
+  .fn-main .workspace .panel-head,
+  .fn-main .workspace .dz-listtop,
+  .fn-main .workspace .list,
+  .fn-main .workspace .dz-row,
+  .fn-main .workspace .dz-row-body,
+  .fn-main .workspace .dz-searchbox,
+  .fn-main .workspace .quick-filters,
+  .fn-main .workspace .tabs,
+  .fn-main .workspace .offer-picker,
+  .fn-main .workspace .summary-grid,
+  .fn-main .workspace .dz-form-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .fn-main .workspace {
+    overflow-x: hidden;
+  }
+
+  /* horizontal choice rows may scroll, the page itself may not. */
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month)::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* long identity/meta text yields before values/actions do. */
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.panel-head h1,.vehicle-title > div) {
+    min-width: 0;
+  }
+
+  .fn-main .workspace :is(.dz-row-l1 > b,.dz-row-l2:not(.value),.panel-head h1) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* monetary/result values remain whole when practical. */
+  .fn-main .workspace .dz-row-l3 > :is(strong,b) {
+    flex-shrink: 0;
+    max-width: 48%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* forms never force viewport wider than 360px. */
+  .fn-main .workspace :is(input,select,textarea,button,a.primary,a.dz-bar-sub) {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 379px) {
+  /* 360-class devices: preserve touch size, reduce only horizontal inner padding. */
+  .fn-main .workspace .panel {
+    padding-inline: 12px;
+  }
+
+  .fn-main .workspace .panel-head {
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row {
+    padding-inline: 8px;
+  }
+}

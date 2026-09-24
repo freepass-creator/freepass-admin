@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 55886bc56a7779e8f290248ffbbaab8dc8e48824
+ * 정본: freepass-creator/ai-core @ 0504a5c3d5272afddfc852d87efea65ec8497dde
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -351,8 +351,13 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 .erp-facet-opt[aria-pressed="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
 .erp-filter-panel-foot { display: flex; justify-content: flex-end; gap: var(--erp-sp-2); margin-top: var(--erp-sp-4); padding-top: var(--erp-sp-3); border-top: 1px solid var(--erp-color-line); }
 .erp-searchbar .erp-chip { text-decoration: none; }
-/* 분류 드롭다운 — 계약 · 정산 · 실적 조회에서만, 검색창 앞에 1~2개 */
+/* 분류 드롭다운 — 계약 · 정산 · 실적 조회에서만, 퀵 필터 줄(erp-toolbar) 안 1~2개(대표 2026-09-24
+ * 「그 드랍다운은 퀵필터라고 생각을 하고 퀵필터 라인에 있어야 돼」 — 검색창 줄이 아니다). */
 .erp-dd { flex: none; width: auto; min-width: 120px; height: var(--erp-btn-h); }
+/* 퀵 필터 줄 안에서는 옆 알약(erp-facet-opt, btn-h-sm 28px)과 같은 높이 · 글자 크기로 — 혼자
+ * 튀어나오면 안 된다(대표 2026-09-24 「그것도 버튼하고 이게 같아야지, 레벨이 … 그것만 튀나오면
+ * 안 되잖아」). */
+.erp-toolbar .erp-dd { height: var(--erp-btn-h-sm); padding: 0 10px; font-size: var(--erp-fs-label); }
 /* 한 줄 처리 폼 — 상세의 «처리» 카드: 값 한 칸 + 그 값을 바꾸는 단추(차량번호 저장 · 인도 완료 · 취소 …) */
 .erp-inline-form { display: flex; align-items: flex-end; gap: var(--erp-sp-2); padding: var(--erp-sp-3) 0; border-bottom: 1px solid var(--erp-color-line-row); }
 .erp-inline-form:first-child { padding-top: 0; }

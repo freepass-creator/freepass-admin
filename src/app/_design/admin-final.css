@@ -1172,3 +1172,69 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace .dz-searchbox .dz-fs-open {
   height: 32px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Alignment & information hierarchy (live Admin)
+   1행=식별, 2행=meta, 3행=결과/금액. 숫자·금액은 우측.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head {
+  align-items: center;
+}
+.fn-main .workspace .panel-head h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fn-main .workspace .panel-head > .count {
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ListRow hierarchy */
+.fn-main .workspace .dz-row-l1,
+.fn-main .workspace .dz-row-l2 {
+  text-align: left;
+}
+.fn-main .workspace .dz-row-l3 {
+  align-items: center;
+}
+.fn-main .workspace .dz-row-l3 > :is(strong,b) {
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fn-main .workspace .dz-row-l3 > small {
+  flex: none;
+  text-align: right;
+}
+
+/* value 전용 2행도 숫자는 우측. */
+.fn-main .workspace .dz-row-l2.value {
+  justify-content: space-between;
+  align-items: baseline;
+}
+.fn-main .workspace .dz-row-l2.value strong {
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 요약/상세의 숫자 값은 우측 정렬. */
+.fn-main .workspace :is(.summary-grid,.dz-picked-grid) dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 좁은 화면에서 식별/meta는 줄을 깨지 않고 말줄임. */
+.fn-main .workspace :is(.dz-row-l1,.dz-row-l2) {
+  min-width: 0;
+}
+.fn-main .workspace .dz-row-l1 > b,
+.fn-main .workspace .dz-row-l2:not(.value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

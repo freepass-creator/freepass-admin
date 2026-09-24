@@ -108,6 +108,18 @@ async function inspect(page) {
           amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
         };
       })(),
+      panelWidths: (() => {
+        const panels = [...document.querySelectorAll('.erp-workspace > .erp-panel, .workspace > .panel')].filter(visible);
+        return panels.map((panel, index) => {
+          const r = panel.getBoundingClientRect();
+          return {
+            index,
+            width: Math.round(r.width),
+            compact: panel.classList.contains('erp-panel--compact') || panel.dataset.panelRole === 'list',
+            wide: panel.classList.contains('erp-panel--wide'),
+          };
+        });
+      })(),
       panelRhythm: (() => {
         const panels = [...document.querySelectorAll('.erp-panel, .panel')].filter(visible).slice(0, 6);
         return panels.map((panel, index) => {
@@ -287,6 +299,26 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      if (Array.isArray(info.panelWidths) && c.width >= 1280 && info.panelWidths.length >= 2) {
+        const widths = info.panelWidths.map((p) => p.width);
+        const wide = info.panelWidths.find((p) => p.wide);
+        if (wide && info.panelWidths.length === 2) {
+          const other = info.panelWidths.find((p) => !p.wide);
+          if (other) {
+            const ratio = wide.width / other.width;
+            if (ratio < 1.85 || ratio > 2.15) {
+              problems.push(`wide panel ratio out of range: ${ratio.toFixed(2)} (${wide.width}/${other.width})`);
+            }
+          }
+        } else if (!wide && info.panelWidths.length === 3) {
+          const max = Math.max(...widths);
+          const min = Math.min(...widths);
+          if (min > 0 && max / min > 1.08) {
+            problems.push(`3-panel widths drift beyond 8%: ${widths.join(', ')}`);
+          }
+        }
+      }
+
       if (Array.isArray(info.panelRhythm) && c.width >= 1280) {
         const present = (key) => info.panelRhythm.map((p) => p[key]).filter(Boolean);
         for (const key of ['head', 'search', 'quick']) {
@@ -371,6 +403,7 @@ async function runInteractiveStates(page, c) {
         cardInteraction: info.cardInteraction,
         scrollTopology: info.scrollTopology,
         panelRhythm: info.panelRhythm,
+        panelWidths: info.panelWidths,
         interactiveStates,
         problems,
       };

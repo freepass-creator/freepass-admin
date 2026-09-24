@@ -2166,3 +2166,33 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 실제 브라우저에서:
 - interactive RowCard의 중앙/모서리 hit-test가 링크로 연결되는지 검사
 - passive Tile의 computed cursor가 `pointer`면 실패
+
+
+# 45. Panel scroll topology
+
+패널마다 세로 스크롤 책임은 하나만 가진다.
+
+## Desktop
+
+- PanelHead: 고정
+- Search / QuickFilter: 패널 상단 영역
+- PanelBody: 주 세로 스크롤
+- PanelFoot: 고정
+- 3-panel workspace의 각 Panel은 서로 독립적으로 스크롤
+
+입력·저장 Panel:
+- 외부 PanelBody가 아니라 폼 본문이 스크롤될 수 있음
+- ActionBar / dz-bar는 sticky bottom
+- 동시에 두 개의 세로 스크롤 컨테이너를 만들지 않는다
+
+## Mobile
+
+- 현재 screen Panel이 기본 컨테이너
+- 페이지 전체와 Panel 내부가 동시에 세로 스크롤되지 않게 한다
+- 내부 choice row(QuickFilter/Tabs 등)의 가로 스크롤은 허용
+- 세로 nested scroll은 금지
+
+## Visual QA
+
+한 visible Panel 안에서 실제 scrollHeight/clientHeight와 overflow-y를 검사한다.
+세로 스크롤 가능한 컨테이너가 2개 이상 중첩되면 FAIL.

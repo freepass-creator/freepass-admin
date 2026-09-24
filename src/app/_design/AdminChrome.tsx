@@ -56,9 +56,12 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
       <header className="erp-topbar erp-std" data-region="topbar">
         <div className="erp-brand"><Brand /></div>
-        <a className="erp-company" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
+        {/* 정보만 — 회사 전환 기능이 없는데 링크로 두면 오른쪽 게이지 단추와 똑같은 자리(/system/data-status)로
+            두 번 가는 중복 이동이 된다(대표 2026-09-24 「상단바랑 사이드바만 … 규격 제대로 검토해봐」).
+            "지금 어느 회사 · 어느 모드인가"를 보여주는 정보 칩으로만 둔다. */}
+        <span className="erp-company">
           <Icon name="building" size={16} />프리패스 본사 · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
-        </a>
+        </span>
         <form className="erp-gsearch" action="/products" role="search">
           <Icon name="search" size={16} />
           <input name="q" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />

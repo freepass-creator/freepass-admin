@@ -48,10 +48,12 @@ export function SideMenu() {
     <>
       <div className="erp-nav-group">업무</div>
       {FLOW.map((it) => <MenuLink key={it.key} it={it} now={now} />)}
-      {/* 전자계약 — 업무 흐름과 따로 다루는 문. 구분선으로 떼어 둔다. */}
+      {/* 전자계약 · 시스템 — 둘 다 «업무 흐름 밖의 따로 된 문»이라 같은 구분선 처리를 받는다(대표 2026-09-24
+          UI/UX 재검토 — 전에는 계약서 그룹만 --apart 라 시스템 그룹 앞엔 구분선이 없어서 둘의 성격이
+          같은데 처리가 달랐다). */}
       <div className="erp-nav-group erp-nav-group--apart">계약서</div>
       <MenuLink it={ESIGN} now={now} />
-      <div className="erp-nav-group">시스템</div>
+      <div className="erp-nav-group erp-nav-group--apart">시스템</div>
       <MenuLink it={SYSTEM} now={now} />
     </>
   );

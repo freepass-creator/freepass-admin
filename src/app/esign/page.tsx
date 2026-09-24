@@ -78,7 +78,7 @@ async function EsignBoards({ searchParams }: {
 
   return (
     <section className="workspace" data-mode="esign" data-phone={view}>
-      <section className="panel product-panel">
+      <section className="panel product-panel" data-panel-role="list">
         <div className="dz-listtop">
           <PanelHeader title="계약 목록" count={`${shown.length.toLocaleString()}건`} />
 
@@ -137,7 +137,7 @@ async function EsignBoards({ searchParams }: {
         </div>
       </section>
 
-      <section className="panel detail-panel">
+      <section className="panel detail-panel" data-panel-role="detail">
         {selected ? (
           <>
             <PanelHeader title="계약 상세" count={txt(selected.code)}

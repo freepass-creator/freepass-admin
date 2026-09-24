@@ -89,6 +89,10 @@ async function inspect(page) {
       primary: pick('.erp-btn--primary, button.primary, a.primary'),
       panels: pick('.erp-panel, .panel'),
       cards: pick('.erp-rowcard, .erp-tile, .dz-row'),
+      surfaceSamples: {
+        panel: pick('.erp-panel, .panel').slice(0, 4),
+        card: pick('.erp-rowcard, .erp-tile, .dz-row').slice(0, 8),
+      },
     };
   });
 }
@@ -187,6 +191,12 @@ async function runInteractiveStates(page, c) {
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
 
+      const panelBg = info.surfaceSamples?.panel?.[0]?.backgroundColor;
+      const cardBg = info.surfaceSamples?.card?.find((x) => x.backgroundColor && x.backgroundColor !== 'rgba(0, 0, 0, 0)')?.backgroundColor;
+      if (panelBg && cardBg && panelBg === cardBg) {
+        problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
+      }
+
       for (const [kind, list] of [['selected', info.selected], ['primary', info.primary]]) {
         for (const el of list) {
           const ratio = contrast(el.color, el.backgroundColor);
@@ -212,6 +222,7 @@ async function runInteractiveStates(page, c) {
         screenshot: path.relative(process.cwd(), shot),
         selected: info.selected,
         primary: info.primary,
+        surfaceSamples: info.surfaceSamples,
         interactiveStates,
         problems,
       };

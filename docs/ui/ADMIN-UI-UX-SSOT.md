@@ -2059,3 +2059,30 @@ Raw blocker를 그대로 노출하지 않는다.
 - 정산관리에서는 받을 돈과 줄 돈을 동시에 이해할 수 있어야 한다.
 - 공급사 수금 이후 영업자 지급이 다음 흐름으로 읽혀야 한다.
 - 어디서 막혔는지 찾기 위해 다른 화면을 추측하며 돌아다니게 하지 않는다.
+
+
+# 42. Panel / Card separation guard
+
+카드형 UI의 전제는 Panel과 Card가 실제 렌더링에서도 분리되어 보이는 것이다.
+
+## Resting surface
+
+- Panel: `#FFFFFF`
+- Card / Component: `#F7F9FC`
+- Hover: `#F3F6FA`
+- Selected: primary tint
+
+Panel과 Card는 **같은 resting background를 사용하지 않는다.**
+
+## 원칙
+
+- line-free UI라서 background 차이가 hierarchy의 핵심이다.
+- shadow만 강하게 해서 위계를 대신하지 않는다.
+- Card는 Panel보다 한 톤 낮은 cool surface를 사용한다.
+- selected는 grey 단계가 아니라 semantic primary tint를 사용한다.
+- 실제 브라우저 computed style에서 Panel/Card background가 같으면 Visual QA 실패다.
+
+## 검증
+
+`visual:qa` report는 첫 visible Panel/Card의 computed background를 비교한다.
+같으면 FAIL 처리한다.

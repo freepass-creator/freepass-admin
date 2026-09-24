@@ -459,30 +459,79 @@ semantic tone은 제한한다.
 
 ---
 
-# 13. Responsive 원칙
+# 13. Responsive / Shell 원칙
+
+**같은 업무 부품을 쓰되, Web과 Mobile의 shell composition은 다르다.**
 
 모바일은 PC 축소판이 아니다.
 
-## Desktop
+## Web shell
 
-- 여러 Panel을 동시에 노출
-- context 유지
-- 비교와 반복 업무 속도 우선
+```
+Topbar
+Sidenav | Multi-panel workspace
+Statusbar
+```
 
-## Mobile
+- 전역 Topbar 있음
+- 좌측 Sidenav 있음
+- 2~3 Panel 동시 노출 가능
+- 하단 Statusbar 있음
+- context 유지와 비교/반복 업무 속도 우선
 
+## Mobile shell
+
+```
+[ Current Panel ]
+[ Global bottom tabs ]   ← depth 0
+
+또는
+
+[ Current Panel ]
+[ Local ActionBar ]      ← depth 1+
+```
+
+- **전역 Topbar 없음**
+- Sidenav 없음
+- Statusbar 없음
+- 현재 Panel이 화면 최상단부터 시작
+- depth 0에서는 전역 하단탭
+- depth 1+에서는 전역 하단탭을 숨기고 해당 Panel의 ActionBar만 노출
 - 한 번에 하나의 업무 surface
 - 깊이에 따라 list → detail → work
-- global navigation과 local action을 동시에 과다 노출하지 않는다.
 
-### 중요한 현재 상태
+## 같은 것 / 다른 것
 
-현재 코드에서 `≤900px`은 PC `.erp-screen`을 숨기고 기존 mobile board를 사용한다.
+### Web과 Mobile에서 같은 것
+- business state
+- command 의미
+- Panel content contract
+- Search / Filter / QuickFilter
+- RowCard / Detail / Tile
+- Button hierarchy
+- selected / hover / pressed / disabled 의미
+- color / typography / spacing token
+- validation / loading / error 의미
 
-따라서:
-- PC 디자인을 그대로 줄여 모바일로 쓰지 않는다.
-- FreePass Admin의 PC standard와 Mobile baseline은 동일 business semantics를 공유하되 presentation은 다를 수 있다.
-- 향후 모바일 재정비 시 PC Panel 하나가 모바일 한 화면으로 자연스럽게 옮겨지는지를 기준으로 한다.
+### Web과 Mobile에서 다른 것
+- 전역 shell
+- 동시에 보이는 Panel 수
+- navigation 위치
+- global context 노출 방식
+- action boundary의 화면 배치
+
+### 핵심 문장
+
+> **Same component semantics, adaptive shell composition.**
+
+같은 컴포넌트를 쓴다는 말은 Web과 Mobile의 화면을 똑같이 복사한다는 뜻이 아니다.
+업무 의미와 부품 contract는 같고, viewport에 따라 shell과 배치가 달라진다.
+
+현재 `≤900px`에서는 PC `.erp-screen`을 숨기고 mobile board를 사용한다.
+모바일의 기존 전역 `fn-top` 상태바는 2026-09-24 결정으로 제거했다.
+
+향후 모바일 최신화 기준:
+**PC의 Panel 하나를 떼어 모바일 한 화면으로 놓아도 같은 업무를 끝낼 수 있어야 한다.**
 
 ---
 

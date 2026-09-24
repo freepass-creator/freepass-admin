@@ -113,8 +113,6 @@
    * 체크박스」). 부품(FilterSheet.tsx · dz-fs-*)은 그대로 재사용하고, 여기서는 자리(검색창 줄의 한 칸
    * — 예전엔 .dz-find 안 절대좌표였다)와 옷(규격 색·글자)만 규격에 맞춘다. */
   .erp-std .erp-searchbar { position: relative; }
-  /* dz-fs 도 다시 독립 단추 — 검색창은 밑줄이라 나눠 쓸 상자가 없다(대표 2026-09-24 「하나의 상자로
-   * 다 쓰자고 이런 게 중요한 게 아니라 … 박스로 묶는 게 아니라 밑줄로」). */
   .erp-std .dz-fs-open {
     position: static; display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 14px;
     border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);

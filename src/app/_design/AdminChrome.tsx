@@ -24,7 +24,8 @@ const RETRO_FONTS = [
  * 관리자 틀 — AI Core «ERP 표준 UI 규격 v1» 골격 (대표 2026-09-23 「이 컨셉으로 프리패스 어드민에 적용」).
  *   PC: ① 상단 정보줄(워드마크 · 데이터 상태 · 사람) ② 왼쪽 업무 메뉴 ③ 본문 판 ④ 하단 상태줄(연결 · 테마).
  *   ★상단에는 실행 버튼을 두지 않는다 — 정보만(대표 2026-09-18). 업무 이동은 왼쪽 메뉴, 판 안의 실행은 판의 하단바.
- *   ★폰은 그대로 — 왼쪽 메뉴·상태줄을 숨기고 다섯 걸음 하단바(`MobileTabBar`)가 선다.
+ *   ★모바일은 전역 상단바를 두지 않는다 — 현재 Panel이 화면 최상단에서 시작하고, depth 0에는 하단 전역탭,
+ *   depth 1+에는 해당 Panel의 ActionBar만 선다. PC shell과 같은 업무 부품을 쓰되 shell 배치만 다르다.
  *   ⓘ 2026-09-21 「PC 도 하단 업무 버튼」을 이 결정이 대신한다 — docs/DECISIONS.md D-UI-2026-09-23.
  *
  *   루트 layout 이 아니라 «관리자 쪽마다»(products · intake · settlement · esign · system 의 layout) 이 틀을 쓴다.
@@ -44,14 +45,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       {/* 테마 표지 — 틀은 body 바로 아래 형제들로 선다(폰 규칙이 `body > main` 을 본다). 감싸지 않고 표지 하나로
           테마와 PC 격자를 건다: `body:has(> .erp-theme-flag…)` (_erp/shell.css · _erp/erp-standard.css). */}
       <i className="erp-theme-flag" data-theme={theme} hidden />
-
-      {/* ── 폰 머리(그대로) ── */}
-      <header className="fn-top dz-statusbar" aria-label="관리자 상태">
-        <a className="fn-state" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
-          {data.ok ? '데이터 설정됨' : '데이터 설정 필요'} · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
-        </a>
-        {나 && <span className="dz-me">{나.name}</span>}
-      </header>
 
       {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
       <header className="erp-topbar erp-std" data-region="topbar">

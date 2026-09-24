@@ -808,5 +808,25 @@
       "horizontalChoiceScrollAllowed": true
     },
     "visualQa": "fail when more than one vertical scroll container exists inside one visible panel"
+  },
+  "panelRhythm": {
+    "desktop": {
+      "headPx": 48,
+      "searchPx": 52,
+      "quickPx": 48,
+      "footPx": 60
+    },
+    "mobile": {
+      "headPx": 56,
+      "searchPx": 52,
+      "controlPx": 44
+    },
+    "alignmentTolerancePx": 2,
+    "visualQa": [
+      "headTop",
+      "searchTop",
+      "quickTop",
+      "footBottom"
+    ]
   }
 }

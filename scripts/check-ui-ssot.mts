@@ -191,6 +191,21 @@ if (/\.dz-perk\s*\{[^}]*font-size:\s*13px/s.test(cssFinal)) {
   errors.push('live Admin typography: dz-perk reintroduced legacy 13px tier');
 }
 
+const stateContractBaseline = [
+  [/Interaction state consistency/, 'desktop interaction state contract'],
+  [/--fp-focus-halo:/, 'desktop soft focus halo token'],
+] as const;
+for (const [re, label] of stateContractBaseline) {
+  if (!re.test(desktopCss)) errors.push(`interaction state mismatch or missing: ${label}`);
+}
+const mobileStateBaseline = [
+  [/Interaction state consistency \(live Admin\)/, 'mobile interaction state contract'],
+  [/--ui-focus-halo:/, 'mobile soft focus halo token'],
+] as const;
+for (const [re, label] of mobileStateBaseline) {
+  if (!re.test(cssFinal)) errors.push(`interaction state mismatch or missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

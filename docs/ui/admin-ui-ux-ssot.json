@@ -439,5 +439,71 @@
       "severity": "below-error"
     },
     "rule": "System states use semantic soft surfaces without visible borders and must preserve layout geometry."
+  },
+  "pageQa": {
+    "products": {
+      "webPanels": [
+        "wide-list",
+        "product-detail"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "ProductDetail"
+    },
+    "intake": {
+      "webPanels": [
+        "product-list",
+        "product-detail",
+        "work"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "ProductDetail"
+    },
+    "performance": {
+      "webPanels": [
+        "installment-list",
+        "performance-detail",
+        "paid-list"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "SettlementDetail"
+    },
+    "settlement": {
+      "webPanels": [
+        "claim-list",
+        "settlement-detail",
+        "pay-list"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ]
+    },
+    "esign": {
+      "webPanels": [
+        "contract-list",
+        "contract-detail"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ]
+    },
+    "actionRule": "PanelFoot/ActionBar only",
+    "status": "CODE_STRUCTURE_PASS_2026-09-24",
+    "note": "Viewport visual regression still requires runtime/browser screenshot QA."
   }
 }

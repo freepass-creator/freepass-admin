@@ -794,5 +794,19 @@
       ],
       "passivePointerForbidden": true
     }
+  },
+  "panelScroll": {
+    "verticalScrollersPerPanelMax": 1,
+    "desktop": {
+      "head": "fixed",
+      "body": "scroll-owner",
+      "foot": "fixed",
+      "panelsIndependent": true
+    },
+    "mobile": {
+      "nestedVerticalScroll": false,
+      "horizontalChoiceScrollAllowed": true
+    },
+    "visualQa": "fail when more than one vertical scroll container exists inside one visible panel"
   }
 }

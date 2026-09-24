@@ -162,6 +162,18 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const liveAdminScaleBaseline = [
+  [/--ui-panel-pad:\s*20px/, 'shared panel padding 20px'],
+  [/--ui-panel-pad-mobile:\s*16px/, 'mobile panel padding 16px'],
+  [/--ui-list-gap:\s*8px/, 'list gap 8px'],
+  [/--ui-item-pad:\s*12px/, 'item padding 12px'],
+  [/\.dz-picked-grid > div \{[^}]*padding:\s*8px 12px/s, 'picked-grid padding 8/12'],
+  [/--ui-space-7:\s*32px/, 'current-route 4pt spacing scale through 32px'],
+] as const;
+for (const [re, label] of liveAdminScaleBaseline) {
+  if (!re.test(cssFinal)) errors.push(`live Admin scale mismatch or missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

@@ -500,6 +500,39 @@ Statusbar
 - 한 번에 하나의 업무 surface
 - 깊이에 따라 list → detail → work
 
+## Panel role vs navigation depth
+
+둘은 반드시 구분한다.
+
+### Panel role
+시각/업무 책임이다.
+
+- `list`
+- `detail`
+- `work`
+
+### Navigation depth
+모바일에서 지금 몇 단계 들어와 있는지다.
+
+- depth 0
+- depth 1
+- depth 2
+
+URL의 `v=list|detail|work` 같은 값은 **navigation state**일 수 있으며,
+Panel role과 1:1로 같다고 가정하지 않는다.
+
+예:
+- 정산관리 가운데 「실적 줄」은 모바일 navigation 상 `detail` 단계에 있지만,
+  역할은 **LIST Panel**이다.
+- 신규 접수는 navigation 상 `work`이면서 역할도 **WORK Panel**이다.
+
+따라서:
+- **어떤 Panel을 보여줄지 = route/navigation state**
+- **어떻게 보여줄지 = data-panel-role**
+
+이 분리를 깨지 않는다.
+
+
 ## 같은 것 / 다른 것
 
 ### Web과 Mobile에서 같은 것

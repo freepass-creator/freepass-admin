@@ -405,5 +405,39 @@
     ],
     "riskRule": "Do not hide operational risk. Compress multiple risks into one flag; show up to two key items and optionally '외 N'.",
     "rule": "List is for decision; Detail is for verification."
+  },
+  "systemStates": {
+    "empty": {
+      "surface": "component/neutral",
+      "border": false
+    },
+    "warning": {
+      "surface": "amber-soft",
+      "border": false
+    },
+    "error": {
+      "surface": "red-soft",
+      "border": false
+    },
+    "success": {
+      "surface": "green-soft",
+      "border": false
+    },
+    "readonly": {
+      "surface": "muted-neutral",
+      "elevation": "0",
+      "interactive": false
+    },
+    "busy": {
+      "geometry": "preserve",
+      "opacity": 0.72,
+      "pointerEvents": "none",
+      "cursor": "progress"
+    },
+    "stale": {
+      "surface": "neutral/info-soft",
+      "severity": "below-error"
+    },
+    "rule": "System states use semantic soft surfaces without visible borders and must preserve layout geometry."
   }
 }

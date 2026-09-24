@@ -81,6 +81,12 @@
   .erp-screen .erp-content > .erp-card--fill, .erp-screen .erp-content > .erp-cols:has(> .erp-card--fill),
   .erp-screen .erp-content > .erp-panel { flex: 1 0 420px; }
   .erp-screen .erp-cols > .erp-card--fill { min-height: 420px; }
+  /* 여러 패널 작업화면(erp-workspace, erp.css 공통 규격) 이 Screen() 의 .erp-content(패딩 · overflow:auto ·
+   * flex-shrink:0 자식 규칙)를 그대로 쓰면 판 셋이 뷰포트를 못 채운다 — 여기서만 지우고, .erp-workspace
+   * 자신이 그 자리를 채운다. 이 자리 잡기(.erp-content/.erp-screen 은 freepass-admin 자신의 Screen() 틀)만
+   * 앱 몫이고, 배치·카드 자체는 erp.css 공통 규격이다. */
+  .erp-content:has(> .erp-workspace) { padding: 0; overflow: hidden; }
+  .erp-screen .erp-content > .erp-workspace { flex: 1 1 auto; min-height: 0; }
   .erp-std .erp-chip[aria-current="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
   .erp-std a.erp-chip { text-decoration: none; }
   /* 기능 쪽 판 안의 입력 · 단추를 규격 치수로(데스크톱에서만 — 폰 판은 그대로 44) */

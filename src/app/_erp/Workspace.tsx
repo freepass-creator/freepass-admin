@@ -131,11 +131,11 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
     /*
      * §5-4 상세내용 패널 규격 — 이 판 안의 모든 내용은 카드(erp-tile) 안에만 들어간다(대표 2026-09-24
      * 「상세 내용창 다 카드로만 구성이 돼있어 카드 없이 내용이 들어가진 않아」). erp-section·erp-card·
-     * Props·table 조합(§4, 예전 풀페이지 규격)은 여기 쓰지 않는다 — sv-car-card/sv-ref-card 와 같은
+     * Props·table 조합(§4, 예전 풀페이지 규격)은 여기 쓰지 않는다 — erp-hero-tile/erp-info-card 와 같은
      * dl 카드 · erp-tile-row 로만 짠다(product-detail 판과 같은 결).
      */
     curDetail = (
-      <div className="sv-detail-body">
+      <div className="erp-detail-body">
         <div className="erp-tile">
           <h3 className="erp-tile-title">진행</h3>
           <Steps current={step} items={[
@@ -146,8 +146,8 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
             { label: '수금 · 지급', count: p.collected && p.paid ? '끝' : p.collected ? '수금' : '—' },
           ]} />
         </div>
-        <div className="sv-ref-list erp-tile-group">
-          <div className="sv-ref-card erp-tile">
+        <div className="erp-tile-group">
+          <div className="erp-info-card erp-tile">
             <h3 className="erp-tile-title">고객 · 차량</h3>
             <dl>
               <div><dt>고객</dt><dd>{txt(cur.customer)}</dd></div>
@@ -158,7 +158,7 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
               <div><dt>영업 담당</dt><dd>{txt(cur.agent)}</dd></div>
             </dl>
           </div>
-          <div className="sv-ref-card erp-tile">
+          <div className="erp-info-card erp-tile">
             <h3 className="erp-tile-title">계약 조건</h3>
             <dl>
               <div><dt>상품구분</dt><dd>{txt(cur.product)}</dd></div>
@@ -205,7 +205,7 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
 
   return (
     <Screen name="intake-workspace">
-    <div className="sbs-main">
+    <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="상품찾기" count={`전체 ${hits.length}건`} />
         <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']} />
@@ -248,18 +248,18 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
             <PanelHead kind="상세내용" title={sel ? `${txt(sel.p.registration?.vehicleNumber)} ${carName(sel.p)}` : '상품상세'} count="고른 상품" />
             <PanelBody>
               {sel ? (
-                <div className="sv-detail-body">
-                  <div className="sv-car-card erp-tile">
+                <div className="erp-detail-body">
+                  <div className="erp-hero-tile erp-tile">
                     <div className="photo"><CarIcon /></div>
-                    <div className="sv-detail-info">
+                    <div className="erp-hero-info">
                       <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
                       <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>
-                      <p className="sv-car-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
+                      <p className="erp-hero-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
                     </div>
                   </div>
 
-                  <div className="sv-terms-main">
-                    <p className="sv-section-title sv-section-title--main">대여료</p>
+                  <div>
+                    <p className="erp-subtitle erp-subtitle--lead">대여료</p>
                     <TileGroup>
                       {selOffers.map((o) => (
                         <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={selOffer?.id === o.id}
@@ -270,11 +270,11 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
                   </div>
 
                   {(sel.p.perks ?? []).length ? (
-                    <div className="sv-staff-ref">
-                      <p className="sv-section-title">담당자 참고</p>
-                      <div className="sv-ref-list erp-tile-group">
-                        <div className="sv-ref-card erp-tile">
-                          <h3 className="sv-ref-card-title erp-tile-title">우대조건 · 정책</h3>
+                    <div>
+                      <p className="erp-subtitle">담당자 참고</p>
+                      <div className="erp-tile-group">
+                        <div className="erp-info-card erp-tile">
+                          <h3 className="erp-tile-title">우대조건 · 정책</h3>
                           <dl>
                             <div><dt>우대조건</dt><dd><span className="erp-tags">{(sel.p.perks ?? []).map((k) => <span key={k} className="erp-tag erp-tag--primary">{k}</span>)}</span></dd></div>
                             <div><dt>공급사</dt><dd>{txt(sel.p.supplierName ?? sel.p.supplierId)}</dd></div>

@@ -162,6 +162,31 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const businessFlowBaseline = [
+  ['src/domain/settlement/types.ts', [
+    /export function adminWorkflowPhaseOf/,
+    /'접수 진행'/,
+    /'공급사 청구'/,
+    /'공급사 수금'/,
+    /'영업자 지급'/,
+    /export function adminBlockLabel/,
+  ]],
+  ['src/app/_erp/SettlementDetail.tsx', [
+    /adminWorkflowPhaseOf/,
+    /adminBlockLabel/,
+  ]],
+  ['src/app/intake/IntakeDetailPanel.tsx', [
+    /adminWorkflowPhaseOf/,
+    /업무 흐름 · \{업무흐름\}/,
+  ]],
+] as const;
+for (const [file, rules] of businessFlowBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: business flow contract missing: ${re}`);
+  }
+}
+
 const terminologyBaseline = [
   ['src/app/intake/new/IntakeForm.tsx', [
     /월 대여료/,

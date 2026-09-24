@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ ba0fcdc23f5e6624ea5908823baa757ae5b9d634
+ * 정본: freepass-creator/ai-core @ 4211249c4a79601ed76b52ec7506f6d03b96494c
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -451,7 +451,12 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 왼쪽은 무겁고 오른쪽은 휑해서 균형이 안 맞아 보였다. */
 .erp-panel-head { display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
 .erp-panel-kind { padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
-.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+/* 패널 머리 제목은 그 패널 안에서 가장 큰 글자다(대표 2026-09-24 「패널 헤드의 텍스트랑 그 패널
+ * 내용이랑 같을 순 없지 … 패널 헤드가 제일 크면 그거보다 좀 작고」). 패널 안 강조 글자(대여료·금액
+ * 같은 erp-tile-row strong, 좁은 목록의 rowcard 제목·금액, 히어로 카드 이름, 진행 카운트)는 전부
+ * fs-section(15px) 한 단인데, 패널 머리가 같은 fs-section 을 쓰면 위계가 없었다 — erp-page-title(페이지
+ * 제목)과 같은 fs-title(22px) 로 올려 패널 안 어떤 글자보다도 늘 위에 서게 한다. */
+.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-title); font-weight: var(--erp-fw-bold); }
 .erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
 .erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
 /* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */

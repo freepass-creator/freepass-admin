@@ -1804,3 +1804,53 @@ body > nav.fn-top :where(a, button):focus-visible,
     transform: translateY(var(--ui-press-y));
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Full-width mobile workspace + fixed gutter
+   바깥 gutter / panel padding / card gap을 서로 분리한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-screen-gutter: 16px;
+  --ui-screen-gutter-narrow: 12px;
+}
+
+@media (max-width: 900px) {
+  .fn-main .workspace {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-left: var(--ui-screen-gutter);
+    padding-right: var(--ui-screen-gutter);
+  }
+
+  .fn-main .workspace > .panel {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .fn-main .workspace :is(
+    .list,
+    .dz-row,
+    .summary-grid,
+    .dz-form-grid,
+    .dz-intake-form,
+    .dz-picked,
+    .dz-offer-line
+  ) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace {
+    padding-left: var(--ui-screen-gutter-narrow);
+    padding-right: var(--ui-screen-gutter-narrow);
+  }
+}

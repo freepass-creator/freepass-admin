@@ -505,5 +505,39 @@
     "actionRule": "PanelFoot/ActionBar only",
     "status": "CODE_STRUCTURE_PASS_2026-09-24",
     "note": "Viewport visual regression still requires runtime/browser screenshot QA."
+  },
+  "responsiveWidths": {
+    "desktop": {
+      "compact": {
+        "min": 1280,
+        "max": 1439,
+        "workspaceGapPx": 12,
+        "workspacePaddingYpx": 12,
+        "workspacePaddingXpx": 16
+      },
+      "standard": {
+        "min": 1440,
+        "workspaceGapPx": 16,
+        "workspacePaddingYpx": 16,
+        "workspacePaddingXpx": 20
+      }
+    },
+    "mobile": {
+      "qaWidthsPx": [
+        360,
+        390,
+        412
+      ],
+      "pageHorizontalOverflow": false,
+      "internalHorizontalScroll": [
+        "quick-filter",
+        "tabs",
+        "offer-picker",
+        "month-selector"
+      ],
+      "preserveTouchMinimumPx": 44,
+      "narrow360Rule": "reduce horizontal padding only; do not reduce touch height"
+    },
+    "rule": "Same shell structure; viewport changes density and overflow behavior, not workflow composition."
   }
 }

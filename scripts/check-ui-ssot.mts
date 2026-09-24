@@ -162,6 +162,19 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const motionBaseline = [
+  [/--fp-motion-press:\s*80ms/, 'desktop press motion 80ms'],
+  [/--fp-motion-state:\s*120ms/, 'desktop state motion 120ms'],
+  [/--fp-motion-float:\s*160ms/, 'desktop float motion 160ms'],
+  [/--ui-motion-press:\s*80ms/, 'mobile press motion 80ms'],
+  [/--ui-motion-state:\s*120ms/, 'mobile state motion 120ms'],
+  [/--ui-motion-float:\s*160ms/, 'mobile float motion 160ms'],
+] as const;
+for (const [re, label] of motionBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`motion mismatch or missing: ${label}`);
+}
+
 const riskActionBaseline = [
   ['src/app/intake/[code]/Progress.tsx', [
     /className="dz-action-danger"/,

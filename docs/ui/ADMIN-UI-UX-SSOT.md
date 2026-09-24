@@ -1064,3 +1064,122 @@ disabled   → flat
 
 ---
 
+
+
+# 24. Line-free UI standard — 2026-09-24
+
+FreePass Admin은 visible border에 의존하지 않는다.
+
+## 24-1. 기본 원칙
+
+위계는 다음 순서로 만든다.
+
+1. surface
+2. elevation
+3. spacing
+4. typography
+5. state color
+6. interaction
+
+border는 기본 위계 수단이 아니다.
+
+## 24-2. 공통 control
+
+다음은 visible border를 기본적으로 사용하지 않는다.
+
+- Button
+- QuickFilter
+- Dropdown
+- Select
+- Input
+- Search
+- Card
+- Tile
+- RowCard
+- Panel 내부 구획
+- FilterSheet / Popover 외곽
+
+### Input / Select / Search
+
+입력 가능한 영역은 선 대신 다음으로 구분한다.
+
+- neutral surface
+- base elevation
+- focus 시 surface 변화
+- focus 시 elevation 강화
+- placeholder / icon / caret
+
+focus ring을 사각 border처럼 상시 보이게 만들지 않는다.
+접근성 focus-visible 의미는 유지하되 line-free 문법 안에서 표현한다.
+
+## 24-3. Dropdown / Popover
+
+Dropdown / FilterSheet / floating menu는 별도 border를 쓰지 않는다.
+
+- surface
+- float elevation
+- spacing
+- selected state
+
+로 구분한다.
+
+## 24-4. Table / Row
+
+행선·셀선에 의존하지 않는다.
+
+- header surface
+- zebra surface가 필요하면 약하게 사용
+- hover
+- selected
+- spacing / alignment
+
+으로 읽기 흐름을 만든다.
+
+필요한 숫자 정렬과 column alignment는 유지한다.
+
+## 24-5. Panel — Web / Mobile
+
+Panel은 viewport에 따라 역할이 다르다.
+
+### Web Panel
+
+Web에서는 Panel이 **canvas 위의 큰 surface island**다.
+
+- canvas: neutral background
+- panel: surface
+- panel border: 없음
+- elevation: base
+- gap으로 panel 간 경계 확보
+- panel 내부 header/body/footer도 line 없이 spacing으로 구분
+
+즉 Web에서 Panel은 “조금 떠 있는 큰 판”이다.
+
+### Mobile Panel
+
+Mobile에서는 한 번에 한 Panel만 보므로 Panel 자체를 카드처럼 띄우지 않는다.
+
+- Panel = screen surface
+- panel border: 없음
+- panel shadow: 없음
+- child card/control만 elevation 사용
+- PanelHeader가 화면의 local header 역할
+- depth 0: bottom global tabs
+- depth 1+: local ActionBar
+
+즉 Mobile에서 Panel은 “현재 화면 그 자체”다.
+
+## 24-6. Geometry freeze
+
+Line-free 전환을 이유로 다음을 바꾸지 않는다.
+
+- width
+- height
+- padding
+- gap
+- radius
+- typography
+- panel composition
+- navigation structure
+
+가능하면 border box는 유지하고 color만 transparent로 바꿔 geometry drift를 막는다.
+

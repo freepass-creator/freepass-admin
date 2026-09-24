@@ -1034,3 +1034,45 @@ body > nav.fn-top :where(a, button):focus-visible,
 /* 현재 Admin에서 14/22 같은 독자 vertical rhythm이 다시 보이지 않도록 final layer에서 수렴. */
 .fn-main .workspace .vehicle-title { padding-block: var(--ui-space-4); }
 .fn-main .workspace .dz-side-steps { margin-bottom: var(--ui-space-3); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Surface depth refinement (mobile/live Admin)
+   Panel=white screen surface, entity/info card=soft cool surface.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-component-surface: #F7F9FC;
+}
+
+.fn-main .workspace :is(
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .dz-picked,
+  .fn-box
+) {
+  background: var(--ui-component-surface);
+}
+
+/* row/card hover only. passive information boxes stay still. */
+@media (hover:hover) {
+  .fn-main .workspace .dz-row:hover {
+    background: var(--ui-surface-hover);
+  }
+}
+
+/* selected is semantic tint, never merely a darker grey. */
+.fn-main .workspace .dz-row.on {
+  background: var(--ui-selected);
+}
+
+/* primary / selected compact controls keep their semantic surface. */
+.fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .offer-picker button.active,
+.fn-main .workspace .dz-fs-open.on,
+.fn-main .workspace .dz-bar-go > .primary {
+  background: var(--ci남색);
+  color: #fff;
+}

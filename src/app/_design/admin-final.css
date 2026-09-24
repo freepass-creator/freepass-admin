@@ -127,7 +127,7 @@
 .dz-picked > b { font-size: var(--글메인); }
 .dz-picked > p { margin: 0; font-size: var(--글보조); color: #6b7580; }
 .dz-picked-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
-.dz-picked-grid > div { padding: 8px 10px; border-radius: var(--r); background: var(--판); }
+.dz-picked-grid > div { padding: 8px 12px; border-radius: var(--r); background: var(--판); }
 .dz-picked-grid dt { font-size: var(--글보조); color: #6b7580; }
 .dz-picked-grid dd { margin: 2px 0 0; font-size: var(--글메인); font-weight: 700; font-variant-numeric: tabular-nums; }
 .dz-picked-note { font-size: var(--글보조); color: #6b7580; }
@@ -140,7 +140,7 @@
 .dz-choice label { position: relative; flex-direction: row !important; }
 .dz-choice input { position: absolute; opacity: 0; pointer-events: none; }
 .dz-choice span {
-  display: inline-flex; align-items: center; height: var(--컨트롤); line-height: 16px; padding: 0 14px; border-radius: var(--r);
+  display: inline-flex; align-items: center; height: var(--컨트롤); line-height: 16px; padding: 0 16px; border-radius: var(--r);
   background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
 }
 .dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
@@ -981,3 +981,56 @@ body > nav.fn-top :where(a, button):focus-visible,
     box-shadow: var(--ui-elevation-float);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Current-route spacing normalization
+   legacy globals의 값은 보존하되 현재 내부 Admin route에서 실제 보이는 공통 부품은
+   4pt scale(4/8/12/16/20/24/32)로 고정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace {
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-7: 32px;
+}
+
+/* 검색/목록/요약의 기본 리듬 */
+.fn-main .workspace .dz-find { gap: var(--ui-space-2); }
+.fn-main .workspace .list { gap: var(--ui-list-gap); }
+.fn-main .workspace .dz-picked-grid { gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
+.fn-main .workspace .dz-picked-grid > div { padding: var(--ui-space-2) var(--ui-space-3); }
+.fn-main .workspace :is(.summary-grid, .dz-offer-line, .dz-issue) {
+  border-radius: var(--ui-radius);
+}
+
+/* control 안쪽 horizontal padding도 12/16 두 단계로 제한 */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  padding-inline: var(--ui-space-3);
+}
+.fn-main .workspace .dz-bar-go > :is(.primary, .dz-bar-sub) {
+  padding-inline: var(--ui-space-4);
+}
+
+/* row/card 안쪽은 12를 기본으로, 큰 section 분리는 16 */
+.fn-main .workspace .dz-row {
+  padding-inline: var(--ui-item-pad);
+}
+.fn-main .workspace :is(.dz-form-group, .dz-issue, .dz-offer-line, .fn-box) {
+  padding: var(--ui-space-3);
+}
+
+/* 현재 Admin에서 14/22 같은 독자 vertical rhythm이 다시 보이지 않도록 final layer에서 수렴. */
+.fn-main .workspace .vehicle-title { padding-block: var(--ui-space-4); }
+.fn-main .workspace .dz-side-steps { margin-bottom: var(--ui-space-3); }

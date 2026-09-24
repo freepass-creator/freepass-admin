@@ -522,8 +522,9 @@ body > nav.fn-top :where(a, button):focus-visible,
   --ui-elevation-float: 0 8px 22px rgba(16,24,40,.14);
   --ui-press-y: 1px;
 
-  --ui-line-card: rgba(16,24,40,.08);
-  --ui-line-control: rgba(16,24,40,.14);
+  /* Borderless polish: 카드/버튼 선은 숨기고 입력 경계만 유지한다. */
+  --ui-line-card: transparent;
+  --ui-line-control: transparent;
   --ui-line-input: #cdd5df;
 }
 
@@ -538,12 +539,13 @@ body > nav.fn-top :where(a, button):focus-visible,
   box-shadow: var(--ui-elevation-base);
 }
 
-/* 목록 카드가 텍스트 덩어리로 사라지지 않게 아주 약한 카드선을 둔다. */
+/* 목록 카드의 1px box model은 유지하되 선은 투명.
+ * 카드 경계는 surface + elevation으로만 표현한다. */
 .fn-main .workspace .dz-row {
-  border: 1px solid var(--ui-line-card);
+  border: 1px solid transparent;
 }
 
-/* 정보 카드/박스도 같은 카드선. */
+/* 정보 카드/박스도 visible line 없이 같은 surface hierarchy를 쓴다. */
 .fn-main .workspace :is(.dz-form-group, .summary-grid, .dz-offer-line) {
   border-color: var(--ui-line-card);
 }
@@ -730,5 +732,40 @@ body > nav.fn-top :where(a, button):focus-visible,
   }
   .fn-main .workspace > .panel[data-panel-role] > :is(.list, .dz-tabbody, .dz-intake-form) {
     min-height: 0;
+  }
+}
+
+/* Borderless mobile panels/controls — 치수·간격·라운드는 그대로, 보이는 선만 제거. */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel,
+  .fn-main .workspace :is(
+    .dz-row,
+    .dz-form-group,
+    .summary-grid,
+    .dz-offer-line,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 입력/Search는 예외 — 입력 가능한 곳임을 보여주는 경계는 유지한다. */
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .dz-searchbox
+  ) {
+    border-color: var(--ui-line-input);
+  }
+
+  .fn-main .workspace .dz-bar,
+  .fn-main .workspace .dz-fs-foot {
+    border-top-color: transparent;
   }
 }

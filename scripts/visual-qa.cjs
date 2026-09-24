@@ -108,6 +108,32 @@ async function inspect(page) {
           amountFontVariantNumeric: as?.fontVariantNumeric ?? null,
         };
       })(),
+      panelRhythm: (() => {
+        const panels = [...document.querySelectorAll('.erp-panel, .panel')].filter(visible).slice(0, 6);
+        return panels.map((panel, index) => {
+          const rectOf = (selector) => {
+            const el = panel.querySelector(selector);
+            if (!el || !visible(el)) return null;
+            const r = el.getBoundingClientRect();
+            return {
+              top: Math.round(r.top),
+              bottom: Math.round(r.bottom),
+              height: Math.round(r.height),
+            };
+          };
+          const p = panel.getBoundingClientRect();
+          return {
+            index,
+            panelTop: Math.round(p.top),
+            panelBottom: Math.round(p.bottom),
+            panelHeight: Math.round(p.height),
+            head: rectOf('.erp-panel-head, .panel-head'),
+            search: rectOf('.erp-searchbar, .dz-find'),
+            quick: rectOf('.erp-toolbar, .quick-filters'),
+            foot: rectOf('.erp-panel-foot, .dz-bar'),
+          };
+        });
+      })(),
       scrollTopology: (() => {
         const panels = [...document.querySelectorAll('.erp-panel, .panel')].filter(visible).slice(0, 6);
         return panels.map((panel, index) => {
@@ -261,6 +287,24 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
+      if (Array.isArray(info.panelRhythm) && c.width >= 1280) {
+        const present = (key) => info.panelRhythm.map((p) => p[key]).filter(Boolean);
+        for (const key of ['head', 'search', 'quick']) {
+          const rows = present(key);
+          if (rows.length >= 2) {
+            const tops = rows.map((x) => x.top);
+            const delta = Math.max(...tops) - Math.min(...tops);
+            if (delta > 2) problems.push(`panel ${key} y-axis drift: ${delta}px (${tops.join(', ')})`);
+          }
+        }
+        const foots = present('foot');
+        if (foots.length >= 2) {
+          const bottoms = foots.map((x) => x.bottom);
+          const delta = Math.max(...bottoms) - Math.min(...bottoms);
+          if (delta > 2) problems.push(`panel foot bottom drift: ${delta}px (${bottoms.join(', ')})`);
+        }
+      }
+
       if (Array.isArray(info.scrollTopology)) {
         for (const p of info.scrollTopology) {
           if (p.verticalScrollers.length > 1) {
@@ -326,6 +370,7 @@ async function runInteractiveStates(page, c) {
         cardMetrics: info.cardMetrics,
         cardInteraction: info.cardInteraction,
         scrollTopology: info.scrollTopology,
+        panelRhythm: info.panelRhythm,
         interactiveStates,
         problems,
       };

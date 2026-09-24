@@ -791,3 +791,78 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace .dz-searchbox :is(input,button):focus-visible {
   outline: none;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Line-free UI standard (mobile)
+   Mobile Panel은 떠 있는 카드가 아니라 현재 screen surface다.
+   child card/control만 elevation으로 물성을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* 화면을 차지하는 Panel 자체는 flat. */
+  .fn-main .workspace > .panel[data-panel-role] {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    background: var(--판);
+  }
+
+  /* panel 내부 구획선 제거. */
+  .fn-main .workspace :is(
+    .panel-head,
+    .dz-bar,
+    .dz-listtop,
+    .dz-fs-head,
+    .dz-fs-foot,
+    .dz-month
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 모든 버튼/필터/드롭다운/입력은 visible line 없이 surface로 구분. */
+  .fn-main .workspace :is(
+    button,
+    .quick-filters a,
+    .tabs a,
+    .tabs button,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-sub,
+    a.primary,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .dz-searchbox
+  ) {
+    border-color: transparent !important;
+  }
+
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+    background: var(--박스);
+    box-shadow: var(--ui-elevation-base);
+  }
+
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ):focus {
+    outline: none;
+    background: var(--판);
+    box-shadow: var(--ui-elevation-hover);
+  }
+
+  /* sheet/popover는 선 없이 높은 elevation. */
+  .fn-main .workspace .dz-fs-sheet {
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-float);
+  }
+
+  /* 목록/테이블성 행도 선 대신 surface/hover/selected. */
+  .fn-main .workspace :is(.dz-row, .dz-life-row, .fn-row) {
+    border-color: transparent !important;
+  }
+}

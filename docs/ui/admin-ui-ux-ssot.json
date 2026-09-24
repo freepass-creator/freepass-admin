@@ -610,5 +610,40 @@
       "signalPointer": false
     },
     "rule": "Glyph size and hit area are independent. Mobile icon-only actions require at least 44x44 hit area."
+  },
+  "forms": {
+    "required": {
+      "nativeRequired": true,
+      "visualAsterisk": "supplemental"
+    },
+    "errors": {
+      "summaryRole": "alert",
+      "ariaLive": "assertive",
+      "fieldInvalidOnlyWhenSpecific": true,
+      "surface": "red-soft"
+    },
+    "numeric": {
+      "align": "right",
+      "numericVariant": "tabular-nums",
+      "inputMode": [
+        "numeric",
+        "decimal"
+      ],
+      "forceTypeNumber": false
+    },
+    "pending": {
+      "formAriaBusy": true,
+      "preventDuplicateSubmit": true,
+      "preserveGeometry": true,
+      "statusLabelRecommended": true
+    },
+    "success": {
+      "placement": "near action/form",
+      "surface": "green-soft"
+    },
+    "retry": {
+      "preserveInputOnFailure": true
+    },
+    "rule": "Validation semantics must be accurate; do not mark every field invalid for a form-level error."
   }
 }

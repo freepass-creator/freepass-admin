@@ -51,25 +51,27 @@ test('products is a two-panel wide-list + detail workspace, not a standalone §4
   assert.equal(/style=\{\{/.test(src), false, 'no inline style');
 });
 
-test('one desktop screen is still built from the older §4 skeleton regions', () => {
-  const screens = {
-    'src/app/_erp/EsignScreen.tsx': [],
-  } as const;
-  for (const [file, regions] of Object.entries(screens)) {
-    const src = read(file);
-    assert.ok(src.includes('<PageHeader'), `${file}: page header`);
-    // 요약 카드는 두지 않는다 — 제목 밑에 검색창, 그 밑에 목록(대표 2026-09-23 「요약표는 필요 없어」)
-    assert.equal(src.includes('<Kpis'), false, `${file}: no summary cards`);
-    assert.ok(src.includes('data-region="grid-toolbar"'), `${file}: status tabs on the toolbar row (standard)`);
-    for (const r of regions) assert.ok(src.includes(`data-region="${r}"`), `${file}: region ${r}`);
-    // 목록은 긴 카드(규격 §5-3) — 폰으로 그대로 넘어간다(대표 2026-09-23 「카드를 기다랗게 … 그거 규격으로 다 해놓고」)
-    assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), `${file}: long card list`);
-    assert.equal(src.includes('erp-grid-scroll'), false, `${file}: no table list`);
-    assert.equal(/style=\{\{/.test(src), false, `${file}: no inline style`);
-    // 조회 = 검색창 + 상세 필터(규격 §5-1) — 라벨 드롭다운 바(erp-filter)를 늘어놓지 않는다
-    assert.ok(src.includes('<SearchBar'), `${file}: search bar`);
-    assert.equal(src.includes('className="erp-filter"'), false, `${file}: no dropdown filter bar`);
-    assert.ok((src.match(/<AutoSelect/g) ?? []).length <= 1, `${file}: at most one classification dropdown`);
+test('esign is a two-panel list + detail workspace, not a standalone §4 page', () => {
+  // 대표 2026-09-24 「최종 확정된 규격 말고 페이지 전체 나오거나 했던 것들 … 없애야지」 — 마지막까지
+  // 남아 있던 §4 화면(PageHeader · erp-cols · CardHead · Props)을 §5-4 erp-panel 둘(목록 | 상세내용)로 다시 짰다.
+  const src = read('src/app/_erp/EsignScreen.tsx');
+  assert.equal(src.includes('<PageHeader'), false, 'no standalone page header — panels carry their own PanelHead');
+  assert.equal(src.includes('erp-cols'), false, 'no §4 two-column card grid');
+  assert.ok(src.includes('<Panel') && src.includes('<PanelHead') && src.includes('<PanelBody') && src.includes('<PanelFoot'), 'built from §5-4 panel parts');
+  assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), 'long card list');
+  assert.ok(src.includes('<SearchBar') && src.includes('facets={[agentFacet]}'), 'search bar with filter button');
+  assert.ok((src.match(/<AutoSelect/g) ?? []).length <= 1, 'at most one classification dropdown');
+  assert.equal(/style=\{\{/.test(src), false, 'no inline style');
+});
+
+test('no page renders the older §4 skeleton (PageHeader/erp-cols) any more', () => {
+  // 대표 2026-09-24 「최종 확정된 규격 말고 페이지 전체 나오거나 했던 것들 네가 한번 띄워봐 … 없애야지」
+  // — 상품찾기 · 정산관리 · 전자계약까지 전부 §5-4 erp-panel 로 옮겨, PC 화면 중 §4 골격을 쓰는 곳이
+  // 이제 하나도 없다.
+  for (const file of ['ProductsScreen.tsx', 'SettlementScreen.tsx', 'EsignScreen.tsx', 'Workspace.tsx']) {
+    const src = read(`src/app/_erp/${file}`);
+    assert.equal(src.includes('<PageHeader'), false, `${file}: no §4 PageHeader`);
+    assert.equal(src.includes('erp-cols'), false, `${file}: no §4 two-column card grid`);
   }
   const parts = read('src/app/_erp/parts.tsx');
   assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-rowcards" data-region="grid"'));

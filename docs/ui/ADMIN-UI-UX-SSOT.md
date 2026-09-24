@@ -2196,3 +2196,40 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 한 visible Panel 안에서 실제 scrollHeight/clientHeight와 overflow-y를 검사한다.
 세로 스크롤 가능한 컨테이너가 2개 이상 중첩되면 FAIL.
+
+
+# 46. Panel vertical rhythm alignment
+
+같은 workspace 안에서 같은 역할의 영역은 같은 y축에 선다.
+
+## Desktop rhythm
+
+- PanelHead: 48px
+- Search row: 52px
+- QuickFilter row: 48px
+- PanelFoot: 60px
+
+## Alignment
+
+3-panel 화면에서:
+- Head top
+- Search top
+- QuickFilter top
+- Foot bottom
+
+은 같은 역할끼리 2px 이내로 맞춘다.
+
+패널 내용이 달라도 shell rhythm은 흔들리지 않는다.
+내용 유무 때문에 Search/QuickFilter 줄이 임의 높이로 줄거나 늘지 않는다.
+
+## Mobile
+
+- PanelHead: 56px
+- Search row: 52px
+- QuickFilter controls: 44px touch/control 기준
+- 모바일은 단일 Panel 구조라 cross-panel y축 정렬보다 내부 rhythm 유지가 우선
+
+## Visual QA
+
+Desktop 1280+에서 visible Panel들의 computed rect를 비교한다.
+같은 종류 영역의 top/bottom 차이가 2px를 넘으면 FAIL.

@@ -809,3 +809,125 @@ FreePass Admin UI preflight
 > 시각적 구분은 border보다 spacing·surface·typography를 먼저 쓴다.
 > PC는 multi-panel로 context를 유지하고, 모바일은 한 업무 surface에 집중한다.
 > 새로운 화면은 새로운 디자인이 아니라 기존 pattern의 조합으로 시작한다.
+
+
+# 23. 2026-09-24 전수 규격 감사 — 페이지별 독자 UI 금지
+
+FreePass Admin 전체 UI를 다시 분류한 결과, **내부 관리자 업무 화면에는 페이지별 독립 디자인을 두지 않는다.**
+
+## 23-1. 내부 Admin — 공통 규격 강제
+
+대상:
+- 상품찾기
+- 계약접수
+- 실적
+- 정산관리
+- 전자계약 관리
+- 데이터 상태
+- 접수/정산의 내부 입력·처리 화면
+
+이 화면들은 업무 내용이 달라도 시각 규칙은 공통이다.
+
+공통으로 가져오는 것:
+- shell / navigation
+- Panel / PanelHead / PanelBody / PanelFoot
+- Search / Filter / QuickFilter
+- List / RowCard
+- Detail / Tile
+- Button / ActionBar
+- selected / hover / pressed / disabled
+- elevation
+- typography / spacing / radius / color
+- empty / warning / success / error
+- focus-visible / reduced-motion
+
+도메인별 파일은 **데이터·문구·validation·workflow만 소유**한다.
+
+예:
+- MoneyForm은 금액 계산과 필드 구성을 소유할 수 있다.
+- LifeForms는 청구/지급 업무 입력을 소유할 수 있다.
+- 그러나 버튼의 높이·radius·shadow·pressed·selected 색을 자체 정의하면 안 된다.
+
+## 23-2. 명시적 별도 Surface
+
+다음은 내부 관리자 업무화면과 audience/shell이 다르므로 별도 surface로 인정한다.
+
+1. `/login`
+   - 인증 전 진입 화면
+2. `/c/[token]`
+   - 공급사/외부 상대방 확인·이의 화면
+3. `/sign/[token]`
+   - 고객 전자계약·서명 화면
+
+이 세 화면도 임의 디자인을 허용한다는 뜻은 아니다.
+내부 Admin의 Panel composition을 그대로 강제하지 않을 뿐이며,
+향후 typography / button / interaction / accessibility 같은 상위 원칙은 공통화 대상으로 본다.
+
+**새로운 별도 surface는 자동 허용하지 않는다.**
+필요하면 이 목록에 사유를 먼저 기록한다.
+
+## 23-3. 현재 남은 구조적 부채
+
+### A. 두 세대의 공통 부품
+
+현재:
+- PC 최신 ERP: `_erp/*`
+- 모바일/기존 board: `_design/*` + `dz-*`
+
+둘 다 “페이지별 디자인”은 아니지만 공통 primitive가 두 세대로 존재한다.
+
+정리 방향:
+- 당장 억지 병합하지 않는다.
+- semantics와 interaction hierarchy부터 동일하게 유지한다.
+- 모바일 최신화 시 Panel / List / Action의 공통 contract로 수렴한다.
+
+### B. 도메인 CSS class
+
+`dz-money`, `dz-life-form`, `dz-intake-form`처럼 업무 이름이 붙은 class가 있다.
+
+허용:
+- layout
+- domain-specific field grouping
+- business state 표시를 위한 hook
+
+금지:
+- 독자 button system
+- 독자 radius
+- 독자 elevation
+- 독자 typography scale
+- 독자 selected/pressed language
+- 독자 status palette
+
+## 23-4. Interaction hierarchy 통일 완료
+
+PC와 mobile/legacy Admin board 모두 같은 원칙을 쓴다.
+
+```
+read-only  → flat
+surface    → slight elevation
+interactive→ elevation + hover
+pressed    → sinks
+selected   → pressed/locked surface
+primary    → strongest tactile affordance
+disabled   → flat
+```
+
+선택은 elevation을 키우지 않는다.
+**selected = 눌려 고정된 상태**다.
+
+## 23-5. CI Guard
+
+`scripts/check-ui-ssot.mts`가 내부 관리자 화면에서 다음을 막는다.
+
+- raw 공통 markup 재도입
+- inline visual style
+- page-local `<style>`
+- JSX 안의 안정적인 visual constant
+- public/login surface class prefix의 Admin 내부 유입
+- SSOT token drift
+
+페이지가 자기 디자인을 만들 필요가 생겼다고 느껴지면,
+페이지에서 바로 만들지 않고 **공통 규격에 먼저 추가할지 판단**한다.
+
+---
+

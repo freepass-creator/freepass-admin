@@ -1178,3 +1178,32 @@
     margin-bottom: var(--erp-sp-2);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Action risk hierarchy
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .dz-action-caution {
+    background: var(--erp-color-warn-bg);
+    color: var(--erp-color-warn);
+    box-shadow: var(--fp-elevation-base);
+  }
+
+  .erp-std .dz-action-danger,
+  .erp-std .erp-btn--danger {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+    box-shadow: var(--fp-elevation-base);
+    font-weight: var(--erp-fw-bold);
+  }
+
+  @media (hover:hover) {
+    .erp-std .dz-action-caution:hover {
+      background: #FFF1D6;
+    }
+    .erp-std :is(.dz-action-danger,.erp-btn--danger):hover {
+      background: var(--erp-color-err-ring);
+    }
+  }
+}

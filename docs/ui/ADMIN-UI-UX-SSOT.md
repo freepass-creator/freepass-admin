@@ -1415,3 +1415,54 @@ Line-free UI에서도 접근성 상태는 반드시 보인다.
 - selected + focus에서는 selected 상태를 유지하고 halo만 추가한다.
 - disabled는 focus/hover/press elevation을 갖지 않는다.
 - Badge/Tag/Signal은 focusable control처럼 보이지 않는다.
+
+
+# 28. Density contract — standard
+
+FreePass Admin은 사용자 선택형 density switch보다
+화면 역할에 맞는 **고정된 표준 밀도**를 우선한다.
+
+## Desktop
+
+| 영역 | 높이 |
+|---|---:|
+| PanelHead | 48px |
+| Search / Query row | 52px |
+| QuickFilter row | 48px |
+| PanelFoot | 60px |
+| Compact RowCard | 최소 64px |
+| Standard RowCard | 최소 72px |
+| Standard control | 36px |
+| Small control | 32px |
+| Data row | 40px |
+
+## Mobile
+
+| 영역 | 높이 |
+|---|---:|
+| PanelHead | 56px |
+| Standard control | 44px |
+| Action | 44px |
+| RowCard | 최소 88px |
+| Bottom navigation | 56~60px |
+
+## Rhythm
+
+- section separation: 16px
+- list/card gap: 8px
+- control gap: 8px
+- compact item inner gap: 8px
+- card/item padding: 12px
+- panel/content padding: 16~20px
+
+## 예외
+
+검색창 내부의 embedded filter trigger처럼
+상위 control 안에 들어가는 보조 control만 32px을 허용한다.
+
+## 금지
+
+- 화면별 임의 33/34/42px control
+- 같은 역할인데 Panel마다 다른 header/footer 높이
+- card 높이를 내용마다 임의로 줄여 목록 리듬이 흔들리는 것
+- density를 이유로 typography scale을 새로 만드는 것

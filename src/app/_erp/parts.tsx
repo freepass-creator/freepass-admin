@@ -47,8 +47,12 @@ export function PanelBody({ children }: { children: ReactNode }) {
 }
 
 /** 패널 하단 고정 — 스크롤과 무관하게 바닥에 붙는 버튼 줄 */
-export function PanelFoot({ children }: { children: ReactNode }) {
-  return <div className="erp-panel-foot">{children}</div>;
+export function PanelFoot({ children, balance = 'primary' }: {
+  children: ReactNode;
+  /** primary: 2개 3:7 / 3개 3:3:4. equal: 동급 2개 5:5 */
+  balance?: 'primary' | 'equal';
+}) {
+  return <div className="erp-panel-foot" data-action-balance={balance}>{children}</div>;
 }
 
 export type Kpi = { label: string; side?: string; value: string; unit?: string; delta?: ReactNode; alert?: boolean };

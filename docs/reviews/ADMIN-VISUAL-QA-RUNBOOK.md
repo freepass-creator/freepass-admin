@@ -161,3 +161,32 @@ VISUAL_QA_PORT=3200 npm run visual:qa:cloud
 ```
 
 이 명령이 실패하면 화면 규칙을 더 수정하기 전에 `server.log`와 `report.json`부터 확인한다.
+
+
+## Interactive state capture
+
+기본 route 캡처 뒤 가능한 경우 실제 control을 눌러 상태를 한 번 더 만든다.
+
+자동 상태 캡처:
+- `/products`: 첫 상품 선택, 필터 열기
+- `/intake`: 첫 접수 선택
+- `/settlement`: 첫 거래처/정산 row 선택
+- `/esign`: 첫 계약 선택
+
+각 상태는 기본 screenshot과 별도로
+`<case>--<state>.png`
+형태로 저장한다.
+
+상태 결과:
+- `PASS`: selector를 찾아 실제 클릭/렌더 완료
+- `SKIP`: 데이터 없음 또는 해당 control 없음
+- `FAIL`: selector는 있었지만 클릭/렌더 과정 실패
+
+`SKIP`은 데이터가 없는 환경에서는 허용한다.
+`FAIL`은 visual QA 실패로 취급한다.
+
+특히 눈으로 확인할 것:
+- 선택된 row/card의 surface와 text contrast
+- 상세 진입 후 Primary action
+- FilterSheet의 popup elevation / 선택 상태
+- 선택 후에도 Canvas → Panel → Card 위계가 유지되는지

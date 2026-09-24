@@ -12,10 +12,10 @@ import type { ReactNode } from 'react';
 import { productList, settlements, today } from '../../server/erp5';
 import type { CanonicalProduct } from '../../domain/product/types';
 import { lead, STATUS_ORDER } from '../products/workspace-config';
-import { bucketOf, type Bucket } from '../../domain/settlement/stage';
+import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
-import { blockOf } from '../../domain/settlement/types';
+import { blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { NewIntakePanel } from '../intake/panels';
@@ -23,13 +23,15 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt, when } from '../_fn/fmt';
 import { IntakeProgress } from './IntakeProgress';
 import {
-  Badge, CardHead, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, Props, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, Tile, TileGroup, won0, type Tone,
+  Badge, CardHead, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, Props, QuickFilter, RowCard, RowCards, Screen, SearchBar, Seg, Steps, Tile, TileGroup, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
 const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
 const INTAKE_TONE: Record<Bucket, Tone> = { 당월접수: 'info', 미완료: 'warn', 분납실적: 'neutral', 완납실적: 'ok', 취소: 'err' };
+const 실적칸: Bucket[] = ['분납실적', '완납실적'];
+const IPAGE = 15;
 /** 44px 정사각 썸네일 안 보조 글씨 — §5-4 규격대로 「당월」·「미완」처럼 짧은 두 글자만 쓴다. */
 const INTAKE_SHORT: Record<Bucket, string> = { 당월접수: '당월', 미완료: '미완', 완납실적: '완납', 분납실적: '분납', 취소: '취소' };
 
@@ -79,11 +81,27 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
   catch { intake = []; }
   const rows = intake.map((x) => x.row);
   const now = new Date(`${today()}T12:00:00+09:00`);
+  /*
+   * 접수목록(3번째 판) — 「상품 찾기 말고는 다 세개 패널로」(대표 2026-09-24) — 예전 IntakeScreen 단독
+   * 훑어보기 화면(전체 조회조건 · 상태 탭 · 페이지네이션)을 이 판 하나로 합친다. 판이 compact 라
+   * erp-panel--compact CSS 가 카드의 facts · steps 는 이미 숨긴다 — 여기 남는 차이는 금액 뿐이다.
+   */
   const itext = sp(q.wiq).trim().toLowerCase();
-  const iBucket = sp(q.wiv);
-  const iSearched = rows.filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier].join(' ').toLowerCase().includes(itext));
-  const thisMonthCount = iSearched.filter((r) => bucketOf(r, now) === '당월접수').length;
-  const iShown = sortIntakeRows(iBucket ? iSearched.filter((r) => bucketOf(r, now) === iBucket) : iSearched, iBucket ? (iBucket as Bucket) : '당월접수');
+  const isup = sp(q.wisup), ich = sp(q.wich);
+  const iv = (BUCKETS as string[]).includes(sp(q.wiv)) || sp(q.wiv) === 'all' ? sp(q.wiv) : '당월접수';
+  const perfView = 실적칸.includes(iv as Bucket);
+  const iSearched = rows
+    .filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(itext))
+    .filter((r) => !isup || r.supplier === isup).filter((r) => !ich || r.channel === ich);
+  const iInView = (r: SettlementRow) => iv === 'all' || bucketOf(r, now) === iv;
+  const iShown = sortIntakeRows(iSearched.filter(iInView), iv as Bucket | 'all');
+  const ipage = Math.max(1, Number(sp(q.wpage)) || 1);
+  const ipages = Math.max(1, Math.ceil(iShown.length / IPAGE));
+  const islice = iShown.slice((ipage - 1) * IPAGE, ipage * IPAGE);
+  const iCount = (b: Bucket) => iSearched.filter((r) => bucketOf(r, now) === b).length;
+  const isuppliers = [...new Set(rows.map((r) => r.supplier).filter(Boolean) as string[])].sort();
+  const ichannels = [...new Set(rows.map((r) => r.channel).filter(Boolean) as string[])].sort();
+  const iTitle = perfView ? '실적' : '접수목록';
 
   /*
    * 가운데 판 — 상품상세 ↔ 접수상세 ↔ 입력·저장(신규접수 폼) 셋 중 하나로 등힌다(erp-panel--flip, §5-4).
@@ -272,15 +290,18 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
       </Panel>
 
       <Panel compact>
-        <PanelHead kind="목록" title="접수목록" count={`전체 ${iSearched.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 공급사" keep={['wiv']} />
-        <QuickFilter label="퀵 필터" items={[
-          { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: null }), on: !iBucket },
-          { key: '당월접수', label: `당월접수 ${thisMonthCount}`, href: hrefWith(base, q, { wiv: '당월접수' }), on: iBucket === '당월접수' },
+        <PanelHead kind="목록" title={iTitle} count={`전체 ${iShown.length}건`} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} facets={[
+          { key: 'wisup', title: '공급사', options: isuppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && iInView(r)).length })) },
+          { key: 'wich', title: '영업채널', options: ichannels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && iInView(r)).length })) },
+        ]} />
+        <Seg label="접수 칸" items={[
+          { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
+          ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
         ]} />
         <PanelBody>
-          <RowCards label="접수 목록">
-            {iShown.slice(0, 40).map((r) => {
+          <RowCards label={`${iTitle} 목록`}>
+            {islice.map((r) => {
               const b = bucketOf(r, now);
               return (
                 <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id, w: null })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
@@ -288,11 +309,19 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
                   plate={txt(r.plate)} car={txt(r.model)}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-                  amount={won0(r.rent)} amountLabel="원/월" />
+                  amount={won0(perfView ? marginOf(r, now) : r.rent)} amountLabel={perfView ? '남는 것' : '원/월'} />
               );
             })}
           </RowCards>
         </PanelBody>
+        <PanelFoot>
+          <span>총 <b>{iShown.length}</b>건</span>
+          <nav className="erp-pager" aria-label="페이지">
+            {Array.from({ length: ipages }, (_, i) => i + 1).map((k) => (
+              <Link key={k} href={hrefWith(base, q, { wpage: String(k) })} aria-current={k === ipage ? 'page' : undefined}>{k}</Link>
+            ))}
+          </nav>
+        </PanelFoot>
       </Panel>
     </div>
     </Screen>

@@ -24,7 +24,7 @@ test('admin root enters the real intake workspace and contains no demo runtime',
 // DEC-2026-09-23-01 — PC 는 AI Core ERP 표준 골격(왼쪽 업무 메뉴), 폰은 다섯 걸음 하단바 그대로.
 test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab bar on phone, no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
-  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
+  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=완납실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
     assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
     assert.ok(side.includes(label),`side menu missing ${label}`);
   }
@@ -80,8 +80,10 @@ test('legacy prototype and duplicate intake routes converge on canonical workspa
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(designRoute),false);
   assert.ok(intakeListRoute.includes("new URLSearchParams({ v: 'work' })"));
   assert.ok(intakeListRoute.includes("u.set('iq', text)"));
+  assert.ok(intakeListRoute.includes("u.set('wiq', text)"));
   assert.ok(intakeListRoute.includes("u.set('im', month)"));
   assert.ok(intakeListRoute.includes("u.set('iv', '취소')"));
+  assert.ok(intakeListRoute.includes("u.set('wiv', '취소')"));
   assert.ok(intakeListRoute.includes('redirect(`/intake?${u}`)'));
 });
 

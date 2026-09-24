@@ -22,7 +22,6 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
 test('five desktop screens are built from the standard skeleton regions', () => {
   const screens = {
     'src/app/_erp/ProductsScreen.tsx': [],
-    'src/app/_erp/IntakeScreen.tsx': [],
     'src/app/_erp/SettlementScreen.tsx': [],
     'src/app/_erp/EsignScreen.tsx': [],
   } as const;
@@ -45,14 +44,14 @@ test('five desktop screens are built from the standard skeleton regions', () => 
   const parts = read('src/app/_erp/parts.tsx');
   assert.ok(parts.includes('data-region="page-header"') && parts.includes('data-region="kpi"') && parts.includes('className="erp-rowcards" data-region="grid"'));
   assert.ok(parts.includes('data-region="filter"') && parts.includes('data-region="grid-toolbar"') && parts.includes('erp-filter-more'));
-  // 실적은 새 판이 아니라 접수 목록의 실적 칸
-  assert.ok(read('src/app/_erp/IntakeScreen.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));
+  // 실적은 새 판이 아니라 접수 목록(3패널 Workspace 세 번째 판)의 실적 칸
+  assert.ok(read('src/app/_erp/Workspace.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));
 });
 
 test('each page renders the standard screen for PC and keeps the phone board', () => {
   for (const [page, screen, board] of [
     ['src/app/products/page.tsx', '<ProductsScreen', '<ProductWorkspace'],
-    ['src/app/intake/page.tsx', '<IntakeScreen', '<ProductWorkspace'],
+    ['src/app/intake/page.tsx', '<WorkspaceScreen', '<ProductWorkspace'],
     ['src/app/settlement/page.tsx', '<SettlementScreen', '<SettlementBoards'],
     ['src/app/esign/page.tsx', '<EsignScreen', '<EsignBoards'],
   ]) {

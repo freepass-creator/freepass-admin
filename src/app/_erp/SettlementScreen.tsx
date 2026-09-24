@@ -87,7 +87,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       <PageHeader crumb={['홈', '업무', '정산관리']} title="정산관리"
         desc="공급사 청구와 영업채널 지급을 달마다 묶어 맞춥니다. 완납 · 인도 기준으로 줄이 서고, 끊긴 분납은 받은 만큼만 셉니다."
         actions={<>
-          <Link className="erp-btn erp-btn--ghost" href="/intake?iv=완납실적">실적</Link>
+          <Link className="erp-btn erp-btn--ghost" href="/intake?iv=완납실적&wiv=완납실적">실적</Link>
           {gSel
             ? <button className="erp-btn erp-btn--primary" type="submit" form="erp-issue-form">{gSel.party} {문서} 발행</button>
             : <span className="erp-btn erp-btn--primary" aria-disabled="true" title={`${who}을 고르면 ${문서}를 발행할 수 있습니다`}>{문서} 발행</span>}

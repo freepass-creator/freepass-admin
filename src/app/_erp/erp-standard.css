@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 0909af73acd20c643b36bace649e5fe1c986a0fa
+ * 정본: freepass-creator/ai-core @ eaeb5268a23c1cf0988a5f72f1d50b7552fd4663
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -135,7 +135,11 @@
 .erp-nav-count { margin-left: auto; padding: 1px 7px; border-radius: var(--erp-r-pill); background: var(--erp-color-nav-raised); font-size: var(--erp-fs-caption); }
 .erp-nav-sub { margin: 2px 0 6px 20px; border-left: 1px solid var(--erp-color-nav-line); }
 .erp-std .erp-nav-sub a { display: block; padding: 7px 14px; color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
-.erp-std .erp-nav-item[aria-current="page"], .erp-std .erp-nav-sub a[aria-current="page"] { color: var(--erp-color-nav-text-strong); background: var(--erp-color-nav-active); border-radius: 0 var(--erp-r-md) var(--erp-r-md) 0; box-shadow: inset 2px 0 0 var(--erp-color-nav-indicator); font-weight: var(--erp-fw-semibold); }
+/* 고른 메뉴 표시는 배경색 + 굵은 글자만(대표 2026-09-24 「메뉴 선택됐을 때 좌측에 바 있는데 이런 거
+ * 할 거야? 미니멀 심플로 하기로 한 거 아니야?」) — 목록 카드 왼쪽 상태색 띠를 뺀 것과 같은 이유다.
+ * 배경색 자체가 이미 "지금 여기"를 충분히 보여주므로 곁줄(box-shadow inset 왼쪽 테)은 군더더기였다.
+ * 그래서 배경 판을 왼쪽만 각지게(border-radius 한쪽만 0) 만들던 것도 같이 없애고 네 모서리 다 둥글게 했다. */
+.erp-std .erp-nav-item[aria-current="page"], .erp-std .erp-nav-sub a[aria-current="page"] { color: var(--erp-color-nav-text-strong); background: var(--erp-color-nav-active); border-radius: var(--erp-r-md); font-weight: var(--erp-fw-semibold); }
 
 /* ── ③ 작업 탭 (MDI) ───────────────────────────────── */
 .erp-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }

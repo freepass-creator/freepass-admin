@@ -1821,6 +1821,7 @@ body > nav.fn-top :where(a, button):focus-visible,
     max-width: none;
     min-width: 0;
     box-sizing: border-box;
+    gap: 0; /* single visible mobile panel */
     padding-left: var(--ui-screen-gutter);
     padding-right: var(--ui-screen-gutter);
   }

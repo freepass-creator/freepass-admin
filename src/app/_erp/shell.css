@@ -181,8 +181,10 @@
     --fp-elevation-float: 0 8px 22px rgba(16, 24, 40, 0.14);
     --fp-press-y: 1px;
 
-    --fp-line-card: rgba(16, 24, 40, 0.08);
-    --fp-line-control: rgba(16, 24, 40, 0.14);
+    /* Borderless polish: layout box는 유지하고 보이는 선만 걷는다.
+     * input/search만 입력 affordance 때문에 선/밑줄을 유지한다. */
+    --fp-line-card: transparent;
+    --fp-line-control: transparent;
     --fp-line-input: var(--erp-color-line-strong);
   }
 
@@ -197,14 +199,15 @@
     border-color: var(--fp-line-card);
   }
 
-  /* 카드 타입의 얇은 외곽선 — 텍스트 묶음으로 보이지 않게 하되 선이 주인공은 아니다. */
+  /* 카드의 1px box model은 유지하되 선은 보이지 않는다.
+   * 카드 경계는 surface + elevation으로만 읽힌다. */
   .erp-std .erp-rowcard,
   .erp-std .erp-tile,
   .erp-std .erp-kpi {
-    border: 1px solid var(--fp-line-card);
+    border: 1px solid transparent;
   }
 
-  /* 버튼/필터/드롭다운은 같은 elevation이지만 control line은 카드보다 조금 더 또렷하다. */
+  /* 버튼/필터/드롭다운도 visible outline 없이 surface + elevation으로 구분한다. */
   .erp-std :is(
     .erp-btn:not(.erp-btn--ghost),
     .erp-facet-opt,
@@ -276,13 +279,13 @@
     background: var(--erp-color-primary);
     color: var(--erp-color-on-primary);
     font-weight: var(--erp-fw-semibold);
-    border-color: var(--erp-color-primary);
+    border-color: transparent;
   }
 
   .erp-std .erp-tile--pressable[aria-pressed="true"],
   .erp-std .erp-rowcard[aria-current="true"] {
     background: var(--erp-color-primary-weak);
-    border-color: color-mix(in srgb, var(--erp-color-primary) 20%, transparent);
+    border-color: transparent;
   }
 
   @media (hover: hover) {
@@ -349,3 +352,16 @@
   }
 }
 
+
+/* Borderless panel surface — box model/크기 유지, 보이는 외곽선만 제거. */
+@media (min-width: 901px) {
+  .erp-std .erp-panel {
+    border-color: transparent;
+  }
+  /* 하단 action 영역의 구조선도 제거 — spacing/surface가 경계를 맡는다. */
+  .erp-std .erp-panel-foot,
+  .erp-std .dz-fs-foot,
+  .erp-std .erp-embed .dz-bar {
+    border-top-color: transparent;
+  }
+}

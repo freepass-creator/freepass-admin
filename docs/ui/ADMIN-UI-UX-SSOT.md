@@ -2414,3 +2414,54 @@ Compact selection control:
 - 카드 선택 시 2px 이상 primary border/outline
 - 카드 간격 8px 이하로 과도하게 조이기
 - 모든 UI 요소를 동일 높이로 강제하기
+
+
+# 52. Full-width workspace & gutter contract
+
+세련된 밀도는 가운데에 좁게 띄우는 것이 아니라
+**바깥 여백만 정확히 두고 그 안의 가용 폭을 모두 쓰는 것**이다.
+
+## Desktop
+
+### 1280~1439
+- workspace gutter X: 16px
+- workspace gutter Y: 12px
+- panel gap: 12px
+
+### 1440+
+- workspace gutter X: 20px
+- workspace gutter Y: 16px
+- panel gap: 16px
+
+Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
+역할별 panel ratio(1:1:1 / 2:1 / 1:1) 안에서 가용 폭을 전부 사용한다.
+
+## Mobile
+
+- 380px 이상: screen gutter 16px
+- 360-class(<380px): screen gutter 12px
+- visible Panel: gutter 안의 100%
+- List/Card/Form: Panel 안의 100%
+
+## 역할 분리
+
+- screen/workspace gutter: 화면 바깥 여백
+- panel padding: panel 내부 콘텐츠 여백
+- card gap: 카드 사이 12px
+- section gap: 섹션 사이 16px
+
+위 네 가지를 같은 토큰으로 묶지 않는다.
+
+## 금지
+
+- 내부 화면에 임의 `max-width`를 걸어 가운데 좁게 띄우기
+- 카드 폭을 고정 px로 제한해 오른쪽 여백 남기기
+- 모바일에서 workspace gutter와 card gap을 같은 값으로 묶기
+- viewport가 넓어졌는데 panel/card 폭이 그대로인 상태
+
+## Visual QA
+
+실제 브라우저에서:
+- workspace content left/right edge와 visible panel group edge 비교
+- mobile gutter 16px / narrow 12px 확인
+- panel/card가 남는 폭을 채우는지 확인

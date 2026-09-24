@@ -86,13 +86,11 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
                   tone={SIGN_TONE[c.signStatus] ?? 'neutral'} thumb={<><SignIcon s={s} /><span>{SIGN_SHORT[s]}</span></>} thumbStatus
                   title={txt(c.customer)} badge={<Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{s}</Badge>}
                   subId={txt(c.plate)} sub={txt(c.vehicle)}
-                  meta={`${txt(c.code)} · 계약일 ${txt(c.contractDate)}`}
+                  meta={txt(c.code)}
                   steps={{ labels: [...SIGN], at }}
                   facts={[
                     ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],
-                    ['영업 담당', txt(c.agent)],
                     ['기간', c.term ? `${c.term}개월` : '—'],
-                    ['양식', txt(c.kind), txt(c.insurance)],
                   ]}
                   amount={won0(c.rent)} amountLabel="월 대여료" />
               );

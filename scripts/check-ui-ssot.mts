@@ -148,6 +148,17 @@ const desktopScaleBaseline = [
 for (const [re, label] of desktopScaleBaseline) {
   if (!re.test(desktopCss)) errors.push(`desktop scale mismatch or missing: ${label}`);
 }
+
+/* 최신 PC consumer layer는 Product Scale 밖의 새 안정값을 만들지 않는다.
+ * generated erp-standard.css와 legacy/mobile CSS는 아직 별도 세대이므로 여기서 기계적으로 막지 않는다. */
+const desktopOffScaleRules = [
+  [/font-size:\s*(?:11\.5|13|15|17|22)px/g, 'off-scale desktop font size (11.5/13/15/17/22px)'],
+  [/(?:padding|gap|margin(?:-top|-right|-bottom|-left)?):[^;\n]*(?:14|18|22)px/g, 'off-scale desktop layout spacing (14/18/22px)'],
+] as const;
+for (const [re, label] of desktopOffScaleRules) {
+  re.lastIndex = 0;
+  if (re.test(desktopCss)) errors.push(`desktop scale: ${label}`);
+}
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 

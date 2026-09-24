@@ -507,21 +507,29 @@
     transition: none;
   }
 
-  /* Action / Selection controls — 누를 수 있는 물건. */
-  .erp-std :is(
-    .erp-btn:not(.erp-btn--ghost),
-    .erp-facet-opt,
-    .erp-dd,
-    .dz-fs-open
-  ) {
+  /* Action / Selection controls — 누를 수 있는 물건. Primary/danger 버튼은 따로 뺀다(:is() 안에
+   * 같이 두면 :not() 이 많이 붙은 쪽 때문에 :is() 전체의 specificity 가 올라가서, 상관없는
+   * .erp-facet-opt[aria-pressed="true"] 선택된-상태 규칙까지 덮어써 버린다 — 대표 2026-09-24
+   * 「모니터링」 중 실제 화면에서 「접수하기」·선택된 퀵필터 알약이 둘 다 흰 배경에 흰 글자로
+   * 안 보이는 걸 찾았다. 버튼과 나머지를 별도 규칙으로 쪼개 specificity 오염을 막는다). */
+  .erp-std .erp-btn:not(.erp-btn--ghost):not(.erp-btn--primary):not(.erp-btn--danger) {
+    background-color: var(--fp-surface-soft);
+    box-shadow: var(--fp-elevation-base);
+    cursor: pointer;
+  }
+  .erp-std :is(.erp-facet-opt, .erp-dd, .dz-fs-open) {
     background-color: var(--fp-surface-soft);
     box-shadow: var(--fp-elevation-base);
     cursor: pointer;
   }
 
   @media (hover:hover) {
+    .erp-std .erp-btn:not(.erp-btn--ghost):not(.erp-btn--primary):not(.erp-btn--danger):not(:disabled):not([aria-disabled="true"]):hover {
+      background-color: var(--fp-surface-hover);
+      box-shadow: var(--fp-elevation-hover);
+      transform: translateY(-1px);
+    }
     .erp-std :is(
-      .erp-btn:not(.erp-btn--ghost):not(:disabled):not([aria-disabled="true"]),
       .erp-facet-opt:not([aria-pressed="true"]),
       .erp-dd:not(:disabled),
       .dz-fs-open:not(.on)

@@ -1,706 +1,750 @@
 # FreePass Admin UI/UX SSOT
 
-상태: **PRODUCT PROFILE / AI CORE CONSUMER**  
-기준일: 2026-09-21
-적용: `freepass-admin` 실제 관리자 화면  
-코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
+상태: **CURRENT PRODUCT STANDARD / AI CORE PROMOTION CANDIDATE**  
+기준일: **2026-09-24**  
+적용 저장소: `freepass-creator/freepass-admin`  
+기준 브랜치: `claude/erp-platform-ui-ux-hvfyfa`  
+문서 작성 시 기준 revision: `74bbda50ef20209df630a093f2dc9b5a403a890e`
 
-> 공통 UI/UX 의미·선택 규칙의 정본은 **AI Core**다.
-> **실제 화면 형태의 기본은 FreePass Sales 운영 앱이다(사용자 2026-09-21 정정).**
-> 참조 revision/컴포넌트별 매핑은 `SALES-APP-BASELINE.md`를 먼저 읽는다.
-> 이 문서는 FreePass Admin이 AI Core 규격을 어떤 도메인에 어떻게 적용하는지 정하는 **Product Profile**이다.
+> 이 문서는 FreePass Admin의 **현재 디자인 정본**이다.
+> 테스트용 mockup, 과거 screenshot, 폐기된 §4 PageHeader/erp-cols 구조보다 이 문서와 현재 구현이 우선한다.
 >
-> AI Core binding: `docs/ui/ai-core-bindings.json`
->
-> 이 문서는 화면을 새로 디자인하는 문서가 아니다.  
-> **이미 확정된 화면의 눈에 보이는 위계·크기·역할을 한 곳에 고정**해서, 다음 화면과 다음 AI가 같은 규격을 쓰게 하는 문서다.
+> 지금 FreePass Admin에서 먼저 검증·고도화하고, 안정화된 규칙만 이후 AI Core 전사 공통 규격 후보로 승격한다.
 
 ---
 
-## 1. 정본 우선순위
+## 0. 한 문장 정의
 
-충돌하면 아래 순서가 이긴다.
+**FreePass Admin은 “Minimal Operational UI”를 따른다.**
 
-1. **사용자의 최신 명시 결정**
-2. **AI Core UI/UX Feature Registry + Interaction Contract**
-3. `docs/ui/ai-core-bindings.json` — FreePass Admin consumer mapping
-4. **이 문서 `ADMIN-UI-UX-SSOT.md`** — FreePass Admin Product Profile
-5. 실제 공통 구현 — `src/app/_design/*`
-4. 실제 최종 CSS — `src/app/globals.css`의 뒤쪽 확정 규칙
-5. `docs/ui/UI-SPEC.md`
-6. mockup / POLISH-NOTES / 과거 CSS 주석
+미니멀은 장식을 줄이는 취향이 아니라,
+**업무 완료에 필요하지 않은 시각·행동 요소를 제거하고 정보·상태·행동의 위계를 일관되게 유지하는 것**을 뜻한다.
+
+핵심 키워드는 두 개다.
+
+- **Minimal**
+- **Simple**
+
+“트렌디해 보이기 위한 장식”은 목표가 아니다.
+대신 현대적인 업무도구가 가져야 할 **명확한 hierarchy, contextual panel, responsive composition, 빠른 상태 인지, 낮은 학습비용**은 적극적으로 채택한다.
+
+---
+
+# 1. 정본 우선순위
+
+충돌 시 아래가 이긴다.
+
+1. 사용자의 가장 최근 명시 결정
+2. 현재 FreePass Admin의 확정 구현
+   - `src/app/_erp/Workspace.tsx`
+   - `src/app/_erp/ProductsScreen.tsx`
+   - `src/app/_erp/SettlementScreen.tsx`
+   - `src/app/_erp/EsignScreen.tsx`
+   - `src/app/_erp/parts.tsx`
+   - `src/app/_erp/ProductDetail.tsx`
+3. 현재 generated standard CSS
+   - `src/app/_erp/erp-standard.css`
+   - `src/app/_erp/shell.css`
+4. 이 문서
+5. 과거 문서·mockup·screenshot
+
+### 중요한 규칙
+
+- `docs/ui/erp-standard/classic-*.png` 등 저장 screenshot은 **현재 코드보다 뒤처질 수 있다**.
+- screenshot과 코드가 충돌하면 **현재 branch HEAD 코드가 우선**이다.
+- AI는 UI 작업 전에 반드시 현재 branch HEAD를 새로 조회한다.
+- 오래된 commit/revision을 “최신 디자인”으로 재사용하지 않는다.
+
+---
+
+# 2. 현재 확정된 전체 구조
+
+## 2-1. PC Shell
+
+PC는 다음 4영역으로 구성한다.
+
+1. **Topbar**
+   - 브랜드
+   - 회사/모드 정보
+   - 통합검색
+   - 데이터 상태
+   - 사용자
+   - 업무 실행 CTA는 두지 않는다.
+
+2. **Sidenav**
+   - 업무 이동의 유일한 주 navigation
+   - 같은 navigation을 상단 탭으로 중복하지 않는다.
+
+3. **Workspace**
+   - 1~3개의 Panel을 조합
+   - 업무의 실제 내용
+
+4. **Statusbar**
+   - ERP5 연결/설정
+   - 쓰기/조회 모드
+   - 시스템 상태
 
 ### 금지
-- 과거 `admin-shell.*` 값을 실제 앱보다 우선하지 않는다.
-- `globals.css` 파일 위쪽에 남은 옛 값을 보고 새 화면을 만들지 않는다.
-- 새 화면마다 버튼·텍스트·라운드·뱃지 규격을 새로 정하지 않는다.
-- White Label에서 가져온 뱃지는 **모양만 가져오지 말고 규격 전체**를 쓴다.
+
+- 상단에 동일한 업무 메뉴를 다시 반복하지 않는다.
+- Side navigation + top tab navigation을 중복하지 않는다.
+- 페이지마다 새 shell을 만들지 않는다.
 
 ---
 
-# 2. 전체 시각 위계
+# 3. Panel이 기본 단위다
+
+현재 PC 화면의 정본은 **§5-4 Panel architecture**다.
+
+폐기:
+- `PageHeader`
+- `erp-cols`
+- 화면 전체 단독 카드 페이지
+- 구형 §4 skeleton
+
+현재 실제 코드에서도 죽은 §4 부품과 CSS는 제거됐다.
+
+## 3-1. Panel 구조
+
+모든 Panel은 가능한 한 다음 순서로 간다.
 
 ```
-L0  Status / Bottom navigation
-    AdminChrome · desktop TopMenu · mobile MobileTabBar
-
-L1  Workspace
-    화면의 업무 배열
-
-L2  Panel
-    목록 / 상세 / 업무
-
-L3  Panel section
-    PanelHeader · Search/Filter · List · Detail section · Action bar
-
-L4  Item
-    ListRow · Summary box · Offer · Form field · Event
-
-L5  Signal
-    Badge · Perk · Status tile · Count · Icon · Helper text
+Panel
+  ├─ PanelHead
+  ├─ SearchBar / QuickFilter   (목록일 때)
+  ├─ PanelBody
+  └─ PanelFoot                (실행이 있을 때)
 ```
 
-**아래 단계가 위 단계보다 시각적으로 세면 안 된다.**
+### PanelHead
 
-예:
-- 뱃지가 판 제목보다 커지면 안 됨.
-- 필터 버튼이 주 실행 버튼보다 세면 안 됨.
-- 카드 안 상자가 패널보다 더 강한 테두리를 가지면 안 됨.
+```
+[종류 칩] 제목                         [count/context]
+```
 
----
+- 패널 제목은 screen title처럼 과장하지 않는다.
+- 현재 token: `--erp-fs-panel: 17px`
+- 패널마다 동일한 visual grammar 사용
 
-# 3. Surface / Panel 위계
-
-## 3-1. 면의 단계
-
-| 단계 | 역할 | 현재 정본 |
-|---|---|---|
-| Ground | 화면 바닥 | `--바닥 #eef1f4` |
-| Panel | 업무 큰 판 | `--판 #fff` |
-| Box | 판 안 정보 상자 | `--박스` |
-| List card | 목록 한 줄 | `--카드` |
-| Hover | 손이 올라간 상태 | `--박스손 / --카드손` |
-| Selected | 선택된 값 | `--고름` 옅은 네이비 |
-
-### 선 규칙
-**기본적으로 선은 두 군데만 강제한다.**
-1. Panel 외곽
-2. Search/Input 중 “찾기 시작점” 역할
-
-그 외:
-- 버튼: 선 없음
-- 목록 카드: 선 없음
-- 선택: 선보다 면의 변화
-- 정보 상자: 면과 간격으로 구분
-
-## 3-2. Panel 규격
-
-### Desktop
-- workspace gap: **12px**
-- workspace padding: **12px**
-- panel radius: **4px**
-- panel border: **1px**
-- panel padding: **22px**
-
-### Mobile
-- workspace gap: **8px**
-- workspace padding: **8px**
-- panel padding: **16px**
-
-## 3-3. Panel 역할은 세 종류만
+## 3-2. Panel 역할
 
 ### LIST PANEL
-목적: 찾고, 거르고, 훑고, 고른다.
+찾고, 거르고, 훑고, 고르는 판.
 
-차례:
-1. PanelHeader
-2. Search
-3. Quick filter / facet
-4. List
-5. 필요하면 count/summary
+기본 순서:
+
+```
+PanelHead
+SearchBar + Filter
+QuickFilter
+RowCards
+```
 
 ### DETAIL PANEL
-목적: 고른 한 건을 읽고 조건을 확인한다.
+선택한 한 건을 읽고 판단하는 판.
 
-차례:
-1. PanelHeader
-2. Identity / primary value
-3. Summary
-4. Sections
-5. Action bar
+기본 순서:
+
+```
+PanelHead
+Identity / Hero
+Primary values
+Sections / Tiles
+PanelFoot
+```
 
 ### WORK PANEL
-목적: 접수·계약·정산 등 실제 상태를 바꾼다.
+실제 상태를 변경하는 판.
 
-차례:
-1. PanelHeader
-2. Current state
-3. Required fields / progress
-4. History / evidence
-5. Action bar
+기본 순서:
 
-**같은 Panel 안에서 LIST + WORK를 임의 혼합하지 않는다.**
-
----
-
-# 4. 화면별 Panel 배열
-
-| 화면 | Desktop | Mobile |
-|---|---|---|
-| 상품찾기 | 목록 **2/3** + 상세 **1/3** | 목록 → 상세 |
-| 계약접수 | 상품목록 + 상품상세 + 접수/업무 | depth 전환 |
-| 정산관리 | 묶음 + 실적줄 + 접수상세 | 목록 → 실적 → 업무 |
-| 전자계약 | 계약목록 **2/3** + 계약상세 **1/3** | 목록 → 상세 |
-
-Panel 비율은 업무 목적이다. 장식 때문에 임의 변경하지 않는다.
-
----
-
-# 5. Text hierarchy — 세 단계만
-
-## 5-1. 정본
-
-| 위계 | Token | 크기 | 쓰는 곳 |
-|---|---|---:|---|
-| Title | `--글제목` | **18px** | Panel title, detail title, 주요 금액 |
-| Main | `--글메인` | **14px** | 본문, 값, 이름, 버튼, 입력 |
-| Support | `--글보조` | **12px** | 설명, 날짜, 코드, 라벨, count |
+```
+PanelHead
+Current state
+Required fields
+Validation / evidence
+PanelFoot
+```
 
 ### 원칙
-- **새 13/15/16/17/20px 위계를 만들지 않는다.**
-- 굵기로 위계를 만들 수 있으면 크기를 늘리지 않는다.
-- 숫자도 같은 3단을 사용한다.
-- 큰 금액도 별도 “금액 폰트”를 만들지 않는다.
 
-## 5-2. 승인된 예외
-
-| 예외 | 값 | 이유 |
-|---|---:|---|
-| CI wordmark | 20px 전후 | BI/CI 규격 |
-| Login brand | 24px | 독립 로그인 화면 |
-| Mobile text input | **16px** | 모바일 브라우저 자동 확대 방지 |
-| White Label Perk detail | 13px | 가져온 공통 규격 그대로 |
-| White Label Perk compact | 12px | 가져온 공통 규격 그대로 |
-
-예외를 새로 만들려면 이 표에 먼저 추가한다.
+한 Panel이 무엇을 하는지 애매하면 안 된다.
+LIST / DETAIL / WORK의 책임을 필요 이상으로 섞지 않는다.
 
 ---
 
-# 6. Control hierarchy
+# 4. 현재 화면별 확정 composition
 
-## 6-1. 버튼·입력 크기
-
-| 등급 | 높이 | 글자 | 용도 |
-|---|---:|---:|---|
-| Badge / signal | content based | 12 | 상태·신원 표시 |
-| Standard workspace control | **44px** | 14 | 필터, 탭, 기간, 보조 버튼, 업무 입력 |
-| Search / field | **44px** | 14 | 검색창, 주요 입력 |
-| Primary action | **44px** | 14 bold | 저장, 접수, 발행, 승인 |
-| Mobile touch action | **44px 이상** | 14 | 엄지로 누르는 주요 행동 |
-
-### Button radius
-- 일반 버튼: **6px** — Sales 운영 공통 컨트롤 토큰
-- 새로운 radius 금지
-
-### Primary
-- 한 Panel의 한 시점에 **주 행동 하나**
-- FreePass Navy
-- 44px
-- 우측 또는 하단 action bar
-
-### Secondary
-- 같은 action bar에서는 중립 면
-- Primary보다 약하게
-- action bar에서 둘이 서면 기본 **3 : 7**
-
-### Utility
-- 필터·탭·작은 조작
-- 업무 workspace에서는 44px
-- 평소 투명/중립
-- active에서 Navy 면
-
-### Destructive
-- 붉은색은 “위험 의미”에만 사용
-- 상시 Primary로 띄우지 않는다
-- 가능하면 더보기/확인 단계 뒤
-
-## 6-2. Mobile touch
-정본: **touch target 44px 이상**
-
-현재 처리:
-- `.dz-phone-back`은 보이는 상자 32px를 유지하되 **실제 hit-area 44px**를 확보했다.
-- 달 넘기기 등 workspace 조작은 공통 `--ui-control-h` 44px를 사용한다.
-
-승인된 compact 예외:
-- Desktop 하단 TopMenu는 Sales의 60px 탭바 안에서 최소 44px 터치 영역을 사용한다(2026-09-21 개정).
-- 검색창 내부 `세부검색` 단추는 32px visual이지만 44px search box 안의 내부 조작이다.
-
----
-
-# 7. Badge / Status SSOT
-
-뱃지는 **두 얼굴**뿐이다.
-
-## 7-1. Identity Tag — `Tag`
-무엇인가를 말한다.
-- 상품구분
-- 출고상태
-- 접수 상태
-- 업무 상태
-
-정본: White Label StateChip
-- font 12 / weight 600
-- padding **5px 10px**
-- radius **8px**
-- border 없음
-- icon + text
-
-Tone:
-- plain
-- good
-- act
-- warn
-
-## 7-2. Condition Mark — `PerkMarks`
-가능 조건을 말한다.
-- 무심사
-- 21세
-- 소득확인
-- 분납가능 등
-
-**박스 없음.**
-- icon + bold text
-- 상세 13px
-- compact 12px
-
-### 금지
-- 조건을 Identity Tag 상자로 만들지 않는다.
-- 심사 요구를 혜택처럼 초록 체크로 만들지 않는다.
-
-## 7-3. StatusTile
-사진이 없는 업무 목록의 썸네일 자리.
-
-- **64 × 64**
-- icon + 짧은 상태명
-- navy / green / red / grey / amber
-
----
-
-# 8. List SSOT
-
-모든 업무 목록은 가능하면 **`_design/ListRow`** 를 쓴다.
-
-## 8-1. 구조
+## 상품찾기
 
 ```
-[thumb/status]  1줄: 제목 + identity badges
-                2줄: context / flag
-                3줄: main value + aside/perks
+[ 상품목록 1×2 wide ] [ 상품상세 ]
 ```
 
-### 치수
-- outer padding: **12px**
-- body visual height: **64px**
-- 실제 rendered row: **약 88px** (64 + 상하 padding)
-- row gap: **8px**
-- radius: **4px**
-- product thumbnail: **82 × 64**
-- status tile: **64 × 64**
+- 상품찾기가 메인이다.
+- 목록 Panel은 `compact + wide`
+- wide 목록은 두 칸 grid로 상품 카드를 배치한다.
+- 검색창도 wide Panel 폭을 따라 넓어진다.
+- 상품상세는 계약접수와 **동일한 `ProductDetail`** 을 재사용한다.
 
-**“목록 높이 64”라고 쓸 때는 body 높이인지 실제 row 높이인지 반드시 구분한다.**
+## 계약접수
 
-## 8-2. 의미 순서
-1. 무엇인가
-2. 어떤 상태인가
-3. 핵심 조건/맥락
-4. 얼마인가 / 지금 무엇을 해야 하나
+```
+[ 상품목록 ] [ 상품상세 ] [ 접수목록 ]
+```
 
-목록에서 제원 전체를 보여주지 않는다. 상세에서 읽는다.
+- 기본 landing은 3 Panel.
+- 상품상세는 상품찾기와 같은 `ProductDetail`.
+- 접수 상세/신규 접수는 같은 shell 안에서 실제 work context로 이어진다.
 
-## 8-3. 선택
-- border 추가 금지
-- `--고름` 면으로 표시
-- selected와 status 색을 섞지 않는다.
+## 실적
 
----
+```
+[ 분납실적 ] [ 실적상세 ] [ 완납실적 ]
+```
 
-## 8-4. AI Core List Presentation
+- 분납/완납은 동시에 비교 가능해야 한다.
+- 가운데 상세는 별도 새 디자인을 만들지 않고 기존 상세 부품을 재사용한다.
 
-목록 표현 방식의 선택은 FreePass Admin이 새로 정하지 않는다.
-AI Core `data.list-presentation`을 따른다.
+## 정산관리
 
-| FreePass domain | AI Core mode |
-|---|---|
-| 상품 목록 | `product-media-row` |
-| 접수 목록 | `business-row` |
-| 실적 목록 | `business-row` |
-| 청구 목록 | `business-row` |
-| 지급 목록 | `business-row` |
-| Offer 선택 | `variant-card` |
-| 고밀도 다열 비교 | `data-table` |
+```
+[ 청구목록 ] [ 정산상세 ] [ 지급목록 ]
+```
 
-Desktop/Mobile은 배치가 달라져도 **semantic mode는 바꾸지 않는다.**
-AI Core가 이 선택 규칙을 변경하면 FreePass Admin은 consumer binding을 갱신해 같이 따라간다.
+- 청구와 지급은 항상 양쪽에서 비교 가능해야 한다.
+- 월 선택은 검색창이 아니라 **QuickFilter line**에 둔다.
+- 양쪽 목록 모두 같은 month context를 보여준다.
 
-# 9. PanelHeader SSOT
+## 전자계약
 
-현재 공통 CSS 패턴: `.panel-head`
+```
+[ 전자계약목록 ] [ 전자계약상세 ]
+```
 
-- height/min-height: **32px**
-- title: 18px / 800
-- count: 14px / 700, muted
-- title + count는 한 덩어리
-- 별도 영문 eyebrow 사용하지 않는다.
-- Header에 실행 버튼을 남발하지 않는다.
-- 실행은 가능하면 하단 action bar.
-
-향후 공통 컴포넌트 추출 후보:
-`PanelHeader(title, count, back?)`
+- 입력 Panel 없음.
+- 전자계약 생성은 별도 흐름이 담당.
+- Admin은 목록과 상세/서명 상태 확인이 중심.
 
 ---
 
-# 10. Search / Filter SSOT
+# 5. 목록 규격
 
-## Search
-- 높이 **44px**
-- 검색 icon
-- 텍스트
-- 필요하면 내부 우측에 “세부검색”
-- search border는 허용
-- main text 14
+모든 업무 목록은 가능한 한 같은 문법을 사용한다.
 
-## Quick filter
-- search 아래
-- height **44px** (`--ui-control-h`)
-- active = Navy
-- 같은 축 선택값은 주소/query SSOT와 연결
+## 5-1. 순서
 
-## Facet sheet
-공통: `FilterSheet`
-- 왼쪽 axis
-- 오른쪽 values
-- 고르면 즉시 반영
-- 마지막에 “N대/건 보기”
-- 모바일 touch item 44
+**검색창 + 필터 → 퀵 필터 → 목록**
 
-### 금지
-- 같은 화면에 서로 다른 검색 엔진/필터 규격 두 벌
-- 적용 버튼을 별도 규칙으로 새로 만들기
-- 숨은 필터
+예외를 만들려면 명확한 이유가 있어야 한다.
+
+### SearchBar
+- 검색창 옆에 필터 버튼
+- 검색창은 해당 Panel 폭을 충분히 사용
+- wide Panel에서 좁은 max-width를 그대로 두지 않는다.
+
+### Filter
+- 상세 조건은 FilterSheet/facet 규칙 재사용
+- 화면마다 다른 모달/드롭다운 방식 새로 만들지 않는다.
+
+### QuickFilter
+- 검색 바로 아래
+- 상태/분류/월처럼 “누르는 즉시 결과가 바뀌는 조건”
+- 월 dropdown도 QuickFilter의 한 구성원
+- 주변 pill/control과 높이·레벨을 맞춘다.
+
+### List
+- 기본: `RowCards / RowCard`
+- 긴 카드형
+- compact Panel은 상태/분류 thumbnail을 허용
+- 선택은 surface 변화로 표현
+- 장식용 좌측 색 bar는 사용하지 않는다.
 
 ---
 
-# 11. Detail information hierarchy
+# 6. RowCard 정보 위계
 
-상세는 아래 순서로 고정한다.
+목록 한 건은 다음 순서를 기본으로 한다.
 
 1. **Identity**
-   - 고객 / 차량 / 계약 / 공급사
-2. **Primary value**
-   - 월 대여료 / 청구금액 / 지급액 등
-3. **Summary**
-   - 2~4개의 핵심 값
-4. **Sections**
-   - 차량정보 / 조건 / 진행 / 원자 / 이력
-5. **Warnings**
-   - 실제로 손이 필요한 것
-6. **Action bar**
+   - 고객/상품/차량/계약
+2. **Status**
+   - Badge
+3. **Context**
+   - 차번, 공급사, 채널, 코드
+4. **Progress**
+   - 필요한 경우
+5. **Facts**
+   - 기간, 상품구분, 주요 조건
+6. **Amount**
+   - 숫자/금액은 우측 정렬
 
-Summary box는 `summary-grid` 규격을 사용한다.
-새 카드 디자인을 만들지 않는다.
+### 금지
 
----
-
-# 12. Action bar SSOT
-
-공통 CSS pattern: `.dz-bar > .dz-bar-go`
-
-역할:
-- 상세/업무 화면의 마지막 실행 자리
-- PC와 Mobile에서 동일한 의미
-
-### 한 개
-```
-[              PRIMARY              ]
-```
-
-### 두 개
-```
-[ secondary 3 ] [ primary 7 ]
-```
-
-- primary 44
-- secondary 44
-- radius 6
-- panel bottom에 정렬
-- content 중간에 떠 있지 않는다.
-
-향후 공통 컴포넌트 추출 후보:
-`ActionBar(primary, secondary?)`
+- 목록 카드 안에 상세정보 전체를 집어넣지 않는다.
+- 금액 위치를 화면마다 바꾸지 않는다.
+- 상태마다 카드 구조를 다르게 만들지 않는다.
+- 선택 표시를 decorative line으로 추가하지 않는다.
 
 ---
 
-# 13. Navigation SSOT
+# 7. Detail 규격
 
-## 2026-09-21 사용자 결정 — 현재 기준
-- 상단은 상태바다. FreePass Admin 워드마크·업무 메뉴·실행 버튼을 넣지 않는다.
-- 데이터 설정 여부, 쓰기 허용 여부, 로그인 사용자만 표시한다. 설정 확인을 실시간 연결 성공으로 표현하지 않는다.
-- 상태 링크는 기존 데이터 진단 화면으로 이어진다. 로그아웃은 그 화면의 하단 공통 ActionBar로 이동한다.
-- Desktop 기존 업무 4축은 Sales 형태의 흰 하단바(60px)에 아이콘·라벨 탭으로 옮긴다. 활성 탭 전체를 진한 면으로 채우지 않는다. 패널별 실행은 기존 ActionBar와 실제 동작을 유지한다.
-- Mobile 기존 업무 5걸음은 Sales 형태의 아이콘·라벨 탭을 사용하며 depth 1/2에서는 숨기고 현재 판의 실행바만 보인다.
-- 제목 18 / 본문 14 / 보조 12, 패널 라운드 4는 유지한다. 버튼/입력은 Sales의 높이 44·반경 6·간격 8을 사용한다. 두 실행의 업무 비율 3:7은 유지한다.
-- 이 결정은 과거 CI 상단·상단 4메뉴·33px TopMenu 설명보다 우선한다. 로그인 화면의 BI는 대상이 아니다.
+상세는 “더 많은 카드”를 만드는 곳이 아니다.
 
+기본:
 
-## Desktop — 업무 4축
-1. 상품찾기
-2. 계약접수
-3. 정산관리
-4. 전자계약
+```
+Identity / Hero
+Primary value
+Related options
+Operational notes
+Action
+```
 
-정본:
-- `AdminChrome`
-- `TopMenu`
+## ProductDetail
 
-## Mobile — 업무 5걸음
-1. 상품
-2. 접수
-3. 계약
-4. 청구
-5. 지급
+현재 상품찾기와 계약접수의 동일 상품은 반드시 같은 `ProductDetail`을 사용한다.
 
-정본:
-- `MobileTabBar`
+구성:
 
-청구·지급은 Desktop 정산관리의 두 입구다.
+- 차량 identity / status
+- 차량번호 / 제조사 / 공급사
+- 연식 / 주행 / 색상 / 상품구분
+- 기간별 대여료 Tile
+- 우대조건 / 정책
+- 하단 접수 action
 
-## Depth rule
-- depth 0: global bottom tabs
-- depth 1/2: global tabs를 숨기고 해당 Panel action bar
-- back은 PanelHeader에 둔다.
+### 원칙
+
+**같은 entity는 어느 화면에서 열어도 같은 Detail component를 사용한다.**
+
+화면별로 별도 상세 UI를 만들지 않는다.
 
 ---
 
-# 14. Common component SSOT
+# 8. Action 규격
 
-## 이미 공통화 완료 — 새로 만들지 말고 재사용
+## 8-1. Primary
 
-| 역할 | Component |
-|---|---|
-| 관리자 chrome | `AdminChrome` |
-| Desktop menu | `TopMenu` |
-| Mobile navigation | `MobileTabBar` |
-| 목록 한 줄 | `ListRow` |
-| 목록 상태 tile | `StatusTile` |
-| 신원 badge | `Tag` |
-| 조건 표시 | `PerkMarks` |
-| icon | `Icon` |
-| 세부검색 | `FilterSheet` |
-| Offer 선택 | `OfferPicker` |
-| 상세 tab | `DetailTabs` |
-| 차량 사진 | `PhotoGallery` |
+- 한 action boundary에 Primary는 **1개**
+- Panel 내부 업무의 최종 행동은 `PanelFoot`가 기본
+- 저장/접수/완료/발행 등 업무 결과를 바꾸는 action은 시각적으로 가장 강해야 한다.
 
-## 공통 primitive — 구현 완료
+## 8-2. Secondary
 
-`src/app/_design/Primitives.tsx`
+- Primary보다 한 단계 약하게
+- 의미 없는 outlined button 남발 금지
+- 버튼의 개수로 화면 hierarchy를 무너뜨리지 않는다.
 
-| 역할 | 공통 primitive |
-|---|---|
-| Panel header | `PanelHeader` |
-| Search input core | `SearchField` |
-| Bottom action | `ActionBar` |
-| Empty state | `EmptyState` |
-| Summary values | `SummaryGrid / SummaryItem` |
+## 8-3. 모바일
 
-핵심 4개 실제 화면(`products/intake/settlement/esign`)은 위 primitive를 사용한다.
-raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `npm run ui:check`가 실패시킨다.
+기존 사용자 확정 규칙 유지:
 
-## 다음 공통화 후보
+- 1개: 100%
+- 2개: **3 : 7**
+- 3개: **3 : 3 : 4**
 
-| 역할 | 현재 | 후보 |
-|---|---|---|
-| Search outer/form | `.dz-searchbox` + route별 form | `SearchBox` |
-| Notice | `.dz-warn/.dz-ok` | `Notice` |
-
-**공통화는 모양을 바꾸는 작업이 아니다. 동일 마크업을 한 곳으로 모으는 작업이다.**
+Primary는 항상 1개다.
 
 ---
 
-# 15. UX state hierarchy
+# 9. Surface / Border 철학
 
-모든 interactive component는 아래 상태를 구분한다.
+컨셉은 **Minimal + Simple**.
+
+## 9-1. 기본
+
+구분 순서:
+
+1. spacing
+2. surface
+3. typography
+4. border
+
+border는 마지막 수단이다.
+
+### border를 써도 되는 곳
+
+- input/search
+- 실제 데이터 읽기선이 필요한 table/grid
+- focus
+- 구조상 반드시 필요한 경계
+
+### 기본적으로 border를 줄이는 곳
+
+- 일반 button
+- Badge
+- Tag
+- 선택 카드
+- nested information box
+- decorative container
+
+### 선택
+
+selected는 **면 변화**가 기본.
+좌측 bar, 두꺼운 outline 등 추가 장식은 금지한다.
+
+---
+
+# 10. 상태 색
+
+semantic tone은 제한한다.
+
+- Primary
+- Success / OK
+- Info
+- Warning
+- Error
+- Neutral
+
+## 구분
+
+- **selected**와 **success**는 다른 의미다.
+- **warning**과 **destructive**는 다른 의미다.
+- 상태 의미를 색만으로 전달하지 않는다.
+- Badge는 배경 + 텍스트만으로 충분하면 dot를 추가하지 않는다.
+
+### 금지
+
+- 화면별 임의 status 색 생성
+- 같은 상태를 다른 화면에서 다른 색으로 표현
+- 혜택/우대조건과 위험/검증 상태를 같은 표현으로 사용
+
+---
+
+# 11. Typography
+
+현재 ERP standard token이 정본이다.
+
+주요 단계:
+
+- screen title: 22px
+- panel title: **17px**
+- section: 15px
+- body: 13px
+- label: 12px
+- caption: 11.5px
+
+## 원칙
+
+- 계층을 만들기 위해 임의 font-size를 추가하지 않는다.
+- 크기보다 weight / spacing / surface로 먼저 해결한다.
+- Panel title을 Page title 크기로 반복하지 않는다.
+- 숫자는 tabular alignment를 유지한다.
+
+---
+
+# 12. Spacing / Radius / Control
+
+현재 값은 `erp-standard.css` token을 정본으로 한다.
+
+핵심 token:
+
+- spacing: 4 / 8 / 12 / 16 / 20 / 24
+- radius: 4 / 6 / 8 / pill
+- topbar: 56
+- sidenav: 240
+- statusbar: 26
+- input: 32
+- button: 34
+- small button/dropdown: 28
+- desktop grid row: 40
+
+### 원칙
+
+- 화면마다 임의 숫자를 추가하지 않는다.
+- “조금 더 넓게/조금 더 둥글게”를 개별 CSS로 해결하지 않는다.
+- 새로운 안정값이 필요하면 token layer에서 결정한다.
+
+---
+
+# 13. Responsive 원칙
+
+모바일은 PC 축소판이 아니다.
+
+## Desktop
+
+- 여러 Panel을 동시에 노출
+- context 유지
+- 비교와 반복 업무 속도 우선
+
+## Mobile
+
+- 한 번에 하나의 업무 surface
+- 깊이에 따라 list → detail → work
+- global navigation과 local action을 동시에 과다 노출하지 않는다.
+
+### 중요한 현재 상태
+
+현재 코드에서 `≤900px`은 PC `.erp-screen`을 숨기고 기존 mobile board를 사용한다.
+
+따라서:
+- PC 디자인을 그대로 줄여 모바일로 쓰지 않는다.
+- FreePass Admin의 PC standard와 Mobile baseline은 동일 business semantics를 공유하되 presentation은 다를 수 있다.
+- 향후 모바일 재정비 시 PC Panel 하나가 모바일 한 화면으로 자연스럽게 옮겨지는지를 기준으로 한다.
+
+---
+
+# 14. “트렌디하지 않게 보이는” 위험과 보완 규칙
+
+현재 디자인의 가장 큰 위험은 색이나 radius가 아니라 **반복과 과밀도**다.
+
+## 위험 A — 모든 것을 카드로 만들기
+
+문제:
+- 카드 안 카드가 늘어나면 2010년대 dashboard처럼 보일 수 있음.
+
+보완:
+- entity 선택/업무 단위만 카드
+- 단순 facts는 평면 정보
+- 비교/대량 데이터는 필요하면 table/grid
+- 의미 없는 wrapper 금지
+
+## 위험 B — 모든 Panel이 똑같이 무거워 보이기
+
+문제:
+- 3개의 Panel이 모두 같은 정보량/강도로 보이면 집중점이 사라짐.
+
+보완:
+- list / detail / work 역할 차이를 content hierarchy로 표현
+- 중앙 Detail/Work의 핵심 정보가 자연스럽게 중심이 되도록 함
+- border/shadow를 더 세게 해서 중심을 만들지 않음
+
+## 위험 C — 미니멀 = 빈약함
+
+문제:
+- 선과 장식을 걷은 뒤 typography/spacing hierarchy가 약하면 그냥 허전해 보임.
+
+보완:
+- title / primary / secondary / meta 단계 고정
+- spacing rhythm 엄격히 유지
+- selected / hover / disabled 차이를 명확히
+- empty/loading/error 상태까지 같은 수준으로 설계
+
+## 위험 D — 업무 화면이라서 모든 공간을 채우기
+
+문제:
+- 정보량을 최대화하면 금방 구형 ERP 느낌이 난다.
+
+보완:
+- 빈 공간은 낭비가 아니라 grouping 수단으로 사용
+- 한 화면에서 지금 필요한 정보만 우선 노출
+- 세부값은 Detail로 이동
+
+## 위험 E — 트렌드 장식 추가
+
+금지:
+- glassmorphism
+- 과한 gradient
+- 불필요한 blur
+- oversized headline
+- decorative animation
+- floating CTA 남발
+
+이런 것은 “최신처럼 보이기” 위해 넣지 않는다.
+
+현대성은 다음에서 만든다.
+
+- 명확한 hierarchy
+- 빠른 state transition
+- contextual Panel
+- 적절한 density
+- keyboard/focus
+- skeleton/loading
+- 반응형 composition
+- 적은 cognitive load
+
+---
+
+# 15. Density 규칙 — 보완 필요 영역
+
+현재 가장 더 정교화해야 할 영역 중 하나다.
+
+향후 다음 3단 density를 검토한다.
+
+- comfortable
+- standard
+- compact
+
+단, 사용자가 density switch를 직접 바꾸게 하는 것이 목적이 아니다.
+화면/Panel 성격에 따라 적절한 density를 표준이 선택하는 구조가 우선이다.
+
+### 현재 원칙
+
+- compact Panel = 목록 중심
+- Detail/Work = compact를 남발하지 않음
+- wide list = compact card를 2열로 펼칠 수 있음
+- table은 비교/대량 처리에 본질적으로 유리할 때만
+
+---
+
+# 16. Interaction state — 반드시 완성해야 하는 규격
+
+모든 interactive component는 다음 상태를 고려한다.
 
 1. default
 2. hover
-3. focus-visible
-4. active/selected
-5. disabled
-6. busy/loading
-7. error/warn (필요한 경우)
+3. pressed
+4. selected
+5. focus-visible
+6. disabled
+7. loading/busy
+8. empty
+9. error
+10. stale/offline/readonly — 필요한 경우
 
-### 선택 vs 성공
-- selected = Navy
-- success/done = Green
+### 특히 주의
 
-둘을 같은 색으로 표현하지 않는다.
-
-### warn vs destructive
-- warn = 확인 필요
-- destructive = 삭제/취소/되돌림
-
-같은 빨강이라도 의미를 텍스트로 같이 적는다.
+- hover와 selected가 같은 표현이면 안 된다.
+- loading 중 중복 제출을 막는다.
+- readonly와 disabled를 구분한다.
+- focus-visible을 제거하지 않는다.
+- 색 하나만으로 상태를 설명하지 않는다.
 
 ---
 
-# 16. Responsive hierarchy
+# 17. Component reuse 규칙
 
-Mobile은 PC를 축소하지 않는다.
+새 화면을 만들기 전에 반드시 기존 부품으로 조합 가능한지 확인한다.
 
-### Desktop
-여러 Panel을 동시에 보여 맥락 유지.
+현재 핵심:
 
-### Mobile
-한 번에 한 Panel.
+- `Screen`
+- `Panel`
+- `PanelHead`
+- `PanelBody`
+- `PanelFoot`
+- `SearchBar`
+- `QuickFilter`
+- `FilterSheet`
+- `RowCards`
+- `RowCard`
+- `Tile`
+- `TileGroup`
+- `Badge`
+- `ProductDetail`
+- `SettlementDetail`
+
+## 절대 규칙
+
+**새로운 화면은 새 디자인을 만드는 일이 아니라, 기존 업무 패턴과 컴포넌트를 조합하는 일로 시작한다.**
+
+필요한 primitive/pattern이 없으면:
+
+1. 기존 부품으로 해결 가능한지 재검토
+2. 정말 공통 패턴이면 FreePass Admin standard에 먼저 추가
+3. 그 다음 화면에서 사용
+
+화면 안에서 일회성 디자인을 먼저 만들지 않는다.
+
+---
+
+# 18. Anti-patterns
+
+다음은 기본 금지한다.
+
+- 폐기된 §4 PageHeader / erp-cols 재도입
+- 화면마다 별도 card system
+- 같은 entity를 화면마다 다른 Detail UI로 구현
+- 검색창만 있고 필터 버튼이 없는 목록
+- QuickFilter 위치를 화면마다 바꿈
+- 월/상태 dropdown을 검색창 줄에 임의로 삽입
+- 목록 Panel인데 compact 규격을 무시
+- 선택된 menu/card에 decorative left bar 추가
+- 상단 navigation 중복
+- 버튼 radius/height 개별 생성
+- inline style로 안정값 고정
+- 임의 status color
+- screenshot을 코드보다 정본으로 취급
+- 테스트 화면/mockup을 현재 production design으로 오인
+
+---
+
+# 19. AI 작업 Preflight
+
+FreePass Admin UI를 만지기 전에 AI는 반드시 확인한다.
+
 ```
-depth 0 목록
-  → depth 1 상세
-    → depth 2 업무
+FreePass Admin UI preflight
+
+- repository: freepass-creator/freepass-admin
+- branch:
+- HEAD revision:
+- target screen:
+- current Panel composition:
+- reused components:
+- new component/pattern needed?:
+- desktop/mobile scope:
+- visual verification required:
 ```
 
-### 유지되는 것
-- 데이터
-- 용어
-- 상태
-- action hierarchy
-- badge 의미
+그리고:
 
-### 달라지는 것
-- Panel 동시 노출 수
-- navigation 위치
-- action bar 위치
+1. branch HEAD 새로 조회
+2. 해당 화면 source 읽기
+3. `parts.tsx` 및 공용 detail 확인
+4. `erp-standard.css` token 확인
+5. 과거 screenshot보다 현재 코드 우선
+6. 변경 후 typecheck/test/build
+7. 실제 browser screenshot으로 visual check
 
 ---
 
-# 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
+# 20. 현재 확정 여부
 
-## A. CSS cascade가 정본 역할을 하고 있음
-`globals.css` 상단에 옛 규격이 남고 아래에서 계속 덮는 구조다. **파일 맨 위에 LEGACY BASE 경고를 추가해 새 코드가 그 값을 복사하지 않게 표시했다.**
+2026-09-24 기준:
 
-**위험:** 다음 AI가 위쪽 값을 읽고 되돌릴 수 있음.
+### 확정
+- Minimal + Simple 방향
+- PC Panel architecture
+- 화면별 Panel composition
+- 목록 순서: Search+Filter → QuickFilter → RowCards
+- compact / wide 역할
+- ProductDetail 재사용
+- Settlement/Performance 3 Panel
+- 전자계약 2 Panel
+- Sidenav 중심 navigation
+- Topbar는 정보 중심
+- 구형 §4 skeleton 제거
 
-권장 후속:
-- legacy block 명시
-- 최종 token/component CSS를 파일 하단이 아니라 별도 SSOT CSS로 분리
-
-## B. UI-SPEC 옛 절이 최신 절 아래에 같이 있음
-맨 위 “실제 앱 정본”이 우선이지만, 옛 22/30/34/38 규격이 계속 보인다.
-
-권장:
-- 옛 절을 `UI-HISTORY.md`로 이동
-- UI-SPEC은 현행만 남김
-
-## C. 목록 높이 용어
-문서 주석은 “64px row”라고 하나 실제 outer row는 padding 포함 약 88px.
-
-정본:
-- **body = 64**
-- **rendered row ≈ 88**
-
-## D. Mobile back hit-area
-처리 완료: visual 32px는 유지하면서 pseudo hit-area를 **44px**로 확장했다.
-
-## E. 2개의 secondary surface
-`--박스`, `--카드`가 둘 다 존재한다.
-
-현재 역할:
-- `--박스`: 정보/폼/요약 박스
-- `--카드`: 목록 row
-
-이 역할을 넘겨 쓰지 않는다.
+### 계속 고도화
+- density 세부 수치
+- empty/loading/error visual
+- 모바일을 최신 Panel grammar에 맞추는 작업
+- 더 정교한 accessibility/keyboard behavior
+- 실제 운영 데이터에서 정보량 검증
+- 장시간 사용하는 직원 기준 fatigue 검증
+- small laptop / 1280 width에서 3 Panel readability 검증
 
 ---
 
-# 18. 새 화면 체크리스트
+# 21. AI Core 승격 전 체크
 
-새 화면/컴포넌트 추가 전 반드시 확인:
+이 규격을 AI Core로 승격하기 전에 FreePass Admin에서 먼저 검증한다.
 
-- [ ] Title/Main/Support 18/14/12 안에서 해결했나?
-- [ ] 업무 컨트롤 44 / 주 행동·모바일 터치 44 체계 안에 있나?
-- [ ] mobile touch는 44 이상인가?
-- [ ] 컨트롤 반경 6 / 패널 반경 4를 구분했나?
-- [ ] 신원 = Tag, 조건 = PerkMarks로 갈랐나?
-- [ ] 목록이면 ListRow를 재사용했나?
-- [ ] Panel은 LIST/DETAIL/WORK 중 하나인가?
-- [ ] Search/Filter가 기존 FilterSheet 계약을 따르나?
-- [ ] 한 Panel에 Primary가 하나인가?
-- [ ] Primary는 action bar에 있는가?
-- [ ] selected(Navy)와 success(Green)를 구분했나?
-- [ ] Desktop/Mobile에서 용어와 상태 뜻이 같은가?
-- [ ] 새 CSS 숫자를 만들기 전에 이 문서를 확인했나?
+승격 후보 조건:
 
----
+- 실제 업무에서 반복 사용
+- 상품/접수/실적/정산/전자계약 모두 동일 문법으로 안정화
+- PC 1280/1440 이상 검증
+- 모바일 360/390/412 검증
+- Visual QA
+- 접근성/keyboard/focus 검증
+- 특정 FreePass 도메인에만 필요한 부분과 전사 공통 부분 분리
+- AI가 이 문서만 읽고도 임의 재설계 없이 같은 화면을 만들 수 있음
 
-# 19. 한 문장 규칙
-
-> **큰 틀은 Panel, 목록은 ListRow, 신원은 Tag, 조건은 PerkMarks, 업무 컨트롤은 44, 주 행동·모바일 터치는 44, 글은 18/14/12, 선택은 Navy, 완료는 Green, 모바일은 한 Panel씩.**
-
+**FreePass Admin에서 검증되지 않은 아이디어를 AI Core의 전사 규칙으로 먼저 고정하지 않는다.**
 
 ---
 
-# 20. 자동 검사
+# 22. 최종 요약
 
-PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한다.
-
-1. `npm run typecheck`
-2. `npm test`
-3. `npm run ui:check`
-
-`ui:check`는:
-- 핵심 화면이 공통 primitive를 우회해 raw 공통 마크업을 다시 만드는지
-- 안정적인 UI 값이 inline style로 다시 들어오는지
-- `--ui-*` 핵심 토큰이 사라졌는지
-- 실제 CSS와 machine SSOT의 18/14/12 · 44 · 44 · radius 4가 변했는지
-- focus-visible / reduced-motion 공통 규칙이 사라졌는지
-
-를 검사한다.
-
-
----
-
-# 21. 이번 정리에서 실제 코드에 반영된 것
-
-문서 규격만 선언한 것이 아니라 아래 항목은 실제 코드에 적용됐다.
-
-- 공통 primitive: `PanelHeader / SearchField / ActionBar / EmptyState / Notice / SummaryGrid / SummaryItem`
-- 핵심 화면 `products / intake / settlement / esign`의 반복 마크업을 공통 primitive로 교체
-- `DetailTabs`와 `OfferPicker`도 공통 ActionBar / EmptyState 사용
-- `--ui-*` 토큰으로 공통 치수 연결
-- 모바일 뒤로가기 visual 32px 유지 + 실제 hit-area 44px
-- 세부검색: 닫힌 뒤 trigger로 focus 복귀 · unique dialog id · busy 상태 노출
-- 상품 상세 tab에 `tablist/tab/tabpanel` 의미 추가
-- ListRow 선택 상태를 접근성 트리에 노출
-- 저장/정산 폼 pending 중 중복 조작 방지 + `aria-busy`
-- PhotoGallery 화살표 클릭이 크게보기로 번지는 pointer 이벤트 오류 수정
-- PhotoGallery reduced-motion 대응
-- 전역 `:focus-visible` 및 `prefers-reduced-motion` 공통 규칙
-- Badge/ListRow/Sections의 icon 이름 일부를 `IconName`으로 타입 고정
-- 안정적인 inline style을 CSS class로 이동
-- `AGENTS / MASTER / WORK-INBOX`의 오래된 UI 규칙에 최신 SSOT 우선관계 명시
-
-위 항목은 **기능/업무규칙/화면 디자인을 바꾸지 않는 범위의 정리**다.
-
-
-## F. 파일 책임 분리 — 2026-09-18 정리
-
-- `src/app/globals.css` — base/legacy 및 기존 화면 호환 규칙
-- `src/app/_design/admin-final.css` — 현재 관리자 UI의 final override / token / mobile / login / accessibility
-- `src/app/products/workspace-config.ts` — 상품 workspace의 정적 필터축·가격구간·대표요금·표시 helper
-- `src/app/intake/intake-options.ts` — 신규 접수의 기존 원장 선택지/code-map 준비
-- `src/app/intake/panels.tsx` — 외부에서 쓰는 안정적 re-export 경계
-- `src/app/intake/NewIntakePanel.tsx` — 신규접수 WORK 판
-- `src/app/intake/IntakeDetailPanel.tsx` — 접수상세/정산연계 WORK 판
-- `src/app/_design/Primitives.tsx` — 반복 시각 primitive
-
-CSS import 순서는 **`globals.css → admin-final.css → _fn/fn.css`** 를 유지한다.
-이 순서를 바꾸는 것은 디자인 변경으로 취급한다.
-
+> **FreePass Admin의 기본 UI는 Minimal Operational UI다.**
+>
+> 화면은 Panel로 조립하고, 목록은 Search+Filter → QuickFilter → RowCards 순서를 지킨다.
+> 같은 entity는 같은 Detail component를 쓴다.
+> 업무 action은 PanelFoot에 둔다.
+> 시각적 구분은 border보다 spacing·surface·typography를 먼저 쓴다.
+> PC는 multi-panel로 context를 유지하고, 모바일은 한 업무 surface에 집중한다.
+> 새로운 화면은 새로운 디자인이 아니라 기존 pattern의 조합으로 시작한다.

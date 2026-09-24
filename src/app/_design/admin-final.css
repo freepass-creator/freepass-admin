@@ -512,24 +512,67 @@ body > nav.fn-top :where(a, button):focus-visible,
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   2026-09-24 — 공통 Interaction Elevation (mobile/legacy admin board)
-   PC ERP shell의 동일 원칙을 기존 모바일 공통부품에도 적용한다.
-   페이지별로 그림자/눌림/선택 상태를 따로 만들지 않는다.
+   2026-09-24 — Surface type / Interaction hierarchy (mobile/legacy board)
+   물성은 타입이 정하고, hover/press 여부가 상호작용을 정한다.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
   --ui-elevation-0: none;
-  --ui-elevation-1: 0 1px 2px rgba(16,24,40,.06);
-  --ui-elevation-2: 0 2px 5px rgba(16,24,40,.10);
-  --ui-elevation-3: 0 3px 8px rgba(16,24,40,.14);
+  --ui-elevation-base: 0 1px 2px rgba(16,24,40,.07);
+  --ui-elevation-hover: 0 3px 7px rgba(16,24,40,.12);
+  --ui-elevation-float: 0 8px 22px rgba(16,24,40,.14);
   --ui-press-y: 1px;
+
+  --ui-line-card: rgba(16,24,40,.08);
+  --ui-line-control: rgba(16,24,40,.14);
+  --ui-line-input: #cdd5df;
 }
 
-/* 읽기용 surface는 평평하게. */
-.fn-main .workspace :is(.dz-form-group, .summary-grid, .dz-warn, .dz-ok) {
-  box-shadow: var(--ui-elevation-0);
+/* Card/box 타입은 전부 같은 기본 높이. 읽기 전용도 바닥에 붙이지 않는다. */
+.fn-main .workspace :is(
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .dz-row-status
+) {
+  box-shadow: var(--ui-elevation-base);
 }
 
-/* 누를 수 있는 공통 surface는 살짝 떠 있다. */
+/* 목록 카드가 텍스트 덩어리로 사라지지 않게 아주 약한 카드선을 둔다. */
+.fn-main .workspace .dz-row {
+  border: 1px solid var(--ui-line-card);
+}
+
+/* 정보 카드/박스도 같은 카드선. */
+.fn-main .workspace :is(.dz-form-group, .summary-grid, .dz-offer-line) {
+  border-color: var(--ui-line-card);
+}
+
+/* Button/control 타입은 같은 기본 elevation + 조금 더 또렷한 control line. */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  box-shadow: var(--ui-elevation-base);
+  border-color: var(--ui-line-control);
+}
+
+/* 입력은 별도 input line. */
+.fn-main .workspace :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea,
+  .dz-searchbox
+) {
+  border-color: var(--ui-line-input);
+}
+
+/* interactive에만 hover/press를 준다. passive card는 그대로 떠 있다. */
 .fn-main .workspace :is(
   .dz-row,
   .quick-filters a,
@@ -540,15 +583,14 @@ body > nav.fn-top :where(a, button):focus-visible,
   .dz-bar-go > .primary,
   .dz-bar-go > .dz-bar-sub
 ) {
-  box-shadow: var(--ui-elevation-1);
   transition:
     transform 90ms ease,
     box-shadow 120ms ease,
     background-color 120ms ease,
-    color 120ms ease;
+    color 120ms ease,
+    border-color 120ms ease;
 }
 
-/* hover = 조금 올라옴. */
 @media (hover:hover) {
   .fn-main .workspace :is(
     .dz-row,
@@ -560,12 +602,11 @@ body > nav.fn-top :where(a, button):focus-visible,
     .dz-bar-go > .primary,
     .dz-bar-go > .dz-bar-sub
   ):hover {
-    box-shadow: var(--ui-elevation-2);
+    box-shadow: var(--ui-elevation-hover);
     transform: translateY(-1px);
   }
 }
 
-/* pressed = 내려앉음. */
 .fn-main .workspace :is(
   .dz-row,
   .quick-filters a,
@@ -580,9 +621,9 @@ body > nav.fn-top :where(a, button):focus-visible,
   transform: translateY(var(--ui-press-y));
 }
 
-/* selected = 더 뜨는 상태가 아니라 눌려 고정된 상태. */
+/* selected = 눌려 고정. 더 높이지 않는다. */
 .fn-main .workspace .dz-row.on,
-.fn-main .workspace .quick-filters a:is(.on,[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
 .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
 .fn-main .workspace .offer-picker button.active,
 .fn-main .workspace .dz-fs-open.on {
@@ -590,10 +631,9 @@ body > nav.fn-top :where(a, button):focus-visible,
   transform: translateY(var(--ui-press-y));
 }
 
-/* 선택된 surface는 hover해도 다시 떠오르지 않는다. */
 @media (hover:hover) {
   .fn-main .workspace .dz-row.on:hover,
-  .fn-main .workspace .quick-filters a:is(.on,[aria-pressed="true"],[aria-current="true"]):hover,
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]):hover,
   .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]):hover,
   .fn-main .workspace .offer-picker button.active:hover,
   .fn-main .workspace .dz-fs-open.on:hover {
@@ -602,22 +642,11 @@ body > nav.fn-top :where(a, button):focus-visible,
   }
 }
 
-/* Primary action = 가장 강한 tactile affordance. */
+/* Primary도 기본 높이는 다른 버튼과 같다. 우선순위는 색/텍스트가 말한다. */
 .fn-main .workspace .dz-bar-go > .primary {
-  box-shadow: var(--ui-elevation-2);
-}
-@media (hover:hover) {
-  .fn-main .workspace .dz-bar-go > .primary:hover {
-    box-shadow: var(--ui-elevation-3);
-    transform: translateY(-1px);
-  }
-}
-.fn-main .workspace .dz-bar-go > .primary:active {
-  box-shadow: var(--ui-elevation-0);
-  transform: translateY(var(--ui-press-y));
+  box-shadow: var(--ui-elevation-base);
 }
 
-/* disabled는 물성을 제거한다. */
 .fn-main .workspace :is(button,a)[aria-disabled="true"],
 .fn-main .workspace button:disabled {
   box-shadow: none !important;

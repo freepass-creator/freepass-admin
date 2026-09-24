@@ -227,6 +227,23 @@ for (const [re, label] of mobileAlignmentBaseline) {
   if (!re.test(cssFinal)) errors.push(`alignment mismatch or missing: ${label}`);
 }
 
+const systemStateBaseline = [
+  [/Async \/ empty \/ error \/ readonly state surfaces/, 'desktop system state contract'],
+  [/\[aria-busy="true"\]/, 'desktop busy state'],
+  [/data-ui-state="stale"/, 'desktop stale state'],
+] as const;
+for (const [re, label] of systemStateBaseline) {
+  if (!re.test(desktopCss)) errors.push(`system state mismatch or missing: ${label}`);
+}
+const mobileSystemStateBaseline = [
+  [/Async \/ empty \/ error \/ readonly state surfaces/, 'mobile system state contract'],
+  [/\.fn-main \.workspace \.dz-empty/, 'mobile empty surface'],
+  [/\.fn-main \.workspace \.fn-err/, 'mobile error surface'],
+] as const;
+for (const [re, label] of mobileSystemStateBaseline) {
+  if (!re.test(cssFinal)) errors.push(`system state mismatch or missing: ${label}`);
+}
+
 const stateContractBaseline = [
   [/Interaction state consistency/, 'desktop interaction state contract'],
   [/--fp-focus-halo:/, 'desktop soft focus halo token'],

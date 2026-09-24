@@ -167,7 +167,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       <Panel compact>
         <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
         <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" keep={['month', 'pgs']} />
-        <QuickFilter label="정산 상태" items={[
+        <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${payCount('all')}`, href: hrefWith(base, q, { pgs: null }), on: pgs === 'all' },
           { key: 'issue', label: `이슈 ${payCount('issue')}`, href: hrefWith(base, q, { pgs: 'issue' }), on: pgs === 'issue' },
           { key: 'todo', label: `미처리 ${payCount('todo')}`, href: hrefWith(base, q, { pgs: 'todo' }), on: pgs === 'todo' },

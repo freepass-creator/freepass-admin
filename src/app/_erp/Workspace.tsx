@@ -390,7 +390,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         <PanelHead kind="목록" title="완납실적" count={`전체 ${완납.length}건`} />
         <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'fqs', 'month']}
           filter={<FilterSheet axes={fFacets} count={완납.length} unit="건" label="필터" />} />
-        <QuickFilter label="확인 필요" items={[
+        <QuickFilter label="확인 필요" dropdown={<AutoSelect name="month" value={month} label="실적월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${완납전체.length}`, href: hrefWith(base, q, { fqs: null }), on: fqs === 'all' },
           { key: 'issue', label: `확인필요 ${fIssueCount}`, href: hrefWith(base, q, { fqs: 'issue' }), on: fqs === 'issue' },
         ]} />

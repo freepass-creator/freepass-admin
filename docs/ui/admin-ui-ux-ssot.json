@@ -645,5 +645,41 @@
       "preserveInputOnFailure": true
     },
     "rule": "Validation semantics must be accurate; do not mark every field invalid for a form-level error."
+  },
+  "actionRisk": {
+    "secondary": {
+      "dataMutation": false,
+      "confirm": false,
+      "surface": "neutral-secondary"
+    },
+    "caution": {
+      "reversible": true,
+      "confirm": "contextual",
+      "surface": "amber-soft"
+    },
+    "destructive": {
+      "reversible": false,
+      "confirm": true,
+      "surface": "red-soft",
+      "emphasis": "not larger than primary"
+    },
+    "examples": {
+      "secondary": [
+        "back",
+        "close",
+        "input-cancel"
+      ],
+      "caution": [
+        "hold",
+        "correction-request",
+        "revoke-claim-link"
+      ],
+      "destructive": [
+        "cancel-intake",
+        "revert-delivery",
+        "permanent-delete"
+      ]
+    },
+    "rule": "Classify by reversibility and business impact, not by button wording."
   }
 }

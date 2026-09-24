@@ -589,3 +589,70 @@
     border-color: transparent !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Scale normalization
+ * FreePass Admin에서 먼저 검증하는 공통 스케일.
+ * generated erp-standard.css를 직접 수정하지 않고 consumer override로 압축한다.
+ *
+ * Typography: 24 / 20 / 18 / 16 / 14 / 12
+ * Spacing:    4 / 8 / 12 / 16 / 20 / 24 / 32
+ * Desktop:    small 32 / standard 36 / row 40 / topbar 56
+ * Mobile:     control/action/touch 44 (admin-final.css)
+ * Radius:     4 / 6 / 8 / pill
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --erp-fs-kpi: 24px;
+    --erp-fs-title: 20px;
+    --erp-fs-panel: 18px;
+    --erp-fs-section: 16px;
+    --erp-fs-body: 14px;
+    --erp-fs-label: 12px;
+    --erp-fs-caption: 12px;
+
+    --erp-sp-1: 4px;
+    --erp-sp-2: 8px;
+    --erp-sp-3: 12px;
+    --erp-sp-4: 16px;
+    --erp-sp-5: 20px;
+    --erp-sp-6: 24px;
+    --fp-sp-7: 32px;
+
+    --erp-section-gap: 16px;
+
+    --erp-btn-h-sm: 32px;
+    --erp-btn-h: 36px;
+    --erp-input-h: 36px;
+    --erp-grid-row-h-dense: 32px;
+    --erp-grid-row-h: 40px;
+
+    --erp-r-sm: 4px;
+    --erp-r-md: 6px;
+    --erp-r-lg: 8px;
+  }
+
+  /* 같은 줄의 검색/버튼/셀렉트는 같은 standard 36 높이를 쓴다. */
+  .erp-std .erp-search,
+  .erp-std .erp-dd,
+  .erp-std .dz-fs-open {
+    height: var(--erp-btn-h);
+  }
+
+  /* QuickFilter처럼 의도적으로 작은 control만 small 32. */
+  .erp-std .erp-toolbar :is(.erp-facet-opt, .erp-dd) {
+    height: var(--erp-btn-h-sm);
+  }
+
+  /* 공통 panel rhythm은 16 기반으로 맞춘다. */
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-4);
+    padding: var(--erp-sp-4) var(--erp-sp-5);
+  }
+  .erp-std .erp-panel-head,
+  .erp-std .erp-panel-foot {
+    padding-block: var(--erp-sp-3);
+    padding-inline: var(--erp-sp-4);
+  }
+}

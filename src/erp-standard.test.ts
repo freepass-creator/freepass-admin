@@ -19,10 +19,22 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
   assert.ok(css.includes('body:has(> .erp-theme-flag[data-theme="retro"]) {'), 'retro theme block');
 });
 
-test('five desktop screens are built from the standard skeleton regions', () => {
+test('settlement is panelized like the intake workspace, not a standalone §4 page', () => {
+  // 대표 2026-09-24 「모든 페이지는 다 패널화 돼 있다 … 정산관리는 이거 공통규격이 아니잖아」 — §4
+  // PageHeader/erp-cols 골격을 걷어내고 §5-4 erp-panel 셋(정산묶음 | 실적 줄 | 접수상세)으로 다시 짰다.
+  const src = read('src/app/_erp/SettlementScreen.tsx');
+  assert.equal(src.includes('<PageHeader'), false, 'no standalone page header — panels carry their own PanelHead');
+  assert.equal(src.includes('erp-cols'), false, 'no §4 two-column card grid');
+  assert.ok(src.includes('<Panel') && src.includes('<PanelHead') && src.includes('<PanelBody') && src.includes('<PanelFoot'), 'built from §5-4 panel parts');
+  assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), 'long card list');
+  assert.ok(src.includes('<SearchBar'), 'search bar');
+  assert.ok(src.includes('<SettlementDetail'), '접수상세 판 reuses the shared detail component, not a copy');
+  assert.equal(/style=\{\{/.test(src), false, 'no inline style');
+});
+
+test('two desktop screens are still built from the older §4 skeleton regions', () => {
   const screens = {
     'src/app/_erp/ProductsScreen.tsx': [],
-    'src/app/_erp/SettlementScreen.tsx': [],
     'src/app/_erp/EsignScreen.tsx': [],
   } as const;
   for (const [file, regions] of Object.entries(screens)) {

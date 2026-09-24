@@ -57,18 +57,6 @@ export function SideMenu() {
   );
 }
 
-/** ③ 작업 탭 — 업무 다섯 판을 탭으로 늘어놓고 지금 판을 고른다(규격 erp-tabs). */
-export function WorkTabs() {
-  const now = useCurrent();
-  return (
-    <div className="erp-tabs" role="tablist" data-region="tabs">
-      {[...FLOW, ESIGN].map((it) => (
-        <Link key={it.key} href={it.href} className="erp-tab" role="tab" aria-selected={now === it.key}>{it.label}</Link>
-      ))}
-    </div>
-  );
-}
-
 /** 상태줄의 테마 고르기 — 링크 하나로 바꾼다(스크립트 없이도 된다). 되돌아올 자리는 지금 주소. */
 export function ThemeSwitch({ current, labels }: { current: string; labels: Record<string, string> }) {
   const path = usePathname() || '/';

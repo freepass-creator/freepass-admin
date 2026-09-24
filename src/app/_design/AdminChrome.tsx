@@ -5,7 +5,7 @@ import { erp5Ready } from '../../adapters/erp5/firestore';
 import { demoMode } from '../../adapters/erp5/demo';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
-import { SideMenu, ThemeSwitch, WorkTabs } from './SideMenu';
+import { SideMenu, ThemeSwitch } from './SideMenu';
 import { Icon } from './Icon';
 import { THEME_COOKIE, THEME_LABEL, themeOf } from './theme';
 import { currentAdmin } from '../../server/require-admin';
@@ -78,9 +78,13 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <SideMenu />
       </nav>
 
-      {/* ── 본문: PC 는 ③ 작업 탭 + 규격 화면(.erp-screen), 폰은 기존 판(그대로) ── */}
+      {/* ── 본문: PC 는 규격 화면(.erp-screen), 폰은 기존 판(그대로) ── (대표 2026-09-24 「좌측 사이드
+          메뉴하고 상단 헤더하고 겹치잖아」) — ③ 작업 탭(규격 §1, 여러 화면을 MDI 탭으로 동시에 여는 자리)
+          자리에 실제로는 ② 왼쪽 메뉴와 똑같은 다섯 항목을 그대로 다시 그리는 WorkTabs 가 있었다 — 진짜
+          MDI(열어 둔 화면 탭)가 아니라 그냥 같은 이동 메뉴를 위아래로 두 번 보여주는 중복이었다. 이동은
+          왼쪽 메뉴 하나로 정하고(AdminChrome 자신의 머리 주석 「② 왼쪽 업무 메뉴」, DEC-2026-09-23-01
+          「상단은 정보만」과 일관되게) 이 줄을 없앴다. */}
       <main className="fn-main">
-        <div className="erp-main erp-std erp-tabs-bar"><WorkTabs /></div>
         {children}
       </main>
 

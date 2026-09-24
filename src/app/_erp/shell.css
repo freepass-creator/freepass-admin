@@ -23,11 +23,13 @@
     grid-area: main; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
     padding: 0; background: var(--erp-color-bg);
   }
-  /* PC 에서는 규격 화면만 — 기존 판 · 폰 머리 · 하단바는 숨긴다 */
+  /* PC 에서는 규격 화면만 — 기존 판 · 폰 머리 · 하단바는 숨긴다. 이동은 왼쪽 메뉴 하나뿐이라
+   * main.fn-main 의 유일한 자식은 .erp-screen 이다(예전엔 위에 .erp-tabs-bar 도 있었다 — 왼쪽 메뉴와
+   * 똑같은 걸 또 보여주는 중복이라 없앴다, 대표 2026-09-24 「좌측 사이드 메뉴하고 상단 헤더하고
+   * 겹치잖아」). */
   body:has(> .erp-theme-flag) > header.fn-top,
   body:has(> .erp-theme-flag) > .dz-tabbar,
-  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen):not(.erp-tabs-bar) { display: none !important; }
-  body:has(> .erp-theme-flag) > main.fn-main > .erp-tabs-bar { flex: none; overflow: visible; }
+  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen) { display: none !important; }
   body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
   /* 규격 부품이 <a> · <form> 으로 설 때의 기본값만 맞춘다(모양은 규격 그대로) */
@@ -81,5 +83,5 @@
 }
 
 @media (max-width: 900px) {
-  .erp-std, .erp-screen, .erp-tabs-bar { display: none !important; }
+  .erp-std, .erp-screen { display: none !important; }
 }

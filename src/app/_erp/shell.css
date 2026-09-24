@@ -1077,3 +1077,60 @@
   .erp-std .erp-badge--warn { color: #B54708; background: #FFFAEB; }
   .erp-std .erp-badge--err { color: #B42318; background: #FEF3F2; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Icon & hit-area contract
+ * glyph size와 click target을 분리한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-icon-sm: 16px;
+    --fp-icon-md: 18px;
+    --fp-icon-lg: 20px;
+    --fp-icon-action-hit: 36px;
+  }
+
+  /* 데스크톱 icon-only action은 36x36 hit area, glyph는 18px */
+  .erp-std .erp-iconbtn {
+    width: var(--fp-icon-action-hit);
+    height: var(--fp-icon-action-hit);
+    min-width: var(--fp-icon-action-hit);
+    min-height: var(--fp-icon-action-hit);
+  }
+  .erp-std .erp-iconbtn svg {
+    width: var(--fp-icon-md);
+    height: var(--fp-icon-md);
+  }
+
+  /* search/navigation glyphs */
+  .erp-std .erp-search > svg,
+  .erp-std .erp-gsearch > svg {
+    width: var(--fp-icon-sm);
+    height: var(--fp-icon-sm);
+  }
+  .erp-std .erp-nav-item svg {
+    width: var(--fp-icon-md);
+    height: var(--fp-icon-md);
+  }
+
+  /* status/decorative glyphs are not interactive */
+  .erp-std :is(.erp-badge svg,.erp-tag svg,.erp-rowcard-thumb svg,.erp-rowcard-go) {
+    pointer-events: none;
+  }
+
+  /* affordance: actions/selectables pointer, signals default */
+  .erp-std :is(
+    .erp-btn,
+    .erp-facet-opt,
+    .erp-dd,
+    .erp-iconbtn,
+    .erp-tile--pressable,
+    .erp-rowcard
+  ) {
+    cursor: pointer;
+  }
+  .erp-std :is(.erp-badge,.erp-tag,.erp-chip:not(a)) {
+    cursor: default;
+  }
+}

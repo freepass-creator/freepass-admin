@@ -1036,8 +1036,8 @@ FreePass Admin 전체 UI를 다시 분류한 결과, **내부 관리자 업무 �
 PC와 mobile/legacy Admin board 모두 같은 원칙을 쓴다.
 
 ```
-read-only  → flat
-surface    → slight elevation
+read-only card → base elevation, no hover
+surface        → base elevation
 interactive→ elevation + hover
 pressed    → sinks
 selected   → pressed/locked surface
@@ -1183,3 +1183,128 @@ Line-free 전환을 이유로 다음을 바꾸지 않는다.
 
 가능하면 border box는 유지하고 color만 transparent로 바꿔 geometry drift를 막는다.
 
+
+
+# 25. Semantic state standard — 일반 UI 관례 기반
+
+FreePass Admin의 상태 표현은 역할별로 분리한다.
+
+## 25-1. Badge = Signal
+
+Badge/Tag/Perk는 상태를 **보여주는 것**이다.
+
+- hover 없음
+- press 없음
+- elevation 없음
+- cursor pointer 없음
+- semantic color + text
+- 선택 control처럼 보이면 안 됨
+
+예:
+- 완료
+- 보류
+- 경고
+- 상품구분
+- 출고상태
+- 혜택조건
+
+## 25-2. Button = Action
+
+Button은 **행동을 실행하는 것**이다.
+
+- base elevation
+- hover 가능
+- pressed 가능
+- disabled는 elevation 제거
+- Primary/Secondary는 높이가 아니라 surface color와 weight로 위계 구분
+
+Primary:
+- brand solid surface
+- white text
+- 같은 base elevation
+
+Secondary:
+- neutral/soft surface
+- dark text
+- 같은 base elevation
+
+## 25-3. QuickFilter / Toggle = Selection control
+
+QuickFilter는 **값을 선택하는 control**이다.
+
+기본:
+- soft surface
+- base elevation
+
+hover:
+- surface 변화
+- elevation 상승
+
+selected:
+- brand surface
+- on-primary text
+- 눌려 고정된 shadow
+- hover해도 다시 뜨지 않음
+
+## 25-4. Card
+
+### Passive Card
+- base elevation
+- hover 없음
+- press 없음
+
+### Interactive Card
+- base elevation
+- hover 상승
+- press 내려앉음
+
+### Selected Card
+- primary weak/tint surface
+- inset pressed state
+- 더 떠오르지 않음
+
+## 25-5. Field
+
+Input/Search/Select/Dropdown은 visible border 없이 다음으로 구분한다.
+
+- soft surface
+- base elevation
+- focus halo
+- focus 시 surface 밝아짐
+- placeholder/icon/caret
+
+keyboard focus는 반드시 보이되,
+solid outline/border 대신 **soft focus halo**를 기본으로 한다.
+
+## 25-6. Popup / Sheet
+
+- surface white
+- float elevation
+- border 없음
+- 내부 선택 상태는 Selection control 규칙 사용
+
+## 25-7. Canvas / Panel
+
+### Canvas
+- very light blue-gray
+- current FreePass Admin base: `#F2F6FC`
+
+### Web Panel
+- white
+- base elevation
+- border 없음
+
+### Mobile Panel
+- white
+- shadow 없음
+- screen surface 자체
+
+## 25-8. 금지
+
+- Badge에 hover/pressed 넣기
+- Primary만 더 높이 띄우기
+- selected를 outline으로 표시
+- 색 의미와 interaction 의미 혼용
+- page별 shadow 강도 생성
+- page별 focus style 생성
+- line을 다시 기본 hierarchy 수단으로 사용

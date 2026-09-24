@@ -1466,3 +1466,58 @@ FreePass Admin은 사용자 선택형 density switch보다
 - 같은 역할인데 Panel마다 다른 header/footer 높이
 - card 높이를 내용마다 임의로 줄여 목록 리듬이 흔들리는 것
 - density를 이유로 typography scale을 새로 만드는 것
+
+
+# 29. Alignment & information hierarchy
+
+## 기본 정렬
+
+- 텍스트 / 이름 / 설명 / 상태 문구: **좌측**
+- 숫자 / 금액 / 합계 / 비율: **우측**
+- 숫자는 tabular-nums 사용
+- 상태 Badge는 내용 폭만 차지
+- 주요 Action은 PanelFoot
+
+## RowCard 정보 순서
+
+### 1행
+식별 정보
+- 고객명
+- 차량명
+- 계약번호
+- 상태 Badge
+
+### 2행
+보조 정보 / metadata
+- 차량번호
+- 공급사
+- 영업채널
+- 날짜
+- 조건
+
+### 3행 / 우측 끝
+결과 / 금액
+- 대여료
+- 청구액
+- 지급액
+- 수수료
+- 기간/단위
+
+좁은 Panel에서는 내용을 무작정 여러 줄로 늘리지 않는다.
+식별 정보와 meta는 말줄임을 우선하고,
+핵심 금액/결과는 우측 정렬 상태를 유지한다.
+
+## PanelHead
+
+- 왼쪽: kind + title
+- 오른쪽: count / status summary
+- 중간 action 금지
+- title은 말줄임 허용
+- count는 고정 폭이 아니라 content width + tabular nums
+
+## 금지
+
+- 금액을 카드마다 좌/우 다르게 배치
+- 같은 데이터 타입인데 화면별 정렬 다르게 적용
+- status badge를 금액보다 더 큰 시각적 위계로 만들기
+- 좁은 패널에서 긴 문자열 때문에 카드 전체 폭/높이 깨뜨리기

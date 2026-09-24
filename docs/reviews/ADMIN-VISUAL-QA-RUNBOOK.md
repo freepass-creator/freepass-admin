@@ -131,3 +131,33 @@ npm run visual:qa -- http://localhost:3000
 - Actions가 사용 가능하더라도 Visual QA의 필수 전제조건으로 두지 않는다.
 - CSS/state 변경 후 실제 PNG 확인 없이 완료 처리하지 않는다.
 - generated `erp-standard.css`는 직접 수정하지 않는다.
+
+
+## 원커맨드 실행
+
+클라우드 작업공간에서는 아래 한 줄을 기본으로 사용한다.
+
+```bash
+npm run visual:qa:cloud
+```
+
+이 명령은 자동으로:
+
+1. Next dev server를 `127.0.0.1:3100`에서 시작
+2. `/products`가 응답할 때까지 최대 90초 대기
+3. 기존 `visual:qa` harness 실행
+4. PNG + `report.json` 생성
+5. dev server 종료
+
+결과:
+- `artifacts/visual-qa/*.png`
+- `artifacts/visual-qa/report.json`
+- `artifacts/visual-qa/server.log`
+
+포트가 이미 사용 중이면:
+
+```bash
+VISUAL_QA_PORT=3200 npm run visual:qa:cloud
+```
+
+이 명령이 실패하면 화면 규칙을 더 수정하기 전에 `server.log`와 `report.json`부터 확인한다.

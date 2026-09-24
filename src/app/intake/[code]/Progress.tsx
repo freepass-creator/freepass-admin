@@ -13,6 +13,7 @@ export default function Progress({ code, plate, paper, delivered, deliveredAt, c
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const btn = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    if (btn?.dataset.confirm && !window.confirm(btn.dataset.confirm)) return;
     if (btn?.name) fd.set(btn.name, btn.value);
     startTransition(() => action(fd));
   };
@@ -34,15 +35,19 @@ export default function Progress({ code, plate, paper, delivered, deliveredAt, c
         인도 {delivered ? `● 완료 (${deliveredAt || '인도일 없음'})` : '○ 전'}{' '}
         <input type="date" name="deliveredAt" defaultValue={deliveredAt || today} disabled={pending || cancelled} />{' '}
         <button name="on" value="1" disabled={pending || cancelled}>{delivered ? '인도일 고침' : '인도 완료'}</button>{' '}
-        {delivered && <button name="on" value="0" disabled={pending || cancelled}>인도 되돌림</button>}
+        {delivered && <button name="on" value="0" className="dz-action-danger"
+          data-confirm="인도 완료 상태를 되돌릴까요? 정산·진행 상태에 영향을 줄 수 있습니다."
+          disabled={pending || cancelled}>인도 되돌림</button>}
       </form>
       <form id={progressFormId(code, 'cancelled')} onSubmit={send} aria-busy={pending}>
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="cancelled" />
         {cancelled
           ? <>● 취소됨 <button name="on" value="0" disabled={pending}>취소 풀기</button></>
-          : <>취소 사유 <input name="reason" size={30} disabled={pending} /> <button name="on" value="1" disabled={pending}>취소</button></>}
+          : <>취소 사유 <input name="reason" size={30} disabled={pending} /> <button name="on" value="1" className="dz-action-danger"
+            data-confirm="이 접수를 취소할까요? 이후 진행·정산 작업이 중단됩니다."
+            disabled={pending}>접수 취소</button></>}
       </form>
-      {state.errors.length > 0 && <ul className="fn-err">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+      {state.errors.length > 0 && <ul className="fn-err" role="alert" aria-live="assertive">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
       {pending && <p className="fn-muted">저장 중…</p>}
     </div>
   );

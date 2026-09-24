@@ -1,0 +1,174 @@
+#!/usr/bin/env node
+/**
+ * FreePass Admin visual QA harness.
+ *
+ * Usage:
+ *   NODE_PATH=/opt/node22/lib/node_modules npm run visual:qa -- http://localhost:3000
+ *
+ * Optional env:
+ *   PW_CHROMIUM=/opt/pw-browsers/chromium/chrome-linux/chrome
+ *   VISUAL_QA_OUT=artifacts/visual-qa
+ *
+ * This intentionally stays outside CI until Playwright is a project dependency.
+ */
+const fs = require('node:fs');
+const path = require('node:path');
+
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch {
+  console.error('visual:qa requires Playwright.');
+  console.error('Managed dev env: NODE_PATH=/opt/node22/lib/node_modules npm run visual:qa -- http://localhost:3000');
+  process.exit(2);
+}
+
+const base = (process.argv[2] || 'http://localhost:3000').replace(/\/$/, '');
+const outDir = process.env.VISUAL_QA_OUT || path.join(process.cwd(), 'artifacts', 'visual-qa');
+const executablePath = process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium/chrome-linux/chrome';
+
+const cases = [
+  { name: 'products-desktop-1440', route: '/products', width: 1440, height: 900 },
+  { name: 'products-desktop-1280', route: '/products', width: 1280, height: 800 },
+  { name: 'intake-desktop-1440', route: '/intake', width: 1440, height: 900 },
+  { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
+  { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
+  { name: 'products-mobile-390', route: '/products', width: 390, height: 844 },
+  { name: 'intake-mobile-390', route: '/intake', width: 390, height: 844 },
+  { name: 'settlement-mobile-390', route: '/settlement', width: 390, height: 844 },
+  { name: 'esign-mobile-390', route: '/esign', width: 390, height: 844 },
+  { name: 'products-mobile-360', route: '/products', width: 360, height: 800 },
+  { name: 'intake-mobile-360', route: '/intake', width: 360, height: 800 },
+];
+
+function rgbLuminance(rgb) {
+  const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb || '');
+  if (!m) return null;
+  const c = [m[1], m[2], m[3]].map(Number).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+function contrast(fg, bg) {
+  const a = rgbLuminance(fg);
+  const b = rgbLuminance(bg);
+  if (a === null || b === null) return null;
+  const hi = Math.max(a, b);
+  const lo = Math.min(a, b);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+async function inspect(page) {
+  return page.evaluate(() => {
+    const visible = (el) => {
+      const r = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && Number(s.opacity || 1) > 0;
+    };
+    const styleOf = (el) => {
+      const s = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120),
+        color: s.color,
+        backgroundColor: s.backgroundColor,
+        opacity: s.opacity,
+        visible: visible(el),
+        rect: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) },
+      };
+    };
+    const pick = (selector) => [...document.querySelectorAll(selector)].filter(visible).slice(0, 24).map(styleOf);
+    return {
+      title: document.title,
+      url: location.href,
+      bodyWidth: document.body.scrollWidth,
+      viewportWidth: innerWidth,
+      selected: pick('[aria-pressed="true"], [aria-current="true"], [aria-current="page"]'),
+      primary: pick('.erp-btn--primary, button.primary, a.primary'),
+      panels: pick('.erp-panel, .panel'),
+      cards: pick('.erp-rowcard, .erp-tile, .dz-row'),
+    };
+  });
+}
+
+(async () => {
+  fs.mkdirSync(outDir, { recursive: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: fs.existsSync(executablePath) ? executablePath : undefined,
+  });
+
+  const report = { createdAt: new Date().toISOString(), base, cases: [], failures: [] };
+
+  for (const c of cases) {
+    const context = await browser.newContext({
+      viewport: { width: c.width, height: c.height },
+      deviceScaleFactor: 1,
+      colorScheme: 'light',
+      reducedMotion: 'reduce',
+    });
+    const page = await context.newPage();
+    const url = base + c.route;
+
+    try {
+      const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForTimeout(250);
+
+      const shot = path.join(outDir, c.name + '.png');
+      await page.screenshot({ path: shot, fullPage: true });
+
+      const info = await inspect(page);
+      const problems = [];
+      if (!response || !response.ok()) problems.push('HTTP response not OK');
+      if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
+
+      for (const [kind, list] of [['selected', info.selected], ['primary', info.primary]]) {
+        for (const el of list) {
+          const ratio = contrast(el.color, el.backgroundColor);
+          if (!el.visible) problems.push(`${kind} control not visible: ${el.text}`);
+          if (ratio !== null && ratio < 3) problems.push(`${kind} low contrast ${ratio.toFixed(2)}: ${el.text}`);
+        }
+      }
+
+      if (c.route === '/products' && c.width >= 1280 && info.selected.length === 0) {
+        problems.push('products desktop has no visible selected/current state to inspect');
+      }
+      if (c.route === '/products' && c.width >= 1280 && info.primary.length === 0) {
+        problems.push('products desktop has no visible primary action to inspect');
+      }
+
+      const item = {
+        ...c,
+        url: info.url,
+        screenshot: path.relative(process.cwd(), shot),
+        selected: info.selected,
+        primary: info.primary,
+        problems,
+      };
+      report.cases.push(item);
+      if (problems.length) report.failures.push({ case: c.name, problems });
+
+      console.log(`${problems.length ? 'FAIL' : 'PASS'} ${c.name} -> ${item.screenshot}`);
+      for (const p of problems) console.log('  - ' + p);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      report.failures.push({ case: c.name, problems: [message] });
+      report.cases.push({ ...c, url, problems: [message] });
+      console.log(`FAIL ${c.name}`);
+      console.log('  - ' + message);
+    } finally {
+      await context.close();
+    }
+  }
+
+  await browser.close();
+  const reportPath = path.join(outDir, 'report.json');
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
+  console.log(`report: ${path.relative(process.cwd(), reportPath)}`);
+  process.exit(report.failures.length ? 1 : 0);
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

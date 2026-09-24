@@ -23,6 +23,7 @@ import { NewIntakePanel } from '../intake/panels';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt } from '../_fn/fmt';
 import { SettlementDetail } from './SettlementDetail';
+import { AutoSelect } from './AutoSelect';
 import {
   Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Tile, TileGroup, won0, type Tone,
 } from './parts';
@@ -298,6 +299,18 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
   const icId = sp(q.ic);
   const cur = icId ? rows.find((r) => r.id === icId) : undefined;
 
+  /* 실적월 — 그 접수가 들어온 달(receivedAt). 정산의 청구월(billingMonthIn)과는 다른 개념이라
+   * 갖다 쓰지 않는다 — 청구월 기준으로 걸렀더니 분납·완납 실적 대부분이 0건으로 사라졌다(실적은
+   * "인도 후 완납/분납" 상태고 청구월은 그중 하나의 부분집합일 뿐이라 서로 안 맞았다). 드롭다운은
+   * 검색창이 아니라 퀵 필터 줄에 선다(대표 2026-09-24 「그 드랍다운은 퀵필터라고 생각을 하고 퀵필터
+   * 라인에 있어야 돼」).
+   */
+  const nowMonth = today().slice(0, 7);
+  const rowMonth = (r: SettlementRow) => r.receivedAt?.slice(0, 7) ?? '';
+  const 실적후보 = searched.filter((r) => bucketOf(r, now) === '분납실적' || bucketOf(r, now) === '완납실적');
+  const months = [...new Set(실적후보.map(rowMonth).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  const month = sp(q.month) || months.find((m) => m <= nowMonth) || months[0] || nowMonth;
+
   /*
    * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「목록 카드는 …
    * 왜 규격화를 안 하고 자꾸 맘대로 만드냐」). 분납·완납은 늘 같이 보여야 해서 필터 축 이름(dsup/dch ·
@@ -313,22 +326,22 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
   const dqs = sp(q.dqs) === 'issue' ? 'issue' : 'all';
   const fqs = sp(q.fqs) === 'issue' ? 'issue' : 'all';
 
-  const 분납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적').filter((r) => d통과(r));
-  const 완납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적').filter((r) => f통과(r));
+  const 분납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적' && rowMonth(r) === month), '분납실적').filter((r) => d통과(r));
+  const 완납전체 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적' && rowMonth(r) === month), '완납실적').filter((r) => f통과(r));
   const dIssueCount = 분납전체.filter(실적문제).length;
   const fIssueCount = 완납전체.filter(실적문제).length;
   const 분납 = dqs === 'issue' ? 분납전체.filter(실적문제) : 분납전체;
   const 완납 = fqs === 'issue' ? 완납전체.filter(실적문제) : 완납전체;
 
   const dFacets: FacetAxis[] = dAxis.map(([a, label, of]) => {
-    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적');
+    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적' && rowMonth(r) === month), '분납실적');
     const keys = 많은순(universe.map(of));
     const base = tallyMatch(universe, keys, (r, k) => of(r) === k);
     const live = tallyMatch(universe.filter((r) => d통과(r, a)), keys, (r, k) => of(r) === k);
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
   });
   const fFacets: FacetAxis[] = fAxis.map(([a, label, of]) => {
-    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적');
+    const universe = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적' && rowMonth(r) === month), '완납실적');
     const keys = 많은순(universe.map(of));
     const base = tallyMatch(universe, keys, (r, k) => of(r) === k);
     const live = tallyMatch(universe.filter((r) => f통과(r, a)), keys, (r, k) => of(r) === k);
@@ -353,9 +366,9 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="분납실적" count={`전체 ${분납.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'dqs']}
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'dqs', 'month']}
           filter={<FilterSheet axes={dFacets} count={분납.length} unit="건" label="필터" />} />
-        <QuickFilter label="확인 필요" items={[
+        <QuickFilter label="확인 필요" dropdown={<AutoSelect name="month" value={month} label="실적월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${분납전체.length}`, href: hrefWith(base, q, { dqs: null }), on: dqs === 'all' },
           { key: 'issue', label: `확인필요 ${dIssueCount}`, href: hrefWith(base, q, { dqs: 'issue' }), on: dqs === 'issue' },
         ]} />
@@ -375,7 +388,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
 
       <Panel compact>
         <PanelHead kind="목록" title="완납실적" count={`전체 ${완납.length}건`} />
-        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'fqs']}
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'fqs', 'month']}
           filter={<FilterSheet axes={fFacets} count={완납.length} unit="건" label="필터" />} />
         <QuickFilter label="확인 필요" items={[
           { key: 'all', label: `전체 ${완납전체.length}`, href: hrefWith(base, q, { fqs: null }), on: fqs === 'all' },

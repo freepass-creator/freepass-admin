@@ -203,10 +203,18 @@ export function Seg({ label, items }: { label: string; items: { key: string; lab
   );
 }
 
-/** 퀵 필터 — 좁은 패널(compact) 전용, 검색창 바로 밑 독립 버튼 줄(§5-4 — erp-seg 아니라 erp-facet-opt). */
-export function QuickFilter({ label, items }: { label: string; items: { key: string; label: ReactNode; href: string; on: boolean }[] }) {
+/**
+ * 퀵 필터 — 좁은 패널(compact) 전용, 검색창 바로 밑 독립 버튼 줄(§5-4 — erp-seg 아니라 erp-facet-opt).
+ * 분류 드롭다운(erp-dd, 정산·실적의 달 고르기)도 «고르는 즉시 목록이 바뀐다»는 점에서 퀵 필터 한
+ * 줄의 식구다(대표 2026-09-24 「그 드랍다운은 퀵필터라고 생각을 하고 퀵필터 라인에 있어야 돼」) —
+ * 검색창 줄이 아니라 여기, 퀵 필터 알약들 바로 앞에 선다.
+ */
+export function QuickFilter({ label, items, dropdown }: {
+  label: string; items: { key: string; label: ReactNode; href: string; on: boolean }[]; dropdown?: ReactNode;
+}) {
   return (
     <div className="erp-toolbar" data-region="grid-toolbar">
+      {dropdown}
       <div className="erp-facet-opts" role="group" aria-label={label}>
         {items.map((it) => <Link key={it.key} className="erp-facet-opt" href={it.href} aria-pressed={it.on}>{it.label}</Link>)}
       </div>

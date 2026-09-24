@@ -105,9 +105,8 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     <div className="erp-workspace">
       <Panel compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
-        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month', 'cgs']}
-          dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} />
-        <QuickFilter label="정산 상태" items={[
+        <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" keep={['month', 'cgs']} />
+        <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
           { key: 'issue', label: `이슈 ${claimCount('issue')}`, href: hrefWith(base, q, { cgs: 'issue' }), on: cgs === 'issue' },
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },

@@ -305,5 +305,39 @@
     "hover": "0 3px 7px rgba(16,24,40,.12)",
     "float": "0 8px 22px rgba(16,24,40,.14)",
     "rule": "Passive cards keep base elevation; only interactive components hover/press."
+  },
+  "interactionStates": {
+    "badge": {
+      "hover": false,
+      "pressed": false,
+      "selected": false,
+      "focusControl": false
+    },
+    "button": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "focus": "soft-halo",
+      "disabled": "flat+opacity"
+    },
+    "selectionControl": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "selected": "brand-surface+locked",
+      "focus": "preserve-state+soft-halo"
+    },
+    "interactiveCard": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "selected": "primary-tint+locked",
+      "focus": "preserve-state+soft-halo"
+    },
+    "field": {
+      "focus": "surface-brighten+soft-halo"
+    },
+    "popup": {
+      "surface": "white",
+      "elevation": "float"
+    },
+    "rule": "Focus-visible remains accessible but uses soft halo rather than a persistent solid outline in internal Admin."
   }
 }

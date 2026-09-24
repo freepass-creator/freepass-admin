@@ -37,9 +37,12 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.ok(chrome.includes('<MobileTabBar />'));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
-  // 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18)
+  // 모바일은 전역 상단바 자체를 안 둔다(2026-09-24 — 전역 상태줄 header 를 걷어내고 Panel 이 화면
+  // 맨 위에서 시작한다) — 예전 폰 상단바(fn-top dz-statusbar)가 더는 없는지 확인한다.
+  assert.equal(chrome.includes('fn-top dz-statusbar'),false,'모바일 전역 상단바를 다시 넣지 않는다');
+  // PC 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18) — 통합검색(erp-gsearch)은 조회라 예외.
   const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
-  assert.equal(/<button|<form/.test(top),false);
+  assert.equal(/<button/.test(top),false);
   assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
 });
 

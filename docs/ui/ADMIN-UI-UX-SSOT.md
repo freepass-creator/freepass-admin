@@ -1616,3 +1616,50 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - loading 때문에 card/panel 크기가 바뀌는 것
 - readonly를 disabled와 동일하게 처리
 - stale를 error와 같은 붉은 상태로 표현
+
+
+# 32. Page QA matrix — current structure lock
+
+페이지별 정보는 달라도 shell/pattern은 아래 구조를 벗어나지 않는다.
+
+| 화면 | Web Panel composition | List pattern | Detail | Action |
+|---|---|---|---|---|
+| 상품찾기 | Wide List + Detail | Search → QuickFilter → RowCards | ProductDetail | Detail PanelFoot |
+| 계약접수 | Product List + Product Detail + Work | Search → QuickFilter → RowCards | ProductDetail | Work ActionBar/PanelFoot |
+| 실적 | Installment List + Detail + Paid List | Search → QuickFilter → RowCards | SettlementDetail | Detail PanelFoot |
+| 정산 | Claim List + Settlement Detail + Pay List | Search → QuickFilter → RowCards | Settlement summary/detail | Detail PanelFoot |
+| 전자계약 | Contract List + Detail | Search → QuickFilter → RowCards | Contract detail | Detail PanelFoot |
+
+## 공통 QA 기준
+
+### List Panel
+1. PanelHead
+2. Search
+3. QuickFilter
+4. RowCards
+5. 필요 시 PanelFoot
+
+이 순서를 바꾸지 않는다.
+
+### Detail Panel
+- 동일 entity는 동일 Detail component를 재사용한다.
+- 상단에 page-level action을 추가하지 않는다.
+- action은 PanelFoot/ActionBar에 둔다.
+
+### Work Panel
+- 입력/처리 단계만 소유한다.
+- 목록용 filter/search를 억지로 넣지 않는다.
+- primary action은 하단 고정 영역에 둔다.
+
+## Page QA 결과 — 2026-09-24
+
+- 상품찾기: 구조 적합
+- 계약접수: 구조 적합
+- 실적: 구조 적합
+- 정산: 구조 적합
+- 전자계약: 구조 적합
+- residual visible navigation divider 제거
+- route-level error fallback semantic surface 적용
+
+이 QA는 **코드 구조 기준**이다.
+실제 viewport별 visual regression은 별도 screenshot/browser QA에서 확인한다.

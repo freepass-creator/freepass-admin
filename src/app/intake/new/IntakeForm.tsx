@@ -220,7 +220,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       {/* 하단바 규격(dz-bar) — 판 바닥. 신규 접수 중에는 [취소] [접수 저장] (대표 2026-09-18) */}
       <div className="dz-bar">
         {state.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <div className="dz-bar-go">
+        <div className="dz-bar-go" data-action-balance="primary">
           {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
           <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
         </div>

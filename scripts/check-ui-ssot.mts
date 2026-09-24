@@ -162,6 +162,17 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const iconTouchBaseline = [
+  [/--fp-icon-action-hit:\s*36px/, 'desktop icon-only hit area 36px'],
+  [/--fp-icon-md:\s*18px/, 'desktop action glyph 18px'],
+  [/--ui-icon-action:\s*20px/, 'mobile action glyph 20px'],
+  [/\.dz-phone-back[\s\S]*?width:\s*var\(--ui-touch-min\)[\s\S]*?height:\s*var\(--ui-touch-min\)/, 'mobile back hit area uses touch minimum'],
+] as const;
+for (const [re, label] of iconTouchBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`icon/touch mismatch or missing: ${label}`);
+}
+
 const contrastBaseline = [
   [/--fp-text-muted:\s*#667085/i, 'desktop muted text #667085'],
   [/--fp-nav-text:\s*#AEB9CA/i, 'desktop nav text #AEB9CA'],

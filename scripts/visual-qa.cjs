@@ -109,6 +109,15 @@ async function inspect(page) {
         };
       })(),
       actionBars: (() => {
+        const uncontracted = [...document.querySelectorAll('.dz-bar-go, .erp-panel-foot')]
+          .filter(visible)
+          .filter((el) => !el.hasAttribute('data-action-balance'))
+          .map((el) => ({
+            tag: el.tagName,
+            className: typeof el.className === 'string' ? el.className : '',
+            text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120),
+          }));
+
         const bars = [...document.querySelectorAll(
           '.erp-panel-foot[data-action-balance], .dz-bar-go[data-action-balance]'
         )].filter(visible);
@@ -129,6 +138,7 @@ async function inspect(page) {
           });
           return { index, balance, actions };
         }).filter((x) => x.actions.length > 0);
+        return { contracted: bars, uncontracted };
       })(),
       panelWidths: (() => {
         const panels = [...document.querySelectorAll('.erp-workspace > .erp-panel, .workspace > .panel')].filter(visible);
@@ -321,8 +331,12 @@ async function runInteractiveStates(page, c) {
         problems.push(`panel/card resting surfaces are identical: ${panelBg}`);
       }
 
-      if (Array.isArray(info.actionBars)) {
-        for (const bar of info.actionBars) {
+      if (info.actionBars?.uncontracted?.length) {
+        problems.push(`uncontracted action bar found: ${JSON.stringify(info.actionBars.uncontracted)}`);
+      }
+
+      if (Array.isArray(info.actionBars?.contracted)) {
+        for (const bar of info.actionBars.contracted) {
           const a = bar.actions;
           const primary = a.find((x) => x.primary);
 

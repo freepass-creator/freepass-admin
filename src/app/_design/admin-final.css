@@ -769,3 +769,25 @@ body > nav.fn-top :where(a, button):focus-visible,
     border-top-color: transparent;
   }
 }
+
+
+/* 2026-09-24 — Borderless search (mobile/legacy admin).
+ * 기존 높이/폭/패딩은 유지하고, border 대신 surface + elevation으로 검색 영역을 구분한다. */
+.fn-main .workspace .dz-searchbox {
+  border-color: transparent !important;
+  background: var(--박스);
+  box-shadow: var(--ui-elevation-base);
+}
+@media (hover:hover) {
+  .fn-main .workspace .dz-searchbox:hover {
+    background: var(--카드손);
+  }
+}
+.fn-main .workspace .dz-searchbox:focus-within {
+  border-color: transparent !important;
+  background: var(--판);
+  box-shadow: var(--ui-elevation-hover);
+}
+.fn-main .workspace .dz-searchbox :is(input,button):focus-visible {
+  outline: none;
+}

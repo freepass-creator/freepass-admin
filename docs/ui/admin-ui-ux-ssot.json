@@ -871,5 +871,44 @@
       "mobile": "single-panel"
     },
     "rule": "Panel width is role-driven, not page-specific visual improvisation."
+  },
+  "actionBar": {
+    "one": [
+      1
+    ],
+    "twoPrimary": [
+      3,
+      7
+    ],
+    "twoEqual": [
+      5,
+      5
+    ],
+    "three": [
+      3,
+      3,
+      4
+    ],
+    "primaryPosition": "rightmost",
+    "sharedAcross": [
+      "desktop",
+      "mobile"
+    ],
+    "componentApi": {
+      "primary": "balance=primary",
+      "equal": "balance=equal"
+    },
+    "visualQa": {
+      "primaryTwoRatioTolerance": [
+        2.15,
+        2.55
+      ],
+      "equalMaxWidthDriftRatio": 1.06,
+      "threePrimaryShare": [
+        0.37,
+        0.43
+      ],
+      "primaryMustBeRightmost": true
+    }
   }
 }

@@ -1663,3 +1663,44 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 
 이 QA는 **코드 구조 기준**이다.
 실제 viewport별 visual regression은 별도 screenshot/browser QA에서 확인한다.
+
+
+# 33. Responsive width contract
+
+## Desktop viewport tiers
+
+### 1280~1439
+- 3-panel 구조 유지
+- workspace gap: 12px
+- workspace padding: 12px / 16px
+- compact RowCard의 identity가 먼저 줄어듦
+- amount/status는 가능한 한 유지
+- QuickFilter는 필요 시 내부 horizontal scroll
+- page 자체 horizontal overflow 금지
+
+### 1440+
+- standard density
+- workspace gap: 16px
+- workspace padding: 16px / 20px
+
+## Mobile target widths
+
+반드시 다음 폭에서 가로 overflow 없이 동작해야 한다.
+
+- 360px
+- 390px
+- 412px
+
+### Mobile rules
+- Panel은 1개만 보임
+- page horizontal scroll 금지
+- QuickFilter / Tabs / OfferPicker / Month selector만 내부 horizontal scroll 허용
+- 긴 identity/meta는 ellipsis
+- 금액/결과는 우측 정렬 유지
+- 360-class에서는 touch height를 줄이지 않고 horizontal padding만 줄임
+
+## 금지
+- 1280에서 Panel 자체를 숨기거나 구조를 바꾸기
+- 모바일에서 44px touch target 축소
+- 긴 문자열 때문에 viewport 자체가 넓어지는 것
+- 금액을 줄바꿈해 카드 높이를 예측 불가하게 만드는 것

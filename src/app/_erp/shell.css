@@ -1207,3 +1207,58 @@
     }
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Motion & immediate feedback contract
+ * 업무툴은 짧게 반응하고 오래 움직이지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-motion-press: 80ms;
+    --fp-motion-state: 120ms;
+    --fp-motion-float: 160ms;
+    --fp-motion-ease: ease-out;
+    --fp-busy-opacity: .72;
+  }
+
+  .erp-std :is(
+    .erp-btn,
+    .erp-facet-opt,
+    .erp-dd,
+    .erp-rowcard,
+    .erp-tile--pressable,
+    .dz-fs-open
+  ) {
+    transition:
+      transform var(--fp-motion-press) var(--fp-motion-ease),
+      box-shadow var(--fp-motion-state) var(--fp-motion-ease),
+      background-color var(--fp-motion-state) var(--fp-motion-ease),
+      color var(--fp-motion-state) var(--fp-motion-ease);
+  }
+
+  .erp-std :is(.erp-filter-panel,.dz-fs-sheet) {
+    transition:
+      opacity var(--fp-motion-float) var(--fp-motion-ease),
+      box-shadow var(--fp-motion-float) var(--fp-motion-ease);
+  }
+
+  .erp-std [aria-busy="true"] {
+    opacity: var(--fp-busy-opacity);
+  }
+
+  .erp-std [aria-busy="true"] :is(button,a,input,select,textarea) {
+    cursor: progress;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .erp-std *,
+    .erp-std *::before,
+    .erp-std *::after {
+      transition-duration: .01ms !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

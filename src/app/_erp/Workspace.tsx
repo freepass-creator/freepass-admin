@@ -23,7 +23,7 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt, when } from '../_fn/fmt';
 import { IntakeProgress } from './IntakeProgress';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Seg, Steps, Tile, TileGroup, won0, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, Tile, TileGroup, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -301,12 +301,10 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
           { key: 'wisup', title: '공급사', options: isuppliers.map((v) => ({ value: v, count: rows.filter((r) => r.supplier === v && iInView(r)).length })) },
           { key: 'wich', title: '영업채널', options: ichannels.map((v) => ({ value: v, count: rows.filter((r) => r.channel === v && iInView(r)).length })) },
         ]} />
-        <div className="erp-toolbar" data-region="grid-toolbar">
-          <Seg label="접수 칸" items={[
-            { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
-            ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
-          ]} />
-        </div>
+        <QuickFilter label="접수 칸" items={[
+          { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
+          ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
+        ]} />
         <PanelBody>
           <RowCards label={`${iTitle} 목록`}>
             {islice.map((r) => {

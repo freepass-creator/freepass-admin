@@ -5,6 +5,7 @@ import './_fn/fn.css';
 import './_design/erp-theme.css';
 import './_erp/erp-standard.css';
 import './_erp/shell.css';
+import './_erp/workspace.css';
 
 export const metadata = {
   title: 'freepass-admin',

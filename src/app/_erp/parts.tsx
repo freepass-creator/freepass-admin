@@ -18,6 +18,36 @@ export function Screen({ name, children, footer }: { name: string; children: Rea
   );
 }
 
+/**
+ * 패널 — 규격 §5-4. 판 셋(목록 | 상세내용 | 목록)을 나란히 조립하는 자족 카드. `compact` 면 카드가
+ * 좁은 폭에 맞춰 두 줄로 접힌다(erp-panel--compact — SearchBar · RowCards · RowCard 는 이 클래스가
+ * 부모에 있으면 저절로 좁은 모양으로 바뀐다, 부품 쪽에서 따로 안 챙겨도 된다).
+ */
+export function Panel({ compact, children }: { compact?: boolean; children: ReactNode }) {
+  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}`}>{children}</section>;
+}
+
+/** 패널 머리 — 왼쪽 이름표 칩 + 제목, 오른쪽 칩(§5-4 「전체 N건」/「고른 <대상>」). */
+export function PanelHead({ kind, title, count }: { kind: string; title: ReactNode; count: ReactNode }) {
+  return (
+    <div className="erp-panel-head">
+      <span className="erp-panel-kind">{kind}</span>
+      <h2>{title}</h2>
+      <span className="erp-panel-count">{count}</span>
+    </div>
+  );
+}
+
+/** 패널 몸 — 안에서 스크롤 */
+export function PanelBody({ children }: { children: ReactNode }) {
+  return <div className="erp-panel-body">{children}</div>;
+}
+
+/** 패널 하단 고정 — 스크롤과 무관하게 바닥에 붙는 버튼 줄 */
+export function PanelFoot({ children }: { children: ReactNode }) {
+  return <div className="erp-panel-foot">{children}</div>;
+}
+
 /** ④ 페이지 헤더 — 경로 · 제목(+뱃지) · 설명 · 액션(Primary 는 맨 오른쪽 하나) */
 export function PageHeader({ crumb, title, badge, desc, actions }: {
   crumb: string[]; title: ReactNode; badge?: ReactNode; desc?: ReactNode; actions?: ReactNode;
@@ -125,8 +155,11 @@ export function TileGroup({ children }: { children: ReactNode }) {
  *   steps 가 없으면(상품) ③ 이 ② 자리까지 넓어진다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다.
  */
 export type Fact = [label: string, value: ReactNode, sub?: ReactNode];
-export function RowCard({ href, tone, current, title, badge, plate, car, meta, steps, facts, amount, amountLabel, unit = '원' }: {
+export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, plate, car, meta, steps, facts, amount, amountLabel, unit = '원' }: {
   href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; plate?: ReactNode; car?: ReactNode; meta?: ReactNode;
+  /** 좁은 목록(§5-4 compact)의 44px 정사각 썸네일 — 사진이 있으면 그 아이콘, 없으면 상태 아이콘 + 짧은 글자
+   *  (thumbStatus, erp-rowcard-thumb--status). 넓은 카드(§5-3 원안)에서는 그리는 자리가 없어 그냥 안 보인다. */
+  thumb?: ReactNode; thumbStatus?: boolean;
   /** labels · at: 지금 단계 번호(labels.length 면 다 끝, -1 이면 멈춤) */
   steps?: { labels: string[]; at: number };
   facts: Fact[]; amount?: ReactNode; amountLabel?: string; unit?: string;
@@ -134,6 +167,7 @@ export function RowCard({ href, tone, current, title, badge, plate, car, meta, s
   return (
     <article className={`erp-rowcard${steps ? '' : ' erp-rowcard--no-steps'}`} role="listitem"
       data-tone={tone && tone !== 'neutral' ? tone : undefined} aria-current={current ? 'true' : undefined}>
+      {thumb ? <div className={`erp-rowcard-thumb${thumbStatus ? ' erp-rowcard-thumb--status' : ''}`}>{thumb}</div> : null}
       <div className="erp-rowcard-id">
         <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href}>{title}</Link>{badge}</h3>
         {plate || car ? <div className="erp-rowcard-car">{plate ? <b>{plate}</b> : null}{car}</div> : null}
@@ -165,6 +199,17 @@ export function Seg({ label, items }: { label: string; items: { key: string; lab
   return (
     <div className="erp-seg" role="group" aria-label={label}>
       {items.map((it) => <Link key={it.key} href={it.href} aria-pressed={it.on}>{it.label}</Link>)}
+    </div>
+  );
+}
+
+/** 퀵 필터 — 좁은 패널(compact) 전용, 검색창 바로 밑 독립 버튼 줄(§5-4 — erp-seg 아니라 erp-facet-opt). */
+export function QuickFilter({ label, items }: { label: string; items: { key: string; label: ReactNode; href: string; on: boolean }[] }) {
+  return (
+    <div className="erp-toolbar" data-region="grid-toolbar">
+      <div className="erp-facet-opts" role="group" aria-label={label}>
+        {items.map((it) => <Link key={it.key} className="erp-facet-opt" href={it.href} aria-pressed={it.on}>{it.label}</Link>)}
+      </div>
     </div>
   );
 }

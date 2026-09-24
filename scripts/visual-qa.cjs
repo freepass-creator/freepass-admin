@@ -174,6 +174,25 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      workspaceFill: (() => {
+        const ws = document.querySelector('.erp-workspace, .workspace');
+        if (!ws || !visible(ws)) return null;
+        const wr = ws.getBoundingClientRect();
+        const s = getComputedStyle(ws);
+        const children = [...ws.children].filter((el) => visible(el));
+        const cr = children.map((el) => el.getBoundingClientRect());
+        return {
+          width: Math.round(wr.width),
+          left: Math.round(wr.left),
+          right: Math.round(wr.right),
+          paddingLeft: parseFloat(s.paddingLeft) || 0,
+          paddingRight: parseFloat(s.paddingRight) || 0,
+          gap: parseFloat(s.columnGap || s.gap) || 0,
+          visibleChildren: cr.length,
+          childLeft: cr.length ? Math.round(Math.min(...cr.map((x) => x.left))) : null,
+          childRight: cr.length ? Math.round(Math.max(...cr.map((x) => x.right))) : null,
+        };
+      })(),
       panelWidths: (() => {
         const panels = [...document.querySelectorAll('.erp-workspace > .erp-panel, .workspace > .panel')].filter(visible);
         return panels.map((panel, index) => {
@@ -409,6 +428,25 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.workspaceFill?.visibleChildren) {
+        const expectedLeft = info.workspaceFill.left + info.workspaceFill.paddingLeft;
+        const expectedRight = info.workspaceFill.right - info.workspaceFill.paddingRight;
+        if (info.workspaceFill.childLeft !== null && Math.abs(info.workspaceFill.childLeft - expectedLeft) > 2) {
+          problems.push(`workspace left fill mismatch: child=${info.workspaceFill.childLeft} expected=${expectedLeft}`);
+        }
+        if (info.workspaceFill.childRight !== null && Math.abs(info.workspaceFill.childRight - expectedRight) > 2) {
+          problems.push(`workspace right fill mismatch: child=${info.workspaceFill.childRight} expected=${expectedRight}`);
+        }
+
+        const expectedGutter = c.width < 380 ? 12 : c.width <= 900 ? 16 : c.width < 1440 ? 16 : 20;
+        if (c.width <= 900) {
+          if (Math.abs(info.workspaceFill.paddingLeft - expectedGutter) > 1 ||
+              Math.abs(info.workspaceFill.paddingRight - expectedGutter) > 1) {
+            problems.push(`mobile workspace gutter mismatch: ${info.workspaceFill.paddingLeft}/${info.workspaceFill.paddingRight}, expected ${expectedGutter}`);
+          }
+        }
+      }
+
       if (Array.isArray(info.panelWidths) && c.width >= 1280 && info.panelWidths.length >= 2) {
         const widths = info.panelWidths.map((p) => p.width);
         const wide = info.panelWidths.find((p) => p.wide);
@@ -539,6 +577,7 @@ async function runInteractiveStates(page, c) {
         scrollTopology: info.scrollTopology,
         panelRhythm: info.panelRhythm,
         panelWidths: info.panelWidths,
+        workspaceFill: info.workspaceFill,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

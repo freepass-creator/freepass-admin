@@ -238,13 +238,30 @@
     ]
   },
   "accessibility": {
-    "focusVisible": true,
-    "reducedMotion": true,
-    "filterSheetFocusReturn": true,
-    "uniqueDialogIds": true,
-    "tabSemantics": true,
-    "selectedRowSemantics": true,
-    "busyStates": true
+    "tabs": {
+      "rovingTabIndex": true,
+      "keys": [
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End"
+      ],
+      "focusFollowsSelection": true
+    },
+    "rowSelection": {
+      "focusedLinkExposesCurrent": true
+    },
+    "filterDialog": {
+      "triggerExpanded": true,
+      "triggerControlsDialog": true,
+      "focusIntoDialogOnOpen": true,
+      "restoreTriggerFocusOnClose": true,
+      "escapeCloses": true,
+      "busyState": true
+    },
+    "focusVisible": "soft-halo",
+    "iconOnlyAccessibleNameRequired": true,
+    "rule": "All core actions must be keyboard reachable and expose state on the actual focus target."
   },
   "files": {
     "baseCss": "src/app/globals.css",

@@ -2086,3 +2086,42 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 `visual:qa` report는 첫 visible Panel/Card의 computed background를 비교한다.
 같으면 FAIL 처리한다.
+
+
+# 43. Card density & rhythm guard
+
+카드형 UI는 surface뿐 아니라 내부 리듬이 일정해야 한다.
+
+## 기본값
+
+- card gap: 8px
+- card padding: 12px
+- compact desktop card min-height: 64px
+- standard desktop card min-height: 72px
+- mobile card min-height: 88px
+
+## 정보 위계
+
+- 1행: identity + status
+- 2행: meta / condition
+- 3행 또는 우측: primary value / money
+- 금액·숫자: 우측 정렬 + tabular-nums
+- 긴 identity/meta: ellipsis
+- risk flag: 최대 1개 압축 표현
+
+## 금지
+
+- 같은 목록에서 카드마다 padding이 다름
+- 카드 간 gap이 화면마다 다름
+- 금액이 좌측 정렬되어 identity와 섞임
+- 카드 높이를 줄이기 위해 핵심 정보가 겹치거나 줄바꿈 폭주
+- compact와 standard를 화면별 임의 값으로 재정의
+
+## Visual QA
+
+실제 브라우저에서 첫 visible card의 computed:
+- padding
+- rendered height
+- amount alignment
+
+를 검사한다.

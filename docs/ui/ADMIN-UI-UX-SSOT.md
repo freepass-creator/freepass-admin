@@ -2365,3 +2365,52 @@ solid brand surface + on-primary text를 사용할 수 있다.
 - control gap: 8px
 - card gap: 12px
 - section gap: 16px
+
+
+# 51. Visual slimness & mobile QuickFilter
+
+세련됨은 단순히 요소를 작게 만드는 것이 아니라
+**터치영역은 유지하고 보이는 물성만 가볍게 만드는 것**이다.
+
+## Spacing hierarchy
+
+- control gap: 8px
+- card gap: 12px
+- section gap: 16px
+- card padding: 12px
+
+카드는 서로 달라붙지 않게 숨 쉴 공간을 주되,
+섹션처럼 과하게 벌리지 않는다.
+
+## Mobile QuickFilter
+
+- touch row: 44px
+- visual pill height: 34px
+- horizontal padding: 12px
+- gap: 8px
+- radius: pill
+- font: 13~14px
+- unselected: soft neutral surface
+- selected: brand/navy solid + white text
+- visible border: 없음
+- horizontal scroll: 허용
+
+QuickFilter를 일반 Action button과 같은 44px visual height로 만들지 않는다.
+
+## Selection
+
+Card:
+- borderless
+- selected = primary tint + shallow inset
+- selected hover에서도 tint 유지
+- focus에서만 soft halo
+
+Compact selection control:
+- selected = solid brand surface 허용
+
+## 금지
+
+- 모바일 QuickFilter를 일반 버튼처럼 뚱뚱하게 만들기
+- 카드 선택 시 2px 이상 primary border/outline
+- 카드 간격 8px 이하로 과도하게 조이기
+- 모든 UI 요소를 동일 높이로 강제하기

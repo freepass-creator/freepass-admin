@@ -681,5 +681,16 @@
       ]
     },
     "rule": "Classify by reversibility and business impact, not by button wording."
+  },
+  "motion": {
+    "pressMs": 80,
+    "stateMs": 120,
+    "floatMs": 160,
+    "easing": "ease-out",
+    "pressSinkPx": 1,
+    "busyOpacity": 0.72,
+    "scaleOnPress": false,
+    "reducedMotion": "remove transitions/animations",
+    "rule": "Motion only confirms interaction; no decorative bounce/spring/page transitions."
   }
 }

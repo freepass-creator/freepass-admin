@@ -1,6 +1,6 @@
 {
   "repository": "freepass-creator/ai-core",
-  "revision": "502fd29097a9227b1e8062f2bf69ace5ae66514d",
+  "revision": "0bed71388eb16584b272d116f80e910613e232b8",
   "files": [
     "design/erp-standard/erp.css",
     "design/erp-standard/themes/retro.css"

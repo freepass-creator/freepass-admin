@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 502fd29097a9227b1e8062f2bf69ace5ae66514d
+ * 정본: freepass-creator/ai-core @ 0bed71388eb16584b272d116f80e910613e232b8
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -445,21 +445,24 @@
 .erp-panel-foot { flex: none; display: flex; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); }
 .erp-panel-foot .erp-btn { flex: 1; justify-content: center; }
 
-/* 카드 — 테두리 선 없이 그림자로만 구분되는 공통 규격(대표 2026-09-24 「그런 위계를 임기응변으로 하지
+/* 타일 — 테두리 선 없이 그림자로만 구분되는 공통 규격(대표 2026-09-24 「그런 위계를 임기응변으로 하지
  * 말고 규격으로 공통 css에다가 규격으로 둬야 돼」). 상품상세 레퍼런스 페이지(sv-term · sv-ref-card ·
  * sv-car-card)에서 같은 패딩 · 모서리 · 그림자를 세 번 따로 베껴 쓰고 있던 걸 공통 부품으로 올렸다 —
  * 새 상세내용 패널(접수상세 · 실적상세 등)을 만들 때도 이 클래스만 붙이면 §5-4/§5-6 카드 규격을 그대로
- * 물려받는다. 성격이 둘이다: 그냥 `erp-card`는 B. 설명하는 카드, `erp-card--pressable`을 더하면
- * A. 누르는 카드(골라서 결정하는 카드, aria-pressed로 상태 표시)가 된다.
+ * 물려받는다. `erp-card`(§4, 위 line 177 부근 — 테두리 있는 큰 구획 카드, freepass-admin 의
+ * `CardHead`/`erp-card--fill`이 이미 쓰고 있다)와 이름이 겹치면 안 돼서 다른 이름 `erp-tile`을 쓴다 —
+ * "카드 안에 든, 테두리 없이 그림자로만 뜨는 작은 낱장"이라 타일이라 불렀다. 성격이 둘이다: 그냥
+ * `erp-tile`은 B. 설명하는 카드, `erp-tile--pressable`을 더하면 A. 누르는 카드(골라서 결정하는 카드,
+ * aria-pressed로 상태 표시)가 된다.
  * 그림자는 아래로만 지지 않는다(대표 2026-09-24 「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝
  * 보일 듯 말 듯 카드구나라는 건 보여줘야」) — 아주 옅은 전방위 테(0 0 0 1px, line-row 색)로 네 변을 다
  * 은은하게 보여주고, 그 위에 아래쪽으로 살짝 더 퍼지는 그림자를 얹어 뜬 느낌을 낸다. */
-.erp-card { padding: var(--erp-sp-3); border: 0; border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 0 0 1px var(--erp-color-line-row), 0 2px 5px -2px var(--erp-color-text-3); }
-.erp-card-group { display: flex; flex-direction: column; gap: var(--erp-sp-2); }
-.erp-card-title { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--erp-color-line); color: var(--erp-color-text); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
-.erp-card--pressable { cursor: pointer; }
-.erp-card--pressable:hover { box-shadow: 0 0 0 1px var(--erp-color-line-strong), 0 4px 10px -3px var(--erp-color-text-3); }
-.erp-card--pressable[aria-pressed="true"] { background: var(--erp-color-primary-weak); box-shadow: 0 0 0 2px var(--erp-color-primary); }
+.erp-tile { padding: var(--erp-sp-3); border: 0; border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 0 0 1px var(--erp-color-line-row), 0 2px 5px -2px var(--erp-color-text-3); }
+.erp-tile-group { display: flex; flex-direction: column; gap: var(--erp-sp-2); }
+.erp-tile-title { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--erp-color-line); color: var(--erp-color-text); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
+.erp-tile--pressable { cursor: pointer; }
+.erp-tile--pressable:hover { box-shadow: 0 0 0 1px var(--erp-color-line-strong), 0 4px 10px -3px var(--erp-color-text-3); }
+.erp-tile--pressable[aria-pressed="true"] { background: var(--erp-color-primary-weak); box-shadow: 0 0 0 2px var(--erp-color-primary); }
 /* 목록 패널 안 — 좁은 폭에서도 서는 작은 긴 카드(§5-3 erp-rowcard 를 그대로 쓰되 칸을 좁힌다)
  * 눌러야 상세내용 패널이 열리므로(대표 2026-09-24 「누르면 상세가 보이는데 계속 보고 있을 것도 아니고」),
  * 여기서는 상태(뱃지)와 고르는 데 필요한 최소 식별 정보 + 금액까지만 — steps 트래커 · facts 는 상세내용 패널 몫이라 뺀다.
@@ -470,7 +473,7 @@
  * 차가 없는 대상에서는 그 대상의 보조 식별 정보로 자연히 대체된다)은 메인줄을 보완하는 한 줄이다. */
 .erp-panel--compact .erp-rowcards { padding: var(--erp-sp-2) var(--erp-sp-3) var(--erp-sp-3); gap: var(--erp-sp-2); background: transparent; }
 /* 좁은 카드는 테두리 선 대신 그림자로 구분한다(대표 2026-09-24 「이 카드가 라인이 없이 좀 구분이
- * 됐으면 좋겠다」→「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝 보일 듯 말 듯」) — 위 .erp-card
+ * 됐으면 좋겠다」→「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝 보일 듯 말 듯」) — 위 .erp-tile
  * 와 같은 전방위 옅은 테 + 아래쪽 그림자 조합을 그대로 쓴다(값을 다시 베끼지 않고 동일 선언을 공유).
  * sunken 배경(erp-rowcards) 위에 카드 하나하나가 네 변 다 은은하게 갈린다. 골랐을 때(aria-current)는
  * Primary 색 그림자 테로 표시한다. */

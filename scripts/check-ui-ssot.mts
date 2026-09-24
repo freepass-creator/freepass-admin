@@ -162,6 +162,25 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const responsiveWidthBaseline = [
+  [/Responsive width QA/, 'desktop responsive width QA contract'],
+  [/@media \(min-width: 1280px\) and \(max-width: 1439px\)/, 'desktop 1280-1439 compact tier'],
+  [/@media \(min-width: 1440px\)/, 'desktop 1440+ standard tier'],
+] as const;
+for (const [re, label] of responsiveWidthBaseline) {
+  if (!re.test(desktopCss)) errors.push(`responsive width mismatch or missing: ${label}`);
+}
+
+const mobileResponsiveBaseline = [
+  [/Mobile width QA \(360 \/ 390 \/ 412\)/, 'mobile width QA contract'],
+  [/@media \(max-width: 379px\)/, '360-class narrow tier'],
+  [/overflow-x:\s*hidden/, 'mobile page horizontal overflow guard'],
+] as const;
+for (const [re, label] of mobileResponsiveBaseline) {
+  if (!re.test(cssFinal)) errors.push(`responsive width mismatch or missing: ${label}`);
+}
+
+
 /* Page QA structural invariants — prevent accidental redesign of core workflows. */
 const pageQaRules = [
   ['src/app/_erp/ProductsScreen.tsx', [

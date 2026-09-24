@@ -1564,3 +1564,55 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - 한 카드에서 4개 이상의 meta segment를 기본 노출
 - 목록에서 상세 정보 대부분을 미리 보여주기
 - 정보량을 줄인다는 이유로 운영상 경고를 숨기기
+
+
+# 31. Empty / Loading / Error / Readonly states
+
+예외 상태도 Line-free surface hierarchy를 따른다.
+
+## Empty
+- neutral component surface
+- support text
+- border 없음
+- 빈 상태를 경고처럼 과장하지 않는다
+
+## Warning
+- amber soft surface
+- warning text
+- border 없음
+- 사용자가 행동해야 하는 이유가 있으면 문구로 설명
+
+## Error
+- red soft surface
+- error text
+- border 없음
+- 단순 빨간 글 한 줄로 끝내지 않는다
+
+## Success
+- green soft surface
+- success text
+- border 없음
+
+## Readonly
+- muted neutral surface
+- no elevation
+- no hover / press
+- disabled와 구분: 값은 읽을 수 있고 focus/selection 의미는 유지 가능
+
+## Busy / Loading
+- 기존 geometry 유지
+- opacity만 낮춤
+- pointer interaction 잠금
+- cursor progress
+- 레이아웃 점프 금지
+
+## Stale / Offline
+- error보다 약한 neutral/info surface
+- 현재 데이터가 최신이 아닐 수 있다는 의미
+- destructive color 사용 금지
+
+## 금지
+- empty/error/warn을 일반 텍스트 한 줄로만 처리
+- loading 때문에 card/panel 크기가 바뀌는 것
+- readonly를 disabled와 동일하게 처리
+- stale를 error와 같은 붉은 상태로 표현

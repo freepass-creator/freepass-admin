@@ -48,7 +48,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
               <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
                 tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-                plate={txt(p.registration?.vehicleNumber)} car={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
+                subId={txt(p.registration?.vehicleNumber)} sub={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
                 facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
                 amount={won0(offer.monthlyRent)} unit="원/월" />
             ))}

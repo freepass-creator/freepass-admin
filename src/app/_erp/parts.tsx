@@ -158,8 +158,8 @@ export function TileGroup({ children }: { children: ReactNode }) {
  *   steps 가 없으면(상품) ③ 이 ② 자리까지 넓어진다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다.
  */
 export type Fact = [label: string, value: ReactNode, sub?: ReactNode];
-export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, plate, car, meta, steps, facts, amount, amountLabel, unit = '원' }: {
-  href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; plate?: ReactNode; car?: ReactNode; meta?: ReactNode;
+export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, subId, sub, meta, steps, facts, amount, amountLabel, unit = '원' }: {
+  href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; subId?: ReactNode; sub?: ReactNode; meta?: ReactNode;
   /** 좁은 목록(§5-4 compact)의 44px 정사각 썸네일 — 사진이 있으면 그 아이콘, 없으면 상태 아이콘 + 짧은 글자
    *  (thumbStatus, erp-rowcard-thumb--status). 넓은 카드(§5-3 원안)에서는 그리는 자리가 없어 그냥 안 보인다. */
   thumb?: ReactNode; thumbStatus?: boolean;
@@ -173,7 +173,7 @@ export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge,
       {thumb ? <div className={`erp-rowcard-thumb${thumbStatus ? ' erp-rowcard-thumb--status' : ''}`}>{thumb}</div> : null}
       <div className="erp-rowcard-id">
         <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href}>{title}</Link>{badge}</h3>
-        {plate || car ? <div className="erp-rowcard-car">{plate ? <b>{plate}</b> : null}{car}</div> : null}
+        {subId || sub ? <div className="erp-rowcard-sub">{subId ? <b>{subId}</b> : null}{sub}</div> : null}
         {meta ? <div className="erp-rowcard-meta">{meta}</div> : null}
       </div>
       {steps ? (

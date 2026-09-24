@@ -133,7 +133,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
               <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
                 tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-                plate={txt(p.registration?.vehicleNumber)} car={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
+                subId={txt(p.registration?.vehicleNumber)} sub={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
                 facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
                 amount={won0(offer.monthlyRent)} unit="원/월" />
             ))}
@@ -174,7 +174,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
                 <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id, w: null })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
                   thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
-                  plate={txt(r.plate)} car={txt(r.model)}
+                  subId={txt(r.plate)} sub={txt(r.model)}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
                   amount={won0(perfView ? marginOf(r, now) : r.rent)}
                   {...(perfView ? { amountLabel: '남는 것' } : { unit: '원/월' })} />
@@ -270,7 +270,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
           thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
           title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
-          plate={txt(r.plate)} car={txt(r.model)}
+          subId={txt(r.plate)} sub={txt(r.model)}
           facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
           amount={won0(marginOf(r, now))} amountLabel="남는 것" />
       ))}

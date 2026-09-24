@@ -85,7 +85,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
                 <RowCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
                   tone={SIGN_TONE[c.signStatus] ?? 'neutral'} thumb={<><SignIcon s={s} /><span>{SIGN_SHORT[s]}</span></>} thumbStatus
                   title={txt(c.customer)} badge={<Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{s}</Badge>}
-                  plate={txt(c.plate)} car={txt(c.vehicle)}
+                  subId={txt(c.plate)} sub={txt(c.vehicle)}
                   meta={`${txt(c.code)} · 계약일 ${txt(c.contractDate)}`}
                   steps={{ labels: [...SIGN], at }}
                   facts={[

@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 5de5ff954a1f38ccb1c355bafa57ff30bafdbe95
+ * 정본: freepass-creator/ai-core @ de2a4f1203f8902b07a1824f5b62edda7c9c026e
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -409,8 +409,8 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
 /* 칸 1 — 누구 · 무슨 차 */
 .erp-rowcard-id { grid-area: id; min-width: 0; }
 .erp-rowcard-title { display: flex; align-items: center; gap: var(--erp-sp-2); margin: 0; min-width: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
-.erp-rowcard-car { margin-top: 4px; color: var(--erp-color-text); font-weight: var(--erp-fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.erp-rowcard-car b { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-rowcard-sub { margin-top: 4px; color: var(--erp-color-text); font-weight: var(--erp-fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-sub b { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
 .erp-rowcard-meta { margin-top: 3px; overflow: hidden; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); text-overflow: ellipsis; white-space: nowrap; }
 /* 칸 2 — 어디까지 왔나 (작은 진행 단계) */
 .erp-rowcard-steps { grid-area: steps; display: flex; margin: 0; padding: 0; list-style: none; }
@@ -525,8 +525,8 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 모든 대상(상품 · 접수 · 실적 · 정산)이 폭 · 줄 수와 무관하게 같은 두 줄 규격으로 통일된다.
  * 두 줄의 역할은 대상과 무관하게 고정(대표 2026-09-24 「메인줄에는 해당되는 내용을 쓰고 보조줄에는
  * 보조적인 거를 쓰면 되잖아 나중에 그 항목은 바꾸더라도」) — 메인줄(erp-rowcard-title)은 이 카드가
- * 무엇/누구인지 + 상태(뱃지), 보조줄(erp-rowcard-car — 이름은 차량 맥락에서 왔지만 정산 · 실적처럼
- * 차가 없는 대상에서는 그 대상의 보조 식별 정보로 자연히 대체된다)은 메인줄을 보완하는 한 줄이다. */
+ * 무엇/누구인지 + 상태(뱃지), 보조줄(erp-rowcard-sub — 처음엔 차량 맥락 이름(erp-rowcard-car)이었으나
+ * 다른 프로젝트 재사용 검토(2026-09-24)로 중립 이름으로 고쳤다)은 메인줄을 보완하는 한 줄이다. */
 .erp-panel--compact .erp-rowcards { padding: var(--erp-sp-2) var(--erp-sp-3) var(--erp-sp-3); gap: var(--erp-sp-2); background: transparent; }
 /* 좁은 카드는 테두리 선 대신 그림자로 구분한다(대표 2026-09-24 「이 카드가 라인이 없이 좀 구분이
  * 됐으면 좋겠다」→「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝 보일 듯 말 듯」) — 위 .erp-tile
@@ -785,8 +785,8 @@ body:has(> .erp-theme-flag[data-theme="retro"]) .erp-listcard-amount { font-fami
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard { border: var(--retro-border) solid var(--erp-color-line-strong); box-shadow: var(--retro-shadow) var(--erp-color-line-strong); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard[aria-current="true"] { border-color: var(--erp-color-primary); box-shadow: var(--retro-shadow) var(--erp-color-primary); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-title, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcards-group { font-family: var(--retro-font-display); }
-body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-car b { border: 1.5px solid var(--erp-color-line-strong); background: var(--erp-color-surface); }
-body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-car b, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-amount strong, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-meta { font-family: var(--retro-font-mono); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-sub b { border: 1.5px solid var(--erp-color-line-strong); background: var(--erp-color-surface); }
+body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-sub b, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-amount strong, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-meta { font-family: var(--retro-font-mono); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li i { border-radius: var(--erp-r-sm); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li::before { height: 0; background: transparent; border-top: var(--retro-border) dashed var(--erp-color-line-strong); }
 body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li[data-state="done"]::before, body:has(> .erp-theme-flag[data-theme="retro"]) .erp-rowcard-steps li[aria-current="step"]::before { border-top-style: solid; border-top-color: var(--erp-color-primary); }

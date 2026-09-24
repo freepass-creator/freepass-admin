@@ -164,7 +164,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                   return (
                     <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
                       title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
-                      plate={txt(r.plate)} car={txt(r.model)} steps={{ labels: flow, at }}
+                      subId={txt(r.plate)} sub={txt(r.model)} steps={{ labels: flow, at }}
                       facts={[
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],

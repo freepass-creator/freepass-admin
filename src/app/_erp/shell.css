@@ -118,6 +118,11 @@
     border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
     color: var(--erp-color-text); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
   }
+  /* 검색창 + dz-fs 필터도 erp.css 의 .erp-search + .erp-filter-more 와 같은 방식으로 한 띠로 붙인다
+   * (대표 2026-09-24 「화이트라벨 검색창 한번 보라고」 — ERP4 SearchInput 의 trailing 배치 참고). */
+  .erp-search:has(+ .dz-fs) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .erp-search + .dz-fs { margin-left: -1px; }
+  .erp-search + .dz-fs .dz-fs-open { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .erp-std .dz-fs-open:hover, .erp-std .dz-fs-open.on { background: var(--erp-color-sunken); }
   .erp-std .dz-fs-open i { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); }
   .erp-std .dz-fs-sheet {
@@ -248,6 +253,11 @@
     transform: translateY(var(--fp-press-y));
   }
 
+  /* a.erp-facet-opt[aria-pressed="true"] 로도 적어야 한다 — sync-erp-standard.mjs 가 넣는 링크색
+   * 되돌림(.erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary) })이
+   * 태그 한 단계만큼 더 구체적이라 이 규칙(클래스만)을 조용히 이겨서 버튼 글자가 파랑-위에-파랑으로
+   * 안 보였다 — 실제 화면 스크린샷으로 찾음(대표 2026-09-24 「화이트라벨 검색창」 점검 중 발견). */
+  .erp-std a.erp-facet-opt[aria-pressed="true"],
   .erp-std .erp-facet-opt[aria-pressed="true"] {
     background: var(--erp-color-primary);
     color: var(--erp-color-on-primary);

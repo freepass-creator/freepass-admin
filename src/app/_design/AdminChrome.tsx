@@ -62,9 +62,12 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <span className="erp-company">
           <Icon name="building" size={16} />프리패스 본사 · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
         </span>
+        {/* 상품찾기(ProductsScreen)의 검색 칸 이름과 같아야 실제로 걸린다 — pq(대표 2026-09-24
+            「검색창도 검색창 옆에 필터」 작업 때 계약접수와 같은 이름(pq)으로 맞추면서, 여기 통합
+            검색이 q 로 남아 있어 조용히 죽어 있었다). */}
         <form className="erp-gsearch" action="/products" role="search">
           <Icon name="search" size={16} />
-          <input name="q" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
+          <input name="pq" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
           <kbd>Enter</kbd>
         </form>
         {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}

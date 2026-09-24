@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 7386533d95628ae5ae21a705b9abfa5766d4b08b
+ * 정본: freepass-creator/ai-core @ 5de5ff954a1f38ccb1c355bafa57ff30bafdbe95
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -330,6 +330,9 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  *   상세 필터는 <details> 로 연다 — 스크립트 없이도 열리고 닫힌다. */
 .erp-searchbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
 .erp-search { display: flex; flex-direction: row; align-items: center; gap: var(--erp-sp-2); flex: 1 1 200px; min-width: 0; max-width: 460px; height: var(--erp-btn-h); padding: 0 var(--erp-sp-3); border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text-3); }
+/* 넓은 목록 판(erp-panel--wide, §5-4)에서는 검색창의 460px 상한을 풀어 패널과 같이 커진다(대표
+ * 2026-09-24 「검색창을 더 키우라고 패널이랑 같이 커져야지」) — 460px 는 1칸 폭 패널 기준값이다. */
+.erp-panel--wide .erp-search { max-width: none; }
 .erp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); }
 .erp-search:focus-within { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
 .erp-filter-more { position: relative; }

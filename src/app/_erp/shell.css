@@ -664,3 +664,43 @@
     padding-inline: var(--erp-sp-4);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Surface depth refinement
+ * Canvas → Panel → Component surface의 색 차이까지 명시한다.
+ * shadow만으로 hierarchy를 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-component-surface: #F7F9FC;
+  }
+
+  /* Panel은 white island. 그 안의 entity/info card는 한 톤 낮춘다. */
+  .erp-std :is(
+    .erp-rowcard,
+    .erp-tile,
+    .erp-kpi,
+    .erp-section
+  ) {
+    background: var(--fp-component-surface);
+  }
+
+  /* interactive card hover는 component surface보다 아주 조금 진하게. */
+  @media (hover:hover) {
+    .erp-std :is(.erp-rowcard, .erp-tile--pressable):hover {
+      background: var(--fp-surface-hover);
+    }
+  }
+
+  /* 선택 상태는 항상 primary tint가 component tone보다 우선한다. */
+  .erp-std .erp-rowcard[aria-current="true"],
+  .erp-std .erp-tile--pressable[aria-pressed="true"] {
+    background: var(--fp-selected);
+  }
+
+  /* Panel 안 embedded info groups도 같은 component layer를 사용한다. */
+  .erp-std .erp-embed :is(.dz-form-group, .summary-grid, .dz-offer-line, .fn-box) {
+    background: var(--fp-component-surface);
+  }
+}

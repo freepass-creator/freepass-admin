@@ -1778,3 +1778,37 @@ Badge/Notice에는 반드시 텍스트 의미가 함께 있어야 한다.
 - Badge/Status에 pointer cursor
 - 장식 icon에 click handler
 - 같은 역할의 icon 크기를 화면마다 임의로 바꾸기
+
+
+# 36. Keyboard & accessibility behavior
+
+## Tabs
+- `role="tablist"` / `role="tab"` / `role="tabpanel"`
+- 선택 탭만 `tabIndex=0`
+- 비선택 탭은 `tabIndex=-1`
+- Left / Right Arrow로 탭 이동
+- Home = 첫 탭
+- End = 마지막 탭
+- 탭 전환 후 새 활성 탭으로 focus 이동
+
+## Row selection
+- 선택 상태는 시각 카드뿐 아니라 실제 focus target에도 전달한다
+- RowCard의 링크는 선택 시 `aria-current`를 가진다
+- decorative chevron/icon은 `aria-hidden`
+
+## FilterSheet
+- trigger는 `aria-expanded`, `aria-haspopup="dialog"`, `aria-controls`
+- dialog가 열리면 focus를 dialog 내부 첫 focusable control로 이동
+- Escape / 닫기 / 외부 클릭으로 닫힘
+- 닫힌 뒤 focus는 원래 trigger로 복귀
+- pending 영역은 `aria-busy`
+
+## Disabled / Readonly
+- disabled: interaction 불가, hover/press 없음
+- readonly: 값은 읽을 수 있으나 편집 불가
+- 둘을 같은 의미로 처리하지 않는다
+
+## 공통
+- focus-visible은 soft halo로 명확히 표시
+- icon-only action은 accessible name 필수
+- 키보드로 도달할 수 없는 핵심 action 금지

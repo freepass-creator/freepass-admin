@@ -2277,3 +2277,45 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 - 3-panel equal layout: max/min width ratio <= 1.08
 - wide + detail: wide/detail ratio 1.85~2.15
 - 실제 computed width 기준으로 검사
+
+
+# 48. ActionBar ratio & primary placement
+
+모바일/웹 공통 ActionBar 규격.
+
+## 버튼 수와 비율
+
+- 1개: `100%`
+- 2개, 주/보조 구분 있음: `3 : 7`
+- 2개, 동급 액션: `5 : 5`
+- 3개: `3 : 3 : 4`
+
+## Primary 위치
+
+- Primary action은 항상 **가장 오른쪽**
+- 3개일 때도 Primary는 오른쪽의 4
+- Secondary는 왼쪽부터 배치
+- 위험 액션은 Primary 위치를 빼앗지 않는다
+
+## Component API
+
+- `ActionBar balance="primary"`: 3:7 / 3:3:4
+- `ActionBar balance="equal"`: 동급 2개 5:5
+- `PanelFoot balance="primary|equal"`: 웹에서도 동일
+
+## 금지
+
+- Primary가 왼쪽에 오는 배치
+- 2개 주/보조를 5:5로 처리
+- 동급 2개를 3:7로 처리
+- 3개를 1:1:1로 처리
+- 모바일/웹에서 서로 다른 버튼 비율 사용
+
+## Visual QA
+
+실제 rendered width와 x좌표를 검사한다.
+
+- 2개 primary: 약 30% / 70%
+- 2개 equal: 50% / 50%
+- 3개: 약 30% / 30% / 40%
+- Primary right edge가 모든 action 중 가장 오른쪽이어야 한다.

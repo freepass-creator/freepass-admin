@@ -162,6 +162,32 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const accessibilityBehaviorBaseline = [
+  ['src/app/_design/DetailTabs.tsx', [
+    /tabIndex=\{tab === 'summary' \? 0 : -1\}/,
+    /ArrowRight/,
+    /ArrowLeft/,
+    /Home/,
+    /End/,
+  ]],
+  ['src/app/_design/FilterSheet.tsx', [
+    /aria-expanded=\{open\}/,
+    /aria-haspopup="dialog"/,
+    /aria-controls=\{dialogId\}/,
+    /querySelector<HTMLElement>/,
+    /trigger\.current\?\.focus\(\)/,
+  ]],
+  ['src/app/_erp/parts.tsx', [
+    /erp-rowcard-link[^>]+aria-current=\{current \? 'true' : undefined\}/,
+  ]],
+] as const;
+for (const [file, rules] of accessibilityBehaviorBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: accessibility behavior missing: ${re}`);
+  }
+}
+
 const iconTouchBaseline = [
   [/--fp-icon-action-hit:\s*36px/, 'desktop icon-only hit area 36px'],
   [/--fp-icon-md:\s*18px/, 'desktop action glyph 18px'],

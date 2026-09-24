@@ -244,7 +244,7 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; }
 /* 조건 표시 — 상세(기본) */
 .dz-perks { column-gap: 16px; row-gap: 8px; }
-.dz-perk { gap: 4px; font-size: 13px; font-weight: 700; color: var(--wl-ink); }
+.dz-perk { gap: 4px; font-size: var(--글메인); font-weight: 700; color: var(--wl-ink); }
 .dz-perk .dz-ico { color: var(--ci남색); }
 .dz-perk.good .dz-ico { color: var(--wl-ok); }
 .dz-perk.ask .dz-ico { color: var(--wl-faint); }

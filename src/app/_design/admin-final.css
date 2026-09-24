@@ -1123,3 +1123,52 @@ body > nav.fn-top :where(a, button):focus-visible,
   outline: none;
   box-shadow: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Density contract (mobile/live Admin)
+   touch target 44는 유지하고, panel/list rhythm을 명시적으로 고정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-panel-head-h: 56px;
+  --ui-query-row-h: 52px;
+  --ui-row-min-h: 88px;
+  --ui-section-rhythm: 16px;
+}
+
+.fn-main .workspace .panel-head {
+  min-height: var(--ui-panel-head-h);
+}
+
+.fn-main .workspace .dz-searchbox {
+  height: var(--ui-control-h);
+}
+
+.fn-main .workspace .dz-find {
+  gap: var(--ui-list-gap);
+  margin-bottom: var(--ui-item-pad);
+}
+
+.fn-main .workspace .quick-filters {
+  min-height: var(--ui-control-h);
+  gap: var(--ui-control-gap);
+}
+
+.fn-main .workspace .dz-row {
+  min-height: var(--ui-row-min-h);
+}
+
+/* 상세/업무 section은 16px 리듬, 카드 내부는 8/12를 유지한다. */
+.fn-main .workspace :is(
+  .dz-intake-form,
+  .dz-tabbody,
+  .dz-life-form
+) {
+  row-gap: var(--ui-section-rhythm);
+}
+
+/* 검색창 안 embedded facet은 작은 보조 control이라 32px 예외를 유지한다.
+ * standalone control은 반드시 44px tier를 사용한다. */
+.fn-main .workspace .dz-searchbox .dz-fs-open {
+  height: 32px;
+}

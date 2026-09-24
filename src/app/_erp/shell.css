@@ -802,8 +802,14 @@
     min-height: var(--fp-row-standard-min-h);
   }
 
-  /* 상세/업무 안의 section 간 리듬은 16px 한 단계로 통일 */
-  .erp-std :is(.erp-tile-group,.erp-form,.erp-section-group) {
+  /* 카드와 섹션의 리듬을 분리한다.
+   * 같은 섹션 안 카드↔카드 = 8px
+   * 섹션↔섹션 = 16px */
+  .erp-std .erp-tile-group {
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std :is(.erp-form,.erp-section-group,.erp-detail-body) {
     gap: var(--fp-section-rhythm);
   }
 }

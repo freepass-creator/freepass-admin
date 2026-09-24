@@ -162,6 +162,30 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const terminologyBaseline = [
+  ['src/app/intake/new/IntakeForm.tsx', [
+    /월 대여료/,
+  ]],
+  ['src/app/intake/IntakeDetailPanel.tsx', [
+    /금액 조정 — 수수료 · 프로모션 · 가감/,
+  ]],
+  ['src/app/settlement/page.tsx', [
+    /할 일 <small>/,
+  ]],
+  ['src/app/_erp/EsignScreen.tsx', [
+    /<dt>영업담당<\/dt>/,
+    /<dt>생성일<\/dt>/,
+    /<dt>발송일<\/dt>/,
+    /<dt>서명일<\/dt>/,
+  ]],
+] as const;
+for (const [file, rules] of terminologyBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: terminology contract missing: ${re}`);
+  }
+}
+
 const motionBaseline = [
   [/--fp-motion-press:\s*80ms/, 'desktop press motion 80ms'],
   [/--fp-motion-state:\s*120ms/, 'desktop state motion 120ms'],

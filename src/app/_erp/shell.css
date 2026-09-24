@@ -81,6 +81,9 @@
   .erp-std .erp-embed .dz-bar-go { display: flex; gap: var(--erp-sp-2); }
   .erp-std .erp-embed .dz-bar-go > * { flex: 3; }
   .erp-std .erp-embed .dz-bar-go > .primary { flex: 7; }
+  /* 단추 셋일 때는 3:3:4(erp.css .erp-panel-foot 과 같은 규칙, 대표 2026-09-24 「패널에 버튼이 3개
+   * 들어갈 때는 334」) — 주 단추 몫만 4로 준다. */
+  .erp-std .erp-embed .dz-bar-go:has(> :nth-child(3)):not(:has(> :nth-child(4))) > .primary { flex: 4; }
   .erp-std .erp-cols--detail { grid-template-columns: minmax(0, 1fr) 440px; }
   /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
   .erp-screen .erp-content > * { flex-shrink: 0; }

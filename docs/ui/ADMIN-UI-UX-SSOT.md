@@ -2233,3 +2233,47 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 Desktop 1280+에서 visible Panel들의 computed rect를 비교한다.
 같은 종류 영역의 top/bottom 차이가 2px를 넘으면 FAIL.
+
+
+# 47. Panel width role contract
+
+패널 폭은 페이지별 임의 디자인이 아니라 역할로 결정한다.
+
+## Desktop
+
+### Equal 3-panel
+`1 : 1 : 1`
+
+적용:
+- 계약접수
+- 실적
+- 정산관리
+
+목록/상세/업무가 서로 다른 역할이어도 shell width는 기본적으로 동일하다.
+
+### Wide list + detail
+`2 : 1`
+
+적용:
+- 상품찾기처럼 목록 탐색 비중이 큰 2-panel 화면
+
+wide list 내부에서는 compact card를 2열로 배치할 수 있다.
+
+### Two-panel standard
+`1 : 1`
+
+적용:
+- 전자계약 등 목록 + 상세 구조
+
+## Responsive
+
+- 1280~1439: 구조 유지, gap/padding만 compact
+- 1440+: standard spacing
+- viewport가 좁다고 workflow 구조 자체를 바꾸지 않는다
+- mobile은 한 Panel씩 보이므로 width ratio 적용 대상 아님
+
+## Visual QA
+
+- 3-panel equal layout: max/min width ratio <= 1.08
+- wide + detail: wide/detail ratio 1.85~2.15
+- 실제 computed width 기준으로 검사

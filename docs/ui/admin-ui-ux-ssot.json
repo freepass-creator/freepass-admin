@@ -692,5 +692,25 @@
     "scaleOnPress": false,
     "reducedMotion": "remove transitions/animations",
     "rule": "Motion only confirms interaction; no decorative bounce/spring/page transitions."
+  },
+  "terminology": {
+    "displayVsDomain": "UI labels may normalize wording without renaming domain enums or persistence values.",
+    "rules": {
+      "state": "noun phrase",
+      "action": "verb/action phrase",
+      "dates": "use ~일 suffix when representing a date",
+      "money": "use standardized amount/rent/fee labels",
+      "descriptions": "short, action-oriented"
+    },
+    "canonical": {
+      "할일": "할 일",
+      "영업 담당": "영업담당",
+      "렌탈료": "월 대여료",
+      "만든 때": "생성일",
+      "발송(date)": "발송일",
+      "서명(date)": "서명일",
+      "돈 고치기": "금액 조정"
+    },
+    "rule": "Do not create page-specific synonyms for the same business concept."
   }
 }

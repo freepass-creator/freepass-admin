@@ -162,6 +162,16 @@ for (const [re, label] of desktopOffScaleRules) {
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
+const contrastBaseline = [
+  [/--fp-text-muted:\s*#667085/i, 'desktop muted text #667085'],
+  [/--fp-nav-text:\s*#AEB9CA/i, 'desktop nav text #AEB9CA'],
+  [/--ui-text-muted-color:\s*#667085/i, 'mobile muted text #667085'],
+] as const;
+for (const [re, label] of contrastBaseline) {
+  const target = label.startsWith('mobile') ? cssFinal : desktopCss;
+  if (!re.test(target)) errors.push(`contrast mismatch or missing: ${label}`);
+}
+
 const responsiveWidthBaseline = [
   [/Responsive width QA/, 'desktop responsive width QA contract'],
   [/@media \(min-width: 1280px\) and \(max-width: 1439px\)/, 'desktop 1280-1439 compact tier'],

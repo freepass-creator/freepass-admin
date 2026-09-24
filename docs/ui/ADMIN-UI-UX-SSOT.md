@@ -2319,3 +2319,20 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 - 2개 equal: 50% / 50%
 - 3개: 약 30% / 30% / 40%
 - Primary right edge가 모든 action 중 가장 오른쪽이어야 한다.
+
+
+# 49. Card gap vs section rhythm
+
+카드 간격과 섹션 간격은 다른 계층이다.
+
+- 같은 섹션 안 Card ↔ Card: **8px**
+- 서로 다른 Section ↔ Section: **16px**
+
+예:
+- 상품상세의 `대여료` 기간별 Tile들: 8px
+- 차량요약 ↔ 대여료 ↔ 담당자 참고: 16px
+- 일반 목록 RowCard들: 8px
+
+금지:
+- TileGroup에 section rhythm 16px를 적용
+- 카드 간격과 섹션 간격을 같은 토큰으로 묶기

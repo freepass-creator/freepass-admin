@@ -910,5 +910,15 @@
       ],
       "primaryMustBeRightmost": true
     }
+  },
+  "spacingHierarchy": {
+    "cardGapPx": 8,
+    "sectionGapPx": 16,
+    "examples": {
+      "rentalOfferTiles": "8px",
+      "listCards": "8px",
+      "detailSections": "16px"
+    },
+    "rule": "Card-to-card spacing and section-to-section spacing use separate tokens."
   }
 }

@@ -58,6 +58,11 @@ function StatusIcon({ b }: { b: Bucket }) {
 }
 
 export async function WorkspaceScreen({ q }: { q: Q }) {
+  if (sp(q.wiv) === '실적') return <PerformanceWorkspace q={q} />;
+  return <IntakeWorkspace q={q} />;
+}
+
+async function IntakeWorkspace({ q }: { q: Q }) {
   const base = '/intake';
 
   let products: CanonicalProduct[];
@@ -247,6 +252,70 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
             ))}
           </nav>
         </PanelFoot>
+      </Panel>
+    </div>
+    </Screen>
+  );
+}
+
+/**
+ * PC 실적 — 판 셋: 분납실적 | 실적상세 | 완납실적 (대표 2026-09-24 「실적은 분납실적과 완납실적이 있어
+ *   … 맨 왼쪽에 분납실적이 있고 맨 오른쪽에 완납실적이 있는 거야 … 가운데에는 … 실적 상세가 있으면 돼」
+ *   — 접수목록(§5-4 3패널)의 실적 칸 필터 하나로는 부족했다: 실적은 분납·완납 두 칸이 늘 같이 보여야
+ *   하는 화면이라, 계약접수와는 다른 배열의 자기 판 셋을 쓴다). 실적상세는 접수상세와 같은 부품
+ *   (SettlementDetail)을 그대로 쓴다 — 새 판이 아니라 같은 대상의 같은 상세다.
+ */
+async function PerformanceWorkspace({ q }: { q: Q }) {
+  const base = '/intake';
+  let intake: Awaited<ReturnType<typeof settlements.list>>;
+  try { intake = await settlements.list(); }
+  catch { intake = []; }
+  const rows = intake.map((x) => x.row);
+  const now = new Date(`${today()}T12:00:00+09:00`);
+  const itext = sp(q.wiq).trim().toLowerCase();
+  const searched = rows.filter((r) => !itext || [r.customer, r.plate, r.model, r.supplier, r.channel, r.agent].join(' ').toLowerCase().includes(itext));
+  const 분납 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '분납실적'), '분납실적');
+  const 완납 = sortIntakeRows(searched.filter((r) => bucketOf(r, now) === '완납실적'), '완납실적');
+  const icId = sp(q.ic);
+  const cur = icId ? rows.find((r) => r.id === icId) : undefined;
+
+  const list = (title: string, items: SettlementRow[], b: Bucket) => (
+    <RowCards label={`${title} 목록`}>
+      {items.map((r) => (
+        <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
+          thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
+          title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
+          plate={txt(r.plate)} car={txt(r.model)}
+          facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
+          amount={won0(marginOf(r, now))} amountLabel="남는 것" />
+      ))}
+    </RowCards>
+  );
+
+  return (
+    <Screen name="performance-workspace">
+    <div className="erp-workspace">
+      <Panel compact>
+        <PanelHead kind="목록" title="분납실적" count={`전체 ${분납.length}건`} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} />
+        <PanelBody>{list('분납실적', 분납, '분납실적')}</PanelBody>
+      </Panel>
+
+      <Panel>
+        {cur ? (
+          <SettlementDetail cur={cur} base={base} q={q} now={now} />
+        ) : (
+          <>
+            <PanelHead kind="상세내용" title="실적상세" count="고른 실적" />
+            <PanelBody><p className="erp-muted">왼쪽 · 오른쪽에서 실적을 고르세요.</p></PanelBody>
+          </>
+        )}
+      </Panel>
+
+      <Panel compact>
+        <PanelHead kind="목록" title="완납실적" count={`전체 ${완납.length}건`} />
+        <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']} />
+        <PanelBody>{list('완납실적', 완납, '완납실적')}</PanelBody>
       </Panel>
     </div>
     </Screen>

@@ -139,6 +139,9 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
       if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       const intake=intakeDoc.data() as Record<string,unknown>;
 
+      const linkError=contractIntakeLinkError(contractId,intake);
+      if(linkError)throw new Error(linkError);
+
       const now=Date.now();
       const plan=planContractTermination(contract,intake,input,now);
       if(!plan.ok)throw new Error(plan.error);

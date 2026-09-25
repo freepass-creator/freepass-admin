@@ -622,11 +622,11 @@ body { background: var(--바닥); }
      우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만 · 글 셋(제목 18 · 메인 14 · 보조 12)
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-find { position: relative; }
-/* 창 «안» 오른쪽 끝 — 창(40) 안에 단추(33)가 가운데로 선다 */
+/* 검색창 안 세부검색 — 44px 검색창 안의 embedded 32px 예외 */
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-fs-open {
-  position: absolute; top: 3.5px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
-  height: 33px; line-height: 15px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  position: absolute; top: 6px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; line-height: 16px; padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
   color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
 }
 .dz-fs-open:hover, .dz-fs-open.on { background: var(--박스손); }

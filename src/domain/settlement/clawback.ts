@@ -47,7 +47,7 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
       code: r.id, receivedAt: r.receivedAt ?? '',
       ...(r.contractTerminatedAt ? {
         source: 'CONTRACT_TERMINATION',
-        contractId: r.esignContractId ?? '',
+        contractId: r.contractTerminationContractId ?? r.esignContractId ?? '',
         contractTerminatedAt: r.contractTerminatedAt,
         contractTerminationDate: r.contractTerminationDate ?? '',
         contractTerminationReason: r.contractTerminationReason ?? '',

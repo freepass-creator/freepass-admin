@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { locateSettlementFocus } from '../ledgers';
+import { claimLedger, ledgerMonths, locateSettlementFocus, settlementEligible } from '../ledgers';
 import type { SettlementRow } from '../types';
 
 const row = (o: Partial<SettlementRow> = {}): SettlementRow => ({
@@ -80,4 +80,33 @@ test('상대가 없거나 원장에 설 수 없는 줄은 다른 묶음으로 �
   assert.equal(locateSettlementFocus([row({ channel: null })], [], 'stl_focus', 'pay'), null);
   assert.equal(locateSettlementFocus([row({ progress: { ...row().progress, paper: false } })], [], 'stl_focus', 'claim'), null);
   assert.equal(locateSettlementFocus([row()], [], '없는코드', 'claim'), null);
+});
+
+
+test('인도 전 줄은 billMonth가 미리 박혀 있어도 정산 원장에 서지 않는다', () => {
+  const dirty = row({
+    progress: {
+      ...row().progress,
+      delivered: false,
+      deliveredAt: null,
+      billMonth: '2026-09',
+    },
+  });
+  assert.equal(settlementEligible(dirty), false);
+  assert.deepEqual(ledgerMonths([dirty], [], new Date('2026-09-21T00:00:00+09:00')), []);
+  assert.deepEqual(claimLedger([dirty], '2026-09', [], new Date('2026-09-21T00:00:00+09:00')), []);
+  assert.equal(locateSettlementFocus([dirty], [], 'stl_focus', 'claim'), null);
+});
+
+test('인도완료 boolean만 있고 인도일이 없으면 정산 원장에 서지 않는다', () => {
+  const incomplete = row({
+    progress: {
+      ...row().progress,
+      delivered: true,
+      deliveredAt: null,
+      billMonth: '2026-09',
+    },
+  });
+  assert.equal(settlementEligible(incomplete), false);
+  assert.equal(locateSettlementFocus([incomplete], [], 'stl_focus', 'claim'), null);
 });

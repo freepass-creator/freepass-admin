@@ -62,11 +62,18 @@ function ensureErp5App(): App {
     app = getApps().find((a) => a.name === APP_NAME) ?? null;
   }
   if (!app) {
-    const sa = credential();
-    app = initializeApp({
-      credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
-      projectId: sa.project_id,
-    }, APP_NAME);
+    // Firebase Admin automatically routes Firestore traffic to the emulator when
+    // FIRESTORE_EMULATOR_HOST is set. In that isolated mode, never require or
+    // load a production service-account credential.
+    if (process.env.FIRESTORE_EMULATOR_HOST?.trim()) {
+      app = initializeApp({ projectId: ERP5_PROJECT_ID }, APP_NAME);
+    } else {
+      const sa = credential();
+      app = initializeApp({
+        credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
+        projectId: sa.project_id,
+      }, APP_NAME);
+    }
   }
   return app;
 }

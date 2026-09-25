@@ -566,11 +566,17 @@ Summary box는 `summary-grid` 규격을 사용한다.
 [ secondary 3 ] [ primary 7 ]
 ```
 
+### 세 개
+```
+[ secondary 3 ] [ secondary 3 ] [ primary 4 ]
+```
+
 - primary 44
 - secondary 44
 - radius 6
 - panel bottom에 정렬
 - content 중간에 떠 있지 않는다.
+- 세 버튼이 생겨도 임의 균등분할하지 않고 **3:3:4**를 유지한다.
 
 향후 공통 컴포넌트 추출 후보:
 `ActionBar(primary, secondary?)`

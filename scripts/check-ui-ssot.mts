@@ -590,9 +590,9 @@ for (const [file, re, label] of quickFilterPolicyBaseline) {
 
 const naturalTypographyBaseline = [
   [/Natural ERP typography roles/, 'desktop natural ERP typography role block'],
-  [/\.erp-panel-head h2 \{ font-size: var\(--erp-fs-panel\); \}/, 'panel title role size'],
+  [/\.erp-panel-head h2 \{ font-size: var\(--erp-fs-body\); \}/, 'panel title role size'],
   [/\.erp-rowcard-title,[\s\S]*?\.erp-facet-opt,[\s\S]*?font-size: var\(--erp-fs-body\)/, 'card/control body size role'],
-  [/\.erp-rowcard-amount strong,.erp-tile-row strong\) \{ font-size: var\(--erp-fs-section\); \}/, 'primary value section size'],
+  [/\.erp-rowcard-amount strong,.erp-tile-row strong\) \{ font-size: var\(--erp-fs-body\); \}/, 'primary value body size'],
 ] as const;
 for (const [re, label] of naturalTypographyBaseline) {
   if (!re.test(desktopCss)) errors.push(`natural typography contract missing: ${label}`);
@@ -600,7 +600,7 @@ for (const [re, label] of naturalTypographyBaseline) {
 
 const mobileNaturalTypographyBaseline = [
   [/Natural ERP typography roles \(mobile\/live\)/, 'mobile natural ERP typography role block'],
-  [/\.panel-head h1 \{ font-size: var\(--글제목\); \}/, 'mobile panel title role size'],
+  [/\.panel-head h1 \{ font-size: var\(--글메인\); \}/, 'mobile panel title role size'],
   [/\.quick-filters a,[\s\S]*?input, select, textarea[\s\S]*?font-size: var\(--글메인\)/, 'mobile body/control role size'],
   [/\.dz-badge[\s\S]*?font-size: var\(--글보조\)/, 'mobile support/badge role size'],
 ] as const;
@@ -705,8 +705,8 @@ if (errors.length) {
   console.log('UI/UX SSOT check PASS');
   console.log(`- checked UI files: ${coreFiles.length}`);
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
-  console.log('- mobile baseline: 18/14/12 · control/action/touch 44 · radius 6 · gap 8');
-  console.log('- desktop normalized scale: 24/20/18/16/14/12 · controls 32/36 · row 40 · topbar 56');
+  console.log('- mobile operational typography: 14/12 · control/action/touch 44 · radius 6 · gap 8');
+  console.log('- desktop operational typography: 14/12 first · larger tiers reserved for explicit exceptions');
   console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
   console.log(`- internal Admin UI guard files: ${internalAdminUiFiles.length}`);

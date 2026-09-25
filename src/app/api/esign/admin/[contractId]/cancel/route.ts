@@ -11,12 +11,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ con
     const body = await request.json() as { reason?: unknown };
     const reason = String(body.reason ?? '').trim();
     const admin = await currentAdmin();
-    const result = await esign.cancelSignedContract(contractId, reason, admin?.name || 'freepass-admin');
+    const result = await esign.cancelContract(contractId, reason, admin?.name || 'freepass-admin');
     return Response.json({
       ok: true,
       cancelled: result.cancelled,
-      sessionId: result.session.id,
-      signedDocumentPreserved: result.session.status === 'signed',
+      sessionId: result.session?.id ?? null,
+      signedDocumentPreserved: result.signedDocumentPreserved,
     });
   } catch (e) {
     return Response.json({ ok: false, error: (e as Error).message }, { status: 409 });

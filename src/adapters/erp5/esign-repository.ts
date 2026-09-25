@@ -139,6 +139,45 @@ export class Erp5EsignRepository implements EsignRepository {
     });
   }
 
+  async finalizeSigned(
+    sessionId:string,
+    finalizationId:string,
+    sessionPatch:Partial<EsignSession>,
+    contractPatch:Record<string,unknown>,
+    actor:string,
+    detail:Record<string,unknown>,
+  ){
+    mustWrite();
+    const db=erp5(), sessionRef=db.collection(SESSIONS).doc(sessionId);
+    return db.runTransaction(async tx=>{
+      const sessionDoc=await tx.get(sessionRef);
+      if(!sessionDoc.exists)throw new Error('전자계약 세션을 찾을 수 없습니다.');
+      const current={id:sessionDoc.id,...sessionDoc.data()} as EsignSession;
+      if(current.status==='signed'){
+        if(current.finalizationId!==finalizationId)throw new Error('이미 다른 승인 요청으로 완료된 계약입니다.');
+        return {finalized:false,session:current};
+      }
+      if(current.status!=='approving'||current.finalizationId!==finalizationId){
+        throw new Error('승인 상태가 바뀌었습니다 — 다시 확인해 주세요.');
+      }
+      const contractRef=db.collection(CONTRACTS).doc(current.contractId);
+      const contractDoc=await tx.get(contractRef);
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+
+      const signed=clean({...sessionPatch,status:'signed',finalizationId} as unknown as Record<string,unknown>);
+      tx.update(sessionRef,signed);
+      tx.update(contractRef,clean({...contractPatch,updated_at:Date.now()}));
+
+      const eventRef=db.collection(EVENTS).doc(
+        'evt_'+createHash('sha256').update(current.contractId+'|'+finalizationId).digest('hex').slice(0,24),
+      );
+      tx.set(eventRef,clean({
+        contractId:current.contractId,sessionId,type:'approved',by:actor,at:Date.now(),detail,
+      }),{merge:false});
+      return {finalized:true,session:{...current,...signed,status:'signed'} as EsignSession};
+    });
+  }
+
   async getPrivate(sessionId:string):Promise<(EsignPrivateSubmission&Record<string,unknown>)|null>{
     const d=await erp5().collection(PRIVATE).doc(sessionId).get();
     return d.exists ? d.data() as EsignPrivateSubmission&Record<string,unknown> : null;

@@ -59,6 +59,12 @@ class Repo implements EsignRepository {
   async appendEvent(contractId:string,sessionId:string,type:string,by:string,detail:Record<string,unknown>={}){
     this.events.push({contractId,sessionId,type,by,detail:structuredClone(detail),at:Date.now()});
   }
+  async releaseFinalizationClaim(id:string,finalizationId:string){
+    const s=this.sessions.get(id);
+    if(!s||s.status!=='approving'||s.finalizationId!==finalizationId)return false;
+    Object.assign(s,{status:'pending_review',approvingAt:0,finalizationId:''});
+    return true;
+  }
   async listEvents(contractId:string){
     return this.events.filter(x=>x.contractId===contractId).map(({type,at,by,detail})=>({type,at,by,detail})).sort((a,b)=>b.at-a.at);
   }
@@ -580,4 +586,23 @@ test('an expired link can no longer upload, save a draft or move progress', asyn
   await assert.rejects(()=>svc.saveDraft(token,{customer_address:'서울'}),/만료/);
   await assert.rejects(()=>svc.progress(token,'summary'),/만료/);
   assert.equal([...assets.m.keys()].length,0);
+});
+
+test('a late failing approval does not release a claim another approval took over', async () => {
+  const repo=new Repo(), assets=new Assets();
+  let sessionId='';
+  const takeoverRenderer: EsignFinalDocumentRenderer = {
+    async render(){
+      // While request A renders, its claim goes stale and request B claims the session.
+      Object.assign(repo.sessions.get(sessionId)!,{status:'approving',finalizationId:'finalize_B_takeover_12345',approvingAt:Date.now()});
+      throw new Error('chromium crashed for A');
+    },
+  };
+  const svc=new EsignService(repo,assets,takeoverRenderer);
+  const {session}=await seedPendingReview(svc,repo,assets);
+  sessionId=session.id;
+  await assert.rejects(()=>svc.approve('c1','finalize_A_original_12345','tester'),/chromium crashed for A/);
+  const after=repo.sessions.get(sessionId)!;
+  assert.equal(after.status,'approving');
+  assert.equal(after.finalizationId,'finalize_B_takeover_12345');
 });

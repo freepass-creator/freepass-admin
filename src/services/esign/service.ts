@@ -747,9 +747,8 @@ export class EsignService {
       );
       return { ok: true as const, finalized: result.finalized, session: result.session };
     } catch (error) {
-      await this.repo.transitionSession(session.id, ['approving'], {
-        status: 'pending_review', approvingAt: 0, finalizationId: '',
-      }).catch(() => false);
+      // 내 claim 일 때만 푼다 — 그 사이 stale 로 넘어가 다른 승인 요청이 잡았다면 그 claim 은 그대로 둔다.
+      await this.repo.releaseFinalizationClaim(session.id, finalizationId).catch(() => false);
       throw error;
     }
   }

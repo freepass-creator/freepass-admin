@@ -230,6 +230,18 @@ export class Erp5EsignRepository implements EsignRepository {
       return {type:String(x.type??''),at:Number(x.at)||0,by:String(x.by??''),detail:(x.detail&&typeof x.detail==='object'&&!Array.isArray(x.detail)?x.detail:{}) as Record<string,unknown>};
     }).sort((a,b)=>b.at-a.at);
   }
+
+  async releaseFinalizationClaim(sessionId:string,finalizationId:string){
+    mustWrite();
+    const db=erp5(), ref=db.collection(SESSIONS).doc(sessionId);
+    return db.runTransaction(async tx=>{
+      const d=await tx.get(ref);
+      const x=d.data();
+      if(!d.exists||x?.status!=='approving'||String(x?.finalizationId??'')!==finalizationId)return false;
+      tx.update(ref,{status:'pending_review',approvingAt:0,finalizationId:''});
+      return true;
+    });
+  }
 }
 
 export class Erp5EsignAssetStore implements EsignAssetStore {

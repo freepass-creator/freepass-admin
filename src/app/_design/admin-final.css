@@ -2209,3 +2209,63 @@ body > nav.fn-top :where(a, button):focus-visible,
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Detail information rows (mobile/live)
+   목록은 3줄 scan, 상세는 key/value 읽기 리듬.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root {
+    --ui-detail-row-h: 36px;
+  }
+
+  .fn-main .workspace .summary-grid {
+    display: grid;
+    gap: 0;
+  }
+
+  .fn-main .workspace .summary-grid > div,
+  .fn-main .workspace .dz-sec-table > div {
+    min-height: var(--ui-detail-row-h);
+    align-items: center;
+  }
+
+  .fn-main .workspace :is(.summary-grid,.dz-sec-table) dt {
+    color: var(--ui-text-muted-color);
+    font-size: var(--글보조);
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .fn-main .workspace :is(.summary-grid,.dz-sec-table) dd {
+    color: var(--ui-text-strong-color);
+    font-size: var(--글메인);
+    font-weight: 500;
+    line-height: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fn-main .workspace .summary-grid > div {
+    display: grid;
+    grid-template-columns: minmax(96px, .8fr) minmax(0, 1.2fr);
+    column-gap: 12px;
+  }
+
+  .fn-main .workspace .summary-grid dd {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-sec-table > div {
+    column-gap: 12px;
+  }
+
+  .fn-main .workspace .dz-sec-table dd {
+    min-width: 0;
+    text-align: right;
+  }
+}

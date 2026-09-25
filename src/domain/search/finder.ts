@@ -35,7 +35,7 @@ export const VEHICLE_MILEAGE_BANDS: readonly FinderBand[] = [
 
 export const OFFER_FINDER_AXES = ['term', 'rent', 'dep', 'mile'] as const;
 export const PRODUCT_FINDER_AXES = [
-  'status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'model', 'cls', 'year', 'vmile', 'fuel', 'credit',
+  'status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'model', 'submodel', 'trim', 'cls', 'year', 'vmile', 'fuel', 'credit',
 ] as const;
 
 export type OfferFinderAxis = typeof OFFER_FINDER_AXES[number];
@@ -130,6 +130,8 @@ function baseQuery(selection:FinderSelection,limits:FinderLimits,skip?:FinderAxi
       (CUSTOMER_VEHICLE_CLASSES as readonly string[]).includes(x))}),
     ...(skip==='maker'||!selection.maker.length?{}:{manufacturerIds:selection.maker}),
     ...(skip==='model'||!selection.model.length?{}:{modelIds:selection.model}),
+    ...(skip==='submodel'||!selection.submodel.length?{}:{subModelIds:selection.submodel}),
+    ...(skip==='trim'||!selection.trim.length?{}:{trimIds:selection.trim}),
     ...(skip==='year'||!selection.year.length?{}:{modelYears:nums(selection.year)}),
     ...(skip==='fuel'||!selection.fuel.length?{}:{fuels:selection.fuel}),
     ...(skip==='term'||!selection.term.length?{}:{termMonths:nums(selection.term)}),
@@ -149,6 +151,8 @@ function productAxisMatches(product:CanonicalProduct,axis:ProductFinderAxis,key:
     case 'supplier': return (product.supplierName??product.supplierId)===key;
     case 'maker': return confirmedVehicleId(product.vehicle,'MANUFACTURER')===key;
     case 'model': return confirmedVehicleId(product.vehicle,'MODEL')===key;
+    case 'submodel': return confirmedVehicleId(product.vehicle,'SUB_MODEL')===key;
+    case 'trim': return confirmedVehicleId(product.vehicle,'TRIM')===key;
     case 'cls': return product.vehicleClass===key;
     case 'year': return product.specs.modelYear!==undefined&&String(product.specs.modelYear)===key;
     case 'vmile': return inBand(VEHICLE_MILEAGE_BANDS,key,product.specs.mileageKm)&&Number(product.specs.mileageKm)>0;
@@ -190,8 +194,9 @@ export function matchFinderProduct(
   const base=matchProduct(product,baseQuery(input.selection,input.limits,skip));
   if(!base)return null;
 
+  const vehicleHierarchyAxes = new Set<ProductFinderAxis>(['maker','model','submodel','trim']);
   for(const axis of PRODUCT_FINDER_AXES){
-    if(axis===skip)continue;
+    if(axis===skip || vehicleHierarchyAxes.has(axis))continue;
     const selected=input.selection[axis];
     if(selected.length&&!selected.some((key)=>productAxisMatches(product,axis,key)))return null;
   }

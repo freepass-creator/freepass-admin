@@ -187,6 +187,15 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const brandRestraintBaseline = [
+  [/--erp-color-primary:\s*#1B2A4A/i, 'desktop primary navy #1B2A4A'],
+  [/--erp-color-primary-weak:\s*#EEF3FA/i, 'desktop primary weak #EEF3FA'],
+  [/\.erp-tile--pressable\[aria-pressed="true"\][\s\S]*?color:\s*var\(--fp-text-strong\)/, 'selected tile text stays neutral'],
+] as const;
+for (const [re, label] of brandRestraintBaseline) {
+  if (!re.test(desktopCss)) errors.push(`brand restraint missing: ${label}`);
+}
+
 const detailPanelRhythmBaseline = [
   [/\.erp-std \.erp-detail-body[\s\S]*?padding:\s*var\(--erp-sp-3\)/, 'detail body padding 12px'],
   [/\.erp-std \.erp-subtitle[\s\S]*?margin:\s*0 0 var\(--erp-sp-2\)/, 'subtitle gap 8px'],

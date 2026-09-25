@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord } from '../clawback.js';
+import { clawbackId, clawbackRecord, sameClawbackPayload } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -115,4 +115,19 @@ test('계약 취소 후 환수는 취소된 전자계약 provenance를 함께 �
   assert.equal(result.doc.source, 'CONTRACT_CANCELLATION');
   assert.equal(result.doc.contractId, 'ctr_cancelled_1');
   assert.equal(result.doc.contractCancellationReason, '중도해지');
+});
+
+
+test('동일 환수 재시도 판정은 금액·일자·사유·계약줄이 같아야 한다', () => {
+  const baseDoc = {
+    code: 'stl_x',
+    at: '2026-09-25',
+    supplierAmt: 100000,
+    agentAmt: 80000,
+    reason: '계약 취소 환수',
+  };
+  assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc }), true);
+  assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, agentAmt: 70000 }), false);
+  assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, reason: '다른 사유' }), false);
+  assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, code: 'stl_y' }), false);
 });

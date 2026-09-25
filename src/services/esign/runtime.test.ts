@@ -44,6 +44,13 @@ class Repo implements EsignRepository {
     if(!reason.trim())throw new Error('계약 취소 사유를 적어 주세요.');
     const session=await this.getCurrentSession(contractId);
     if(contract.contract_status==='계약취소'){
+      if(contract.contract_cancel_reason&&contract.contract_cancel_reason!==reason.trim()){
+        throw new Error('이미 다른 사유로 계약취소 처리된 계약입니다 — 기존 취소 기록을 확인해 주세요.');
+      }
+      if(session&&!['signed','revoked'].includes(session.status)){
+        session.status='revoked';
+        session.revokedAt=Date.now();
+      }
       return {cancelled:false,session:session?structuredClone(session):null,signedDocumentPreserved:session?.status==='signed'};
     }
     if(contract.__testDelivered)throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
@@ -482,3 +489,22 @@ test('contract cancellation works before esign issuance and revokes an active si
   assert.equal(repo.contract.get('c2')?.contract_status,'계약취소');
 });
 
+
+
+test('contract cancellation retry repairs an active signing session and rejects reason drift', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{...contract(),contract_status:'계약취소',contract_cancel_reason:'고객 변심'});
+  repo.sessions.set('esg_cancel_repair',{
+    id:'esg_cancel_repair',contractId:'c1',contractCode:'FP-1',tokenHash:'x',status:'opened',revision:1,
+    issuedAt:1,issuedBy:'tester',expiresAt:2,progress:{},snapshot:{} as EsignSession['snapshot'],
+  });
+
+  const repaired=await svc.cancelContract('c1','고객 변심','tester');
+  assert.equal(repaired.cancelled,false);
+  assert.equal(repaired.session?.status,'revoked');
+
+  await assert.rejects(
+    ()=>svc.cancelContract('c1','다른 사유','tester'),
+    /다른 사유/,
+  );
+});

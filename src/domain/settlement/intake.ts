@@ -239,6 +239,14 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
+    if (S(cur.esignContractId)) {
+      if (B(cur.paper)) {
+        return { ok: false, error: '서명완료된 전자계약 연결 건은 일반 접수 취소할 수 없습니다 — 계약 취소/환수 절차로 처리합니다' };
+      }
+      if (!cur.esignRevokedAt) {
+        return { ok: false, error: '전자계약 링크가 살아 있습니다 — 전자계약을 먼저 해지한 뒤 접수를 취소합니다' };
+      }
+    }
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();
     if (!reason) return { ok: false, error: '취소 사유를 넣어야 합니다' };

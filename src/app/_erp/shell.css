@@ -1766,3 +1766,92 @@
     padding-inline: var(--erp-sp-4);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Card line contract
+ * 목록 카드는 줄 수가 먼저 정해지고, 정보는 그 줄 안에 들어간다.
+ * 내용 때문에 카드 구조를 매번 새로 늘리지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-card-line-h: 20px;
+    --fp-card-line-gap: 2px;
+  }
+
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-amount strong,
+    .erp-rowcard-amount span
+  ) {
+    line-height: var(--fp-card-line-h);
+  }
+
+  .erp-std .erp-rowcard-id {
+    display: grid;
+    align-content: center;
+    gap: var(--fp-card-line-gap);
+  }
+
+  .erp-std .erp-rowcard-title,
+  .erp-std .erp-rowcard-sub,
+  .erp-std .erp-rowcard-meta {
+    min-height: var(--fp-card-line-h);
+    max-height: var(--fp-card-line-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* compact 목록은 최대 3줄: identity / context / meta.
+   * 값이 없으면 해당 줄만 빠지고 카드가 불필요하게 늘어나지 않는다. */
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    grid-auto-rows: var(--fp-card-line-h);
+  }
+
+  /* 넓은 RowCard의 facts는 label/value를 한 줄에서 끝낸다. */
+  .erp-std .erp-rowcard-facts > div {
+    min-height: var(--fp-card-line-h);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    align-items: center;
+    column-gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-rowcard-facts :is(dt,dd) {
+    line-height: var(--fp-card-line-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-rowcard-facts dd small {
+    display: block;
+    line-height: 16px;
+    margin-top: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 내용 카드(Tile)는 1줄 또는 2줄. 3줄 이상 설명은 Tile이 아니라 detail section으로 보낸다. */
+  .erp-std .erp-tile-row {
+    min-height: var(--fp-card-line-h);
+    line-height: var(--fp-card-line-h);
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-tile-row > :is(b,strong,span) {
+    min-width: 0;
+  }
+
+  .erp-std .erp-tile-row > :first-child {
+    text-align: left;
+  }
+
+  .erp-std .erp-tile-row > :last-child {
+    margin-left: auto;
+    text-align: right;
+  }
+}

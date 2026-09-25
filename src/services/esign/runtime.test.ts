@@ -7,6 +7,7 @@ import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } fro
 import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 
 class Repo implements EsignRepository {
+  failFinalizeOnce = false;
   contract = new Map<string, Record<string, unknown>>();
   intakes = new Map<string, ContractHandoffSource>();
   sessions = new Map<string, EsignSession>();
@@ -49,6 +50,7 @@ class Repo implements EsignRepository {
       return {finalized:false,session:structuredClone(s)};
     }
     if(s.status!=='approving'||s.finalizationId!==finalizationId)throw new Error('bad state');
+    if(this.failFinalizeOnce){this.failFinalizeOnce=false;throw new Error('simulated finalize transaction failure');}
     Object.assign(s,structuredClone(sessionPatch),{status:'signed',finalizationId});
     this.contract.set(s.contractId,{...(this.contract.get(s.contractId)||{}),...structuredClone(contractPatch)});
     this.events.push({contractId:s.contractId,sessionId,type:'approved',by:actor,detail:structuredClone(detail),at:Date.now()});
@@ -70,13 +72,17 @@ class Renderer implements EsignFinalDocumentRenderer {
 }
 
 class Assets implements EsignAssetStore {
+  failFinalReadback = false;
+  puts = new Map<string,number>();
   m=new Map<string,{bytes:Uint8Array;contentType:string;sha256:string}>();
   async put(path:string,bytes:Uint8Array,contentType:string){
     const sha256=createHash('sha256').update(bytes).digest('hex');
     this.m.set(path,{bytes:new Uint8Array(bytes),contentType,sha256});
+    this.puts.set(path,(this.puts.get(path)??0)+1);
     return {path,sha256,size:bytes.length};
   }
   async get(path:string,expected?:string){
+    if(this.failFinalReadback&&path.startsWith('esign-final/'))return null;
     const x=this.m.get(path);
     if(!x||expected&&x.sha256!==expected)return null;
     return {bytes:new Uint8Array(x.bytes),contentType:x.contentType};
@@ -228,7 +234,21 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
   });
 
   const operation='finalize_1234567890abcdef';
+  const finalPath='esign-final/FP-1/'+current!.id+'.pdf';
+
+  assets.failFinalReadback=true;
+  await assert.rejects(()=>svc.approve('c1',operation,'tester'),/재조회 검증/);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.equal(assets.puts.get(finalPath),1);
+
+  assets.failFinalReadback=false;
+  repo.failFinalizeOnce=true;
+  await assert.rejects(()=>svc.approve('c1',operation,'tester'),/simulated finalize transaction failure/);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.equal(assets.puts.get(finalPath),2);
+
   const first=await svc.approve('c1',operation,'tester');
+  assert.equal(assets.puts.get(finalPath),3);
   assert.equal(first.finalized,true);
   assert.equal(first.session.status,'signed');
   assert.equal(repo.contract.get('c1')?.sign_status,'서명완료');
@@ -238,7 +258,7 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
 
   const second=await svc.approve('c1',operation,'tester');
   assert.equal(second.finalized,false);
-  assert.equal(renderer.calls,1);
+  assert.equal(renderer.calls,3);
   assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
 });
 

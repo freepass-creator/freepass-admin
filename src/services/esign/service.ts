@@ -712,6 +712,11 @@ export class EsignService {
     }
   }
 
+  async cancelSignedContract(contractId: string, reason: string, actor = 'admin') {
+    const result = await this.repo.cancelSignedContract(contractId, reason, actor);
+    return { ok: true as const, ...result };
+  }
+
   async reject(contractId: string, reason: string, items: string[], actor = 'admin') {
     const session = await this.repo.getCurrentSession(contractId);
     if (!session) throw new Error('전자계약 세션이 없습니다.');

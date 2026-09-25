@@ -64,7 +64,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <SideMenu />
       </nav>
 
-      {/* ── 본문: PC 는 규격 화면(.erp-screen), 폰은 기존 판(그대로) ── (대표 2026-09-24 「좌측 사이드
+      {/* ── 본문: viewport에 따라 같은 actual route의 responsive composition을 배치한다. (대표 2026-09-24 「좌측 사이드
           메뉴하고 상단 헤더하고 겹치잖아」) — ③ 작업 탭(규격 §1, 여러 화면을 MDI 탭으로 동시에 여는 자리)
           자리에 실제로는 ② 왼쪽 메뉴와 똑같은 다섯 항목을 그대로 다시 그리는 WorkTabs 가 있었다 — 진짜
           MDI(열어 둔 화면 탭)가 아니라 그냥 같은 이동 메뉴를 위아래로 두 번 보여주는 중복이었다. 이동은

@@ -14,6 +14,6 @@ export const dynamic = 'force-dynamic';
  */
 export default async function IntakeMain({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
-  /* PC = ERP 표준 3패널(DEC-2026-09-23-01), 폰 = 기존 판 — CSS(_erp/shell.css)가 폭으로 가른다 */
+  /* 같은 actual route가 viewport에 따라 적응형 composition으로 렌더링된다. */
   return <><WorkspaceScreen q={q} /><ProductWorkspace q={q} mode="intake" base="/intake" /></>;
 }

@@ -240,12 +240,7 @@ export function progressPatch(
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
     if (S(cur.esignContractId)) {
-      if (B(cur.paper)) {
-        return { ok: false, error: '서명완료된 전자계약 연결 건은 일반 접수 취소가 아니라 계약취소 절차로 처리합니다' };
-      }
-      if (!cur.esignRevokedAt) {
-        return { ok: false, error: '전자계약 링크가 살아 있습니다 — 전자계약 발행을 먼저 철회한 뒤 접수를 취소합니다' };
-      }
+      return { ok: false, error: '계약이 연결된 접수는 일반 접수 취소가 아니라 계약취소 절차로 처리합니다' };
     }
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();

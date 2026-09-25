@@ -2522,3 +2522,23 @@ Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
 - card gap과 section gap을 섞지 않는다
 - subtitle은 아래 카드 묶음에 붙어 읽히게
 - detail body 바깥 padding을 과하게 키우지 않는다
+
+
+# 55. Typography weight hierarchy
+
+전체 UI가 무거워 보이지 않게 굵기를 역할별로 제한한다.
+
+- PanelHead title: 700
+- Card identity/title: 600
+- Primary value / money / KPI: 700
+- Subtitle / Tile title: 600
+- Primary / Secondary action: 600
+- Badge / Tag: 600
+- Meta / support: 400~500
+
+## 원칙
+
+- 선택 상태를 font-weight로 강조하지 않는다.
+- selected는 surface/tint로 표현한다.
+- 카드 제목과 금액을 둘 다 700으로 반복하지 않는다.
+- 한 카드 안에서 700은 핵심 수치/결과에 우선한다.

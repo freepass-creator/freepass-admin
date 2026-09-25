@@ -1130,8 +1130,8 @@ body > nav.fn-top :where(a, button):focus-visible,
    touch target 44는 유지하고, panel/list rhythm을 명시적으로 고정한다.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --ui-panel-head-h: 56px;
-  --ui-query-row-h: 52px;
+  --ui-panel-head-h: 52px;
+  --ui-query-row-h: 48px;
   --ui-row-min-h: 88px;
   --ui-section-rhythm: 16px;
 }

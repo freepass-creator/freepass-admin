@@ -2289,3 +2289,19 @@ body > nav.fn-top :where(a, button):focus-visible,
     text-overflow: ellipsis;
   }
 }
+
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    margin-left: auto;
+    flex: none;
+    max-width: 46%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    font-size: var(--글메인);
+    font-weight: 600;
+    color: var(--ui-text-strong-color);
+    font-variant-numeric: tabular-nums;
+  }
+}

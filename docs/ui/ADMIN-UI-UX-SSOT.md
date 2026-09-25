@@ -3118,3 +3118,50 @@ Mobile 상세도 같은 의미 위계를 유지한다.
 
 목표:
 > 목록에서는 빠르게 고르고, 상세에서는 같은 정렬 규칙으로 정확히 읽는다.
+
+# 74. List / Content / Input surface types
+
+Admin UI의 기본 surface는 세 가지다.
+
+## List
+목적: 찾기 · 비교 · 선택.
+- 64×64 visual + Main / Key / Support 3줄
+- 빠른 scan
+- 최소정보
+- 클릭하면 Content 또는 Input으로 이동
+
+## Content
+목적: 선택한 대상을 정확히 읽기.
+- Hero / 정보그룹 / key-value rows / 요약
+- 목록의 64×64/3줄 geometry를 그대로 복제하지 않는다
+- 정확값과 맥락을 충분히 보여준다
+- 상품 상세, 접수 상세, 계약 상세 등이 해당
+
+## Input
+목적: 실제 업무처리 · 수정 · 저장.
+- field group
+- validation / pending / error
+- 하단 고정 ActionBar
+- 주요 액션은 하단에 둔다
+
+핵심:
+> 같은 데이터 토큰과 의미는 공유하지만, List / Content / Input의 구조와 밀도는 서로 다르다.
+
+# 75. Embedded selectable list inside Content
+
+Content 화면 안에서도 사용자가 여러 후보 중 하나를 골라 다음 업무로 이어가야 하면
+**선택 가능한 목록 카드**를 임베드할 수 있다.
+
+상품 상세의 기간별 대여료가 대표 사례다.
+
+기간별 대여료 카드:
+- Main 좌측: 기간
+- Main 우측: 월 대여료 정확금액
+- Key: 보증금 · 선납금 · 연간주행거리 등 선택에 직접 필요한 조건
+- Support: 선택상태 / 이 조건으로 접수
+- 선택된 카드는 tint + inset, 외곽선 없음
+- 선택 후 하단 `접수하기`는 선택된 offer id를 사용
+
+주의:
+- 이 카드는 Content 안의 선택목록이지, ProductDetail 전체가 List surface가 되는 것이 아니다.
+- 선택에 필요 없는 정책/세부조건은 상품 상세의 다른 Content 영역에서 본다.

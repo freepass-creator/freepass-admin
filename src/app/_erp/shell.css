@@ -761,10 +761,10 @@
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
   :root {
-    --fp-panel-head-h: 48px;
-    --fp-query-row-h: 52px;
-    --fp-quick-row-h: 48px;
-    --fp-panel-foot-h: 60px;
+    --fp-panel-head-h: 44px;
+    --fp-query-row-h: 48px;
+    --fp-quick-row-h: 40px;
+    --fp-panel-foot-h: 56px;
     --fp-row-compact-min-h: 64px;
     --fp-row-standard-min-h: 72px;
     --fp-section-rhythm: 16px;

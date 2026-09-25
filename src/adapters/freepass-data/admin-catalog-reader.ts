@@ -37,12 +37,12 @@ export class FreePassDataCatalogHoldError extends Error {
 /**
  * Migration switchboard.
  *
- * Today:
- * - LEGACY_DIRECT / OBSERVE: return the legacy ERP5 bridge, but authority remains FreePass Data.
- * - SHADOW_READ and later: fail closed until the Admin consumer contract is actually implemented.
+ * Migration behavior:
+ * - LEGACY_DIRECT / OBSERVE: return the legacy ERP5 bridge.
+ * - SHADOW_READ: read FreePass Data independently, record MATCH/MISMATCH/HOLD, but return legacy rows.
+ * - PARITY_VERIFIED / FREEPASS_DATA_READ: fail closed until revision-scoped parity/fallback/readback evidence exists.
  *
- * We deliberately do not pretend that the generic ERP-public projection is an Admin contract,
- * and we never silently fall back once a later switch is requested.
+ * The generic ERP-public projection is never treated as the Admin contract.
  */
 export type ShadowComparison = {
   status: 'MATCH' | 'MISMATCH';

@@ -87,7 +87,7 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
         </span>
       )}
       <span className="dz-row-body">
-        <span className="dz-row-l1">
+        <span className="dz-row-l1" data-line-role="main">
           <b>{title}</b>
           <span className="dz-row-badges">
             {/* 신원 칩 — 아이콘 + 글자(갈래마다 그림 · 좋은 소식은 초록). 할 일(act)은 기다림 그림 */}
@@ -99,15 +99,15 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
         {product ? (
           <>
             {/* 값 한 줄 — 좁으면 「 · 」 에서만 넘긴다(「보증금 / 1,000,000원」처럼 말 한가운데서 끊기지 않게) */}
-            <span className="dz-row-l2 value"><strong>{typeof value === 'string'
+            <span className="dz-row-l2 value" data-line-role="key"><strong>{typeof value === 'string'
               ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{i > 0 ? ' · ' : ''}{x}</span>)
               : value}</strong></span>
-            <span className="dz-row-l3 perks">{칩.length ? <PerkMarks marks={칩} compact /> : <small>조건 없음</small>}</span>
+            <span className="dz-row-l3 perks" data-line-role="support">{칩.length ? <PerkMarks marks={칩} compact /> : <small>조건 없음</small>}</span>
           </>
         ) : (
           <>
-            <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
-            <span className="dz-row-l3">
+            <span className="dz-row-l2" data-line-role="key">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
+            <span className="dz-row-l3" data-line-role="support">
               <strong>{value}</strong>
               {칩.length
                 ? <PerkMarks marks={칩} compact />

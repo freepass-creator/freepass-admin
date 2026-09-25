@@ -1881,3 +1881,72 @@
     font-weight: 400;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — 64px visual tile contract
+ * 차량=실사진 우선 / 일반목록=동일 크기 상태 아이콘+텍스트.
+ * 본문 3줄(20+2+20+2+20=64)과 시각 타일 높이를 정확히 맞춘다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard {
+    grid-template-columns: 64px minmax(0, 1fr) minmax(96px, auto);
+    min-height: 84px;
+    column-gap: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    align-self: center;
+    overflow: hidden;
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb:not(.erp-rowcard-thumb--status) > svg {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status svg {
+    width: 24px;
+    height: 24px;
+    flex: none;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status span {
+    display: block;
+    max-width: 56px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 14px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    min-height: 64px;
+    height: 64px;
+    align-content: center;
+  }
+}

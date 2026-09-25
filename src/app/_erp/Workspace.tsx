@@ -9,7 +9,7 @@
  */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { productList, settlements, today } from '../../server/erp5';
+import { productList, settlements, today, writeEnabled } from '../../server/freepass-data';
 import type { CanonicalProduct } from '../../domain/product/types';
 import { 많은순 } from '../products/workspace-config';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
@@ -19,7 +19,6 @@ import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { NewIntakePanel } from '../intake/panels';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt } from '../_fn/fmt';
 import { SettlementDetail } from './SettlementDetail';
 import { AutoSelect } from './AutoSelect';

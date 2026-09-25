@@ -1111,8 +1111,7 @@
       "identity": "single-line+ellipsis",
       "primaryValue": "single-line",
       "meta": "single-line+ellipsis",
-      "secondarySignals": "single-line+clip",
-      "mobilePreferredMaxHeightPx": 96
+      "secondarySignals": "single-line+clip"
     },
     "actions": {
       "wrap": false,
@@ -1261,37 +1260,27 @@
   "cardLines": {
     "lineHeightPx": 20,
     "lineGapPx": 2,
+    "lineCount": "content-driven",
+    "maxLines": null,
     "listCard": {
-      "allowedLines": [
-        1,
-        2,
-        3
-      ],
-      "maxLines": 3,
-      "roles": [
-        "identity",
-        "context",
-        "result"
-      ],
+      "firstLine": "highest-priority identity + optional primary value",
+      "subsequentLines": "descending business priority",
+      "wrap": false,
       "overflow": "ellipsis",
-      "wrap": false
+      "vehicleExample": [
+        "vehicle/model identity + monthly rent",
+        "vehicle number + product kind",
+        "term + deposit",
+        "supplier/year/mileage/color/other operational facts as needed"
+      ]
     },
-    "wideRow": {
-      "regions": [
-        "identity",
-        "progress",
-        "facts",
-        "amount"
+    "amountDisplay": {
+      "list": "compact-ten-thousand-won-allowed",
+      "examples": [
+        "67만원/월",
+        "보증금 500만"
       ],
-      "regionTextWrap": false
-    },
-    "tile": {
-      "preferredLines": [
-        1,
-        2
-      ],
-      "maxLines": 2,
-      "overflowContent": "move-to-detail-section"
+      "detail": "exact-won-preferred"
     },
     "alignment": {
       "text": "left",
@@ -1299,6 +1288,6 @@
       "money": "right",
       "numericVariant": "tabular-nums"
     },
-    "rule": "List cards have a fixed line grammar; do not grow vertically to accommodate extra detail."
+    "rule": "Standardize line roles and rhythm, not the number of lines or total card height."
   }
 }

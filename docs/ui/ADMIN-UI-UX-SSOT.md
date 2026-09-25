@@ -3169,3 +3169,26 @@ Content 화면 안에서도 사용자가 여러 후보 중 하나를 골라 다�
 주의:
 - 이 카드는 Content 안의 선택목록이지, ProductDetail 전체가 List surface가 되는 것이 아니다.
 - 선택에 필요 없는 정책/세부조건은 상품 상세의 다른 Content 영역에서 본다.
+
+# 76. List card horizontal distribution
+
+목록 카드는 가로폭을 꽉 쓰되, 카드마다 좌우 기준선이 흔들리지 않는다.
+
+Web compact:
+- visual: 64px fixed
+- body: minmax(0, 1fr), 남는 폭 전부 사용
+- primary value: clamp(108px, 24%, 136px)
+- column gap: 12px
+- amount/right edge는 같은 목록에서 동일 기준선
+- compact에서는 steps/facts/go를 숨기고 3줄 본문만 유지
+
+Mobile:
+- visual/status: 64px fixed
+- body: 남는 폭 전부
+- Main: identity + stable right value column
+- primary value: clamp(92px, 30vw, 124px)
+- 360-class: 88~112px
+- 긴 identity가 먼저 줄고 대표값은 보존
+
+목표:
+> 카드가 왼쪽부터 오른쪽까지 균일하게 차고, 제목 길이가 달라도 금액/대표값의 오른쪽 기준선은 맞아야 한다.

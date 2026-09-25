@@ -4,16 +4,26 @@ import { deflateSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { EsignService } from './service';
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
-import type { EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 
 class Repo implements EsignRepository {
   contract = new Map<string, Record<string, unknown>>();
+  intakes = new Map<string, ContractHandoffSource>();
   sessions = new Map<string, EsignSession>();
   priv = new Map<string, Record<string, unknown>>();
   events: Array<{ contractId:string; sessionId:string; type:string; at:number; by:string; detail:Record<string,unknown> }> = [];
 
   async getContract(id:string){return this.contract.get(id)??null;}
+  async getIntakeContractSource(id:string){return this.intakes.get(id)??null;}
   async createContract(id:string,data:Record<string,unknown>){if(this.contract.has(id))throw new Error('dup');this.contract.set(id,{id,...structuredClone(data)});}
+  async createContractFromIntake(source:ContractHandoffSource,id:string,data:Record<string,unknown>){
+    if(this.contract.has(id))return {created:false};
+    const current=this.intakes.get(source.intakeId);
+    if(!current)throw new Error('접수를 찾을 수 없습니다.');
+    if(current.sourceDigest!==source.sourceDigest)throw new Error('접수 정보가 변경되었습니다 — 다시 불러온 뒤 계약을 만들어 주세요.');
+    this.contract.set(id,{id,...structuredClone(data)});
+    return {created:true};
+  }
   async updateContract(id:string,patch:Record<string,unknown>){this.contract.set(id,{...(this.contract.get(id)||{}),...structuredClone(patch)});}
   async getCurrentSession(contractId:string){return [...this.sessions.values()].filter(x=>x.contractId===contractId).sort((a,b)=>b.issuedAt-a.issuedAt)[0]??null;}
   async getSession(id:string){return this.sessions.get(id)??null;}
@@ -128,4 +138,37 @@ test('esign issue fails closed before creating a session when public base is mis
   await assert.rejects(()=>svc.issue('c1'),/공개 주소/);
   assert.equal(repo.sessions.size,0);
   assert.equal(repo.contract.get('c1')?.sign_status,undefined);
+});
+
+
+test('intake contract handoff is immutable and idempotent', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.intakes.set('stl_1',{
+    intakeId:'stl_1',sourceDigest:'digest-v1',customerName:'홍길동',vehicleName:'GV70',plate:'12가3456',
+    supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,
+    sourceProductId:'prd_1',sourceProductVersion:7,sourceOfferId:'off_36',sourceSnapshotId:'snap_1',
+    catalogSnapshot:{capturedAt:'2026-09-22T00:00:00.000Z'},
+  });
+
+  const input={
+    intakeId:'stl_1',customerPhone:'01012345678',customerType:'개인' as const,
+    contractDate:'2026-09-25',contractKind:'rent_return',insuranceSide:'회사포함' as const,
+  };
+  const first=await svc.createContractFromIntake(input,'tester');
+  const second=await svc.createContractFromIntake(input,'tester');
+  assert.equal(first.created,true);
+  assert.equal(second.created,false);
+  assert.equal(second.id,first.id);
+
+  const stored=repo.contract.get(first.id)!;
+  assert.equal(stored.source_intake_id,'stl_1');
+  assert.equal(stored.source_product_id,'prd_1');
+  assert.equal(stored.source_offer_id,'off_36');
+  assert.equal(stored.contract_source_digest,'digest-v1');
+  assert.equal((stored.contract_source_snapshot as ContractHandoffSource).rent,690000);
+
+  repo.intakes.set('stl_1',{...repo.intakes.get('stl_1')!,sourceDigest:'digest-v2',rent:710000});
+  const third=await svc.createContractFromIntake(input,'tester');
+  assert.equal(third.created,false);
+  assert.equal(repo.contract.get(first.id)?.rent_amount_snapshot,690000);
 });

@@ -241,7 +241,7 @@ export function progressPatch(
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
     if (S(cur.esignContractId)) {
       if (B(cur.paper)) {
-        return { ok: false, error: '서명완료된 전자계약 연결 건은 일반 접수 취소할 수 없습니다 — 계약 취소/환수 절차로 처리합니다' };
+        return { ok: false, error: '서명완료된 전자계약 연결 건은 일반 접수 취소가 아니라 계약취소 절차로 처리합니다' };
       }
       if (!cur.esignRevokedAt) {
         return { ok: false, error: '전자계약 링크가 살아 있습니다 — 전자계약을 먼저 해지한 뒤 접수를 취소합니다' };

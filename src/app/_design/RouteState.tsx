@@ -1,6 +1,6 @@
 'use client';
 
-import { PanelHeader } from './Primitives';
+import { ActionBar, PanelHeader } from './Primitives';
 
 export function RouteLoading({ title }: { title: string }) {
   return (
@@ -33,11 +33,9 @@ export function RouteError({ title, error, reset }: {
           <p>{error.message || '일시적인 오류가 발생했습니다.'}</p>
           {error.digest ? <small>오류번호 {error.digest}</small> : null}
         </div>
-        <div className="dz-bar">
-          <div className="dz-bar-go">
-            <button type="button" className="primary" onClick={reset}>다시 시도</button>
-          </div>
-        </div>
+        <ActionBar>
+          <button type="button" className="primary" onClick={reset}>다시 시도</button>
+        </ActionBar>
       </section>
     </section>
   );

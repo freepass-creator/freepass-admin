@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
+import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, nextInvoiceRevision, planInvoice } from '../lifecycle.js';
 import { claimLedger } from '../ledgers.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -16,6 +16,22 @@ describe('문서번호 — FP-S/P-YYYYMM-NNN · 그 달 안에서 순번', () =>
     assert.equal(nextInvoiceNo('2026-09', '공급사', ['FP-S-202609-001', 'FP-S-202609-004', 'FP-P-202609-009']), 'FP-S-202609-005');
     assert.equal(nextInvoiceNo('2026-09', '영업채널', ['FP-S-202609-001']), 'FP-P-202609-001');
   });
+});
+
+test('재발행은 이전 snapshot과 상대 답변을 revision history에 봉인한다', () => {
+  const existing = {
+    key: '2026-09|공급사|A', invoiceNo: 'FP-S-202609-001', month: '2026-09', axis: '공급사' as const, party: 'A',
+    supply: 1_000_000, vat: 100_000, total: 1_100_000, lines: 1, codes: ['a'], clawback: 0,
+    revision: 2, issuedAt: 100, issuedBy: 'tester',
+    snapshot: { lines: [{ code: 'a' }], clawbacks: [] },
+    response: { state: '확인' as const, at: 200 },
+    history: [{ revision: 1, supply: 900_000, vat: 90_000, total: 990_000, lines: 1, clawback: 0, issuedAt: 50 }],
+  };
+  const receipt = nextInvoiceRevision(existing);
+  assert.equal(receipt.revision, 3);
+  assert.equal(receipt.history.length, 2);
+  assert.deepEqual(receipt.history[1].snapshot, existing.snapshot);
+  assert.deepEqual(receipt.history[1].response, existing.response);
 });
 
 describe('부가세 — 줄마다 가른다', () => {

@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 96cbbae3fcd84397dcaff5ffce1788f406178058
+ * 정본: freepass-creator/ai-core @ 3f678f0ddde53b4da6e756b72fa2caa0dbd40b22
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -20,7 +20,7 @@
 /* ── erp.css ───────────────────────────────────────────── */
 /* ERP 표준 UI 규격 v1 — 공통 스타일
  *
- * 값의 정본은 tokens.json 이다. 아래 :root 는 그 투영본이고, 그 밖의 규칙은
+ * 값의 정본은 design-system/tokens.json 의 erp_standard 블록이다(AI Core 토큰 정본 하나). 아래 :root 는 그 투영본이고, 그 밖의 규칙은
  * 색·글자 크기·글자 굵기·모서리를 반드시 var(--erp-*) 로만 쓴다.
  * 검사: npm run erp:check  (scripts/check-erp-standard.mjs)
  */
@@ -1054,8 +1054,12 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * focus-visible도 line-free 문법 안에서 soft halo로 통일한다.
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
+  /* 키보드 포커스는 halo 만으로는 모자란다 — halo(투명도 .14)는 배경 대비 3:1 에 못 미친다(WCAG 1.4.11 ·
+   * AI Core 헌법 「접근성은 시각 취향으로 면제하지 않는다」). 네이비 2px 링을 2px 띄워 함께 그린다(2026-09-25).
+   * :focus-visible 이라 마우스로 누를 때는 안 보이고, 키보드로 옮길 때만 보인다. */
   .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-tile--pressable, .erp-rowcard, .erp-seg a, .erp-statusbar-keys a):focus-visible {
-    outline: none;
+    outline: 2px solid var(--erp-color-primary);
+    outline-offset: 2px;
     box-shadow: var(--erp-focus-halo), var(--erp-elevation-base);
   }
 
@@ -1067,7 +1071,8 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
     .erp-seg a[aria-pressed="true"],
     .erp-statusbar-keys a[aria-pressed="true"]
   ):focus-visible {
-    outline: none;
+    outline: 2px solid var(--erp-color-primary);
+    outline-offset: 2px;
     box-shadow:
       var(--erp-focus-halo),
       var(--erp-shadow-pressed-12);
@@ -1859,6 +1864,12 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 좁은 폭에서 세로로 비대해지지 않게 choice/action rows는 가로 흐름을 유지한다.
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
+  /* 가로 스크롤 줄은 밖으로 나간 키보드 포커스 링(2px + 띄움 2px)을 잘라 먹는다 — 퀵 필터 줄에 4px 안쪽 여백을
+   * 주고 같은 만큼 바깥 여백을 빼서 자리는 그대로 둔다. */
+  .erp-std .erp-toolbar .erp-facet-opts {
+    padding: 4px;
+    margin: -4px;
+  }
   .erp-std .erp-toolbar .erp-facet-opts,
   .erp-std .erp-panel--compact .erp-facet-opts {
     flex-wrap: nowrap;

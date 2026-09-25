@@ -94,6 +94,8 @@ export interface SettlementMoney {
 
 export interface IntakeCatalogSnapshot {
   capturedAt: string;
+  /** capturedAt을 제외한 계약상품 사본의 deterministic SHA-256. 같은 선택 재시도 판정에 쓴다. */
+  digest: string;
   product: {
     id: string;
     version: number;
@@ -101,6 +103,8 @@ export interface IntakeCatalogSnapshot {
     supplierId: string;
     supplierName: Maybe<string>;
     productKind: Maybe<string>;
+    status: Maybe<string>;
+    consumerPrice: Maybe<number>;
     vehicle: {
       nodeId: string;
       originId: string;
@@ -110,11 +114,22 @@ export interface IntakeCatalogSnapshot {
       trimId: Maybe<string>;
       matchLevel: string;
     };
+    specs: {
+      modelYear: Maybe<number>;
+      mileageKm: Maybe<number>;
+      fuel: Maybe<string>;
+      displacementCc: Maybe<number>;
+      seats: Maybe<number>;
+      drivetrain: Maybe<string>;
+      batteryKwh: Maybe<number>;
+    };
     registration: {
       vehicleNumber: Maybe<string>;
       vin: Maybe<string>;
       firstRegistrationDate: Maybe<string>;
     };
+    /** Product-scope 정책 원본. Offer 정책과 합치기 전 사본. */
+    policyValues: PolicyValue[];
   };
   offer: {
     id: string;
@@ -123,7 +138,10 @@ export interface IntakeCatalogSnapshot {
     deposit: Maybe<number>;
     prepayment: Maybe<number>;
     annualMileageKm: Maybe<number>;
+    /** Offer-scope 정책 원본. */
     policyValues: PolicyValue[];
+    /** 당시 실제 적용된 Product+Offer 정책 결과. */
+    resolvedPolicyValues: PolicyValue[];
   };
 }
 
@@ -162,6 +180,7 @@ export interface SettlementRow {
     productVersion: Maybe<number>;
     offerId: Maybe<string>;
     sourceSnapshotId: Maybe<string>;
+    snapshotDigest?: Maybe<string>;
   };
   /** 저장 순간의 계약상품 전체 조건. 현재 Catalog가 바뀌어도 이 사본은 변하지 않는다. */
   catalogSnapshot?: Maybe<IntakeCatalogSnapshot>;

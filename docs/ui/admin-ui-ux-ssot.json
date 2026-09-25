@@ -1317,45 +1317,34 @@
     "profitOrMargin": "not-default-list-field"
   },
   "cardInformationMatrix": {
-    "principle": "scan-identify-select; detail owns completeness",
-    "preferredLineRange": "3-4",
+    "principle": "all internal admin list cards are strict 3-line scan cards; detail owns completeness",
     "product": {
       "standardLines": 3,
-      "lines": [
-        "vehicle identity + status | monthly rent compact",
-        "plate + product kind",
-        "term + deposit compact"
-      ]
+      "main": "vehicle identity + status | compact monthly rent",
+      "key": "plate + product kind",
+      "support": "term + compact deposit"
     },
     "intake": {
-      "standardLines": 4,
-      "lines": [
-        "customer + state | monthly rent compact",
-        "plate + model",
-        "product + term",
-        "exact claim fee + exact pay fee"
-      ]
+      "standardLines": 3,
+      "main": "customer + state | compact monthly rent",
+      "key": "plate + model + product + term",
+      "support": "exact claim fee + exact pay fee"
     },
     "performance": {
-      "standardLines": 4,
-      "lines": [
-        "customer + state",
-        "plate + model",
-        "product + term",
-        "exact claim fee + exact pay fee"
-      ],
+      "standardLines": 3,
+      "main": "customer + performance state",
+      "key": "plate + model + product + term",
+      "support": "exact claim fee + exact pay fee",
       "excludedByDefault": [
         "profit",
         "margin"
       ]
     },
     "settlementGroup": {
-      "standardLines": 2,
-      "conditionalExtraLine": "unknown/broken/clawback issue",
-      "lines": [
-        "party + state | exact settlement amount",
-        "document progress + completion"
-      ]
+      "standardLines": 3,
+      "main": "party + state | exact settlement amount",
+      "key": "document progress",
+      "support": "completion or issue summary"
     },
     "settlementLine": {
       "standardLines": 3,
@@ -1368,18 +1357,15 @@
         "main": "customer + pay stage | exact pay fee",
         "key": "plate + model + product + term",
         "support": "exact claim fee"
-      },
-      "rule": "The active settlement axis owns the primary fee; the opposite fee is support context."
+      }
     },
     "esign": {
       "standardLines": 3,
-      "lines": [
-        "customer + sign state | monthly rent compact",
-        "plate + vehicle",
-        "term + contract state"
-      ]
+      "main": "customer + sign state | compact monthly rent",
+      "key": "plate + vehicle",
+      "support": "term + contract state"
     },
-    "rule": "Add a list line only when it materially helps identify or select the target before opening detail."
+    "rule": "No fourth information line in ordinary internal Admin list cards."
   },
   "listCardGrammar": {
     "defaultLines": 3,
@@ -1407,10 +1393,7 @@
       }
     ],
     "statusPlacement": "main-inline-badge",
-    "exceptions": {
-      "twoLine": "allowed when sufficient",
-      "conditionalFourthLine": "issue/warning only"
-    },
-    "rule": "Default list cards use Main/Key/Support semantics; detail owns completeness."
+    "exceptions": {},
+    "rule": "Every ordinary internal Admin list card uses exactly Main/Key/Support. Extra information belongs in detail."
   }
 }

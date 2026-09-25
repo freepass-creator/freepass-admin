@@ -586,15 +586,15 @@ async function runInteractiveStates(page, c) {
           }
         };
         if (c.width <= 900) {
-          expectRange(info.fontSamples.panelTitles, 17, 19, 'mobile panel title');
+          expectRange(info.fontSamples.panelTitles, 13, 15, 'mobile panel title');
           expectRange(info.fontSamples.cardTitles, 13, 15, 'mobile card title');
           expectRange(info.fontSamples.primaryValues, 13, 15, 'mobile primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'mobile control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'mobile support');
         } else {
-          expectRange(info.fontSamples.panelTitles, 17, 19, 'desktop panel title');
+          expectRange(info.fontSamples.panelTitles, 13, 15, 'desktop panel title');
           expectRange(info.fontSamples.cardTitles, 13, 15, 'desktop card title');
-          expectRange(info.fontSamples.primaryValues, 15, 17, 'desktop primary value');
+          expectRange(info.fontSamples.primaryValues, 13, 15, 'desktop primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
         }

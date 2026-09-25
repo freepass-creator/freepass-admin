@@ -2140,7 +2140,7 @@ body > nav.fn-top :where(a, button):focus-visible,
 
 /* ═══════════════════════════════════════════════════════════════════
    2026-09-25 — Card line contract (mobile/live)
-   줄 수는 정보량이 정하고, 각 줄의 높이·간격·정렬만 고정한다.
+   일반 목록은 Main / Key / Support 3줄을 고정한다.
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   :root {
@@ -2187,10 +2187,10 @@ body > nav.fn-top :where(a, button):focus-visible,
     text-align: right;
   }
 
-  /* 카드 줄 수는 고정하지 않는다. 필요한 줄만큼 늘어나되 각 줄 리듬은 동일하다. */
+  /* 목록 본문은 Main / Key / Support 정확히 3줄. */
   .fn-main .workspace .dz-row-body {
-    max-height: none;
-    height: auto;
+    height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
+    max-height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
   }
 }
 

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { erp5Ready } from '../../adapters/erp5/firestore';
+import { erp5Ready, writeEnabled } from '../../server/erp5';
 import { TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { currentAdmin } from '../../server/require-admin';

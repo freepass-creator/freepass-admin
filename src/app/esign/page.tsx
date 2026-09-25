@@ -8,13 +8,22 @@ export const dynamic = 'force-dynamic';
 
 type 계약 = Awaited<ReturnType<typeof contracts.list>>[number];
 
-const SIGN_FILTERS = ['', '전자서명', '발행', '열람', '진행중', '서명완료', '미연결'] as const;
+const SIGN_FILTERS = ['', '발송 전', '고객 작성 중', '완료', '미연결'] as const;
+
+type 관리자단계 = '발송 전' | '고객 작성 중' | '완료' | '미연결';
+
+function 관리자단계(c: 계약): 관리자단계 {
+  if (!c.signStatus) return '미연결';
+  if (c.signStatus === '서명완료') return '완료';
+  if (c.signStatus === '열람' || c.signStatus === '진행중') return '고객 작성 중';
+  return '발송 전';
+}
 
 function 서명상태(c: 계약): RowStatus {
-  if (c.signStatus === '서명완료') return { icon: 'circle-check', label: '서명완료', tone: 'green' };
-  if (c.signStatus === '진행중') return { icon: 'clock', label: '진행중', tone: 'navy' };
-  if (c.signStatus === '열람') return { icon: 'info', label: '열람', tone: 'amber' };
-  if (c.signStatus === '발행') return { icon: 'send', label: '발행', tone: 'navy' };
+  const stage = 관리자단계(c);
+  if (stage === '완료') return { icon: 'circle-check', label: '완료', tone: 'green' };
+  if (stage === '고객 작성 중') return { icon: 'clock', label: '작성 중', tone: 'amber' };
+  if (stage === '발송 전') return { icon: 'send', label: '발송 전', tone: 'navy' };
   return { icon: 'file-text', label: '미연결', tone: 'grey' };
 }
 
@@ -27,23 +36,13 @@ export default async function EsignPage({ searchParams }: {
   const status = sp(q.status);
   const id = sp(q.id);
 
-  let all: Awaited<ReturnType<typeof contracts.list>>;
-  try {
-    all = await contracts.list();
-  } catch (e) {
-    return <><h1>전자계약</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
-  }
+  const all = await contracts.list();
 
   const searched = all.filter((c) => (!status || c.status === status))
     .filter((c) => !text
       || [c.code, c.plate, c.vehicle, c.customer, c.agent, c.signStatus, c.status]
         .join(' ').toLowerCase().includes(text));
-  const shown = searched.filter((c) => {
-    if (!sign) return true;
-    if (sign === '전자서명') return !!c.signStatus;
-    if (sign === '미연결') return !c.signStatus;
-    return c.signStatus === sign;
-  });
+  const shown = searched.filter((c) => !sign || 관리자단계(c) === sign);
 
   const selected = shown.find((c) => c.id === id) ?? shown[0] ?? null;
   const view = (sp(q.v) === 'detail' || id) && selected ? 'detail' : 'list';
@@ -58,11 +57,7 @@ export default async function EsignPage({ searchParams }: {
     return s ? `/esign?${s}` : '/esign';
   };
 
-  const count = (s: string) => s === '전자서명'
-    ? all.filter((c) => !!c.signStatus).length
-    : s === '미연결'
-      ? all.filter((c) => !c.signStatus).length
-      : s ? all.filter((c) => c.signStatus === s).length : all.length;
+  const count = (s: string) => s ? all.filter((c) => 관리자단계(c) === s).length : all.length;
   const contractStatuses = [...new Set(all.map((c) => c.status).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'ko'));
 
   const byCode = new Map<string, number>();
@@ -118,8 +113,8 @@ export default async function EsignPage({ searchParams }: {
               selected={c.id === selected?.id}
               status={서명상태(c)}
               title={txt(c.customer)}
-              badge={txt(c.signStatus) === '—' ? '미연결' : txt(c.signStatus)}
-              tone={c.signStatus === '서명완료' ? 'plain' : 'act'}
+              badge={관리자단계(c)}
+              tone={관리자단계(c) === '완료' ? 'plain' : 관리자단계(c) === '미연결' ? 'plain' : 'act'}
               flag={c.status && c.status !== '완료' ? txt(c.status) : undefined}
               meta={[c.plate, c.vehicle, c.agent, c.code].filter(Boolean).join(' · ') || '—'}
               value={c.rent === null || c.rent === undefined ? '대여료 미확인' : `${won(c.rent)}원`}
@@ -143,34 +138,47 @@ export default async function EsignPage({ searchParams }: {
               </div>
             </div>
 
+            <section className="dz-work-focus dz-esign-focus" aria-label="현재 전자계약 단계">
+              <span>현재 단계</span>
+              <strong>{관리자단계(selected)}</strong>
+              <small>{
+                관리자단계(selected) === '완료' ? '완료 문서를 확인할 수 있습니다.'
+                  : 관리자단계(selected) === '고객 작성 중' ? '고객이 작성 중입니다. 관리자는 진행을 기다립니다.'
+                    : 관리자단계(selected) === '발송 전' ? '링크가 발행됐거나 고객 열람 전 단계입니다.'
+                      : '전자서명 세션이 아직 연결되지 않았습니다.'
+              }</small>
+            </section>
+
             <SummaryGrid>
               <SummaryItem label="계약상태">{txt(selected.status)}</SummaryItem>
-              <SummaryItem label="서명상태">{txt(selected.signStatus)}</SummaryItem>
+              <SummaryItem label="전자서명 상태">{txt(selected.signStatus)}</SummaryItem>
               <SummaryItem label="기간">{selected.term === null || selected.term === undefined ? '—' : `${num(selected.term)}개월`}</SummaryItem>
               <SummaryItem label="월 대여료">{selected.rent === null || selected.rent === undefined ? '—' : `${won(selected.rent)}원`}</SummaryItem>
             </SummaryGrid>
 
-            <h3 className="dz-sub">계약 정보</h3>
-            <SummaryGrid>
-              <SummaryItem label="양식">{txt(selected.kind)}</SummaryItem>
-              <SummaryItem label="보험">{txt(selected.insurance)}</SummaryItem>
-              <SummaryItem label="계약일">{txt(selected.contractDate)}</SummaryItem>
-              <SummaryItem label="만든 때">{when(selected.createdAt)}</SummaryItem>
-              <SummaryItem label="발송">{when(selected.signSentAt)}</SummaryItem>
-              <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
-            </SummaryGrid>
+            <details className="dz-support-section">
+              <summary>계약 메타정보</summary>
+              <SummaryGrid>
+                <SummaryItem label="양식">{txt(selected.kind)}</SummaryItem>
+                <SummaryItem label="보험">{txt(selected.insurance)}</SummaryItem>
+                <SummaryItem label="계약일">{txt(selected.contractDate)}</SummaryItem>
+                <SummaryItem label="만든 때">{when(selected.createdAt)}</SummaryItem>
+                <SummaryItem label="발송">{when(selected.signSentAt)}</SummaryItem>
+                <SummaryItem label="서명">{when(selected.signedAt)}</SummaryItem>
+              </SummaryGrid>
+            </details>
 
             <ActionBar>
               {selected.signUrl && (
-                <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">서명창 열기</a>
+                <a className="dz-bar-sub" href={selected.signUrl} target="_blank" rel="noreferrer">링크 열기</a>
               )}
               {selected.signedPdfUrl && (
-                <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">서명본 열기</a>
+                <a className="primary" href={selected.signedPdfUrl} target="_blank" rel="noreferrer">완료 문서 열기</a>
               )}
             </ActionBar>
 
             {!selected.signUrl && !selected.signedPdfUrl && (
-              <EmptyState>연결된 전자서명 링크나 완료 문서가 없습니다.</EmptyState>
+              <EmptyState>전자서명 링크나 완료 문서가 아직 연결되지 않았습니다.</EmptyState>
             )}
           </>
         ) : (

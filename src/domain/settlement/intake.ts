@@ -40,6 +40,7 @@ export interface IntakeInput {
   sourceProductVersion?: number | null;
   sourceOfferId?: string;
   sourceSnapshotId?: string;
+  catalogSnapshotDigest?: string;
   catalogSnapshot?: IntakeCatalogSnapshot;
   paper: boolean;
   delivered: boolean;
@@ -72,6 +73,14 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
   const expectedDirectRentKind = directIntakeRentKind(x.product);
   if (expectedDirectRentKind && x.rentKind !== expectedDirectRentKind) e.push(`렌트구분은 ${expectedDirectRentKind} 이어야 합니다`);
+  if (x.sourceProductId?.trim()) {
+    if (!x.sourceOfferId?.trim()) e.push('상품 접수의 Offer ID가 없습니다');
+    if (x.sourceProductVersion === null || x.sourceProductVersion === undefined) e.push('상품 접수의 Product version이 없습니다');
+    if (!x.sourceSnapshotId?.trim()) e.push('상품 접수의 Source snapshot이 없습니다');
+    if (!x.catalogSnapshotDigest?.trim()) e.push('상품 접수의 Catalog snapshot digest가 없습니다');
+    if (!x.catalogSnapshot) e.push('상품 접수의 Catalog snapshot이 없습니다');
+    else if (x.catalogSnapshot.digest !== x.catalogSnapshotDigest) e.push('상품 접수의 Catalog snapshot digest가 일치하지 않습니다');
+  }
   if (!x.customer.trim()) e.push('고객명이 없습니다');
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
@@ -126,6 +135,7 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,
     sourceSnapshotId: x.sourceSnapshotId?.trim() || null,
+    catalogSnapshotDigest: x.catalogSnapshotDigest?.trim() || null,
     catalogSnapshot: x.catalogSnapshot ?? null,
     /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
     supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,
@@ -185,6 +195,9 @@ export function progressPatch(
       || claimStage !== '접수' || payStage !== '접수';
   };
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
+  if (Number(cur.contractTerminatedAt ?? 0) > 0 && ['plate','paper','delivered','cancelled'].includes(c.kind)) {
+    return { ok: false, error: '계약해지된 건은 차량·계약서·인도·취소 사실을 변경할 수 없습니다' };
+  }
 
   if (c.kind === 'plate') {
     const plate = c.plate.replace(/\s/g, '').trim();
@@ -212,6 +225,9 @@ export function progressPatch(
   }
   if (c.kind === 'paper') {
     if (B(cur.paper) === c.on) return { ok: true, patch: {}, events: [] };
+    if (c.on && S(cur.esignContractId)) {
+      return { ok: false, error: '전자계약 연결 건은 서명완료 시 자동으로 계약서 완료됩니다 — 수동 완료할 수 없습니다' };
+    }
     if (!c.on && settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 계약서 확인을 해제할 수 없습니다' };
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }
@@ -236,6 +252,15 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
+    if (B(cur.delivered) || S(cur.deliveredAt)) {
+      return { ok: false, error: '인도된 건은 접수취소가 아니라 계약해지 후 환수 검토 대상으로 처리합니다' };
+    }
+    /*
+     * 접수취소는 계약 연결 여부와 무관한 «접수의 종료»다.
+     * 전자계약이 연결돼 있어도 인도/정산 전이면 이 원장을 취소한다.
+     * 전자서명 세션 철회·증빙 보존 같은 기술적 후처리는 별도 전자계약 계층의 일이지,
+     * 별도의 업무 상태 「계약취소」를 만들 이유가 아니다.
+     */
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();
     if (!reason) return { ok: false, error: '취소 사유를 넣어야 합니다' };

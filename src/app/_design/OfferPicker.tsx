@@ -56,21 +56,23 @@ export function OfferPicker({ offers, initial, perks, perksNote }: {
       {줄.length === 0 ? <EmptyState>받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</EmptyState> : (
         /* 기간 · 값 한 줄 — 본문과 같이 구른다. ★고른 요금은 판 하단바(DetailTabs)가 받아 「이 상품 접수하기」에 싣는다 */
         <div className="dz-apply">
-          <div className="offer-picker" data-ai-feature="data.list-presentation data.variant-selector" data-ai-list-mode="variant-card">
+          <div className="offer-picker dz-offer-rows" aria-label="기간별 대여료"
+            data-ai-feature="data.list-presentation data.variant-selector" data-ai-list-mode="variant-card">
             {줄.map((x) => (
-              <button key={x.id} type="button" onClick={() => set고름(x.id)} className={x.id === 고름 ? 'active' : ''}>
-                {x.termMonths}개월{겹침(x.termMonths) && x.annualMileageKm ? ` · ${x.annualMileageKm / 10000}만km` : ''}
+              <button key={x.id} type="button" onClick={() => set고름(x.id)}
+                className={x.id === 고름 ? 'active' : ''} aria-pressed={x.id === 고름}>
+                <span className="dz-offer-term">
+                  {x.termMonths}개월{겹침(x.termMonths) && x.annualMileageKm ? ` · ${x.annualMileageKm / 10000}만km` : ''}
+                </span>
+                <strong className="dz-offer-rent">월 {원(x.monthlyRent)}</strong>
+                <span className="dz-offer-conditions">
+                  보증금 {원(x.deposit)}
+                  {x.prepayment ? ` · 선납 ${원(x.prepayment)}` : ''}
+                  {` · 주행 ${주행(x.annualMileageKm)}`}
+                </span>
               </button>
             ))}
           </div>
-          {o && (
-            <p className="dz-offer-line">
-              <b>월 {원(o.monthlyRent)}</b>
-              <span>보증금 {원(o.deposit)}</span>
-              {o.prepayment ? <span>선납 {원(o.prepayment)}</span> : null}
-              <span>주행 {주행(o.annualMileageKm)}</span>
-            </p>
-          )}
         </div>
       )}
     </>

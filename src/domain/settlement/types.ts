@@ -94,6 +94,8 @@ export interface SettlementMoney {
 
 export interface IntakeCatalogSnapshot {
   capturedAt: string;
+  /** capturedAt을 제외한 계약상품 사본의 deterministic SHA-256. 같은 선택 재시도 판정에 쓴다. */
+  digest?: string;
   product: {
     id: string;
     version: number;
@@ -101,6 +103,8 @@ export interface IntakeCatalogSnapshot {
     supplierId: string;
     supplierName: Maybe<string>;
     productKind: Maybe<string>;
+    status?: Maybe<string>;
+    consumerPrice?: Maybe<number>;
     vehicle: {
       nodeId: string;
       originId: string;
@@ -110,20 +114,37 @@ export interface IntakeCatalogSnapshot {
       trimId: Maybe<string>;
       matchLevel: string;
     };
+    specs?: {
+      modelYear: Maybe<number>;
+      mileageKm: Maybe<number>;
+      fuel: Maybe<string>;
+      displacementCc: Maybe<number>;
+      seats: Maybe<number>;
+      drivetrain: Maybe<string>;
+      batteryKwh: Maybe<number>;
+    };
     registration: {
       vehicleNumber: Maybe<string>;
       vin: Maybe<string>;
       firstRegistrationDate: Maybe<string>;
     };
+    /** Product-scope 정책 원본. Offer 정책과 합치기 전 사본. */
+    policyValues?: PolicyValue[];
   };
   offer: {
     id: string;
+    /** Added for FreePass Data multi-supplier Offer parity. Older snapshots may not contain these fields. */
+    supplierId?: Maybe<string>;
+    supplierName?: Maybe<string>;
     termMonths: number;
     monthlyRent: number;
     deposit: Maybe<number>;
     prepayment: Maybe<number>;
     annualMileageKm: Maybe<number>;
+    /** Offer-scope 정책 원본. */
     policyValues: PolicyValue[];
+    /** 당시 실제 적용된 Product+Offer 정책 결과. */
+    resolvedPolicyValues?: PolicyValue[];
   };
 }
 
@@ -162,9 +183,24 @@ export interface SettlementRow {
     productVersion: Maybe<number>;
     offerId: Maybe<string>;
     sourceSnapshotId: Maybe<string>;
+    snapshotDigest?: Maybe<string>;
   };
   /** 저장 순간의 계약상품 전체 조건. 현재 Catalog가 바뀌어도 이 사본은 변하지 않는다. */
   catalogSnapshot?: Maybe<IntakeCatalogSnapshot>;
+
+  /** 전자계약/계약 취소 provenance. signed 문서는 지우지 않고 운영 원장만 후속 절차로 전환한다. */
+  esignContractId?: Maybe<string>;
+  contractCancelledAt?: Maybe<number>;
+  contractCancellationReason?: Maybe<string>;
+  contractCancellationOperationId?: Maybe<string>;
+  contractCancellationContractId?: Maybe<string>;
+  contractCancellationBy?: Maybe<string>;
+  contractTerminatedAt?: Maybe<number>;
+  contractTerminationDate?: Maybe<string>;
+  contractTerminationReason?: Maybe<string>;
+  contractTerminationOperationId?: Maybe<string>;
+  contractTerminationContractId?: Maybe<string>;
+  contractTerminationBy?: Maybe<string>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

@@ -154,6 +154,7 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
       productVersion: 7,
       offerId: 'O-36',
       sourceSnapshotId: 'erp5-20260921',
+      snapshotDigest: null,
     });
   });
 
@@ -196,6 +197,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     const r = progressPatch({ paper: false }, { kind: 'paper', on: true });
     assert.ok(r.ok); assert.deepEqual(r.ok && r.patch, { paper: true }); assert.equal(r.ok && r.events.length, 1);
   });
+  it('전자계약 연결 건은 signed 전 수동 계약서 완료를 막는다', () => {
+    const r = progressPatch({ paper: false, esignContractId: 'ctr_1' }, { kind: 'paper', on: true });
+    assert.equal(r.ok, false);
+    assert.match(String((r as { error?: string }).error), /전자계약 연결 건/);
+  });
   it('차량번호를 나중에 배정할 수 있다', () => {
     const r = progressPatch({ plate: '', cancelled: false }, { kind: 'plate', plate: '12가 3456' });
     assert.ok(r.ok);
@@ -219,6 +225,34 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
+  it('계약해지 뒤에는 계약 핵심 사실을 바꾸지 않는다', () => {
+    const cur = {
+      contractTerminatedAt: Date.now(),
+      paper: true,
+      delivered: true,
+      deliveredAt: '2026-09-18',
+      plate: '12가3456',
+      claimStage: '접수',
+      payStage: '접수',
+    };
+    assert.equal(progressPatch(cur, { kind: 'plate', plate: '34나5678' }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'paper', on: false }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'cancelled', on: true, reason: '잘못된 취소' }).ok, false);
+  });
+
+  it('계약해지 뒤에는 인도완료와 인도일을 바꾸지 않는다', () => {
+    const cur = {
+      contractTerminatedAt: Date.now(),
+      delivered: true,
+      deliveredAt: '2026-09-18',
+      plate: '12가3456',
+      claimStage: '접수',
+      payStage: '접수',
+    };
+    assert.equal(progressPatch(cur, { kind: 'delivered', on: false }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'delivered', on: true, deliveredAt: '2026-09-19' }).ok, false);
+  });
+
   it('★정산 전 인도를 되돌려도 인도일은 안 지운다', () => {
     const r = progressPatch({ delivered: true, deliveredAt: '2026-09-01', claimStage: '접수', payStage: '접수' }, { kind: 'delivered', on: false });
     assert.deepEqual(r.ok && r.patch, { delivered: false });
@@ -413,3 +447,44 @@ describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () 
     assert.ok(payLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'X')!.rows.some((r) => r.id === 'i'));
   });
 });
+
+
+describe('접수취소 경계 — 계약 연결 여부가 별도 업무를 만들지 않는다', () => {
+  it('전자계약이 연결돼 있어도 인도·정산 전이면 접수 자체를 취소한다', () => {
+    for (const cur of [
+      { cancelled:false, esignContractId:'ctr_1', paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
+      { cancelled:false, esignContractId:'ctr_1', paper:true, delivered:false, claimStage:'접수', payStage:'접수' },
+      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:Date.now(), paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
+    ]) {
+      const r = progressPatch(cur, { kind:'cancelled', on:true, reason:'고객 변심' });
+      assert.equal(r.ok,true);
+      assert.equal(r.ok && r.patch.cancelled,true);
+      assert.match(String(r.ok && r.patch.note), /\[취소\] 고객 변심/);
+    }
+  });
+
+  it('계약 연결이 없어도 같은 접수취소 규칙을 쓴다', () => {
+    const r = progressPatch(
+      { cancelled:false, paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
+      { kind:'cancelled', on:true, reason:'고객 변심' },
+    );
+    assert.equal(r.ok,true);
+    assert.equal(r.ok && r.patch.cancelled,true);
+  });
+
+  it('계약이 연결돼 있어도 인도·정산 뒤에는 취소가 아니라 해지/환수 경계다', () => {
+    const delivered = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', delivered:true, deliveredAt:'2026-09-18', claimStage:'접수', payStage:'접수' },
+      { kind:'cancelled', on:true, reason:'중도 해지' },
+    );
+    // 인도 자체는 계약해지 경계이므로 일반 접수취소로 바꾸지 않는다.
+    assert.equal(delivered.ok,false);
+
+    const settled = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', delivered:true, billed:true, claimStage:'청구', payStage:'통보' },
+      { kind:'cancelled', on:true, reason:'중도 해지' },
+    );
+    assert.equal(settled.ok,false);
+  });
+});
+

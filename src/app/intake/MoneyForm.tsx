@@ -32,7 +32,7 @@ export function MoneyForm({ code, promoAmount, promoSharePct, promoReason, claim
         <label>금액<input name="promoAmount" defaultValue={칸값(promoAmount)} inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
         <label>영업자 몫 %<input name="promoSharePct" defaultValue={칸값(promoSharePct)} inputMode="numeric" placeholder="100" /></label>
         <label className="wide">사유<input name="promoReason" defaultValue={promoReason ?? ''} /></label>
-        {promo.errors.length > 0 && <ul className="dz-errs">{promo.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+        {promo.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{promo.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <button type="submit" disabled={disabled || promoPending} aria-busy={promoPending}>{promoPending ? '저장 중…' : '프로모션 저장'}</button>
       </form>
       <form onSubmit={send(adjAct)} aria-busy={adjPending}>
@@ -41,7 +41,7 @@ export function MoneyForm({ code, promoAmount, promoSharePct, promoReason, claim
         <label>청구 ±<input name="claimAdjust" defaultValue={칸값(claimAdjust)} inputMode="numeric" placeholder="빼는 돈은 −" /></label>
         <label>지급 ±<input name="payAdjust" defaultValue={칸값(payAdjust)} inputMode="numeric" placeholder="빼는 돈은 −" /></label>
         <label className="wide">사유 *<input name="adjustReason" defaultValue={adjustReason ?? ''} /></label>
-        {adj.errors.length > 0 && <ul className="dz-errs">{adj.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+        {adj.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{adj.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <button type="submit" disabled={disabled || adjPending} aria-busy={adjPending}>{adjPending ? '저장 중…' : '가감 저장'}</button>
       </form>
     </div>
@@ -62,7 +62,7 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
         <label>청구 수수료<input name="feeClaim" inputMode="numeric" placeholder={claim === null ? '금액 모름' : `지금 ${claim.toLocaleString('ko-KR')}`} /></label>
         <label>지급 수수료<input name="feePay" inputMode="numeric" placeholder={pay === null ? '금액 모름' : `지금 ${pay.toLocaleString('ko-KR')}`} /></label>
         <label className="wide">사유 *<input name="feeReason" /></label>
-        {s.errors.length > 0 && <ul className="dz-errs">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+        {s.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '수수료 저장'}</button>
       </form>
     </div>
@@ -73,7 +73,7 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
  * ★환수 세우기 — 인도된 줄(완납실적 · 분납실적)만. 금액은 사람이 넣는다(조건이 공급사마다 다르다) · 사유 필수.
  *   그 달 청구 · 지급 묶음에서 빠진다(정산관리 실적 줄 끝 «−금액» 줄). 같은 차 · 같은 달이 있으면 거절 글.
  */
-export function ClawbackForm({ code, today }: { code: string; today: string }) {
+export function ClawbackForm({ code, today, disabled = false }: { code: string; today: string; disabled?: boolean }) {
   const [s, act, pending] = useActionState<FormState, FormData>(clawbackAction, { errors: [] });
   return (
     <details className="dz-form-more">
@@ -86,8 +86,8 @@ export function ClawbackForm({ code, today }: { code: string; today: string }) {
           <label>공급사에 돌려줄 것<input name="supplierAmt" inputMode="numeric" /></label>
           <label>영업채널에서 돌려받을 것<input name="agentAmt" inputMode="numeric" /></label>
           <label className="wide">사유 *<input name="reason" /></label>
-          {s.errors.length > 0 && <ul className="dz-errs">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          <button type="submit" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
+          {s.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+          <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
         </form>
       </div>
     </details>

@@ -5,10 +5,15 @@ import { toCanonicalProduct, type Erp5Doc, type SkipReason } from './to-canonica
 import { loadMasterIndex } from './vehicle-master';
 
 /**
- * **상품 문 뒤 — ERP5 Firestore.** 대표 2026-09-18 「erp5 ssot 를 «직접» 읽는거야」
+ * **상품 legacy bridge — ERP5 Firestore.**
  *
- * ★문(`ProductRepository`)은 «안 바뀐다». 파일 어댑터도 «안 지운다» — 시험이 그걸 쓴다.
- *   문 뒤가 하나 늘었을 뿐이다. 이게 「자격증명이 오면 문 뒤만 갈아 끼운다」 의 뜻이다.
+ * 2026-09-25 authority correction:
+ * - Product/Offer/Policy data authority is FreePass Data.
+ * - This adapter is a temporary legacy source behind AdminCatalogReader while Admin is OBSERVE.
+ * - UI/use cases must not import this adapter or treat its collection names as a public contract.
+ *
+ * ★Admin 화면은 이 구현을 직접 import하지 않고 `server/freepass-data.ts`의 문을 사용한다.
+ *   Firebase는 기술 저장소이며 FreePass Data가 정본 접근을 소유한다.
  *
  * ★시트를 «안 거친다». 전에는 공급사시트 21곳 → 판매시트 3탭 → ERP 였고
  *   `aiops/docs/SHEET_MAP.md` 에 「ERP 가 이걸 그대로 읽는다」 고 적혀 있었다.
@@ -135,6 +140,6 @@ export class Erp5ProductRepository implements ProductRepository {
    *   ⇒ 이름을 대고 던진다. 쓰기가 필요해지면 그때 양식을 열고 여기를 채운다.
    */
   async save(): Promise<CanonicalProduct> {
-    throw new Error('ERP5 상품은 읽기 전용이다 — 쓰기는 아직 정해지지 않았다.');
+    throw new Error('상품 Catalog 쓰기는 FreePass Data 계약 밖에서 수행할 수 없다 — legacy ERP5 bridge는 읽기 전용이다.');
   }
 }

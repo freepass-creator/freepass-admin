@@ -3,6 +3,9 @@ import path from 'node:path';
 import { stripDetachedEsignAppendices } from '../../domain/esign/document-boundary';
 import { AGREEMENT_SECTIONS, AGREEMENT_TITLE, AGREEMENT_VERSION } from '../../domain/esign/agreement';
 import type { EsignPrivateSubmission, EsignSnapshot } from '../../domain/esign/types';
+import { formatKstSignedAt } from '../../domain/esign/signed-at';
+
+export { formatKstSignedAt };
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -28,7 +31,7 @@ export async function buildContractHtml(snapshot: EsignSnapshot, options: {
       signer_name: options.submission.signerName ?? '',
       signer_role: options.submission.signerRole ?? '',
       emergency_contact: [options.submission.emergencyRelation, options.submission.emergencyName, options.submission.emergencyPhone].filter(Boolean).join(' · '),
-      esign_signed_at: new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(options.submission.submittedAt)),
+      esign_signed_at: formatKstSignedAt(options.submission.submittedAt),
       esign_consent_status: String(options.submission.consents.length) + '건 필수 동의 완료',
       esign_consent_summary: options.submission.consents.join(' · '),
       esign_seal_hash: options.sealHash ? options.sealHash.slice(0, 16) + '…' : '',

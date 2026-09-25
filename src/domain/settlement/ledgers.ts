@@ -14,6 +14,7 @@
  */
 import { billingMonthIn, brokenOf, lockedMonthsOf, paidRatioOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
+import { settlementEligible } from './eligibility';
 
 /** 인도는 됐는데 달이 닫혀(박힌 달) 계산으로 못 들어간 줄 — 사람이 달을 정한다 */
 export const NO_MONTH = '청구월 미정';
@@ -68,9 +69,8 @@ function monthOfRow(r: SettlementRow, locked: ReadonlySet<string>, now: Date): s
   return r.progress.delivered ? NO_MONTH : null;
 }
 
-/** 돈 원장에 설 수 있나 — 취소/제외뿐 아니라 차량 identity와 계약서가 확인돼야 한다. */
-const inLedger = (r: SettlementRow) =>
-  !r.progress.cancelled && !r.progress.settleExclude && !!r.plate && r.progress.paper;
+export { settlementEligible } from './eligibility';
+const inLedger = settlementEligible;
 
 /* 금액은 한 곳(money.ts)에서 — 목록·상세·남는 것이 같은 셈을 쓴다 */
 import { claimAmountOf, payAmountOf } from './money';

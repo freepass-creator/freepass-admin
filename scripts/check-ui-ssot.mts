@@ -64,6 +64,17 @@ for (const file of noInlineStyleFiles) {
 const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
 const cssFinal = await readFile(path.join(root, 'src/app/_design/admin-final.css'), 'utf8');
 const css = `${cssBase}\n${cssFinal}`;
+
+const compatMarker = 'CURRENT ADMIN COMPATIBILITY LAYER';
+const compatIndex = cssBase.indexOf(compatMarker);
+if (compatIndex < 0) {
+  errors.push('globals.css: missing CURRENT ADMIN COMPATIBILITY LAYER marker');
+} else {
+  const compatCss = cssBase.slice(compatIndex);
+  if (/height:\s*33px|min-height:\s*33px|--ui-control-h,40px/.test(compatCss)) {
+    errors.push('globals.css current compatibility layer: stale 33px/40px control value found');
+  }
+}
 for (const token of requiredCss) {
   if (!css.includes(token)) errors.push(`admin CSS: missing shared token ${token}`);
 }
@@ -82,6 +93,19 @@ const cssBaseline = [
 for (const [re, label] of cssBaseline) {
   if (!re.test(css)) errors.push(`admin CSS: baseline mismatch or missing: ${label}`);
 }
+const responsiveCssExpected = [
+  ['mobile quick filters stay on one horizontal line', /\.fn-main \.workspace \.quick-filters[\s\S]*?flex-wrap:\s*nowrap/],
+  ['find list desktop card minimum 360px', /workspace\[data-mode="find"\][\s\S]*?minmax\(360px,\s*1fr\)/],
+  ['find list mobile collapses to one shrinkable column', /workspace\[data-mode="find"\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/],
+  ['three-action bar uses 3-3-4', /grid-template-columns:\s*minmax\(0,\s*3fr\)\s+minmax\(0,\s*3fr\)\s+minmax\(0,\s*4fr\)/],
+  ['focused mobile controls avoid sticky action bar', /scroll-margin-block-end:\s*calc\(var\(--ui-action-h\)/],
+  ['high zoom collapses summary to one column', /@media \(max-width:\s*340px\)[\s\S]*?\.summary-grid[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/],
+  ['action bar treats 44px as minimum height', /\.dz-bar-go[\s\S]*?min-height:\s*var\(--ui-action-h\)[\s\S]*?height:\s*auto/],
+] as const;
+for (const [label, re] of responsiveCssExpected) {
+  if (!re.test(cssFinal)) errors.push(`responsive UI regression: missing ${label}`);
+}
+
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 
@@ -119,11 +143,97 @@ for (const [name, actual, want] of aiCoreExpected) {
   if (actual !== want) errors.push(`AI Core UI binding mismatch: ${name}=${String(actual)}; expected ${String(want)}`);
 }
 
+const primitives = await readFile(path.join(root, 'src/app/_design/Primitives.tsx'), 'utf8');
+if (!/aria-live=\{tone === 'ok' \? 'polite'/.test(primitives)) errors.push('Notice: success state must use polite live region');
+
 const listRow = await readFile(path.join(root, 'src/app/_design/ListRow.tsx'), 'utf8');
 const offerPicker = await readFile(path.join(root, 'src/app/_design/OfferPicker.tsx'), 'utf8');
 if (!/data-ai-feature="data\.list-presentation"/.test(listRow)) errors.push('ListRow: missing AI Core data.list-presentation binding');
 if (!/product-media-row/.test(listRow) || !/business-row/.test(listRow)) errors.push('ListRow: missing product-media-row/business-row semantic modes');
 if (!/data-ai-list-mode="variant-card"/.test(offerPicker)) errors.push('OfferPicker: missing AI Core variant-card mode');
+
+const currentPassFiles = {
+  listRow,
+  offerPicker,
+  intakeForm: await readFile(path.join(root, 'src/app/intake/new/IntakeForm.tsx'), 'utf8'),
+  newIntakePanel: await readFile(path.join(root, 'src/app/intake/NewIntakePanel.tsx'), 'utf8'),
+  intakeDetail: await readFile(path.join(root, 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8'),
+  settlementPage: await readFile(path.join(root, 'src/app/settlement/page.tsx'), 'utf8'),
+  esignPage: await readFile(path.join(root, 'src/app/esign/page.tsx'), 'utf8'),
+};
+
+const routeState = await readFile(path.join(root, 'src/app/_design/RouteState.tsx'), 'utf8');
+for (const route of ['products', 'intake', 'settlement', 'esign']) {
+  const loading = await readFile(path.join(root, 'src/app', route, 'loading.tsx'), 'utf8');
+  const error = await readFile(path.join(root, 'src/app', route, 'error.tsx'), 'utf8');
+  if (!/RouteLoading/.test(loading)) errors.push(`${route}: missing shared route loading state`);
+  if (!/RouteError/.test(error) || !/reset/.test(error)) errors.push(`${route}: missing retryable route error state`);
+}
+if (!/aria-busy="true"/.test(routeState)) errors.push('RouteState: loading must expose aria-busy');
+if (!/role="alert"/.test(routeState) || !/다시 시도/.test(routeState)) errors.push('RouteState: fatal error must expose alert + retry');
+if (!/<ActionBar>/.test(routeState)) errors.push('RouteState: retry must use shared ActionBar');
+if (!/window\.location\.reload\(\)/.test(routeState)) errors.push('RouteState: fatal retry must perform a real route reload');
+
+const interactionFiles = {
+  filterSheet: await readFile(path.join(root, 'src/app/_design/FilterSheet.tsx'), 'utf8'),
+  detailTabs: await readFile(path.join(root, 'src/app/_design/DetailTabs.tsx'), 'utf8'),
+  moneyForm: await readFile(path.join(root, 'src/app/intake/MoneyForm.tsx'), 'utf8'),
+  lifeForms: await readFile(path.join(root, 'src/app/settlement/LifeForms.tsx'), 'utf8'),
+};
+
+const interactionExpected = [
+  ['filter mobile modal semantics', interactionFiles.filterSheet, /aria-modal=\{modal \|\| undefined\}/],
+  ['filter modal breakpoint', interactionFiles.filterSheet, /matchMedia\('\(max-width: 900px\)'\)/],
+  ['filter mobile-only focus trap', interactionFiles.filterSheet, /!mq\.matches \|\| e\.key !== 'Tab'/],
+  ['filter dialog focus entry', interactionFiles.filterSheet, /focusables\(\)\[0\]\?\.focus/],
+  ['detail tabs roving tabindex', interactionFiles.detailTabs, /tabIndex=\{tab === 'summary' \? 0 : -1\}/],
+  ['detail tabs arrow navigation', interactionFiles.detailTabs, /ArrowLeft.*ArrowRight.*Home.*End/s],
+  ['intake validation live region', currentPassFiles.intakeForm, /role="alert" aria-live="assertive"/],
+  ['money validation live region', interactionFiles.moneyForm, /role="alert" aria-live="assertive"/],
+  ['settlement validation live region', interactionFiles.lifeForms, /role="alert" aria-live="assertive"/],
+  ['settlement compact visible labels', interactionFiles.lifeForms, /className="dz-side-field"/],
+  ['settlement write actions accept disabled state', interactionFiles.lifeForms, /disabled = false/],
+  ['paid-round validation live region', await readFile(path.join(root, 'src/app/intake/PaidRounds.tsx'), 'utf8'), /role="alert" aria-live="assertive"/],
+  ['progress accepts read-only state', await readFile(path.join(root, 'src/app/intake/[code]/Progress.tsx'), 'utf8'), /disabled = false/],
+] as const;
+for (const [label, src, re] of interactionExpected) {
+  if (!re.test(src)) errors.push(`accessibility regression: missing ${label}`);
+}
+
+const currentPassExpected = [
+  ['product list segmented values', currentPassFiles.listRow, /className="dz-seg"/],
+  ['detail offer one-line rows', currentPassFiles.offerPicker, /dz-offer-rows/],
+  ['intake support helper', currentPassFiles.newIntakePanel, /dz-form-hint/],
+  ['intake detail current work', currentPassFiles.intakeDetail, /dz-work-focus/],
+  ['intake detail diagnostic disclosure', currentPassFiles.intakeDetail, /dz-support-section/],
+  ['settlement axis separation', currentPassFiles.settlementPage, /dz-settle-axis/],
+  ['settlement period context', currentPassFiles.settlementPage, /dz-settle-period/],
+  ['esign admin stage mapping', currentPassFiles.esignPage, /type 관리자단계/],
+  ['esign current stage focus', currentPassFiles.esignPage, /dz-esign-focus/],
+  ['intake save disabled reason binding', currentPassFiles.intakeForm, /aria-describedby=\{disabled \? 'intake-write-disabled'/],
+  ['intake blocked action reason', currentPassFiles.intakeDetail, /intake-block-reason/],
+  ['settlement issue blocked reason', currentPassFiles.settlementPage, /issue-block-reason/],
+  ['intake read-only state propagation', currentPassFiles.intakeDetail, /const canWrite = writeEnabled\(\)/],
+  ['settlement read-only state propagation', currentPassFiles.settlementPage, /const canWrite = writeEnabled\(\)/],
+  ['settlement read-only disabled reason', currentPassFiles.settlementPage, /settlement-write-disabled/],
+] as const;
+
+for (const [label, src, re] of currentPassExpected) {
+  if (!re.test(src)) errors.push(`2026-09-25 UI pass regression: missing ${label}`);
+}
+
+if (/control 40|inside 40px search box/.test(JSON.stringify(ssot))) {
+  errors.push('docs/ui/admin-ui-ux-ssot.json: stale 40px UI wording remains');
+}
+
+const uiSpec = await readFile(path.join(root, 'docs/ui/UI-SPEC.md'), 'utf8');
+const uiHistory = await readFile(path.join(root, 'docs/ui/UI-HISTORY.md'), 'utf8');
+if (/--h-ctl|\*\*30\*\*|\*\*38\*\*/.test(uiSpec)) {
+  errors.push('docs/ui/UI-SPEC.md: historical 30/38px spec leaked back into current spec');
+}
+if (!/HISTORICAL ONLY/.test(uiHistory)) {
+  errors.push('docs/ui/UI-HISTORY.md: missing historical-only warning');
+}
 
 const expected = [
   ['typography.title.px', ssot.typography?.title?.px, 18],

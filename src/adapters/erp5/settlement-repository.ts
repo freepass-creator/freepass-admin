@@ -4,6 +4,7 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
@@ -180,6 +181,13 @@ export class Erp5SettlementRepository {
    */
   async createIntake(input: IntakeInput): Promise<{ code: string; created: boolean }> {
     mustWrite();
+    if (input.sourceProductId?.trim()) {
+      if (!input.sourceOfferId?.trim() || input.sourceProductVersion === null || input.sourceProductVersion === undefined
+        || !input.sourceSnapshotId?.trim() || !input.catalogSnapshot || !input.catalogSnapshotDigest?.trim()
+        || input.catalogSnapshot.digest !== input.catalogSnapshotDigest) {
+        throw new Error('상품 접수는 FreePass Data의 sealed Product/Offer snapshot이 있어야 저장할 수 있습니다.');
+      }
+    }
     const db = erp5();
     /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
     const rules = await loadFeeRuleSet();
@@ -206,9 +214,17 @@ export class Erp5SettlementRepository {
         const samePlate = !!plate && norm(x.plate) === norm(plate);
         return sameProduct || samePlate;
       });
-      if (hit) return { code: hit.id, created: false };
+      if (hit) {
+        const conflict = catalogRetryConflict(hit.data(), input);
+        if (conflict) throw new Error(conflict);
+        return { code: hit.id, created: false };
+      }
       const byId = await tx.get(db.collection(ROWS).doc(code));
-      if (byId.exists) return { code, created: false };
+      if (byId.exists) {
+        const conflict = catalogRetryConflict(byId.data()!, input);
+        if (conflict) throw new Error(conflict);
+        return { code, created: false };
+      }
       tx.create(db.collection(ROWS).doc(code), rec);
       tx.set(db.collection(EVENTS).doc(intakeEventDocId(
         plate, input.sourceProductId, input.receivedAt, input.intakeRequestId, rec.intakeIdentityMode,

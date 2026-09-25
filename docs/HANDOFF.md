@@ -299,3 +299,169 @@ Offer 선택
 ```
 
 각 단계는 단순 UI 클릭이 아니라 authoritative persistence 결과와 receipt/evidence로 검증한다.
+
+
+---
+
+# 2026-09-25 기능 재정렬 — Product Finder → Intake → Performance → Settlement
+
+이 절이 위의 계약 중심 P0 해석보다 최신이다.
+
+## User-confirmed operating model
+
+```text
+White Label Product Finder ≒ Admin Product Finder
+                    ↓
+                  Intake
+                    ↓
+                Performance
+             ↙               ↘
+ Supplier Claim/Collection   Sales-channel Pay
+             ↘               ↙
+                 Settlement
+```
+
+### Product finder
+- White Label is the outward-facing projection of Admin's product finder.
+- Search/filter/Offer meaning should converge on one contract.
+- Admin may extend it with internal-only supplier/delivery-status/diagnostic facets.
+- Confirmed drift to resolve: `mile` currently means actual vehicle mileage in White Label but annual contracted mileage in Admin.
+- Evidence: `docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md`.
+
+### Cancellation
+- Pre-delivery cancellation is an Intake cancellation fact.
+- E-sign linkage does not create a separate business cancellation workflow.
+- E-sign revoke/session/evidence handling remains a technical sub-flow owned by the e-sign layer.
+
+### Termination / clawback
+- Post-delivery termination is a clawback review trigger.
+- Historical claim/pay/collection/payment facts remain immutable.
+- Do not auto-calculate or auto-create clawback money.
+- Confirmed clawback is a separate negative ledger line in the clawback month.
+
+## Current implementation delta
+
+- `progressPatch` allows pre-delivery Intake cancellation even when an e-sign contract is linked.
+- `progressPatch` blocks cancellation after delivery and directs the case to termination/clawback review.
+- `terminationClawbackReview` classifies termination as `PENDING` until a clawback explicitly linked to the Intake code is recorded.
+- `pendingTerminationClawbackRows` exposes the domain queue without inventing clawback amounts.
+- `admin-core-domain` CI isolates finder/intake/performance/settlement/clawback regressions from separately owned e-sign failures.
+
+## Next implementation order
+
+1. Make Admin and White Label finder semantics converge, starting with axis identity and the vehicle-mileage vs annual-contract-mileage split.
+2. Expose the pending termination clawback review queue in Settlement without turning it into a third money ledger.
+3. Keep Intake → Performance promotion and Claim/Pay ledgers deterministic and tested.
+4. Treat e-sign finalization as supporting contract evidence, not the center of the Admin operating workflow.
+
+
+---
+
+# 2026-09-25 FreePass Data persistence boundary — latest
+
+This supersedes older wording that treated FreePass Data as catalog-only persistence.
+
+## Authoritative data path
+
+```text
+FreePass Admin feature/workflow
+        ↓
+src/server/freepass-data.ts
+        ↓
+Repository / Adapter
+        ↓
+Firestore project freepasserp5
+```
+
+FreePass Admin owns business semantics and workflow decisions. FreePass Data owns the authoritative persistence gateway for those facts.
+
+All of the following are read/written through FreePass Data:
+- Product / Offer / Policy / Vehicle
+- Intake
+- Performance facts
+- Contract facts used by Admin
+- Settlement
+- Supplier claim / collection
+- Sales-channel pay
+- Clawback
+
+No second Admin database/ledger is introduced.
+
+## Enforced implementation
+
+- `src/server/freepass-data.ts` is the single composition root.
+- `src/server/erp5.ts` is deprecated compatibility only.
+- App/Server/Service may not directly import the Firestore/product/settlement/contract/fee ERP5 adapters.
+- `src/server/freepass-data-boundary.test.ts` enforces the rule in CI.
+- mutation-time Product/Offer validation performs an uncached FreePass Data read.
+- RTDB remains forbidden.
+
+E-sign implementation internals remain separately owned, but Admin-facing contract facts must converge on the same FreePass Data SSOT rather than creating a second contract truth.
+
+
+---
+
+# 2026-09-25 sealed Intake catalog snapshot — latest
+
+The Product Finder → Intake handoff now persists an immutable FreePass Data selection receipt.
+
+## Write path
+
+```text
+Finder matched Product + Offer
+        ↓
+Intake panel
+        ↓
+FreePass Data fresh Product read
+        ↓
+version / sourceSnapshot / Offer revalidation
+        ↓
+sealed catalog snapshot + SHA-256 digest
+        ↓
+FreePass Data settlement repository transaction
+        ↓
+Firestore settlement_rows
+```
+
+## Snapshot contents
+
+New product-backed Intake snapshot preserves:
+- Product id/version/source snapshot
+- supplier/product kind/status/consumer price
+- confirmed vehicle identity
+- vehicle specs + registration identity
+- Product-scope policy atoms
+- selected Offer id/term/rent/deposit/prepayment/annual mileage
+- Offer-scope policy atoms
+- resolved Product+Offer policy result
+- deterministic catalog snapshot digest
+
+`capturedAt` is excluded from the digest so an exact retry produces the same digest.
+
+## Idempotency boundary
+
+Same Product + same intake date is **not sufficient** to reuse an existing Intake.
+
+Existing Intake is idempotently reused only when these also match:
+- Product version
+- Offer id
+- FreePass Data source snapshot id
+- catalog snapshot digest
+
+If a different Offer/version/snapshot is submitted for the same Product/date, the repository fails closed instead of silently opening the existing Intake.
+
+Product-backed Intake without a sealed snapshot is rejected at Repository boundary even if an App action is bypassed.
+
+## Evidence
+
+Firestore Emulator suite `freepass-data-persistence`:
+- contract termination transaction tests: 4/4 PASS
+- intake sealed snapshot persistence tests: 3/3 PASS
+- total: **7/7 PASS**
+
+Domain/core suite after snapshot hardening:
+- FreePass Data boundary: 2/2 PASS
+- Product Finder: 62/62 PASS
+- Intake/Performance/Settlement/Clawback including snapshot tests: 115/115 PASS
+
+Production Firestore security rules/IAM remain a separate deployment verification item; the emulator currently uses permissive rules.

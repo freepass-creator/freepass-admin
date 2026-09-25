@@ -1,4 +1,5 @@
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import type { CustomerVehicleClass } from '../product/customer-vehicle-class';
 
 /** 차종 축 — 원산지 → 제조사 → 모델 → 세부모델 → 세부트림 (AGENTS.md §6) */
 export type VehicleAxis = 'ORIGIN' | 'MANUFACTURER' | 'MODEL' | 'SUB_MODEL' | 'TRIM';
@@ -21,6 +22,9 @@ export interface PolicyRequirement {
  */
 export interface ProductSearchQuery {
   supplierIds?: string[];
+  productKinds?: string[];
+  credits?: string[];
+  customerVehicleClasses?: CustomerVehicleClass[];
 
   originIds?: string[];
   manufacturerIds?: string[];
@@ -28,10 +32,17 @@ export interface ProductSearchQuery {
   subModelIds?: string[];
   trimIds?: string[];
 
+  modelYears?: number[];
+  fuels?: string[];
+  /** 차량 자체의 현재 누적 주행거리. Offer의 annualMileageKm와 다른 축이다. */
+  vehicleMileageKm?: NumericRange;
+
   termMonths?: number[];
   monthlyRent?: NumericRange;
   deposit?: NumericRange;
   annualMileageKm?: NumericRange;
+  /** exact annual contracted mileage choices; OR inside this axis */
+  annualMileageKmValues?: number[];
   policies?: PolicyRequirement[];
 }
 

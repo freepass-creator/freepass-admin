@@ -111,9 +111,9 @@ test('supplier lifecycle renders invoice as an explicit step',()=>{
 });
 
 
-test('settlement UI separates document progress from cash completion',()=>{
-  assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
-  assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
+test('settlement UI keeps document progress and cash completion visible in the compressed summary',()=>{
+  assert.ok(settlementPage.includes('<SummaryItem label="진행">'));
+  assert.ok(settlementPage.includes('{gSel.done} / {gSel.lines.length} · 완료 {gSel.completed}'));
   assert.ok(settlementPage.includes('g.completed'));
 });
 

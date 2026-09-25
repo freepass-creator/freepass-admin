@@ -1,5 +1,6 @@
 import { resolveOfferPolicies } from '../product/resolve-policies';
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import { customerVehicleClass } from '../product/customer-vehicle-class';
 import type {
   NumericRange,
   PolicyRequirement,
@@ -56,6 +57,8 @@ export function matchOffer(
   if (!inRange(offer.monthlyRent, query.monthlyRent)) return false;
   if (!inRange(offer.deposit, query.deposit)) return false;
   if (!inRange(offer.annualMileageKm, query.annualMileageKm)) return false;
+  if (query.annualMileageKmValues?.length
+    && (offer.annualMileageKm === undefined || !query.annualMileageKmValues.includes(offer.annualMileageKm))) return false;
 
   if (query.policies?.length) {
     const resolved = resolveOfferPolicies(product, offer);
@@ -74,6 +77,15 @@ export function matchProduct(
   query: ProductSearchQuery,
 ): ProductSearchMatch | null {
   if (query.supplierIds?.length && !query.supplierIds.includes(product.supplierId)) return null;
+  if (query.productKinds?.length && (!product.productKind || !query.productKinds.includes(product.productKind))) return null;
+  if (query.credits?.length && (!product.credit || !query.credits.includes(product.credit))) return null;
+  if (query.customerVehicleClasses?.length) {
+    const customerClass=customerVehicleClass(product);
+    if (!customerClass || !query.customerVehicleClasses.includes(customerClass)) return null;
+  }
+  if (query.modelYears?.length && (product.specs.modelYear === undefined || !query.modelYears.includes(product.specs.modelYear))) return null;
+  if (query.fuels?.length && (!product.specs.fuel || !query.fuels.includes(product.specs.fuel))) return null;
+  if (!inRange(product.specs.mileageKm, query.vehicleMileageKm)) return null;
 
   const vehicleMatch = matchVehicle(product.vehicle, query);
   if (!vehicleMatch) return null;

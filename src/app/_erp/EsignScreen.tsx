@@ -116,7 +116,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
                     <div><dt>차량</dt><dd>{txt(sel.vehicle)}</dd></div>
                     <div><dt>차량번호</dt><dd>{txt(sel.plate)}</dd></div>
                     <div><dt>영업담당</dt><dd>{txt(sel.agent)}</dd></div>
-                    <div><dt>기간 · 월 대여료</dt><dd>{sel.term ?? '—'}개월 · {won0(sel.rent)}원</dd></div>
+                    <div><dt>기간 · 월 대여료</dt><dd data-type="money">{sel.term ?? '—'}개월 · {won0(sel.rent)}원</dd></div>
                     <div><dt>양식</dt><dd>{txt(sel.kind)}</dd></div>
                     <div><dt>보험</dt><dd>{txt(sel.insurance)}</dd></div>
                     <div><dt>계약일</dt><dd>{txt(sel.contractDate)}</dd></div>

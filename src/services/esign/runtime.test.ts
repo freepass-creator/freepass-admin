@@ -178,6 +178,54 @@ const contract = () => ({
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
 });
 
+
+async function seedPendingReview(
+  svc:EsignService,
+  repo:Repo,
+  assets:Assets,
+  options:{missingSignature?:boolean;missingRequiredDocument?:boolean}={},
+){
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const session=await repo.getCurrentSession('c1');
+  assert.ok(session);
+  session!.status='pending_review';
+  session!.submittedAt=Date.now();
+
+  let signaturePath='',signatureSha256='';
+  if(!options.missingSignature){
+    const signatureAsset=await assets.put(
+      'sig.png',
+      new Uint8Array([137,80,78,71,13,10,26,10]),
+      'image/png',
+    );
+    signaturePath=signatureAsset.path;
+    signatureSha256=signatureAsset.sha256;
+  }
+  const idCard=await assets.put('id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const selfie=await assets.put('selfie.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required);
+  const supportingDocuments=[];
+  for(let i=0;i<required.length;i++){
+    if(options.missingRequiredDocument&&i===0)continue;
+    const d=required[i]!;
+    const a=await assets.put('doc/'+d.key,new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)),'application/pdf');
+    supportingDocuments.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
+  }
+  if(options.missingRequiredDocument)assert.ok(required.length>0);
+
+  repo.priv.set(session!.id,{
+    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
+    signaturePath,signatureSha256,supportingDocuments,submittedAt:Date.now(),
+    assets:{id_card:{...idCard,name:'id.jpg',contentType:'image/jpeg'},selfie:{...selfie,name:'selfie.jpg',contentType:'image/jpeg'}},
+  });
+  return {issued,session:session!};
+}
+
 test('esign runtime: issue -> open -> assets -> submit -> review -> reject -> revoke', async () => {
   process.env.PUBLIC_BASE_URL='https://admin.example.test';
   const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
@@ -507,3 +555,51 @@ test('contract cancellation works before esign issuance and revokes an active si
   assert.equal(repo.contract.get('c2')?.contract_status,'계약취소');
 });
 
+
+
+test('esign finalization rejects truncated PDF bytes before Storage/signing', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new InvalidRenderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_invalid_pdf_1234567890','tester'),
+    /완전한 PDF/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal([...assets.m.keys()].some(path=>path.startsWith('esign-final/')),false);
+});
+
+test('esign finalization rejects Storage upload hash mismatch', async () => {
+  const repo=new Repo(), assets=new HashMismatchAssets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_hash_mismatch_1234567890','tester'),
+    /저장 검증/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+});
+
+test('esign finalization rejects a missing verified signature before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingSignature:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_no_signature_1234567890','tester'),
+    /서명 원본/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+
+test('esign finalization rejects a missing required document before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingRequiredDocument:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_missing_doc_1234567890','tester'),
+    /필수 서류/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});

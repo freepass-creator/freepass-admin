@@ -2788,3 +2788,28 @@ Visual QA:
 - 선택 상태는 font-size/weight 증가로 표현하지 않는다.
 - 제목은 크기보다 굵기·색·여백으로 구분한다.
 - 목표는 디자인한 티가 아니라 오래 써도 자연스러운 시판형 ERP다.
+
+# 63. Solid commercial ERP materiality
+
+목표는 화려함이 아니라 **단단하고 오래된 제품처럼 일관된 물성**이다.
+
+기본 상태:
+- Panel: flat
+- Card / Tile: flat
+- Button / Search / QuickFilter: flat
+- visible border: 기본 없음
+- hierarchy: Canvas → Panel → Component surface 차이 + spacing + alignment
+- shadow: hover / focus / popup / sheet처럼 상호작용 또는 부유 레이어에만 사용
+
+원칙:
+- 평상시 모든 요소가 떠 있으면 SaaS dashboard처럼 보이고, ERP의 안정감이 약해진다.
+- 단단함은 두꺼운 선/그림자가 아니라 geometry와 반복 규칙의 일관성에서 만든다.
+- Panel/Card/Button/Input의 height, radius, padding, gap, text alignment가 화면마다 흔들리지 않아야 한다.
+- selected는 tint + shallow inset이며 outer elevation을 강화하지 않는다.
+- page별 임의 border/shadow를 추가하지 않는다.
+- 예전 §16의 "Card/Button 기본 elevation" 설명보다 이 규칙이 우선한다.
+
+Visual QA:
+- resting Panel/Card/Button/Search/QuickFilter에 outer shadow가 있으면 FAIL
+- floating layer는 shadow 허용
+- selected card는 outer shadow 금지

@@ -217,7 +217,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <p><b>{문서}</b> {장 ? <>{장.invoiceNo} · 발행 {new Date(장.issuedAt).toISOString().slice(0, 10)}</> : <span className="dz-muted">아직 안 나감</span>}</p>
                 {계획.ok
                   ? <p className="dz-issue-sum">공급가 {won(계획.invoice.supply)} · 부가세 {won(계획.invoice.vat)} · <b>합계 {won(계획.invoice.total)}원</b>{계획.invoice.clawback ? ` (환수 −${won(계획.invoice.clawback)})` : ''}</p>
-                  : <Notice tone="warn">{계획.error}</Notice>}
+                  : <div id="issue-block-reason"><Notice tone="warn">{계획.error}</Notice></div>}
                 {어긋남 && <Notice tone="warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</Notice>}
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
                 {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
@@ -256,7 +256,8 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
           {gSel && (
             <ActionBar>
-              <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}>
+              <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}
+                aria-describedby={!계획?.ok ? 'issue-block-reason' : undefined}>
                 {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
               </button>
             </ActionBar>

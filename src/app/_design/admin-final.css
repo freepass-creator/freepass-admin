@@ -2083,3 +2083,26 @@ body > nav.fn-top :where(a, button):focus-visible,
     text-overflow: ellipsis;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Solid commercial ERP materiality (mobile/live)
+   기본 화면은 flat. surface/spacing/alignment가 구조를 만들고,
+   shadow는 interactive hover와 floating layer에만 쓴다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(
+  .panel,
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .primary,
+  .dz-bar-sub,
+  .dz-searchbox
+) {
+  box-shadow: none;
+}
+
+.fn-main .workspace :is(.panel,.dz-row,.dz-form-group,.summary-grid,.dz-offer-line) {
+  border-color: transparent;
+  background-clip: padding-box;
+}

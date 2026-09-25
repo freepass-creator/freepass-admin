@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { productList, settlements, today } from '../../server/freepass-data';
 import {
-  emptyFinderSelection, FINDER_SORTS, findProducts, finderAxisMatches, sortFinderMatches,
+  emptyFinderSelection, FINDER_SORTS, findProducts, findProductsForFacet, finderAxisMatches,
+  finderHierarchyValues, sortFinderMatches,
   type FinderInput, type FinderSort,
 } from '../../domain/search/finder';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
@@ -111,8 +112,10 @@ export async function ProductWorkspace({ q, mode, base }: {
     dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
     mile: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.annualMileageKm).filter((x): x is number => typeof x === 'number')))]
       .sort((a, b) => a - b).map((km) => ({ k: String(km), label: `연 ${(km / 10000).toLocaleString('ko-KR')}만km` })),
-    maker: 많은순(pool.map((h) => confirmedVehicleId(h.product.vehicle, 'MANUFACTURER') ?? '')).map((k) => ({ k, label: k })),
-    model: 많은순(pool.map((h) => confirmedVehicleId(h.product.vehicle, 'MODEL') ?? '')).map((k) => ({ k, label: k })),
+    maker: 많은순(finderHierarchyValues(rows, psel, 'maker')).map((k) => ({ k, label: k })),
+    model: 많은순(finderHierarchyValues(rows, psel, 'model')).map((k) => ({ k, label: k })),
+    submodel: 많은순(finderHierarchyValues(rows, psel, 'submodel')).map((k) => ({ k, label: k })),
+    trim: 많은순(finderHierarchyValues(rows, psel, 'trim')).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
     year: [...new Set(pool.map((h) => h.product.specs.modelYear).filter((x): x is number => typeof x === 'number'))]
       .sort((a, b) => b - a).map((y) => ({ k: String(y), label: `${y}년` })),
@@ -125,9 +128,15 @@ export async function ProductWorkspace({ q, mode, base }: {
     const keys = 값명단[a].map((x) => x.k);
     const name = new Map(값명단[a].map((x) => [x.k, x.label]));
     const base = tallyMatch(pool, keys, (h, k) => finderAxisMatches(h, a, k));
-    const cross = findProducts(rows, finderInput, a);
+    const cross = findProductsForFacet(rows, finderInput, a);
     const live = tallyMatch(cross, keys, (h, k) => finderAxisMatches(h, a, k));
-    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
+    const clearOnChange = a === 'maker' ? ['model','submodel','trim']
+      : a === 'model' ? ['submodel','trim']
+        : a === 'submodel' ? ['trim'] : undefined;
+    return {
+      key: a, label, clearOnChange,
+      options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })),
+    };
   });
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */

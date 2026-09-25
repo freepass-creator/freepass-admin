@@ -1855,3 +1855,52 @@ body > nav.fn-top :where(a, button):focus-visible,
     padding-right: var(--ui-screen-gutter-narrow);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Typography weight hierarchy (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head h1 {
+  font-weight: 700;
+}
+
+.fn-main .workspace :is(
+  .dz-row-l1 > b,
+  .dz-row-l2:not(.value),
+  .dz-sub,
+  .dz-picked-label
+) {
+  font-weight: 600;
+}
+
+.fn-main .workspace :is(
+  .dz-row-l2.value strong,
+  .dz-row-l3 > strong,
+  .summary-grid dd
+) {
+  font-weight: 700;
+}
+
+.fn-main .workspace :is(
+  .primary,
+  .dz-bar-sub,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .dz-badge
+) {
+  font-weight: 600;
+}
+
+.fn-main .workspace :is(
+  .dz-row-l3 small,
+  .dz-muted,
+  .panel-head > .count
+) {
+  font-weight: 400;
+}
+
+/* selected는 색/면으로 구분하고 글자 굵기는 그대로 유지 */
+.fn-main .workspace .dz-row.on :is(.dz-row-l1 > b,.dz-row-l2:not(.value)) {
+  font-weight: 600;
+}

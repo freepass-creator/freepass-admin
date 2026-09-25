@@ -1132,27 +1132,28 @@
   },
   "typographyRoles": {
     "desktop": {
-      "panelTitlePx": 18,
-      "sectionTitlePx": 16,
+      "panelTitlePx": 14,
+      "sectionTitlePx": 14,
       "cardIdentityPx": 14,
       "bodyPx": 14,
       "inputPx": 14,
       "buttonPx": 14,
       "quickFilterPx": 14,
-      "primaryValuePx": 16,
+      "primaryValuePx": 14,
       "supportPx": 12,
       "badgePx": 12,
       "tagPx": 12,
-      "kpiPx": 24
+      "exceptionalLargerText": "screen-title/KPI/special-result-only"
     },
-    "rule": "Typography should feel conventional and native to an ERP; hierarchy comes from role, not decorative size jumps.",
+    "rule": "Use 14px for almost all operational text; use 12px for support. Create hierarchy with weight, color and spacing. Larger text requires explicit exception.",
     "mobile": {
-      "panelTitlePx": 18,
+      "panelTitlePx": 14,
       "cardIdentityPx": 14,
       "bodyPx": 14,
       "inputPx": 14,
       "actionPx": 14,
       "quickFilterPx": 14,
+      "primaryValuePx": 14,
       "supportPx": 12,
       "badgePx": 12
     },
@@ -1160,16 +1161,16 @@
       "computedSizeByRole": true,
       "desktop": {
         "panelTitlePx": [
-          17,
-          19
+          13,
+          15
         ],
         "cardTitlePx": [
           13,
           15
         ],
         "primaryValuePx": [
-          15,
-          17
+          13,
+          15
         ],
         "controlPx": [
           13,
@@ -1182,8 +1183,8 @@
       },
       "mobile": {
         "panelTitlePx": [
-          17,
-          19
+          13,
+          15
         ],
         "cardTitlePx": [
           13,

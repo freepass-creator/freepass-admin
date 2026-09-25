@@ -174,6 +174,22 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      dividerSamples: (() => {
+        const nodes = [...document.querySelectorAll(
+          '.erp-panel-head, .erp-panel-foot, .erp-searchbar, .erp-toolbar, .erp-card-head, .erp-listcard-foot, .erp-grid-foot, .erp-tile-title, .panel-head, .dz-listtop, .dz-bar'
+        )].filter(visible).slice(0, 40);
+        return nodes.map((el) => {
+          const s = getComputedStyle(el);
+          return {
+            className: typeof el.className === 'string' ? el.className : '',
+            topWidth: parseFloat(s.borderTopWidth) || 0,
+            topColor: s.borderTopColor,
+            bottomWidth: parseFloat(s.borderBottomWidth) || 0,
+            bottomColor: s.borderBottomColor,
+            text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+          };
+        });
+      })(),
       shadowSamples: (() => {
         const sample = (selector, limit = 16) =>
           [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
@@ -461,6 +477,17 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (Array.isArray(info.dividerSamples)) {
+        const visibleColor = (value) => value && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)';
+        for (const x of info.dividerSamples) {
+          const topVisible = x.topWidth > 0 && visibleColor(x.topColor);
+          const bottomVisible = x.bottomWidth > 0 && visibleColor(x.bottomColor);
+          if (topVisible || bottomVisible) {
+            problems.push(`decorative divider still visible: ${JSON.stringify(x)}`);
+          }
+        }
+      }
+
       if (info.shadowSamples?.cards) {
         for (const x of info.shadowSamples.cards) {
           if (!x.selected && x.boxShadow && x.boxShadow !== 'none' && /0px [3-9]px|0px [1-9][0-9]px/.test(x.boxShadow)) {
@@ -635,6 +662,7 @@ async function runInteractiveStates(page, c) {
         workspaceFill: info.workspaceFill,
         radiusSamples: info.radiusSamples,
         shadowSamples: info.shadowSamples,
+        dividerSamples: info.dividerSamples,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

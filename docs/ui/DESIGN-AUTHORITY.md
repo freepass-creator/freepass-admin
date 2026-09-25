@@ -23,18 +23,10 @@ PC actual route 구현:
 복구 진행판:
 - `docs/recovery/PR92-LATESTIZATION-STATUS.md`
 
-## 금지
+## 현재 사용 규칙
 
-다음은 디자인 정본으로 사용하지 않는다.
-- 과거 mockup
-- 저장 screenshot
-- reference 이미지
-- isolated component browser fixture
-- Git history의 삭제된 UI 파일
-- main에서 더 최근 날짜라는 이유만으로 선택한 시각 구현
-- 다른 PR/AI가 별도로 만든 두 번째 visual authority
-
-현재 트리에서 혼동용 mockup/reference/stale screenshot은 제거한다.
+UI/UX 작업은 이 문서에 적힌 actual route 구현과 UI SSOT만 읽는다.
+디자인 판단은 저장된 이미지가 아니라 실제 route 렌더 결과로 한다.
 
 ## actual route 우선
 
@@ -65,4 +57,4 @@ UI 변경은 한 변경에서 다음을 같이 갱신한다.
 4. Visual QA
 5. 이 authority 문서
 
-대체 branch나 별도 mockup을 새로운 정본으로 만들지 않는다.
+UI 변경은 위 actual route 계보 안에서만 수행한다.

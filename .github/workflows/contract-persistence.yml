@@ -1,12 +1,15 @@
-name: contract-persistence
+name: freepass-data-persistence
 
 on:
   pull_request:
     paths:
       - "src/domain/contracts/**"
+      - "src/domain/settlement/**"
       - "src/adapters/erp5/contract-repository.ts"
+      - "src/adapters/erp5/settlement-repository.ts"
       - "src/adapters/erp5/firestore.ts"
       - "src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts"
+      - "src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts"
       - "package.json"
       - "firebase.json"
       - ".github/workflows/contract-persistence.yml"
@@ -16,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  firestore-contract-termination:
+  firestore-freepass-data:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -41,5 +44,5 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Firestore transaction / concurrency / rollback
-        run: npx --yes firebase-tools@15.30.2 emulators:exec --only firestore --project freepasserp5 "npm run test:contract-firestore"
+      - name: Firestore FreePass Data persistence
+        run: npx --yes firebase-tools@15.30.2 emulators:exec --only firestore --project freepasserp5 "npm run test:freepass-data-firestore"

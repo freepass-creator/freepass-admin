@@ -12,6 +12,11 @@ export interface EsignRepository {
   createSession(session: EsignSession, publicUrl: string): Promise<void>;
   updateSession(id: string, patch: Partial<EsignSession>): Promise<void>;
   transitionSession(id: string, allowed: EsignSession['status'][], patch: Partial<EsignSession>): Promise<boolean>;
+  revokeSession(
+    sessionId: string,
+    contractId: string,
+    actor: string,
+  ): Promise<{ revoked: boolean; session: EsignSession }>;
   finalizeSigned(
     sessionId: string,
     finalizationId: string,

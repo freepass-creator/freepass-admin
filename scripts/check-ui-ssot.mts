@@ -82,6 +82,16 @@ const cssBaseline = [
 for (const [re, label] of cssBaseline) {
   if (!re.test(css)) errors.push(`admin CSS: baseline mismatch or missing: ${label}`);
 }
+const responsiveCssExpected = [
+  ['mobile quick filters stay on one horizontal line', /\.fn-main \.workspace \.quick-filters[\s\S]*?flex-wrap:\s*nowrap/],
+  ['find list desktop card minimum 360px', /workspace\[data-mode="find"\][\s\S]*?minmax\(360px,\s*1fr\)/],
+  ['find list mobile collapses to one shrinkable column', /workspace\[data-mode="find"\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/],
+  ['three-action bar uses 3-3-4', /grid-template-columns:\s*minmax\(0,\s*3fr\)\s+minmax\(0,\s*3fr\)\s+minmax\(0,\s*4fr\)/],
+] as const;
+for (const [label, re] of responsiveCssExpected) {
+  if (!re.test(cssFinal)) errors.push(`responsive UI regression: missing ${label}`);
+}
+
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
 

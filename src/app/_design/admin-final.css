@@ -2039,8 +2039,8 @@ body > nav.fn-top :where(a, button):focus-visible,
 
   .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-body {
     min-height: 64px;
-    height: 64px;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
   }
 
   .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l1 {
@@ -2140,7 +2140,7 @@ body > nav.fn-top :where(a, button):focus-visible,
 
 /* ═══════════════════════════════════════════════════════════════════
    2026-09-25 — Card line contract (mobile/live)
-   1/2/3줄 카드 문법을 고정하고, 긴 내용은 세로 팽창보다 ellipsis를 우선한다.
+   줄 수는 정보량이 정하고, 각 줄의 높이·간격·정렬만 고정한다.
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   :root {
@@ -2187,8 +2187,9 @@ body > nav.fn-top :where(a, button):focus-visible,
     text-align: right;
   }
 
-  /* 카드 줄 수는 최대 3줄. 3줄을 넘어가는 설명은 상세 화면으로 보낸다. */
+  /* 카드 줄 수는 고정하지 않는다. 필요한 줄만큼 늘어나되 각 줄 리듬은 동일하다. */
   .fn-main .workspace .dz-row-body {
-    max-height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
+    max-height: none;
+    height: auto;
   }
 }

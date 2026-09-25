@@ -190,32 +190,37 @@ export class Erp5EsignRepository implements EsignRepository {
     });
   }
 
-  async cancelSignedContract(contractId:string,reason:string,actor:string){
+  async cancelContract(contractId:string,reason:string,actor:string){
     mustWrite();
     const why=reason.trim();
     if(!why)throw new Error('계약 취소 사유를 적어 주세요.');
     const db=erp5(), contractRef=db.collection(CONTRACTS).doc(contractId);
+
     return db.runTransaction(async tx=>{
       const contractDoc=await tx.get(contractRef);
       if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
       const contractRaw=contractDoc.data() as Record<string,unknown>;
-      const sessionId=String(contractRaw.esign_id??'').trim();
-      if(!sessionId)throw new Error('전자계약 세션이 없습니다.');
-      const sessionRef=db.collection(SESSIONS).doc(sessionId);
-      const sessionDoc=await tx.get(sessionRef);
-      if(!sessionDoc.exists)throw new Error('전자계약 세션을 찾을 수 없습니다.');
-      const session={id:sessionDoc.id,...sessionDoc.data()} as EsignSession;
-      if(session.status!=='signed')throw new Error('서명완료된 계약만 이 계약취소 절차를 사용할 수 있습니다.');
-
       const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
       if(!sourceIntakeId)throw new Error('계약의 원본 접수 연결이 없습니다.');
+
       const intakeRef=db.collection(INTAKES).doc(sourceIntakeId);
       const intakeDoc=await tx.get(intakeRef);
       if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       const intake=intakeDoc.data() as Record<string,unknown>;
 
+      const sessionId=String(contractRaw.esign_id??'').trim();
+      const sessionRef=sessionId ? db.collection(SESSIONS).doc(sessionId) : null;
+      const sessionDoc=sessionRef ? await tx.get(sessionRef) : null;
+      const session=sessionDoc?.exists ? ({id:sessionDoc.id,...sessionDoc.data()} as EsignSession) : null;
+
       const alreadyAt=Number(intake.contractCancelledAt??0);
-      if(alreadyAt>0)return {cancelled:false,session};
+      if(alreadyAt>0){
+        return {
+          cancelled:false,
+          session,
+          signedDocumentPreserved:session?.status==='signed',
+        };
+      }
 
       const exit=contractExitDecision(intake);
       if(exit.kind==='TERMINATION_REQUIRED'){
@@ -223,11 +228,18 @@ export class Erp5EsignRepository implements EsignRepository {
         throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
       }
 
+      if(session?.status==='approving')throw new Error('전자계약 승인 처리 중입니다 — 승인 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
+      if(session?.status==='submitting')throw new Error('고객 제출 처리 중입니다 — 제출 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
+
       const now=Date.now();
+      const signedDocumentPreserved=session?.status==='signed';
+      const revokeSession=!!session && !['signed','revoked'].includes(session.status);
+
       tx.update(contractRef,{
         contract_status:'계약취소',
         contract_cancelled_at:now,
         contract_cancel_reason:why,
+        ...(revokeSession ? {sign_status:'미발송',sign_revoked_at:now,esign_progress:0} : {}),
         updated_at:now,
       });
       tx.update(intakeRef,{
@@ -235,24 +247,35 @@ export class Erp5EsignRepository implements EsignRepository {
         settleExclude:true,
         contractCancelledAt:now,
         contractCancellationReason:why,
+        ...(revokeSession ? {esignRevokedAt:now} : {}),
         updatedAt:now,
         stateAt:new Date(now).toISOString(),
       });
+      if(sessionRef && revokeSession)tx.update(sessionRef,{status:'revoked',revokedAt:now});
 
       const settlementEventRef=db.collection('settlement_events').doc(
         intakeEventDocId(intake.plate,intake.sourceProductId,intake.receivedAt,intake.intakeRequestId,intake.intakeIdentityMode),
       );
       const settlementEventKey='aud_contract_cancel_'+createHash('sha256').update(contractId+'|'+why).digest('hex').slice(0,16);
       tx.set(settlementEventRef,{[settlementEventKey]:{
-        at:now,by:actor,field:'계약취소',from:'false',to:'true',reason:why,contractId,sessionId,
+        at:now,by:actor,field:'계약취소',from:'false',to:'true',reason:why,contractId,sessionId:session?.id??null,
       }},{merge:true});
 
       const eventRef=db.collection(EVENTS).doc(
         'evt_'+createHash('sha256').update(contractId+'|cancel|'+why).digest('hex').slice(0,24),
       );
-      tx.set(eventRef,{contractId,sessionId,type:'contract_cancelled',by:actor,at:now,detail:{reason:why}},{merge:false});
+      tx.set(eventRef,{
+        contractId,sessionId:session?.id??'',type:'contract_cancelled',by:actor,at:now,
+        detail:{reason:why,signedDocumentPreserved,sessionRevoked:revokeSession},
+      },{merge:false});
 
-      return {cancelled:true,session};
+      return {
+        cancelled:true,
+        session:session
+          ? (revokeSession ? {...session,status:'revoked',revokedAt:now} as EsignSession : session)
+          : null,
+        signedDocumentPreserved,
+      };
     });
   }
 

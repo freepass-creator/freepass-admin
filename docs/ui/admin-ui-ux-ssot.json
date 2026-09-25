@@ -1358,13 +1358,18 @@
       ]
     },
     "settlementLine": {
-      "standardLines": 4,
-      "lines": [
-        "customer + stage | exact claim/pay amount",
-        "plate + model",
-        "product + term",
-        "exact claim fee + exact pay fee"
-      ]
+      "standardLines": 3,
+      "claim": {
+        "main": "customer + claim stage | exact claim fee",
+        "key": "plate + model + product + term",
+        "support": "exact pay fee"
+      },
+      "pay": {
+        "main": "customer + pay stage | exact pay fee",
+        "key": "plate + model + product + term",
+        "support": "exact claim fee"
+      },
+      "rule": "The active settlement axis owns the primary fee; the opposite fee is support context."
     },
     "esign": {
       "standardLines": 3,

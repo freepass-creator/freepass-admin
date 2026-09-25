@@ -190,6 +190,49 @@
 .dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
 .dz-choice input:focus-visible + span { box-shadow: 0 0 0 2px var(--ci스카이); }
 
+/* 접수 상세 WORK 위계 — 2026-09-25
+ * 현재 업무는 짧고 분명하게, 진단/원자/이력은 보조 disclosure로 내린다. */
+.dz-work-focus {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 10px; row-gap: 2px; align-items: baseline;
+  margin: 0 0 12px; padding: 10px 12px; border-radius: var(--ui-radius);
+  background: var(--고름);
+}
+.dz-work-focus > span {
+  font-size: var(--글보조); font-weight: 700; color: var(--ci남색);
+}
+.dz-work-focus > strong {
+  font-size: var(--글메인); font-weight: 800; color: var(--글);
+}
+.dz-work-focus > small {
+  grid-column: 2; font-size: var(--글보조); color: #6b7580;
+}
+.dz-attention {
+  margin: 12px 0; padding: 10px 12px; border-radius: var(--ui-radius);
+  background: #fff7e8;
+}
+.dz-attention .dz-sub { margin-top: 0; }
+.dz-support-section {
+  margin-top: 12px; padding: 0; border-top: 1px solid var(--선);
+}
+.dz-support-section > summary {
+  min-height: var(--ui-control-h); display: flex; align-items: center; gap: 8px;
+  list-style: none; cursor: pointer; font-size: var(--글메인); font-weight: 700; color: var(--글);
+}
+.dz-support-section > summary::-webkit-details-marker { display: none; }
+.dz-support-section > summary::after {
+  content: '＋'; margin-left: auto; color: #9aa3ad; font-weight: 400;
+}
+.dz-support-section[open] > summary::after { content: '－'; }
+.dz-support-section > summary small {
+  font-size: var(--글보조); font-weight: 600; color: #9aa3ad;
+}
+.dz-support-section > p {
+  margin: -4px 0 10px; font-size: var(--글보조); line-height: 18px; color: #6b7580;
+}
+.dz-support-section > .list,
+.dz-support-section > .dz-empty { margin-bottom: 8px; }
+
 /* ═══════════════════════════════════════════════════════════════════
    ★ 청구 링크 (/c/[token]) — 공급사가 여는 문. 관리자 틀 없음 · 옷은 같은 규격(§14-9)
    ═══════════════════════════════════════════════════════════════════ */

@@ -597,6 +597,25 @@ for (const [re, label] of naturalTypographyBaseline) {
   if (!re.test(desktopCss)) errors.push(`natural typography contract missing: ${label}`);
 }
 
+const mobileNaturalTypographyBaseline = [
+  [/Natural ERP typography roles \(mobile\/live\)/, 'mobile natural ERP typography role block'],
+  [/\.panel-head h1 \{ font-size: var\(--글제목\); \}/, 'mobile panel title role size'],
+  [/\.quick-filters a,[\s\S]*?input, select, textarea[\s\S]*?font-size: var\(--글메인\)/, 'mobile body/control role size'],
+  [/\.dz-badge[\s\S]*?font-size: var\(--글보조\)/, 'mobile support/badge role size'],
+] as const;
+for (const [re, label] of mobileNaturalTypographyBaseline) {
+  if (!re.test(cssFinal)) errors.push(`mobile natural typography contract missing: ${label}`);
+}
+
+const typographyVisualQaBaseline = [
+  [/fontSamples: \(\(\) => \{/, 'visual QA font samples'],
+  [/mobile panel title/, 'visual QA mobile panel title range'],
+  [/desktop primary value/, 'visual QA desktop primary value range'],
+] as const;
+for (const [re, label] of typographyVisualQaBaseline) {
+  if (!re.test(visualQa)) errors.push(`typography visual QA missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

@@ -3,9 +3,9 @@ import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 /**
- * **ERP5 SSOT 로 가는 문** — 대표 2026-09-18
- *   「너는 erp5 ssot를 «직접» 읽는거야. 상품이랑 정산도 다 여기서 관리할거야」
- *   「어드민이 «메인집»이야. 여기에 이제 프리패스어드민 «터를 잡는거야»」
+ * **FreePass Data의 Firestore 기술 Adapter.**
+ *   Admin/UI가 이 파일을 직접 부르지 않는다. 공식 진입점은 `src/server/freepass-data.ts`다.
+ *   `freepasserp5`는 FreePass Data가 사용하는 Firebase project id다.
  *
  * ★`src/ports/repositories.ts` 가 예고해 둔 그 순간이다 —
  *   「독립 Firestore 자격증명이 아직 없다 … 자격증명이 오면 «문 뒤만» 갈아 끼운다」
@@ -83,7 +83,7 @@ export function erp5App(): App {
   return ensureErp5App();
 }
 
-/** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
+/** FreePass Data Firestore transport. 읽기/쓰기는 상위 repository가 통제한다. */
 export function erp5(): Firestore {
   return getFirestore(ensureErp5App());
 }

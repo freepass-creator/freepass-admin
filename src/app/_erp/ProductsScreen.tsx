@@ -11,7 +11,7 @@ import type { CanonicalProduct } from '../../domain/product/types';
 import { sp, txt } from '../_fn/fmt';
 import { FilterSheet } from '../_design/FilterSheet';
 import { buildProductList } from './productList';
-import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
+import { ProductDetail, ProductThumb, STATUS_TONE, carName } from './ProductDetail';
 import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -46,7 +46,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
           <RowCards label="상품 목록">
             {hits.map(({ p, offer }) => (
               <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
+                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                 subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
                 meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}

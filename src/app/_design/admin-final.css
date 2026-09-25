@@ -120,6 +120,61 @@
   .fn-main .workspace .vehicle-title p { margin-top: 2px; }
 }
 
+/* 접근성 / reflow 안정화 — 2026-09-25 */
+.dz-side-field {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+}
+.dz-side-field > span {
+  flex: none; font-size: var(--글보조); color: #6b7580; white-space: nowrap;
+}
+.dz-side-field > input { min-width: 0; }
+
+/* 긴 번역/확대에서 ActionBar가 가로 넘침을 만들지 않는다. 44px은 고정높이가 아니라 최소 터치높이로 보호한다. */
+.fn-main .workspace .dz-bar-go > :is(a, button) {
+  min-height: var(--ui-action-h); height: auto !important;
+  padding-block: 8px; line-height: 18px; white-space: normal;
+  overflow-wrap: anywhere; text-align: center;
+}
+
+/* 가상 키보드나 sticky ActionBar가 포커스된 입력을 덮지 않게 스크롤 여유를 둔다. */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel {
+    scroll-padding-block-end: calc(var(--ui-action-h) + 32px + env(safe-area-inset-bottom));
+  }
+  .fn-main .workspace .panel :is(input, select, textarea, button, a, summary):focus-visible {
+    scroll-margin-block-start: calc(var(--판탭) + 12px);
+    scroll-margin-block-end: calc(var(--ui-action-h) + 32px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 400% reflow에 가까운 320px 안팎 CSS viewport에서는 2열 의미보다 읽기 순서를 우선한다. */
+@media (max-width: 340px) {
+  .fn-main .workspace .summary-grid,
+  .fn-main .workspace .dz-form-grid,
+  .fn-main .workspace .dz-life-form,
+  .fn-main .workspace .dz-money form,
+  .fn-main .workspace .dz-settle-axis {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .fn-main .workspace .dz-form-grid .wide,
+  .fn-main .workspace .dz-life-form .wide,
+  .fn-main .workspace .dz-life-form .dz-errs,
+  .fn-main .workspace .dz-money .wide,
+  .fn-main .workspace .dz-money .dz-errs {
+    grid-column: 1 !important;
+  }
+  .fn-main .workspace .dz-work-focus { grid-template-columns: minmax(0, 1fr); }
+  .fn-main .workspace .dz-work-focus > small { grid-column: 1; }
+  .fn-main .workspace .dz-picked-grid { grid-template-columns: minmax(0, 1fr); }
+  .fn-main .workspace .dz-picked-grid > div {
+    border-left: 0 !important; border-top: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
+    margin-top: 8px; padding-top: 8px;
+  }
+  .fn-main .workspace .dz-picked-grid > div:first-child {
+    border-top: 0; margin-top: 0;
+  }
+}
+
 /* 색 위계 — 카드 */
 .dz-row { background: var(--카드); }
 .dz-row:hover { background: var(--카드손); }

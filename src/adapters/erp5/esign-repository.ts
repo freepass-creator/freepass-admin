@@ -216,14 +216,21 @@ export class Erp5EsignRepository implements EsignRepository {
 
       const alreadyAt=Number(intake.contractCancelledAt??0);
       if(alreadyAt>0){
+        const fallback=cancellationClawbackRequirement({
+          collected:intake.collected,collectedAmt:intake.collectedAmt,claimStage:intake.claimStage,
+          paid:intake.paid,paidAmt:intake.paidAmt,payStage:intake.payStage,
+        });
+        const followup=(v:unknown,dflt:'NONE'|'REQUIRED'|'COMPLETED')=>{
+          const x=String(v??'').trim();
+          return (['NONE','REQUIRED','COMPLETED'].includes(x)?x:dflt) as 'NONE'|'REQUIRED'|'COMPLETED';
+        };
+        const supplier=followup(intake.contractCancellationSupplierClawbackState,fallback.supplier);
+        const channel=followup(intake.contractCancellationChannelClawbackState,fallback.channel);
+        const needsClawback=supplier==='REQUIRED'||channel==='REQUIRED';
         return {
           cancelled:false,
-          needsClawback:Boolean(intake.contractCancellationNeedsClawback),
-          clawback:{
-            supplier:String(intake.contractCancellationSupplierClawbackState??'NONE'),
-            channel:String(intake.contractCancellationChannelClawbackState??'NONE'),
-            needsClawback:Boolean(intake.contractCancellationNeedsClawback),
-          },
+          needsClawback,
+          clawback:{supplier,channel,needsClawback},
           session,
         };
       }

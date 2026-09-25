@@ -60,6 +60,7 @@ try {
     });
     const page=await context.newPage(); page.setDefaultTimeout(5000);
     const checks=[], errors=[];
+    receipt.cases.push({width,checks,errors});
     page.on('pageerror',e=>errors.push(e.message));
     const frames=()=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
     const check=async(name,fn)=>{let ok=false,why;try{ok=Boolean(await fn());}catch(e){why=String(e.message);}checks.push({name,ok,...(why?{why}:{})});};
@@ -102,17 +103,17 @@ try {
       await check('mobile background cannot take focus',focusedInside);
       await check('mobile background is inert',()=>page.locator('#outside').evaluate(el=>Boolean(el.closest('[inert]'))));
       await check('mobile document scroll is locked',()=>page.evaluate(()=>getComputedStyle(document.documentElement).overflowY==='hidden' && getComputedStyle(document.body).overflowY==='hidden'));
-      // Recover focus even on the known-bad baseline so the remaining cases run.
       await page.getByRole('button',{name:'닫기',exact:true}).focus();
       await page.keyboard.press('Escape');await frames();
       await check('closing releases background and scroll',()=>page.locator('#outside').evaluate(el=>!el.closest('[inert]') && document.documentElement.style.overflow!=='hidden' && document.body.style.overflow!=='hidden'));
       await open();await page.setViewportSize({width:1440,height:900});await frames();
       await check('resize to desktop removes modality',async()=>await page.getByRole('dialog').getAttribute('aria-modal')===null && await page.locator('#outside').evaluate(el=>!el.closest('[inert]')));
     }
-    await page.locator('#outside').click();await frames();
-    await check('desktop outside click preserves target focus',()=>page.locator('#outside').evaluate(el=>document.activeElement===el));
+    // Another panel stays visibly outside the desktop popover; do not force-click through it.
+    await page.locator('#outside-desktop').click();await frames();
+    await check('desktop outside click preserves target focus',()=>page.locator('#outside-desktop').evaluate(el=>document.activeElement===el));
     await page.keyboard.type('continued');
-    await check('typing continues in outside input',async()=>await page.locator('#outside').inputValue()==='continued');
+    await check('typing continues in outside input',async()=>await page.locator('#outside-desktop').inputValue()==='continued');
     await page.setViewportSize({width,height:900});
     await fresh('&status=s10');
     await check('selected hidden option expands automatically',async()=>await page.getByRole('button',{name:/^시험 상태 10/}).getAttribute('aria-pressed')==='true');
@@ -123,7 +124,6 @@ try {
     await page.keyboard.press('Escape');await frames();
     await check('empty axes close leaves background usable',()=>page.locator('#outside').evaluate(el=>!el.closest('[inert]')));
     await check('no runtime errors',()=>errors.length===0);
-    receipt.cases.push({width,checks,errors});
     console.log(`FILTER_BROWSER ${width}: ${checks.filter(x=>x.ok).length}/${checks.length}; FAIL=${checks.filter(x=>!x.ok).map(x=>x.name).join(' | ')}`);
     await context.close();
   }

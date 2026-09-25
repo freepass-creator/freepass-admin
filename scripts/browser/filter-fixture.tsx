@@ -30,7 +30,10 @@ function Fixture() {
       <button type="button" id="outside-button">배경 동작</button>
       <p>검증 전용 합성 데이터 · 저장 및 발송 없음</p>
     </section>
-    <section className="panel detail-panel"><h2>배경 상세</h2><button type="button">상세 동작</button></section>
+    <section className="panel detail-panel"><h2>배경 상세</h2>
+      <label>다음 입력칸<input id="outside-desktop" aria-label="다음 입력칸" /></label>
+      <button type="button">상세 동작</button>
+    </section>
   </section>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture />);

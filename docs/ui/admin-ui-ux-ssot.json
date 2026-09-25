@@ -360,22 +360,27 @@
   },
   "density": {
     "desktop": {
-      "panelHeadPx": 48,
-      "queryRowPx": 52,
-      "quickFilterRowPx": 48,
-      "panelFootPx": 60,
+      "panelHeadPx": 44,
+      "queryRowPx": 48,
+      "quickFilterRowPx": 40,
+      "panelFootPx": 56,
       "compactRowMinPx": 64,
       "standardRowMinPx": 72,
       "standardControlPx": 36,
       "smallControlPx": 32,
-      "dataRowPx": 40
+      "dataRowPx": 40,
+      "compactControlPx": 32
     },
     "mobile": {
-      "panelHeadPx": 56,
+      "panelHeadPx": 52,
       "standardControlPx": 44,
       "actionPx": 44,
       "rowMinPx": 88,
-      "navigationPx": "56-60"
+      "navigationPx": "56-60",
+      "queryRowPx": 48,
+      "quickFilterTouchRowPx": 44,
+      "quickFilterVisualPx": 34,
+      "actionTouchMinPx": 44
     },
     "rhythm": {
       "sectionPx": 16,
@@ -385,7 +390,7 @@
       "panelPaddingPx": "16-20"
     },
     "exception": "32px embedded control allowed only inside a larger search/control surface",
-    "rule": "Density is role-driven and fixed; do not create page-specific height tiers."
+    "rule": "Slim shell rows first; preserve card readability and 44px mobile touch minimum."
   },
   "alignment": {
     "text": "left",

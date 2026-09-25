@@ -287,7 +287,7 @@ async function inspect(page) {
         return {
           panels: pickRadius('.erp-panel, .panel'),
           cards: pickRadius('.erp-rowcard, .erp-tile, .dz-row'),
-          controls: pickRadius('.erp-btn, .primary, .dz-bar-sub, button'),
+          controls: pickRadius('.erp-btn, .primary, .dz-bar-sub, .dz-fs-open'),
           quickFilters: pickRadius('.erp-facet-opt, .quick-filters a'),
         };
       })(),

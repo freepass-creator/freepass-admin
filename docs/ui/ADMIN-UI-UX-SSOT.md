@@ -1,10 +1,10 @@
 # FreePass Admin UI/UX SSOT
 
-상태: **CURRENT PRODUCT STANDARD / AI CORE PROMOTION CANDIDATE**  
-기준일: **2026-09-24**  
+상태: **RECOVERY CANONICAL / SINGLE UI LINEAGE**  
+기준일: **2026-09-26**  
 적용 저장소: `freepass-creator/freepass-admin`  
-기준 브랜치: `claude/erp-platform-ui-ux-hvfyfa`  
-문서 작성 시 기준 revision: `74bbda50ef20209df630a093f2dc9b5a403a890e`
+기준 계보: **PR #92 actual route** (`claude/erp-platform-ui-ux-hvfyfa`)  
+통합 검증 브랜치: `recovery/pr92-modernize-20260926`  
 
 > 이 문서는 FreePass Admin의 **현재 디자인 정본**이다.
 > 테스트용 mockup, 과거 screenshot, 폐기된 §4 PageHeader/erp-cols 구조보다 이 문서와 현재 구현이 우선한다.
@@ -50,8 +50,8 @@
 
 ### 중요한 규칙
 
-- `docs/ui/erp-standard/classic-*.png` 등 저장 screenshot은 **현재 코드보다 뒤처질 수 있다**.
-- screenshot과 코드가 충돌하면 **현재 branch HEAD 코드가 우선**이다.
+- 과거 저장 screenshot/mockup/reference는 현재 트리에서 제거한다.
+- 문서·fixture와 actual route가 충돌하면 **PR #92 actual route 코드가 우선**이다.
 - AI는 UI 작업 전에 반드시 현재 branch HEAD를 새로 조회한다.
 - 오래된 commit/revision을 “최신 디자인”으로 재사용하지 않는다.
 

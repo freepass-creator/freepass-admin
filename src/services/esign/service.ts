@@ -5,12 +5,12 @@ import {
   CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, mergeRequiredDocuments, normalizeRequiredDocuments,
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
-import { sha256 } from '../../domain/esign/snapshot';
+import { sha256, signedSnapshot, stableJson } from '../../domain/esign/snapshot';
 import { templateFieldsFromContract } from '../../domain/esign/template-fields';
 import type {
   EsignAdminState, EsignPrivateSubmission, EsignSession, EsignSnapshot,
 } from '../../domain/esign/types';
-import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
+import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } from '../../ports/esign/repositories';
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
 
@@ -20,6 +20,7 @@ const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
 const SUBMIT_CLAIM_TTL = 90_000;
+const FINALIZE_CLAIM_TTL = 90_000;
 
 function uploadMagicOk(type: string, bytes: Uint8Array) {
   if (type === 'application/pdf') return bytes.length >= 5 && Buffer.from(bytes.subarray(0, 5)).toString('ascii') === '%PDF-';
@@ -57,7 +58,7 @@ export type CreateContractInput = {
 };
 
 export class EsignService {
-  constructor(private repo: EsignRepository, private assets: EsignAssetStore) {}
+  constructor(private repo: EsignRepository, private assets: EsignAssetStore, private finalRenderer?: EsignFinalDocumentRenderer) {}
 
   private publicBase() {
     const raw = (process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '');
@@ -549,6 +550,133 @@ export class EsignService {
         submittingAt: 0,
       }).catch(() => false);
       throw e;
+    }
+  }
+
+  async approve(contractId: string, finalizationId: string, actor = 'admin') {
+    if (!/^[A-Za-z0-9_-]{16,128}$/.test(finalizationId)) {
+      throw new Error('승인 요청 식별자가 없습니다 — 화면을 새로 열어 다시 승인해 주세요.');
+    }
+    if (!this.finalRenderer) {
+      throw new Error('최종 PDF 생성기가 연결되지 않았습니다 — 계약을 완료 처리하지 않았습니다.');
+    }
+
+    let session = await this.repo.getCurrentSession(contractId);
+    if (!session) throw new Error('전자계약 세션이 없습니다.');
+    if (session.status === 'signed') {
+      if (session.finalizationId !== finalizationId) throw new Error('이미 다른 승인 요청으로 완료된 계약입니다.');
+      return { ok: true as const, finalized: false, session };
+    }
+
+    const now = Date.now();
+    if (session.status === 'approving') {
+      const stale = Number(session.approvingAt || 0) <= now - FINALIZE_CLAIM_TTL;
+      if (session.finalizationId !== finalizationId && !stale) throw new Error('다른 승인 요청이 처리 중입니다.');
+      if (stale) {
+        const released = await this.repo.transitionSession(session.id, ['approving'], {
+          status: 'pending_review', approvingAt: 0, finalizationId: '',
+        });
+        if (!released) throw new Error('승인 상태가 바뀌었습니다 — 다시 확인해 주세요.');
+        session = { ...session, status: 'pending_review', approvingAt: 0, finalizationId: '' };
+      }
+    }
+
+    if (session.status === 'pending_review') {
+      const claimed = await this.repo.transitionSession(session.id, ['pending_review'], {
+        status: 'approving', approvingAt: now, finalizationId,
+      });
+      if (!claimed) throw new Error('이미 승인·보완 처리가 시작된 계약입니다.');
+      session = { ...session, status: 'approving', approvingAt: now, finalizationId };
+    } else if (session.status !== 'approving' || session.finalizationId !== finalizationId) {
+      throw new Error('검토 대기 상태의 계약만 승인할 수 있습니다.');
+    }
+
+    try {
+      const priv = await this.repo.getPrivate(session.id);
+      if (!priv || Number(priv.submittedAt || 0) <= 0) throw new Error('고객 제출 자료를 찾을 수 없습니다.');
+
+      const missingConsents = session.snapshot.consentProfile.requiredKeys
+        .filter((key) => !priv.consents?.includes(key));
+      if (missingConsents.length) throw new Error('필수 동의가 누락되었습니다: ' + missingConsents.join(' · '));
+
+      const requiredDocs = session.snapshot.requiredDocuments.filter((d) => d.required).map((d) => d.key);
+      const uploadedDocs = new Set((priv.supportingDocuments || []).map((d) => d.key));
+      const missingDocs = requiredDocs.filter((key) => !uploadedDocs.has(key));
+      if (missingDocs.length) throw new Error('필수 서류가 누락되었습니다: ' + missingDocs.join(' · '));
+
+      if (!priv.signaturePath || !priv.signatureSha256) throw new Error('고객 서명 원본이 없습니다.');
+      const signature = await this.assets.get(priv.signaturePath, priv.signatureSha256);
+      if (!signature || !signature.contentType.startsWith('image/')) throw new Error('고객 서명 원본 검증에 실패했습니다.');
+
+      const sealedSnapshot = signedSnapshot(session.snapshot, priv);
+      const sealHash = sha256(stableJson({
+        sessionId: session.id,
+        revision: session.revision,
+        snapshot: sealedSnapshot,
+        signatureSha256: priv.signatureSha256,
+        consents: [...(priv.consents || [])].sort(),
+        documents: [...(priv.supportingDocuments || [])]
+          .map((d) => ({ key: d.key, sha256: d.sha256 }))
+          .sort((a, b) => a.key.localeCompare(b.key)),
+      }));
+
+      const rendered = await this.finalRenderer.render({
+        snapshot: session.snapshot,
+        submission: priv,
+        signatureBytes: signature.bytes,
+        sealHash,
+      });
+      if (rendered.contentType !== 'application/pdf' || rendered.bytes.byteLength < 5
+        || Buffer.from(rendered.bytes.subarray(0, 5)).toString('ascii') !== '%PDF-') {
+        throw new Error('최종 문서 생성기가 PDF가 아닌 결과를 반환했습니다.');
+      }
+
+      const documentSha256 = sha256(rendered.bytes);
+      const documentStoragePath = 'esign-final/' + session.contractCode + '/' + session.id + '.pdf';
+      const stored = await this.assets.put(documentStoragePath, rendered.bytes, 'application/pdf');
+      if (stored.sha256 !== documentSha256) throw new Error('최종 PDF 저장 검증에 실패했습니다.');
+
+      const approvedAt = Date.now();
+      const result = await this.repo.finalizeSigned(
+        session.id,
+        finalizationId,
+        {
+          approvedAt,
+          approvedBy: actor,
+          approvingAt: 0,
+          signedSnapshot: sealedSnapshot,
+          sealHash,
+          documentSha256,
+          documentStoragePath,
+          documentContentType: 'application/pdf',
+        },
+        {
+          sign_status: '서명완료',
+          contract_status: '계약완료',
+          sign_signed_at: approvedAt,
+          signed_pdf_url: '/api/esign/final/' + encodeURIComponent(session.id),
+          esign_seal_hash: sealHash,
+          esign_document_sha256: documentSha256,
+          esign_document_storage_path: documentStoragePath,
+          esign_template_version: session.snapshot.templateVersion,
+          sign_consent_version: session.snapshot.agreementVersion,
+        },
+        actor,
+        {
+          finalizationId,
+          sealHash,
+          documentSha256,
+          documentStoragePath,
+          templateVersion: session.snapshot.templateVersion,
+          agreementVersion: session.snapshot.agreementVersion,
+        },
+      );
+      return { ok: true as const, finalized: result.finalized, session: result.session };
+    } catch (error) {
+      await this.repo.transitionSession(session.id, ['approving'], {
+        status: 'pending_review', approvingAt: 0, finalizationId: '',
+      }).catch(() => false);
+      throw error;
     }
   }
 

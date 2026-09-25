@@ -56,8 +56,34 @@ export function planContractTermination(
     return {ok:false,error:`계약해지일은 인도일(${deliveredAt})보다 빠를 수 없습니다.`};
   }
 
-  const terminatedAt=Number(intake.contractTerminatedAt??0);
-  if(terminatedAt>0){
+  // Termination is mirrored in both contract + source intake. Never trust only one
+  // side for idempotency: legacy/manual partial writes must fail closed instead of
+  // being silently overwritten by a retry.
+  const contractTerminatedAt=Number(contract.contract_terminated_at??0);
+  const intakeTerminatedAt=Number(intake.contractTerminatedAt??0);
+  const contractHasTermination=S(contract.contract_status)==='계약해지'
+    || contractTerminatedAt>0
+    || Boolean(S(contract.contract_termination_date))
+    || Boolean(S(contract.contract_termination_reason))
+    || Boolean(S(contract.contract_termination_operation_id));
+  const intakeHasTermination=intakeTerminatedAt>0
+    || Boolean(S(intake.contractTerminationDate))
+    || Boolean(S(intake.contractTerminationReason))
+    || Boolean(S(intake.contractTerminationOperationId));
+
+  if(contractHasTermination||intakeHasTermination){
+    if(!contractHasTermination||!intakeHasTermination){
+      return {ok:false,error:'계약과 접수의 기존 해지 기록이 일치하지 않습니다 — 데이터를 먼저 확인해 주세요.'};
+    }
+    const mirrored=contractTerminatedAt>0
+      && contractTerminatedAt===intakeTerminatedAt
+      && S(contract.contract_status)==='계약해지'
+      && S(contract.contract_termination_operation_id)===S(intake.contractTerminationOperationId)
+      && S(contract.contract_termination_date)===S(intake.contractTerminationDate)
+      && S(contract.contract_termination_reason)===S(intake.contractTerminationReason);
+    if(!mirrored){
+      return {ok:false,error:'계약과 접수의 기존 해지 기록이 일치하지 않습니다 — 데이터를 먼저 확인해 주세요.'};
+    }
     const sameOperation=S(intake.contractTerminationOperationId)===input.operationId;
     const samePayload=S(intake.contractTerminationDate)===input.effectiveDate
       && S(intake.contractTerminationReason)===reason;

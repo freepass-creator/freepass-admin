@@ -262,6 +262,44 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .dz-row-l3.perks .dz-perks.compact { justify-content: flex-start; flex: 1 1 auto; }
 .dz-row-l3.perks small { font-size: var(--글보조); color: #9aa3ad; }
 
+/* 상품 상세 — 기간별 대여료는 별도 기간 버튼 + 선택값 박스로 중복하지 않고 한 줄 선택행으로 비교한다.
+ * 선택은 체크 아이콘/테두리 추가 없이 --고름 면으로만 표시한다. */
+.fn-main .workspace .offer-picker.dz-offer-rows {
+  display: grid; grid-template-columns: 1fr; gap: var(--ui-list-gap);
+  overflow: visible; padding-top: 12px;
+}
+.fn-main .workspace .offer-picker.dz-offer-rows > button {
+  width: 100%; min-height: var(--ui-control-h); height: auto;
+  display: grid; grid-template-columns: max-content minmax(112px, .8fr) minmax(0, 1.4fr);
+  align-items: center; column-gap: 12px;
+  padding: 8px 12px; border: 0; border-radius: var(--ui-radius);
+  background: var(--카드); color: var(--글); text-align: left;
+}
+.fn-main .workspace .offer-picker.dz-offer-rows > button:hover { background: var(--카드손); }
+.fn-main .workspace .offer-picker.dz-offer-rows > button.active,
+.fn-main .workspace .offer-picker.dz-offer-rows > button[aria-pressed="true"] {
+  background: var(--고름); color: var(--글);
+}
+.dz-offer-term { font-size: var(--글메인); font-weight: 700; white-space: nowrap; }
+.dz-offer-rent {
+  font-size: var(--글메인); font-weight: 800; color: var(--ci남색);
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.dz-offer-conditions {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--글보조); color: #6b7580; text-align: right; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 900px) {
+  .fn-main .workspace .offer-picker.dz-offer-rows > button {
+    grid-template-columns: max-content minmax(0, 1fr);
+    row-gap: 4px; column-gap: 10px;
+  }
+  .dz-offer-rent { text-align: right; }
+  .dz-offer-conditions {
+    grid-column: 1 / -1; text-align: left; white-space: normal;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    ★ 로그인 (/login) — erp4 LoginView 짜임 · 우리 규격(§14-9). 관리자 틀 없음
    ═══════════════════════════════════════════════════════════════════ */

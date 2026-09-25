@@ -1119,5 +1119,32 @@
       "overflow": "ellipsis"
     },
     "rule": "Prefer horizontal flow and truncation over vertical growth on narrow screens."
+  },
+  "quickFilterContent": {
+    "businessItemsConfigured": false,
+    "provisionalMaxItems": 2,
+    "defaultExamples": [
+      "전체",
+      "대표 예시 1개"
+    ],
+    "contextSelectorsMayRemain": true,
+    "rule": "QuickFilter layout is standardized, but business filter items stay provisional until explicitly configured."
+  },
+  "typographyRoles": {
+    "desktop": {
+      "panelTitlePx": 18,
+      "sectionTitlePx": 16,
+      "cardIdentityPx": 14,
+      "bodyPx": 14,
+      "inputPx": 14,
+      "buttonPx": 14,
+      "quickFilterPx": 14,
+      "primaryValuePx": 16,
+      "supportPx": 12,
+      "badgePx": 12,
+      "tagPx": 12,
+      "kpiPx": 24
+    },
+    "rule": "Typography should feel conventional and native to an ERP; hierarchy comes from role, not decorative size jumps."
   }
 }

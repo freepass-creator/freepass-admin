@@ -1,0 +1,86 @@
+name: Admin release assembly
+
+on:
+  push:
+    branches: [release/admin-operational-20260925]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: admin-release-assembly
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    if: github.repository == 'freepass-creator/freepass-admin' && github.ref == 'refs/heads/release/admin-operational-20260925'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      ERP5_WRITE: 'off'
+      FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: OBSERVE
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assemble immutable source revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'FreePass Release Integration'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mkdir -p /tmp/admin-release-evidence
+          printf 'workflow_source=%s\n' "$(git rev-parse HEAD)" > /tmp/admin-release-evidence/revisions.txt
+          for entry in \
+            'ui 0ce9df1772eb35e289d94b1a9fbc1f2cb286b75a' \
+            'esign 77e5e1d8485e71e217e2026af0cd82ffa17fd5cb' \
+            'privacy d91ada90057a4765e4c9087c426dda13796f401a'; do
+            read -r label sha <<< "$entry"
+            git fetch --no-tags origin "$sha"
+            git update-ref "refs/integration/$label" "$sha"
+            printf '%s=%s\n' "$label" "$sha" >> /tmp/admin-release-evidence/revisions.txt
+            if ! git merge --no-ff "$sha" -m "merge: integrate pinned $label candidate $sha"; then
+              git diff --name-only --diff-filter=U | tee /tmp/admin-release-evidence/conflicts.txt
+              git diff --cc > /tmp/admin-release-evidence/conflicts.diff
+              echo '::error::Integration conflict requires explicit resolution; no source branch or production data changed.'
+              sed -n '1,500p' /tmp/admin-release-evidence/conflicts.diff
+              exit 1
+            fi
+          done
+          git diff --check
+          git rev-parse HEAD | tee /tmp/admin-release-evidence/integrated-sha.txt
+          # Publish only to this isolated branch. Never force-push or modify main.
+          git push origin HEAD:refs/heads/release/admin-operational-20260925
+      - name: Locked dependency install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Full unit and domain tests
+        run: npm test
+      - name: UI contract
+        run: npm run ui:check
+      - name: Data boundary
+        run: npm run data:check
+      - name: Production build
+        run: npm run build
+      - name: Capture non-secret integration evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p /tmp/admin-release-evidence
+          git status --short > /tmp/admin-release-evidence/worktree-status.txt
+          git bundle create /tmp/admin-release-evidence/source.bundle --all
+          tar --exclude=.git --exclude=node_modules --exclude=.next --exclude='.env*' -czf /tmp/admin-release-evidence/source.tar.gz .
+          git rev-parse HEAD > /tmp/admin-release-evidence/checked-sha.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-release-assembly-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/admin-release-evidence
+          retention-days: 7

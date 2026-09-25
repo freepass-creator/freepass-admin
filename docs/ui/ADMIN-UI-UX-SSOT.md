@@ -2846,88 +2846,62 @@ Visual QA:
 
 # 65. Card line contract
 
-카드는 먼저 **몇 줄짜리 카드인지**가 정해지고,
-정보는 그 줄 안에 들어간다.
-내용이 늘었다고 카드 구조를 매번 새로 키우지 않는다.
+카드의 **줄 수는 고정하지 않는다.** 2줄, 3줄, 4줄, 5줄이 될 수 있다.
+규격화할 것은 줄 수가 아니라 **각 줄의 역할·우선순위·간격·정렬**이다.
 
-## 목록 카드
-
-기본 줄 높이:
+기본 line rhythm:
 - line-height: 20px
 - line gap: 2px
+- 각 정보줄은 기본 한 줄 유지
+- 긴 값은 ellipsis
+- 카드 전체 높이는 실제 필요한 정보줄 수에 따라 자연스럽게 증가
 
-### 1줄 카드
-- identity/value 한 줄
-- 상태나 금액은 같은 줄 우측에 둘 수 있다
-- 줄바꿈 금지
-- overflow는 ellipsis
+## 정보 우선순위
 
-### 2줄 카드
-- 1행: identity/title
-- 2행: context/meta 또는 primary value
-- 두 줄 모두 한 줄 유지
-- 각 줄 간 gap 2px
+1행은 항상 그 카드를 고를 때 가장 먼저 봐야 하는 정보다.
 
-### 3줄 카드
-- 1행: identity/title
-- 2행: context/meta
-- 3행: result/amount/support
-- 목록 카드의 기본 최대치
-- 3줄을 넘는 설명은 상세 화면으로 이동
+차량/상품 목록 권장:
+- 1행: 차종 또는 차량 identity ↔ 월 대여료
+- 2행: 차량번호 · 상품구분
+- 3행: 기간 · 보증금
+- 4행 이후: 공급사, 연식, 주행거리, 색상, 기타 운영정보 등 실제 업무상 필요한 순서
 
-## Compact list card
+접수/계약 목록은 같은 원칙을 적용하되 identity가 고객명/차량일 수 있다.
+정산 목록은 상대방/상태/금액이 1순위가 될 수 있다.
+즉 **도메인마다 1행의 핵심정보는 다를 수 있지만 중요도 순서는 반드시 명시**한다.
 
-- 최대 3줄
-- title / sub / meta 순서
-- 없는 줄은 제거
-- 빈 줄을 자리만 차지하게 만들지 않는다
-- 카드 전체를 긴 문장 때문에 키우지 않는다
+## 금액 표기
 
-## Wide RowCard
-
-가로 영역:
-- identity
-- progress
-- facts
-- amount
-
-각 영역 내부 텍스트는 원칙적으로 한 줄이다.
-facts의 label/value도 한 행에서 끝낸다.
-
-## Tile / content card
-
-- 기본 1~2줄
-- 1행: label ↔ primary value
-- 2행: support label ↔ support value
-- 3줄 이상 설명이 필요하면 Tile 안에 계속 쌓지 않고 Detail section으로 보낸다
+목록은 빠른 스캔이 목적이므로 금액을 축약할 수 있다.
+- 월 대여료: `67만원/월`
+- 보증금: `500만` 또는 `보증금 500만`
+- 상세 화면: 필요 시 `670,000원`, `5,000,000원`처럼 정확 금액
+- 축약 표기와 실제 저장값/계산값은 분리한다.
 
 ## 줄바꿈
 
-기본:
-- identity/title: nowrap + ellipsis
-- meta/context: nowrap + ellipsis
-- amount/value: nowrap
+- identity/title: 기본 nowrap + ellipsis
+- 차량번호/기간/보증금/금액: nowrap
 - status/badge: nowrap
-- 긴 업무 설명문만 Detail section에서 자연 줄바꿈 허용
+- 긴 설명문만 상세 영역에서 자연 줄바꿈
+- 줄이 많다는 이유만으로 카드 자체를 금지하지 않는다.
 
 ## 정렬
 
-- identity/title/context: 좌측 정렬
-- 숫자/금액/result: 우측 정렬
-- 같은 카드 묶음의 금액 우측선은 동일해야 한다
-- tabular-nums 사용
-- 한 카드 안에서 왼쪽 정보와 오른쪽 값을 임의로 뒤집지 않는다
+- identity/context: 좌측
+- 금액/result: 우측
+- 같은 목록의 금액 우측선은 동일
+- 숫자는 tabular-nums
+- 한 줄 안에서 중요값을 좌우 끝에 배치할 수 있다.
 
 ## 금지
 
-- 카드마다 임의 line-height
-- 내용이 많다는 이유로 4~5줄 목록 카드 생성
-- 제목 두 줄 wrap을 기본값으로 사용
-- 금액 줄바꿈
-- 줄마다 서로 다른 vertical gap
-- 같은 역할의 카드인데 화면마다 줄 수/정렬 규칙 변경
+- 카드 줄 수를 3줄 등으로 전역 고정
+- 카드 높이를 96px 등으로 전역 제한
+- 중요정보를 상세에만 숨기고 목록에서 식별/비교가 안 되게 만들기
+- 같은 역할의 줄인데 화면마다 line-height/gap을 다르게 만들기
 
 Visual QA:
-- card line computed line-height 20px 검사
-- 한 줄 요소가 22px 이상으로 커지면 FAIL
-- 예상치 못한 vertical wrap을 FAIL
+- 각 정보줄 line-height 20px 검사
+- 의도치 않은 한 정보줄의 multi-line wrap 검사
+- 카드 전체 높이는 실패 조건으로 사용하지 않는다.

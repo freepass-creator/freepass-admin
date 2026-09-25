@@ -2258,3 +2258,39 @@
     transform: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact list text rails
+ * Main/Key/Support share the same left rail; primary value shares one right rail.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    justify-self: stretch;
+  }
+
+  .erp-std .erp-panel--compact :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta
+  ) {
+    width: 100%;
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-title {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-title .erp-rowcard-link {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-sub > b {
+    margin-left: 0;
+  }
+}

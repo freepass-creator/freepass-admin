@@ -255,6 +255,7 @@ async function inspect(page) {
           const vr = rr(visual), mr = rr(main), kr = rr(key), sr = rr(support), pr = rr(primary);
           return {
             className: typeof card.className === 'string' ? card.className : '',
+            outerHeight: Math.round(cr.height),
             cardLeft: Math.round(cr.left), cardRight: Math.round(cr.right),
             visualTop: vr ? Math.round(vr.top) : null, visualBottom: vr ? Math.round(vr.bottom) : null, visualLeft: vr ? Math.round(vr.left) : null,
             mainTop: mr ? Math.round(mr.top) : null,
@@ -659,6 +660,10 @@ async function runInteractiveStates(page, c) {
       }
       if (Array.isArray(info.listCardAlignment)) {
         for (const card of info.listCardAlignment) {
+          const expectedOuter = c.width <= 900 ? 88 : 84;
+          if (Math.abs(card.outerHeight - expectedOuter) > 2) {
+            problems.push(`list card outer height mismatch: expected ${expectedOuter}px: ${JSON.stringify(card)}`);
+          }
           if (card.visualTop !== null && card.mainTop !== null && card.visualBottom !== null && card.supportBottom !== null) {
             if (Math.abs(card.visualTop - card.mainTop) > 2 || Math.abs(card.visualBottom - card.supportBottom) > 2) {
               problems.push(`visual and 3-line text block vertical alignment drift: ${JSON.stringify(card)}`);

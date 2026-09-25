@@ -12,7 +12,7 @@ import { sp, txt } from '../_fn/fmt';
 import { FilterSheet } from '../_design/FilterSheet';
 import { buildProductList } from './productList';
 import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
-import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0 } from './parts';
+import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 

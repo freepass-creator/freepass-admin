@@ -22,6 +22,19 @@ export const clawbackId = (plate: unknown, month: string, code?: unknown) => {
   return c ? `${p}_${month}_${c}` : `${p}_${month}`;
 };
 
+export function sameClawbackPayload(
+  existing: Record<string, unknown>,
+  planned: Record<string, unknown>,
+): boolean {
+  const S = (v: unknown) => String(v ?? '').trim();
+  const N = (v: unknown) => Math.round(Number(v) || 0);
+  return S(existing.code) === S(planned.code)
+    && S(existing.at) === S(planned.at)
+    && S(existing.reason) === S(planned.reason)
+    && N(existing.supplierAmt) === N(planned.supplierAmt)
+    && N(existing.agentAmt) === N(planned.agentAmt);
+}
+
 export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, nowMs: number):
   { ok: true; id: string; doc: Record<string, unknown> } | { ok: false; error: string } {
   if (!r.plate) return { ok: false, error: '차량번호가 없는 줄은 환수를 세울 수 없습니다' };

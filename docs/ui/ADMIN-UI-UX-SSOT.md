@@ -1,7 +1,7 @@
 # FreePass Admin UI/UX SSOT
 
-상태: **PRODUCT PROFILE / AI CORE CONSUMER**  
-기준일: 2026-09-21
+상태: **CANONICAL / USER-LOCKED / AI CORE CONSUMER**  
+기준일: 2026-09-25
 적용: `freepass-admin` 실제 관리자 화면  
 코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
@@ -17,6 +17,21 @@
 
 ---
 
+## 0. 절대 디자인 잠금 — 2026-09-25
+
+이 문서는 FreePass Admin의 **유일한 사람용 UI/UX 정본**이다. 작업자는 먼저 [DESIGN-AUTHORITY.md](DESIGN-AUTHORITY.md)를 읽는다.
+
+- 삭제된 `docs/ui/mockups/**`, `UI-HISTORY.md`, 2026-09-16 rail/topbar/mockup 계열은 **설계 입력으로 재사용 금지**다.
+- 과거 스크린샷·PR·리뷰·Git history에서 옛 화면을 발견해도 복원하지 않는다.
+- Claude/Codex/GPT 등 어떤 AI도 자체적인 “기존 디자인”을 기억/추측해 새 화면을 만들지 않는다.
+- 현행 공통 부품(`src/app/_design/*`)과 이 문서의 토큰/배치만 조합한다.
+- 새로운 시각 규칙은 사용자의 명시 승인 없이 추가하지 않는다.
+- 시각 정본을 바꾸는 경우 이 MD, machine SSOT JSON, Design Authority, 공통 부품, 회귀검사를 **같은 변경**에서 갱신한다.
+
+**옛 디자인으로 fallback 하는 것은 기능 정상 여부와 무관하게 UI 회귀로 간주한다.**
+
+---
+
 ## 1. 정본 우선순위
 
 충돌하면 아래 순서가 이긴다.
@@ -28,7 +43,7 @@
 5. 실제 공통 구현 — `src/app/_design/*`
 4. 실제 최종 CSS — `src/app/globals.css`의 뒤쪽 확정 규칙
 5. `docs/ui/UI-SPEC.md`
-6. mockup / POLISH-NOTES / 과거 CSS 주석
+6. 기타 문서·캡처·리뷰 — 참고만 가능, 시각 정본 아님
 
 ### 금지
 - 과거 `admin-shell.*` 값을 실제 앱보다 우선하지 않는다.

@@ -765,7 +765,7 @@
     --fp-query-row-h: 48px;
     --fp-quick-row-h: 40px;
     --fp-panel-foot-h: 56px;
-    --fp-row-compact-min-h: 64px;
+    --fp-row-compact-min-h: 84px;
     --fp-row-standard-min-h: 72px;
     --fp-section-rhythm: 16px;
   }
@@ -1782,7 +1782,6 @@
     .erp-rowcard-title,
     .erp-rowcard-sub,
     .erp-rowcard-meta,
-    .erp-rowcard-line,
     .erp-rowcard-amount strong,
     .erp-rowcard-amount span
   ) {
@@ -1797,8 +1796,7 @@
 
   .erp-std .erp-rowcard-title,
   .erp-std .erp-rowcard-sub,
-  .erp-std .erp-rowcard-meta,
-  .erp-std .erp-rowcard-line {
+  .erp-std .erp-rowcard-meta {
     min-height: var(--fp-card-line-h);
     max-height: var(--fp-card-line-h);
     overflow: hidden;

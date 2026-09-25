@@ -685,17 +685,18 @@ for (const [file, re, label] of listAmountLanguageBaseline) {
 }
 
 const cardInformationMatrixBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product third line term/deposit'],
-  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product primary rent value'],
-  ['src/app/_erp/Workspace.tsx', /meta=\{`\$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance third line product/term'],
-  ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구/, 'intake/performance support fee line'],
-  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key progress line'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement line opposite-axis support'],
-  ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign third line term/state'],
+  ['src/app/_erp/ProductsScreen.tsx', /subId=\{txt\(p\.registration\?\.vehicleNumber\)\} sub=\{txt\(p\.productKind\)\}/, 'product key line'],
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product support line'],
+  ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance key line'],
+  ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구 /, 'intake/performance support line'],
+  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{g\.unknown \|\| g\.broken \|\| g\.clawbacks\.length/, 'settlement group support line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement opposite-axis support line'],
+  ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign support line'],
 ] as const;
 for (const [file, re, label] of cardInformationMatrixBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
-  if (!re.test(src)) errors.push(`${file}: scan-first card matrix mismatch: ${label}`);
+  if (!re.test(src)) errors.push(`${file}: strict three-line card matrix mismatch: ${label}`);
 }
 
 // Profit/margin is detail-owned by default and must not be promoted into list-card amount text.

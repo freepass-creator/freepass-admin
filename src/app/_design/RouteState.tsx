@@ -34,7 +34,12 @@ export function RouteError({ title, error, reset }: {
           {error.digest ? <small>오류번호 {error.digest}</small> : null}
         </div>
         <ActionBar>
-          <button type="button" className="primary" onClick={reset}>다시 시도</button>
+          <button type="button" className="primary" onClick={() => {
+            /* Actual Next production receipt: reset() alone kept the same server error
+               without issuing a new request. Fatal route retry must really re-request the URL. */
+            reset();
+            window.location.reload();
+          }}>다시 시도</button>
         </ActionBar>
       </section>
     </section>

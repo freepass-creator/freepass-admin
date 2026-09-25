@@ -118,8 +118,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
             tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
             title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
-            sub={`${name} ${g.done}/${g.lines.length}`}
-            meta={`완료 ${g.completed}/${g.lines.length}`}
+            sub={`${name} ${g.done}/${g.lines.length} · 완료 ${g.completed}/${g.lines.length}`}
             lines={g.unknown || g.broken || g.clawbacks.length
               ? [`이슈 · 미확정 ${g.unknown} · 끊김 ${g.broken} · 환수 ${g.clawbacks.length}`]
               : []}
@@ -169,12 +168,13 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                     <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
                       title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
                       subId={txt(r.plate)} sub={txt(r.model)} steps={{ labels: flow, at }}
+                      meta={`${txt(r.product)} · ${r.term ?? '—'}개월`}
+                      lines={[
+                        `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
+                      ]}
                       facts={[
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
-                      ]}
-                      lines={[
-                        `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
                       ]}
                       amount={`${tab === 'claim' ? '청구' : '지급'} ${amount === null ? '—' : `${won0(amount)}원`}`} unit="" />
                   );

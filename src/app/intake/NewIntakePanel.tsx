@@ -40,7 +40,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
   };
   /*
    * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).
-   *   기능 쪽 셈(feeOf · ERP5 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
+   *   기능 쪽 셈(feeOf · FreePass Data 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
    */
   const 수수료 = product && offer && 짝?.certain
     ? await previewFeeAction((() => {
@@ -72,13 +72,13 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
                 }</dd></div>
               </dl>
             : <Notice tone="warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</Notice>}
-          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">ERP5 수수료표 · 기준 {수수료.basis}{수수료.basis === '차량가액' && product.consumerPrice !== undefined ? ` ${won(product.consumerPrice)}원` : ''} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
+          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">FreePass Data 수수료표 · 기준 {수수료.basis}{수수료.basis === '차량가액' && product.consumerPrice !== undefined ? ` ${won(product.consumerPrice)}원` : ''} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
           {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : selectedProductPath
         ? <Notice tone="warn">선택한 상품을 더 이상 찾을 수 없습니다 — 상품 목록에서 다시 골라 주세요.</Notice>
         : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
-      {!freePassDataWriteEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
+      {!freePassDataWriteEnabled() && <Notice tone="warn">FreePass Data 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
       <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
       {(!selectedProductPath || (product && offer)) && (
         <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}

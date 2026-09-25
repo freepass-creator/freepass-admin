@@ -17,16 +17,7 @@ import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, Row
 type Q = Record<string, string | string[] | undefined>;
 
 export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: string }) {
-  let products: CanonicalProduct[];
-  try { products = (await productList()).rows; }
-  catch (e) {
-    return (
-      <Screen name="products-workspace">
-        <Panel compact><PanelHead kind="목록" title="상품찾기" count="오류" />
-          <PanelBody><p className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></PanelBody></Panel>
-      </Screen>
-    );
-  }
+  const products: CanonicalProduct[] = (await productList()).rows;
 
   const { all, hits, readyCount, facets, sel, selOffers, selOffer } = buildProductList(products, q);
   const pst = sp(q.pst);

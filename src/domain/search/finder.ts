@@ -1,6 +1,7 @@
 import type { CanonicalProduct, Offer } from '../product/types';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass, type CustomerVehicleClass } from '../product/customer-vehicle-class';
 import { matchProduct } from './match-product';
+import { confirmedVehicleId } from './vehicle-match';
 import type { ProductSearchMatch, ProductSearchQuery } from './types';
 
 export type FinderBand = { k: string; label: string; lo: number; hi: number };
@@ -34,7 +35,7 @@ export const VEHICLE_MILEAGE_BANDS: readonly FinderBand[] = [
 
 export const OFFER_FINDER_AXES = ['term', 'rent', 'dep', 'mile'] as const;
 export const PRODUCT_FINDER_AXES = [
-  'status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'cls', 'year', 'vmile', 'fuel', 'credit',
+  'status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'model', 'cls', 'year', 'vmile', 'fuel', 'credit',
 ] as const;
 
 export type OfferFinderAxis = typeof OFFER_FINDER_AXES[number];
@@ -128,6 +129,7 @@ function baseQuery(selection:FinderSelection,limits:FinderLimits,skip?:FinderAxi
     ...(skip==='vc'||!selection.vc.length?{}:{customerVehicleClasses:selection.vc.filter((x):x is CustomerVehicleClass=>
       (CUSTOMER_VEHICLE_CLASSES as readonly string[]).includes(x))}),
     ...(skip==='maker'||!selection.maker.length?{}:{manufacturerIds:selection.maker}),
+    ...(skip==='model'||!selection.model.length?{}:{modelIds:selection.model}),
     ...(skip==='year'||!selection.year.length?{}:{modelYears:nums(selection.year)}),
     ...(skip==='fuel'||!selection.fuel.length?{}:{fuels:selection.fuel}),
     ...(skip==='term'||!selection.term.length?{}:{termMonths:nums(selection.term)}),
@@ -145,7 +147,8 @@ function productAxisMatches(product:CanonicalProduct,axis:ProductFinderAxis,key:
     case 'kind': return product.productKind===key;
     case 'perk': return (product.perks??[]).includes(key);
     case 'supplier': return (product.supplierName??product.supplierId)===key;
-    case 'maker': return product.vehicle.manufacturerId===key;
+    case 'maker': return confirmedVehicleId(product.vehicle,'MANUFACTURER')===key;
+    case 'model': return confirmedVehicleId(product.vehicle,'MODEL')===key;
     case 'cls': return product.vehicleClass===key;
     case 'year': return product.specs.modelYear!==undefined&&String(product.specs.modelYear)===key;
     case 'vmile': return inBand(VEHICLE_MILEAGE_BANDS,key,product.specs.mileageKm)&&Number(product.specs.mileageKm)>0;

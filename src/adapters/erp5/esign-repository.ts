@@ -88,7 +88,16 @@ export class Erp5EsignRepository implements EsignRepository {
 
   async updateContract(id:string,patch:Record<string,unknown>){
     mustWrite();
-    await erp5().collection(CONTRACTS).doc(id).update(clean({...patch,updated_at:Date.now()}));
+    const db=erp5(), ref=db.collection(CONTRACTS).doc(id);
+    await db.runTransaction(async tx=>{
+      const d=await tx.get(ref);
+      if(!d.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const status=String(d.data()?.contract_status??'').trim();
+      if(/취소|철회|해지/.test(status)){
+        throw new Error('취소·철회·해지 계약의 전자계약 상태는 변경할 수 없습니다.');
+      }
+      tx.update(ref,clean({...patch,updated_at:Date.now()}));
+    });
   }
 
   async getCurrentSession(contractId:string):Promise<EsignSession|null>{
@@ -114,24 +123,74 @@ export class Erp5EsignRepository implements EsignRepository {
     const d=q.docs[0]; return d?({id:d.id,...d.data()} as EsignSession):null;
   }
 
-  async createSession(session:EsignSession,publicUrl:string){
+  async issueSession(
+    session:EsignSession,
+    publicUrl:string,
+    contractPatch:Record<string,unknown>,
+    actor:string,
+  ){
     mustWrite();
-    const db=erp5(), lockRef=db.collection(LOCKS).doc(session.contractId);
+    const db=erp5();
+    const lockRef=db.collection(LOCKS).doc(session.contractId);
+    const contractRef=db.collection(CONTRACTS).doc(session.contractId);
+    const nextRef=db.collection(SESSIONS).doc(session.id);
+    const privateRef=db.collection(PRIVATE).doc(session.id);
+
     await db.runTransaction(async tx=>{
-      const lock=await tx.get(lockRef);
-      const oldId=String(lock.data()?.currentSessionId??'');
-      if(oldId&&oldId!==session.id){
-        const oldRef=db.collection(SESSIONS).doc(oldId), old=await tx.get(oldRef);
-        if(old.exists&&!['signed','revoked'].includes(String(old.data()?.status))){
-          tx.update(oldRef,{status:'revoked',revokedAt:Date.now()});
-        }
-      }
-      const nextRef=db.collection(SESSIONS).doc(session.id);
-      const existing=await tx.get(nextRef);
+      const [lock,contractDoc,existing]=await Promise.all([
+        tx.get(lockRef),tx.get(contractRef),tx.get(nextRef),
+      ]);
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
       if(existing.exists)throw new Error('같은 전자계약 세션이 이미 있습니다.');
+
+      const contractRaw=contractDoc.data() as Record<string,unknown>;
+      const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
+      const oldId=String(lock.data()?.currentSessionId??'').trim();
+      const oldRef=oldId&&oldId!==session.id ? db.collection(SESSIONS).doc(oldId) : null;
+      const intakeRef=sourceIntakeId ? db.collection(INTAKES).doc(sourceIntakeId) : null;
+      const [oldDoc,intakeDoc]=await Promise.all([
+        oldRef ? tx.get(oldRef) : Promise.resolve(null),
+        intakeRef ? tx.get(intakeRef) : Promise.resolve(null),
+      ]);
+      if(intakeRef&&!intakeDoc?.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+
+      const contractStatus=String(contractRaw.contract_status??'').trim();
+      const intakeRaw=intakeDoc?.exists ? intakeDoc.data() as Record<string,unknown> : null;
+      const blocked=finalizationBlockReason(contractRaw,intakeRaw);
+      if(blocked){
+        if(blocked.includes('계약취소'))throw new Error('계약취소된 계약은 전자계약을 발행할 수 없습니다.');
+        if(blocked.includes('계약해지'))throw new Error('계약해지된 계약은 전자계약을 발행할 수 없습니다.');
+        throw new Error(blocked);
+      }
+      if(contractStatus==='계약철회')throw new Error('계약철회된 계약은 전자계약을 발행할 수 없습니다.');
+      if(String(contractRaw.sign_status??'').trim()==='서명완료'){
+        throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
+      }
+
+      const lockRevision=Number(lock.data()?.revision??0);
+      if(oldId&&oldId!==session.id&&lockRevision>=session.revision){
+        throw new Error('다른 전자계약 발행 요청이 먼저 완료되었습니다 — 다시 불러와 주세요.');
+      }
+      if(oldDoc?.exists&&String(oldDoc.data()?.status)==='signed'){
+        throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
+      }
+
+      const now=Date.now();
+      if(oldRef&&oldDoc?.exists&&!['signed','revoked'].includes(String(oldDoc.data()?.status))){
+        tx.update(oldRef,{status:'revoked',revokedAt:now});
+      }
       tx.create(nextRef,clean(session as unknown as Record<string,unknown>));
-      tx.set(db.collection(PRIVATE).doc(session.id),{sessionId:session.id,contractId:session.contractId,publicUrl,createdAt:Date.now()},{merge:true});
+      tx.set(privateRef,{sessionId:session.id,contractId:session.contractId,publicUrl,createdAt:session.issuedAt},{merge:true});
       tx.set(lockRef,{currentSessionId:session.id,issuedAt:session.issuedAt,revision:session.revision},{merge:true});
+      tx.update(contractRef,clean({...contractPatch,updated_at:now}));
+
+      const eventRef=db.collection(EVENTS).doc(
+        'evt_'+createHash('sha256').update(session.contractId+'|'+session.id+'|issued').digest('hex').slice(0,24),
+      );
+      tx.create(eventRef,{
+        contractId:session.contractId,sessionId:session.id,type:'issued',by:actor,at:now,
+        detail:{revision:session.revision},
+      });
     });
   }
 
@@ -205,11 +264,12 @@ export class Erp5EsignRepository implements EsignRepository {
       if(!sourceIntakeId)throw new Error('계약의 원본 접수 연결이 없습니다.');
 
       const intakeRef=db.collection(INTAKES).doc(sourceIntakeId);
-      const intakeDoc=await tx.get(intakeRef);
+      const lockRef=db.collection(LOCKS).doc(contractId);
+      const [intakeDoc,lockDoc]=await Promise.all([tx.get(intakeRef),tx.get(lockRef)]);
       if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       const intake=intakeDoc.data() as Record<string,unknown>;
 
-      const sessionId=String(contractRaw.esign_id??'').trim();
+      const sessionId=String(contractRaw.esign_id??lockDoc.data()?.currentSessionId??'').trim();
       const sessionRef=sessionId ? db.collection(SESSIONS).doc(sessionId) : null;
       const sessionDoc=sessionRef ? await tx.get(sessionRef) : null;
       const session=sessionDoc?.exists ? ({id:sessionDoc.id,...sessionDoc.data()} as EsignSession) : null;

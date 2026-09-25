@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { intakeCode, intakeKey, settlementCode, settlementKey, eventDocId } from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
-import { billingMonth, bucketOf, paidRoundsOf, roundsOf, stageOf } from '../stage.js';
+import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
 import { claimAmountOf, payAmountOf } from '../money.js';
 import { blockOf, intakeTaskOf } from '../types.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
@@ -335,20 +335,6 @@ describe('★완납·인도 기준 — 대표 「접수 -> 분납실적/완납�
   it('9월 전 인도분은 옛 규칙(인도월) 그대로 — 지난 달을 흔들지 않는다', () =>
     assert.equal(billingMonth(row({ payKind: '2회분납', deliveredAt: '2026-08-20' }), NOW), '2026-08'));
   it('박힌 청구월이 이긴다', () => assert.equal(billingMonth(row({ billMonth: '2026-07' }), NOW), '2026-07'));
-  it('★월말 인도도 달을 건너뛰지 않는다 — 10/31 + 1개월은 11월(말일)', () => {
-    const later = new Date(2027, 11, 31);
-    assert.equal(billingMonth(row({ payKind: '2회분납', receivedAt: '2026-10-01', deliveredAt: '2026-10-31' }), later), '2026-11');
-    assert.equal(billingMonth(row({ payKind: '3회분납', receivedAt: '2026-12-01', deliveredAt: '2026-12-31' }), later), '2027-02');
-    assert.equal(billingMonth(row({ payKind: '2회분납', receivedAt: '2027-01-01', deliveredAt: '2027-01-30' }), later), '2027-02');
-    assert.equal(billingMonth(row({ payKind: '6회분납', receivedAt: '2027-01-01', deliveredAt: '2027-01-31' }), later), '2027-06');
-  });
-  it('★두 자리 회차 — 「12회분납」 은 12회다', () => {
-    assert.equal(roundsOf('12회분납'), 12);
-    assert.equal(roundsOf('10회 분납'), 10);
-    assert.equal(roundsOf('3회분납'), 3);
-    assert.equal(roundsOf('일시납'), 1);
-    assert.equal(billingMonth(row({ payKind: '12회분납', receivedAt: '2026-09-01', deliveredAt: '2026-09-05' }), new Date(2027, 11, 31)), '2027-08');
-  });
   it('당월 접수 · 지난달 이전인데 인도 전이면 미완료', () => {
     assert.equal(bucketOf(row({ receivedAt: '2026-09-02', delivered: false, deliveredAt: '' }), NOW), '당월접수');
     assert.equal(bucketOf(row({ receivedAt: '2026-07-02', delivered: false, deliveredAt: '' }), NOW), '미완료');

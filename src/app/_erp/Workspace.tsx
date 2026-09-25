@@ -176,11 +176,8 @@ async function IntakeWorkspace({ q }: { q: Q }) {
                 <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id, w: null })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
                   thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
-                  subId={txt(r.plate)} sub={txt(r.model)}
-                  meta={`${txt(r.product)} · ${r.term ?? '—'}개월`}
-                  lines={[
-                    `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
-                  ]}
+                  subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`}
+                  meta={`수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
                   amount={perfView ? undefined : `월 ${manWon(r.rent)} 원`}
                   unit="" />
@@ -276,11 +273,8 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
           thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
           title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
-          subId={txt(r.plate)} sub={txt(r.model)}
-          meta={`${txt(r.product)} · ${r.term ?? '—'}개월`}
-          lines={[
-            `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
-          ]}
+          subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`}
+          meta={`수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`}
           facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
           unit="" />
       ))}

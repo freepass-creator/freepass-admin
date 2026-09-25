@@ -994,5 +994,19 @@
     },
     "noArbitraryMaxWidth": true,
     "rule": "Use fixed outer gutters; workspace, panels and cards consume the remaining available width."
+  },
+  "detailPanelRhythm": {
+    "desktop": {
+      "bodyPaddingPx": 12,
+      "sectionGapPx": 16,
+      "subtitleToCardsPx": 8,
+      "cardGapPx": 12,
+      "tileTitleToContentPx": 8,
+      "infoGroupGapPx": 8
+    },
+    "lineFree": {
+      "tileTitleBottomBorder": false
+    },
+    "rule": "Use spacing and typography for detail hierarchy; do not reintroduce internal divider lines."
   }
 }

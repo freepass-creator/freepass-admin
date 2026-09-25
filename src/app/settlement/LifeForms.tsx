@@ -34,9 +34,9 @@ export function IssueForm({ id, month, axis, party }: { id: string; month: strin
  * 한 줄의 주 걸음 — 하단바 주 단추가 보내는 폼. need 에 따라 칸이 선다:
  *   none(확인 · 정정 풂) · money(수금 · 지급 — 금액 · 날) · correct(정정 — 금액 · 사유 필수)
  */
-export function LifeForm({ id, code, kind, axis, need, amount, day, operationId }: {
+export function LifeForm({ id, code, kind, axis, need, amount, day, operationId, disabled = false }: {
   id: string; code: string; kind: string; axis: '공급사' | '영업채널';
-  need: 'none' | 'money' | 'correct'; amount?: number | null; day?: string; operationId?: string;
+  need: 'none' | 'money' | 'correct'; amount?: number | null; day?: string; operationId?: string; disabled?: boolean;
 }) {
   const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
@@ -44,13 +44,13 @@ export function LifeForm({ id, code, kind, axis, need, amount, day, operationId 
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} /><input type="hidden" name="axis" value={axis} />
       {operationId && <input type="hidden" name="operationId" value={operationId} />}
       {need === 'money' && <>
-        <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" /></label>
-        <label>{kind === 'collected' ? '받은 날' : '준 날'}<input name="day" type="date" defaultValue={day} /></label>
+        <label>{kind === 'collected' ? '받은 금액' : '준 금액'}<input name="amount" defaultValue={amount ?? ''} inputMode="numeric" disabled={disabled || pending} /></label>
+        <label>{kind === 'collected' ? '받은 날' : '준 날'}<input name="day" type="date" defaultValue={day} disabled={disabled || pending} /></label>
         {typeof amount === 'number' && <small className="dz-muted wide">남은 금액 {Math.round(amount).toLocaleString('ko-KR')}원 전액이 기본값입니다. 부분 처리면 금액만 줄여 입력합니다.</small>}
       </>}
       {need === 'correct' && <>
-        <label>상대가 말한 금액<input name="amount" inputMode="numeric" placeholder="모르면 비움" /></label>
-        <label className="wide">사유 *<input name="memo" placeholder="상대가 뭐라고 했는지" /></label>
+        <label>상대가 말한 금액<input name="amount" inputMode="numeric" placeholder="모르면 비움" disabled={disabled || pending} /></label>
+        <label className="wide">사유 *<input name="memo" placeholder="상대가 뭐라고 했는지" disabled={disabled || pending} /></label>
       </>}
       {오류(s)}
     </form>
@@ -58,24 +58,24 @@ export function LifeForm({ id, code, kind, axis, need, amount, day, operationId 
 }
 
 /** 곁 걸음 — 본문 안 작은 폼(청구 보류 · 청구월 정하기 · 계산서). 제 단추를 가진다(주 걸음이 아니라서 하단바에 안 올린다) */
-export function SideStep({ id, code, kind, label, on, month, biz, day, externalSubmit = false }: {
+export function SideStep({ id, code, kind, label, on, month, biz, day, externalSubmit = false, disabled = false }: {
   id?: string; code: string; kind: 'hold' | 'billMonth' | 'invoice'; label: string;
-  on?: boolean; month?: string; biz?: string; day?: string; externalSubmit?: boolean;
+  on?: boolean; month?: string; biz?: string; day?: string; externalSubmit?: boolean; disabled?: boolean;
 }) {
   const [s, act, pending] = useActionState<FormState, FormData>(lifecycleAction, { errors: [] });
   return (
     <form id={id} className="dz-side-step" onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} />
       <b>{label}</b>
-      {kind === 'billMonth' && <label className="dz-side-field"><span>청구월</span><input name="month" type="month" defaultValue={month} disabled={pending} /></label>}
+      {kind === 'billMonth' && <label className="dz-side-field"><span>청구월</span><input name="month" type="month" defaultValue={month} disabled={disabled || pending} /></label>}
       {kind === 'invoice' && !on && <>
-        <label className="dz-side-field"><span>날짜</span><input name="day" type="date" defaultValue={day} disabled={pending} /></label>
-        <label className="dz-side-field"><span>사업자번호</span><input name="biz" defaultValue={biz} placeholder="10자리" inputMode="numeric" disabled={pending} /></label>
+        <label className="dz-side-field"><span>날짜</span><input name="day" type="date" defaultValue={day} disabled={disabled || pending} /></label>
+        <label className="dz-side-field"><span>사업자번호</span><input name="biz" defaultValue={biz} placeholder="10자리" inputMode="numeric" disabled={disabled || pending} /></label>
         {externalSubmit && <input type="hidden" name="on" value="1" />}
       </>}
       {!externalSubmit && (kind === 'billMonth'
-        ? <button type="submit" disabled={pending} aria-busy={pending}>달 정하기</button>
-        : <button type="submit" name="on" value={on ? '0' : '1'} disabled={pending} aria-busy={pending}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>)}
+        ? <button type="submit" disabled={disabled || pending} aria-busy={pending}>달 정하기</button>
+        : <button type="submit" name="on" value={on ? '0' : '1'} disabled={disabled || pending} aria-busy={pending}>{on ? '풀기' : kind === 'hold' ? '보류' : '끊음'}</button>)}
       {오류(s)}
     </form>
   );
@@ -87,11 +87,12 @@ export function SideStep({ id, code, kind, label, on, month, biz, day, externalS
  *   상대가 열어 본 횟수 · 답(확인 · 이의)을 같이 보인다. 하는 일은 기능 쪽 createClaimLinkAction · revokeClaimLinkAction.
  *   ⚠ 운영 원장 — 모양 확인 때 누르지 않는다.
  */
-export function ClaimLink({ month, axis, party, live, openCount, openedAt, failCount, locked, lockedUntil, response }: {
+export function ClaimLink({ month, axis, party, live, openCount, openedAt, failCount, locked, lockedUntil, response, disabled = false }: {
   month: string; axis: '공급사' | '영업채널'; party: string;
   /** 살아 있는 링크가 있나(만든 적 있고 안 거둠) */
   live: boolean; openCount?: number; openedAt?: number; failCount?: number; locked?: boolean; lockedUntil?: number | null;
   response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] } | null;
+  disabled?: boolean;
 }) {
   const [made, make, making] = useActionState<FormState & { url?: string; warn?: string }, FormData>(createClaimLinkAction, { errors: [] });
   const [gone, revoke, revoking] = useActionState<FormState, FormData>(revokeClaimLinkAction, { errors: [] });
@@ -112,11 +113,11 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, failC
       </p>
       <div className="dz-claim-link-go">
         <form aria-busy={making} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => make(fd)); }}>
-          {칸}<button type="submit" disabled={making} aria-busy={making}>{making ? '만드는 중…' : live ? (locked ? '새 링크 만들기(잠금 초기화)' : '새로 만들기(옛 링크 죽음)') : '링크 만들기'}</button>
+          {칸}<button type="submit" disabled={disabled || making} aria-busy={making}>{making ? '만드는 중…' : live ? (locked ? '새 링크 만들기(잠금 초기화)' : '새로 만들기(옛 링크 죽음)') : '링크 만들기'}</button>
         </form>
         {live && (
           <form aria-busy={revoking} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>
-            {칸}<button type="submit" disabled={revoking} aria-busy={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
+            {칸}<button type="submit" disabled={disabled || revoking} aria-busy={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
           </form>
         )}
       </div>

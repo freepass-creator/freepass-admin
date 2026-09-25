@@ -1731,3 +1731,38 @@
     background-clip: padding-box;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Geometry contract
+ * 단단함은 장식보다 geometry 반복에서 만든다.
+ * Panel 8 / Card·Tile 6 / Control 6 / card padding 12.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel {
+    border-radius: var(--erp-r-lg);
+  }
+
+  .erp-std :is(.erp-rowcard,.erp-tile,.erp-listcard,.erp-kpi) {
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std :is(.erp-btn,.erp-input,.erp-search,.erp-dd,.dz-fs-open) {
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std .erp-rowcard {
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    padding: 10px var(--erp-sp-3);
+  }
+
+  .erp-std .erp-tile {
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std :is(.erp-panel-head,.erp-searchbar,.erp-toolbar,.erp-panel-foot) {
+    padding-inline: var(--erp-sp-4);
+  }
+}

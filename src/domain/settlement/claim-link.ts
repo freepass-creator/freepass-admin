@@ -141,6 +141,7 @@ export function planClaimResponse(
   requestedCodes: readonly string[],
   invoiceCodes: readonly string[],
   now: number,
+  allowEmptyTarget = false,
 ):
   | { ok: true; response: ClaimResponse; target: string[]; idempotent: boolean }
   | { ok: false; error: string } {
@@ -152,7 +153,7 @@ export function planClaimResponse(
     ? uniqRequested.filter((c) => invoiceCodes.includes(c))
     : [...invoiceCodes];
 
-  if (!target.length) return { ok: false, error: '선택한 정산 줄이 발행 사본에 없습니다 — 문서를 다시 열어 주세요' };
+  if (!target.length && !allowEmptyTarget) return { ok: false, error: '선택한 정산 줄이 발행 사본에 없습니다 — 문서를 다시 열어 주세요' };
   if (kind === '이의' && uniqRequested.length && target.length !== uniqRequested.length) {
     return { ok: false, error: '발행 사본에 없는 줄이 섞여 있습니다 — 문서를 다시 열어 주세요' };
   }

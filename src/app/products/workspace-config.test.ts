@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
-import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금 } from './workspace-config';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, productWithinSearchLimits, 보증금 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -55,7 +55,8 @@ test('natural product search keeps unknown words as free text', () => {
 
 test('parsed conditions merge with explicit facet state without duplicates', () => {
   const empty = {
-    status: [], kind: [], perk: [], term: [], rent: [], dep: [], supplier: [], cls: [], fuel: [], mile: [],
+    status: [], kind: [], perk: [], term: [], rent: [], dep: [], mile: [],
+    maker: [], cls: [], year: [], vmile: [], fuel: [], credit: [], supplier: [],
   };
   const merged = mergeProductSelections({ ...empty, perk: ['무심사'] }, { perk: ['무심사', '만21세'], term: ['36'] });
   assert.deepEqual(merged.perk, ['무심사', '만21세']);
@@ -110,4 +111,29 @@ test('21-year-old search includes products with lower minimum driver age', () =>
   assert.equal(productMeetsSearchRequirements({ perks: ['만20세'] }, q.requirements), true);
   assert.equal(productMeetsSearchRequirements({ perks: ['만21세'] }, q.requirements), true);
   assert.equal(productMeetsSearchRequirements({ perks: [] }, q.requirements), false);
+});
+
+
+test('mileage search separates annual contract mileage from current vehicle mileage', () => {
+  const q = parseProductSearch('연 2만km 주행 5만km 이하');
+  assert.deepEqual(q.inferred.mile, ['20000']);
+  assert.deepEqual(q.inferred.vmile, ['m1', 'm3', 'm5']);
+  assert.equal(q.limits.vehicleMileageMax, 50_000);
+  assert.deepEqual(q.tokens.map((x) => x.label), ['연 2만km', '현재 주행 5만km 이하']);
+  assert.equal(q.text, '');
+});
+
+test('bare mileage means current vehicle mileage, not annual contract mileage', () => {
+  const q = parseProductSearch('3만km');
+  assert.equal(q.inferred.mile, undefined);
+  assert.deepEqual(q.inferred.vmile, ['m1', 'm3']);
+  assert.equal(q.limits.vehicleMileageMax, 30_000);
+});
+
+test('current mileage exact limit rejects unknown and over-limit vehicles', () => {
+  const limits = parseProductSearch('주행 5만km 이하').limits;
+  assert.equal(productWithinSearchLimits({ specs: { mileageKm: 49_999 } }, limits), true);
+  assert.equal(productWithinSearchLimits({ specs: { mileageKm: 50_001 } }, limits), false);
+  assert.equal(productWithinSearchLimits({ specs: {} }, limits), false);
+  assert.equal(productWithinSearchLimits({ specs: { mileageKm: 0 } }, limits), false);
 });

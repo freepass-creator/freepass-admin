@@ -70,9 +70,9 @@ class Repo implements EsignRepository {
   }
   async revokeSession(sessionId:string,contractId:string,actor:string){
     const session=this.sessions.get(sessionId); if(!session)throw new Error('missing');
-    if(session.status==='signed')throw new Error('서명완료 계약은 해지할 수 없습니다.');
+    if(session.status==='signed')throw new Error('서명완료 계약의 전자계약 발행은 철회할 수 없습니다.');
     if(session.status==='revoked')return {revoked:false,session:structuredClone(session)};
-    if(!['sent','opened','in_progress','rejected'].includes(session.status))throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
+    if(!['sent','opened','in_progress','rejected'].includes(session.status))throw new Error('제출·승인 처리 중인 링크는 철회할 수 없습니다.');
     session.status='revoked'; session.revokedAt=Date.now();
     this.contract.set(contractId,{...(this.contract.get(contractId)||{}),sign_status:'미발송',sign_revoked_at:Date.now(),esign_progress:0});
     this.events.push({contractId,sessionId,type:'revoked',by:actor,detail:{},at:Date.now()});

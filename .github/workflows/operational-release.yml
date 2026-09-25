@@ -17,7 +17,7 @@ env:
   FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: OBSERVE
 jobs:
   code:
-    if: github.event.head_commit.message != 'build: prepare final operational verification'
+    if: github.event.head_commit.message != 'release-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -60,7 +60,7 @@ jobs:
           path: artifacts/operational
           retention-days: 7
   persistence:
-    if: github.event.head_commit.message != 'build: prepare final operational verification'
+    if: github.event.head_commit.message != 'release-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -87,7 +87,6 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/operational-persistence
           git rev-parse HEAD | tee artifacts/operational-persistence/checked-sha.txt
-          # No credential secrets are provided. Both test entrypoints require emulator hosts.
           npx --yes firebase-tools@15.30.2 emulators:exec --config firebase.release-test.json --only firestore,storage --project freepasserp5 \
             'npm run test:freepass-data-firestore && npx tsx scripts/verify-esign-pdf-emulator.mts' \
             2>&1 | tee artifacts/operational-persistence/emulators.log
@@ -98,7 +97,7 @@ jobs:
           path: artifacts/operational-persistence
           retention-days: 7
   browser:
-    if: github.event.head_commit.message != 'build: prepare final operational verification'
+    if: github.event.head_commit.message != 'release-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

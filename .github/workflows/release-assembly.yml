@@ -9,7 +9,7 @@ defaults:
     shell: bash
 jobs:
   finalize:
-    if: github.repository == 'freepass-creator/freepass-admin' && github.event.head_commit.message == 'build: prepare final operational verification'
+    if: github.repository == 'freepass-creator/freepass-admin' && github.event.head_commit.message == 'release-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto';
 import { WriteDisabledError, writeEnabled } from './settlement-repository';
 import { intakeEventDocId } from '../../domain/settlement/code';
 import { planContractTermination, type ContractTerminationInput } from '../../domain/contracts/termination';
+import { planContractCancellation, type ContractCancellationInput } from '../../domain/contracts/cancellation';
+import { contractIntakeLinkError } from '../../domain/contracts/link';
 import type { ContractLifecycleRepository } from '../../ports/contracts/repositories';
 
 /**
@@ -35,6 +37,9 @@ export interface ContractSummary {
   terminationReason: string;
   terminatedAt: number | null;
   terminatedBy: string;
+  cancellationReason: string;
+  cancelledAt: number | null;
+  cancelledBy: string;
   signUrl: string;
   signedPdfUrl: string;
 }
@@ -42,6 +47,77 @@ export interface ContractSummary {
 const T = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 
 export class Erp5ContractRepository implements ContractLifecycleRepository {
+  async cancelContract(
+    contractId: string,
+    input: ContractCancellationInput,
+    actor: string,
+  ): Promise<{ cancelled: boolean; reason: string }> {
+    if (!writeEnabled()) throw new WriteDisabledError();
+    const db=erp5();
+    const contractRef=db.collection('contract').doc(contractId);
+
+    return db.runTransaction(async tx=>{
+      const contractDoc=await tx.get(contractRef);
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const contract=contractDoc.data() as Record<string,unknown>;
+      const intakeId=S(contract.source_intake_id);
+      if(!intakeId)throw new Error('계약의 원본 접수 연결이 없습니다.');
+
+      const intakeRef=db.collection('settlement_rows').doc(intakeId);
+      const intakeDoc=await tx.get(intakeRef);
+      if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      const intake=intakeDoc.data() as Record<string,unknown>;
+
+      const linkError=contractIntakeLinkError(contractId,intake);
+      if(linkError)throw new Error(linkError);
+
+      const now=Date.now();
+      const plan=planContractCancellation(contract,intake,input,now);
+      if(!plan.ok)throw new Error(plan.error);
+      if(plan.idempotent){
+        return {
+          cancelled:false,
+          reason:S(intake.contractCancellationReason),
+        };
+      }
+
+      tx.update(contractRef,{...plan.patch,contract_cancelled_by:actor});
+      tx.update(intakeRef,{
+        ...plan.intakePatch,
+        contractCancellationContractId:contractId,
+        contractCancellationBy:actor,
+      });
+
+      const contractEventRef=db.collection('contract_event').doc(
+        'evt_'+createHash('sha256').update(contractId+'|cancel|'+input.operationId).digest('hex').slice(0,24),
+      );
+      tx.create(contractEventRef,{
+        contractId,
+        type:'cancelled',
+        operationId:input.operationId,
+        reason:input.reason.trim(),
+        by:actor,
+        at:now,
+      });
+
+      const eventRef=db.collection('settlement_events').doc(
+        intakeEventDocId(
+          intake.plate,intake.sourceProductId,intake.receivedAt,
+          intake.intakeRequestId,intake.intakeIdentityMode,
+        ),
+      );
+      const eventKey='aud_contract_cancel_'+createHash('sha256')
+        .update(contractId+'|'+input.operationId).digest('hex').slice(0,16);
+      tx.set(eventRef,{[eventKey]:{
+        at:now,by:actor,operationId:input.operationId,
+        field:'계약취소',from:S(contract.contract_status),to:'계약취소',
+        reason:input.reason.trim(),contractId,
+      }},{merge:true});
+
+      return {cancelled:true,reason:input.reason.trim()};
+    });
+  }
+
   async terminateContract(
     contractId: string,
     input: ContractTerminationInput,
@@ -141,6 +217,9 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
         terminationReason: S(c.contract_termination_reason),
         terminatedAt: N(c.contract_terminated_at),
         terminatedBy: S(c.contract_terminated_by),
+        cancellationReason: S(c.contract_cancel_reason),
+        cancelledAt: N(c.contract_cancelled_at),
+        cancelledBy: S(c.contract_cancelled_by),
         signUrl: S(c.esign_sign_url),
         signedPdfUrl: S(c.signed_pdf_url),
       });

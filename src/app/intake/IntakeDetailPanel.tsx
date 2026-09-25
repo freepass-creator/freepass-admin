@@ -162,6 +162,12 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <Tag {...신원(다음 === '끝' || 다음 === '취소됨' ? 다음 : '다음')} tone={다음 === '끝' || 다음 === '취소됨' ? 'plain' : 'act'}>{다음 === '끝' || 다음 === '취소됨' ? 다음 : `다음 · ${다음}`}</Tag>
       </div>
 
+      <section className="dz-work-focus" aria-label="현재 업무">
+        <span>현재 업무</span>
+        <strong>{life ? `${life.axis} 정산` : (다음 === '끝' || 다음 === '취소됨' ? 다음 : 다음)}</strong>
+        <small>{life ? '정산 단계와 다음 실행을 확인합니다.' : (다음 === '끝' ? '접수 진행이 끝났습니다.' : 다음 === '취소됨' ? '취소된 접수입니다.' : `다음 실행 · ${다음}`)}</small>
+      </section>
+
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
       {걸음}
 
@@ -174,8 +180,13 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <PaidRounds code={r.id} rounds={roundsOf(r.payKind)} paid={r.paidRounds} disabled={r.progress.cancelled} />
       )}
 
+      {warnings.length > 0 && <section className="dz-attention">
+        <h3 className="dz-sub">확인 필요</h3>
+        <ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+      </section>}
+
       {/* 돈 — 한 곳에서 센 금액((수수료 + 프로모션) × 비율 + 가감). 나머지 원자는 아래 «성격별 구역» 이 다 싣는다 */}
-      <h3 className="dz-sub">금액</h3>
+      <h3 className="dz-sub">핵심 금액</h3>
       <SummaryGrid>
         <SummaryItem label="청구금액">{won(청구)}</SummaryItem>
         <SummaryItem label="지급액">{won(지급)}</SummaryItem>
@@ -191,30 +202,34 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         items: 구역.flatMap((x) => x.items.filter((it) => it.pinned)) }]} />
 
       {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
-      <h3 className="dz-sub">돈 고치기 — 수수료 · 프로모션 · 가감</h3>
+      <h3 className="dz-sub">금액 조정</h3>
       <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled} />
       {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</Notice>}
       <MoneyForm code={r.id}
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
         promoReason={r.money.promoReason} claimAdjust={r.money.claimAdjust} payAdjust={r.money.payAdjust}
         adjustReason={r.money.adjustReason} disabled={r.progress.cancelled} />
-      {/* ★정산 줄 원자 전부 — erp4 settlement-atom 묶음 그대로(정체 · 상대 · 조건 · 요율·돈 · 날 · 정산 축 · 상태 · 이월 · 출처) */}
-      <h3 className="dz-sub">원자 전부</h3>
-      <Sections sections={구역} />
       {/* 환수 — 인도된 줄(완납 · 분납실적)에서만 연다 */}
       {!r.progress.cancelled && r.progress.delivered && <ClawbackForm code={r.id} today={today()} />}
-      {warnings.length > 0 && <><h3 className="dz-sub">살필 것</h3><ul className="dz-list-plain">{warnings.map((w) => <li key={w}>{w}</li>)}</ul></>}
 
-      <h3 className="dz-sub">고친 이력 {events.length}</h3>
-      {events.length === 0 ? <EmptyState>남은 이력이 없습니다.</EmptyState> : (
-        <div className="list">
-          {events.map((e, i) => (
-            <div key={i} className="dz-event">
-              <b>{e.field}</b><span>{txt(e.from)} → {txt(e.to)}</span><small>{when(e.at)}</small>
-            </div>
-          ))}
-        </div>
-      )}
+      <details className="dz-support-section">
+        <summary>세부 원자 · 진단</summary>
+        <p>정체 · 상대 · 조건 · 요율 · 날짜 · 정산축 · 상태 · 출처 원문을 확인합니다.</p>
+        <Sections sections={구역} />
+      </details>
+
+      <details className="dz-support-section">
+        <summary>변경 이력 <small>{events.length}</small></summary>
+        {events.length === 0 ? <EmptyState>남은 이력이 없습니다.</EmptyState> : (
+          <div className="list">
+            {events.map((e, i) => (
+              <div key={i} className="dz-event">
+                <b>{e.field}</b><span>{txt(e.from)} → {txt(e.to)}</span><small>{when(e.at)}</small>
+              </div>
+            ))}
+          </div>
+        )}
+      </details>
       {바}
     </>
   );

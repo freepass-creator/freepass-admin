@@ -191,7 +191,7 @@ for (const [re, label] of actionRatioCss) {
 const noWrapResponsiveBaseline = [
   [/\.erp-std \.erp-toolbar \.erp-facet-opts[\s\S]*?flex-wrap:\s*nowrap/, 'desktop quick filters nowrap'],
   [/\.quick-filters,.tabs,.offer-picker,.dz-month[\s\S]*?flex-wrap:\s*nowrap/, 'mobile choice rows nowrap'],
-  [/\.dz-row:has\(\.dz-row-l2\.value\)[\s\S]*?contain-intrinsic-size:\s*auto 88px/, 'mobile value card intrinsic 88px'],
+  [/\.dz-row:has\(\.dz-row-l2\.value\)[\s\S]*?contain-intrinsic-size:\s*auto 64px/, 'mobile value card intrinsic 64px body'],
 ] as const;
 for (const [re, label] of noWrapResponsiveBaseline) {
   const target = label.startsWith('desktop') ? desktopCss : cssFinal;
@@ -247,7 +247,7 @@ for (const [re, label] of quickFilterVisualBaseline) {
 }
 
 const cardRhythmBaseline = [
-  [/--fp-row-compact-min-h:\s*64px/, 'desktop compact card min 64px'],
+  [/64px visual tile contract/, 'desktop compact list visual tile 64px'],
   [/--fp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
   [/--ui-row-min-h:\s*88px/, 'mobile card min 88px'],
   [/--ui-list-gap:\s*12px/, 'mobile list gap 12px'],
@@ -514,7 +514,7 @@ const densityBaseline = [
   [/--fp-query-row-h:\s*48px/, 'desktop query row 48px'],
   [/--fp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],
   [/--fp-panel-foot-h:\s*56px/, 'desktop panel foot 56px'],
-  [/--fp-row-compact-min-h:\s*64px/, 'desktop compact row 64px'],
+  [/64px visual tile contract/, 'desktop compact visual tile 64px'],
   [/--fp-row-standard-min-h:\s*72px/, 'desktop standard row 72px'],
 ] as const;
 for (const [re, label] of densityBaseline) {

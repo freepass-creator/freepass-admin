@@ -41,7 +41,7 @@ const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
   return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };
 
-export function ListRow({ href, selected, thumb, status, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips, product }: {
+export function ListRow({ href, selected, thumb, status, title, mainValue, badge, badges, tone = 'plain', flag, meta, value, aside, chips, product }: {
   href: string;
   selected?: boolean;
   /** 사진 칸 — 상품 목록만 준다. `null` 이면 「사진 없음」 칸이 서고, `undefined` 면 칸 자체가 없다. */
@@ -49,6 +49,8 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   /** 상태 칸 — 사진 없는 목록에서 사진 자리에 선다 */
   status?: RowStatus;
   title: ReactNode;
+  /** Main 우측 대표값 — 월 대여료 / 현재 축 수수료 등. */
+  mainValue?: ReactNode;
   /** 뱃지 하나(접수·실적) — `tone` 이 이 뱃지에 걸린다 */
   badge?: ReactNode;
   /** 뱃지 여럿(상품: 상품구분 · 배차상태) — 늘 옅은 바탕 */
@@ -95,6 +97,7 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
             {(badges ?? []).map((x, i) => (x ? <Tag key={i} {...(typeof x === 'string' ? 상품신원(x, i === 0 && (badges ?? []).length > 1 ? 'kind' : 'status') : {})}>{x}</Tag> : null))}
             {!status && badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
           </span>
+          {mainValue !== undefined ? <strong className="dz-row-main-value">{mainValue}</strong> : null}
         </span>
         {product ? (
           <>

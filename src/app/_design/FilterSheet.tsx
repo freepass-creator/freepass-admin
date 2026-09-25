@@ -44,6 +44,7 @@ export function FilterSheet({ axes, count, unit }: {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const dialogId = useId();
   const close = useCallback(() => {
@@ -58,11 +59,23 @@ export function FilterSheet({ axes, count, unit }: {
   const [active, setActive] = useState(() => (shown.find((a) => sel(a.key).length) ?? shown[0])?.key ?? '');
   useEffect(() => { if (shown.length && !shown.some((a) => a.key === active)) setActive(shown[0].key); }, [shown, active]);
 
-  /* 닫기 — 바깥을 누르거나 Esc */
+  /* 닫기 + 키보드 모달 계약 — 열리면 안으로 초점, Tab은 시트 안에서 순환, 닫으면 trigger로 복귀 */
   useEffect(() => {
     if (!open) return;
+    const focusables = () => Array.from(dialog.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ) ?? []);
+    requestAnimationFrame(() => focusables()[0]?.focus());
     const down = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) close(); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const nodes = focusables();
+      if (!nodes.length) { e.preventDefault(); return; }
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
@@ -91,7 +104,7 @@ export function FilterSheet({ axes, count, unit }: {
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" aria-modal="true" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>

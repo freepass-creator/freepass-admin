@@ -128,7 +128,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           : sel('rentKind', options.rentKinds, '렌트구분'))}
         {sel('contractType', options.contractTypes, '계약방식')}
         {sel('payKind', options.payKinds, '분납여부')}
-        {picked && 코드}
+        {!picked && <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>}
+        {코드}
         {picked && !직접 && 수수료칸}
         {/* 프로모션 — 공급사가 더 주는 돈 · 영업자 몫은 비우면 100% */}
         <label>프로모션 금액<input name="promoAmount" inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
@@ -193,10 +194,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
               <label>모델<input name="model" defaultValue={defaults.model} /></label>
               <label>공급사 *<input name="supplier" list="dl-supplier" defaultValue={defaults.supplier} required
                 onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? '')} /></label>
-              <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>
             </div>
           ))}
-          {묶음('고객 · 영업', <div className="dz-form-grid">{사람}{코드}</div>)}
+          {묶음('고객 · 영업', <div className="dz-form-grid">{사람}</div>)}
           {묶음('조건', (
             <div className="dz-form-grid">
               <label>접수일 *<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>

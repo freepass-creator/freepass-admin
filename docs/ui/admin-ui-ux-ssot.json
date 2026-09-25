@@ -1375,5 +1375,37 @@
       ]
     },
     "rule": "Add a list line only when it materially helps identify or select the target before opening detail."
+  },
+  "listCardGrammar": {
+    "defaultLines": 3,
+    "roles": [
+      {
+        "name": "main",
+        "fontPx": 14,
+        "weight": 600,
+        "color": "strong",
+        "content": "identity + optional primary value + compact status badge"
+      },
+      {
+        "name": "key",
+        "fontPx": 14,
+        "weight": 500,
+        "color": "secondary",
+        "content": "selection-critical context"
+      },
+      {
+        "name": "support",
+        "fontPx": 12,
+        "weight": 400,
+        "color": "muted",
+        "content": "secondary context or exact fee"
+      }
+    ],
+    "statusPlacement": "main-inline-badge",
+    "exceptions": {
+      "twoLine": "allowed when sufficient",
+      "conditionalFourthLine": "issue/warning only"
+    },
+    "rule": "Default list cards use Main/Key/Support semantics; detail owns completeness."
   }
 }

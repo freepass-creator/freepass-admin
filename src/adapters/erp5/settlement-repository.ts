@@ -50,6 +50,9 @@ const clawbackFromRaw = (c: Record<string, unknown>): Clawback => ({
   plate: S(c.plate), month: S(c.month), supplier: S(c.supplier), channel: S(c.channel),
   supplierAmt: N(c.supplierAmt), agentAmt: N(c.agentAmt), reason: S(c.reason), at: S(c.at),
   ...(S(c.code) ? { code: S(c.code) } : {}),
+  ...(S(c.supplierCode) ? { supplierCode: S(c.supplierCode) } : {}),
+  ...(S(c.channelCode) ? { channelCode: S(c.channelCode) } : {}),
+  ...(S(c.contractId) ? { contractId: S(c.contractId) } : {}),
 });
 
 /** 상대에게 보이는 것 — ★굳힌 사본 · 그 축 금액만 · 링크 칸(해시·잠금)은 안 싣는다 */
@@ -307,7 +310,11 @@ export class Erp5SettlementRepository {
       if (!freshG) return { ok: false as const, error: '그 사이 발행 대상이 바뀌었습니다 — 다시 불러와 확인합니다' };
 
       const existing = invDoc.exists ? (invDoc.data() as IssuedInvoice) : null;
-      const party0 = await this.partyOf(axis, freshG.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)));
+      const partyCodes = [
+        ...freshG.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)),
+        ...freshG.clawbacks.map((c) => axis === '공급사' ? c.supplierCode ?? null : c.channelCode ?? null),
+      ];
+      const party0 = await this.partyOf(axis, partyCodes);
       const taken = sameMonth.docs.map((d) => String(d.data().invoiceNo ?? ''));
       const now = Date.now();
       const plan = planInvoice(month, axis, party, freshG.lines, freshClaws, existing, taken, now, BY);

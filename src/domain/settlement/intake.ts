@@ -40,6 +40,7 @@ export interface IntakeInput {
   sourceProductVersion?: number | null;
   sourceOfferId?: string;
   sourceSnapshotId?: string;
+  catalogSnapshotDigest?: string;
   catalogSnapshot?: IntakeCatalogSnapshot;
   paper: boolean;
   delivered: boolean;
@@ -72,6 +73,14 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
   const expectedDirectRentKind = directIntakeRentKind(x.product);
   if (expectedDirectRentKind && x.rentKind !== expectedDirectRentKind) e.push(`렌트구분은 ${expectedDirectRentKind} 이어야 합니다`);
+  if (x.sourceProductId?.trim()) {
+    if (!x.sourceOfferId?.trim()) e.push('상품 접수의 Offer ID가 없습니다');
+    if (x.sourceProductVersion === null || x.sourceProductVersion === undefined) e.push('상품 접수의 Product version이 없습니다');
+    if (!x.sourceSnapshotId?.trim()) e.push('상품 접수의 Source snapshot이 없습니다');
+    if (!x.catalogSnapshotDigest?.trim()) e.push('상품 접수의 Catalog snapshot digest가 없습니다');
+    if (!x.catalogSnapshot) e.push('상품 접수의 Catalog snapshot이 없습니다');
+    else if (x.catalogSnapshot.digest !== x.catalogSnapshotDigest) e.push('상품 접수의 Catalog snapshot digest가 일치하지 않습니다');
+  }
   if (!x.customer.trim()) e.push('고객명이 없습니다');
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
@@ -126,6 +135,7 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     sourceProductVersion: x.sourceProductVersion ?? null,
     sourceOfferId: x.sourceOfferId?.trim() || null,
     sourceSnapshotId: x.sourceSnapshotId?.trim() || null,
+    catalogSnapshotDigest: x.catalogSnapshotDigest?.trim() || null,
     catalogSnapshot: x.catalogSnapshot ?? null,
     /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
     supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,

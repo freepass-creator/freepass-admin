@@ -34,16 +34,7 @@ function SignIcon({ s }: { s: string }) {
 }
 
 export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string }) {
-  let all: 계약[];
-  try { all = await contracts.list(); }
-  catch (e) {
-    return (
-      <Screen name="esign-workspace">
-        <Panel compact><PanelHead kind="목록" title="전자계약" count="오류" />
-          <PanelBody><p className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></PanelBody></Panel>
-      </Screen>
-    );
-  }
+  const all: 계약[] = await contracts.list();
 
   const text = sp(q.q).trim().toLowerCase();
   const status = sp(q.status), sign = sp(q.sign), agent = sp(q.agent);

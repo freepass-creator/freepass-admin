@@ -1,0 +1,67 @@
+name: Resolve release PDF dependency audit
+on:
+  push:
+    branches: [release/admin-operational-20260925]
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  dependencies:
+    if: github.event.head_commit.message == 'release-security-bootstrap'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      ERP5_WRITE: 'off'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Resolve a matching browser pair and patched compatible transitives
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/admin-dependency-evidence
+          test "$(git rev-parse HEAD:package.json)" = 93ed44f89c5508996f57301107a5ef7b26c90705
+          # Upstream supported-browser matrix maps Puppeteer 25.1 to Chromium 149.0.7827.22.
+          # No blanket npm audit fix --force and no new security exceptions.
+          npm install --save-exact @sparticuz/chromium@149.0.0 puppeteer-core@25.1.0
+          npm update basic-ftp ip-address ws
+          cp package.json package-lock.json /tmp/admin-dependency-evidence/
+          npm ls @sparticuz/chromium puppeteer-core @puppeteer/browsers basic-ftp ip-address ws > /tmp/admin-dependency-evidence/versions.txt
+          git diff --stat > /tmp/admin-dependency-evidence/changed-files.txt
+      - name: Strict production audit before publishing
+        run: |
+          set -euo pipefail
+          npm audit --json --omit=dev > /tmp/admin-dependency-evidence/prod.json || audit_rc=$?
+          node -e 'const a=require("/tmp/admin-dependency-evidence/prod.json");if(a.error||a.auditReportVersion!==2||!a.metadata?.vulnerabilities||!a.vulnerabilities)process.exit(1)'
+          node scripts/check-dependency-audit.mjs /tmp/admin-dependency-evidence/prod.json | tee /tmp/admin-dependency-evidence/audit-gate.log
+      - name: Real renderer and all regressions
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee /tmp/admin-dependency-evidence/typecheck.log
+          npm test 2>&1 | tee /tmp/admin-dependency-evidence/tests.log
+          npm run build 2>&1 | tee /tmp/admin-dependency-evidence/build.log
+      - name: Publish only the tested dependency change and remove this bootstrap
+        run: |
+          set -euo pipefail
+          git add package.json package-lock.json
+          git rm .github/workflows/release-security-bootstrap.yml
+          git diff --cached --check
+          git config user.name 'FreePass Release Integration'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: align PDF browser dependencies and remove high audit findings'
+          git push origin HEAD:refs/heads/release/admin-operational-20260925
+          git rev-parse HEAD | tee /tmp/admin-dependency-evidence/published-sha.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operational-dependencies-${{ github.run_id }}
+          path: /tmp/admin-dependency-evidence
+          retention-days: 7

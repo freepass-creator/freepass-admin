@@ -1,11 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = process.cwd();
 const exists = (p: string) => existsSync(resolve(root, p));
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
+
+function textFiles(dir: string): string[] {
+  const full = resolve(root, dir);
+  if (!existsSync(full)) return [];
+  return readdirSync(full).flatMap((name) => {
+    const child = resolve(full, name);
+    const rel = child.slice(root.length + 1).replaceAll('\\', '/');
+    return statSync(child).isDirectory()
+      ? textFiles(rel)
+      : /\.(md|json)$/.test(name) ? [rel] : [];
+  });
+}
 
 test('UI authority surface is singular and contains only current SSOT documents', () => {
   const uiDir = resolve(root, 'docs/ui');
@@ -51,4 +63,23 @@ test('actual-route UI remains the declared authority', () => {
     'src/app/_erp/erp-standard.css',
     'src/app/_erp/shell.css',
   ]) assert.ok(authority.includes(file), file);
+});
+
+
+test('current project documents contain no removed UI source references', () => {
+  const docs = ['AGENTS.md', 'PROJECT.md', ...textFiles('docs'), ...textFiles('.ai-core')];
+  const forbidden = [
+    'docs/ui/mockups/',
+    'docs/ui/reference/',
+    'admin-product-to-application.html',
+    '.devcenter/design-authority.json',
+    '.devcenter/design-job.json',
+    '.devcenter/visual-job.json',
+    '.ai-core/ui-ux.consumer.json',
+  ];
+  const hits = docs.flatMap((path) => {
+    const body = read(path);
+    return forbidden.filter((needle) => body.includes(needle)).map((needle) => path + ' -> ' + needle);
+  });
+  assert.deepEqual(hits, []);
 });

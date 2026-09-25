@@ -38,6 +38,7 @@ jobs:
         run: >
           npx tsx --test
           src/domain/search/__tests__/search-contract.test.ts
+          src/domain/search/__tests__/finder.test.ts
           src/domain/product/customer-vehicle-class.test.ts
           src/app/products/workspace-config.test.ts
 

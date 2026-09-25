@@ -131,6 +131,7 @@ async function inspect(page) {
         const as = amount ? getComputedStyle(amount) : null;
         const r = card.getBoundingClientRect();
         return {
+          className: typeof card.className === 'string' ? card.className : '',
           paddingTop: parseFloat(cs.paddingTop) || 0,
           paddingRight: parseFloat(cs.paddingRight) || 0,
           paddingBottom: parseFloat(cs.paddingBottom) || 0,
@@ -635,13 +636,31 @@ async function runInteractiveStates(page, c) {
       }
 
       if (info.radiusSamples) {
-        for (const x of [...info.radiusSamples.panels, ...info.radiusSamples.cards]) {
-          if (x.radius > 8.5) problems.push(`oversized panel/card radius: ${JSON.stringify(x)}`);
-        }
-        for (const x of info.radiusSamples.controls) {
-          if (x.radius > 8.5 && !/quick|facet|chip|badge/i.test(x.className)) {
-            problems.push(`oversized action/control radius: ${JSON.stringify(x)}`);
+        for (const x of info.radiusSamples.panels || []) {
+          const expected = c.width <= 900 ? 0 : 8;
+          if (Math.abs(x.radius - expected) > 0.6) {
+            problems.push(`panel radius mismatch ${x.radius}px expected ${expected}px: ${JSON.stringify(x)}`);
           }
+        }
+        for (const x of info.radiusSamples.cards || []) {
+          if (Math.abs(x.radius - 6) > 0.6) {
+            problems.push(`card/tile radius mismatch ${x.radius}px expected 6px: ${JSON.stringify(x)}`);
+          }
+        }
+        for (const x of info.radiusSamples.controls || []) {
+          if (/quick|facet/i.test(x.className)) continue;
+          if (Math.abs(x.radius - 6) > 0.6) {
+            problems.push(`action/control radius mismatch ${x.radius}px expected 6px: ${JSON.stringify(x)}`);
+          }
+        }
+      }
+
+      if (info.cardMetrics) {
+        const m = info.cardMetrics;
+        const narrowMobile = c.width < 380 && /dz-row/.test(m.className || '');
+        const expectedPad = narrowMobile ? 8 : 12;
+        if (Math.abs(m.paddingLeft - expectedPad) > 1 || Math.abs(m.paddingRight - expectedPad) > 1) {
+          problems.push(`card horizontal padding mismatch ${m.paddingLeft}/${m.paddingRight}, expected ${expectedPad}`);
         }
       }
 

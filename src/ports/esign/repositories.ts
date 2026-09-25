@@ -21,7 +21,12 @@ export interface EsignRepository {
     contractId: string,
     reason: string,
     actor: string,
-  ): Promise<{ cancelled: boolean; needsClawback: boolean; session: EsignSession }>;
+  ): Promise<{
+    cancelled: boolean;
+    needsClawback: boolean;
+    clawback: { supplier: 'NONE' | 'REQUIRED' | 'COMPLETED'; channel: 'NONE' | 'REQUIRED' | 'COMPLETED'; needsClawback: boolean };
+    session: EsignSession;
+  }>;
   finalizeSigned(
     sessionId: string,
     finalizationId: string,

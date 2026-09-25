@@ -358,8 +358,7 @@ export class EsignService {
       progress: {},
       snapshot,
     };
-    await this.repo.createSession(session, publicUrl);
-    await this.repo.updateContract(contractId, {
+    await this.repo.issueSession(session, publicUrl, {
       esign_id: id,
       sign_status: '발행',
       sign_sent_at: now,
@@ -370,8 +369,7 @@ export class EsignService {
       esign_template_version: snapshot.templateVersion,
       sign_consent_version: snapshot.agreementVersion,
       signed_pdf_url: '',
-    });
-    await this.repo.appendEvent(contractId, id, 'issued', actor, { revision });
+    }, actor);
     return { session, publicUrl };
   }
 
@@ -394,7 +392,8 @@ export class EsignService {
       throw new Error('만료된 전자계약 링크입니다.');
     }
     if (!peek && session.status === 'sent') {
-      await this.repo.updateSession(session.id, { status: 'opened', openedAt: now });
+      const opened = await this.repo.transitionSession(session.id, ['sent'], { status: 'opened', openedAt: now });
+      if (!opened) throw new Error('전자계약 상태가 바뀌었습니다 — 링크를 다시 열어 주세요.');
       await this.repo.updateContract(session.contractId, { sign_status: '열람', esign_opened_at: now });
       await this.repo.appendEvent(session.contractId, session.id, 'opened', 'customer');
       session.status = 'opened';
@@ -456,7 +455,12 @@ export class EsignService {
       throw new Error('현재 링크에서는 진행상태를 바꿀 수 없습니다.');
     }
     const progress = { ...(session.progress || {}), [step]: now };
-    await this.repo.updateSession(session.id, { status: 'in_progress', progress });
+    const moved = await this.repo.transitionSession(
+      session.id,
+      ['sent', 'opened', 'in_progress', 'rejected'],
+      { status: 'in_progress', progress },
+    );
+    if (!moved) throw new Error('전자계약 상태가 바뀌었습니다 — 다시 열어 주세요.');
     await this.repo.updateContract(session.contractId, { sign_status: '진행중', esign_progress: Object.keys(progress).length });
     return { ok: true };
   }

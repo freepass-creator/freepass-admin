@@ -74,7 +74,7 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
       }
 
       tx.update(contractRef,plan.patch);
-      tx.update(intakeRef,plan.intakePatch);
+      tx.update(intakeRef,{...plan.intakePatch,contractTerminationContractId:contractId});
 
       const eventRef=db.collection('settlement_events').doc(
         intakeEventDocId(

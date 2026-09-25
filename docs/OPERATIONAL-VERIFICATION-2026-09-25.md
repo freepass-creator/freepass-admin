@@ -1,36 +1,37 @@
 # Admin operational integration verification — 2026-09-25
 
-## Candidate
+## Single operating candidate
 
 PR #106: `release/admin-operational-20260925`.
-Corrected implementation commit: `d363d9e5fa0cba271ff16143effd6a45a676ef2c`.
-This document-only checkpoint triggers the same-code verification; see each artifact's checked-sha.txt for the exact tested revision.
+UI #96, workflow stack through #102, Claude e-contract #104, fixture privacy #105 were merged without rewriting their source branches. Temporary assembly and dependency-bootstrap workflows were removed after use. Catalog authority remains FreePass Data; Admin owns workflow composition. Catalog mode OBSERVE is the explicit transitional read-only legacy bridge, not final Data cutover.
 
-Pinned inputs preserved:
-- Core workflow #102: 27e3c4385132f45715f388c82c115151e05bd634
-- UI #96: 0ce9df1772eb35e289d94b1a9fbc1f2cb286b75a
-- Claude e-contract #104: 77e5e1d8485e71e217e2026af0cd82ffa17fd5cb
-- Fixture privacy #105: d91ada90057a4765e4c9087c426dda13796f401a
+## Inspected baseline evidence
 
-## Corrections
+Exact revision `78d187cffadc1a782b07426443cb6867ced65435`, operational run 36135213725; all three downloaded artifacts name and record this exact SHA:
+- Typecheck PASS; full test suite 561/561, zero skipped/failed; UI and Data checks PASS; production build PASS.
+- Isolated Firestore tests 7/7, zero skipped/failed; idempotent intake, competing Offer conflict, missing snapshot rejection, concurrent termination, audit rollback and partial-state protection.
+- Real Chromium final PDF + private Storage emulator: competing approvals have one winner; independent read-back hash matches; retry does not rewrite the PDF; same sealed input reproduces the PDF; cancellation during rendering cannot finish signing. E2E EMULATOR OK.
+- Actual Next production runtime (NO production data): 35/35 checks, protected-route auth/error/retry boundaries, 390/1440px; no external browser requests.
+- Isolated actual-component UI browser: 24 layout cases + 2 interactions; filter browser: 5 widths. Receipts report failed=false and zero external requests. Representative 390px and 1440px screenshots were visually inspected.
 
-Preserved centralized Finder and same-Offer supplier/rent matching, readonly form disabling, immutable intake catalog digest, contract cancellation/termination separation, and both the core and Claude regression suites. Product/Offer/Policy authority remains FreePass Data; Admin workflow composition remains separate.
+These are not real-account login, live Firestore IAM, customer-contract acceptance or Galaxy hardware evidence.
 
-Narrowed revoked-session status to its literal type. Prioritized cancelled/withdrawn/terminated contract rejection before legacy-signature classification without weakening either guard. Removed all temporary merge-resolution scripts and branch-mutating assembly workflow.
+## Invalid earlier badge
 
-## Invalid previous receipt
+Run 36134238491 was not a passing release receipt despite a green badge: raw logs contained type errors, 560/561 tests and a failed build. The replacement workflow explicitly uses Bash pipefail and probes failure propagation. Do not cite that old run as PASS.
 
-Run 36134238491's green badge is not a passing release receipt. Raw artifact logs contained two related type errors, 560/561 passing tests (one failing lifecycle classification), and a failed production build. Piped commands masked exit codes. The replacement workflow specifies Bash pipefail and deliberately probes failure propagation.
+## Dependency closeout and final recheck
 
-## Current gates
+The separate baseline audit run 36135217991 found high 6 / moderate 2 / critical 0. This prevented release promotion despite functional PASS. No exception was added.
 
-PENDING: exact-revision typecheck, complete tests, UI/Data boundaries and production build.
-PENDING: isolated Firestore intake/termination persistence and Storage/PDF sealing verification.
-PENDING: actual Next production runtime authentication/error boundaries plus responsive and filter browser tests.
-NOT VERIFIED: production deployment, real authorized/unauthorized account login, Firestore/Storage IAM and live write/read-back, Galaxy hardware.
+Dependency correction commit `1045d929380652c749c8ef65a769f6d9ab7cbabf` uses exact puppeteer-core 25.1.0 + @sparticuz/chromium 149.0.0, the upstream Chrome 149.0.7827.22 pairing, and compatible transitive refresh. Refer to the final exact-revision audit rather than assuming the baseline lock remains valid. npm ci and generated PDF fonts are required before renderer tests.
 
-Do not convert a badge or a fixture pass into production acceptance. Update this receipt only after raw logs and checked revisions are inspected.
+The audit validator now rejects missing/errored/malformed/inconsistent reports; ten validator regression cases preserve the existing reviewed gaxios/uuid moderate exceptions without widening them. An unavailable audit service must not produce a clean result.
 
-## Deployment boundary
+FINAL SAME-REVISION CHECK: PENDING for the commit containing this checkpoint. Its CI must cover complete tests/build, the new dependency lock, Firestore/Storage PDF emulator and browser receipts before promotion. Baseline PASS does not automatically apply to new dependencies.
 
-The currently connected Vercel team listed zero projects and the exposed deployment action failed schema validation. A presence-only check found no configured Vercel token/project/org, ERP5 credential, session secret, or complete Google OAuth pair in this repository context. Other accounts/environments are not ruled out. No secret values were read or copied. `.env.example` and `docs/OPERATIONS-FIRST-USE.md` document the implemented bindings, staged enablement and rollback procedure.
+## Operational activation still unverified
+
+The connected Vercel team listed zero projects; the exposed deploy action failed schema validation. Presence-only repository checks found no Vercel token/project/org, ERP5 credential, session secret or complete Google OAuth pair in that checked context. Other accounts/environments are not ruled out. No secrets were read or copied, no real customer/financial record was changed, and no live deployment URL was established.
+
+Use `.env.example` and `docs/OPERATIONS-FIRST-USE.md`: bind the correct approved Admin deployment and authentication/Data environment; start read-only; verify accounts and live read-back before enabling operational writes. Mixed-clawback allocation remains guarded; external tax-invoice issuance and bank transfers are not automatically certified by a ledger record. Keep these explicit scope limits during first use.

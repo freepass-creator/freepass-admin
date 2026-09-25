@@ -1,14 +1,20 @@
 name: Dependency audit
 on:
+  push:
+    branches: [main, release/admin-operational-20260925]
   pull_request:
     paths:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/check-dependency-audit.mjs'
+      - 'scripts/check-dependency-audit.test.mjs'
       - 'docs/security/DEPENDENCY-AUDIT-2026-09-25.md'
       - '.github/workflows/dependency-audit.yml'
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -17,22 +23,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Evidence validator regressions
+        run: node --test scripts/check-dependency-audit.test.mjs
       - name: Capture dependency audits
-        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p artifacts/dependency-audit
+          git rev-parse HEAD > artifacts/dependency-audit/checked-sha.txt
           npm audit --json > artifacts/dependency-audit/all.json || true
           npm audit --json --omit=dev > artifacts/dependency-audit/prod.json || true
       - name: Enforce production dependency boundary
         run: node scripts/check-dependency-audit.mjs artifacts/dependency-audit/prod.json
       - name: Print audit summary
         if: always()
-        shell: bash
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -50,7 +59,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dependency-audit-${{ github.event.pull_request.head.sha }}
+          name: dependency-audit-${{ github.event_name }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: artifacts/dependency-audit/
           retention-days: 7
           if-no-files-found: error

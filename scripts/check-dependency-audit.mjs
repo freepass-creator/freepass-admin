@@ -6,7 +6,23 @@ if (!file) {
   process.exit(2);
 }
 const audit = JSON.parse(fs.readFileSync(file, 'utf8'));
-const vulnerabilities = audit.vulnerabilities ?? {};
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const severities = ['info', 'low', 'moderate', 'high', 'critical'];
+const summary = audit?.metadata?.vulnerabilities;
+if (!isRecord(audit) || Object.hasOwn(audit, 'error') || audit.auditReportVersion !== 2
+  || !isRecord(audit.vulnerabilities) || !isRecord(summary)
+  || [...severities, 'total'].some(key => !Number.isInteger(summary[key]) || summary[key] < 0)) {
+  console.error('DEPENDENCY AUDIT GATE FAILED: missing, invalid or errored npm audit report');
+  process.exit(1);
+}
+const vulnerabilities = audit.vulnerabilities;
+const entries = Object.entries(vulnerabilities);
+if (entries.some(([name, value]) => !isRecord(value) || value.name !== name || !severities.includes(value.severity))
+  || summary.total !== entries.length
+  || severities.some(severity => summary[severity] !== entries.filter(([, value]) => value.severity === severity).length)) {
+  console.error('DEPENDENCY AUDIT GATE FAILED: inconsistent vulnerability evidence');
+  process.exit(1);
+}
 
 /*
  * Temporary, reviewed transitive exceptions.
@@ -28,7 +44,7 @@ const allowed = {
     direct: false,
     range: '<11.1.1',
     via: (v) => Array.isArray(v.via) && v.via.some((x) =>
-      typeof x === 'object' && (
+      x !== null && typeof x === 'object' && (
         Number(x.source) === 1119441 ||
         String(x.url ?? '').includes('GHSA-w5hq-g745-h8pq')
       )),
@@ -52,6 +68,5 @@ if (failures.length) {
   for (const failure of failures) console.error('- ' + failure);
   process.exit(1);
 }
-const summary = audit.metadata?.vulnerabilities ?? {};
 console.log('DEPENDENCY AUDIT GATE PASS', JSON.stringify(summary));
 console.log('Reviewed temporary findings:', Object.keys(vulnerabilities).sort().join(', ') || 'none');

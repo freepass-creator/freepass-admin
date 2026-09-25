@@ -5,9 +5,9 @@ on:
     paths:
       - "src/domain/search/**"
       - "src/domain/settlement/**"
-      - "src/app/products/workspace-config.ts"
-      - "src/app/products/workspace.tsx"
-      - "src/app/settlement/**"
+      - "src/app/**"
+      - "src/server/**"
+      - "src/services/**"
       - "docs/WORK-INBOX.md"
       - "docs/DECISIONS.md"
       - "docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md"

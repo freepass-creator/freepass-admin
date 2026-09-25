@@ -55,8 +55,8 @@ button { cursor: pointer; }
 
 /* ⑤ 판 셋을 박스로 — 1px 틈으로 긋던 세로선을 걷고 사이를 준다 */
 .topbar { border-bottom: 0; }
-.workspace { gap: var(--ui-panel-gap, 12px); padding: var(--ui-panel-gap, 12px); background: var(--바닥); height: calc(100vh - 64px); }
-.panel { border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
+.workspace { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-panel-gap, 12px); padding: var(--ui-panel-gap, 12px); background: var(--바닥); height: calc(100vh - 64px); }
+.panel { min-width: 0; padding: var(--ui-panel-pad,22px); overflow: auto; border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
 
 /* ① 선 걷기 + ② 라운드 4 — 목록 카드 · 표 · 상자 */
 .product-row, .application-card, .selected-offer-card, .snapshot-box, .work-hint {

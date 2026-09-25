@@ -273,8 +273,9 @@ export async function ProductWorkspace({ q, mode, base }: {
                 product
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
                 badges={[txt(p.status)]}
+                mainValue={o ? `월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원` : '요금 없음'}
                 meta={[txt(p.registration?.vehicleNumber), txt(p.productKind)].filter((x) => x !== '—').join(' · ') || '—'}
-                value={o ? `${o.termMonths}개월 · 월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원 · 보증 ${o.deposit ? `${Math.round(o.deposit / 10000).toLocaleString('ko-KR')}만 원` : '없음'}` : '요금 없음'} />
+                value={o ? `${o.termMonths}개월 · 보증 ${o.deposit ? `${Math.round(o.deposit / 10000).toLocaleString('ko-KR')}만 원` : '없음'}` : '—'} />
             ))}
             {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>
@@ -360,11 +361,12 @@ export async function ProductWorkspace({ q, mode, base }: {
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
                   href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
-                  title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
+                  title={txt(r.customer)} mainValue={r.rent ? `월 ${Math.round(r.rent / 10000).toLocaleString('ko-KR')}만 원` : '—'}
+                  badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   flag={지연표시(r)}
-                  meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
-                  value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
+                  meta={[r.plate, r.model, r.product, r.term ? `${r.term}개월` : ''].filter(Boolean).join(' · ') || '—'}
+                  value={`청구 ${r.money.claim === null ? '—' : `${won(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won(r.money.pay)}원`}`} />
               ))}
               {ishown.length === 0 && <EmptyState>조건에 맞는 접수가 없습니다.</EmptyState>}
             </div>

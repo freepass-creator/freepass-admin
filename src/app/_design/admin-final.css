@@ -2367,3 +2367,60 @@ body > nav.fn-top :where(a, button):focus-visible,
     padding-inline: 10px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Balanced mobile list columns
+   visual=64 fixed / body=fill / main value=stable right edge.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .fn-main .workspace .dz-row-body {
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(92px, 30vw, 124px);
+    column-gap: 10px;
+    align-items: center;
+  }
+
+  .fn-main .workspace .dz-row-l1 > b {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-badges {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    text-align: right;
+  }
+
+  .fn-main .workspace :is(.dz-row-l2,.dz-row-l3) {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace .dz-row-l1 {
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 112px);
+    column-gap: 8px;
+  }
+}

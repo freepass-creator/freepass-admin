@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord } from '../clawback.js';
+import { clawbackId, clawbackRecord, terminationClawbackReview } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -114,4 +114,37 @@ it('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 �
   assert.equal(result.doc.contractId,'ctr_term_1');
   assert.equal(result.doc.contractTerminationDate,'2026-09-25');
   assert.equal(result.doc.contractTerminationReason,'중도해지');
+});
+
+
+describe('계약해지 → 환수 검토대상', () => {
+  const baseRow = {
+    id: 'stl_term_target',
+    contractTerminatedAt: Date.parse('2026-09-25T00:00:00Z'),
+  };
+
+  it('계약해지가 찍히면 환수를 자동 생성하지 않고 검토대상으로 분류한다', () => {
+    assert.equal(terminationClawbackReview(baseRow as never, []), 'PENDING');
+  });
+
+  it('같은 접수 code의 환수가 실제 등록되면 검토 완료로 본다', () => {
+    assert.equal(
+      terminationClawbackReview(baseRow as never, [{ code: 'stl_term_target' }]),
+      'RECORDED',
+    );
+  });
+
+  it('다른 재계약 건의 환수나 code 없는 레거시 환수는 이 해지의 완료로 추측하지 않는다', () => {
+    assert.equal(
+      terminationClawbackReview(baseRow as never, [{ code: 'stl_other' }, {}]),
+      'PENDING',
+    );
+  });
+
+  it('계약해지가 아니면 환수 검토대상이 아니다', () => {
+    assert.equal(
+      terminationClawbackReview({ id: 'stl_normal', contractTerminatedAt: null } as never, []),
+      'NONE',
+    );
+  });
 });

@@ -23,8 +23,8 @@ import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
-  STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 정책말,
+  STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 요금축, 차축, 상품축이름, 요금맞음,
+  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, productWithinSearchLimits, 보증금, 정책말,
   type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
 } from './workspace-config';
 
@@ -46,8 +46,16 @@ const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
   kind: (p, k) => p.productKind === k,
   perk: (p, k) => (p.perks ?? []).includes(k),
   supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
+  maker: (p, k) => p.vehicle.manufacturerId === k,
   cls: (p, k) => p.vehicleClass === k,
+  year: (p, k) => p.specs.modelYear !== undefined && String(p.specs.modelYear) === k,
+  vmile: (p, k) => {
+    const km = p.specs.mileageKm;
+    const band = 현재주행구간.find((x) => x.k === k);
+    return typeof km === 'number' && Number.isFinite(km) && km > 0 && !!band && km > band.lo && km <= band.hi;
+  },
   fuel: (p, k) => p.specs.fuel === k,
+  credit: (p, k) => p.credit === k,
 };
 
 /** 사진 URL은 서버 proxy 규칙을 반드시 거친다. */
@@ -80,6 +88,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     && offerWithinSearchLimits(o, parsedSearch.limits));
   const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
     productMeetsSearchRequirements(h.product, parsedSearch.requirements)
+    && productWithinSearchLimits(h.product, parsedSearch.limits)
     && 차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
     && 남은요금(h, skip).length > 0;
   const searched = text ? pool.filter(({ product: p }) =>
@@ -121,9 +130,14 @@ export async function ProductWorkspace({ q, mode, base }: {
     dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
     mile: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.annualMileageKm).filter((x): x is number => typeof x === 'number')))]
       .sort((a, b) => a - b).map((km) => ({ k: String(km), label: `연 ${(km / 10000).toLocaleString('ko-KR')}만km` })),
-    supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
+    maker: 많은순(pool.map((h) => h.product.vehicle.manufacturerId ?? '')).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
+    year: [...new Set(pool.map((h) => h.product.specs.modelYear).filter((x): x is number => typeof x === 'number'))]
+      .sort((a, b) => b - a).map((y) => ({ k: String(y), label: `${y}년` })),
+    vmile: 현재주행구간.map((b) => ({ k: b.k, label: b.label })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
+    credit: 많은순(pool.map((h) => h.product.credit ?? '')).map((k) => ({ k, label: k })),
+    supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
   };
   const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
     (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축Type](o, k)) : 차맞음[a as 차축Type](h.product, k);

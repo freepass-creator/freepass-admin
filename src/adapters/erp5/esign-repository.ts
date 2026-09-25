@@ -6,6 +6,7 @@ import type { EsignAssetStore, EsignRepository } from '../../ports/esign/reposit
 import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 import { withContractHandoffDigest } from '../../domain/esign/handoff';
 import { toSettlementRow } from './to-settlement';
+import { intakeEventDocId } from '../../domain/settlement/code';
 
 const CONTRACTS='contract';
 const SESSIONS='esign_session';
@@ -163,10 +164,34 @@ export class Erp5EsignRepository implements EsignRepository {
       const contractRef=db.collection(CONTRACTS).doc(current.contractId);
       const contractDoc=await tx.get(contractRef);
       if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const contractRaw=contractDoc.data() as Record<string,unknown>;
+      const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
+      let intakeDoc: Awaited<ReturnType<typeof tx.get>> | null=null;
+      if(sourceIntakeId){
+        intakeDoc=await tx.get(db.collection(INTAKES).doc(sourceIntakeId));
+        if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      }
 
       const signed=clean({...sessionPatch,status:'signed',finalizationId} as unknown as Record<string,unknown>);
+      const finalizedAt=Date.now();
       tx.update(sessionRef,signed);
-      tx.update(contractRef,clean({...contractPatch,updated_at:Date.now()}));
+      tx.update(contractRef,clean({...contractPatch,updated_at:finalizedAt}));
+
+      if(intakeDoc?.exists){
+        const intakeRaw=intakeDoc.data() as Record<string,unknown>;
+        tx.update(intakeDoc.ref,{paper:true,updatedAt:finalizedAt,stateAt:new Date(finalizedAt).toISOString()});
+        const settlementEventRef=db.collection('settlement_events').doc(
+          intakeEventDocId(
+            intakeRaw.plate,intakeRaw.sourceProductId,intakeRaw.receivedAt,
+            intakeRaw.intakeRequestId,intakeRaw.intakeIdentityMode,
+          ),
+        );
+        const eventKey='aud_esign_'+createHash('sha256').update(current.contractId+'|'+finalizationId).digest('hex').slice(0,16);
+        tx.set(settlementEventRef,{[eventKey]:{
+          at:finalizedAt,by:actor,operationId:finalizationId,field:'계약서',from:String(intakeRaw.paper===true),to:'true',
+          contractId:current.contractId,sessionId,
+        }},{merge:true});
+      }
 
       const eventRef=db.collection(EVENTS).doc(
         'evt_'+createHash('sha256').update(current.contractId+'|'+finalizationId).digest('hex').slice(0,24),

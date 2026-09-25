@@ -126,21 +126,15 @@ class Repo implements EsignRepository {
   async appendEvent(contractId:string,sessionId:string,type:string,by:string,detail:Record<string,unknown>={}){
     this.events.push({contractId,sessionId,type,by,detail:structuredClone(detail),at:Date.now()});
   }
+  async releaseFinalizationClaim(id:string,finalizationId:string){
+    const s=this.sessions.get(id);
+    if(!s||s.status!=='approving'||s.finalizationId!==finalizationId)return false;
+    Object.assign(s,{status:'pending_review',approvingAt:0,finalizationId:''});
+    return true;
+  }
   async listEvents(contractId:string){
     return this.events.filter(x=>x.contractId===contractId).map(({type,at,by,detail})=>({type,at,by,detail})).sort((a,b)=>b.at-a.at);
   }
-}
-
-class ReadbackFailAssets extends Assets {
-  async get(path:string,expected?:string){
-    if(path.startsWith('esign-final/'))return null;
-    return super.get(path,expected);
-  }
-}
-
-class Renderer implements EsignFinalDocumentRenderer {
-  calls=0;
-  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
 }
 
 class Assets implements EsignAssetStore {
@@ -154,6 +148,43 @@ class Assets implements EsignAssetStore {
     const x=this.m.get(path);
     if(!x||expected&&x.sha256!==expected)return null;
     return {bytes:new Uint8Array(x.bytes),contentType:x.contentType};
+  }
+}
+
+class ReadbackFailAssets extends Assets {
+  async get(path:string,expected?:string){
+    if(path.startsWith('esign-final/'))return null;
+    return super.get(path,expected);
+  }
+}
+
+class HashMismatchAssets extends Assets {
+  async put(path:string,bytes:Uint8Array,contentType:string){
+    const stored=await super.put(path,bytes,contentType);
+    return path.startsWith('esign-final/')
+      ? {...stored,sha256:'0'.repeat(64)}
+      : stored;
+  }
+}
+
+function completeFakePdf(){
+  return new Uint8Array(Buffer.concat([
+    Buffer.from('%PDF-1.4\n'),
+    Buffer.alloc(2_048,0x20),
+    Buffer.from('\n%%EOF\n'),
+  ]));
+}
+
+class Renderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){this.calls+=1;return {bytes:completeFakePdf(),contentType:'application/pdf' as const};}
+}
+
+class InvalidRenderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){
+    this.calls+=1;
+    return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\ntruncated')),contentType:'application/pdf' as const};
   }
 }
 
@@ -180,6 +211,54 @@ const contract = () => ({
   rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-22',
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
 });
+
+
+async function seedPendingReview(
+  svc:EsignService,
+  repo:Repo,
+  assets:Assets,
+  options:{missingSignature?:boolean;missingRequiredDocument?:boolean}={},
+){
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const session=await repo.getCurrentSession('c1');
+  assert.ok(session);
+  session!.status='pending_review';
+  session!.submittedAt=Date.now();
+
+  let signaturePath='',signatureSha256='';
+  if(!options.missingSignature){
+    const signatureAsset=await assets.put(
+      'sig.png',
+      new Uint8Array([137,80,78,71,13,10,26,10]),
+      'image/png',
+    );
+    signaturePath=signatureAsset.path;
+    signatureSha256=signatureAsset.sha256;
+  }
+  const idCard=await assets.put('id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const selfie=await assets.put('selfie.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required);
+  const supportingDocuments=[];
+  for(let i=0;i<required.length;i++){
+    if(options.missingRequiredDocument&&i===0)continue;
+    const d=required[i]!;
+    const a=await assets.put('doc/'+d.key,new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)),'application/pdf');
+    supportingDocuments.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
+  }
+  if(options.missingRequiredDocument)assert.ok(required.length>0);
+
+  repo.priv.set(session!.id,{
+    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
+    signaturePath,signatureSha256,supportingDocuments,submittedAt:Date.now(),
+    assets:{id_card:{...idCard,name:'id.jpg',contentType:'image/jpeg'},selfie:{...selfie,name:'selfie.jpg',contentType:'image/jpeg'}},
+  });
+  return {issued,session:session!};
+}
 
 test('esign runtime: issue -> open -> assets -> submit -> review -> reject -> revoke', async () => {
   process.env.PUBLIC_BASE_URL='https://admin.example.test';
@@ -632,4 +711,251 @@ test('admin esign asset read verifies stored sha', async () => {
     },
   });
   assert.equal(await svc.adminAsset('esg_bad','id_card'),null);
+});
+
+test('esign finalization rejects truncated PDF bytes before Storage/signing', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new InvalidRenderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_invalid_pdf_1234567890','tester'),
+    /완전한 PDF/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal([...assets.m.keys()].some(path=>path.startsWith('esign-final/')),false);
+});
+
+test('esign finalization rejects Storage upload hash mismatch', async () => {
+  const repo=new Repo(), assets=new HashMismatchAssets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_hash_mismatch_1234567890','tester'),
+    /저장 검증/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+});
+
+test('esign finalization rejects a missing verified signature before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingSignature:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_no_signature_1234567890','tester'),
+    /서명 원본/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+
+test('esign finalization rejects a missing required document before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingRequiredDocument:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_missing_doc_1234567890','tester'),
+    /필수 서류/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+
+
+class FinalizeFailsOnceRepo extends Repo {
+  failures=1;
+  async finalizeSigned(...args:Parameters<Repo['finalizeSigned']>){
+    if(this.failures>0){this.failures-=1;throw new Error('transaction aborted');}
+    return super.finalizeSigned(...args);
+  }
+}
+
+class SealBoundRenderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(input:{sealHash:string}){
+    this.calls+=1;
+    return {bytes:new Uint8Array(Buffer.concat([
+      Buffer.from('%PDF-1.4\n% '+input.sealHash+'\n'),
+      Buffer.alloc(2_048,0x20),
+      Buffer.from('\n%%EOF\n'),
+    ])),contentType:'application/pdf' as const};
+  }
+}
+
+test('esign finalization recovers when PDF is stored but DB finalization fails', async () => {
+  const repo=new FinalizeFailsOnceRepo(), assets=new Assets(), renderer=new SealBoundRenderer(), svc=new EsignService(repo,assets,renderer);
+  const {session}=await seedPendingReview(svc,repo,assets);
+  const finalPath='esign-final/'+session.contractCode+'/'+session.id+'.pdf';
+
+  await assert.rejects(()=>svc.approve('c1','finalize_db_fail_1234567890','tester'),/transaction aborted/);
+  // Orphan object may exist, but it is never mistaken for a signed contract.
+  assert.equal(assets.m.has(finalPath),true);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal(repo.contract.get('c1')?.esign_document_sha256,undefined);
+  const orphanSha=assets.m.get(finalPath)!.sha256;
+
+  const retried=await svc.approve('c1','finalize_db_fail_1234567890','tester');
+  assert.equal(retried.finalized,true);
+  assert.equal(retried.session.status,'signed');
+  assert.equal(renderer.calls,2);
+  // Same deterministic path is overwritten and read-back verified; no second object name appears.
+  assert.deepEqual([...assets.m.keys()].filter(p=>p.startsWith('esign-final/')),[finalPath]);
+  const stored=assets.m.get(finalPath)!;
+  assert.equal(stored.sha256,retried.session.documentSha256);
+  assert.equal(stored.sha256,orphanSha);
+  assert.equal(repo.contract.get('c1')?.esign_document_sha256,stored.sha256);
+  assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
+});
+
+test('CMS auto-debit account survives submission into the sealed snapshot, and the public link stops exposing PII', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',{...contract(),payment_method:'CMS 자동이체'});
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.consentProfile.cmsRequiredBeforeHandover,true);
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  await svc.progress(token,'summary');
+  await svc.progress(token,'document');
+  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
+  for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
+  await svc.saveDraft(token,{customer_address:'서울시 비밀로 1',cms_account_no:'110123456789'});
+
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시 비밀로 1',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    cms_holder_name:'홍길동',cms_holder_relation:'본인',cms_holder_phone:'01012345678',cms_bank:'신한은행',
+    cms_account_no:'110-123-456789',cms_holder_identifier:'830926',
+    uploaded_documents:required,
+    signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  const session=(await repo.getCurrentSession('c1'))!;
+  assert.equal(session.status,'pending_review');
+  const priv=repo.priv.get(session.id) as unknown as EsignPrivateSubmission;
+  assert.equal(priv.cms?.accountNo,'110123456789');
+  assert.equal(priv.cms?.bank,'신한은행');
+
+  // After submission the link returns only what the waiting/done screens need.
+  const view=await svc.publicView(token);
+  const exposed=JSON.stringify(view);
+  for(const secret of ['110123456789','서울시 비밀로 1','830926','11-11-111111-11','1983-09-26'])assert.equal(exposed.includes(secret),false,secret);
+  assert.equal(view.draft,null);
+  assert.equal(view.session.snapshot.contractCode,issued.session.snapshot.contractCode);
+
+  const approved=await svc.approve('c1','finalize_cms_1234567890abc','tester');
+  assert.equal(approved.session.status,'signed');
+  const sealed=(repo.sessions.get(session.id)!.signedSnapshot as {templateFields:Record<string,string>}).templateFields;
+  assert.equal(sealed.cms_account_no,'110123456789');
+  assert.equal(sealed.cms_bank,'신한은행');
+  assert.equal(sealed.cms_holder_identifier,'830926');
+  assert.equal(JSON.stringify(await svc.publicView(token)).includes('110123456789'),false);
+});
+
+test('approve refuses to seal a contract cancelled after the customer submitted', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  repo.contract.set('c1',{...repo.contract.get('c1')!,contract_status:'계약취소'});
+  await assert.rejects(()=>svc.approve('c1','finalize_cancelled_1234567890','tester'),/취소·철회된 계약/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.equal(repo.contract.get('c1')?.contract_status,'계약취소');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+});
+
+test('approve refuses to seal when contract terms changed after issue', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  repo.contract.set('c1',{...repo.contract.get('c1')!,rent_amount_snapshot:720000});
+  await assert.rejects(()=>svc.approve('c1','finalize_changed_1234567890','tester'),/월 대여료.*다시 발행/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+
+test('public upload accepts only this contract\'s kinds and overwrites instead of piling up copies', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  const jpg=new Uint8Array([0xff,0xd8,0xff,0xd9]);
+
+  for(const kind of ['junk','support:not_in_this_contract','id_card2','../id_card'])
+    await assert.rejects(()=>svc.upload(token,kind,'x.jpg','image/jpeg',jpg),/받지 않는 파일 종류/);
+
+  const first=await svc.upload(token,'id_card','a.jpg','image/jpeg',jpg);
+  const second=await svc.upload(token,'id_card','b.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0x00,0xd9]));
+  assert.equal(first.path,second.path);
+  const idCopies=[...assets.m.keys()].filter(p=>p.includes('/'+issued.session.id+'/id_card'));
+  assert.equal(idCopies.length,1);
+
+  const doc=issued.session.snapshot.requiredDocuments[0]!;
+  await svc.upload(token,'support:'+doc.key,'d.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
+  // Delegated-signer documents are allowed even if not in the base list.
+  await svc.upload(token,'support:delegation_letter','l.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
+});
+
+test('an expired link can no longer upload, save a draft or move progress', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  repo.sessions.get(issued.session.id)!.expiresAt=Date.now()-1;
+  await assert.rejects(()=>svc.upload(token,'id_card','a.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9])),/만료/);
+  await assert.rejects(()=>svc.saveDraft(token,{customer_address:'서울'}),/만료/);
+  await assert.rejects(()=>svc.progress(token,'summary'),/만료/);
+  assert.equal([...assets.m.keys()].length,0);
+});
+
+test('a late failing approval does not release a claim another approval took over', async () => {
+  const repo=new Repo(), assets=new Assets();
+  let sessionId='';
+  const takeoverRenderer: EsignFinalDocumentRenderer = {
+    async render(){
+      // While request A renders, its claim goes stale and request B claims the session.
+      Object.assign(repo.sessions.get(sessionId)!,{status:'approving',finalizationId:'finalize_B_takeover_12345',approvingAt:Date.now()});
+      throw new Error('chromium crashed for A');
+    },
+  };
+  const svc=new EsignService(repo,assets,takeoverRenderer);
+  const {session}=await seedPendingReview(svc,repo,assets);
+  sessionId=session.id;
+  await assert.rejects(()=>svc.approve('c1','finalize_A_original_12345','tester'),/chromium crashed for A/);
+  const after=repo.sessions.get(sessionId)!;
+  assert.equal(after.status,'approving');
+  assert.equal(after.finalizationId,'finalize_B_takeover_12345');
+});
+
+test('identity photos are frozen at submission: a photo swapped afterwards is never sealed', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  await svc.progress(token,'summary');
+  await svc.progress(token,'document');
+  const original=await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
+  for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    uploaded_documents:required,signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  const session=(await repo.getCurrentSession('c1'))!;
+  const priv=repo.priv.get(session.id) as unknown as EsignPrivateSubmission & {assets:Record<string,Record<string,unknown>>};
+  assert.deepEqual(priv.identityAssets?.map(a=>[a.key,a.sha256]),[['id_card',original.sha256],['selfie',priv.assets.selfie.sha256]]);
+
+  // A racing upload replaced the licence photo after submission (same slot, new bytes, map updated).
+  const swapped=await assets.put(original.path,new Uint8Array([0xff,0xd8,0xff,0x00,0x00,0xd9]),'image/jpeg');
+  priv.assets.id_card={...priv.assets.id_card,sha256:swapped.sha256};
+  await assert.rejects(()=>svc.approve('c1','finalize_swapped_id_12345','tester'),/운전면허증 원본 검증에 실패/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
 });

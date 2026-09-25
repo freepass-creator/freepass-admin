@@ -13,7 +13,8 @@
     "data:check": "tsx scripts/check-live-data-wiring.mts",
     "test:contract-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts",
     "test:intake-firestore": "tsx --test src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
-    "test:freepass-data-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts"
+    "test:freepass-data-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
+    "postinstall": "node scripts/install-pdf-fonts.mjs"
   },
   "dependencies": {
     "firebase-admin": "^14.4.0",
@@ -21,7 +22,10 @@
     "next": "16.3.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "zod": "4.1.12"
+    "zod": "4.1.12",
+    "@sparticuz/chromium": "147.0.2",
+    "puppeteer-core": "24.41.0",
+    "pretendard": "1.3.9"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -29,5 +33,8 @@
     "@types/react-dom": "^19.0.0",
     "tsx": "^4.23.13",
     "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

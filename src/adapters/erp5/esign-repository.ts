@@ -6,6 +6,7 @@ import { WriteDisabledError, writeEnabled } from './settlement-repository';
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
 import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 import { withContractHandoffDigest } from '../../domain/esign/handoff';
+import { signabilityProblem } from '../../domain/esign/signability';
 import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
 import { finalizationBlockReason } from '../../domain/esign/finalization-gate';
@@ -404,6 +405,9 @@ export class Erp5EsignRepository implements EsignRepository {
         intakeDoc=await tx.get(db.collection(INTAKES).doc(sourceIntakeId));
         if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       }
+      // 서비스에서 한 검사와 확정 사이(PDF 생성 수 초)에 취소·변경이 끼어들 수 있다 — 같은 트랜잭션에서 다시 본다.
+      const signability=signabilityProblem(contractRaw,current.snapshot,intakeDoc?.exists?intakeDoc.data() as Record<string,unknown>:null);
+      if(signability)throw new Error(signability);
 
       const intakeRawForGate=intakeDoc?.exists ? intakeDoc.data() as Record<string,unknown> : null;
       const finalLinkError=contractIntakeLinkError(current.contractId,intakeRawForGate);
@@ -463,6 +467,18 @@ export class Erp5EsignRepository implements EsignRepository {
       const x=d.data();
       return {type:String(x.type??''),at:Number(x.at)||0,by:String(x.by??''),detail:(x.detail&&typeof x.detail==='object'&&!Array.isArray(x.detail)?x.detail:{}) as Record<string,unknown>};
     }).sort((a,b)=>b.at-a.at);
+  }
+
+  async releaseFinalizationClaim(sessionId:string,finalizationId:string){
+    mustWrite();
+    const db=erp5(), ref=db.collection(SESSIONS).doc(sessionId);
+    return db.runTransaction(async tx=>{
+      const d=await tx.get(ref);
+      const x=d.data();
+      if(!d.exists||x?.status!=='approving'||String(x?.finalizationId??'')!==finalizationId)return false;
+      tx.update(ref,{status:'pending_review',approvingAt:0,finalizationId:''});
+      return true;
+    });
   }
 }
 

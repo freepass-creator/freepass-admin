@@ -39,6 +39,11 @@ export interface EsignRepository {
   putPrivate(sessionId: string, data: Record<string, unknown>): Promise<void>;
   appendEvent(contractId: string, sessionId: string, type: string, by: string, detail?: Record<string, unknown>): Promise<void>;
   listEvents(contractId: string): Promise<Array<{ type: string; at: number; by: string; detail: Record<string, unknown> }>>;
+  /**
+   * 승인 claim 을 «내 것일 때만» 푼다(approving → pending_review). 다른 finalizationId 의 claim 이면 건드리지 않는다.
+   * ★상태만 보고 풀면, 오래 걸려 늦게 실패한 요청이 그 사이 다른 관리자가 잡은 claim 을 풀어 버린다.
+   */
+  releaseFinalizationClaim(sessionId: string, finalizationId: string): Promise<boolean>;
 }
 
 export interface EsignFinalDocumentRenderer {

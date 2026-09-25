@@ -6,7 +6,6 @@ import {
   type FinderInput, type FinderSort,
 } from '../../domain/search/finder';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
-import { confirmedVehicleId } from '../../domain/search/vehicle-match';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';

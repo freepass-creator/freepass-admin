@@ -64,6 +64,13 @@ class Repo implements EsignRepository {
   }
 }
 
+class ReadbackFailAssets extends Assets {
+  async get(path:string,expected?:string){
+    if(path.startsWith('esign-final/'))return null;
+    return super.get(path,expected);
+  }
+}
+
 class Renderer implements EsignFinalDocumentRenderer {
   calls=0;
   async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
@@ -266,4 +273,41 @@ test('esign finalization blocks concurrent retry with the same finalization id',
     /같은 승인 요청이 처리 중/,
   );
   assert.equal(renderer.calls,0);
+});
+
+
+test('esign finalization does not sign when stored PDF read-back fails', async () => {
+  const repo=new Repo(), assets=new ReadbackFailAssets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',contract());
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const issued=await svc.issue('c1','tester');
+  const session=await repo.getCurrentSession('c1');
+  assert.ok(session);
+  session!.status='pending_review';
+  session!.submittedAt=Date.now();
+
+  const signatureAsset=await assets.put('sig.png',new Uint8Array([137,80,78,71,13,10,26,10]),'image/png');
+  const idCard=await assets.put('id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const selfie=await assets.put('selfie.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const requiredDocs=[];
+  for(const d of issued.session.snapshot.requiredDocuments.filter(d=>d.required)){
+    const a=await assets.put('doc/'+d.key,new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)),'application/pdf');
+    requiredDocs.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
+  }
+  repo.priv.set(session!.id,{
+    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
+    signaturePath:signatureAsset.path,signatureSha256:signatureAsset.sha256,
+    supportingDocuments:requiredDocs,submittedAt:Date.now(),
+    assets:{id_card:{...idCard,name:'id.jpg',contentType:'image/jpeg'},selfie:{...selfie,name:'selfie.jpg',contentType:'image/jpeg'}},
+  });
+
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_readback_1234567890','tester'),
+    /재조회 검증/,
+  );
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
 });

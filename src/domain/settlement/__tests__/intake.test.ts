@@ -427,7 +427,7 @@ describe('전자계약 연결 접수의 취소 경계', () => {
       { kind:'cancelled', on:true, reason:'고객 변심' },
     );
     assert.equal(r.ok,false);
-    assert.match(String((r as { error?: string }).error), /전자계약을 먼저 해지/);
+    assert.match(String((r as { error?: string }).error), /전자계약 발행을 먼저 철회/);
   });
 
   it('전자계약을 해지한 뒤에는 정산 전 접수 취소를 허용한다', () => {

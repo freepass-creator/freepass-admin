@@ -3047,3 +3047,27 @@ Web RowCard와 Mobile ListRow는 같은 3줄 의미를 공유한다.
 - Web과 Mobile에서 같은 카드의 Main/Key/Support 의미가 달라지는 것
 - 모바일에서만 4번째 정보줄을 추가하는 것
 - 상세에 있을 정보를 모바일 목록에만 추가 노출하는 것
+
+# 71. List card alignment grid
+
+3줄 목록 카드는 내용뿐 아니라 **좌표도 동일한 grid**를 사용한다.
+
+기준:
+- visual tile: 64×64
+- text block: 64px
+- visual top = Main top
+- visual bottom = Support bottom
+- visual ↔ text gap: 12px
+- Main 우측 primary value는 카드 우측 padding 기준선에 정렬
+- 같은 목록의 primary value 우측선은 동일
+- 숫자/금액은 tabular-nums
+
+광학 보정:
+- 아이콘 자체는 24px
+- 상태 label은 아이콘 아래 4px gap
+- Main/Key/Support 간격은 2px
+- 카드마다 임의 top/bottom offset을 만들지 않는다
+
+Visual QA:
+- visual/text top·bottom 차이 2px 초과 FAIL
+- primary value 우측 기준선 drift 검사

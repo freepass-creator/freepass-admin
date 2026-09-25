@@ -46,16 +46,12 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
 });
 
-test('theme choice is limited to the registered ERP themes and never redirects off-site',async()=>{
-  const { themeOf, safeBack, THEMES } = await import('./app/_design/theme');
-  assert.deepEqual([...THEMES],['classic','retro']);
-  assert.equal(themeOf('retro'),'retro');
-  assert.equal(themeOf('neon'),'classic');
-  assert.equal(themeOf(undefined),'classic');
-  assert.equal(safeBack('/products?id=1'),'/products?id=1');
-  for (const bad of ['//evil.example','https://evil.example','/\\evil','javascript:alert(1)','']) assert.equal(safeBack(bad),'/');
+test('admin exposes one visual authority and no theme-switch route',()=>{
+  assert.ok(chrome.includes('className="erp-theme-flag"'));
+  assert.equal(chrome.includes('ThemeSwitch'),false);
+  assert.equal(chrome.includes('data-theme='),false);
+  assert.equal(css.includes('data-theme="retro"'),false);
 });
-
 test('product workspace is bound to real repositories and whole-offer selection',()=>{
   assert.ok(workspace.includes('productList()'));
   assert.ok(workspace.includes('settlements.list()'));

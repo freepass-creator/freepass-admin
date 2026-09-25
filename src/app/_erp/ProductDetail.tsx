@@ -41,7 +41,7 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
         {sel ? (
           <div className="erp-detail-body">
             <div className="erp-hero-tile erp-tile">
-              <div className="photo"><CarIcon /></div>
+              <div className="photo"><ProductThumb p={sel.p} /></div>
               <div className="erp-hero-info">
                 <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
                 <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>

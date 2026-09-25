@@ -72,7 +72,7 @@
     },
     "searchEmbeddedFacet": {
       "visualHeightPx": 32,
-      "note": "inside 40px search box; not a standalone workspace control"
+      "note": "inside 44px search box; not a standalone workspace control"
     },
     "desktopGlobalNavigation": {
       "heightPx": 60,
@@ -235,7 +235,7 @@
     "checks": [
       "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
       "required --ui-* CSS tokens exist",
-      "machine SSOT baseline remains 18/14/12, control 40, primary/touch 44, radius 4",
+      "machine SSOT baseline remains 18/14/12, control/action/touch 44, control radius 6, panel radius 4",
       "stable core UI files do not reintroduce inline visual styles",
       "focus-visible and reduced-motion rules exist"
     ]

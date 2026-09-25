@@ -6,8 +6,7 @@
  *   맨 오른쪽에 … 가운데에는 … 실적 상세」) — `wiv=실적` 로 들어가면 `Workspace.tsx` 가 계약접수 배열
  *   대신 분납실적|실적상세|완납실적 배열(`PerformanceWorkspace`)을 그린다.
  *   정산은 한 판에서 청구 · 지급을 가른다. 전자계약은 업무 흐름 밖의 따로 된 문으로 떼어 둔다.
- *   폰에서는 이 메뉴가 안 보인다(_erp/shell.css) — 다섯 걸음 하단바(`MobileTabBar`)가 대신한다.
- */
+ * */
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Icon } from './Icon';
@@ -61,17 +60,3 @@ export function SideMenu() {
   );
 }
 
-/** 상태줄의 테마 고르기 — 링크 하나로 바꾼다(스크립트 없이도 된다). 되돌아올 자리는 지금 주소. */
-export function ThemeSwitch({ current, labels }: { current: string; labels: Record<string, string> }) {
-  const path = usePathname() || '/';
-  const sp = useSearchParams();
-  const back = `${path}${sp.toString() ? `?${sp}` : ''}`;
-  return (
-    <span className="erp-theme-switch" role="group" aria-label="화면 테마">
-      테마
-      {Object.entries(labels).map(([id, label]) => (
-        <a key={id} href={`/theme?set=${id}&back=${encodeURIComponent(back)}`} aria-pressed={current === id}>{label}</a>
-      ))}
-    </span>
-  );
-}

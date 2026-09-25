@@ -5,6 +5,8 @@ import {
   emptyFinderSelection,
   findProducts,
   finderAxisMatches,
+  finderHierarchyValues,
+  finderInputForFacet,
   matchFinderProduct,
   sortFinderMatches,
   type FinderInput,
@@ -195,4 +197,87 @@ test('manufacturer facet also ignores UNMATCHED identity leftovers',()=>{
   });
   const pool=findProducts([confirmed,unmatched],input());
   assert.deepEqual(pool.filter((m)=>finderAxisMatches(m,'maker','현대')).map((x)=>x.product.id),['confirmed-maker']);
+});
+
+
+test('hierarchy values only open children in parent context and only use confirmed ids',()=>{
+  const modelOnly=product({
+    id:'model-only',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',matchLevel:'MODEL'},
+  });
+  const subA=product({
+    id:'sub-a',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',subModelId:'GN7',matchLevel:'SUB_MODEL'},
+  });
+  const trimA=product({
+    id:'trim-a',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',subModelId:'GN7',trimId:'캘리그래피',matchLevel:'TRIM'},
+  });
+  const other=product({
+    id:'other',
+    vehicle:{...product().vehicle,manufacturerId:'기아',modelId:'K8',subModelId:'GL3',trimId:'노블레스',matchLevel:'TRIM'},
+  });
+  const rows=[modelOnly,subA,trimA,other];
+  const selection=emptyFinderSelection();
+
+  assert.deepEqual(new Set(finderHierarchyValues(rows,selection,'maker')),new Set(['현대','기아']));
+  assert.deepEqual(new Set(finderHierarchyValues(rows,selection,'model')),new Set(['그랜저','K8']));
+  assert.deepEqual(finderHierarchyValues(rows,selection,'submodel'),[]);
+  assert.deepEqual(finderHierarchyValues(rows,selection,'trim'),[]);
+
+  selection.maker=['현대'];
+  assert.deepEqual(finderHierarchyValues(rows,selection,'model'),['그랜저','그랜저','그랜저']);
+  selection.model=['그랜저'];
+  assert.deepEqual(new Set(finderHierarchyValues(rows,selection,'submodel')),new Set(['GN7']));
+  selection.submodel=['GN7'];
+  assert.deepEqual(finderHierarchyValues(rows,selection,'trim'),['캘리그래피']);
+});
+
+test('submodel and trim filters preserve shallower inventory as PARTIAL instead of inventing identity',()=>{
+  const modelOnly=product({
+    id:'model-only',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',matchLevel:'MODEL'},
+  });
+  const exactSub=product({
+    id:'exact-sub',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',subModelId:'GN7',matchLevel:'SUB_MODEL'},
+  });
+  const wrongSub=product({
+    id:'wrong-sub',
+    vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저',subModelId:'IG',matchLevel:'SUB_MODEL'},
+  });
+  const selection=emptyFinderSelection();
+  selection.maker=['현대'];
+  selection.model=['그랜저'];
+  selection.submodel=['GN7'];
+
+  const matches=findProducts([modelOnly,exactSub,wrongSub],input({selection}));
+  assert.deepEqual(matches.map((x)=>[x.product.id,x.vehicleMatch.level]),[
+    ['exact-sub','EXACT'],
+    ['model-only','PARTIAL'],
+  ]);
+  assert.equal(finderAxisMatches(matches[1],'submodel','GN7'),false);
+});
+
+test('changing a hierarchy parent clears its descendants for cross-facet evaluation',()=>{
+  const selection=emptyFinderSelection();
+  selection.maker=['현대'];
+  selection.model=['그랜저'];
+  selection.submodel=['GN7'];
+  selection.trim=['캘리그래피'];
+  selection.fuel=['가솔린'];
+  const current=input({selection});
+
+  const makerFacet=finderInputForFacet(current,'maker');
+  assert.deepEqual(makerFacet.selection.maker,[]);
+  assert.deepEqual(makerFacet.selection.model,[]);
+  assert.deepEqual(makerFacet.selection.submodel,[]);
+  assert.deepEqual(makerFacet.selection.trim,[]);
+  assert.deepEqual(makerFacet.selection.fuel,['가솔린']);
+
+  const modelFacet=finderInputForFacet(current,'model');
+  assert.deepEqual(modelFacet.selection.maker,['현대']);
+  assert.deepEqual(modelFacet.selection.model,[]);
+  assert.deepEqual(modelFacet.selection.submodel,[]);
+  assert.deepEqual(modelFacet.selection.trim,[]);
 });

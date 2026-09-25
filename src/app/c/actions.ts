@@ -1,6 +1,6 @@
 'use server';
 
-import { settlements, type ClaimView } from '../../server/freepass-data';
+import { settlements, type ClaimView } from '../../server/erp5';
 import type { ClaimResponse } from '../../domain/settlement/claim-link';
 
 /**

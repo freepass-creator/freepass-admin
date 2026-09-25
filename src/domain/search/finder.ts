@@ -33,9 +33,9 @@ export const VEHICLE_MILEAGE_BANDS: readonly FinderBand[] = [
   { k: 'm99', label: '10만km↑', lo: 100000, hi: Infinity },
 ];
 
-export const OFFER_FINDER_AXES = ['term', 'rent', 'dep', 'mile'] as const;
+export const OFFER_FINDER_AXES = ['term', 'rent', 'dep', 'mile', 'supplier'] as const;
 export const PRODUCT_FINDER_AXES = [
-  'status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'model', 'submodel', 'trim', 'cls', 'year', 'vmile', 'fuel', 'credit',
+  'status', 'vc', 'kind', 'perk', 'maker', 'model', 'submodel', 'trim', 'cls', 'year', 'vmile', 'fuel', 'credit',
 ] as const;
 
 export type OfferFinderAxis = typeof OFFER_FINDER_AXES[number];
@@ -148,7 +148,6 @@ function productAxisMatches(product:CanonicalProduct,axis:ProductFinderAxis,key:
     case 'vc': return customerVehicleClass(product)===key;
     case 'kind': return product.productKind===key;
     case 'perk': return (product.perks??[]).includes(key);
-    case 'supplier': return (product.supplierName??product.supplierId)===key;
     case 'maker': return confirmedVehicleId(product.vehicle,'MANUFACTURER')===key;
     case 'model': return confirmedVehicleId(product.vehicle,'MODEL')===key;
     case 'submodel': return confirmedVehicleId(product.vehicle,'SUB_MODEL')===key;
@@ -161,8 +160,9 @@ function productAxisMatches(product:CanonicalProduct,axis:ProductFinderAxis,key:
   }
 }
 
-function offerAxisMatches(offer:Offer,axis:OfferFinderAxis,key:string):boolean {
+export function offerAxisMatches(offer:Offer,axis:OfferFinderAxis,key:string,product?:Pick<CanonicalProduct,'supplierId'|'supplierName'>):boolean {
   switch(axis){
+    case 'supplier': return (offer.supplierName??offer.supplierId??product?.supplierName??product?.supplierId)===key;
     case 'term': return String(offer.termMonths)===key;
     case 'rent': return inBand(RENT_BANDS,key,offer.monthlyRent);
     case 'dep': return inBand(DEPOSIT_BANDS,key,offer.deposit);
@@ -176,7 +176,7 @@ export function finderAxisMatches(
   key: string,
 ): boolean {
   return (OFFER_FINDER_AXES as readonly string[]).includes(axis)
-    ? match.matchedOffers.some((offer)=>offerAxisMatches(offer,axis as OfferFinderAxis,key))
+    ? match.matchedOffers.some((offer)=>offerAxisMatches(offer,axis as OfferFinderAxis,key,match.product))
     : productAxisMatches(match.product,axis as ProductFinderAxis,key);
 }
 
@@ -204,7 +204,7 @@ export function matchFinderProduct(
   const matchedOffers=base.matchedOffers.filter((offer)=>
     offerWithinFinderLimits(offer,input.limits)
     && OFFER_FINDER_AXES.every((axis)=>
-      axis===skip||!input.selection[axis].length||input.selection[axis].some((key)=>offerAxisMatches(offer,axis,key))),
+      axis===skip||!input.selection[axis].length||input.selection[axis].some((key)=>offerAxisMatches(offer,axis,key,product))),
   );
   if(!matchedOffers.length)return null;
 

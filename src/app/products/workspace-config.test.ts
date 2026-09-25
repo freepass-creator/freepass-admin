@@ -137,3 +137,13 @@ test('current mileage exact limit rejects unknown and over-limit vehicles', () =
   assert.equal(productWithinSearchLimits({ specs: {} }, limits), false);
   assert.equal(productWithinSearchLimits({ specs: { mileageKm: 0 } }, limits), false);
 });
+
+import { offerAxisMatches } from '../../domain/search/finder';
+
+test('supplier facet is Offer-level so one Product preserves multiple suppliers', () => {
+  const a: Offer = { ...offer('a', 500_000), supplierId: 'SUP-A', supplierName: '공급사 A' };
+  const b: Offer = { ...offer('b', 510_000), supplierId: 'SUP-B', supplierName: '공급사 B' };
+  assert.equal(offerAxisMatches(a, 'supplier', '공급사 A'), true);
+  assert.equal(offerAxisMatches(a, 'supplier', '공급사 B'), false);
+  assert.equal(offerAxisMatches(b, 'supplier', '공급사 B'), true);
+});

@@ -33,6 +33,9 @@ export interface RegistrationInfo {
 
 export interface Offer {
   id: string;
+  /** Supplier belongs to the Offer. Product-level supplier fields are legacy compatibility only. */
+  supplierId?: string;
+  supplierName?: string;
   termMonths: number;
   monthlyRent: number;
   deposit?: number;

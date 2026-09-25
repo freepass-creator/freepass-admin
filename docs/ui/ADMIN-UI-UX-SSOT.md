@@ -322,9 +322,26 @@ Tone:
 - `--고름` 면으로 표시
 - selected와 status 색을 섞지 않는다.
 
+## 8-4. 상품 목록 카드 폭 배분 — 2026-09-25 사용자 결정
+
+상품 목록은 카드 안의 정보가 왼쪽에 몰리지 않게 **가로 폭을 적극적으로 사용**한다.
+
+Desktop:
+- 1줄: 세부모델은 좌측, 상품구분/출고상태 Tag는 우측
+- 2줄: **기간 = 좌측 / 월 대여료 = 중앙 핵심 / 보증금 = 우측**
+- 3줄: 조건(PerkMarks)은 좌측에서 자연스럽게 이어진다.
+- 긴 모델명은 Tag 영역을 침범하지 않고 ellipsis 처리한다.
+- 금액/숫자는 tabular number 정렬을 유지한다.
+
+Mobile:
+- 같은 의미 순서를 유지하되 폭이 부족하면 2줄 값 영역만 자연스럽게 wrap한다.
+- Desktop의 억지 3열을 축소 복사하지 않는다.
+- 카드의 선택 상태는 추가 체크/테두리보다 면 변화가 우선이다.
+
+
 ---
 
-## 8-4. AI Core List Presentation
+## 8-5. AI Core List Presentation
 
 목록 표현 방식의 선택은 FreePass Admin이 새로 정하지 않는다.
 AI Core `data.list-presentation`을 따른다.
@@ -411,6 +428,126 @@ Summary box는 `summary-grid` 규격을 사용한다.
 
 ---
 
+## 11-1. 상품 상세 기간별 대여료 — 2026-09-25 사용자 결정
+
+상품 상세의 기간별 대여료는 **기간 버튼 묶음 + 선택값 박스**로 두 번 표현하지 않는다.
+
+- Offer 하나 = 한 줄 선택행
+- 기본 정보 순서: **기간 | 월 대여료 | 보증금·선납·주행 조건**
+- 선택된 Offer는 체크 아이콘이나 강한 테두리를 추가하지 않고 `--고름` 면으로 표시
+- 월 대여료는 같은 행에서 핵심값으로 강조
+- 같은 기간 Offer가 둘 이상이면 기간 옆에 주행한도를 붙여 서로 구분
+- Desktop은 한 줄 비교를 우선하고, Mobile은 의미 순서를 유지하면서 조건부만 아래로 자연스럽게 wrap
+- 선택한 Offer ID는 기존 `useChosenOffer` 계약을 그대로 사용하여 접수 ActionBar로 전달
+
+## 11-2. 신규 접수 WORK 입력 문법 — 2026-09-25 사용자 결정
+
+신규 접수는 **업무 입력 화면**이므로 상세 카드 문법을 복사하지 않는다.
+
+### 앞에 보이는 것
+차량을 골라 들어온 접수:
+- 이미 확정된 차량/기간/대여료/보증금은 읽기 요약
+- 사람이 주로 입력하는 값은 **고객명 · 영업채널 · 영업담당**
+- 도메인상 상품구분 선택이 필요한 경우에만 해당 선택을 앞에 노출
+- 자동 수수료 계산이 막힌 경우에만 수수료 보완 입력을 앞에 노출
+
+직접 접수:
+- 차량/공급사
+- 고객명/영업채널/영업담당
+- 계약조건/요금
+- 수수료
+
+### 뒤로 내리는 것
+아래 값은 기본 업무 흐름을 방해하지 않게 `더 넣기` 안에 둔다.
+- 공급사코드
+- 채널코드
+- 영업자코드
+- 계약방식/분납여부 등 선택값
+- 프로모션
+- 진행 체크
+- 메모
+- 자동 수수료가 정상일 때의 수동 수정값
+
+### 시각 규칙
+- Fieldset 자체를 또 하나의 카드로 만들지 않는다.
+- **섹션은 제목 + 간격/얇은 구분선**, 입력 필드만 secondary surface를 사용한다.
+- 선택된 상품 요약은 하나의 강조 surface로 충분하며 내부 값을 다시 작은 카드들로 쪼개지 않는다.
+- 중복 생성 안내 같은 운영 설명은 EmptyState가 아니라 support helper text로 표시한다.
+- 입력 오류는 해당 WORK panel의 하단 ActionBar 직전에 모아서 보여 주되, 실제 필드 focus/error 연결 고도화는 별도 접근성 pass에서 다룬다.
+
+## 11-3. 접수 상세 WORK 위계 — 2026-09-25 사용자 결정
+
+접수 상세는 데이터 전체를 펼쳐놓는 화면이 아니라 **현재 업무를 끝내는 화면**이다.
+
+기본 읽기 순서:
+1. 고객/차량 Identity
+2. **현재 업무**
+3. 진행 상태와 다음 단계
+4. 확인이 필요한 경고
+5. 핵심 금액
+6. 정산 진행/금액 조정
+7. 환수 등 실제 업무
+8. 세부 원자·진단
+9. 변경 이력
+10. ActionBar
+
+### 시각 강도
+- `현재 업무`는 짧은 강조 surface 하나로 보여 준다.
+- 경고는 실제 확인이 필요한 경우에만 amber 계열 보조 surface를 사용한다.
+- 원자 전체와 변경 이력은 기본적으로 **접힌 보조 영역**이다.
+- 세부 원자/진단/이력은 Primary action이나 현재 진행보다 시각적으로 강하면 안 된다.
+- 기존 업무 기능·상태머신·금액 계산은 이 UI 정리에서 변경하지 않는다.
+- ActionBar의 Primary는 기존 다음 행동 판정을 그대로 따른다.
+
+## 11-4. 정산관리 3패널 위계 — 2026-09-25 사용자 결정
+
+정산관리는 Desktop에서 세 패널을 동시에 보여 주되, 각 패널의 역할을 섞지 않는다.
+
+### 왼쪽 — 거래처/채널 목록
+읽기 순서:
+1. 청구/지급 축
+2. 월/합계
+3. 상태 필터
+4. 거래처/채널 목록
+
+- 청구/지급 축은 일반 quick filter와 분리한다.
+- 축 선택은 **청구=공급사 기준 / 지급=영업채널 기준**이라는 의미를 함께 보여 준다.
+- 월과 총액은 한 개의 기간 context로 묶는다.
+- 전체/이슈/미처리/완료는 그 아래 보조 필터다.
+
+### 가운데 — 선택한 묶음의 실적
+- 가장 중요한 값은 **이번에 청구할 돈 / 줄 돈**
+- 원 실적·환수·진행 수치는 4개 이내의 Summary로 압축
+- 발행 정보는 큰 카드가 아니라 **현재 문서 상태 요약**으로 표현
+- 실제 발행은 기존대로 Panel 하단 Primary Action에서 한다.
+
+### 오른쪽 — 현재 정산업무
+- 기존 `IntakeDetailPanel`의 WORK 위계를 재사용한다.
+- 현재 정산 단계와 다음 실행이 원자/이력보다 우선한다.
+
+기능 규칙, 원장 계산, 발행 조건, 정정/수금/지급 상태머신은 이 UI 정리에서 변경하지 않는다.
+
+## 11-5. 전자계약 UI/UX 단계 정리 — 2026-09-25
+
+전자계약은 최종적으로 관리자 5단계와 고객 진행축을 분리해야 한다. 다만 현재 `freepass-admin` 계약 목록 adapter가 읽는 데이터는 `발행 · 열람 · 진행중 · 서명완료`와 링크/PDF 수준이므로, UI는 **현재 데이터가 증명하는 범위만 표현**한다.
+
+현재 관리자 표현:
+- `발송 전`: 현재 signStatus가 발행 또는 기타 pre-open 상태
+- `고객 작성 중`: 열람 / 진행중
+- `완료`: 서명완료
+- `미연결`: 전자서명 상태 없음
+
+규칙:
+- 원시 `signStatus`와 관리자 단계는 섞지 않는다.
+- 목록 필터와 목록 뱃지는 관리자 단계 용어를 사용한다.
+- 상세에는 **현재 단계**를 Identity 다음에 우선 표시한다.
+- 고객 작성 중에는 관리자가 할 행동을 억지로 만들지 않고 "기다림"을 명시한다.
+- 계약 양식/보험/날짜/발송시각/서명시각은 `계약 메타정보` 접힘 영역으로 내린다.
+- 현재 가능한 실행은 기존 링크/PDF만 사용한다: `링크 열기`, `완료 문서 열기`.
+- 검토대기/승인/보완요청/봉인검증 등 현재 adapter가 제공하지 않는 상태와 행동은 UI에서 추측해 만들지 않는다.
+- 전자계약 기능 세션이 해당 데이터를 연결하면 관리자 5단계 정본으로 확장한다.
+- PDF Renderer/Storage/hash 검증 인프라는 이 UI 작업 범위가 아니다.
+
 # 12. Action bar SSOT
 
 공통 CSS pattern: `.dz-bar > .dz-bar-go`
@@ -429,11 +566,17 @@ Summary box는 `summary-grid` 규격을 사용한다.
 [ secondary 3 ] [ primary 7 ]
 ```
 
+### 세 개
+```
+[ secondary 3 ] [ secondary 3 ] [ primary 4 ]
+```
+
 - primary 44
 - secondary 44
 - radius 6
 - panel bottom에 정렬
 - content 중간에 떠 있지 않는다.
+- 세 버튼이 생겨도 임의 균등분할하지 않고 **3:3:4**를 유지한다.
 
 향후 공통 컴포넌트 추출 후보:
 `ActionBar(primary, secondary?)`
@@ -552,6 +695,33 @@ raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `
 
 ---
 
+## 15-1. UX 상태 전수검사 — 2026-09-25
+
+상태는 아래 의미를 섞지 않는다.
+
+- **loading**: 데이터를 아직 받는 중. 화면 구조는 유지하고 `aria-busy` + 짧은 skeleton/support text를 사용한다.
+- **empty**: 읽기는 성공했지만 결과가 0건. `EmptyState`.
+- **partial error**: 일부 데이터만 실패했고 나머지 업무는 가능. 해당 Panel 안의 `Notice tone="warn"`으로 표시하고 사용 가능한 UI는 유지한다.
+- **fatal error**: 화면 핵심 데이터 자체를 읽지 못함. route `error.tsx`에서 오류와 **다시 시도** Primary를 제공한다.
+- **disabled**: 행동 자체가 현재 불가능. disabled control 가까이에 이유를 보이고 `aria-describedby`로 연결한다.
+- **busy**: write/request 진행 중. `aria-busy` + 중복 조작 방지 + 진행형 버튼 라벨을 함께 사용한다.
+- **success**: authoritative completion 뒤에만 표시. `Notice tone="ok"`는 polite live region으로 안내한다.
+- **retry**: 실패 뒤 동일 작업을 다시 실행할 수 있을 때만 제공한다. 시작을 성공처럼 표현하지 않는다.
+  - fatal route error의 「다시 시도」는 **실제 현재 URL 재요청**이어야 한다.
+  - Next production 실측에서 error-boundary `reset()`만 호출하면 서버 요청 없이 같은 오류 상태가 유지됐다.
+  - 따라서 공통 `RouteError`는 `reset()` 뒤 `window.location.reload()`로 실제 재시도를 보장한다.
+
+현재 적용:
+- products / intake / settlement / esign에 공통 `loading.tsx` + retry 가능한 `error.tsx`
+- 상품 원장 전체 실패는 fatal error boundary
+- 접수목록만 실패하는 경우는 partial warning으로 남겨 상품/접수 다른 기능을 계속 사용
+- 정산/전자계약 핵심 목록 실패는 fatal error boundary
+- 조회 전용일 때 `접수 저장`은 실제 disabled이며 이유와 연결
+- 조회 전용은 접수 상세의 진행/회차/수수료/프로모션/가감/환수 및 정산 lifecycle 보조행동까지 전파된다.
+- 정산관리의 문서 발행과 청구링크 생성/회수도 조회 전용이면 실제 disabled이며 가까운 이유와 연결한다.
+- 정산 문서 발행 disabled는 `planInvoice`의 막힌 이유와 연결
+- 접수 상세의 blocked Primary는 막힘 사유 Notice와 연결
+
 # 16. Responsive hierarchy
 
 Mobile은 PC를 축소하지 않는다.
@@ -581,23 +751,72 @@ depth 0 목록
 
 ---
 
+## 16-1. 반응형 전수검사 규칙 — 2026-09-25
+
+검증 기준 viewport:
+- Mobile: **360 / 390 / 412**
+- Desktop: **1280 / 1440**
+
+Mobile:
+- Quick filter는 여러 줄로 쌓지 않고 **한 줄 가로 스크롤**을 기본으로 한다.
+- 스크롤바는 숨기되 44px touch target은 유지한다.
+- Sticky list header가 필터 줄바꿈 때문에 과도하게 높아지지 않아야 한다.
+- 고객명/차량명 같은 detail identity는 최대 2줄까지 허용하고, 그 외 보조정보는 한 줄 ellipsis를 우선한다.
+- 상태 Tag는 identity 텍스트를 밀어내지 않도록 별도 고정 영역으로 둔다.
+- 상품찾기 목록은 **고정 400px track을 만들지 않는다.** 360/390/412에서는 한 열 `minmax(0,1fr)`로 수축한다.
+- ActionBar 3:7 비율과 safe-area를 유지한다.
+
+Desktop:
+- 1280에서도 panel 간 gap 12와 panel padding 22를 먼저 보존한다.
+- 상품찾기 2/3 목록은 1280에서도 2개 카드가 설 수 있도록 카드 최소폭을 **360px** 기준으로 잡는다.
+- 긴 identity/금액 때문에 다른 panel 폭이 밀리지 않게 각 panel 내부에서 overflow를 해결한다.
+- panel/grid/flex child는 intrinsic width 때문에 전체 workspace를 밀어내지 않도록 `min-width:0` 경계를 둔다.
+- 1440 이상이라고 정보 행 수를 임의로 늘리지 않는다.
+
+## 16-2. 상호작용·접근성 전수검사 — 2026-09-25
+
+Keyboard:
+- FilterSheet는 열릴 때 dialog 내부로 focus가 들어간다.
+- Desktop FilterSheet는 검색창 아래 **non-modal popover**이므로 Tab 이동을 가두지 않는다.
+- Mobile FilterSheet는 backdrop이 있는 **modal sheet**이므로 Tab/Shift+Tab을 내부에서 순환시킨다.
+- 둘 다 Esc로 닫히고 trigger로 focus가 돌아간다.
+- DetailTabs는 roving `tabIndex`를 사용하고 **ArrowLeft / ArrowRight / Home / End**로 이동한다.
+- focus-visible은 기존 전역 규칙을 유지한다.
+
+Validation / async:
+- 서버 검증 오류 `.dz-errs`는 동적으로 생길 때 `role="alert"` / `aria-live="assertive"`로 안내한다.
+- pending write는 기존 `aria-busy`와 disabled 중복제출 방지를 유지한다.
+- disabled Primary는 가능한 경우 버튼 라벨 또는 바로 인접한 Notice가 막힌 이유를 설명해야 한다.
+
+Virtual keyboard / zoom:
+- Mobile focused control에는 sticky header/ActionBar를 피할 scroll-margin을 둔다.
+- Panel은 하단 ActionBar + safe-area만큼 scroll-padding을 둔다.
+- 약 320px CSS viewport(400% reflow에 대응하는 좁은 폭)에서는 Summary / form / money / settlement axis를 1열로 reflow한다.
+- ActionBar의 44px은 **minimum touch height**다. 긴 번역/확대에서는 문구가 wrap되며 버튼 높이가 늘어날 수 있다.
+
+Visible labels:
+- 업무 입력 필드는 visible label을 기본으로 한다.
+- 정산 SideStep의 청구월/계산서 날짜/사업자번호도 aria-label-only가 아니라 compact visible label을 사용한다.
+- 검색창은 현재 검색 아이콘 + 구체적 placeholder + accessible name을 사용한다. persistent visible text label 적용 여부는 검색 밀도와 함께 별도 SearchBox 공통화 때 검토한다.
+
+I18N / RTL:
+- 현재 루트는 `<html lang="ko">` 단일 런타임이며 실제 locale switch/RTL 경로가 없다.
+- 따라서 en-US/de-DE/ar-SA는 **현재 완료로 간주하지 않는다.**
+- 긴 문자열·reflow 안전성은 지금 보호하되, RTL/locale conformance receipt는 i18n runtime boundary가 생긴 뒤 실제 `lang/dir` 전환으로 검증한다.
+
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
-## A. CSS cascade가 정본 역할을 하고 있음
-`globals.css` 상단에 옛 규격이 남고 아래에서 계속 덮는 구조다. **파일 맨 위에 LEGACY BASE 경고를 추가해 새 코드가 그 값을 복사하지 않게 표시했다.**
+## A. CSS cascade / legacy base — 해결 완료
+- `globals.css` 상단의 초기 mockup/base는 **LEGACY BASE LAYER**로 격리했다.
+- 실제 관리자 호환 규칙 시작점에 **CURRENT ADMIN COMPATIBILITY LAYER** 마커를 추가했다.
+- 이 호환층의 실제 workspace/control 규칙은 33px/40px을 제거하고 44px 공통 토큰으로 승격했다.
+- 검색창 안 세부검색만 machine SSOT에 정의된 **embedded 32px 예외**를 유지한다.
+- 최종 권위는 계속 `admin-final.css` + 이 문서다.
 
-**위험:** 다음 AI가 위쪽 값을 읽고 되돌릴 수 있음.
-
-권장 후속:
-- legacy block 명시
-- 최종 token/component CSS를 파일 하단이 아니라 별도 SSOT CSS로 분리
-
-## B. UI-SPEC 옛 절이 최신 절 아래에 같이 있음
-맨 위 “실제 앱 정본”이 우선이지만, 옛 22/30/34/38 규격이 계속 보인다.
-
-권장:
-- 옛 절을 `UI-HISTORY.md`로 이동
-- UI-SPEC은 현행만 남김
+## B. UI-SPEC 역사 규격 혼재 — 해결 완료
+- `UI-SPEC.md`에는 현행 baseline만 남겼다.
+- 2026-09-16 mockup의 rail/22·30·34·38·46px 규격은 `UI-HISTORY.md`로 이동했다.
+- `UI-HISTORY.md`는 HISTORICAL ONLY이며 구현 기준으로 사용하지 않는다.
 
 ## C. 목록 높이 용어
 문서 주석은 “64px row”라고 하나 실제 outer row는 padding 포함 약 88px.

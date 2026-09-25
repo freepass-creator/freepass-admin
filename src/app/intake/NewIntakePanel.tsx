@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { freePassDataWriteEnabled, productById, today } from '../../server/freepass-data';
+import { productById } from '../../server/freepass-data';
+import { today } from '../../server/erp5';
+import { writeEnabled } from '../../server/erp5';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { txt, won } from '../_fn/fmt';
 import { vehicleName } from '../_fn/product';
@@ -25,8 +27,8 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
     intakeRequestId: randomUUID(),
     plate: product?.registration?.vehicleNumber ?? '',
     model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
-    supplier: product ? (product.supplierName ?? product.supplierId) : '',
-    supplierCode: product?.supplierId ?? '',
+    supplier: offer ? (offer.supplierName ?? offer.supplierId ?? product?.supplierName ?? product?.supplierId ?? '') : '',
+    supplierCode: offer?.supplierId ?? product?.supplierId ?? '',
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',
@@ -78,11 +80,11 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
       ) : selectedProductPath
         ? <Notice tone="warn">선택한 상품을 더 이상 찾을 수 없습니다 — 상품 목록에서 다시 골라 주세요.</Notice>
         : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
-      {!freePassDataWriteEnabled() && <Notice tone="warn">FreePass Data 쓰기가 꺼져 있어 「접수 저장」은 저장되지 않습니다.</Notice>}
-      <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
+      {!writeEnabled() && <div id="intake-write-disabled"><Notice tone="warn">현재 조회 전용이라 접수를 저장할 수 없습니다.</Notice></div>}
+      <p className="dz-form-hint">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
       {(!selectedProductPath || (product && offer)) && (
         <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
-          productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} /></div>
+          productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} disabled={!writeEnabled()} /></div>
       )}
     </>
   );

@@ -15,6 +15,7 @@ test('canonical product keeps the authoritative Firestore revision as version', 
     car_number: '12가3456',
     product_code: 'P-1',
     provider_company_code: 'SUP-1',
+    provider_name: '공급사 1',
     maker: '현대',
     model: '그랜저',
     price: {
@@ -35,4 +36,7 @@ test('canonical product keeps the authoritative Firestore revision as version', 
   if (!result.ok) return;
   assert.equal(result.product.version, 123456);
   assert.equal(result.product.sourceSnapshotId, productSourceRevision(123456, 0));
+  assert.equal(result.product.offers[0]?.supplierId, 'SUP-1');
+  assert.equal(result.product.offers[0]?.supplierName, '공급사 1');
 });
+

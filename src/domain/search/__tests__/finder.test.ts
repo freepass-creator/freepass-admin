@@ -281,3 +281,17 @@ test('changing a hierarchy parent clears its descendants for cross-facet evaluat
   assert.deepEqual(modelFacet.selection.submodel,[]);
   assert.deepEqual(modelFacet.selection.trim,[]);
 });
+
+test('supplier and rent must match the same Offer; facade supplier cannot override it',()=>{
+  const p=product({supplierId:'PARENT',supplierName:'원상품 공급사',offers:[
+    offer({id:'cheap-a',supplierId:'A',supplierName:'공급사 A',monthlyRent:500_000}),
+    offer({id:'costly-b',supplierId:'B',supplierName:'공급사 B',monthlyRent:900_000}),
+  ]});
+  const selection=emptyFinderSelection();
+  selection.supplier=['공급사 B']; selection.rent=['r50'];
+  assert.equal(matchFinderProduct(p,input({selection})),null);
+  selection.rent=['r90'];
+  assert.deepEqual(matchFinderProduct(p,input({selection}))?.matchedOfferIds,['costly-b']);
+  selection.supplier=['원상품 공급사'];
+  assert.equal(matchFinderProduct(p,input({selection})),null);
+});

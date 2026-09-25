@@ -1,12 +1,7 @@
-import {
-  FREEPASS_DATA_PROJECT_ID,
-  contracts,
-  freePassDataReady,
-  freePassDataWriteEnabled,
-  products,
-  settlements,
-} from './freepass-data';
+import { ERP5_PROJECT_ID, erp5Ready, writeEnabled } from './erp5';
 import { esign } from './esign';
+import { adminCatalogListFresh, adminCatalogStatus } from './freepass-data';
+import { contracts, settlements } from './erp5';
 
 export type DataProbe = {
   key: 'products' | 'intakes' | 'clawbacks' | 'cashEvents' | 'contracts';
@@ -25,22 +20,30 @@ async function probe(key: DataProbe['key'], label: string, read: () => Promise<u
   }
 }
 
-/** 관리자 실제 데이터 runtime 상태. 값을 만들거나 보정하지 않고 각 실제 repository를 그대로 읽는다. */
+/**
+ * Admin runtime status.
+ * Data authority and physical storage are reported separately so the legacy ERP5 bridge
+ * can never be mistaken for the FreePass Data public contract.
+ */
 export async function adminDataStatus() {
-  const credential = freePassDataReady();
+  const credential = erp5Ready();
   const esignFinalization = esign.finalizationReadiness();
   const probes = await Promise.all([
-    probe('products', '상품', () => products.list()),
+    probe('products', '상품', async () => (await adminCatalogListFresh()).rows),
     probe('intakes', '접수·정산원장', async () => (await settlements.list()).map((x) => x.row)),
     probe('clawbacks', '환수', () => settlements.clawbacks()),
     probe('cashEvents', '수금·지급 거래', () => settlements.cashEvents()),
     probe('contracts', '전자계약', () => contracts.list()),
   ]);
+  const catalog = adminCatalogStatus();
   return {
-    schema: 'freepass-data-runtime/v1',
-    project: FREEPASS_DATA_PROJECT_ID,
+    schema: 'freepass-admin-data-runtime/v2',
+    authority: 'FREEPASS_DATA' as const,
+    catalog,
+    /** Transitional Admin workflow store and Catalog legacy bridge physical project. */
+    project: ERP5_PROJECT_ID,
     credential,
-    writeEnabled: freePassDataWriteEnabled(),
+    writeEnabled: writeEnabled(),
     live: probes.every((x) => x.ok),
     esignFinalization,
     probes,

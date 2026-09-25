@@ -1,24 +1,9 @@
 'use client';
 /**
- * ★★★**세부검색 = 화이트라벨 · 레트로의 «두 칸 조건판»** (대표 2026-09-18)
- *   「세부검색은 이미 화이트라벨이나 레트로 화면에 만들어 놓은 필터」
- *   ⚠ 앞서 고르기 칸(select) 여섯 + 찾기 단추였다 — 우리가 이미 만든 것을 두고 새로 지은 것이다.
- *   ⇒ 원본 = freepasserp4 `components/shop/ShopFilterSheet.tsx` · `ShopFilters.tsx`(CheckList · CheckRow)의 짜임을 그대로:
- *
- * ```
- *   ┌ 상세 조건 ────────────── 초기화  닫기 ┐
- *   │ 출고상태 2 │ 출고상태           해제  │   ← 왼쪽 = 축 지도(늘 보인다) · 고른 개수
- *   │ 상품구분   │ ☑ 즉시출고          128  │   ← 오른쪽 = 값 · 건수(교차 집계)
- *   │ 혜택       │ ☐ 출고협의           12  │
- *   │ 계약기간   │ ☐ 출고불가            0  │   ← 0 이어도 줄은 선다(2026-09-10 「0이라고 해줘야지」)
- *   ├────────────┴──────────────────────────┤
- *   │             [ 132대 보기 ]            │   ← 적용/취소 없음 — 고르는 즉시 걸리고, 결과 수만 말한다
- *   └───────────────────────────────────────┘
- * ```
- * ★같은 축 안은 «또는», 축끼리는 «이면서» — 값은 여러 개를 고른다(네모).
- * ★고르면 주소만 바뀐다(`?status=즉시출고,출고협의`) — 쪽을 안 옮긴다(절대 법칙). 판은 그대로 열려 있고 숫자만 바뀐다.
- * ★모양은 우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만(규칙 ①) · 글 셋(제목 · 메인 · 보조).
- * 폰은 아래에서 올라오는 시트(82vh) — 원본 그대로. 웹은 검색창 바로 밑에 같은 폭으로 뜬다.
+ * 세부검색 — 왼쪽 축 지도 / 오른쪽 복수 선택 / 하단 결과 수.
+ * 같은 축은 OR, 다른 축은 AND. 0건 조건도 숨기지 않는다.
+ * 조건 선택은 URL만 갱신하며 현재 판과 검색어를 유지한다.
+ * Desktop은 non-modal popover, Mobile은 배경 조작을 막는 modal sheet.
  */
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
@@ -37,10 +22,8 @@ export type FacetAxis = {
 /** 긴 목록은 머리 여덟만 — 원본 `HEAD_COUNT` */
 const HEAD_COUNT = 8;
 
-
 export function FilterSheet({ axes, count, unit }: {
   axes: FacetAxis[];
-  /** 지금 조건으로 남는 수 — 바닥 단추가 든다 */
   count: number;
   unit: '대' | '건';
 }) {
@@ -49,29 +32,119 @@ export function FilterSheet({ axes, count, unit }: {
   const params = useSearchParams();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
+  const [modal, setModal] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const dialogId = useId();
+  // Explicit close / Escape return to the trigger. Outside pointer/focus dismissal does not.
   const close = useCallback(() => {
     setOpen(false);
-    requestAnimationFrame(() => trigger.current?.focus());
+    requestAnimationFrame(() => trigger.current?.focus({ preventScroll: true }));
   }, []);
 
-  /** 값이 하나도 없는 축은 안 세운다 — 눌러도 빈 칸이 나오는 이름을 지도에 두지 않는다(원본) */
   const shown = useMemo(() => axes.filter((a) => a.options.length), [axes]);
   const sel = (a: string) => 고른값(params.get(a));
   const total = shown.reduce((n, a) => n + sel(a.key).length, 0);
   const [active, setActive] = useState(() => (shown.find((a) => sel(a.key).length) ?? shown[0])?.key ?? '');
   useEffect(() => { if (shown.length && !shown.some((a) => a.key === active)) setActive(shown[0].key); }, [shown, active]);
 
-  /* 닫기 — 바깥을 누르거나 Esc */
   useEffect(() => {
-    if (!open) return;
-    const down = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) close(); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const sheet = dialog.current;
+    if (!open || !sheet) return;
+    const mq = window.matchMedia('(max-width: 900px)');
+    const focusables = () => Array.from(sheet.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((node) => node.tabIndex >= 0 && !node.matches(':disabled') && node.getClientRects().length > 0 && !node.closest('[inert]'));
+    const focusFirst = () => (focusables()[0] ?? sheet).focus({ preventScroll: true });
+
+    // Only sibling branches become inert: never an ancestor of this sheet.
+    // Restore exact pre-existing attributes/styles on close, resize and unmount.
+    const inertBefore = new Map<HTMLElement, string | null>();
+    let scrollBefore: Array<{ node: HTMLElement; value: string; priority: string }> = [];
+    const isolate = () => {
+      let branch: HTMLElement | null = sheet.parentElement;
+      while (branch?.parentElement) {
+        const parent: HTMLElement = branch.parentElement;
+        for (const sibling of Array.from(parent.children)) {
+          if (sibling === branch || !(sibling instanceof HTMLElement)) continue;
+          if (!inertBefore.has(sibling)) inertBefore.set(sibling, sibling.getAttribute('inert'));
+          sibling.setAttribute('inert', '');
+        }
+        if (parent === document.body) break;
+        branch = parent;
+      }
+      if (!scrollBefore.length) {
+        scrollBefore = [document.documentElement, document.body].map((node) => ({
+          node, value: node.style.getPropertyValue('overflow'), priority: node.style.getPropertyPriority('overflow'),
+        }));
+        for (const { node } of scrollBefore) node.style.setProperty('overflow', 'hidden');
+      }
+    };
+    const release = () => {
+      for (const [node, before] of inertBefore) {
+        if (before === null) node.removeAttribute('inert'); else node.setAttribute('inert', before);
+      }
+      inertBefore.clear();
+      for (const { node, value, priority } of scrollBefore) {
+        if (value) node.style.setProperty('overflow', value, priority); else node.style.removeProperty('overflow');
+      }
+      scrollBefore = [];
+    };
+    const syncModal = () => {
+      setModal(mq.matches);
+      if (mq.matches) {
+        isolate();
+        if (!sheet.contains(document.activeElement)) focusFirst();
+      } else release();
+    };
+    syncModal();
+    mq.addEventListener('change', syncModal);
+    const entryFrame = requestAnimationFrame(() => focusables()[0]?.focus({ preventScroll: true }));
+    const down = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) {
+        if (mq.matches) close(); else setOpen(false);
+      }
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (!mq.matches || e.key !== 'Tab') return;
+      const nodes = focusables();
+      if (!nodes.length) { e.preventDefault(); sheet.focus(); return; }
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (!sheet.contains(document.activeElement)) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    const focus = (e: FocusEvent) => {
+      if (sheet.contains(e.target as Node)) return;
+      if (mq.matches) focusFirst();
+      else if (e.target !== document.body && !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    // Clearing an axis/reset can remove the focused button. Do not strand focus on body.
+    const contentObserver = new MutationObserver(() => {
+      if (sheet.isConnected && document.activeElement === document.body) {
+        (sheet.querySelector<HTMLElement>('.dz-fs-check') ?? focusables()[0] ?? sheet).focus({ preventScroll: true });
+      }
+    });
+    contentObserver.observe(sheet, { childList: true, subtree: true });
+    const backgroundObserver = new MutationObserver((changes) => {
+      if (mq.matches && changes.some((change) => !sheet.contains(change.target))) isolate();
+    });
+    backgroundObserver.observe(document.body, { childList: true, subtree: true });
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
-    return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
+    document.addEventListener('focusin', focus, true);
+    return () => {
+      cancelAnimationFrame(entryFrame);
+      contentObserver.disconnect(); backgroundObserver.disconnect();
+      mq.removeEventListener('change', syncModal);
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+      document.removeEventListener('focusin', focus, true);
+      release();
+    };
   }, [open, close]);
 
   const go = (edit: (u: URLSearchParams) => void) => {
@@ -95,7 +168,6 @@ export function FilterSheet({ axes, count, unit }: {
     clearDescendants(u, axis);
   });
   const clearAll = () => go((u) => { for (const a of axes) u.delete(a.key); });
-
   const cur = shown.find((a) => a.key === active);
   return (
     <div className="dz-fs" ref={box}>
@@ -105,13 +177,13 @@ export function FilterSheet({ axes, count, unit }: {
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" tabIndex={-1}
+            aria-modal={modal || undefined} aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>
             </div>
             <div className="dz-fs-body">
-              {/* 왼쪽 — 축 지도. 오른쪽과 «따로» 구른다 */}
               <nav aria-label="조건 항목">
                 {shown.map((a) => {
                   const n = sel(a.key).length;
@@ -123,7 +195,6 @@ export function FilterSheet({ axes, count, unit }: {
                   );
                 })}
               </nav>
-              {/* 오른쪽 — 고른 축의 값 */}
               <div className={`dz-fs-vals${pending ? ' wait' : ''}`} aria-busy={pending}>
                 {cur && <>
                   <div className="dz-fs-axis">
@@ -134,7 +205,6 @@ export function FilterSheet({ axes, count, unit }: {
                 </>}
               </div>
             </div>
-            {/* 하단바 규격(dz-bar) — 보조(초기화) 왼쪽 작게 · 주 단추가 나머지 */}
             <div className="dz-fs-foot dz-bar-go">
               {total ? <button type="button" className="dz-bar-sub" onClick={clearAll}>초기화</button> : null}
               <button type="button" className="primary" onClick={close}>
@@ -148,25 +218,31 @@ export function FilterSheet({ axes, count, unit }: {
   );
 }
 
-/**
- * 체크 목록 — 원본 `CheckList`. 긴 목록은 머리 여덟만, 나머지는 「더보기」.
- * ★고른 값이 접힌 자리에 있으면 처음부터 펼친다 — 걸어 둔 조건이 안 보이면 그게 «숨은 필터»다.
- * ★한 열 — 두 열이면 건수가 옆 칸 라벨에 붙어 읽힌다(원본 2026-09-06 실측).
- */
+/** Selected options beyond HEAD_COUNT are never hidden. */
 function CheckList({ axis, selected, onToggle }: {
   axis: FacetAxis; selected: string[]; onToggle: (axis: string, key: string) => void;
 }) {
   const hiddenHasPick = axis.options.slice(HEAD_COUNT).some((o) => selected.includes(o.key));
   const [all, setAll] = useState(false);
+  const optionNodes = useRef(new Map<string, HTMLButtonElement>());
+  const revealFrame = useRef<number | null>(null);
+  useEffect(() => () => { if (revealFrame.current !== null) cancelAnimationFrame(revealFrame.current); }, []);
   const list = all || hiddenHasPick ? axis.options : axis.options.slice(0, HEAD_COUNT);
   const rest = axis.options.length - list.length;
+  const reveal = () => {
+    const nextKey = axis.options[list.length]?.key;
+    setAll(true);
+    revealFrame.current = requestAnimationFrame(() => {
+      if (nextKey) optionNodes.current.get(nextKey)?.focus();
+    });
+  };
   return (
     <>
       {list.map((o) => {
         const on = selected.includes(o.key);
         return (
-          /* ★네모 — 여러 개를 고르는 축이다(원형이면 «하나만»으로 읽힌다) */
-          <button key={o.key} type="button" className={`dz-fs-check${on ? ' on' : ''}${o.count ? '' : ' zero'}`}
+          <button key={o.key} ref={(node) => { if (node) optionNodes.current.set(o.key, node); else optionNodes.current.delete(o.key); }}
+            type="button" className={`dz-fs-check${on ? ' on' : ''}${o.count ? '' : ' zero'}`}
             aria-pressed={on} onClick={() => onToggle(axis.key, o.key)}>
             <span className="box" aria-hidden>{on ? '✓' : ''}</span>
             <span className="lab">{o.label}</span>
@@ -174,7 +250,7 @@ function CheckList({ axis, selected, onToggle }: {
           </button>
         );
       })}
-      {rest > 0 && <button type="button" className="dz-fs-more" onClick={() => setAll(true)}>더보기 {rest}</button>}
+      {rest > 0 && <button type="button" className="dz-fs-more" onClick={reveal}>더보기 {rest}</button>}
     </>
   );
 }

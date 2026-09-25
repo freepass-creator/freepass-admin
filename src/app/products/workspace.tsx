@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { productList, settlements, today } from '../../server/freepass-data';
+import { productList } from '../../server/freepass-data';
+import { settlements, today } from '../../server/erp5';
 import {
   emptyFinderSelection, FINDER_SORTS, findProducts, findProductsForFacet, finderAxisMatches,
   finderHierarchyValues, sortFinderMatches,
@@ -24,7 +25,7 @@ import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
-import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 상품축이름,
   많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
@@ -53,11 +54,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
   const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);
-  let all: Awaited<ReturnType<typeof productList>>;
-  try { all = await productList(); }
-  catch (e) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
-  }
+  // Catalog authority stays FreePass Data; OBSERVE uses its explicit legacy bridge.
+  const all = await productList();
   const { rows } = all;
 
   /**
@@ -121,7 +119,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     vmile: 현재주행구간.map((b) => ({ k: b.k, label: b.label })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
     credit: 많은순(pool.map((h) => h.product.credit ?? '')).map((k) => ({ k, label: k })),
-    supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
+    supplier: 많은순(pool.flatMap((h) => h.matchedOffers.map((o) => o.supplierName ?? o.supplierId ?? h.product.supplierName ?? h.product.supplierId))).map((k) => ({ k, label: k })),
   };
   const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
     const keys = 값명단[a].map((x) => x.k);
@@ -157,7 +155,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   let irows: SettlementRow[] = [];
   let intakeErr = '';
   if (mode === 'intake') {
-    try { irows = (await settlements.list()).map((x) => x.row); } catch (e) { intakeErr = (e as Error).message; }
+    try { irows = (await settlements.list()).map((x) => x.row); } catch { intakeErr = '접수 목록을 불러오지 못했습니다. 다시 시도해 주세요.'; }
   }
   /**
    * ★★접수 목록 판 = 상품 목록 판과 «같은 규격» — 대표 2026-09-18
@@ -317,7 +315,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   <div className="vehicle-title">
                     <div>
                       <h2>{vehicleName(car) || car.id}</h2>
-                      <p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p>
+                      <p>{txt(car.registration?.vehicleNumber)} · {sel.lead?.supplierName ?? sel.lead?.supplierId ?? car.supplierName ?? car.supplierId}</p>
                       {!매칭끝(car.vehicle.matchLevel) && (
                         <p className="dz-note">차종 {매칭(car.vehicle.matchLevel)}{car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : ''}</p>
                       )}
@@ -332,7 +330,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 </>}
                 info={<>
                   <div className="vehicle-title">
-                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
+                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {sel.lead?.supplierName ?? sel.lead?.supplierId ?? car.supplierName ?? car.supplierId}</p></div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}</Tag>
                   </div>
                   {/* ★상세정보 — erp4 읽는 차례로 묶었다(차량 → 대여료 → 운전자 → 보험 → 계약 → 영업 전용 → 기타) · 원자는 기능 쪽 productSections 그대로 */}
@@ -369,7 +367,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
           </div>
           </div>
-          {intakeErr ? <EmptyState>ERP5 접수를 못 읽었습니다 — {intakeErr}</EmptyState> : (
+          {intakeErr ? <Notice tone="warn">{intakeErr}</Notice> : (
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}

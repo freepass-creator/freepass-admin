@@ -1,53 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-const ROOT=process.cwd();
-const SCAN_ROOTS=['src/app','src/server','src/services'];
-const ALLOWED=new Set([
-  'src/server/freepass-data.ts',
-  'src/server/erp5.ts', // deprecated compatibility re-export only
-  'src/server/freepass-data-boundary.test.ts',
-]);
-const FORBIDDEN=[
-  /adapters\/erp5\/(?:firestore|product-repository|settlement-repository|contract-repository|fee-rules)/,
-  /server\/erp5['"]/,
-  /from\s+['"]\.\/erp5['"]/,
-  /from\s+['"]\.\.\/.*\/server\/erp5['"]/,
-];
-
-function files(dir:string):string[]{
-  const out:string[]=[];
-  for(const name of readdirSync(join(ROOT,dir))){
-    const abs=join(ROOT,dir,name);
-    const rel=relative(ROOT,abs).replaceAll('\\','/');
-    if(statSync(abs).isDirectory())out.push(...files(rel));
-    else if(/\.(?:ts|tsx)$/.test(name))out.push(rel);
-  }
-  return out;
+function sources(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name).replaceAll('\\', '/');
+    return entry.isDirectory() ? sources(path) : /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path) ? [path] : [];
+  });
 }
 
-test('FreePass Admin app/server uses FreePass Data as the only ERP5/Firestore gateway',()=>{
-  const violations:{file:string;rule:string}[]=[];
-  for(const root of SCAN_ROOTS){
-    for(const file of files(root)){
-      if(ALLOWED.has(file))continue;
-      const source=readFileSync(join(ROOT,file),'utf8');
-      for(const rule of FORBIDDEN){
-        if(rule.test(source))violations.push({file,rule:String(rule)});
-      }
-    }
-  }
-  assert.deepEqual(violations,[],[
-    'Firebase/ERP5 adapter direct access is forbidden outside src/server/freepass-data.ts.',
-    'Read/write flow must be: Admin -> FreePass Data -> repository -> Firestore.',
-    JSON.stringify(violations,null,2),
-  ].join('\n'));
+test('UI and services cannot bypass Catalog or Admin workflow composition roots', () => {
+  const violations = [...sources('src/app'), ...sources('src/services')].filter((path) =>
+    /(?:from|import\()\s*['"][^'"]*(?:adapters\/erp5|firebase-admin|firebase\/database)/.test(readFileSync(path, 'utf8')));
+  assert.deepEqual(violations, []);
 });
 
-test('deprecated server/erp5 module contains no adapter or Firebase implementation',()=>{
-  const source=readFileSync(join(ROOT,'src/server/erp5.ts'),'utf8');
-  assert.doesNotMatch(source,/adapters\/erp5|firebase-admin|new Erp5/);
-  assert.match(source,/from '\.\/freepass-data'/);
+test('FreePass Data catalog authority never absorbs Admin workflow ownership', () => {
+  const catalog = readFileSync('src/server/freepass-data.ts', 'utf8');
+  const workflows = readFileSync('src/server/erp5.ts', 'utf8');
+  assert.match(catalog, /new AdminCatalogSwitchboard\(legacyProducts, freepassDataProducts\)/);
+  assert.doesNotMatch(catalog, /Erp5SettlementRepository|Erp5ContractRepository|esignRepository|firebase-admin/);
+  assert.match(workflows, /new Erp5SettlementRepository\(\)/);
+  assert.match(workflows, /new Erp5ContractRepository\(\)/);
+  assert.doesNotMatch(workflows, /new Erp5ProductRepository|firebase-admin/);
+});
+
+test('Catalog callers never reach directly for ERP5 product persistence', () => {
+  const allowed = new Set(['src/server/freepass-data.ts']);
+  const violations = sources('src/server').filter((path) => !allowed.has(path)
+    && /from\s+['"][^'"]*adapters\/erp5\/product-repository/.test(readFileSync(path, 'utf8')));
+  assert.deepEqual(violations, []);
 });

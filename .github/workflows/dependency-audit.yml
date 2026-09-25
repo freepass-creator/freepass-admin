@@ -1,0 +1,56 @@
+name: Dependency audit
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/check-dependency-audit.mjs'
+      - 'docs/security/DEPENDENCY-AUDIT-2026-09-25.md'
+      - '.github/workflows/dependency-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Capture dependency audits
+        shell: bash
+        run: |
+          mkdir -p artifacts/dependency-audit
+          npm audit --json > artifacts/dependency-audit/all.json || true
+          npm audit --json --omit=dev > artifacts/dependency-audit/prod.json || true
+      - name: Enforce production dependency boundary
+        run: node scripts/check-dependency-audit.mjs artifacts/dependency-audit/prod.json
+      - name: Print audit summary
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          for (const file of ['all.json','prod.json']) {
+            const path = 'artifacts/dependency-audit/' + file;
+            if (!fs.existsSync(path)) continue;
+            const j = JSON.parse(fs.readFileSync(path,'utf8'));
+            const rows = Object.entries(j.vulnerabilities ?? {}).map(([name,v]) => ({
+              name, severity:v.severity, direct:Boolean(v.isDirect), range:v.range, fix:v.fixAvailable
+            }));
+            console.log('\nAUDIT '+file.toUpperCase());
+            console.log(JSON.stringify({metadata:j.metadata, vulnerabilities:rows}, null, 2));
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-${{ github.event.pull_request.head.sha }}
+          path: artifacts/dependency-audit/
+          retention-days: 7
+          if-no-files-found: error

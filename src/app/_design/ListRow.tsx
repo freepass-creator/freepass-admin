@@ -98,9 +98,9 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
         </span>
         {product ? (
           <>
-            {/* 값 한 줄 — 좁으면 「 · 」 에서만 넘긴다(「보증금 / 1,000,000원」처럼 말 한가운데서 끊기지 않게) */}
+            {/* 값 한 줄 — 기간/월 대여료/보증금을 독립 segment로 두고 Desktop은 좌·중·우, Mobile은 segment 단위로 넘긴다. */}
             <span className="dz-row-l2 value"><strong>{typeof value === 'string'
-              ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{i > 0 ? ' · ' : ''}{x}</span>)
+              ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{x}</span>)
               : value}</strong></span>
             <span className="dz-row-l3 perks">{칩.length ? <PerkMarks marks={칩} compact /> : <small>조건 없음</small>}</span>
           </>

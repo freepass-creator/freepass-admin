@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { feeRuleSet, productByIdFresh, settlements, today, WriteDisabledError } from '../../server/freepass-data';
+import { productByIdFresh } from '../../server/freepass-data';
+import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
@@ -62,7 +63,9 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   }
 
   /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
-   * 저장 직전에 FreePass Data Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
+   * 저장 직전에 FreePass Data Catalog consumer boundary를 다시 읽어 같은 version/snapshot/Offer인지 확인한다.
+   * 현재 OBSERVE 단계에서는 이 fresh read가 legacy ERP5 bridge를 사용하지만 use case는 그 저장소를 모른다.
+   *
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
   if (input.sourceProductId || input.sourceOfferId) {
     if (!input.sourceProductId || !input.sourceOfferId || input.sourceProductVersion === null || !input.sourceSnapshotId) {
@@ -87,8 +90,8 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       ...input,
       plate: product.registration?.vehicleNumber ?? '',
       model: [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' '),
-      supplier: product.supplierName ?? product.supplierId,
-      supplierCode: product.supplierId,
+      supplier: offer.supplierName ?? offer.supplierId ?? product.supplierName ?? product.supplierId,
+      supplierCode: offer.supplierId ?? product.supplierId,
       ...(ledgerKind?.ok ? { product: ledgerKind.product, rentKind: ledgerKind.rentKind } : {}),
       term: offer.termMonths,
       rent: offer.monthlyRent,

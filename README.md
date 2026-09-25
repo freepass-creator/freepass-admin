@@ -44,21 +44,29 @@ FreePass **관리자 화면**입니다. 관리자가 상품을 찾고, 접수하
 기존 프로젝트(`freepasserp4` 등)의 DB, Firebase, API, 시트, 환경변수, 인증정보를 연결하거나 fallback으로 사용하지 않습니다. 기존 구현은 별도 승인 범위에서 설계 참고만 가능합니다.
 
 
-## Live ERP5 runtime
+## FreePass Data integration boundary
 
-현재 핵심 관리자 화면은 mock 데이터가 아니라 `freepasserp5` Firestore repository를 읽는다.
+**상품 Catalog의 데이터 정본은 프리패스 데이터(FreePass Data)** 입니다.
 
-- `/intake`: 상품 + 접수/정산원장
-- `/settlement`: 청구/지급 + 실적 줄 + 접수 상세
-- `/esign`: 실제 contract collection
-- `/system/data-status`: 실제 repository 연결/건수 진단
+Admin은 FreePass Data 중앙 스위치보드의 `FREEPASS_DATA_ADMIN_CATALOG_READ_MODE` 계약을 따릅니다.
 
-배포 읽기 자격증명:
-- `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` 또는
-- `ERP5_SERVICE_ACCOUNT_PATH`
+현재 단계: **OBSERVE**
 
-쓰기 활성화:
-- `ERP5_WRITE=on`
+- 상품 찾기/상세/접수 Snapshot은 `AdminCatalogReader` port만 사용합니다.
+- 현재 FreePass Data Admin 전용 consumer contract와 ACTIVE Release가 아직 HOLD라, OBSERVE에서는 `freepasserp5` Firestore read-only adapter를 **legacy bridge**로 사용합니다.
+- 이 bridge는 물리적 원천/전환 경로일 뿐 Product SSOT 권한이 아닙니다.
+- `SHADOW_READ / PARITY_VERIFIED / FREEPASS_DATA_READ`를 미리 켜면 조용히 ERP5로 fallback하지 않고 fail-closed 합니다.
+- generic ERP public projection을 Admin 계약처럼 억지 사용하지 않습니다.
+
+접수·정산·전자계약 workflow는 Admin이 의미를 소유합니다. 현재 persistence는 `freepasserp5`의 Admin workflow collections를 사용하지만, 이것을 Product Catalog authority와 섞지 않습니다.
+
+환경:
+```bash
+FREEPASS_DATA_ADMIN_CATALOG_READ_MODE=OBSERVE
+```
+
+현재 허용 값:
+`LEGACY_DIRECT | OBSERVE | SHADOW_READ | PARITY_VERIFIED | FREEPASS_DATA_READ`
 
 검사:
 ```bash

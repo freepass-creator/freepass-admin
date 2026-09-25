@@ -313,16 +313,18 @@
     "rule": "Stable layout spacing must use the scale. Optical exceptions require an explicit documented reason."
   },
   "elevation": {
-    "levels": [
-      "0",
-      "base",
-      "hover",
-      "float"
-    ],
-    "base": "0 1px 2px rgba(16,24,40,.07)",
-    "hover": "0 3px 7px rgba(16,24,40,.12)",
-    "float": "0 8px 22px rgba(16,24,40,.14)",
-    "rule": "Passive cards keep base elevation; only interactive components hover/press."
+    "base": "0 1px 2px rgba(16,24,40,.05)",
+    "hover": "0 2px 6px rgba(16,24,40,.08)",
+    "float": "0 8px 22px rgba(16,24,40,.12)",
+    "panelResting": "base",
+    "cardResting": "none",
+    "passiveCard": "none",
+    "interactiveCardHover": "hover",
+    "selectedCard": "primary-tint+shallow-inset",
+    "selectedOuterElevation": false,
+    "buttonResting": "none",
+    "popup": "float",
+    "rule": "Resting surfaces stay flat; elevation appears only for interaction or floating layers."
   },
   "interactionStates": {
     "badge": {

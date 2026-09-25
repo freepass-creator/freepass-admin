@@ -17,12 +17,13 @@ class Repo implements EsignRepository {
   async getIntakeContractSource(id:string){return this.intakes.get(id)??null;}
   async createContract(id:string,data:Record<string,unknown>){if(this.contract.has(id))throw new Error('dup');this.contract.set(id,{id,...structuredClone(data)});}
   async createContractFromIntake(source:ContractHandoffSource,id:string,data:Record<string,unknown>){
-    if(this.contract.has(id))return {created:false};
+    if(this.contract.has(id))return {created:false,contract:structuredClone(this.contract.get(id)!)};
     const current=this.intakes.get(source.intakeId);
     if(!current)throw new Error('접수를 찾을 수 없습니다.');
     if(current.sourceDigest!==source.sourceDigest)throw new Error('접수 정보가 변경되었습니다 — 다시 불러온 뒤 계약을 만들어 주세요.');
-    this.contract.set(id,{id,...structuredClone(data)});
-    return {created:true};
+    const contract={id,...structuredClone(data)};
+    this.contract.set(id,contract);
+    return {created:true,contract:structuredClone(contract)};
   }
   async updateContract(id:string,patch:Record<string,unknown>){this.contract.set(id,{...(this.contract.get(id)||{}),...structuredClone(patch)});}
   async getCurrentSession(contractId:string){return [...this.sessions.values()].filter(x=>x.contractId===contractId).sort((a,b)=>b.issuedAt-a.issuedAt)[0]??null;}
@@ -155,10 +156,11 @@ test('intake contract handoff is immutable and idempotent', async () => {
     contractDate:'2026-09-25',contractKind:'rent_return',insuranceSide:'회사포함' as const,
   };
   const first=await svc.createContractFromIntake(input,'tester');
-  const second=await svc.createContractFromIntake(input,'tester');
+  const second=await svc.createContractFromIntake({...input,contractDate:'2026-10-01'},'tester');
   assert.equal(first.created,true);
   assert.equal(second.created,false);
   assert.equal(second.id,first.id);
+  assert.equal(second.code,first.code);
 
   const stored=repo.contract.get(first.id)!;
   assert.equal(stored.source_intake_id,'stl_1');

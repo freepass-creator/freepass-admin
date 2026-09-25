@@ -25,6 +25,6 @@ test('esign stage follows issue-open-progress-review-signed', () => {
 });
 
 test('revoked and expired sessions never look active', () => {
-  const s=base(); s.status='revoked'; assert.equal(esignStage(s).state,'해지');
+  const s=base(); s.status='revoked'; assert.equal(esignStage(s).state,'철회');
   const e=base(); e.expiresAt=1; assert.equal(esignStage(e,2).state,'만료');
 });

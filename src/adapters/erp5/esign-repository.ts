@@ -164,14 +164,15 @@ export class Erp5EsignRepository implements EsignRepository {
         throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
       }
       const now=Date.now();
-      tx.update(sessionRef,{status:'revoked',revokedAt:now});
       const contractRaw=contractDoc.data() as Record<string,unknown>;
-      tx.update(contractRef,{sign_status:'미발송',sign_revoked_at:now,esign_progress:0,updated_at:now});
       const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
-      if(sourceIntakeId){
-        const intakeRef=db.collection(INTAKES).doc(sourceIntakeId);
-        const intakeDoc=await tx.get(intakeRef);
-        if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      const intakeRef=sourceIntakeId ? db.collection(INTAKES).doc(sourceIntakeId) : null;
+      const intakeDoc=intakeRef ? await tx.get(intakeRef) : null;
+      if(intakeRef && !intakeDoc?.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+
+      tx.update(sessionRef,{status:'revoked',revokedAt:now});
+      tx.update(contractRef,{sign_status:'미발송',sign_revoked_at:now,esign_progress:0,updated_at:now});
+      if(intakeRef && intakeDoc?.exists){
         tx.update(intakeRef,{esignRevokedAt:now,updatedAt:now,stateAt:new Date(now).toISOString()});
         const raw=intakeDoc.data() as Record<string,unknown>;
         const evRef=db.collection('settlement_events').doc(

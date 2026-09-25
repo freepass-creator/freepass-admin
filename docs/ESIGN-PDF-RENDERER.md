@@ -61,6 +61,24 @@ DECISION REQUIRED (outside this renderer): either cap these inputs at intake/iss
 - peak RSS (node + Chromium, upper bound) ~0.7–0.8 GB;
 - no Chromium process or temp HTML/PDF left after a render.
 
+## Vercel-parity runtime check (Amazon Linux 2023, Node 24)
+
+Vercel Node functions run on an Amazon Linux 2023 base. `@sparticuz/chromium` detects `VERCEL` + Node >= 20 and unpacks its bundled `al2023` shared libraries into `/tmp`.
+
+Verified locally without Vercel:
+
+1. `next build` with `output: 'standalone'` (temporary; not committed), so the bundle contains only files traced for the route, including the `outputFileTracingIncludes` fonts, template and Chromium pack (~152 MB standalone, ~89 MB traced for the approve route).
+2. Run it in `amazonlinux:2023` (no Chromium system libraries: 0 of libnss3/libatk/libcups/libgbm present) with Node 24.21, `VERCEL=1`, `NODE_ENV=production`, 2 GB memory, and an executable 512 MB tmpfs on `/tmp`.
+3. Call a temporary route that invokes the production adapter.
+
+Result: HTTP 200 `application/pdf`. First call ~3.1–3.2 s (includes Chromium unpack), then ~1.9–2.0 s. Container memory ~320 MB after renders. Only Pretendard subsets are embedded. Korean text is intact. **SHA-256 is identical to the Ubuntu/Node 22 render** (`e68a8ac2…` for the test fixture).
+
+Note: Docker's `--tmpfs` defaults to `noexec`. With that default, launch fails with `spawn /tmp/chromium EACCES` (reported as `단계: launch`). Vercel's `/tmp` is executable.
+
+### Node/ICU-independent text
+
+`esign_signed_at` used `Intl.DateTimeFormat('ko-KR')`, whose output depends on the Node ICU build: Node 22/ICU 78.2 printed `PM 2:30`, Node 24/ICU 78.3 prints `오후 2:30`. That made sealed text, and therefore the PDF, depend on the runtime Node version. It is now formatted explicitly in KST (`formatKstSignedAt`), matching the Node 24 production output exactly. Production output did not change; other Node versions now match it.
+
 ## Browser-side code
 
 Code evaluated inside Chromium (`waitForFunction`/`evaluate`) is passed as source strings, never as TypeScript functions. Transpilers (tsx/esbuild `keepNames`, Next/SWC) may inject helpers such as `__name` into serialized functions; those do not exist in the page and previously made every render fail (`ReferenceError: __name is not defined`).
@@ -161,7 +179,7 @@ The renderer integration test launches real Chromium, feeds the real contract te
 | CODED | PASS | Production Chromium adapter is wired into `EsignService`; no UI/workflow redesign is included. |
 | STATIC CHECKED | PASS (local) | `typecheck`, `ui:check`, `data:check`, `next build` pass locally. GitHub Actions still assigns no runner (`runner_id=0`, `steps=[]`), so there is no CI receipt. |
 | TESTED | PASS (local) | `npm test` 423/423 on Node 22; renderer/PDF/service suites pass on Node 24.21 — real Chromium PDF, A4, fonts, determinism, overflow, CSP, fail-closed paths. |
-| RUNTIME VERIFIED | PARTIAL | Local `next start` production bundle rendered via the adapter (~1.7–2.0 s warm, ~4.1 s cold). No Vercel invocation. |
+| RUNTIME VERIFIED | PARTIAL | Local `next start` bundle, plus a Vercel-parity run: traced standalone bundle on Amazon Linux 2023 + Node 24 + `VERCEL=1`, byte-identical to Ubuntu. No real Vercel invocation. |
 | STORAGE VERIFIED | PARTIAL | Firebase emulators with the real ERP5 adapters (`scripts/verify-esign-pdf-emulator.mts`): private write, independent SHA read-back, atomic signing, retries. No real Firebase Storage receipt. |
 | DEPLOYMENT VERIFIED | NOT VERIFIED | The connected Vercel team exposes no project for this repository, so no deployed invocation is possible yet. |
 | USER APPROVED | NOT VERIFIED | Awaiting user acceptance after deployment evidence. |

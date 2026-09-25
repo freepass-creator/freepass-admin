@@ -27,7 +27,7 @@
   --ui-list-gap: 12px;
   --ui-item-pad: 12px;
   --ui-row-body-h: 64px;
-  --ui-thumb-w: 82px;
+  --ui-thumb-w: 64px;
   --ui-thumb-h: 64px;
   --ui-status-tile: 64px;
 }
@@ -2215,5 +2215,43 @@ body > nav.fn-top :where(a, button):focus-visible,
     color: var(--ui-text-muted-color);
     font-size: var(--글보조);
     font-weight: 400;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — 64px visual parity (mobile/live)
+   차량 썸네일과 상태 타일을 같은 64x64 geometry로 맞춘다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.dz-row-thumb,.dz-row-status) {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    flex: 0 0 64px;
+  }
+
+  .fn-main .workspace .dz-row-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fn-main .workspace .dz-row-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .fn-main .workspace .dz-row-status svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .fn-main .workspace .dz-row-status em {
+    line-height: 14px;
+    font-weight: 600;
   }
 }

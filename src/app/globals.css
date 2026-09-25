@@ -324,7 +324,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
 .fn-main .workspace label.searchbox {
   display: flex; flex-direction: row; align-items: center; gap: 8px;
-  height: var(--ui-control-h,40px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+  height: var(--ui-control-h,44px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace label.searchbox input {
   flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; outline: 0;
@@ -648,7 +648,7 @@ body { background: var(--바닥); }
 .dz-fs-head { flex: none; display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 16px; }
 .dz-fs-head b { flex: 1; font-size: var(--글메인); font-weight: 700; color: var(--글); }
 .dz-fs-head button, .dz-fs-axis button, .dz-fs-more {
-  height: 33px; line-height: 15px; padding: 0 10px; border: 0; border-radius: var(--r); background: transparent;
+  min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 10px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
   color: #6b7580; font-size: var(--글보조); cursor: pointer;
 }
 .dz-fs-head button:hover, .dz-fs-axis button:hover, .dz-fs-more:hover { background: var(--박스손); }
@@ -666,7 +666,7 @@ body { background: var(--바닥); }
 .dz-fs-body nav button.on { background: var(--판); color: var(--ci남색); font-weight: 700; }
 .dz-fs-vals { flex: 1; min-width: 0; overflow-y: auto; padding: 8px 16px 16px; transition: opacity .12s; }
 .dz-fs-vals.wait { opacity: .55; }
-.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; height: 33px; margin-bottom: 4px; }
+.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; min-height: var(--ui-control-h,44px); margin-bottom: 4px; }
 .dz-fs-axis b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
 /* 값 한 줄 — 네모 · 이름 · 건수(오른쪽 끝, 흐리게). 한 열(두 열이면 숫자가 옆 라벨에 붙어 읽힌다) */
 .dz-fs-check {
@@ -830,13 +830,13 @@ body { background: var(--바닥); }
 .fn-main .workspace .work-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .fn-main .workspace .work-panel input:not([type="checkbox"]):not([type="radio"]),
 .fn-main .workspace .work-panel select, .fn-main .workspace .work-panel textarea {
-  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판);
   color: var(--글); font: inherit; font-size: var(--글메인);
 }
 .fn-main .workspace .work-panel textarea { height: auto; min-height: 66px; padding: 8px; }
 .fn-main .workspace .work-panel input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--ci남색); }
 .fn-main .workspace .work-panel form button {
-  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px);
   background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
 }
 .fn-main .workspace .work-panel form button[type="submit"]:not([name]) { background: var(--ci남색); color: #fff; font-weight: 600; }
@@ -945,11 +945,11 @@ body { background: var(--바닥); }
 .dz-money label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .dz-money label.wide { grid-column: 1 / -1; }
 .dz-money input {
-  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
+  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판);
   color: var(--글); font-size: var(--글메인); font-family: inherit;
 }
 .dz-money button {
-  grid-column: 1 / -1; justify-self: end; height: 33px; line-height: 15px; padding: 0 16px; border: 0; border-radius: var(--r);
+  grid-column: 1 / -1; justify-self: end; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 16px; border: 0; border-radius: var(--ui-control-radius,6px);
   background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600; cursor: pointer;
 }
 .dz-money button:disabled { opacity: .5; cursor: default; }
@@ -1018,7 +1018,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .dz-secs { display: grid; gap: 12px; margin-top: 4px; }
 .dz-sec > summary {
-  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 33px; cursor: pointer; user-select: none;
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: var(--ui-touch-min,44px); cursor: pointer; user-select: none;
 }
 .dz-sec > summary::-webkit-details-marker { display: none; }
 .dz-sec-ico {
@@ -1159,7 +1159,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 /* 달 넘기기 — ‹ 달 › · 합 */
 .dz-month { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; font-size: var(--글메인); }
 .dz-month > a, .dz-month > span:not(.dz-month-sum) {
-  display: inline-flex; align-items: center; justify-content: center; width: 33px; height: 33px; border-radius: var(--r);
+  display: inline-flex; align-items: center; justify-content: center; width: var(--ui-control-h,44px); height: var(--ui-control-h,44px); border-radius: var(--ui-control-radius,6px);
   color: #4f5862; font-size: 18px; text-decoration: none;
 }
 .dz-month > a:hover { background: var(--박스손); }
@@ -1246,7 +1246,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 /* 걸음 길 — 접수 → 청구 → 확인 → 수금. 지나온 곳 흐린 남색 글자 · 지금 남색 면 · 정정 붉은 면 */
 .dz-path { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; padding: 0; list-style: none; }
 .dz-path li {
-  display: inline-flex; align-items: center; height: 33px; padding: 0 12px; border-radius: var(--r);
+  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); padding: 0 12px; border-radius: var(--ui-control-radius,6px);
   background: var(--박스); color: #9aa3ad; font-size: var(--글메인);
 }
 .dz-path li.done { color: var(--ci남색); }
@@ -1256,14 +1256,14 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-life-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; padding: 12px; border-radius: var(--r); background: var(--박스); }
 .dz-life-form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .dz-life-form label.wide, .dz-life-form .dz-errs { grid-column: 1 / -1; }
-.dz-life-form input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판); font-size: var(--글메인); color: var(--글); }
+.dz-life-form input { height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판); font-size: var(--글메인); color: var(--글); }
 /* 곁 걸음 — 한 줄에 이름 · 칸 · 작은 단추(글자 단추 규칙 ③) */
 .dz-side-steps { display: grid; gap: 4px; margin: 0 0 12px; }
-.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 33px; }
+.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: var(--ui-control-h,44px); }
 .dz-side-step b { min-width: 88px; font-size: var(--글보조); color: #6b7580; font-weight: 400; }
-.dz-side-step input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
+.dz-side-step input { height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--박스); font-size: var(--글메인); }
 .dz-side-step button {
-  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
+  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
   color: var(--ci남색); font-size: var(--글메인); font-weight: 600; cursor: pointer;
 }
 .dz-side-step button:hover { background: var(--박스손); }

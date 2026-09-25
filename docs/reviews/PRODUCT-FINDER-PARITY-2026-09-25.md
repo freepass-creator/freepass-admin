@@ -144,3 +144,44 @@ Product Finder
 ```
 
 Pre-delivery cancellation ends the intake. Post-delivery termination creates a clawback review target; it does not rewrite historical claim/pay facts and does not automatically calculate a clawback amount.
+
+
+---
+
+## Implementation follow-up — parity phase 1
+
+Implemented on the Admin branch after this review:
+
+- Added explicit separation between:
+  - current vehicle mileage: Product/Vehicle fact
+  - annual contracted mileage: Offer fact
+- Kept the existing Admin URL axis `mile` as annual contracted mileage for backward compatibility.
+- Added `vmile` as current vehicle mileage instead of silently changing the meaning of old URLs.
+- Natural search now distinguishes:
+  - `연 2만km` → annual contracted mileage
+  - `주행 5만km`, `5만km 이하` → current vehicle mileage
+- Added common finder facts to Domain Search Contract:
+  - product kind
+  - credit/review condition
+  - model year
+  - fuel
+  - current vehicle mileage
+- Added Admin facets already present in White Label semantics:
+  - manufacturer
+  - model year
+  - credit/review condition
+  - current vehicle mileage
+- Ported White Label's exact customer vehicle-class projection:
+  - 승용
+  - SUV
+  - 승합
+  - 화물·픽업
+- Ambiguous detailed class values are left unclassified rather than guessed.
+
+Current remaining parity gaps:
+1. sorting choices/semantics;
+2. one structural finder engine instead of overlapping Admin workspace logic + Domain Search logic;
+3. model/submodel/trim navigation exposure in Admin filter UI;
+4. parity fixtures that can be replayed against both deployed surfaces from the same canonical snapshot.
+
+Do not solve the remaining gaps by copying another independent filtering implementation.

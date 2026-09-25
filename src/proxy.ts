@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE, authEnforced, isPublicPath, verifySession } from './server/auth';
+import { esignEnabled, isEsignPath } from './server/esign-scope';
 
 /**
  * **모든 요청 앞의 문** (Next 16 proxy · Node 에서 돈다).
@@ -9,6 +10,13 @@ import { AUTH_COOKIE, authEnforced, isPublicPath, verifySession } from './server
  */
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  /* ★전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED=on 전에는 화면·고객 링크·API 모두 닫는다(src/server/esign-scope.ts) */
+  if (!esignEnabled() && isEsignPath(path)) {
+    if (path === '/esign' && req.method === 'GET') { const to = req.nextUrl.clone(); to.pathname = '/intake'; to.search = ''; return NextResponse.redirect(to); }
+    return path.startsWith('/api/')
+      ? NextResponse.json({ error: '전자계약은 현재 운영 범위가 아닙니다' }, { status: 404 })
+      : new NextResponse('Not Found', { status: 404 });
+  }
   if (!authEnforced() || isPublicPath(path)) return NextResponse.next();
   const user = await verifySession(req.cookies.get(AUTH_COOKIE)?.value);
   if (user) return NextResponse.next();

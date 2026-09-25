@@ -49,11 +49,12 @@ function useCurrent(): string {
   return '';
 }
 
-export function MobileTabBar() {
+export function MobileTabBar({ esign = true }: { esign?: boolean }) {
   const now = useCurrent();
+  const tabs = esign ? TABS : TABS.filter(([label]) => label !== '계약');
   return (
     <nav className="dz-tabbar" aria-label="판 바꾸기">
-      {TABS.map(([label, href]) => (
+      {tabs.map(([label, href]) => (
         <Link key={label} href={href} className={now === label ? 'on' : undefined} aria-current={now === label ? 'page' : undefined}>
           <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth={1.8}
             strokeLinecap="round" strokeLinejoin="round" aria-hidden>{아이콘[label]}</svg>

@@ -25,7 +25,9 @@ test('admin chrome exposes the operational lanes without a legacy left rail',()=
   assert.ok(chrome.includes("['/products', '상품찾기']"));
   assert.ok(chrome.includes("['/intake', '계약접수']"));
   assert.ok(chrome.includes("['/settlement', '정산관리']"));
-  assert.ok(chrome.includes('<MobileTabBar />'));
+  assert.ok(chrome.includes('<MobileTabBar esign={esignEnabled()} />'));
+  /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴에 선다 */
+  assert.ok(chrome.includes("esignEnabled() ? MENU : MENU.filter(([href]) => href !== '/esign')"));
   assert.ok(chrome.includes('dz-desktop-bottom'));
   assert.equal(chrome.includes('className="rail"'),false);
 });

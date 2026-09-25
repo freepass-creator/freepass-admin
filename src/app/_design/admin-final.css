@@ -725,7 +725,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
     --아래띠: env(safe-area-inset-bottom);
   }
   .dz-tabbar {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0;  /* 탭 수(전자계약 on/off)에 맞춰 나눈다 */
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
     height: calc(58px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
     background: var(--ci남색); box-shadow: 0 -1px 0 rgba(255, 255, 255, .06);

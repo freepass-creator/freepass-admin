@@ -3,6 +3,7 @@ import { erp5Ready, writeEnabled } from '../../server/erp5';
 import { TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { currentAdmin } from '../../server/require-admin';
+import { esignEnabled } from '../../server/esign-scope';
 
 /** 기존 업무 4축 — 2026-09-21 결정에 따라 PC에서도 하단 버튼으로 배치.
  *   ★폰은 이 메뉴를 안 쓴다 — 다섯 걸음 하단바(`MobileTabBar`)가 대신한다(§14-8 개정, 아래 문서). */
@@ -35,14 +36,15 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       </header>
       <main className="fn-main">{children}</main>
       <nav className="dz-desktop-bottom" aria-label="업무 이동">
-        <TopMenu items={MENU} />
+        {/* 전자계약은 ESIGN_ENABLED=on 일 때만 메뉴에 선다(운영 개시 범위 밖) */}
+        <TopMenu items={esignEnabled() ? MENU : MENU.filter(([href]) => href !== '/esign')} />
       </nav>
       {/*
         ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
         depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
       */}
-      <MobileTabBar />
+      <MobileTabBar esign={esignEnabled()} />
     </>
   );
 }

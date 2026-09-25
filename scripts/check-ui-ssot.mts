@@ -156,6 +156,7 @@ const currentPassFiles = {
   listRow,
   offerPicker,
   intakeForm: await readFile(path.join(root, 'src/app/intake/new/IntakeForm.tsx'), 'utf8'),
+  newIntakePanel: await readFile(path.join(root, 'src/app/intake/NewIntakePanel.tsx'), 'utf8'),
   intakeDetail: await readFile(path.join(root, 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8'),
   settlementPage: await readFile(path.join(root, 'src/app/settlement/page.tsx'), 'utf8'),
   esignPage: await readFile(path.join(root, 'src/app/esign/page.tsx'), 'utf8'),
@@ -201,7 +202,7 @@ for (const [label, src, re] of interactionExpected) {
 const currentPassExpected = [
   ['product list segmented values', currentPassFiles.listRow, /className="dz-seg"/],
   ['detail offer one-line rows', currentPassFiles.offerPicker, /dz-offer-rows/],
-  ['intake support helper', currentPassFiles.intakeForm, /dz-form-hint/],
+  ['intake support helper', currentPassFiles.newIntakePanel, /dz-form-hint/],
   ['intake detail current work', currentPassFiles.intakeDetail, /dz-work-focus/],
   ['intake detail diagnostic disclosure', currentPassFiles.intakeDetail, /dz-support-section/],
   ['settlement axis separation', currentPassFiles.settlementPage, /dz-settle-axis/],

@@ -56,17 +56,13 @@ export async function WorkspaceScreen({ q }: { q: Q }) {
 async function IntakeWorkspace({ q }: { q: Q }) {
   const base = '/intake';
 
-  let products: CanonicalProduct[];
-  try { products = (await productList()).rows; }
-  catch { products = []; }
+  const products: CanonicalProduct[] = (await productList()).rows;
   /* 상품목록 계산(검색 · FilterSheet 축 · 즉시출고 퀵 필터 · 고른 상품)은 상품찾기(ProductsScreen)와
    * 같이 쓰는 한 곳(productList.ts)에서 — 화면마다 새로 짜지 않는다. */
   const { all, hits, readyCount, facets: 상품판축, sel, selOffers, selOffer } = buildProductList(products, q);
   const pst = sp(q.pst);
 
-  let intake: Awaited<ReturnType<typeof settlements.list>>;
-  try { intake = await settlements.list(); }
-  catch { intake = []; }
+  const intake: Awaited<ReturnType<typeof settlements.list>> = await settlements.list();
   const rows = intake.map((x) => x.row);
   const now = new Date(`${today()}T12:00:00+09:00`);
   /*
@@ -206,9 +202,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
  */
 async function PerformanceWorkspace({ q }: { q: Q }) {
   const base = '/intake';
-  let intake: Awaited<ReturnType<typeof settlements.list>>;
-  try { intake = await settlements.list(); }
-  catch { intake = []; }
+  const intake: Awaited<ReturnType<typeof settlements.list>> = await settlements.list();
   const rows = intake.map((x) => x.row);
   const now = new Date(`${today()}T12:00:00+09:00`);
   const itext = sp(q.wiq).trim().toLowerCase();

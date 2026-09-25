@@ -121,7 +121,12 @@ export class EsignService {
       updated_at: now,
       from_admin: true,
     });
-    return { id, code, created: result.created, sourceDigest: source.sourceDigest };
+    return {
+      id,
+      code: S(result.contract.contract_code) || code,
+      created: result.created,
+      sourceDigest: S(result.contract.contract_source_digest) || source.sourceDigest,
+    };
   }
 
   async createContract(input: CreateContractInput, actor = 'freepass-admin') {

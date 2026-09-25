@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'src/app/**'
+      - 'docs/ui/DESIGN-AUTHORITY.md'
+      - 'docs/ui/ADMIN-UI-UX-SSOT.md'
+      - 'docs/ui/admin-ui-ux-ssot.json'
+      - '.devcenter/design-authority.json'
+      - '.ai-core/ui-ux.consumer.json'
+      - 'scripts/check-ui-ssot.mts'
       - 'scripts/browser/**'
       - 'scripts/check-ui-browser.mjs'
       - 'scripts/check-ui-filter-browser.mjs'

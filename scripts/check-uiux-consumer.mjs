@@ -62,6 +62,23 @@ export function validateConsumer({root=ROOT,aiCorePath=process.env.AI_CORE_PATH|
   else if(sha256(approved.path)!==approved.sha256) errors.push('DESIGN_APPROVED_VISUAL_HASH_MISMATCH');
   if(approved.status!=='USER_APPROVED') errors.push('DESIGN_APPROVAL_STATUS_INVALID');
 
+  // 2026-09-25 user hard lock: only the current Admin SSOT may be visual authority.
+  if(approved?.path!=='docs/ui/ADMIN-UI-UX-SSOT.md') errors.push('DESIGN_APPROVED_VISUAL_NOT_CANONICAL_SSOT');
+  if(approved?.approved_on!=='2026-09-25') errors.push('DESIGN_APPROVAL_DATE_NOT_CURRENT_LOCK');
+  const machine=authority.machine_ssot;
+  if(machine?.path!=='docs/ui/admin-ui-ux-ssot.json'||!fs.existsSync(path.join(root,machine?.path??''))) errors.push('DESIGN_MACHINE_SSOT_MISSING');
+  else if(sha256(machine.path)!==machine.sha256) errors.push('DESIGN_MACHINE_SSOT_HASH_MISMATCH');
+  if(authority.design_lock?.policy!=='SINGLE_AUTHORITY'||authority.design_lock?.legacy_visuals!=='FORBIDDEN'||authority.design_lock?.fallback!=='FAIL_CHECK') {
+    errors.push('DESIGN_HARD_LOCK_INVALID');
+  }
+  const legacyRefs=[...(manifest.local_authorities??[]),...(manifest.feature_bindings??[]).flatMap((b)=>b.local_evidence??[])];
+  for(const ref of legacyRefs){
+    if(/docs\/ui\/mockups\//.test(ref)||/UI-HISTORY/.test(ref)||/6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d/.test(ref)) {
+      errors.push(`UIUX_LEGACY_VISUAL_REFERENCE_FORBIDDEN:${ref}`);
+    }
+  }
+  if(manifest.legacy_policy?.visual_sources!=='FORBIDDEN'||manifest.legacy_policy?.fallback!=='FAIL_CHECK') errors.push('UIUX_LEGACY_POLICY_INVALID');
+
   const base=spawnSync('git',['cat-file','-e',`${manifest.product.mapping_base_revision}^{commit}`],{cwd:root,encoding:'utf8',windowsHide:true});
   if(base.status!==0) errors.push('UIUX_MAPPING_BASE_REVISION_NOT_FOUND');
 

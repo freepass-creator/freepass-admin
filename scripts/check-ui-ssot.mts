@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import crypto from 'node:crypto';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -123,6 +124,79 @@ const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot
   listPresentation?: { authorityFeature?: string; modes?: Record<string,string> };
 };
 
+// ── 2026-09-25 hard design-authority lock ───────────────────────────────
+const designAuthorityPath = '.devcenter/design-authority.json';
+const designJobPath = '.devcenter/design-job.json';
+const consumerPath = '.ai-core/ui-ux.consumer.json';
+const designAuthorityText = await readFile(path.join(root, designAuthorityPath), 'utf8');
+const designJobText = await readFile(path.join(root, designJobPath), 'utf8');
+const consumerText = await readFile(path.join(root, consumerPath), 'utf8');
+const designAuthority = JSON.parse(designAuthorityText) as {
+  approved_visual?: { path?: string; sha256?: string; status?: string; approved_on?: string };
+  machine_ssot?: { path?: string; sha256?: string; status?: string };
+  design_lock?: { policy?: string; authority?: string; legacy_visuals?: string; fallback?: string };
+};
+const designJob = JSON.parse(designJobText) as { approved_design_refs?: string[]; quality?: Record<string, unknown> };
+const consumer = JSON.parse(consumerText) as { local_authorities?: string[]; feature_bindings?: Array<{ local_evidence?: string[] }>; legacy_policy?: Record<string, unknown> };
+const hashFile = async (p: string) => crypto.createHash('sha256').update(await readFile(path.join(root, p))).digest('hex');
+
+if (designAuthority.approved_visual?.path !== 'docs/ui/ADMIN-UI-UX-SSOT.md') {
+  errors.push('design authority: approved visual must be docs/ui/ADMIN-UI-UX-SSOT.md');
+} else if (designAuthority.approved_visual?.sha256 !== await hashFile('docs/ui/ADMIN-UI-UX-SSOT.md')) {
+  errors.push('design authority: approved visual hash drift');
+}
+if (designAuthority.approved_visual?.status !== 'USER_APPROVED' || designAuthority.approved_visual?.approved_on !== '2026-09-25') {
+  errors.push('design authority: current user approval lock missing');
+}
+if (designAuthority.machine_ssot?.path !== 'docs/ui/admin-ui-ux-ssot.json'
+  || designAuthority.machine_ssot?.sha256 !== await hashFile('docs/ui/admin-ui-ux-ssot.json')
+  || designAuthority.machine_ssot?.status !== 'CANONICAL') {
+  errors.push('design authority: machine SSOT binding mismatch');
+}
+if (designAuthority.design_lock?.policy !== 'SINGLE_AUTHORITY'
+  || designAuthority.design_lock?.authority !== 'docs/ui/DESIGN-AUTHORITY.md'
+  || designAuthority.design_lock?.legacy_visuals !== 'FORBIDDEN'
+  || designAuthority.design_lock?.fallback !== 'FAIL_CHECK') {
+  errors.push('design authority: hard lock policy mismatch');
+}
+
+for (const legacyPath of ['docs/ui/mockups', 'docs/ui/UI-HISTORY.md', 'docs/DESIGN-HUB-IMPLEMENTATION-2026-09-21.md', 'docs/DESIGN-HUB-MAPPING-2026-09-21.md']) {
+  try {
+    await access(path.join(root, legacyPath));
+    errors.push(`legacy visual source must not exist: ${legacyPath}`);
+  } catch {
+    // absence is the required state
+  }
+}
+const forbiddenVisualRefs = [/docs\/ui\/mockups\//, /docs\/ui\/UI-HISTORY\.md/, /6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d/];
+for (const [name, text] of [[designAuthorityPath, designAuthorityText], [designJobPath, designJobText], [consumerPath, consumerText]] as const) {
+  for (const re of forbiddenVisualRefs) if (re.test(text)) errors.push(`${name}: legacy visual reference resurrected: ${re}`);
+}
+if (!(consumer.local_authorities ?? []).includes('docs/ui/DESIGN-AUTHORITY.md')
+  || !(consumer.local_authorities ?? []).includes('docs/ui/ADMIN-UI-UX-SSOT.md')) {
+  errors.push('AI Core consumer: canonical design authority files missing');
+}
+for (const ref of [
+  ...(consumer.local_authorities ?? []),
+  ...(consumer.feature_bindings ?? []).flatMap((b) => b.local_evidence ?? []),
+]) {
+  if (/docs\/ui\/mockups\//.test(ref) || /UI-HISTORY/.test(ref)) errors.push(`AI Core consumer: forbidden legacy evidence ${ref}`);
+}
+if (consumer.legacy_policy?.visual_sources !== 'FORBIDDEN' || consumer.legacy_policy?.fallback !== 'FAIL_CHECK') {
+  errors.push('AI Core consumer: legacy visual policy must be FORBIDDEN/FAIL_CHECK');
+}
+if (!(designJob.approved_design_refs ?? []).includes('docs/ui/DESIGN-AUTHORITY.md')
+  || designJob.quality?.reject_legacy_visual_sources !== true
+  || designJob.quality?.require_single_design_authority !== true) {
+  errors.push('Design Hub job: single-authority lock missing');
+}
+if ((ssot as any).legacyPolicy?.visualInputsForbidden !== true
+  || (ssot as any).legacyPolicy?.fallback !== 'FAIL_CHECK'
+  || (ssot as any).rules?.legacyVisualInputsForbidden !== true
+  || (ssot as any).rules?.canonicalDesignAuthority !== 'docs/ui/DESIGN-AUTHORITY.md') {
+  errors.push('machine SSOT: hard legacy rejection missing');
+}
+
 const aiCoreExpected = [
   ['binding.upstream.repository', binding.upstream?.repository, 'freepass-creator/ai-core'],
   ['ssot.aiCore.upstreamRevision', ssot.aiCore?.upstreamRevision, binding.upstream?.revision],
@@ -227,12 +301,8 @@ if (/control 40|inside 40px search box/.test(JSON.stringify(ssot))) {
 }
 
 const uiSpec = await readFile(path.join(root, 'docs/ui/UI-SPEC.md'), 'utf8');
-const uiHistory = await readFile(path.join(root, 'docs/ui/UI-HISTORY.md'), 'utf8');
-if (/--h-ctl|\*\*30\*\*|\*\*38\*\*/.test(uiSpec)) {
-  errors.push('docs/ui/UI-SPEC.md: historical 30/38px spec leaked back into current spec');
-}
-if (!/HISTORICAL ONLY/.test(uiHistory)) {
-  errors.push('docs/ui/UI-HISTORY.md: missing historical-only warning');
+if (!/DESIGN-AUTHORITY\.md/.test(uiSpec) || /--h-ctl|\*\*30\*\*|\*\*38\*\*/.test(uiSpec)) {
+  errors.push('docs/ui/UI-SPEC.md: must be a canonical-authority pointer only');
 }
 
 const expected = [
@@ -260,6 +330,7 @@ if (errors.length) {
   console.log(`- checked UI files: ${coreFiles.length}`);
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- visual baseline: 18/14/12 · Sales control/action 44 · control radius 6 · gap 8 · panel radius 4');
+  console.log('- design authority: USER_LOCKED / SINGLE_AUTHORITY / legacy visuals forbidden');
   console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
   console.log(`- inline-style guard files: ${noInlineStyleFiles.length}`);

@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { buildConsentProfile } from '../../domain/esign/consents';
+import { FINALIZE_CLAIM_TTL, SUBMIT_CLAIM_TTL } from '../../domain/esign/claim-ttl';
 import { allowsInsuranceSide, findContractKind, type InsuranceSide } from '../../domain/esign/contract-kind';
 import {
   CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, applySignerRole, mergeRequiredDocuments, normalizeRequiredDocuments,
@@ -20,8 +21,6 @@ const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n :
 const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
-const SUBMIT_CLAIM_TTL = 90_000;
-const FINALIZE_CLAIM_TTL = 90_000;
 
 function uploadMagicOk(type: string, bytes: Uint8Array) {
   if (type === 'application/pdf') return bytes.length >= 5 && Buffer.from(bytes.subarray(0, 5)).toString('ascii') === '%PDF-';

@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { AGREEMENT_SECTIONS, AGREEMENT_TITLE } from '../../../domain/esign/agreement';
 import { applySignerRole } from '../../../domain/esign/required-documents';
+import { prepareUpload } from './prepare-upload';
 import type { EsignSession } from '../../../domain/esign/types';
 
 type View = {
@@ -192,7 +193,8 @@ export function SignClient({ token }: { token: string }) {
     if (!file) return;
     setBusy(true); setError('');
     try {
-      const fd = new FormData(); fd.set('kind', kind); fd.set('file', file);
+      const ready = await prepareUpload(file);   // 사진은 폰에서 줄여 보낸다(Vercel 본문 한도 4.5MB)
+      const fd = new FormData(); fd.set('kind', kind); fd.set('file', ready);
       await json('/api/esign/public/' + encodeURIComponent(token) + '/asset', { method: 'POST', body: fd });
       setUploaded((prev) => new Set([...prev, kind]));
     } catch (e) { setError((e as Error).message); }

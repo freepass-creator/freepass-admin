@@ -15,6 +15,7 @@ import { validateSubmission, type PublicSubmissionPayload } from '../../server/e
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
 import { isCompletePdfBytes } from '../../server/esign/pdf';
 import { signabilityProblem } from '../../domain/esign/signability';
+import { UPLOAD_MAX_BYTES, UPLOAD_MAX_LABEL } from '../../domain/esign/upload-limits';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -499,7 +500,7 @@ export class EsignService {
     if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) throw new Error('지금은 파일을 올릴 수 없습니다.');
     this.assertNotExpired(session);
     if (!allowedUploadKinds(session.snapshot.requiredDocuments).has(kind)) throw new Error('이 계약에서 받지 않는 파일 종류입니다.');
-    if (bytes.byteLength <= 0 || bytes.byteLength > 10 * 1024 * 1024) throw new Error('파일은 10MB 이하만 올릴 수 있습니다.');
+    if (bytes.byteLength <= 0 || bytes.byteLength > UPLOAD_MAX_BYTES) throw new Error('파일은 ' + UPLOAD_MAX_LABEL + ' 이하만 올릴 수 있습니다.');
     if (!/^image\/(jpeg|png|webp)$/.test(contentType) && contentType !== 'application/pdf') throw new Error('JPG·PNG·WEBP·PDF만 올릴 수 있습니다.');
     if (!uploadMagicOk(contentType, bytes)) throw new Error('파일 형식과 실제 내용이 맞지 않습니다.');
     const safe = kind.replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 80);

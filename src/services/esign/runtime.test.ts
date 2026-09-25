@@ -637,3 +637,15 @@ test('identity photos are frozen at submission: a photo swapped afterwards is ne
   assert.equal(renderer.calls,0);
   assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
 });
+
+test('server refuses uploads above the shared 4MB limit (below the Vercel 4.5MB body cap)', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  const big=new Uint8Array(4*1024*1024+1); big.set([0xff,0xd8,0xff],0);
+  await assert.rejects(()=>svc.upload(token,'id_card','big.jpg','image/jpeg',big),/4MB 이하/);
+  const ok=new Uint8Array(4*1024*1024); ok.set([0xff,0xd8,0xff],0);
+  await svc.upload(token,'id_card','ok.jpg','image/jpeg',ok);
+});

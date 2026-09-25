@@ -96,7 +96,8 @@ describe('환수 — 열어 둔다', () => {
 
 
 
-test('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
+it('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
+  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   const terminated = {
     ...row({ collected:true, paid:true, claimStage:'수금', payStage:'지급' }),
     contractTerminationContractId:'ctr_term_1',

@@ -133,3 +133,17 @@ describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나
     assert.equal(blockOf(r), null);
   });
 });
+
+
+test('계약취소 환수 축 상태를 ERP5 원장에서 그대로 읽는다', () => {
+  const { row } = toSettlementRow({
+    code:'stl_cancel_axis',
+    contractCancelledAt:Date.now(),
+    contractCancellationSupplierClawbackState:'COMPLETED',
+    contractCancellationChannelClawbackState:'REQUIRED',
+    contractCancellationNeedsClawback:true,
+  }, 'stl_cancel_axis');
+  assert.equal(row.contractCancellationSupplierClawbackState,'COMPLETED');
+  assert.equal(row.contractCancellationChannelClawbackState,'REQUIRED');
+  assert.equal(row.contractCancellationNeedsClawback,true);
+});

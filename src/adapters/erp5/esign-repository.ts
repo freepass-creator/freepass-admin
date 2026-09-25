@@ -3,13 +3,16 @@ import { getStorage } from 'firebase-admin/storage';
 import { erp5, erp5App, ERP5_PROJECT_ID } from './firestore';
 import { WriteDisabledError, writeEnabled } from './settlement-repository';
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
-import type { EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+import { withContractHandoffDigest } from '../../domain/esign/handoff';
+import { toSettlementRow } from './to-settlement';
 
 const CONTRACTS='contract';
 const SESSIONS='esign_session';
 const PRIVATE='esign_private';
 const EVENTS='esign_event';
 const LOCKS='esign_issue_lock';
+const INTAKES='settlement_rows';
 
 const mustWrite=()=>{if(!writeEnabled()) throw new WriteDisabledError();};
 const clean=<T extends Record<string,unknown>>(x:T)=>Object.fromEntries(Object.entries(x).filter(([,v])=>v!==undefined)) as T;
@@ -20,6 +23,31 @@ export class Erp5EsignRepository implements EsignRepository {
     return d.exists ? ({ id:d.id, ...d.data() } as Record<string,unknown>) : null;
   }
 
+  private handoffSource(id:string, raw:Record<string,unknown>):ContractHandoffSource{
+    const { row }=toSettlementRow(raw,id);
+    return withContractHandoffDigest({
+      intakeId:id,
+      customerName:String(row.customer??'').trim(),
+      vehicleName:String(row.model??'').trim(),
+      plate:row.plate,
+      supplierCode:row.supplierCode,
+      supplierName:row.supplier,
+      rent:row.rent,
+      termMonths:row.term,
+      deposit:row.deposit,
+      sourceProductId:row.catalogRef?.productId??null,
+      sourceProductVersion:row.catalogRef?.productVersion??null,
+      sourceOfferId:row.catalogRef?.offerId??null,
+      sourceSnapshotId:row.catalogRef?.sourceSnapshotId??null,
+      catalogSnapshot:(row.catalogSnapshot??null) as Record<string,unknown>|null,
+    });
+  }
+
+  async getIntakeContractSource(intakeId:string){
+    const d=await erp5().collection(INTAKES).doc(intakeId).get();
+    return d.exists ? this.handoffSource(d.id,d.data() as Record<string,unknown>) : null;
+  }
+
   async createContract(id:string,data:Record<string,unknown>){
     mustWrite();
     const ref=erp5().collection(CONTRACTS).doc(id);
@@ -27,6 +55,20 @@ export class Erp5EsignRepository implements EsignRepository {
       const d=await tx.get(ref);
       if(d.exists) throw new Error('같은 계약 ID가 이미 있습니다.');
       tx.create(ref,clean(data));
+    });
+  }
+
+  async createContractFromIntake(source:ContractHandoffSource,id:string,data:Record<string,unknown>){
+    mustWrite();
+    const db=erp5(), contractRef=db.collection(CONTRACTS).doc(id), intakeRef=db.collection(INTAKES).doc(source.intakeId);
+    return db.runTransaction(async tx=>{
+      const [existing,intake]=await Promise.all([tx.get(contractRef),tx.get(intakeRef)]);
+      if(existing.exists)return {created:false};
+      if(!intake.exists)throw new Error('접수를 찾을 수 없습니다.');
+      const current=this.handoffSource(intake.id,intake.data() as Record<string,unknown>);
+      if(current.sourceDigest!==source.sourceDigest)throw new Error('접수 정보가 변경되었습니다 — 다시 불러온 뒤 계약을 만들어 주세요.');
+      tx.create(contractRef,clean(data));
+      return {created:true};
     });
   }
 

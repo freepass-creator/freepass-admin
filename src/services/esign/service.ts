@@ -14,6 +14,7 @@ import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } fro
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
 import { isCompletePdfBytes } from '../../server/esign/pdf';
+import { signabilityProblem } from '../../domain/esign/signability';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -21,6 +22,7 @@ const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
 const SUBMIT_CLAIM_TTL = 90_000;
+const POST_SUBMISSION = new Set<string>(['pending_review', 'approving', 'signed']);
 const FINALIZE_CLAIM_TTL = 90_000;
 
 function uploadMagicOk(type: string, bytes: Uint8Array) {
@@ -401,6 +403,29 @@ export class EsignService {
       session.status = 'opened';
       session.openedAt = now;
     }
+    // 제출 뒤(검토·승인·완료)에는 링크 화면이 계약번호와 상태만 쓴다.
+    // 봉인 스냅샷(생년월일·면허·주소·CMS 계좌), 작성본(draft), 내부 경로·승인자는 링크로 내주지 않는다.
+    if (POST_SUBMISSION.has(session.status)) {
+      return {
+        session: {
+          id: session.id,
+          status: session.status,
+          submittedAt: session.submittedAt,
+          approvedAt: session.approvedAt,
+          snapshot: {
+            contractCode: session.snapshot.contractCode,
+            customerType: session.snapshot.customerType,
+            requiredDocuments: session.snapshot.requiredDocuments,
+            consentProfile: session.snapshot.consentProfile,
+          },
+        },
+        stage: esignStage(session),
+        rejectReason: '',
+        supplementItems: [],
+        uploadedKeys: [],
+        draft: null,
+      };
+    }
     const priv = await this.repo.getPrivate(session.id);
     const assetKeys = Object.keys((priv?.assets as Record<string, unknown>) || {});
     return {
@@ -527,6 +552,8 @@ export class EsignService {
         driverLicenseNo: result.license || undefined,
         signerName: result.signerName || undefined,
         signerRole: result.signerRole || undefined,
+        // 자동이체(CMS) 계좌는 검증만 하고 버리면 봉인본의 CMS 칸이 비어 「출금 동의」만 있는 계약서가 된다.
+        cms: result.cms || undefined,
         emergencyRelation: result.emergencyRelation,
         emergencyName: result.emergencyName,
         emergencyPhone: result.emergencyPhone,
@@ -605,6 +632,11 @@ export class EsignService {
     }
 
     try {
+      // 고객 제출 뒤 ERP 에서 계약이 취소·변경됐을 수 있다 — 봉인 전에 발행 때 기준으로 다시 본다.
+      // (확정 트랜잭션 안에서도 같은 검사를 한 번 더 한다: repo.finalizeSigned)
+      const signability = signabilityProblem(await this.repo.getContract(session.contractId), session.snapshot);
+      if (signability) throw new Error(signability);
+
       const priv = await this.repo.getPrivate(session.id);
       if (!priv || Number(priv.submittedAt || 0) <= 0) throw new Error('고객 제출 자료를 찾을 수 없습니다.');
 

@@ -478,3 +478,70 @@ test('esign finalization recovers when PDF is stored but DB finalization fails',
   assert.equal(repo.contract.get('c1')?.esign_document_sha256,stored.sha256);
   assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
 });
+
+test('CMS auto-debit account survives submission into the sealed snapshot, and the public link stops exposing PII', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',{...contract(),payment_method:'CMS 자동이체'});
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.consentProfile.cmsRequiredBeforeHandover,true);
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  await svc.progress(token,'summary');
+  await svc.progress(token,'document');
+  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
+  for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
+  await svc.saveDraft(token,{customer_address:'서울시 비밀로 1',cms_account_no:'110123456789'});
+
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시 비밀로 1',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    cms_holder_name:'홍길동',cms_holder_relation:'본인',cms_holder_phone:'01012345678',cms_bank:'신한은행',
+    cms_account_no:'110-123-456789',cms_holder_identifier:'830926',
+    uploaded_documents:required,
+    signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  const session=(await repo.getCurrentSession('c1'))!;
+  assert.equal(session.status,'pending_review');
+  const priv=repo.priv.get(session.id) as unknown as EsignPrivateSubmission;
+  assert.equal(priv.cms?.accountNo,'110123456789');
+  assert.equal(priv.cms?.bank,'신한은행');
+
+  // After submission the link returns only what the waiting/done screens need.
+  const view=await svc.publicView(token);
+  const exposed=JSON.stringify(view);
+  for(const secret of ['110123456789','서울시 비밀로 1','830926','11-11-111111-11','1983-09-26'])assert.equal(exposed.includes(secret),false,secret);
+  assert.equal(view.draft,null);
+  assert.equal(view.session.snapshot.contractCode,issued.session.snapshot.contractCode);
+
+  const approved=await svc.approve('c1','finalize_cms_1234567890abc','tester');
+  assert.equal(approved.session.status,'signed');
+  const sealed=(repo.sessions.get(session.id)!.signedSnapshot as {templateFields:Record<string,string>}).templateFields;
+  assert.equal(sealed.cms_account_no,'110123456789');
+  assert.equal(sealed.cms_bank,'신한은행');
+  assert.equal(sealed.cms_holder_identifier,'830926');
+  assert.equal(JSON.stringify(await svc.publicView(token)).includes('110123456789'),false);
+});
+
+test('approve refuses to seal a contract cancelled after the customer submitted', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  repo.contract.set('c1',{...repo.contract.get('c1')!,contract_status:'계약취소'});
+  await assert.rejects(()=>svc.approve('c1','finalize_cancelled_1234567890','tester'),/취소·철회된 계약/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.equal(repo.contract.get('c1')?.contract_status,'계약취소');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+});
+
+test('approve refuses to seal when contract terms changed after issue', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  repo.contract.set('c1',{...repo.contract.get('c1')!,rent_amount_snapshot:720000});
+  await assert.rejects(()=>svc.approve('c1','finalize_changed_1234567890','tester'),/월 대여료.*다시 발행/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});

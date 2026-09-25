@@ -21,12 +21,19 @@ export interface PolicyRequirement {
  */
 export interface ProductSearchQuery {
   supplierIds?: string[];
+  productKinds?: string[];
+  credits?: string[];
 
   originIds?: string[];
   manufacturerIds?: string[];
   modelIds?: string[];
   subModelIds?: string[];
   trimIds?: string[];
+
+  modelYears?: number[];
+  fuels?: string[];
+  /** 차량 자체의 현재 누적 주행거리. Offer의 annualMileageKm와 다른 축이다. */
+  vehicleMileageKm?: NumericRange;
 
   termMonths?: number[];
   monthlyRent?: NumericRange;

@@ -2123,3 +2123,68 @@
     font-weight: 600;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Embedded one-line offer selection list
+ * Content 내부의 기간별 대여료는 한 줄 비교/선택용 카드.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-offer-list {
+    display: grid;
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-offer-card {
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(64px, auto) minmax(120px, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--erp-sp-4);
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--erp-r-md);
+    background: var(--fp-component-surface);
+    color: var(--fp-text-strong);
+    text-decoration: none;
+    box-shadow: none;
+    transition:
+      background-color var(--fp-motion-state) var(--fp-motion-ease),
+      box-shadow var(--fp-motion-state) var(--fp-motion-ease),
+      transform var(--fp-motion-press) var(--fp-motion-ease);
+  }
+
+  .erp-std .erp-offer-card:hover {
+    background: var(--fp-surface-hover);
+    box-shadow: var(--fp-elevation-hover);
+  }
+
+  .erp-std .erp-offer-card[aria-current="true"] {
+    background: var(--erp-color-primary-weak);
+    box-shadow: inset 0 1px 2px rgba(29,78,216,.10);
+  }
+
+  .erp-std .erp-offer-term {
+    font-size: var(--erp-fs-body);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-offer-rent {
+    font-size: var(--erp-fs-body);
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-offer-conditions {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--fp-text-secondary);
+    font-size: var(--erp-fs-label);
+    font-weight: 400;
+    text-align: right;
+  }
+}

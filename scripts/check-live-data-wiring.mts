@@ -17,6 +17,7 @@ const esignService=await read('src/services/esign/service.ts');
 const server=await read('src/server/erp5.ts');
 const catalogServer=await read('src/server/freepass-data.ts');
 const catalogSwitch=await read('src/adapters/freepass-data/admin-catalog-reader.ts');
+const catalogClient=await read('src/adapters/freepass-data/admin-catalog-client.ts');
 const productRepo=await read('src/adapters/erp5/product-repository.ts');
 const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
 const intakeActions=await read('src/app/intake/actions.ts');
@@ -44,11 +45,15 @@ must(/const EVENTS='esign_event'/.test(esignRepo),'esign repository must persist
 must(/writeEnabled/.test(esignRepo),'esign writes must use the shared ERP5 write gate');
 must(/PUBLIC_BASE_URL/.test(esignService) && /new URL\(raw\)/.test(esignService),'esign issue must require an absolute public base');
 must(!/new Erp5ProductRepository\(\)/.test(server),'ERP5 workflow server must not own the Product Catalog reader');
-must(/new AdminCatalogSwitchboard\(legacyProducts\)/.test(catalogServer),'Catalog server must compose the FreePass Data AdminCatalogReader boundary');
+must(/new AdminCatalogSwitchboard\(legacyProducts,\s*freepassDataProducts\)/.test(catalogServer),'Catalog server must compose legacy + FreePass Data shadow readers behind AdminCatalogReader');
 must(/new Erp5ProductRepository\(\)/.test(catalogServer),'Catalog OBSERVE mode must keep the explicit legacy ERP5 bridge');
 must(/FREEPASS_DATA_ADMIN_CATALOG_READ_MODE/.test(catalogSwitch),'Admin Catalog switchboard must use the central FreePass Data read-mode key');
 must(/'OBSERVE'/.test(catalogSwitch),'Admin Catalog default stage must remain OBSERVE until cutover evidence exists');
-must(/FREEPASS_DATA_READ/.test(catalogSwitch) && /fallback하지 않았다/.test(catalogSwitch),'premature Data-read modes must fail closed without silent ERP5 fallback');
+must(/mode !== 'SHADOW_READ'/.test(catalogSwitch) && /compareAdminCatalogShadow/.test(catalogSwitch),'SHADOW_READ must compare Data independently while keeping legacy output');
+must(/FREEPASS_DATA_READ/.test(catalogSwitch) && /parity\/fallback\/readback/.test(catalogSwitch),'final Data-read modes must remain fail closed until cutover evidence exists');
+must(/freepass-admin-catalog/.test(catalogClient),'FreePass Data client must use the dedicated Admin consumer identity');
+must(/cache:\s*'no-store'/.test(catalogClient) && /AbortSignal\.timeout\(5_000\)/.test(catalogClient),'FreePass Data shadow client must be no-store and timeout bounded');
+must(/FREEPASS_DATA_ADMIN_CATALOG_TOKEN/.test(catalogClient),'FreePass Data Admin Catalog token binding missing');
 must(/new Erp5SettlementRepository\(\)/.test(server),'server must use Erp5SettlementRepository');
 must(/new Erp5ContractRepository\(\)/.test(server),'server must use Erp5ContractRepository');
 must(/collection\('products'\)/.test(productRepo),'product repository must read ERP5 products collection');
@@ -73,7 +78,7 @@ if(errors.length){
   process.exitCode=1;
 }else{
   console.log('LIVE DATA WIRING CHECK PASS');
-  console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE -> legacy ERP5 bridge until approved cutover)');
+  console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE default; SHADOW_READ compares Data but returns legacy; final cutover gated)');
   console.log('- intake + settlement -> Erp5SettlementRepository / settlement_rows');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
   console.log('- esign list -> Erp5ContractRepository / contract');

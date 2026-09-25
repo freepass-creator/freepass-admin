@@ -116,6 +116,50 @@ const priv = await esignRepository.getPrivate(session.id);
 const rerender = await esignFinalDocumentRenderer.render({ snapshot: session.snapshot, submission: priv!, signatureBytes: signaturePng(), sealHash: stored!.sealHash! });
 assert.equal(sha(rerender.bytes), stored?.documentSha256);
 
+// 7) Race: the contract is cancelled while the PDF is rendering (after the service-level check).
+//    The in-transaction re-check must refuse to sign; the orphan PDF stays but the session is not signed.
+{
+  const raceId = contractId + '-race';
+  await erp5().collection('contract').doc(raceId).set({
+    ...(await erp5().collection('contract').doc(contractId).get()).data(),
+    contract_code: 'FP-E2E-R-' + runId, contract_status: '계약대기', sign_status: '',
+  });
+  const cancellingRenderer = {
+    async render(input: Parameters<typeof esignFinalDocumentRenderer.render>[0]) {
+      const out = await esignFinalDocumentRenderer.render(input);
+      await erp5().collection('contract').doc(raceId).update({ contract_status: '계약취소' });
+      return out;
+    },
+  };
+  const raceSvc = new EsignService(esignRepository, esignAssets, cancellingRenderer);
+  const raceIssued = await raceSvc.issue(raceId, 'e2e');
+  const rs = raceIssued.session;
+  const rsig = await esignAssets.put('esign-private/' + rs.id + '/signature.png', signaturePng(), 'image/png');
+  const rid = await esignAssets.put('esign-private/' + rs.id + '/id.jpg', new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), 'image/jpeg');
+  const rself = await esignAssets.put('esign-private/' + rs.id + '/selfie.jpg', new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), 'image/jpeg');
+  const rdocs = [];
+  for (const d of rs.snapshot.requiredDocuments.filter(d => d.required)) {
+    const a = await esignAssets.put('esign-private/' + rs.id + '/doc-' + d.key + '.pdf', new Uint8Array(Buffer.from('%PDF-1.4\n' + d.key)), 'application/pdf');
+    rdocs.push({ key: d.key, path: a.path, sha256: a.sha256, label: d.label });
+  }
+  await esignRepository.putPrivate(rs.id, {
+    sessionId: rs.id, contractId: raceId, customerName: '홍길동', customerPhone: '01012345678', customerAddress: '서울',
+    emergencyRelation: '가족', emergencyName: '김가족', emergencyPhone: '01099998888',
+    consents: [...rs.snapshot.consentProfile.requiredKeys], consentTimes: {}, sectionConfirmations: {},
+    summaryConfirmedAt: submittedAt, agreementReadAt: submittedAt, signaturePath: rsig.path, signatureSha256: rsig.sha256,
+    supportingDocuments: rdocs, submittedAt,
+    assets: { id_card: { ...rid, name: 'id.jpg', contentType: 'image/jpeg' }, selfie: { ...rself, name: 'selfie.jpg', contentType: 'image/jpeg' } },
+  });
+  await esignRepository.updateSession(rs.id, { status: 'pending_review', submittedAt });
+  await assert.rejects(() => raceSvc.approve(raceId, 'finalize_e2e_race_1234567890', 'admin'), /취소·철회된 계약/);
+  const raced = await esignRepository.getSession(rs.id);
+  assert.equal(raced?.status, 'pending_review');
+  const raceContract = (await erp5().collection('contract').doc(raceId).get()).data()!;
+  assert.equal(raceContract.contract_status, '계약취소');
+  assert.notEqual(raceContract.sign_status, '서명완료');
+  console.log('race: cancelled during render -> refused in transaction, session back to pending_review');
+}
+
 if (process.env.OUT_PDF) writeFileSync(process.env.OUT_PDF, buf);
 console.log(JSON.stringify({ sessionId: session.id, path, size: buf.length, sha256: stored?.documentSha256, sealHash: stored?.sealHash, generation: meta.generation, winner: winnerId }, null, 1));
 console.log('E2E EMULATOR OK');

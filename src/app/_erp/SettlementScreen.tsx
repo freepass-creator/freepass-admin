@@ -168,12 +168,17 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                     <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
                       title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
                       subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`} steps={{ labels: flow, at }}
-                      meta={`수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`}
+                      meta={tab === 'claim'
+                        ? `지급 수수료 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`
+                        : `청구 수수료 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`}`}
                       facts={[
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
                       ]}
-                      amount={`${tab === 'claim' ? '청구' : '지급'} ${amount === null ? '—' : `${won0(amount)}원`}`} unit="" />
+                      amount={tab === 'claim'
+                        ? `청구 수수료 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`}`
+                        : `지급 수수료 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`}
+                      unit="" />
                   );
                 })}
               </RowCards>

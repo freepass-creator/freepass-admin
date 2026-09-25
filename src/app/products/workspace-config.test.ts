@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Offer } from '../../domain/product/types';
-import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금 } from './workspace-config';
+import { lead, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 요금맞음 } from './workspace-config';
 
 const offer = (id: string, monthlyRent: number): Offer => ({
   id,
@@ -110,4 +110,13 @@ test('21-year-old search includes products with lower minimum driver age', () =>
   assert.equal(productMeetsSearchRequirements({ perks: ['만20세'] }, q.requirements), true);
   assert.equal(productMeetsSearchRequirements({ perks: ['만21세'] }, q.requirements), true);
   assert.equal(productMeetsSearchRequirements({ perks: [] }, q.requirements), false);
+});
+
+
+test('supplier facet is Offer-level so one Product can preserve multiple suppliers', () => {
+  const a: Offer = { ...offer('a', 500_000), supplierId: 'SUP-A', supplierName: '공급사 A' };
+  const b: Offer = { ...offer('b', 510_000), supplierId: 'SUP-B', supplierName: '공급사 B' };
+  assert.equal(요금맞음.supplier(a, '공급사 A'), true);
+  assert.equal(요금맞음.supplier(a, '공급사 B'), false);
+  assert.equal(요금맞음.supplier(b, '공급사 B'), true);
 });

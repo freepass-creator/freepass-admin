@@ -142,8 +142,10 @@ test('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () =
     contractTerminationDate:'2026-09-25',
     contractTerminationReason:'중도해지',
     contractTerminationOperationId:'terminate_1234567890abcdef',
+    contractTerminationContractId:'ctr_term_1',
   }, 'stl_term');
   assert.equal(row.contractTerminationDate,'2026-09-25');
   assert.equal(row.contractTerminationReason,'중도해지');
   assert.equal(row.contractTerminationOperationId,'terminate_1234567890abcdef');
+  assert.equal(row.contractTerminationContractId,'ctr_term_1');
 });

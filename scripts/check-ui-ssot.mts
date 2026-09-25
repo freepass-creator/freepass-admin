@@ -132,6 +132,9 @@ for (const [name, actual, want] of aiCoreExpected) {
   if (actual !== want) errors.push(`AI Core UI binding mismatch: ${name}=${String(actual)}; expected ${String(want)}`);
 }
 
+const primitives = await readFile(path.join(root, 'src/app/_design/Primitives.tsx'), 'utf8');
+if (!/aria-live=\{tone === 'ok' \? 'polite'/.test(primitives)) errors.push('Notice: success state must use polite live region');
+
 const listRow = await readFile(path.join(root, 'src/app/_design/ListRow.tsx'), 'utf8');
 const offerPicker = await readFile(path.join(root, 'src/app/_design/OfferPicker.tsx'), 'utf8');
 if (!/data-ai-feature="data\.list-presentation"/.test(listRow)) errors.push('ListRow: missing AI Core data.list-presentation binding');
@@ -146,6 +149,17 @@ const currentPassFiles = {
   settlementPage: await readFile(path.join(root, 'src/app/settlement/page.tsx'), 'utf8'),
   esignPage: await readFile(path.join(root, 'src/app/esign/page.tsx'), 'utf8'),
 };
+
+const routeState = await readFile(path.join(root, 'src/app/_design/RouteState.tsx'), 'utf8');
+for (const route of ['products', 'intake', 'settlement', 'esign']) {
+  const loading = await readFile(path.join(root, 'src/app', route, 'loading.tsx'), 'utf8');
+  const error = await readFile(path.join(root, 'src/app', route, 'error.tsx'), 'utf8');
+  if (!/RouteLoading/.test(loading)) errors.push(`${route}: missing shared route loading state`);
+  if (!/RouteError/.test(error) || !/reset/.test(error)) errors.push(`${route}: missing retryable route error state`);
+}
+if (!/aria-busy="true"/.test(routeState)) errors.push('RouteState: loading must expose aria-busy');
+if (!/role="alert"/.test(routeState) || !/다시 시도/.test(routeState)) errors.push('RouteState: fatal error must expose alert + retry');
+if (!/<ActionBar>/.test(routeState)) errors.push('RouteState: retry must use shared ActionBar');
 
 const interactionFiles = {
   filterSheet: await readFile(path.join(root, 'src/app/_design/FilterSheet.tsx'), 'utf8'),
@@ -179,6 +193,9 @@ const currentPassExpected = [
   ['settlement period context', currentPassFiles.settlementPage, /dz-settle-period/],
   ['esign admin stage mapping', currentPassFiles.esignPage, /type 관리자단계/],
   ['esign current stage focus', currentPassFiles.esignPage, /dz-esign-focus/],
+  ['intake save disabled reason binding', currentPassFiles.intakeForm, /aria-describedby=\{disabled \? 'intake-write-disabled'/],
+  ['intake blocked action reason', currentPassFiles.intakeDetail, /intake-block-reason/],
+  ['settlement issue blocked reason', currentPassFiles.settlementPage, /issue-block-reason/],
 ] as const;
 
 for (const [label, src, re] of currentPassExpected) {

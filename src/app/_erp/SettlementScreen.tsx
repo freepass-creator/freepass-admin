@@ -167,11 +167,8 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                   return (
                     <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
                       title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
-                      subId={txt(r.plate)} sub={txt(r.model)} steps={{ labels: flow, at }}
-                      meta={`${txt(r.product)} · ${r.term ?? '—'}개월`}
-                      lines={[
-                        `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
-                      ]}
+                      subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`} steps={{ labels: flow, at }}
+                      meta={`수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`}
                       facts={[
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],

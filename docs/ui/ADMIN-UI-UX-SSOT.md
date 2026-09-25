@@ -772,7 +772,9 @@ Desktop:
 
 Keyboard:
 - FilterSheet는 열릴 때 dialog 내부로 focus가 들어간다.
-- FilterSheet의 Tab/Shift+Tab은 dialog 내부에서 순환하고 Esc로 닫힌 뒤 trigger로 focus가 돌아간다.
+- Desktop FilterSheet는 검색창 아래 **non-modal popover**이므로 Tab 이동을 가두지 않는다.
+- Mobile FilterSheet는 backdrop이 있는 **modal sheet**이므로 Tab/Shift+Tab을 내부에서 순환시킨다.
+- 둘 다 Esc로 닫히고 trigger로 focus가 돌아간다.
 - DetailTabs는 roving `tabIndex`를 사용하고 **ArrowLeft / ArrowRight / Home / End**로 이동한다.
 - focus-visible은 기존 전역 규칙을 유지한다.
 

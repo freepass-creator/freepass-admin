@@ -10,16 +10,12 @@ import { esignEnabled, isEsignPath } from './server/esign-scope';
  */
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  /* ★전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED=on 전에는 화면·고객 링크·API 모두 닫는다(src/server/esign-scope.ts) */
-  if (!esignEnabled() && isEsignPath(path)) {
-    if (path === '/esign' && req.method === 'GET') { const to = req.nextUrl.clone(); to.pathname = '/intake'; to.search = ''; return NextResponse.redirect(to); }
-    return path.startsWith('/api/')
-      ? NextResponse.json({ error: '전자계약은 현재 운영 범위가 아닙니다' }, { status: 404 })
-      : new NextResponse('Not Found', { status: 404 });
-  }
-  if (!authEnforced() || isPublicPath(path)) return NextResponse.next();
+  /* ★전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED=on 전에는 화면·고객 링크·API 모두 닫는다(src/server/esign-scope.ts).
+   *   로그인 문이 먼저다: 관리자 전용 전자계약 API 는 로그인 없으면 지금처럼 401, 로그인했으면 404. */
+  const esignClosed = !esignEnabled() && isEsignPath(path);
+  if (!authEnforced() || isPublicPath(path)) return esignClosed ? closedEsign(req, path) : NextResponse.next();
   const user = await verifySession(req.cookies.get(AUTH_COOKIE)?.value);
-  if (user) return NextResponse.next();
+  if (user) return esignClosed ? closedEsign(req, path) : NextResponse.next();
   if (req.method !== 'GET' || path.startsWith('/api/')) {
     return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
   }
@@ -27,6 +23,17 @@ export async function proxy(req: NextRequest) {
   to.pathname = '/login';
   to.search = `?next=${encodeURIComponent(path + req.nextUrl.search)}`;
   return NextResponse.redirect(to);
+}
+
+/** 닫힌 전자계약 — 관리자 목록은 접수로 돌려보내고, 고객 링크·API 는 없는 주소로 답한다 */
+function closedEsign(req: NextRequest, path: string) {
+  if (path === '/esign' && req.method === 'GET') {
+    const to = req.nextUrl.clone(); to.pathname = '/intake'; to.search = '';
+    return NextResponse.redirect(to);
+  }
+  return path.startsWith('/api/')
+    ? NextResponse.json({ error: '전자계약은 현재 운영 범위가 아닙니다' }, { status: 404 })
+    : new NextResponse('Not Found', { status: 404 });
 }
 
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };

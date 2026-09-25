@@ -3087,3 +3087,28 @@ Visual QA:
 - 같은 상태를 Web과 Mobile에서 다른 색으로 표현하지 않는다.
 - 상태타일이 있으면 Main 옆 Badge는 기본적으로 중복 표시하지 않는다.
 - 상품처럼 상태타일이 아닌 사진 visual에서는 필요 시 Badge를 사용할 수 있다.
+
+# 73. Detail information rows
+
+목록은 3줄 scan card, 상세는 key/value 정보행으로 역할을 분리한다.
+
+Desktop 상세 정보행:
+- row min-height: 36px
+- label: 12px / 400 / muted / left
+- value: 14px / 500 / strong / right
+- label/value gap: 12px
+- money/number: tabular-nums
+- 긴 값: 한 줄 ellipsis
+- 카드 내부 divider는 기본적으로 사용하지 않는다
+
+금액:
+- 상세에서는 정확 원 단위
+- 단위 `원`을 생략하지 않는다
+- 보증금/월 대여료/수수료/정산금액은 같은 정확금액 문법 사용
+
+시각 identity:
+- 상품 상세도 목록과 동일하게 실제 차량사진 우선
+- 사진이 없을 때만 차량 아이콘 fallback
+
+목표:
+> 목록에서는 빠르게 고르고, 상세에서는 같은 정렬 규칙으로 정확히 읽는다.

@@ -189,6 +189,82 @@ export class Erp5EsignRepository implements EsignRepository {
     });
   }
 
+  async cancelSignedContract(contractId:string,reason:string,actor:string){
+    mustWrite();
+    const why=reason.trim();
+    if(!why)throw new Error('계약 취소 사유를 적어 주세요.');
+    const db=erp5(), contractRef=db.collection(CONTRACTS).doc(contractId);
+    return db.runTransaction(async tx=>{
+      const contractDoc=await tx.get(contractRef);
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const contractRaw=contractDoc.data() as Record<string,unknown>;
+      const sessionId=String(contractRaw.esign_id??'').trim();
+      if(!sessionId)throw new Error('전자계약 세션이 없습니다.');
+      const sessionRef=db.collection(SESSIONS).doc(sessionId);
+      const sessionDoc=await tx.get(sessionRef);
+      if(!sessionDoc.exists)throw new Error('전자계약 세션을 찾을 수 없습니다.');
+      const session={id:sessionDoc.id,...sessionDoc.data()} as EsignSession;
+      if(session.status!=='signed')throw new Error('서명완료된 계약만 계약 취소 절차를 사용할 수 있습니다.');
+
+      const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
+      if(!sourceIntakeId)throw new Error('계약의 원본 접수 연결이 없습니다.');
+      const intakeRef=db.collection(INTAKES).doc(sourceIntakeId);
+      const intakeDoc=await tx.get(intakeRef);
+      if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      const intake=intakeDoc.data() as Record<string,unknown>;
+
+      const alreadyAt=Number(intake.contractCancelledAt??0);
+      if(alreadyAt>0){
+        return {
+          cancelled:false,
+          needsClawback:Boolean(intake.contractCancellationNeedsClawback),
+          session,
+        };
+      }
+
+      const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v===1;
+      const S=(v:unknown)=>String(v??'').trim();
+      const moneyMoved=B(intake.collected)||B(intake.paid)
+        || Number(intake.collectedAmt??0)>0||Number(intake.paidAmt??0)>0;
+      const financialStarted=moneyMoved
+        || B(intake.billed)||B(intake.invoiceIssued)||B(intake.supplierOk)||B(intake.channelOk)
+        || ['청구','정정','확인','수금'].includes(S(intake.claimStage))
+        || ['통보','정정','확인','지급'].includes(S(intake.payStage));
+      const needsClawback=moneyMoved;
+      const now=Date.now();
+
+      tx.update(contractRef,{
+        contract_status:'계약취소',
+        contract_cancelled_at:now,
+        contract_cancel_reason:why,
+        updated_at:now,
+      });
+      tx.update(intakeRef,{
+        contractCancelledAt:now,
+        contractCancellationReason:why,
+        contractCancellationNeedsClawback:needsClawback,
+        ...(financialStarted?{}:{settleExclude:true}),
+        updatedAt:now,
+        stateAt:new Date(now).toISOString(),
+      });
+
+      const settlementEventRef=db.collection('settlement_events').doc(
+        intakeEventDocId(intake.plate,intake.sourceProductId,intake.receivedAt,intake.intakeRequestId,intake.intakeIdentityMode),
+      );
+      const settlementEventKey='aud_contract_cancel_'+createHash('sha256').update(contractId+'|'+why).digest('hex').slice(0,16);
+      tx.set(settlementEventRef,{[settlementEventKey]:{
+        at:now,by:actor,field:'계약취소',from:'false',to:'true',reason:why,contractId,sessionId,needsClawback,
+      }},{merge:true});
+
+      const eventRef=db.collection(EVENTS).doc(
+        'evt_'+createHash('sha256').update(contractId+'|cancel|'+why).digest('hex').slice(0,24),
+      );
+      tx.set(eventRef,{contractId,sessionId,type:'contract_cancelled',by:actor,at:now,detail:{reason:why,needsClawback}},{merge:false});
+
+      return {cancelled:true,needsClawback,session};
+    });
+  }
+
   async finalizeSigned(
     sessionId:string,
     finalizationId:string,

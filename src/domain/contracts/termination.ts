@@ -12,6 +12,13 @@ const DAY=/^\d{4}-\d{2}-\d{2}$/;
 const S=(v:unknown)=>String(v??'').trim();
 const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v==='참'||v===1;
 
+// Reject calendar overflow (for example, February 30) instead of normalizing it.
+function isCalendarDay(value: string): boolean {
+  if(!DAY.test(value)||Number(value.slice(0,4))<1)return false;
+  const ms=Date.parse(`${value}T00:00:00.000Z`);
+  return Number.isFinite(ms)&&new Date(ms).toISOString().slice(0,10)===value;
+}
+
 export function planContractTermination(
   contract: Record<string, unknown>,
   intake: Record<string, unknown>,
@@ -20,8 +27,13 @@ export function planContractTermination(
 ): ContractTerminationPlan {
   const reason=input.reason.trim();
   if(!reason)return {ok:false,error:'계약해지 사유를 적어 주세요.'};
-  if(!DAY.test(input.effectiveDate))return {ok:false,error:'계약해지일은 YYYY-MM-DD 입니다.'};
-  const today=new Date(nowMs+9*3600_000).toISOString().slice(0,10);
+  if(!isCalendarDay(input.effectiveDate))return {ok:false,error:'계약해지일은 YYYY-MM-DD 형식의 유효한 날짜여야 합니다.'};
+  const now=new Date(nowMs);
+  const localNow=new Date(nowMs+9*3600_000);
+  if(!Number.isFinite(nowMs)||!Number.isFinite(now.getTime())||!Number.isFinite(localNow.getTime())){
+    return {ok:false,error:'계약해지 처리 시각이 올바르지 않습니다. 다시 시도해 주세요.'};
+  }
+  const today=localNow.toISOString().slice(0,10);
   if(input.effectiveDate>today)return {ok:false,error:`계약해지일은 오늘(${today})보다 뒤일 수 없습니다.`};
   if(!/^[A-Za-z0-9_-]{16,128}$/.test(input.operationId))return {ok:false,error:'계약해지 요청 식별자가 올바르지 않습니다.'};
 
@@ -34,8 +46,11 @@ export function planContractTermination(
   }
 
   const deliveredAt=S(intake.deliveredAt);
-  if(!B(intake.delivered)||!DAY.test(deliveredAt)){
+  if(!B(intake.delivered)){
     return {ok:false,error:'인도 전 계약은 계약해지가 아니라 계약취소로 처리합니다.'};
+  }
+  if(!isCalendarDay(deliveredAt)){
+    return {ok:false,error:'인도일이 올바르지 않습니다 — 인도 기록을 먼저 확인해 주세요.'};
   }
   if(input.effectiveDate<deliveredAt){
     return {ok:false,error:`계약해지일은 인도일(${deliveredAt})보다 빠를 수 없습니다.`};
@@ -67,7 +82,7 @@ export function planContractTermination(
       contractTerminationReason:reason,
       contractTerminationOperationId:input.operationId,
       updatedAt:nowMs,
-      stateAt:new Date(nowMs).toISOString(),
+      stateAt:now.toISOString(),
     },
   };
 }

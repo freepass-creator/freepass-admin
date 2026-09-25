@@ -210,9 +210,13 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
   current!.submittedAt=Date.now();
 
   const signatureAsset=await assets.put('sig.png',new Uint8Array([137,80,78,71,13,10,26,10]),'image/png');
-  const requiredDocs=snapshot.requiredDocuments.filter(d=>d.required).map(d=>({
-    key:d.key,path:'doc/'+d.key,sha256:'sha-'+d.key,label:d.label,
-  }));
+  const idCard=await assets.put('id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const selfie=await assets.put('selfie.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const requiredDocs=[];
+  for(const d of snapshot.requiredDocuments.filter(d=>d.required)){
+    const a=await assets.put('doc/'+d.key,new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)),'application/pdf');
+    requiredDocs.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
+  }
   repo.priv.set(current!.id,{
     sessionId:current!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
     customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
@@ -220,6 +224,7 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
     signaturePath:signatureAsset.path,signatureSha256:signatureAsset.sha256,
     supportingDocuments:requiredDocs,submittedAt:Date.now(),
+    assets:{id_card:{...idCard,name:'id.jpg',contentType:'image/jpeg'},selfie:{...selfie,name:'selfie.jpg',contentType:'image/jpeg'}},
   });
 
   const operation='finalize_1234567890abcdef';

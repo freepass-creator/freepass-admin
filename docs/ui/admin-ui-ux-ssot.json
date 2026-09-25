@@ -1468,5 +1468,27 @@
     "neutral": "grey",
     "duplicateBadgeWhenTilePresent": false,
     "rule": "Same semantic state uses the same tile tone across web and mobile."
+  },
+  "detailInformationRows": {
+    "desktopRowMinHeightPx": 36,
+    "label": {
+      "fontPx": 12,
+      "weight": 400,
+      "color": "muted",
+      "align": "left"
+    },
+    "value": {
+      "fontPx": 14,
+      "weight": 500,
+      "color": "strong",
+      "align": "right"
+    },
+    "gapPx": 12,
+    "wrap": false,
+    "overflow": "ellipsis",
+    "numericVariant": "tabular-nums",
+    "money": "exact-won-with-unit",
+    "productVisual": "photo-first-icon-fallback",
+    "rule": "List scans; detail reads exact key/value data with shared alignment."
   }
 }

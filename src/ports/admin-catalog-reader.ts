@@ -24,6 +24,21 @@ export type AdminCatalogReceipt = {
     mapped: number;
     warnings: number;
   };
+  freepass?: {
+    releaseId: string;
+    revision: number;
+    dataDigest: string;
+    policyParity: 'COMPLETE' | 'INCOMPLETE';
+    rows: number;
+  };
+  shadow?: {
+    status: 'MATCH' | 'MISMATCH' | 'HOLD';
+    comparedAt: string;
+    missingInFreePass: number;
+    extraInFreePass: number;
+    differentProducts: number;
+    reason?: string;
+  };
 };
 
 export type AdminCatalogListResult = {

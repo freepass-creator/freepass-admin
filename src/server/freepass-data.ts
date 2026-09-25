@@ -9,6 +9,7 @@
  * Do not move intake/settlement/e-sign workflow ownership into this module.
  */
 import { AdminCatalogSwitchboard } from '../adapters/freepass-data/admin-catalog-reader';
+import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
@@ -23,7 +24,8 @@ const g = globalThis as unknown as {
 };
 
 export const legacyProducts = new Erp5ProductRepository();
-export const adminCatalog = new AdminCatalogSwitchboard(legacyProducts);
+export const freepassDataProducts = new FreePassDataAdminCatalogClient();
+export const adminCatalog = new AdminCatalogSwitchboard(legacyProducts, freepassDataProducts);
 
 const TTL = 60_000;
 

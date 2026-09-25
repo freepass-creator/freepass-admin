@@ -54,11 +54,21 @@ export function nextInvoiceNo(month: string, axis: Axis, taken: readonly string[
   return head + String((used.length ? Math.max(...used) : 0) + 1).padStart(3, '0');
 }
 
+export interface InvoiceRevision {
+  revision: number;
+  supply: number; vat: number; total: number; lines: number; clawback: number;
+  issuedAt: number;
+  snapshot?: { lines: unknown[]; clawbacks: unknown[] };
+  response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] } | null;
+}
+
 export interface IssuedInvoice {
   key: string; invoiceNo: string; month: string; axis: Axis; party: string;
   supply: number; vat: number; total: number; lines: number; codes: string[];
   /** 이 장에서 뺀 환수(공급가) — 환수는 «반대 부호의 한 줄» 이다 */
   clawback: number;
+  revision?: number;
+  history?: InvoiceRevision[];
   issuedAt: number; issuedBy: string;
   /* ── 청구 링크 (claim-link.ts) — 저장소가 채운다 ── */
   /** 상대 거래처 — 공급사/영업채널 코드 · 등록 상호 · 사업자등록번호(발행 때 굳힘) */

@@ -35,7 +35,10 @@ jobs:
         run: npm ci
 
       - name: Product finder contract
-        run: npx tsx --test src/domain/search/__tests__/search-contract.test.ts
+        run: >
+          npx tsx --test
+          src/domain/search/__tests__/search-contract.test.ts
+          src/app/products/workspace-config.test.ts
 
       - name: Intake / performance / settlement / clawback
         run: >

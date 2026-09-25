@@ -9,6 +9,7 @@ import { withContractHandoffDigest } from '../../domain/esign/handoff';
 import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
 import { finalizationBlockReason } from '../../domain/esign/finalization-gate';
+import { claimIsFresh, FINALIZE_CLAIM_TTL, SUBMIT_CLAIM_TTL } from '../../domain/esign/claim-ttl';
 import { contractExitDecision } from '../../domain/esign/contract-exit';
 
 const CONTRACTS='contract';
@@ -308,10 +309,14 @@ export class Erp5EsignRepository implements EsignRepository {
         throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
       }
 
-      if(session?.status==='approving')throw new Error('전자계약 승인 처리 중입니다 — 승인 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
-      if(session?.status==='submitting')throw new Error('고객 제출 처리 중입니다 — 제출 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
-
       const now=Date.now();
+      if(session?.status==='approving' && claimIsFresh(session.approvingAt,now,FINALIZE_CLAIM_TTL)){
+        throw new Error('전자계약 승인 처리 중입니다 — 승인 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
+      }
+      if(session?.status==='submitting' && claimIsFresh(session.submittingAt,now,SUBMIT_CLAIM_TTL)){
+        throw new Error('고객 제출 처리 중입니다 — 제출 처리가 끝난 뒤 계약취소를 다시 실행해 주세요.');
+      }
+
       const signedDocumentPreserved=session?.status==='signed';
       const revokeSession=!!session && !['signed','revoked'].includes(session.status);
 

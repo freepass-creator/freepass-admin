@@ -87,6 +87,9 @@ const responsiveCssExpected = [
   ['find list desktop card minimum 360px', /workspace\[data-mode="find"\][\s\S]*?minmax\(360px,\s*1fr\)/],
   ['find list mobile collapses to one shrinkable column', /workspace\[data-mode="find"\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/],
   ['three-action bar uses 3-3-4', /grid-template-columns:\s*minmax\(0,\s*3fr\)\s+minmax\(0,\s*3fr\)\s+minmax\(0,\s*4fr\)/],
+  ['focused mobile controls avoid sticky action bar', /scroll-margin-block-end:\s*calc\(var\(--ui-action-h\)/],
+  ['high zoom collapses summary to one column', /@media \(max-width:\s*340px\)[\s\S]*?\.summary-grid[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/],
+  ['action bar treats 44px as minimum height', /\.dz-bar-go[\s\S]*?min-height:\s*var\(--ui-action-h\)[\s\S]*?height:\s*auto/],
 ] as const;
 for (const [label, re] of responsiveCssExpected) {
   if (!re.test(cssFinal)) errors.push(`responsive UI regression: missing ${label}`);
@@ -143,6 +146,28 @@ const currentPassFiles = {
   settlementPage: await readFile(path.join(root, 'src/app/settlement/page.tsx'), 'utf8'),
   esignPage: await readFile(path.join(root, 'src/app/esign/page.tsx'), 'utf8'),
 };
+
+const interactionFiles = {
+  filterSheet: await readFile(path.join(root, 'src/app/_design/FilterSheet.tsx'), 'utf8'),
+  detailTabs: await readFile(path.join(root, 'src/app/_design/DetailTabs.tsx'), 'utf8'),
+  moneyForm: await readFile(path.join(root, 'src/app/intake/MoneyForm.tsx'), 'utf8'),
+  lifeForms: await readFile(path.join(root, 'src/app/settlement/LifeForms.tsx'), 'utf8'),
+};
+
+const interactionExpected = [
+  ['filter dialog aria-modal', interactionFiles.filterSheet, /aria-modal="true"/],
+  ['filter dialog focus trap', interactionFiles.filterSheet, /e\.key !== 'Tab'/],
+  ['filter dialog focus entry', interactionFiles.filterSheet, /focusables\(\)\[0\]\?\.focus/],
+  ['detail tabs roving tabindex', interactionFiles.detailTabs, /tabIndex=\{tab === 'summary' \? 0 : -1\}/],
+  ['detail tabs arrow navigation', interactionFiles.detailTabs, /ArrowLeft.*ArrowRight.*Home.*End/s],
+  ['intake validation live region', currentPassFiles.intakeForm, /role="alert" aria-live="assertive"/],
+  ['money validation live region', interactionFiles.moneyForm, /role="alert" aria-live="assertive"/],
+  ['settlement validation live region', interactionFiles.lifeForms, /role="alert" aria-live="assertive"/],
+  ['settlement compact visible labels', interactionFiles.lifeForms, /className="dz-side-field"/],
+] as const;
+for (const [label, src, re] of interactionExpected) {
+  if (!re.test(src)) errors.push(`accessibility regression: missing ${label}`);
+}
 
 const currentPassExpected = [
   ['product list segmented values', currentPassFiles.listRow, /className="dz-seg"/],

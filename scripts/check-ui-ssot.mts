@@ -644,6 +644,22 @@ for (const [re, label] of geometryContractBaseline) {
   if (!re.test(target)) errors.push(`geometry contract missing: ${label}`);
 }
 
+const cardLineContractBaseline = [
+  [/2026-09-25 — Card line contract/, 'desktop card line contract block'],
+  [/--fp-card-line-h:\s*20px/, 'desktop card line height 20'],
+  [/--fp-card-line-gap:\s*2px/, 'desktop card line gap 2'],
+  [/grid-auto-rows:\s*var\(--fp-card-line-h\)/, 'desktop compact card fixed line rows'],
+  [/Card line contract \(mobile\/live\)/, 'mobile card line contract block'],
+  [/--ui-card-line-h:\s*20px/, 'mobile card line height 20'],
+  [/--ui-card-line-gap:\s*2px/, 'mobile card line gap 2'],
+  [/card line-height mismatch/, 'visual QA card line-height guard'],
+  [/card line wrapped or grew vertically/, 'visual QA card wrap guard'],
+] as const;
+for (const [re, label] of cardLineContractBaseline) {
+  const target = /visual QA/.test(label) ? visualQa : `${desktopCss}\n${cssFinal}`;
+  if (!re.test(target)) errors.push(`card line contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

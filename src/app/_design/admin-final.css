@@ -64,6 +64,10 @@
 .fn-main .workspace .summary-grid dd { min-width: 0; }
 .fn-main .workspace .summary-grid dd { overflow-wrap: anywhere; }
 .fn-main .workspace .dz-bar-go > * { min-width: 0; }
+/* ActionBar 3개 — 사용자 공통 규격 3:3:4. 기존 2개 3:7 규칙은 globals의 현행 계약을 유지한다. */
+.fn-main .workspace .dz-bar-go:has(> :nth-child(3)):has(> .primary) {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 4fr);
+}
 
 /* 상품찾기 넓은 목록: 1280에서도 두 카드가 설 수 있고 360에서는 400px 고정트랙이 생기지 않는다. */
 @media (min-width: 901px) {

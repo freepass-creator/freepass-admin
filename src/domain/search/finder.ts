@@ -217,3 +217,88 @@ export function findProducts(
   }
   return [...exact,...partial];
 }
+
+
+export const FINDER_SORTS = [
+  { key:'popular', label:'인기순' },
+  { key:'asc', label:'낮은 대여료순' },
+  { key:'desc', label:'높은 대여료순' },
+  { key:'dep', label:'보증금 낮은순' },
+  { key:'year', label:'연식 최신순' },
+  { key:'mile', label:'주행거리 짧은순' },
+  { key:'many', label:'같은 차 많은순' },
+] as const;
+export type FinderSort = typeof FINDER_SORTS[number]['key'] | 'admin';
+
+export const POPULAR_MODELS: readonly string[] = [
+  '쏘렌토','그랜저','카니발','스포티지','셀토스',
+  '레이','싼타페','쏘나타','K8','K5','팰리세이드','아반떼','아이오닉5',
+];
+
+const popularRank=(model:unknown)=>{
+  const i=POPULAR_MODELS.indexOf(String(model??'').trim());
+  return i<0?Number.MAX_SAFE_INTEGER:i;
+};
+const photoRank=(p:CanonicalProduct)=>(p.photoUrl||(p.photos?.length??0)>0?0:1);
+const sameCarKey=(p:CanonicalProduct)=>
+  `${p.vehicle.manufacturerId??''}|${p.vehicle.modelId??''}`.toLowerCase().replace(/\s+/g,'');
+const minRent=(m:ProductSearchMatch)=>{
+  const values=m.matchedOffers.map((o)=>o.monthlyRent).filter((n)=>Number.isFinite(n)&&n>0);
+  return values.length?Math.min(...values):Number.MAX_SAFE_INTEGER;
+};
+const minDeposit=(m:ProductSearchMatch)=>{
+  const values=m.matchedOffers.map((o)=>o.deposit).filter((n):n is number=>typeof n==='number'&&Number.isFinite(n)&&n>=0);
+  return values.length?Math.min(...values):Number.MAX_SAFE_INTEGER;
+};
+const statusRank=(s:unknown)=>({즉시출고:0,출고가능:1,출고협의:2}[String(s??'') as '즉시출고'|'출고가능'|'출고협의']??9);
+const exactRank=(m:ProductSearchMatch)=>m.vehicleMatch.level==='EXACT'?0:1;
+
+/**
+ * White Label 정렬 의미를 Canonical Product/Matched Offer 위에 재현한다.
+ * Admin 기본('admin')만 기존 운영 우선순위(출고상태 → 낮은 대여료)를 유지한다.
+ * 그 외 sort key는 White Label과 같은 의미를 사용하고, EXACT는 항상 PARTIAL보다 앞선다.
+ */
+export function sortFinderMatches(matches: readonly ProductSearchMatch[], sort: FinderSort): ProductSearchMatch[] {
+  const indexed=matches.map((m,i)=>({m,i,exact:exactRank(m),photo:photoRank(m.product),rent:minRent(m),dep:minDeposit(m)}));
+  if(sort==='admin'){
+    return indexed.sort((a,b)=>
+      a.exact-b.exact
+      || statusRank(a.m.product.status)-statusRank(b.m.product.status)
+      || a.rent-b.rent
+      || a.i-b.i).map((x)=>x.m);
+  }
+
+  if(sort==='many'){
+    const tally=new Map<string,number>();
+    for(const x of indexed){
+      const k=sameCarKey(x.m.product);
+      tally.set(k,(tally.get(k)??0)+1);
+    }
+    return indexed.sort((a,b)=>
+      a.exact-b.exact
+      || a.photo-b.photo
+      || (tally.get(sameCarKey(b.m.product))??0)-(tally.get(sameCarKey(a.m.product))??0)
+      || a.rent-b.rent
+      || a.i-b.i).map((x)=>x.m);
+  }
+
+  const value=(x:typeof indexed[number])=>{
+    switch(sort){
+      case 'popular': return popularRank(x.m.product.vehicle.modelId);
+      case 'asc': return x.rent;
+      case 'desc': return x.rent===Number.MAX_SAFE_INTEGER?x.rent:-x.rent;
+      case 'dep': return x.dep;
+      case 'year': return -(x.m.product.specs.modelYear??0);
+      case 'mile': {
+        const km=x.m.product.specs.mileageKm;
+        return typeof km==='number'&&Number.isFinite(km)&&km>0?km:Number.MAX_SAFE_INTEGER;
+      }
+    }
+  };
+  return indexed.sort((a,b)=>
+    a.exact-b.exact
+    || a.photo-b.photo
+    || value(a)-value(b)
+    || ((sort==='popular')?a.rent-b.rent:0)
+    || a.i-b.i).map((x)=>x.m);
+}

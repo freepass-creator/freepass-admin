@@ -651,6 +651,13 @@ export class EsignService {
       const documentStoragePath = 'esign-final/' + session.contractCode + '/' + session.id + '.pdf';
       const stored = await this.assets.put(documentStoragePath, rendered.bytes, 'application/pdf');
       if (stored.sha256 !== documentSha256) throw new Error('최종 PDF 저장 검증에 실패했습니다.');
+      const storedReadback = await this.assets.get(documentStoragePath, documentSha256);
+      if (!storedReadback
+        || storedReadback.contentType !== 'application/pdf'
+        || storedReadback.bytes.byteLength !== rendered.bytes.byteLength
+        || Buffer.from(storedReadback.bytes.subarray(0, 5)).toString('ascii') !== '%PDF-') {
+        throw new Error('최종 PDF 저장 후 재조회 검증에 실패했습니다.');
+      }
 
       const approvedAt = Date.now();
       const result = await this.repo.finalizeSigned(

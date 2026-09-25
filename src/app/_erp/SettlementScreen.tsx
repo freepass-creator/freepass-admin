@@ -19,7 +19,7 @@ import {
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 
@@ -119,7 +119,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
             tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
             title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
             facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
-            amount={won0(g.net)} amountLabel="정산액" />
+            amount={`정산 ${manWon(g.net)} 원`} unit="" />
         );
       })}
     </RowCards>
@@ -168,7 +168,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
                       ]}
-                      amount={won0(amount)} amountLabel={tab === 'claim' ? '청구금액' : '지급액'} />
+                      amount={`${tab === 'claim' ? '청구' : '지급'} ${manWon(amount)} 원`} unit="" />
                   );
                 })}
               </RowCards>

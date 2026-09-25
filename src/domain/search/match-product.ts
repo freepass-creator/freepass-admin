@@ -74,6 +74,11 @@ export function matchProduct(
   query: ProductSearchQuery,
 ): ProductSearchMatch | null {
   if (query.supplierIds?.length && !query.supplierIds.includes(product.supplierId)) return null;
+  if (query.productKinds?.length && (!product.productKind || !query.productKinds.includes(product.productKind))) return null;
+  if (query.credits?.length && (!product.credit || !query.credits.includes(product.credit))) return null;
+  if (query.modelYears?.length && (product.specs.modelYear === undefined || !query.modelYears.includes(product.specs.modelYear))) return null;
+  if (query.fuels?.length && (!product.specs.fuel || !query.fuels.includes(product.specs.fuel))) return null;
+  if (!inRange(product.specs.mileageKm, query.vehicleMileageKm)) return null;
 
   const vehicleMatch = matchVehicle(product.vehicle, query);
   if (!vehicleMatch) return null;

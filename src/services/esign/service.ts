@@ -290,7 +290,7 @@ export class EsignService {
     const attention: string[] = [];
     if (session) {
       const stage = esignStage(session);
-      if (['반려', '만료', '해지'].includes(stage.state)) attention.push(stage.label);
+      if (['반려', '만료', '철회'].includes(stage.state)) attention.push(stage.label);
       if (session.status === 'pending_review') attention.push('승인 필요');
     }
     const assetMap = (priv?.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;

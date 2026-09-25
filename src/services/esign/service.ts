@@ -551,6 +551,9 @@ export class EsignService {
           label: session.snapshot.requiredDocuments.find((d) => d.key === key)?.label || key,
         };
       });
+      const identityAssets = (['id_card', 'selfie'] as const)
+        .filter((key) => assets[key])
+        .map((key) => ({ key, path: S(assets[key]?.path), sha256: S(assets[key]?.sha256) }));
       const consentTimes = Object.fromEntries(result.consents.map((key) => [key, now]));
       const submission: EsignPrivateSubmission = {
         sessionId: session.id,
@@ -576,6 +579,7 @@ export class EsignService {
         signaturePath: signatureAsset.path,
         signatureSha256: signatureAsset.sha256,
         supportingDocuments,
+        identityAssets,
         submittedAt: now,
       };
       await this.repo.putPrivate(session.id, { ...submission, assets });
@@ -661,9 +665,12 @@ export class EsignService {
       if (missingDocs.length) throw new Error('필수 서류가 누락되었습니다: ' + missingDocs.map((d) => d.label).join(' · '));
 
       const privateAssets = (priv.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
+      // 제출 때 굳힌 신분증·얼굴 사진으로 검증한다. 굳힌 기록이 없는 옛 제출만 현재 업로드 목록을 본다.
+      const frozenIdentity = new Map((priv.identityAssets || []).map((a) => [a.key, a]));
+      const identityOf = (key: 'id_card' | 'selfie') => (priv.identityAssets ? frozenIdentity.get(key) : privateAssets[key]);
       if (session.snapshot.customerType !== '법인') {
         for (const [key, label] of [['id_card', '운전면허증'], ['selfie', '본인 얼굴']] as const) {
-          const asset = privateAssets[key];
+          const asset = identityOf(key);
           const path = S(asset?.path), hash = S(asset?.sha256);
           if (!path || !hash || !(await this.assets.get(path, hash))) throw new Error(label + ' 원본 검증에 실패했습니다.');
         }
@@ -688,6 +695,9 @@ export class EsignService {
         consents: [...(priv.consents || [])].sort(),
         documents: [...(priv.supportingDocuments || [])]
           .map((d) => ({ key: d.key, sha256: d.sha256 }))
+          .sort((a, b) => a.key.localeCompare(b.key)),
+        identity: [...(priv.identityAssets || [])]
+          .map((a) => ({ key: a.key, sha256: a.sha256 }))
           .sort((a, b) => a.key.localeCompare(b.key)),
       }));
 

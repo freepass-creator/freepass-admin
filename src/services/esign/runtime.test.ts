@@ -606,3 +606,34 @@ test('a late failing approval does not release a claim another approval took ove
   assert.equal(after.status,'approving');
   assert.equal(after.finalizationId,'finalize_B_takeover_12345');
 });
+
+test('identity photos are frozen at submission: a photo swapped afterwards is never sealed', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  await svc.progress(token,'summary');
+  await svc.progress(token,'document');
+  const original=await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
+  for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    uploaded_documents:required,signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  const session=(await repo.getCurrentSession('c1'))!;
+  const priv=repo.priv.get(session.id) as unknown as EsignPrivateSubmission & {assets:Record<string,Record<string,unknown>>};
+  assert.deepEqual(priv.identityAssets?.map(a=>[a.key,a.sha256]),[['id_card',original.sha256],['selfie',priv.assets.selfie.sha256]]);
+
+  // A racing upload replaced the licence photo after submission (same slot, new bytes, map updated).
+  const swapped=await assets.put(original.path,new Uint8Array([0xff,0xd8,0xff,0x00,0x00,0xd9]),'image/jpeg');
+  priv.assets.id_card={...priv.assets.id_card,sha256:swapped.sha256};
+  await assert.rejects(()=>svc.approve('c1','finalize_swapped_id_12345','tester'),/운전면허증 원본 검증에 실패/);
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});

@@ -128,6 +128,8 @@ export type EsignPrivateSubmission = {
   signaturePath: string;
   signatureSha256: string;
   supportingDocuments: Array<{ key: string; path: string; sha256: string; label: string }>;
+  /** 제출 순간의 신분증·얼굴 사진 — 봉인은 이 해시로만 검증한다(제출 뒤 바뀐 사진은 봉인하지 않는다) */
+  identityAssets?: Array<{ key: 'id_card' | 'selfie'; path: string; sha256: string }>;
   submittedAt: number;
 };
 

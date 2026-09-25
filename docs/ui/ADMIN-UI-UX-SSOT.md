@@ -2495,3 +2495,30 @@ Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
 - touch target은 줄이지 않는다.
 - 시각 높이와 hit area를 분리한다.
 - mobile primary/action 44px은 유지한다.
+
+
+# 54. Detail panel inner rhythm
+
+상세 패널은 내용이 많아도 세로로 뚱뚱해 보이지 않게
+**내부 padding은 줄이고, 카드/섹션 간격으로 구조를 만든다.**
+
+## Desktop
+
+- detail body padding: 12px
+- section gap: 16px
+- subtitle → card group: 8px
+- card gap: 12px
+- tile inner title → content: 8px
+- info dt/dd group gap: 8px
+
+## Line-free detail
+
+- tile title underline/bottom border 금지
+- 제목 계층은 typography + spacing으로 표현
+- 카드 내부에서 section line을 다시 만들지 않는다
+
+## 원칙
+
+- card gap과 section gap을 섞지 않는다
+- subtitle은 아래 카드 묶음에 붙어 읽히게
+- detail body 바깥 padding을 과하게 키우지 않는다

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { productList, settlements, today } from '../../server/erp5';
+import { productList, settlements, today } from '../../server/freepass-data';
 import {
   emptyFinderSelection, FINDER_SORTS, findProducts, finderAxisMatches, sortFinderMatches,
   type FinderInput, type FinderSort,

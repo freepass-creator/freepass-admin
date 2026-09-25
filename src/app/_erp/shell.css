@@ -1534,3 +1534,37 @@
     box-shadow: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Brand restraint & neutral selected-card text
+ * 큰 카드 선택은 tint로, brand 색은 compact selection/action에 집중한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std {
+    --erp-color-primary: #1B2A4A;
+    --erp-color-primary-hover: #24395F;
+    --erp-color-primary-weak: #EEF3FA;
+    --erp-color-focus-ring: #D8E2F0;
+  }
+
+  .erp-std .erp-tile--pressable[aria-pressed="true"] .erp-tile-row b,
+  .erp-std .erp-tile--pressable[aria-pressed="true"] .erp-tile-row strong,
+  .erp-std .erp-rowcard[aria-current="true"] .erp-rowcard-title,
+  .erp-std .erp-rowcard[aria-current="true"] .erp-rowcard-amount strong {
+    color: var(--fp-text-strong);
+  }
+
+  .erp-std .erp-rowcard[aria-current="true"] :is(.erp-rowcard-sub,.erp-rowcard-meta,.erp-rowcard-amount span) {
+    color: var(--fp-text-secondary);
+  }
+
+  /* compact selection controls may carry solid brand. */
+  .erp-std :is(
+    .erp-facet-opt[aria-pressed="true"],
+    .erp-seg :is(a,button)[aria-pressed="true"]
+  ) {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+  }
+}

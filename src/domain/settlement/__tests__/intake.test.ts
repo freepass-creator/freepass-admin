@@ -448,26 +448,42 @@ describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () 
 });
 
 
-describe('계약 연결 접수의 취소 경계', () => {
-  it('계약이 연결된 접수는 서명 여부와 무관하게 raw 취소를 막고 계약취소 절차로 보낸다', () => {
+describe('접수취소 경계 — 계약 연결 여부가 별도 업무를 만들지 않는다', () => {
+  it('전자계약이 연결돼 있어도 인도·정산 전이면 접수 자체를 취소한다', () => {
     for (const cur of [
-      { cancelled:false, esignContractId:'ctr_1', paper:false },
-      { cancelled:false, esignContractId:'ctr_1', paper:true },
-      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:Date.now(), paper:false },
+      { cancelled:false, esignContractId:'ctr_1', paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
+      { cancelled:false, esignContractId:'ctr_1', paper:true, delivered:false, claimStage:'접수', payStage:'접수' },
+      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:Date.now(), paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
     ]) {
       const r = progressPatch(cur, { kind:'cancelled', on:true, reason:'고객 변심' });
-      assert.equal(r.ok,false);
-      assert.match(String((r as { error?: string }).error), /계약취소 절차/);
+      assert.equal(r.ok,true);
+      assert.equal(r.ok && r.patch.cancelled,true);
+      assert.match(String(r.ok && r.patch.note), /\[취소\] 고객 변심/);
     }
   });
 
-  it('계약이 연결되지 않은 일반 접수는 정산 전이면 기존 취소 규칙을 따른다', () => {
+  it('계약 연결이 없어도 같은 접수취소 규칙을 쓴다', () => {
     const r = progressPatch(
       { cancelled:false, paper:false, delivered:false, claimStage:'접수', payStage:'접수' },
       { kind:'cancelled', on:true, reason:'고객 변심' },
     );
     assert.equal(r.ok,true);
     assert.equal(r.ok && r.patch.cancelled,true);
+  });
+
+  it('계약이 연결돼 있어도 인도·정산 뒤에는 취소가 아니라 해지/환수 경계다', () => {
+    const delivered = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', delivered:true, deliveredAt:'2026-09-18', claimStage:'접수', payStage:'접수' },
+      { kind:'cancelled', on:true, reason:'중도 해지' },
+    );
+    // 인도 자체는 계약해지 경계이므로 일반 접수취소로 바꾸지 않는다.
+    assert.equal(delivered.ok,false);
+
+    const settled = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', delivered:true, billed:true, claimStage:'청구', payStage:'통보' },
+      { kind:'cancelled', on:true, reason:'중도 해지' },
+    );
+    assert.equal(settled.ok,false);
   });
 });
 

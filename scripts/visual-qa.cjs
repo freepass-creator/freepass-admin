@@ -174,6 +174,22 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      shadowSamples: (() => {
+        const sample = (selector, limit = 16) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const s = getComputedStyle(el);
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              boxShadow: s.boxShadow,
+              selected: el.matches('[aria-current="true"],[aria-pressed="true"],.on'),
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            };
+          });
+        return {
+          cards: sample('.erp-rowcard, .erp-tile, .erp-listcard, .dz-row'),
+          panels: sample('.erp-panel, .panel', 8),
+        };
+      })(),
       radiusSamples: (() => {
         const pickRadius = (selector, limit = 12) =>
           [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
@@ -445,6 +461,17 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.shadowSamples?.cards) {
+        for (const x of info.shadowSamples.cards) {
+          if (!x.selected && x.boxShadow && x.boxShadow !== 'none' && /0px [3-9]px|0px [1-9][0-9]px/.test(x.boxShadow)) {
+            problems.push(`resting card shadow too strong: ${JSON.stringify(x)}`);
+          }
+          if (x.selected && x.boxShadow && /rgba\([^)]*\)[^,]*,/.test(x.boxShadow) && /0px [2-9]px/.test(x.boxShadow)) {
+            problems.push(`selected card has outer elevation: ${JSON.stringify(x)}`);
+          }
+        }
+      }
+
       if (info.radiusSamples) {
         for (const x of [...info.radiusSamples.panels, ...info.radiusSamples.cards]) {
           if (x.radius > 8.5) problems.push(`oversized panel/card radius: ${JSON.stringify(x)}`);
@@ -607,6 +634,7 @@ async function runInteractiveStates(page, c) {
         panelWidths: info.panelWidths,
         workspaceFill: info.workspaceFill,
         radiusSamples: info.radiusSamples,
+        shadowSamples: info.shadowSamples,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

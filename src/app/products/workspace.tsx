@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { productList, settlements, today } from '../../server/erp5';
-import { searchProducts } from '../../domain/search/search-products';
-import type { ProductSearchQuery } from '../../domain/search/types';
-import type { Offer } from '../../domain/product/types';
+import { emptyFinderSelection, findProducts, finderAxisMatches, type FinderInput } from '../../domain/search/finder';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
@@ -24,9 +22,9 @@ import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
 import {
-  STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, productWithinSearchLimits, 보증금, 정책말,
-  type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
+  STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 상품축이름,
+  많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
+  type 상품축,
 } from './workspace-config';
 
 
@@ -39,26 +37,6 @@ import {
  * 고르기는 주소로 한다(`?id=` · `?offer=`) — 서버 화면이라 새로 고쳐도, 링크로 보내도 같은 자리가 선다.
  * 폰은 `?v=list|detail|work` 로 판을 한 장씩(규칙 ⑧).
  */
-
-/** 실제 Canonical product shape에 붙는 차 축 판정은 workspace 가까이에 둔다. */
-type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
-const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
-  status: (p, k) => p.status === k,
-  vc: (p, k) => customerVehicleClass(p) === k,
-  kind: (p, k) => p.productKind === k,
-  perk: (p, k) => (p.perks ?? []).includes(k),
-  supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
-  maker: (p, k) => p.vehicle.manufacturerId === k,
-  cls: (p, k) => p.vehicleClass === k,
-  year: (p, k) => p.specs.modelYear !== undefined && String(p.specs.modelYear) === k,
-  vmile: (p, k) => {
-    const km = p.specs.mileageKm;
-    const band = 현재주행구간.find((x) => x.k === k);
-    return typeof km === 'number' && Number.isFinite(km) && km > 0 && !!band && km > band.lo && km <= band.hi;
-  },
-  fuel: (p, k) => p.specs.fuel === k,
-  credit: (p, k) => p.credit === k,
-};
 
 /** 사진 URL은 서버 proxy 규칙을 반드시 거친다. */
 const 사진 = (p: { photoUrl?: string }): string | undefined =>
@@ -79,27 +57,23 @@ export async function ProductWorkspace({ q, mode, base }: {
   }
   const { rows } = all;
 
-  /*
-   * ★요금 축(기간 · 대여료 · 보증금)은 «한 요금이 모두» 만족해야 걸린다(S-02) — 그래서 차가 아니라 요금을 거른다.
-   *   남은 요금이 곧 matchedOffers 다(S-03 — 상세·접수는 여기서 고른다). 여러 구간은 하나의 범위로 못 적어
-   *   도메인 질의(monthlyRent: {min,max})에 못 넣으므로, 도메인이 돌려준 요금을 같은 규칙으로 한 번 더 거른다.
+  /**
+   * 상품찾기 의미는 Domain Finder 한 곳에서만 판정한다.
+   * 화면은 URL 선택값/자연어를 FinderInput으로 바꾸고 결과를 그리기만 한다.
    */
-  const pool = searchProducts(rows, {} as ProductSearchQuery);
-  const 남은요금 = (h: (typeof pool)[number], skip?: 상품축) => h.matchedOffers.filter((o) =>
-    요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k)))
-    && offerWithinSearchLimits(o, parsedSearch.limits));
-  const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
-    productMeetsSearchRequirements(h.product, parsedSearch.requirements)
-    && productWithinSearchLimits(h.product, parsedSearch.limits)
-    && 차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
-    && 남은요금(h, skip).length > 0;
-  const searched = text ? pool.filter(({ product: p }) =>
-    `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
-      .toLowerCase().includes(text)) : pool;
-  const hits = searched.filter((h) => 통과(h)).map((h) => {
-    const matchedOffers = 남은요금(h);
-    return { ...h, matchedOffers, matchedOfferIds: matchedOffers.map((o) => o.id) };
+  const finderInput: FinderInput = {
+    selection: psel,
+    limits: parsedSearch.limits,
+    requirements: parsedSearch.requirements,
+    text: parsedSearch.text,
+  };
+  const pool = findProducts(rows, {
+    selection: emptyFinderSelection(),
+    limits: {},
+    requirements: { perks: [] },
+    text: '',
   });
+  const hits = findProducts(rows, finderInput);
   const sorted = hits
     .map((h) => ({ ...h, lead: lead(h.matchedOffers) }))
     .sort((a, b) => (STATUS_ORDER[a.product.status ?? ''] ?? 9) - (STATUS_ORDER[b.product.status ?? ''] ?? 9)
@@ -143,13 +117,12 @@ export async function ProductWorkspace({ q, mode, base }: {
     credit: 많은순(pool.map((h) => h.product.credit ?? '')).map((k) => ({ k, label: k })),
     supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
   };
-  const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
-    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축Type](o, k)) : 차맞음[a as 차축Type](h.product, k);
   const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
     const keys = 값명단[a].map((x) => x.k);
     const name = new Map(값명단[a].map((x) => [x.k, x.label]));
-    const base = tallyMatch(pool, keys, (h, k) => 걸림(a, h, k, h.matchedOffers));
-    const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
+    const base = tallyMatch(pool, keys, (h, k) => finderAxisMatches(h, a, k));
+    const cross = findProducts(rows, finderInput, a);
+    const live = tallyMatch(cross, keys, (h, k) => finderAxisMatches(h, a, k));
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
   });
 

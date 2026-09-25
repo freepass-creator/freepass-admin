@@ -50,7 +50,6 @@ export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
   const parsedSearch = parseProductSearch(sp(q.q));
-  const text = parsedSearch.text.toLowerCase();
   /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
   const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);

@@ -8,6 +8,7 @@ import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from
 import { withContractHandoffDigest } from '../../domain/esign/handoff';
 import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
+import { cancellationClawbackRequirement } from '../../domain/settlement/cancellation-clawback';
 
 const CONTRACTS='contract';
 const SESSIONS='esign_session';
@@ -218,19 +219,26 @@ export class Erp5EsignRepository implements EsignRepository {
         return {
           cancelled:false,
           needsClawback:Boolean(intake.contractCancellationNeedsClawback),
+          clawback:{
+            supplier:String(intake.contractCancellationSupplierClawbackState??'NONE'),
+            channel:String(intake.contractCancellationChannelClawbackState??'NONE'),
+            needsClawback:Boolean(intake.contractCancellationNeedsClawback),
+          },
           session,
         };
       }
 
       const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v===1;
       const S=(v:unknown)=>String(v??'').trim();
-      const moneyMoved=B(intake.collected)||B(intake.paid)
-        || Number(intake.collectedAmt??0)>0||Number(intake.paidAmt??0)>0;
-      const financialStarted=moneyMoved
+      const clawback=cancellationClawbackRequirement({
+        collected:intake.collected,collectedAmt:intake.collectedAmt,claimStage:intake.claimStage,
+        paid:intake.paid,paidAmt:intake.paidAmt,payStage:intake.payStage,
+      });
+      const financialStarted=clawback.needsClawback
         || B(intake.billed)||B(intake.invoiceIssued)||B(intake.supplierOk)||B(intake.channelOk)
         || ['청구','정정','확인','수금'].includes(S(intake.claimStage))
         || ['통보','정정','확인','지급'].includes(S(intake.payStage));
-      const needsClawback=moneyMoved;
+      const needsClawback=clawback.needsClawback;
       const now=Date.now();
 
       tx.update(contractRef,{
@@ -243,6 +251,8 @@ export class Erp5EsignRepository implements EsignRepository {
         contractCancelledAt:now,
         contractCancellationReason:why,
         contractCancellationNeedsClawback:needsClawback,
+        contractCancellationSupplierClawbackState:clawback.supplier,
+        contractCancellationChannelClawbackState:clawback.channel,
         ...(financialStarted?{}:{settleExclude:true}),
         updatedAt:now,
         stateAt:new Date(now).toISOString(),
@@ -253,15 +263,18 @@ export class Erp5EsignRepository implements EsignRepository {
       );
       const settlementEventKey='aud_contract_cancel_'+createHash('sha256').update(contractId+'|'+why).digest('hex').slice(0,16);
       tx.set(settlementEventRef,{[settlementEventKey]:{
-        at:now,by:actor,field:'계약취소',from:'false',to:'true',reason:why,contractId,sessionId,needsClawback,
+        at:now,by:actor,field:'계약취소',from:'false',to:'true',reason:why,contractId,sessionId,
+        needsClawback,supplierClawback:clawback.supplier,channelClawback:clawback.channel,
       }},{merge:true});
 
       const eventRef=db.collection(EVENTS).doc(
         'evt_'+createHash('sha256').update(contractId+'|cancel|'+why).digest('hex').slice(0,24),
       );
-      tx.set(eventRef,{contractId,sessionId,type:'contract_cancelled',by:actor,at:now,detail:{reason:why,needsClawback}},{merge:false});
+      tx.set(eventRef,{contractId,sessionId,type:'contract_cancelled',by:actor,at:now,detail:{
+        reason:why,needsClawback,supplierClawback:clawback.supplier,channelClawback:clawback.channel,
+      }},{merge:false});
 
-      return {cancelled:true,needsClawback,session};
+      return {cancelled:true,needsClawback,clawback,session};
     });
   }
 

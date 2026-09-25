@@ -736,16 +736,7 @@ export class EsignService {
   async revoke(contractId: string, actor = 'admin') {
     const session = await this.repo.getCurrentSession(contractId);
     if (!session) return;
-    if (session.status === 'signed') throw new Error('서명완료 계약은 해지할 수 없습니다.');
-    const now = Date.now();
-    const claimed = await this.repo.transitionSession(
-      session.id,
-      ['sent', 'opened', 'in_progress', 'rejected'],
-      { status: 'revoked', revokedAt: now },
-    );
-    if (!claimed) throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
-    await this.repo.updateContract(contractId, { sign_status: '미발송', sign_revoked_at: now, esign_progress: 0 });
-    await this.repo.appendEvent(contractId, session.id, 'revoked', actor);
+    await this.repo.revokeSession(session.id, contractId, actor);
   }
 
   /**

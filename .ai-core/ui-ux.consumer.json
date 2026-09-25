@@ -5,7 +5,7 @@
     "id": "freepass-admin",
     "repository": "freepass-creator/freepass-admin",
     "profile": "FREEPASS_ADMIN_INTERNAL_ERP",
-    "mapping_base_revision": "92e2838b6da2df5f0b8733db494e879bd25d2e74"
+    "mapping_base_revision": "4c37c736416ac897db6435cff171608efd94485f"
   },
   "ai_core": {
     "repository": "freepass-creator/ai-core",
@@ -15,11 +15,13 @@
   },
   "adoption_status": "MAPPED",
   "local_authorities": [
-    "docs/WORK-INBOX.md#13-admin-visual-approved",
-    "docs/ui/mockups/admin-product-to-application.html",
-    "docs/reviews/ADMIN-DESIGN-FUNCTION-AUDIT-2026-09-18.md",
-    "src/app/page.tsx",
-    "src/app/globals.css"
+    "docs/ui/DESIGN-AUTHORITY.md",
+    "docs/ui/ADMIN-UI-UX-SSOT.md",
+    "docs/ui/admin-ui-ux-ssot.json",
+    "docs/ui/SALES-APP-BASELINE.md",
+    "docs/ui/ai-core-bindings.json",
+    "src/app/_design/admin-final.css",
+    "src/app/_design/Primitives.tsx"
   ],
   "required_feature_ids": [
     "action.primary",
@@ -39,85 +41,89 @@
       "feature_id": "action.primary",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/Primitives.tsx"
       ]
     },
     {
       "feature_id": "form.search",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/Primitives.tsx"
       ]
     },
     {
       "feature_id": "data.filter",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/FilterSheet.tsx"
       ]
     },
     {
       "feature_id": "data.list",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/ListRow.tsx"
       ]
     },
     {
       "feature_id": "data.detail",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/DetailTabs.tsx"
       ]
     },
     {
       "feature_id": "data.badge",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/Badges.tsx"
       ]
     },
     {
       "feature_id": "navigation.tabs",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/page.tsx",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/AdminChrome.tsx",
+        "src/app/_design/MobileTabBar.tsx"
       ]
     },
     {
       "feature_id": "navigation.bottom-action",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/Primitives.tsx"
       ]
     },
     {
       "feature_id": "system.responsive",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "src/app/globals.css",
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/admin-final.css"
       ]
     },
     {
       "feature_id": "system.focus",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/admin-final.css"
       ]
     },
     {
       "feature_id": "system.safe-area-keyboard",
       "implementation": "NATIVE_PRODUCT",
       "local_evidence": [
-        "docs/ui/mockups/admin-product-to-application.html"
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "src/app/_design/admin-final.css"
       ]
     }
   ],
@@ -155,5 +161,10 @@
     ]
   },
   "exceptions": [],
-  "conformance_receipts": []
+  "conformance_receipts": [],
+  "legacy_policy": {
+    "visual_sources": "FORBIDDEN",
+    "fallback": "FAIL_CHECK",
+    "authority": "docs/ui/DESIGN-AUTHORITY.md"
+  }
 }

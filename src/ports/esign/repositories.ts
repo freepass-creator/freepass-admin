@@ -17,11 +17,11 @@ export interface EsignRepository {
     contractId: string,
     actor: string,
   ): Promise<{ revoked: boolean; session: EsignSession }>;
-  cancelSignedContract(
+  cancelContract(
     contractId: string,
     reason: string,
     actor: string,
-  ): Promise<{ cancelled: boolean; session: EsignSession }>;
+  ): Promise<{ cancelled: boolean; session: EsignSession | null; signedDocumentPreserved: boolean }>;
   finalizeSigned(
     sessionId: string,
     finalizationId: string,

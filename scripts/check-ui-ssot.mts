@@ -191,7 +191,7 @@ for (const [re, label] of actionRatioCss) {
 const noWrapResponsiveBaseline = [
   [/\.erp-std \.erp-toolbar \.erp-facet-opts[\s\S]*?flex-wrap:\s*nowrap/, 'desktop quick filters nowrap'],
   [/\.quick-filters,.tabs,.offer-picker,.dz-month[\s\S]*?flex-wrap:\s*nowrap/, 'mobile choice rows nowrap'],
-  [/\.dz-row:has\(\.dz-row-l2\.value\)[\s\S]*?contain-intrinsic-size:\s*auto 64px/, 'mobile value card intrinsic 64px body'],
+  [/\.fn-main \.workspace \.dz-row-body[\s\S]*?height:\s*calc\(var\(--ui-card-line-h\) \* 3 \+ var\(--ui-card-line-gap\) \* 2\)/, 'mobile three-line body fixed at 64px'],
 ] as const;
 for (const [re, label] of noWrapResponsiveBaseline) {
   const target = label.startsWith('desktop') ? desktopCss : cssFinal;

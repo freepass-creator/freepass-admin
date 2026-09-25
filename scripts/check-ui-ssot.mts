@@ -471,10 +471,10 @@ if (/\.dz-perk\s*\{[^}]*font-size:\s*13px/s.test(cssFinal)) {
 }
 
 const densityBaseline = [
-  [/--fp-panel-head-h:\s*48px/, 'desktop panel head 48px'],
-  [/--fp-query-row-h:\s*52px/, 'desktop query row 52px'],
-  [/--fp-quick-row-h:\s*48px/, 'desktop quick filter row 48px'],
-  [/--fp-panel-foot-h:\s*60px/, 'desktop panel foot 60px'],
+  [/--fp-panel-head-h:\s*44px/, 'desktop panel head 44px'],
+  [/--fp-query-row-h:\s*48px/, 'desktop query row 48px'],
+  [/--fp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],
+  [/--fp-panel-foot-h:\s*56px/, 'desktop panel foot 56px'],
   [/--fp-row-compact-min-h:\s*64px/, 'desktop compact row 64px'],
   [/--fp-row-standard-min-h:\s*72px/, 'desktop standard row 72px'],
 ] as const;
@@ -482,7 +482,7 @@ for (const [re, label] of densityBaseline) {
   if (!re.test(desktopCss)) errors.push(`density mismatch or missing: ${label}`);
 }
 const mobileDensityBaseline = [
-  [/--ui-panel-head-h:\s*56px/, 'mobile panel head 56px'],
+  [/--ui-panel-head-h:\s*52px/, 'mobile panel head 52px'],
   [/--ui-row-min-h:\s*88px/, 'mobile row 88px'],
   [/--ui-section-rhythm:\s*16px/, 'mobile section rhythm 16px'],
 ] as const;

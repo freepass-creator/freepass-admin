@@ -39,6 +39,16 @@ class Repo implements EsignRepository {
     const s=this.sessions.get(id); if(!s||!allowed.includes(s.status)) return false;
     Object.assign(s,structuredClone(patch)); return true;
   }
+  async revokeSession(sessionId:string,contractId:string,actor:string){
+    const session=this.sessions.get(sessionId); if(!session)throw new Error('missing');
+    if(session.status==='signed')throw new Error('서명완료 계약은 해지할 수 없습니다.');
+    if(session.status==='revoked')return {revoked:false,session:structuredClone(session)};
+    if(!['sent','opened','in_progress','rejected'].includes(session.status))throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
+    session.status='revoked'; session.revokedAt=Date.now();
+    this.contract.set(contractId,{...(this.contract.get(contractId)||{}),sign_status:'미발송',sign_revoked_at:Date.now(),esign_progress:0});
+    this.events.push({contractId,sessionId,type:'revoked',by:actor,detail:{},at:Date.now()});
+    return {revoked:true,session:structuredClone(session)};
+  }
   async finalizeSigned(
     sessionId:string,finalizationId:string,sessionPatch:Partial<EsignSession>,contractPatch:Record<string,unknown>,
     actor:string,detail:Record<string,unknown>,
@@ -357,4 +367,25 @@ test('admin journey: intake -> contract -> esign submit -> approve -> signed', a
   assert.equal(repo.contract.get(created.id)?.contract_status,'계약완료');
   assert.equal(repo.contract.get(created.id)?.source_intake_id,'stl_e2e');
   assert.match(String(repo.contract.get(created.id)?.esign_document_sha256),/^[a-f0-9]{64}$/);
+});
+
+
+test('esign revoke is idempotent before signed and signed remains immutable', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+
+  await svc.revoke('c1','tester');
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'revoked');
+  assert.equal(repo.contract.get('c1')?.sign_status,'미발송');
+
+  await svc.revoke('c1','tester');
+  assert.equal(repo.events.filter(e=>e.type==='revoked').length,1);
+
+  const s=repo.sessions.get(issued.session.id)!;
+  s.status='signed';
+  s.finalizationId='finalize_signed_immutable';
+  await assert.rejects(()=>svc.revoke('c1','tester'),/서명완료/);
+  assert.equal(s.status,'signed');
 });

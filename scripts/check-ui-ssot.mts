@@ -710,11 +710,22 @@ const threeLineCardGrammarBaseline = [
   ['src/app/_erp/shell.css', /Three-line list card semantics/, 'three-line semantic style block'],
   ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake key line'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구/, 'intake support fee line'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`수수료 청구/, 'settlement support fee line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement opposite-axis support fee'],
 ] as const;
 for (const [file, re, label] of threeLineCardGrammarBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
   if (!re.test(src)) errors.push(`${file}: three-line card grammar mismatch: ${label}`);
+}
+
+const settlementFeeAxisBaseline = [
+  [/amount=\{tab === 'claim'/, 'active axis chooses main fee amount'],
+  [/청구 수수료/, 'claim fee label present'],
+  [/지급 수수료/, 'pay fee label present'],
+  [/meta=\{tab === 'claim'/, 'opposite axis chooses support fee'],
+] as const;
+const settlementUiSource = await readFile(path.join(root, 'src/app/_erp/SettlementScreen.tsx'), 'utf8');
+for (const [re, label] of settlementFeeAxisBaseline) {
+  if (!re.test(settlementUiSource)) errors.push(`SettlementScreen.tsx: settlement fee axis mismatch: ${label}`);
 }
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {

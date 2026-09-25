@@ -2,11 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productByIdFresh, settlements, today } from '../../server/erp5';
+import { feeRuleSet, productByIdFresh, settlements, today, WriteDisabledError } from '../../server/freepass-data';
 import { requireAdmin } from '../../server/require-admin';
-import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
-import { WriteDisabledError } from '../../adapters/erp5/settlement-repository';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
@@ -281,7 +279,7 @@ export type FeePreview =
 export async function previewFeeAction(f: FormData): Promise<FeePreview> {
   { const g = await requireAdmin(); if (g) return { status: 'ERROR', why: g }; }
   try {
-    const set = await loadFeeRuleSet();
+    const set = await feeRuleSet();
     const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
     const r = feeOf(set, { supplier: S(f, 'supplier'), product: S(f, 'product'), model: S(f, 'model'), term: num('term'), rent: num('rent'), price: num('price') });
     if (r.status === 'AUTO') return { status: 'AUTO', claim: r.claim, pay: r.pay, ruleId: r.rule.id, basis: r.rule.basis, version: set.version };

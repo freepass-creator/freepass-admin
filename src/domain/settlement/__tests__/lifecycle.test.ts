@@ -156,14 +156,11 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
 
 
 test('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한다', () => {
-  const dirty = baseRow({
-    progress: {
-      ...baseRow().progress,
-      paper: true,
-      delivered: false,
-      deliveredAt: null,
-      billMonth: '2026-09',
-    },
+  const dirty = mk({
+    paper: true,
+    delivered: false,
+    deliveredAt: '',
+    billMonth: '2026-09',
     claimStage: '청구',
     payStage: '통보',
   });

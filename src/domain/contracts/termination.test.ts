@@ -69,19 +69,88 @@ test('전자계약이 연결됐는데 서명완료가 아니면 데이터 불일
   assert.match(String((result as {error?:string}).error),/서명 상태/);
 });
 
-test('동일 operationId와 동일 payload 재시도만 idempotent다', () => {
-  const raw=intake({
+test('동일 operationId와 동일 payload 재시도는 계약·접수 mirror가 모두 같을 때만 idempotent다', () => {
+  const rawContract=contract({
+    contract_status:'계약해지',
+    contract_terminated_at:100,
+    contract_termination_date:'2026-09-25',
+    contract_termination_reason:'고객 중도해지',
+    contract_termination_operation_id:'terminate_1234567890abcdef',
+  });
+  const rawIntake=intake({
     contractTerminatedAt:100,
     contractTerminationDate:'2026-09-25',
     contractTerminationReason:'고객 중도해지',
     contractTerminationOperationId:'terminate_1234567890abcdef',
   });
-  const same=planContractTermination(contract({contract_status:'계약해지'}),raw,input,Date.parse('2026-09-25T06:00:00Z'));
+  const same=planContractTermination(rawContract,rawIntake,input,Date.parse('2026-09-25T06:00:00Z'));
   assert.deepEqual(same,{ok:true,idempotent:true,patch:{},intakePatch:{}});
 
-  const changed=planContractTermination(contract({contract_status:'계약해지'}),raw,{...input,reason:'다른 사유'},Date.parse('2026-09-25T06:00:00Z'));
+  const changed=planContractTermination(rawContract,rawIntake,{...input,reason:'다른 사유'},Date.parse('2026-09-25T06:00:00Z'));
   assert.equal(changed.ok,false);
   assert.match(String((changed as {error?:string}).error),/이미 계약해지/);
+});
+
+test('계약 또는 접수 한쪽에만 해지 기록이 남은 partial state는 덮어쓰지 않는다', () => {
+  const intakeOnly=planContractTermination(
+    contract(),
+    intake({
+      contractTerminatedAt:100,
+      contractTerminationDate:'2026-09-25',
+      contractTerminationReason:'고객 중도해지',
+      contractTerminationOperationId:'terminate_1234567890abcdef',
+    }),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(intakeOnly.ok,false);
+  assert.match(String((intakeOnly as {error?:string}).error),/계약과 접수.*일치하지/);
+
+  const contractOnly=planContractTermination(
+    contract({
+      contract_status:'계약해지',
+      contract_terminated_at:100,
+      contract_termination_date:'2026-09-25',
+      contract_termination_reason:'고객 중도해지',
+      contract_termination_operation_id:'terminate_1234567890abcdef',
+    }),
+    intake(),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(contractOnly.ok,false);
+  assert.match(String((contractOnly as {error?:string}).error),/계약과 접수.*일치하지/);
+});
+
+test('양쪽 모두 해지처럼 보여도 timestamp·operation·payload mirror가 다르면 fail closed', () => {
+  const baseContract={
+    contract_status:'계약해지',
+    contract_terminated_at:100,
+    contract_termination_date:'2026-09-25',
+    contract_termination_reason:'고객 중도해지',
+    contract_termination_operation_id:'terminate_1234567890abcdef',
+  };
+  const baseIntake={
+    contractTerminatedAt:100,
+    contractTerminationDate:'2026-09-25',
+    contractTerminationReason:'고객 중도해지',
+    contractTerminationOperationId:'terminate_1234567890abcdef',
+  };
+  for(const [name,contractPatch,intakePatch] of [
+    ['timestamp',{}, {contractTerminatedAt:101}],
+    ['operation',{}, {contractTerminationOperationId:'terminate_other_1234567890'}],
+    ['date',{contract_termination_date:'2026-09-24'}, {}],
+    ['reason',{}, {contractTerminationReason:'다른 사유'}],
+  ] as const){
+    const result=planContractTermination(
+      contract({...baseContract,...contractPatch}),
+      intake({...baseIntake,...intakePatch}),
+      input,
+      Date.parse('2026-09-25T06:00:00Z'),
+    );
+    assert.equal(result.ok,false,name);
+    assert.match(String((result as {error?:string}).error),/계약과 접수.*일치하지/,name);
+  }
 });
 
 

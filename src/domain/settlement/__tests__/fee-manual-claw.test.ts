@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
 import { clawbackId, clawbackRecord, sameClawbackPayload } from '../clawback.js';
+import { cancellationClawbackCompletionPatch, cancellationClawbackRequirement, cancellationClawbackStateOf, validateCancellationClawbackInput } from '../cancellation-clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -130,4 +131,72 @@ test('동일 환수 재시도 판정은 금액·일자·사유·계약줄이 같
   assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, agentAmt: 70000 }), false);
   assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, reason: '다른 사유' }), false);
   assert.equal(sameClawbackPayload(baseDoc, { ...baseDoc, code: 'stl_y' }), false);
+});
+
+
+describe('계약취소 환수 후속 — 공급사/영업축 분리', () => {
+  it('실제 돈이 움직인 축만 REQUIRED로 잡는다', () => {
+    assert.deepEqual(cancellationClawbackRequirement({
+      collected:true,collectedAmt:100000,claimStage:'수금',
+      paid:false,paidAmt:0,payStage:'확인',
+    }), { supplier:'REQUIRED',channel:'NONE',needsClawback:true });
+
+    assert.deepEqual(cancellationClawbackRequirement({
+      collected:false,collectedAmt:0,claimStage:'확인',
+      paid:true,paidAmt:80000,payStage:'지급',
+    }), { supplier:'NONE',channel:'REQUIRED',needsClawback:true });
+  });
+
+  it('두 축이 모두 필요하면 한 번의 환수 증거에 두 금액을 모두 요구한다', () => {
+    const r = {
+      ...row(),
+      contractCancelledAt: Date.now(),
+      contractCancellationSupplierClawbackState:'REQUIRED' as const,
+      contractCancellationChannelClawbackState:'REQUIRED' as const,
+      progress:{...row().progress,collected:true,paid:true,delivered:true},
+      claimStage:'수금' as const,payStage:'지급' as const,
+    };
+    assert.match(String(validateCancellationClawbackInput(r,{
+      at:'2026-09-25',supplierAmt:100000,agentAmt:0,reason:'취소 환수',
+    })),/영업채널 환수액/);
+    assert.equal(validateCancellationClawbackInput(r,{
+      at:'2026-09-25',supplierAmt:100000,agentAmt:80000,reason:'취소 환수',
+    }),null);
+  });
+
+  it('필요 없는 축에 환수액을 임의로 넣지 못한다', () => {
+    const r = {
+      ...row(),
+      contractCancelledAt: Date.now(),
+      contractCancellationSupplierClawbackState:'REQUIRED' as const,
+      contractCancellationChannelClawbackState:'NONE' as const,
+      progress:{...row().progress,collected:true,paid:false,delivered:true},
+      claimStage:'수금' as const,payStage:'확인' as const,
+    };
+    assert.match(String(validateCancellationClawbackInput(r,{
+      at:'2026-09-25',supplierAmt:100000,agentAmt:1,reason:'취소 환수',
+    })),/영업채널 환수가 필요하지 않은/);
+  });
+
+  it('환수 생성 후 필요한 축만 COMPLETED로 종결하고 전체 pending을 내린다', () => {
+    const supplierOnly = {
+      ...row(),
+      contractCancelledAt: Date.now(),
+      contractCancellationSupplierClawbackState:'REQUIRED' as const,
+      contractCancellationChannelClawbackState:'NONE' as const,
+      progress:{...row().progress,collected:true,paid:false,delivered:true},
+      claimStage:'수금' as const,payStage:'확인' as const,
+    };
+    assert.deepEqual(
+      cancellationClawbackCompletionPatch(supplierOnly,{
+        at:'2026-09-25',supplierAmt:100000,agentAmt:0,reason:'취소 환수',
+      }),
+      {
+        contractCancellationSupplierClawbackState:'COMPLETED',
+        contractCancellationChannelClawbackState:'NONE',
+        contractCancellationNeedsClawback:false,
+      },
+    );
+    assert.deepEqual(cancellationClawbackStateOf(supplierOnly),{supplier:'REQUIRED',channel:'NONE'});
+  });
 });

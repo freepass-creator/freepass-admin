@@ -782,6 +782,19 @@ for (const [file, re, label] of crossShellListParityBaseline) {
   if (!re.test(src)) errors.push(`${file}: cross-shell list parity mismatch: ${label}`);
 }
 
+const statusTileToneBaseline = [
+  ['src/app/_erp/shell.css', /Status tile semantic tones/, 'desktop status tile tones'],
+  ['src/app/_erp/shell.css', /data-tone="info"[\s\S]*?#EEF3FA[\s\S]*?#1B2A4A/, 'desktop info/navy tile'],
+  ['src/app/_erp/shell.css', /data-tone="ok"[\s\S]*?#ECFDF3[\s\S]*?#067647/, 'desktop ok/green tile'],
+  ['src/app/_erp/shell.css', /data-tone="warn"[\s\S]*?#FFFAEB[\s\S]*?#B54708/, 'desktop warn/amber tile'],
+  ['src/app/_erp/shell.css', /data-tone="err"[\s\S]*?#FEF3F2[\s\S]*?#B42318/, 'desktop err/red tile'],
+  ['src/app/globals.css', /\.dz-row-status\.navy[\s\S]*?\.dz-row-status\.green[\s\S]*?\.dz-row-status\.red[\s\S]*?\.dz-row-status\.grey[\s\S]*?\.dz-row-status\.amber/, 'mobile status tile semantic tones'],
+] as const;
+for (const [file, re, label] of statusTileToneBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: status tile tone contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

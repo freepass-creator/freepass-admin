@@ -172,6 +172,7 @@ for (const route of ['products', 'intake', 'settlement', 'esign']) {
 if (!/aria-busy="true"/.test(routeState)) errors.push('RouteState: loading must expose aria-busy');
 if (!/role="alert"/.test(routeState) || !/다시 시도/.test(routeState)) errors.push('RouteState: fatal error must expose alert + retry');
 if (!/<ActionBar>/.test(routeState)) errors.push('RouteState: retry must use shared ActionBar');
+if (!/window\.location\.reload\(\)/.test(routeState)) errors.push('RouteState: fatal retry must perform a real route reload');
 
 const interactionFiles = {
   filterSheet: await readFile(path.join(root, 'src/app/_design/FilterSheet.tsx'), 'utf8'),

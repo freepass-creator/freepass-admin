@@ -582,6 +582,7 @@ for (const [re, label] of mobileStateBaseline) {
 const quickFilterPolicyBaseline = [
   ['src/app/_erp/Workspace.tsx', /QuickFilter 업무 항목은 아직 확정 전/, 'intake quick filters explicitly provisional'],
   ['src/app/_erp/SettlementScreen.tsx', /상태 QuickFilter 업무 항목은 미확정/, 'settlement quick filters explicitly provisional'],
+  ['src/app/_erp/EsignScreen.tsx', /전자서명 QuickFilter 업무 항목은 미확정/, 'e-sign quick filters explicitly provisional'],
 ] as const;
 for (const [file, re, label] of quickFilterPolicyBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
@@ -668,6 +669,18 @@ const cardPriorityBaseline = [
 for (const [file, re, label] of cardPriorityBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
   if (!re.test(src)) errors.push(`${file}: priority-driven card lines missing: ${label}`);
+}
+
+const listAmountLanguageBaseline = [
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product monthly rent wording'],
+  ['src/app/_erp/Workspace.tsx', /`월 \$\{manWon\(r\.rent\)\} 원`/, 'intake monthly rent wording'],
+  ['src/app/_erp/Workspace.tsx', /`남는 \$\{manWon\(marginOf\(r, now\)\)\} 원`/, 'performance margin wording'],
+  ['src/app/_erp/SettlementScreen.tsx', /`정산 \$\{manWon\(g\.net\)\} 원`/, 'settlement total wording'],
+  ['src/app/_erp/EsignScreen.tsx', /amount=\{`월 \$\{manWon\(c\.rent\)\} 원`\}/, 'e-sign monthly rent wording'],
+] as const;
+for (const [file, re, label] of listAmountLanguageBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: list amount language mismatch: ${label}`);
 }
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {

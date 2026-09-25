@@ -34,6 +34,7 @@ export interface ContractSummary {
   terminationDate: string;
   terminationReason: string;
   terminatedAt: number | null;
+  terminatedBy: string;
   signUrl: string;
   signedPdfUrl: string;
 }
@@ -73,8 +74,25 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
         };
       }
 
-      tx.update(contractRef,plan.patch);
-      tx.update(intakeRef,{...plan.intakePatch,contractTerminationContractId:contractId});
+      tx.update(contractRef,{...plan.patch,contract_terminated_by:actor});
+      tx.update(intakeRef,{
+        ...plan.intakePatch,
+        contractTerminationContractId:contractId,
+        contractTerminationBy:actor,
+      });
+
+      const contractEventRef=db.collection('contract_event').doc(
+        'evt_'+createHash('sha256').update(contractId+'|terminate|'+input.operationId).digest('hex').slice(0,24),
+      );
+      tx.create(contractEventRef,{
+        contractId,
+        type:'terminated',
+        operationId:input.operationId,
+        effectiveDate:input.effectiveDate,
+        reason:input.reason.trim(),
+        by:actor,
+        at:now,
+      });
 
       const eventRef=db.collection('settlement_events').doc(
         intakeEventDocId(
@@ -122,6 +140,7 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
         terminationDate: S(c.contract_termination_date),
         terminationReason: S(c.contract_termination_reason),
         terminatedAt: N(c.contract_terminated_at),
+        terminatedBy: S(c.contract_terminated_by),
         signUrl: S(c.esign_sign_url),
         signedPdfUrl: S(c.signed_pdf_url),
       });

@@ -84,7 +84,7 @@ export interface IssuedInvoice {
 
 export function nextInvoiceRevision(existing: IssuedInvoice | null): { revision: number; history: InvoiceRevision[] } {
   if (!existing) return { revision: 1, history: [] };
-  const previousRevision = existing.revision ?? 1;
+  const previousRevision = existing.revision ?? Math.max(1, (existing.history?.length ?? 0) + 1);
   return {
     revision: previousRevision + 1,
     history: [

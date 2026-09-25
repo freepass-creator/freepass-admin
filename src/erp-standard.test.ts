@@ -6,19 +6,16 @@ import { resolve } from 'node:path';
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
-test('standard CSS is the generated ai-core projection, not a hand copy', () => {
+test('standard CSS is one local canonical visual system', () => {
   const css = read('src/app/_erp/erp-standard.css');
-  const src = JSON.parse(read('src/app/_erp/erp-standard.source.json')) as { repository: string; revision: string };
-  assert.equal(src.repository, 'freepass-creator/ai-core');
-  assert.match(src.revision, /^[0-9a-f]{40}$/);
-  assert.ok(css.startsWith('/* ⚠ 생성물'), 'generated header');
-  assert.ok(css.includes(`@ ${src.revision}`), 'header pins the source revision');
-  assert.equal(css.replace(/\/\*[\s\S]*?\*\//g, '').includes('.erp-app'), false, 'root scope is rewritten to .erp-std');
-  assert.equal(css.includes('erp-theme-flagbody'), false, 'retro scope rewritten exactly once');
-  for (const token of ['--erp-color-primary: #1B2A4A;', '--erp-topbar-h: 56px;', '--erp-sidenav-w: 240px;', '--erp-grid-row-h: 40px;']) assert.ok(css.includes(token), token);
-  assert.ok(css.includes('body:has(> .erp-theme-flag[data-theme="retro"]) {'), 'retro theme block');
+  assert.ok(css.startsWith('/* FreePass Admin canonical ERP UI CSS.'), 'canonical header');
+  assert.equal(css.includes('data-theme="retro"'), false, 'no alternate theme selector');
+  assert.equal(css.includes('themes/retro.css'), false, 'no alternate theme source');
+  assert.equal(css.includes('.erp-app'), false, 'no external root scope');
+  for (const token of ['--erp-color-primary: #1B2A4A;', '--erp-topbar-h: 56px;', '--erp-sidenav-w: 240px;', '--erp-grid-row-h: 40px;']) {
+    assert.ok(css.includes(token), token);
+  }
 });
-
 test('settlement is panelized like the intake workspace, not a standalone §4 page', () => {
   // 대표 2026-09-24 「모든 페이지는 다 패널화 돼 있다 … 정산관리는 이거 공통규격이 아니잖아」 — §4
   // PageHeader/erp-cols 골격을 걷어내고 §5-4 erp-panel 셋(청구목록 | 정산상세 | 지급목록)으로 다시 짰다

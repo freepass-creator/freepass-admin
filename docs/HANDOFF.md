@@ -299,3 +299,57 @@ Offer 선택
 ```
 
 각 단계는 단순 UI 클릭이 아니라 authoritative persistence 결과와 receipt/evidence로 검증한다.
+
+
+---
+
+# 2026-09-25 기능 재정렬 — Product Finder → Intake → Performance → Settlement
+
+이 절이 위의 계약 중심 P0 해석보다 최신이다.
+
+## User-confirmed operating model
+
+```text
+White Label Product Finder ≒ Admin Product Finder
+                    ↓
+                  Intake
+                    ↓
+                Performance
+             ↙               ↘
+ Supplier Claim/Collection   Sales-channel Pay
+             ↘               ↙
+                 Settlement
+```
+
+### Product finder
+- White Label is the outward-facing projection of Admin's product finder.
+- Search/filter/Offer meaning should converge on one contract.
+- Admin may extend it with internal-only supplier/delivery-status/diagnostic facets.
+- Confirmed drift to resolve: `mile` currently means actual vehicle mileage in White Label but annual contracted mileage in Admin.
+- Evidence: `docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md`.
+
+### Cancellation
+- Pre-delivery cancellation is an Intake cancellation fact.
+- E-sign linkage does not create a separate business cancellation workflow.
+- E-sign revoke/session/evidence handling remains a technical sub-flow owned by the e-sign layer.
+
+### Termination / clawback
+- Post-delivery termination is a clawback review trigger.
+- Historical claim/pay/collection/payment facts remain immutable.
+- Do not auto-calculate or auto-create clawback money.
+- Confirmed clawback is a separate negative ledger line in the clawback month.
+
+## Current implementation delta
+
+- `progressPatch` allows pre-delivery Intake cancellation even when an e-sign contract is linked.
+- `progressPatch` blocks cancellation after delivery and directs the case to termination/clawback review.
+- `terminationClawbackReview` classifies termination as `PENDING` until a clawback explicitly linked to the Intake code is recorded.
+- `pendingTerminationClawbackRows` exposes the domain queue without inventing clawback amounts.
+- `admin-core-domain` CI isolates finder/intake/performance/settlement/clawback regressions from separately owned e-sign failures.
+
+## Next implementation order
+
+1. Make Admin and White Label finder semantics converge, starting with axis identity and the vehicle-mileage vs annual-contract-mileage split.
+2. Expose the pending termination clawback review queue in Settlement without turning it into a third money ledger.
+3. Keep Intake → Performance promotion and Claim/Pay ledgers deterministic and tested.
+4. Treat e-sign finalization as supporting contract evidence, not the center of the Admin operating workflow.

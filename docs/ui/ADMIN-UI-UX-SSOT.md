@@ -2542,3 +2542,37 @@ Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
 - selected는 surface/tint로 표현한다.
 - 카드 제목과 금액을 둘 다 700으로 반복하지 않는다.
 - 한 카드 안에서 700은 핵심 수치/결과에 우선한다.
+
+
+# 56. Elevation restraint
+
+세련된 Admin UI는 모든 카드를 계속 띄우지 않는다.
+
+## Resting
+
+- Panel: very light base elevation 허용
+- Card: shadow 없음
+- Passive Card: shadow 없음
+- Button: shadow 없음
+- Search/Filter control: shadow 없음
+
+## Interaction
+
+- Interactive Card hover: subtle hover elevation
+- Selected Card: outer elevation 없음
+- Selected Card: primary tint + shallow inset
+- Primary button hover: 색 변화가 우선
+- Popup / Sheet / Modal: float elevation 허용
+
+## Elevation tokens
+
+- base: 0 1px 2px rgba(16,24,40,.05)
+- hover: 0 2px 6px rgba(16,24,40,.08)
+- float: 0 8px 22px rgba(16,24,40,.12)
+
+## 금지
+
+- resting card에 진한 drop shadow
+- selected card를 hover보다 더 띄우기
+- passive card hover elevation
+- 모든 버튼에 기본 shadow 적용

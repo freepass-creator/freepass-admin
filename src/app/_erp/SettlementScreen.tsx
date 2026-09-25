@@ -19,7 +19,7 @@ import {
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Facet, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 
@@ -118,8 +118,13 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
             tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
             title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
+            sub={`${name} ${g.done}/${g.lines.length}`}
+            meta={`완료 ${g.completed}/${g.lines.length}`}
+            lines={g.unknown || g.broken || g.clawbacks.length
+              ? [`이슈 · 미확정 ${g.unknown} · 끊김 ${g.broken} · 환수 ${g.clawbacks.length}`]
+              : []}
             facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
-            amount={`정산 ${manWon(g.net)} 원`} unit="" />
+            amount={`정산 ${won0(g.net)}원`} unit="" />
         );
       })}
     </RowCards>
@@ -168,7 +173,10 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                         ['상품 · 기간', txt(r.product), `${r.term ?? '—'}개월`],
                         ['결제', txt(r.payKind), broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined],
                       ]}
-                      amount={`${tab === 'claim' ? '청구' : '지급'} ${manWon(amount)} 원`} unit="" />
+                      lines={[
+                        `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
+                      ]}
+                      amount={`${tab === 'claim' ? '청구' : '지급'} ${amount === null ? '—' : `${won0(amount)}원`}`} unit="" />
                   );
                 })}
               </RowCards>

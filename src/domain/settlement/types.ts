@@ -175,6 +175,7 @@ export interface SettlementRow {
   contractTerminationReason?: Maybe<string>;
   contractTerminationOperationId?: Maybe<string>;
   contractTerminationContractId?: Maybe<string>;
+  contractTerminationBy?: Maybe<string>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

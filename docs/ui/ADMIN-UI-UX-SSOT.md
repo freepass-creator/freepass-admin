@@ -828,10 +828,10 @@ I18N / RTL:
 - 검색창 안 세부검색만 machine SSOT에 정의된 **embedded 32px 예외**를 유지한다.
 - 최종 권위는 계속 `admin-final.css` + 이 문서다.
 
-## B. UI-SPEC 역사 규격 혼재 — 해결 완료
-- `UI-SPEC.md`에는 현행 baseline만 남겼다.
-- 2026-09-16 mockup의 rail/22·30·34·38·46px 규격은 `UI-HISTORY.md`로 이동했다.
-- `UI-HISTORY.md`는 HISTORICAL ONLY이며 구현 기준으로 사용하지 않는다.
+## B. 과거 UI 시각자료 — 제거 완료
+- `UI-SPEC.md`는 정본으로 이동시키는 포인터만 남겼다.
+- 2026-09-16 mockup/rail/topbar 계열과 `docs/ui/mockups/**`, `UI-HISTORY.md`는 현재 트리에서 삭제했다.
+- Git history에 남은 과거 시각자료도 설계 입력으로 복원하지 않는다.
 
 ## C. 목록 높이 용어
 문서 주석은 “64px row”라고 하나 실제 outer row는 padding 포함 약 88px.

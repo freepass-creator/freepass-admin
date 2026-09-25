@@ -244,10 +244,16 @@
     "focusVisible": true,
     "reducedMotion": true,
     "filterSheetFocusReturn": true,
+    "filterSheetFocusEntry": true,
+    "filterSheetFocusTrap": true,
     "uniqueDialogIds": true,
     "tabSemantics": true,
+    "tabArrowNavigation": true,
     "selectedRowSemantics": true,
-    "busyStates": true
+    "busyStates": true,
+    "validationLiveRegions": true,
+    "highZoomReflow": true,
+    "runtimeI18nRtlConformance": "PENDING_RUNTIME_SUPPORT"
   },
   "files": {
     "baseCss": "src/app/globals.css",

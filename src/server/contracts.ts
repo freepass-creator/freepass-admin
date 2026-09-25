@@ -1,4 +1,4 @@
-import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
+import { contracts } from './freepass-data';
 import { ContractLifecycleService } from '../services/contracts/service';
 
-export const contractLifecycle = new ContractLifecycleService(new Erp5ContractRepository());
+export const contractLifecycle = new ContractLifecycleService(contracts);

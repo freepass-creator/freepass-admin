@@ -42,20 +42,20 @@ class Repo implements EsignRepository {
   async cancelSignedContract(contractId:string,reason:string,actor:string){
     const contract=this.contract.get(contractId); if(!contract)throw new Error('missing contract');
     const session=await this.getCurrentSession(contractId); if(!session)throw new Error('missing session');
-    if(session.status!=='signed')throw new Error('서명완료된 계약만 계약 취소 절차를 사용할 수 있습니다.');
+    if(session.status!=='signed')throw new Error('서명완료된 계약만 이 계약취소 절차를 사용할 수 있습니다.');
     if(!reason.trim())throw new Error('계약 취소 사유를 적어 주세요.');
-    if(contract.contract_status==='계약취소'){
-      return {cancelled:false,needsClawback:Boolean(contract.contractCancellationNeedsClawback),session:structuredClone(session)};
-    }
-    const needsClawback=Boolean(contract.__testMoneyMoved);
+    if(contract.contract_status==='계약취소')return {cancelled:false,session:structuredClone(session)};
+    if(contract.__testDelivered)throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
+    if(contract.__testSettlementStarted)throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
     this.contract.set(contractId,{
       ...contract,
       contract_status:'계약취소',
       contract_cancel_reason:reason.trim(),
-      contractCancellationNeedsClawback:needsClawback,
+      cancelled:true,
+      settleExclude:true,
     });
-    this.events.push({contractId,sessionId:session.id,type:'contract_cancelled',by:actor,detail:{reason:reason.trim(),needsClawback},at:Date.now()});
-    return {cancelled:true,needsClawback,session:structuredClone(session)};
+    this.events.push({contractId,sessionId:session.id,type:'contract_cancelled',by:actor,detail:{reason:reason.trim()},at:Date.now()});
+    return {cancelled:true,session:structuredClone(session)};
   }
   async revokeSession(sessionId:string,contractId:string,actor:string){
     const session=this.sessions.get(sessionId); if(!session)throw new Error('missing');
@@ -409,7 +409,7 @@ test('esign revoke is idempotent before signed and signed remains immutable', as
 });
 
 
-test('signed contract cancellation preserves signed receipt and is idempotent', async () => {
+test('signed contract cancellation before delivery preserves signed receipt and creates no settlement work', async () => {
   const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
   repo.contract.set('c1',{...contract(),contract_status:'계약완료'});
   const session:EsignSession={
@@ -419,28 +419,32 @@ test('signed contract cancellation preserves signed receipt and is idempotent', 
   };
   repo.sessions.set(session.id,session);
 
-  const first=await svc.cancelSignedContract('c1','고객 계약 해지','tester');
+  const first=await svc.cancelSignedContract('c1','출고 전 고객 취소','tester');
   assert.equal(first.cancelled,true);
-  assert.equal(first.needsClawback,false);
   assert.equal((await repo.getCurrentSession('c1'))?.status,'signed');
   assert.equal(repo.contract.get('c1')?.contract_status,'계약취소');
+  assert.equal(repo.contract.get('c1')?.settleExclude,true);
 
-  const second=await svc.cancelSignedContract('c1','고객 계약 해지','tester');
+  const second=await svc.cancelSignedContract('c1','출고 전 고객 취소','tester');
   assert.equal(second.cancelled,false);
   assert.equal(repo.events.filter(e=>e.type==='contract_cancelled').length,1);
 });
 
-test('signed contract cancellation requires clawback follow-up when cash already moved', async () => {
-  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
-  repo.contract.set('c1',{...contract(),contract_status:'계약완료',__testMoneyMoved:true});
-  repo.sessions.set('esg_signed_cash',{
-    id:'esg_signed_cash',contractId:'c1',contractCode:'FP-1',tokenHash:'x',status:'signed',revision:1,
+test('delivered or settlement-started contract must use termination instead of cancellation', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  const signed=(id:string):EsignSession=>({
+    id,contractId:'c1',contractCode:'FP-1',tokenHash:'x',status:'signed',revision:1,
     issuedAt:1,issuedBy:'tester',expiresAt:2,progress:{},snapshot:{} as EsignSession['snapshot'],
-    finalizationId:'finalize_cash_test',
+    finalizationId:'finalize_'+id,
   });
 
-  const result=await svc.cancelSignedContract('c1','중도해지','tester');
-  assert.equal(result.cancelled,true);
-  assert.equal(result.needsClawback,true);
-  assert.equal((await repo.getCurrentSession('c1'))?.status,'signed');
+  repo.contract.set('c1',{...contract(),contract_status:'계약완료',__testDelivered:true});
+  repo.sessions.set('esg_delivered',signed('esg_delivered'));
+  await assert.rejects(()=>svc.cancelSignedContract('c1','취소','tester'),/계약해지/);
+
+  repo.sessions.clear();
+  repo.contract.set('c1',{...contract(),contract_status:'계약완료',__testSettlementStarted:true});
+  repo.sessions.set('esg_settlement',signed('esg_settlement'));
+  await assert.rejects(()=>svc.cancelSignedContract('c1','취소','tester'),/계약해지/);
 });
+

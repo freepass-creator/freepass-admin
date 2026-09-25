@@ -68,7 +68,13 @@ class Repo implements EsignRepository {
 
 class Renderer implements EsignFinalDocumentRenderer {
   calls=0;
-  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
+  invalid=false;
+  async render(){
+    this.calls+=1;
+    return this.invalid
+      ? {bytes:new Uint8Array(Buffer.from('not-a-pdf')),contentType:'application/pdf' as const}
+      : {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};
+  }
 }
 
 class Assets implements EsignAssetStore {
@@ -235,6 +241,25 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
 
   const operation='finalize_1234567890abcdef';
   const finalPath='esign-final/FP-1/'+current!.id+'.pdf';
+  const privateSubmission=repo.priv.get(current!.id)!;
+  const originalSignaturePath=String(privateSubmission.signaturePath);
+  privateSubmission.signaturePath='';
+  await assert.rejects(()=>svc.approve('c1',operation,'tester'),/서명 원본/);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  privateSubmission.signaturePath=originalSignaturePath;
+
+  assert.ok(requiredDocs.length>0,'test fixture must contain at least one required document');
+  const originalSupporting=structuredClone(privateSubmission.supportingDocuments);
+  privateSubmission.supportingDocuments=[];
+  await assert.rejects(()=>svc.approve('c1',operation,'tester'),/필수 서류/);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  privateSubmission.supportingDocuments=originalSupporting;
+
+  renderer.invalid=true;
+  await assert.rejects(()=>svc.approve('c1',operation,'tester'),/PDF가 아닌 결과/);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.equal(assets.puts.get(finalPath),undefined);
+  renderer.invalid=false;
 
   assets.failFinalReadback=true;
   await assert.rejects(()=>svc.approve('c1',operation,'tester'),/재조회 검증/);
@@ -258,7 +283,7 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
 
   const second=await svc.approve('c1',operation,'tester');
   assert.equal(second.finalized,false);
-  assert.equal(renderer.calls,3);
+  assert.equal(renderer.calls,4);
   assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
 });
 

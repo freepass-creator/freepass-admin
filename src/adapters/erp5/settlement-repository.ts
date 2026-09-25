@@ -1,4 +1,5 @@
 import { erp5 } from './firestore';
+import { demoMode } from './demo';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
@@ -36,7 +37,7 @@ const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.so
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
 }
-export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on';
+export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on' && !demoMode();
 const mustWrite = () => { if (!writeEnabled()) throw new WriteDisabledError(); };
 
 const audId = () => {

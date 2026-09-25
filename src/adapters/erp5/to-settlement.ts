@@ -101,6 +101,10 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
       sourceSnapshotId: s(d.sourceSnapshotId),
     },
     catalogSnapshot: catalogSnapshotOf(d.catalogSnapshot),
+    esignContractId: s(d.esignContractId),
+    contractCancelledAt: n(d.contractCancelledAt),
+    contractCancellationReason: s(d.contractCancellationReason),
+    contractCancellationNeedsClawback: b(d.contractCancellationNeedsClawback),
 
     progress: {
       paper: b(d.paper),

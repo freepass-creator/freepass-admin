@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { erp5Ready } from '../../adapters/erp5/firestore';
+import { erp5Ready, writeEnabled } from '../../server/freepass-data';
 import { demoMode } from '../../adapters/erp5/demo';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';

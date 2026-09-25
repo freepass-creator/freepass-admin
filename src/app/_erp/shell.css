@@ -1425,6 +1425,41 @@
 
 
 /* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Natural ERP typography roles
+ * 숫자 토큰만 바꾸고 generated component의 옛 크기가 남는 일을 막는다.
+ * 화면마다 예쁘게 꾸미지 않고, 통상적인 업무도구의 크기 위계만 고정한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-head h2 { font-size: var(--erp-fs-panel); }
+  .erp-std :is(.erp-subtitle,.erp-section-title) { font-size: var(--erp-fs-section); }
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-listcard-title,
+    .erp-tile-title,
+    .erp-tile-row b,
+    .erp-btn,
+    .erp-btn--primary,
+    .erp-dd,
+    .erp-facet-opt,
+    .erp-search input,
+    .erp-input,
+    .erp-info-card dd
+  ) { font-size: var(--erp-fs-body); }
+  .erp-std :is(.erp-rowcard-amount strong,.erp-tile-row strong) { font-size: var(--erp-fs-section); }
+  .erp-std :is(
+    .erp-panel-kind,
+    .erp-panel-count,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-rowcard-facts dd small,
+    .erp-docstate,
+    .erp-badge,
+    .erp-tag
+  ) { font-size: var(--erp-fs-label); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
  * 2026-09-25 — Typography weight hierarchy
  * 굵기는 위계에, 선택 상태는 surface에 맡긴다.
  * ═══════════════════════════════════════════════════════════════════════ */

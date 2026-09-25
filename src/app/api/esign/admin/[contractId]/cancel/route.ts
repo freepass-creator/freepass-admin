@@ -1,5 +1,5 @@
 import { esign } from '../../../../../../server/esign';
-import { currentAdmin, requireAdmin } from '../../../../../../server/require-admin';
+import { currentActor, requireAdmin } from '../../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
 
@@ -10,8 +10,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ con
   try {
     const body = await request.json() as { reason?: unknown };
     const reason = String(body.reason ?? '').trim();
-    const admin = await currentAdmin();
-    const result = await esign.cancelContract(contractId, reason, admin?.name || 'freepass-admin');
+    const actor = await currentActor();
+    const result = await esign.cancelContract(contractId, reason, actor);
     return Response.json({
       ok: true,
       cancelled: result.cancelled,

@@ -1,5 +1,5 @@
 import { esign } from '../../../../../server/esign';
-import { currentAdmin, requireAdmin } from '../../../../../server/require-admin';
+import { currentActor, requireAdmin } from '../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ int
       return Response.json({ ok: false, error: '보험 주체를 확인해 주세요.' }, { status: 400 });
     }
 
-    const admin = await currentAdmin();
+    const actor = await currentActor();
     const result = await esign.createContractFromIntake({
       intakeId,
       customerPhone: S(body.customerPhone),
@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ int
       contractDate: S(body.contractDate),
       contractKind: S(body.contractKind),
       insuranceSide: insuranceSide as '회사포함' | '고객직접',
-    }, admin?.name || 'freepass-admin');
+    }, actor);
 
     return Response.json({
       ok: true,

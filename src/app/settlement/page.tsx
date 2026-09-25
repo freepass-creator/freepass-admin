@@ -31,10 +31,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const q = await searchParams;
   const requestedTab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 
-  let all: Awaited<ReturnType<typeof settlements.list>>;
-  let cb: Awaited<ReturnType<typeof settlements.clawbacks>>;
-  try { [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]); }
-  catch (e) { return <><h1>정산관리</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>; }
+  const [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]);
   const rows = all.map((x) => x.row);
   const focusCode = sp(q.focus).trim();
   const focus = focusCode ? locateSettlementFocus(rows, cb, focusCode, requestedTab) : null;

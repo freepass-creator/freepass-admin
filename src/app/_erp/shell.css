@@ -1642,3 +1642,38 @@
     border-radius: 999px;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — No-wrap responsive density
+ * 좁은 폭에서 세로로 비대해지지 않게 choice/action rows는 가로 흐름을 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-toolbar .erp-facet-opts,
+  .erp-std .erp-panel--compact .erp-facet-opts {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .erp-std .erp-toolbar .erp-facet-opts::-webkit-scrollbar,
+  .erp-std .erp-panel--compact .erp-facet-opts::-webkit-scrollbar {
+    display: none;
+  }
+
+  .erp-std .erp-facet-opt {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-panel--compact .erp-searchbar {
+    flex-wrap: nowrap;
+  }
+
+  .erp-std :is(.erp-btn,.erp-panel-foot .erp-btn) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

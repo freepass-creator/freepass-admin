@@ -1,3 +1,4 @@
+import type { Offer } from '../../domain/product/types';
 import {
   DEPOSIT_BANDS, OFFER_FINDER_AXES, PRODUCT_FINDER_AXES, RENT_BANDS, VEHICLE_MILEAGE_BANDS,
   type FinderAxis, type FinderLimits, type FinderRequirements,

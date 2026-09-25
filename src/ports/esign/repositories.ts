@@ -1,8 +1,10 @@
-import type { EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 
 export interface EsignRepository {
   getContract(id: string): Promise<Record<string, unknown> | null>;
+  getIntakeContractSource(intakeId: string): Promise<ContractHandoffSource | null>;
   createContract(id: string, data: Record<string, unknown>): Promise<void>;
+  createContractFromIntake(source: ContractHandoffSource, id: string, data: Record<string, unknown>): Promise<{ created: boolean }>;
   updateContract(id: string, patch: Record<string, unknown>): Promise<void>;
   getCurrentSession(contractId: string): Promise<EsignSession | null>;
   getSession(id: string): Promise<EsignSession | null>;

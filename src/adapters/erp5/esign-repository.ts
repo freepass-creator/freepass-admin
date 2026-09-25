@@ -8,6 +8,7 @@ import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from
 import { withContractHandoffDigest } from '../../domain/esign/handoff';
 import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
+import { contractExitDecision } from '../../domain/esign/contract-exit';
 
 const CONTRACTS='contract';
 const SESSIONS='esign_session';
@@ -216,18 +217,9 @@ export class Erp5EsignRepository implements EsignRepository {
       const alreadyAt=Number(intake.contractCancelledAt??0);
       if(alreadyAt>0)return {cancelled:false,session};
 
-      const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v===1;
-      const S=(v:unknown)=>String(v??'').trim();
-      const settlementStarted=B(intake.billed)||B(intake.invoiceIssued)||B(intake.collected)||B(intake.paid)
-        || B(intake.supplierOk)||B(intake.channelOk)
-        || Number(intake.collectedAmt??0)>0||Number(intake.paidAmt??0)>0
-        || ['청구','정정','확인','수금'].includes(S(intake.claimStage))
-        || ['통보','정정','확인','지급'].includes(S(intake.payStage))
-        || !!S(intake.billMonth);
-      if(B(intake.delivered)||S(intake.deliveredAt)){
-        throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
-      }
-      if(settlementStarted){
+      const exit=contractExitDecision(intake);
+      if(exit.kind==='TERMINATION_REQUIRED'){
+        if(exit.reason==='DELIVERED') throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
         throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
       }
 

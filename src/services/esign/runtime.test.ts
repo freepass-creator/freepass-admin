@@ -39,14 +39,25 @@ class Repo implements EsignRepository {
     const s=this.sessions.get(id); if(!s||!allowed.includes(s.status)) return false;
     Object.assign(s,structuredClone(patch)); return true;
   }
-  async cancelSignedContract(contractId:string,reason:string,actor:string){
+  async cancelContract(contractId:string,reason:string,actor:string){
     const contract=this.contract.get(contractId); if(!contract)throw new Error('missing contract');
-    const session=await this.getCurrentSession(contractId); if(!session)throw new Error('missing session');
-    if(session.status!=='signed')throw new Error('서명완료된 계약만 이 계약취소 절차를 사용할 수 있습니다.');
     if(!reason.trim())throw new Error('계약 취소 사유를 적어 주세요.');
-    if(contract.contract_status==='계약취소')return {cancelled:false,session:structuredClone(session)};
+    const session=await this.getCurrentSession(contractId);
+    if(contract.contract_status==='계약취소'){
+      return {cancelled:false,session:session?structuredClone(session):null,signedDocumentPreserved:session?.status==='signed'};
+    }
     if(contract.__testDelivered)throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
     if(contract.__testSettlementStarted)throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
+    if(session?.status==='approving')throw new Error('전자계약 승인 처리 중입니다');
+    if(session?.status==='submitting')throw new Error('고객 제출 처리 중입니다');
+
+    const signedDocumentPreserved=session?.status==='signed';
+    let nextSession=session?structuredClone(session):null;
+    if(session&&!['signed','revoked'].includes(session.status)){
+      session.status='revoked';
+      session.revokedAt=Date.now();
+      nextSession=structuredClone(session);
+    }
     this.contract.set(contractId,{
       ...contract,
       contract_status:'계약취소',
@@ -54,8 +65,8 @@ class Repo implements EsignRepository {
       cancelled:true,
       settleExclude:true,
     });
-    this.events.push({contractId,sessionId:session.id,type:'contract_cancelled',by:actor,detail:{reason:reason.trim()},at:Date.now()});
-    return {cancelled:true,session:structuredClone(session)};
+    this.events.push({contractId,sessionId:session?.id??'',type:'contract_cancelled',by:actor,detail:{reason:reason.trim(),signedDocumentPreserved},at:Date.now()});
+    return {cancelled:true,session:nextSession,signedDocumentPreserved};
   }
   async revokeSession(sessionId:string,contractId:string,actor:string){
     const session=this.sessions.get(sessionId); if(!session)throw new Error('missing');
@@ -419,13 +430,13 @@ test('signed contract cancellation before delivery preserves signed receipt and 
   };
   repo.sessions.set(session.id,session);
 
-  const first=await svc.cancelSignedContract('c1','출고 전 고객 취소','tester');
+  const first=await svc.cancelContract('c1','출고 전 고객 취소','tester');
   assert.equal(first.cancelled,true);
   assert.equal((await repo.getCurrentSession('c1'))?.status,'signed');
   assert.equal(repo.contract.get('c1')?.contract_status,'계약취소');
   assert.equal(repo.contract.get('c1')?.settleExclude,true);
 
-  const second=await svc.cancelSignedContract('c1','출고 전 고객 취소','tester');
+  const second=await svc.cancelContract('c1','출고 전 고객 취소','tester');
   assert.equal(second.cancelled,false);
   assert.equal(repo.events.filter(e=>e.type==='contract_cancelled').length,1);
 });
@@ -440,11 +451,34 @@ test('delivered or settlement-started contract must use termination instead of c
 
   repo.contract.set('c1',{...contract(),contract_status:'계약완료',__testDelivered:true});
   repo.sessions.set('esg_delivered',signed('esg_delivered'));
-  await assert.rejects(()=>svc.cancelSignedContract('c1','취소','tester'),/계약해지/);
+  await assert.rejects(()=>svc.cancelContract('c1','취소','tester'),/계약해지/);
 
   repo.sessions.clear();
   repo.contract.set('c1',{...contract(),contract_status:'계약완료',__testSettlementStarted:true});
   repo.sessions.set('esg_settlement',signed('esg_settlement'));
-  await assert.rejects(()=>svc.cancelSignedContract('c1','취소','tester'),/계약해지/);
+  await assert.rejects(()=>svc.cancelContract('c1','취소','tester'),/계약해지/);
+});
+
+
+test('contract cancellation works before esign issuance and revokes an active signing session', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+
+  repo.contract.set('c1',{...contract(),contract_status:'계약대기'});
+  const noSession=await svc.cancelContract('c1','계약 접수 취소','tester');
+  assert.equal(noSession.cancelled,true);
+  assert.equal(noSession.session,null);
+  assert.equal(noSession.signedDocumentPreserved,false);
+  assert.equal(repo.contract.get('c1')?.contract_status,'계약취소');
+
+  repo.contract.set('c2',{...contract(),contract_status:'계약대기'});
+  repo.sessions.set('esg_active',{
+    id:'esg_active',contractId:'c2',contractCode:'FP-2',tokenHash:'x2',status:'opened',revision:1,
+    issuedAt:1,issuedBy:'tester',expiresAt:2,progress:{},snapshot:{} as EsignSession['snapshot'],
+  });
+  const active=await svc.cancelContract('c2','출고 전 취소','tester');
+  assert.equal(active.cancelled,true);
+  assert.equal(active.session?.status,'revoked');
+  assert.equal(active.signedDocumentPreserved,false);
+  assert.equal(repo.contract.get('c2')?.contract_status,'계약취소');
 });
 

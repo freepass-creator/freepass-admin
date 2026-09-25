@@ -1782,6 +1782,7 @@
     .erp-rowcard-title,
     .erp-rowcard-sub,
     .erp-rowcard-meta,
+    .erp-rowcard-line,
     .erp-rowcard-amount strong,
     .erp-rowcard-amount span
   ) {
@@ -1796,7 +1797,8 @@
 
   .erp-std .erp-rowcard-title,
   .erp-std .erp-rowcard-sub,
-  .erp-std .erp-rowcard-meta {
+  .erp-std .erp-rowcard-meta,
+  .erp-std .erp-rowcard-line {
     min-height: var(--fp-card-line-h);
     max-height: var(--fp-card-line-h);
     overflow: hidden;
@@ -1804,8 +1806,8 @@
     white-space: nowrap;
   }
 
-  /* compact 목록은 최대 3줄: identity / context / meta.
-   * 값이 없으면 해당 줄만 빠지고 카드가 불필요하게 늘어나지 않는다. */
+  /* compact 목록은 필요한 정보줄만큼 자연스럽게 늘어난다.
+   * 줄 수를 고정하지 않고 각 줄의 역할/리듬만 고정한다. */
   .erp-std .erp-panel--compact .erp-rowcard-id {
     grid-auto-rows: var(--fp-card-line-h);
   }
@@ -1835,7 +1837,7 @@
     white-space: nowrap;
   }
 
-  /* 내용 카드(Tile)는 1줄 또는 2줄. 3줄 이상 설명은 Tile이 아니라 detail section으로 보낸다. */
+  /* 내용 카드(Tile)는 label/value 한 행 문법을 반복한다. 줄 수 자체는 정보량이 정한다. */
   .erp-std .erp-tile-row {
     min-height: var(--fp-card-line-h);
     line-height: var(--fp-card-line-h);

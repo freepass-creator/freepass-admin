@@ -171,6 +171,8 @@ export interface SettlementRow {
   contractCancelledAt?: Maybe<number>;
   contractCancellationReason?: Maybe<string>;
   contractCancellationNeedsClawback?: boolean;
+  contractCancellationSupplierClawbackState?: 'NONE' | 'REQUIRED' | 'COMPLETED';
+  contractCancellationChannelClawbackState?: 'NONE' | 'REQUIRED' | 'COMPLETED';
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

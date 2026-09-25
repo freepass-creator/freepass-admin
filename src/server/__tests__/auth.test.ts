@@ -13,6 +13,8 @@ describe('로그인 없이 열리는 길', () => {
       '/login',
       '/_next/static/x.js',
       '/favicon.ico',
+      '/fonts/Pretendard-Regular.woff2',
+      '/contract-template/assets/logo-sonogong.webp',
     ]) assert.ok(isPublicPath(p), p);
 
     for (const p of [
@@ -27,6 +29,13 @@ describe('로그인 없이 열리는 길', () => {
       '/login2',
       '/api/other',
       '/design',
+      // 확장자만 붙여 proxy 를 건너뛰던 길
+      '/intake/x.png',
+      '/settlement/a.svg',
+      '/api/esign/final/session.png',
+      '/system/data-status/x.woff2',
+      '/contract-template/rental-contract.html',
+      '/fonts/../intake/x.png',
     ]) assert.ok(!isPublicPath(p), p);
   });
 });

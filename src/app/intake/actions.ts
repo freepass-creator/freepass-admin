@@ -8,7 +8,7 @@ import { feeOf } from '../../domain/settlement/fee';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
-import { resolveOfferPolicies } from '../../domain/product/resolve-policies';
+import { buildIntakeCatalogSnapshot } from '../../domain/settlement/catalog-snapshot';
 import { directIntakeRentKind, resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
 
 /**
@@ -62,7 +62,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   }
 
   /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
-   * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
+   * 저장 직전에 FreePass Data Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
   if (input.sourceProductId || input.sourceOfferId) {
     if (!input.sourceProductId || !input.sourceOfferId || input.sourceProductVersion === null || !input.sourceSnapshotId) {
@@ -82,6 +82,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     if (!offer) return { errors: ['선택한 Offer가 더 이상 없습니다 — 기간/조건을 다시 골라 주세요'] };
     const ledgerKind = resolveLedgerKindSelection(product.productKind, input.product, input.rentKind);
     if (ledgerKind && !ledgerKind.ok) return { errors: [ledgerKind.error] };
+    const catalogSnapshot = buildIntakeCatalogSnapshot(product, offer, new Date().toISOString());
     input = {
       ...input,
       plate: product.registration?.vehicleNumber ?? '',
@@ -92,45 +93,12 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
       term: offer.termMonths,
       rent: offer.monthlyRent,
       deposit: offer.deposit ?? null,
-      // ERP5 차량가가 있으면 정본이 이긴다. 없을 때만 접수 화면의 차량가액을 수수료 기준값으로 보충한다.
+      // FreePass Data 차량가가 있으면 정본이 이긴다. 없을 때만 접수 화면의 차량가액을 수수료 기준값으로 보충한다.
       price: product.consumerPrice ?? input.price,
       sourceProductVersion: product.version,
       sourceSnapshotId: product.sourceSnapshotId,
-      catalogSnapshot: {
-        capturedAt: new Date().toISOString(),
-        product: {
-          id: product.id,
-          version: product.version,
-          sourceSnapshotId: product.sourceSnapshotId,
-          supplierId: product.supplierId,
-          supplierName: product.supplierName ?? null,
-          productKind: product.productKind ?? null,
-          vehicle: {
-            nodeId: product.vehicle.nodeId,
-            originId: product.vehicle.originId,
-            manufacturerId: product.vehicle.manufacturerId,
-            modelId: product.vehicle.modelId,
-            subModelId: product.vehicle.subModelId ?? null,
-            trimId: product.vehicle.trimId ?? null,
-            matchLevel: product.vehicle.matchLevel,
-          },
-          registration: {
-            vehicleNumber: product.registration?.vehicleNumber ?? null,
-            vin: product.registration?.vin ?? null,
-            firstRegistrationDate: product.registration?.firstRegistrationDate ?? null,
-          },
-        },
-        offer: {
-          id: offer.id,
-          termMonths: offer.termMonths,
-          monthlyRent: offer.monthlyRent,
-          deposit: offer.deposit ?? null,
-          prepayment: offer.prepayment ?? null,
-          annualMileageKm: offer.annualMileageKm ?? null,
-          policyValues: resolveOfferPolicies(product, offer).map((p) =>
-            p.type === 'MULTI_SELECT' ? { ...p, value: [...p.value] } : { ...p }),
-        },
-      },
+      catalogSnapshotDigest: catalogSnapshot.digest,
+      catalogSnapshot,
     };
   }
 

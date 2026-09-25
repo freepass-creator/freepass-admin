@@ -64,6 +64,17 @@ for (const file of noInlineStyleFiles) {
 const cssBase = await readFile(path.join(root, 'src/app/globals.css'), 'utf8');
 const cssFinal = await readFile(path.join(root, 'src/app/_design/admin-final.css'), 'utf8');
 const css = `${cssBase}\n${cssFinal}`;
+
+const compatMarker = 'CURRENT ADMIN COMPATIBILITY LAYER';
+const compatIndex = cssBase.indexOf(compatMarker);
+if (compatIndex < 0) {
+  errors.push('globals.css: missing CURRENT ADMIN COMPATIBILITY LAYER marker');
+} else {
+  const compatCss = cssBase.slice(compatIndex);
+  if (/height:\s*33px|min-height:\s*33px|--ui-control-h,40px/.test(compatCss)) {
+    errors.push('globals.css current compatibility layer: stale 33px/40px control value found');
+  }
+}
 for (const token of requiredCss) {
   if (!css.includes(token)) errors.push(`admin CSS: missing shared token ${token}`);
 }
@@ -204,6 +215,15 @@ for (const [label, src, re] of currentPassExpected) {
 
 if (/control 40|inside 40px search box/.test(JSON.stringify(ssot))) {
   errors.push('docs/ui/admin-ui-ux-ssot.json: stale 40px UI wording remains');
+}
+
+const uiSpec = await readFile(path.join(root, 'docs/ui/UI-SPEC.md'), 'utf8');
+const uiHistory = await readFile(path.join(root, 'docs/ui/UI-HISTORY.md'), 'utf8');
+if (/--h-ctl|\*\*30\*\*|\*\*38\*\*/.test(uiSpec)) {
+  errors.push('docs/ui/UI-SPEC.md: historical 30/38px spec leaked back into current spec');
+}
+if (!/HISTORICAL ONLY/.test(uiHistory)) {
+  errors.push('docs/ui/UI-HISTORY.md: missing historical-only warning');
 }
 
 const expected = [

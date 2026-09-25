@@ -617,6 +617,18 @@ for (const [re, label] of typographyVisualQaBaseline) {
   if (!re.test(visualQa)) errors.push(`typography visual QA missing: ${label}`);
 }
 
+const solidMaterialityBaseline = [
+  [/Solid commercial ERP materiality/, 'desktop solid ERP materiality block'],
+  [/\.erp-std \.erp-panel \{\s*box-shadow:\s*none;/s, 'desktop panel rests flat'],
+  [/Solid commercial ERP materiality \(mobile\/live\)/, 'mobile solid ERP materiality block'],
+  [/resting panel has outer shadow/, 'visual QA resting panel shadow guard'],
+  [/selected card\/tile has outer shadow/, 'visual QA selected outer shadow guard'],
+] as const;
+for (const [re, label] of solidMaterialityBaseline) {
+  const target = /visual QA/.test(label) ? visualQa : `${desktopCss}\n${cssFinal}`;
+  if (!re.test(target)) errors.push(`solid materiality contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

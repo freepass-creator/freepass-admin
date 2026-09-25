@@ -6,19 +6,34 @@ export const dynamic = 'force-dynamic';
 
 export default async function DataStatusPage() {
   const s = await adminDataStatus();
+  const legacyCatalog = s.catalog.servedBy === 'LEGACY_ERP5_BRIDGE';
   return (
     <section className="fn-data-status">
       <PanelHeader title="데이터 연결 상태" count={s.live ? 'LIVE' : 'CHECK'} />
-      <p className="fn-muted">정본 프로젝트: {s.project} · 확인 {s.checkedAt}</p>
+      <p className="fn-muted">데이터 정본: 프리패스 데이터 · 상품 모드 {s.catalog.mode} · 확인 {s.checkedAt}</p>
+      {legacyCatalog
+        ? <Notice tone="warn">
+            상품 Catalog는 프리패스 데이터 전환 대기 중입니다. 현재 화면값은 freepasserp5 legacy bridge read이며 정본 권한은 프리패스 데이터에 있습니다.
+          </Notice>
+        : <Notice tone="ok">상품 Catalog가 프리패스 데이터 ACTIVE consumer contract를 사용합니다.</Notice>}
       {s.credential.ok
-        ? <Notice tone="ok">ERP5 자격증명 연결됨 · 쓰기 {s.writeEnabled ? '켜짐' : '꺼짐'}</Notice>
-        : <Notice tone="warn">ERP5 자격증명 오류 — {s.credential.why}</Notice>}
+        ? <Notice tone="ok">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 {s.writeEnabled ? '켜짐' : '꺼짐'}</Notice>
+        : <Notice tone="warn">Admin workflow/legacy bridge 자격증명 오류 — {s.credential.why}</Notice>}
+      {s.catalog.holdReasons.length > 0 && (
+        <p className="fn-muted">Catalog HOLD · {s.catalog.holdReasons.join(' · ')}</p>
+      )}
       <div className="fn-data-grid">
         {s.probes.map((p) => (
           <div className="fn-box" key={p.key}>
             <h2>{p.label}</h2>
             <p><b>{p.ok ? `${p.count?.toLocaleString('ko-KR')}건` : '읽기 실패'}</b></p>
-            {p.error ? <p className="fn-err">{p.error}</p> : <p className="fn-muted">실제 ERP5 repository read</p>}
+            {p.error
+              ? <p className="fn-err">{p.error}</p>
+              : <p className="fn-muted">
+                  {p.key === 'products'
+                    ? `프리패스 데이터 consumer boundary · ${s.catalog.servedBy}`
+                    : `Admin workflow store · ${s.project}`}
+                </p>}
           </div>
         ))}
       </div>

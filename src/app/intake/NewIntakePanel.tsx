@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { productById, today } from '../../server/erp5';
+import { productById } from '../../server/freepass-data';
+import { today } from '../../server/erp5';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { txt, won } from '../_fn/fmt';

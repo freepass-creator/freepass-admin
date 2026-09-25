@@ -15,6 +15,8 @@ const esignRuntime=await read('src/server/esign.ts');
 const esignRepo=await read('src/adapters/erp5/esign-repository.ts');
 const esignService=await read('src/services/esign/service.ts');
 const server=await read('src/server/erp5.ts');
+const catalogServer=await read('src/server/freepass-data.ts');
+const catalogSwitch=await read('src/adapters/freepass-data/admin-catalog-reader.ts');
 const productRepo=await read('src/adapters/erp5/product-repository.ts');
 const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
 const intakeActions=await read('src/app/intake/actions.ts');
@@ -28,6 +30,7 @@ must(/redirect\(['\"]\/intake['\"]\)/.test(designPage),'legacy /design route mus
 must(!/INITIAL_APPS|const\s+PRODUCTS\s*=|MOCK_|fixtureData|demoData/.test(designPage),'legacy /design route must not contain fake runtime data');
 must(intakeListPage.includes("redirect(`/intake?${u}`)"),'legacy /intake/list route must redirect to canonical /intake workspace');
 
+must(/from ['"]\.\.\/\.\.\/server\/freepass-data['"]/.test(product),'products workspace must enter through FreePass Data catalog boundary');
 must(/productList\(\)/.test(product),'products workspace must read productList()');
 must(/settlements\.list\(\)/.test(product),'intake workspace must read settlements.list()');
 must(/settlements\.list\(\)/.test(settlement),'settlement route must read settlements.list()');
@@ -40,7 +43,12 @@ must(/const PRIVATE='esign_private'/.test(esignRepo),'esign repository must keep
 must(/const EVENTS='esign_event'/.test(esignRepo),'esign repository must persist esign events');
 must(/writeEnabled/.test(esignRepo),'esign writes must use the shared ERP5 write gate');
 must(/PUBLIC_BASE_URL/.test(esignService) && /new URL\(raw\)/.test(esignService),'esign issue must require an absolute public base');
-must(/new Erp5ProductRepository\(\)/.test(server),'server must use Erp5ProductRepository');
+must(!/new Erp5ProductRepository\(\)/.test(server),'ERP5 workflow server must not own the Product Catalog reader');
+must(/new AdminCatalogSwitchboard\(legacyProducts\)/.test(catalogServer),'Catalog server must compose the FreePass Data AdminCatalogReader boundary');
+must(/new Erp5ProductRepository\(\)/.test(catalogServer),'Catalog OBSERVE mode must keep the explicit legacy ERP5 bridge');
+must(/FREEPASS_DATA_ADMIN_CATALOG_READ_MODE/.test(catalogSwitch),'Admin Catalog switchboard must use the central FreePass Data read-mode key');
+must(/'OBSERVE'/.test(catalogSwitch),'Admin Catalog default stage must remain OBSERVE until cutover evidence exists');
+must(/FREEPASS_DATA_READ/.test(catalogSwitch) && /fallback하지 않았다/.test(catalogSwitch),'premature Data-read modes must fail closed without silent ERP5 fallback');
 must(/new Erp5SettlementRepository\(\)/.test(server),'server must use Erp5SettlementRepository');
 must(/new Erp5ContractRepository\(\)/.test(server),'server must use Erp5ContractRepository');
 must(/collection\('products'\)/.test(productRepo),'product repository must read ERP5 products collection');
@@ -51,7 +59,8 @@ must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gat
 must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
 must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');
 must(/adminDataStatus/.test(status),'live data status probe missing');
-must(/products\.list\(\)/.test(status),'data-status must bypass product cache and read the live product repository');
+must(/adminCatalogListFresh\(\)/.test(status),'data-status must bypass product cache through the FreePass Data catalog boundary');
+must(/authority:\s*'FREEPASS_DATA'/.test(status),'data-status must identify FreePass Data as the data authority');
 must(!/productList\(\)/.test(status),'data-status must not report the cached productList as a live repository probe');
 
 for(const [name,src] of [['products',product],['settlement',settlement],['esign',esign]] as const){
@@ -64,7 +73,7 @@ if(errors.length){
   process.exitCode=1;
 }else{
   console.log('LIVE DATA WIRING CHECK PASS');
-  console.log('- products -> Erp5ProductRepository / products');
+  console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE -> legacy ERP5 bridge until approved cutover)');
   console.log('- intake + settlement -> Erp5SettlementRepository / settlement_rows');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
   console.log('- esign list -> Erp5ContractRepository / contract');

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { productList, settlements, today } from '../../server/erp5';
+import { productList } from '../../server/freepass-data';
+import { settlements, today } from '../../server/erp5';
 import { searchProducts } from '../../domain/search/search-products';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import type { Offer } from '../../domain/product/types';
@@ -30,7 +31,9 @@ import {
 
 
 /**
- * ★★★**상품·접수 한 화면 — 대표 확정 판 셋 모양 위에 진짜 ERP5 를 얹는다** (2026-09-18)
+ * ★★★**상품·접수 한 화면 — 상품 Catalog는 FreePass Data consumer boundary에서 받는다** (2026-09-25)
+ *   현재 중앙 전환 상태는 OBSERVE라 내부적으로 freepasserp5 legacy bridge가 값을 공급하지만,
+ *   화면과 검색은 Firestore collection을 public contract로 알지 않는다.
  *   대표: 「야 디자인 아까 그 형태 어디 갔어」 — 확정 판 셋(상품 목록 | 상품 상세 | 접수)이 기능 뼈대(맨 표)로
  *   바뀌어 있었다. 나눔: **데이터는 기능 세션**(productList · searchProducts · lead · settlements),
  *   **모양은 디자인**(이 파일의 JSX · globals.css · src/app/_design). 아래 데이터 줄은 기능 쪽이 쓴 그대로다.

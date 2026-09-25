@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productByIdFresh, settlements, today } from '../../server/erp5';
+import { productByIdFresh } from '../../server/freepass-data';
+import { settlements, today } from '../../server/erp5';
 import { requireAdmin } from '../../server/require-admin';
 import { loadFeeRuleSet } from '../../adapters/erp5/fee-rules';
 import { feeOf } from '../../domain/settlement/fee';
@@ -64,7 +65,9 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   }
 
   /* 상품에서 온 접수는 browser hidden 값만 믿지 않는다.
-   * 저장 직전에 ERP5 Canonical Product를 다시 읽어 같은 version/snapshot/Offer인지 확인하고,
+   * 저장 직전에 FreePass Data Catalog consumer boundary를 다시 읽어 같은 version/snapshot/Offer인지 확인한다.
+   * 현재 OBSERVE 단계에서는 이 fresh read가 legacy ERP5 bridge를 사용하지만 use case는 그 저장소를 모른다.
+   *
    * 계약조건은 authoritative Product/Offer 값으로 다시 묶는다. */
   if (input.sourceProductId || input.sourceOfferId) {
     if (!input.sourceProductId || !input.sourceOfferId || input.sourceProductVersion === null || !input.sourceSnapshotId) {

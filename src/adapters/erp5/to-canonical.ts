@@ -1,5 +1,8 @@
 /**
- * ERP5 문서 한 개 → `CanonicalProduct` 한 개.
+ * FreePass Data 전환 전 legacy ERP5 상품 문서 한 개 → Admin `CanonicalProduct` 한 개.
+ *
+ * 이 mapper는 migration bridge다. FreePass Data ACTIVE Admin contract가 열리면
+ * consumer projection mapper로 교체되며, Firestore collection shape 자체는 공개 계약이 아니다.
  *
  * 원천 : Firebase 프로젝트 **`freepasserp5`** Firestore
  *        `products` 1,615 · `policy` 81 (2026-09-17 실측)

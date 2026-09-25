@@ -43,6 +43,7 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
       plate: r.plate, model: r.model ?? '', at: x.at, month,
       supplierAmt: Math.round(s), agentAmt: Math.round(a), reason: x.reason.trim(),
       supplier: r.supplier ?? '', channel: r.channel ?? '',
+      supplierCode: r.supplierCode ?? '', channelCode: r.channelCode ?? '',
       /* ★어느 줄의 환수인지 — 기존 23건에는 없던 칸이다(차번만 있었다). 재계약이면 차번만으로는 못 가른다 */
       code: r.id, receivedAt: r.receivedAt ?? '',
       ...(r.contractCancelledAt ? {

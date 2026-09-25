@@ -13,6 +13,7 @@ import type {
 import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } from '../../ports/esign/repositories';
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
+import { isCompletePdfBytes } from '../../server/esign/pdf';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -654,9 +655,8 @@ export class EsignService {
         signatureBytes: signature.bytes,
         sealHash,
       });
-      if (rendered.contentType !== 'application/pdf' || rendered.bytes.byteLength < 5
-        || Buffer.from(rendered.bytes.subarray(0, 5)).toString('ascii') !== '%PDF-') {
-        throw new Error('최종 문서 생성기가 PDF가 아닌 결과를 반환했습니다.');
+      if (rendered.contentType !== 'application/pdf' || !isCompletePdfBytes(rendered.bytes)) {
+        throw new Error('최종 문서 생성기가 완전한 PDF가 아닌 결과를 반환했습니다.');
       }
 
       const documentSha256 = sha256(rendered.bytes);

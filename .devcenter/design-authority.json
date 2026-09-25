@@ -3,7 +3,7 @@
   "product": "freepass-admin",
   "approved_visual": {
     "path": "docs/ui/ADMIN-UI-UX-SSOT.md",
-    "sha256": "218dbe7c026d36a85a6524b8e50a048ce6dc9296dd814655ea0ff56a264c7396",
+    "sha256": "6166c9677a9f83fec30650a4b180eeb90046ef2a3d793b0a411b3fb5e8ec6544",
     "status": "USER_APPROVED",
     "approved_on": "2026-09-25",
     "source": "user-chat-2026-09-25-ui-design-hard-lock"
@@ -19,7 +19,7 @@
   },
   "machine_ssot": {
     "path": "docs/ui/admin-ui-ux-ssot.json",
-    "sha256": "f62133200b1c383143aad425628c519ded4b2d230709c864dc8be79e53a9c9a2",
+    "sha256": "4e77009bfbe0ca93428b8996fcce9b858f80df50b935c3bb02bcc83500a61138",
     "status": "CANONICAL"
   },
   "design_lock": {

@@ -10,6 +10,7 @@ import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
 import { finalizationBlockReason } from '../../domain/esign/finalization-gate';
 import { claimIsFresh, FINALIZE_CLAIM_TTL, SUBMIT_CLAIM_TTL } from '../../domain/esign/claim-ttl';
+import { contractIntakeLinkError } from '../../domain/contracts/link';
 import { contractExitDecision } from '../../domain/esign/contract-exit';
 
 const CONTRACTS='contract';
@@ -157,6 +158,8 @@ export class Erp5EsignRepository implements EsignRepository {
 
       const contractStatus=String(contractRaw.contract_status??'').trim();
       const intakeRaw=intakeDoc?.exists ? intakeDoc.data() as Record<string,unknown> : null;
+      const linkError=contractIntakeLinkError(session.contractId,intakeRaw);
+      if(linkError)throw new Error(linkError);
       const blocked=finalizationBlockReason(contractRaw,intakeRaw);
       if(blocked){
         if(blocked.includes('계약취소'))throw new Error('계약취소된 계약은 전자계약을 발행할 수 없습니다.');
@@ -231,6 +234,10 @@ export class Erp5EsignRepository implements EsignRepository {
       const intakeRef=sourceIntakeId ? db.collection(INTAKES).doc(sourceIntakeId) : null;
       const intakeDoc=intakeRef ? await tx.get(intakeRef) : null;
       if(intakeRef && !intakeDoc?.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      if(intakeDoc?.exists){
+        const linkError=contractIntakeLinkError(contractId,intakeDoc.data() as Record<string,unknown>);
+        if(linkError)throw new Error(linkError);
+      }
 
       tx.update(sessionRef,{status:'revoked',revokedAt:now});
       tx.update(contractRef,{sign_status:'미발송',sign_revoked_at:now,esign_progress:0,updated_at:now});
@@ -269,6 +276,8 @@ export class Erp5EsignRepository implements EsignRepository {
       const [intakeDoc,lockDoc]=await Promise.all([tx.get(intakeRef),tx.get(lockRef)]);
       if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       const intake=intakeDoc.data() as Record<string,unknown>;
+      const intakeLinkError=contractIntakeLinkError(contractId,intake);
+      if(intakeLinkError)throw new Error(intakeLinkError);
 
       const sessionId=String(lockDoc.data()?.currentSessionId??'').trim()
         || String(contractRaw.esign_id??'').trim();
@@ -397,6 +406,8 @@ export class Erp5EsignRepository implements EsignRepository {
       }
 
       const intakeRawForGate=intakeDoc?.exists ? intakeDoc.data() as Record<string,unknown> : null;
+      const finalLinkError=contractIntakeLinkError(current.contractId,intakeRawForGate);
+      if(finalLinkError)throw new Error(finalLinkError);
       const blocked=finalizationBlockReason(contractRaw,intakeRawForGate);
       if(blocked)throw new Error(blocked);
 

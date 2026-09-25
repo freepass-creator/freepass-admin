@@ -41,6 +41,8 @@ export interface ProductSearchQuery {
   monthlyRent?: NumericRange;
   deposit?: NumericRange;
   annualMileageKm?: NumericRange;
+  /** exact annual contracted mileage choices; OR inside this axis */
+  annualMileageKmValues?: number[];
   policies?: PolicyRequirement[];
 }
 

@@ -1979,3 +1979,64 @@
     color: #B42318;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Detail information row contract
+ * 목록은 3줄 scan, 상세는 36px key/value rows.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-detail-row-h: 36px;
+  }
+
+  .erp-std .erp-info-card dl {
+    display: grid;
+    gap: 0;
+  }
+
+  .erp-std .erp-info-card dl > div {
+    min-height: var(--fp-detail-row-h);
+    display: grid;
+    grid-template-columns: minmax(96px, .8fr) minmax(0, 1.2fr);
+    align-items: center;
+    column-gap: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-info-card dt {
+    min-width: 0;
+    color: var(--fp-text-muted);
+    font-size: var(--erp-fs-label);
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .erp-std .erp-info-card dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--fp-text-strong);
+    font-size: var(--erp-fs-body);
+    font-weight: 500;
+    line-height: 20px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-info-card dd[data-type="money"],
+  .erp-std .erp-info-card dd[data-type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-hero-tile .photo {
+    overflow: hidden;
+  }
+
+  .erp-std .erp-hero-tile .photo > img,
+  .erp-std .erp-hero-tile .photo > svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}

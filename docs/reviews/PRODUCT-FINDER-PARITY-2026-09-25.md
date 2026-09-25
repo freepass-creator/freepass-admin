@@ -231,3 +231,40 @@ Important non-shortcut:
 - Next implementation must preserve manufacturer → model → sub-model → trim context instead of guessing.
 
 This is an intentional safety boundary, not a missing checkbox.
+
+
+---
+
+## Implementation follow-up — hierarchy phase
+
+Vehicle hierarchy filtering now preserves the Search Contract instead of flattening deeper identity.
+
+Implemented axes:
+- manufacturer
+- model
+- sub-model
+- trim
+
+Rules:
+- manufacturer/model/sub-model/trim options are built only from confirmed FreePass Data canonical vehicle identity;
+- UNMATCHED leftover strings never become filter options;
+- model can be searched without requiring every deeper fact;
+- sub-model options open only after a model context exists;
+- trim options open only after a sub-model context exists;
+- changing manufacturer clears model/sub-model/trim selections;
+- changing model clears sub-model/trim;
+- changing sub-model clears trim;
+- cross-facet evaluation removes invalid descendants together with the parent being recalculated.
+
+Search-result semantics remain:
+- a product confirmed at the requested depth and matching the value is EXACT;
+- a product confirmed only at a shallower depth remains PARTIAL;
+- a product confirmed to a different value at that depth is excluded.
+
+Important count rule:
+- an unknown sub-model/trim is not assigned to an arbitrary concrete option.
+- therefore a PARTIAL product can remain in the final candidate list but does not inflate a specific confirmed sub-model/trim option count.
+
+Data path:
+- Admin reads canonical Product/Vehicle facts via `src/server/freepass-data.ts`;
+- the Firestore project `freepasserp5` remains behind the FreePass Data repository/adapter boundary.

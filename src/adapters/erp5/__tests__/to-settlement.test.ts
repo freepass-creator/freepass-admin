@@ -133,3 +133,17 @@ describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나
     assert.equal(blockOf(r), null);
   });
 });
+
+
+test('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () => {
+  const { row } = toSettlementRow({
+    code:'stl_term',
+    contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),
+    contractTerminationDate:'2026-09-25',
+    contractTerminationReason:'중도해지',
+    contractTerminationOperationId:'terminate_1234567890abcdef',
+  }, 'stl_term');
+  assert.equal(row.contractTerminationDate,'2026-09-25');
+  assert.equal(row.contractTerminationReason,'중도해지');
+  assert.equal(row.contractTerminationOperationId,'terminate_1234567890abcdef');
+});

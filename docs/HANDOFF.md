@@ -353,3 +353,47 @@ White Label Product Finder ≒ Admin Product Finder
 2. Expose the pending termination clawback review queue in Settlement without turning it into a third money ledger.
 3. Keep Intake → Performance promotion and Claim/Pay ledgers deterministic and tested.
 4. Treat e-sign finalization as supporting contract evidence, not the center of the Admin operating workflow.
+
+
+---
+
+# 2026-09-25 FreePass Data persistence boundary — latest
+
+This supersedes older wording that treated FreePass Data as catalog-only persistence.
+
+## Authoritative data path
+
+```text
+FreePass Admin feature/workflow
+        ↓
+src/server/freepass-data.ts
+        ↓
+Repository / Adapter
+        ↓
+Firestore project freepasserp5
+```
+
+FreePass Admin owns business semantics and workflow decisions. FreePass Data owns the authoritative persistence gateway for those facts.
+
+All of the following are read/written through FreePass Data:
+- Product / Offer / Policy / Vehicle
+- Intake
+- Performance facts
+- Contract facts used by Admin
+- Settlement
+- Supplier claim / collection
+- Sales-channel pay
+- Clawback
+
+No second Admin database/ledger is introduced.
+
+## Enforced implementation
+
+- `src/server/freepass-data.ts` is the single composition root.
+- `src/server/erp5.ts` is deprecated compatibility only.
+- App/Server/Service may not directly import the Firestore/product/settlement/contract/fee ERP5 adapters.
+- `src/server/freepass-data-boundary.test.ts` enforces the rule in CI.
+- mutation-time Product/Offer validation performs an uncached FreePass Data read.
+- RTDB remains forbidden.
+
+E-sign implementation internals remain separately owned, but Admin-facing contract facts must converge on the same FreePass Data SSOT rather than creating a second contract truth.

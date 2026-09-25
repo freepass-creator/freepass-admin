@@ -341,17 +341,6 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   }
   .fn-main .workspace .panel-head .dz-phone-back:active { background: var(--박스손); }
 }
-/* 폰 — 상품 줄은 네 줄(폭 375 에서 사진 82 + 칩 둘이면 이름이 「모…」로 잘렸다 · 실측):
-   ① 세부모델 ② 상품구분 · 출고상태 칩 ③ 기간 · 월 · 보증금(넘치면 넘긴다) ④ 조건 */
-@media (max-width: 900px) {
-  .dz-row:has(.dz-row-l2.value) { contain-intrinsic-size: auto 104px; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-body { height: auto; min-height: 64px; gap: 4px; justify-content: flex-start; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l1 { flex-wrap: wrap; row-gap: 4px; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 0 100%; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong { white-space: normal; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks .dz-perks.compact { height: auto; flex-wrap: wrap; }
-}
-.dz-seg { white-space: nowrap; }
 /* 폰 — 가로로 흐르는 퀵 단추 줄은 굴림 막대를 안 보인다(손가락으로 민다) */
 @media (max-width: 900px) {
   .fn-main .workspace .quick-filters { scrollbar-width: none; }

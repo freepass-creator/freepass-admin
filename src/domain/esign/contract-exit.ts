@@ -2,7 +2,7 @@ export type ContractExitDecision =
   | { kind: 'CANCEL_ALLOWED' }
   | { kind: 'TERMINATION_REQUIRED'; reason: 'DELIVERED' | 'SETTLEMENT_STARTED' };
 
-const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v===1;
+const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v==='참'||v===1;
 const S=(v:unknown)=>String(v??'').trim();
 
 export function contractExitDecision(raw: Record<string, unknown>): ContractExitDecision {

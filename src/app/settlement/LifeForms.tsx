@@ -16,7 +16,7 @@ const 보냄 = (act: (f: FormData) => void) => (e: React.FormEvent<HTMLFormEleme
   if (btn?.name) fd.set(btn.name, btn.value);
   startTransition(() => act(fd));
 };
-const 오류 = (s: FormState) => (s.errors.length ? <ul className="dz-errs">{s.errors.map((x) => <li key={x}>{x}</li>)}</ul> : null);
+const 오류 = (s: FormState) => (s.errors.length ? <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((x) => <li key={x}>{x}</li>)}</ul> : null);
 
 /** 발행 — 한 달 · 한 축 · 한 상대. 칸은 숨은 셋뿐, 단추는 하단바 */
 export function IssueForm({ id, month, axis, party }: { id: string; month: string; axis: '공급사' | '영업채널'; party: string }) {
@@ -67,10 +67,10 @@ export function SideStep({ id, code, kind, label, on, month, biz, day, externalS
     <form id={id} className="dz-side-step" onSubmit={보냄(act)} aria-busy={pending}>
       <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value={kind} />
       <b>{label}</b>
-      {kind === 'billMonth' && <input name="month" type="month" defaultValue={month} aria-label="청구월" disabled={pending} />}
+      {kind === 'billMonth' && <label className="dz-side-field"><span>청구월</span><input name="month" type="month" defaultValue={month} disabled={pending} /></label>}
       {kind === 'invoice' && !on && <>
-        <input name="day" type="date" defaultValue={day} aria-label="계산서 날짜" disabled={pending} />
-        <input name="biz" defaultValue={biz} placeholder="사업자번호 10자리" aria-label="사업자번호" inputMode="numeric" disabled={pending} />
+        <label className="dz-side-field"><span>날짜</span><input name="day" type="date" defaultValue={day} disabled={pending} /></label>
+        <label className="dz-side-field"><span>사업자번호</span><input name="biz" defaultValue={biz} placeholder="10자리" inputMode="numeric" disabled={pending} /></label>
         {externalSubmit && <input type="hidden" name="on" value="1" />}
       </>}
       {!externalSubmit && (kind === 'billMonth'

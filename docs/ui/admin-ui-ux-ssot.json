@@ -1021,5 +1021,20 @@
     "meta": "400-500",
     "selectedAddsWeight": false,
     "rule": "Use weight for hierarchy, not selection state."
+  },
+  "brandUsage": {
+    "primary": "#1B2A4A",
+    "hover": "#24395F",
+    "weak": "#EEF3FA",
+    "focusRing": "#D8E2F0",
+    "selectedCard": {
+      "surface": "soft-primary-tint",
+      "titleText": "neutral-strong",
+      "valueText": "neutral-strong",
+      "metaText": "neutral-secondary"
+    },
+    "compactSelection": "brand-solid+white",
+    "semanticColors": "status-only",
+    "rule": "Brand color is concentrated in primary actions and compact selection controls, not repeated across large selected cards."
   }
 }

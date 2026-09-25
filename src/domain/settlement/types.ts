@@ -118,8 +118,9 @@ export interface IntakeCatalogSnapshot {
   };
   offer: {
     id: string;
-    supplierId: string;
-    supplierName: Maybe<string>;
+    /** Added for FreePass Data multi-supplier Offer parity. Older snapshots may not contain these fields. */
+    supplierId?: Maybe<string>;
+    supplierName?: Maybe<string>;
     termMonths: number;
     monthlyRent: number;
     deposit: Maybe<number>;

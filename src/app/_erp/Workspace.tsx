@@ -24,7 +24,7 @@ import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { sp, txt } from '../_fn/fmt';
 import { SettlementDetail } from './SettlementDetail';
 import { AutoSelect } from './AutoSelect';
-import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
+import { ProductDetail, ProductThumb, STATUS_TONE, carName } from './ProductDetail';
 import { buildProductList } from './productList';
 import {
   Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Tone,
@@ -131,7 +131,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
           <RowCards label="상품 목록">
             {hits.map(({ p, offer }) => (
               <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
+                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                 subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
                 meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}

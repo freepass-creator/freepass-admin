@@ -153,3 +153,27 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifeStageOf('수금', '지급', '보류'), '보류');
   });
 });
+
+
+test('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한다', () => {
+  const dirty = baseRow({
+    progress: {
+      ...baseRow().progress,
+      paper: true,
+      delivered: false,
+      deliveredAt: null,
+      billMonth: '2026-09',
+    },
+    claimStage: '청구',
+    payStage: '통보',
+  });
+  for (const change of [
+    { kind: 'confirm', axis: '공급사' as const },
+    { kind: 'confirm', axis: '영업채널' as const },
+    { kind: 'billMonth', month: '2026-09' } as const,
+  ]) {
+    const r = lifePatch(dirty, change);
+    assert.equal(r.ok, false);
+    assert.match(String((r as { error?: string }).error), /인도완료/);
+  }
+});

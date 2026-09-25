@@ -34,7 +34,8 @@ must(/settlements\.list\(\)/.test(settlement),'settlement route must read settle
 must(/settlements\.clawbacks\(\)/.test(settlement),'settlement route must read clawbacks');
 must(/settlements\.invoices\(/.test(settlement),'settlement route must read issued invoices');
 must(/contracts\.list\(\)/.test(esign),'esign route must read contracts.list()');
-must(/new EsignService\(esignRepository, esignAssets\)/.test(esignRuntime),'esign runtime must compose EsignService with ERP5 ports');
+must(/new EsignService\(esignRepository, esignAssets, esignFinalDocumentRenderer\)/.test(esignRuntime),'esign runtime must compose EsignService with ERP5 ports and the production PDF renderer');
+must(/from '\.\.\/adapters\/esign\/puppeteer-final-document-renderer'/.test(esignRuntime),'esign runtime must use the server Chromium PDF renderer (no mock renderer)');
 must(/const SESSIONS='esign_session'/.test(esignRepo),'esign repository must use esign_session');
 must(/const PRIVATE='esign_private'/.test(esignRepo),'esign repository must keep private submissions separate');
 must(/const EVENTS='esign_event'/.test(esignRepo),'esign repository must persist esign events');
@@ -68,6 +69,6 @@ if(errors.length){
   console.log('- intake + settlement -> Erp5SettlementRepository / settlement_rows');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
   console.log('- esign list -> Erp5ContractRepository / contract');
-  console.log('- esign runtime -> EsignService / esign_session + esign_private + Storage');
+  console.log('- esign runtime -> EsignService / esign_session + esign_private + Storage + Chromium PDF renderer');
   console.log('- writes remain fail-closed unless ERP5_WRITE=on');
 }

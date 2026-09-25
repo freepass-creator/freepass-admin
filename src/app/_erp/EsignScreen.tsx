@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, won0, type Facet, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, manWon, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 
@@ -72,9 +72,10 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
         <PanelHead kind="목록" title="전자계약목록" count={`전체 ${searched.filter((c) => !agent || c.agent === agent).length}건`} />
         <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" facets={[agentFacet]} keep={['sign']}
           dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} />
+        {/* 전자서명 QuickFilter 업무 항목은 미확정. 전체 + 대표 예시 1개만 둔다. */}
         <QuickFilter label="전자서명" items={[
           { key: 'all', label: `전체 ${searched.filter((c) => !agent || c.agent === agent).length}`, href: hrefWith(base, q, { sign: null }), on: !sign },
-          ...[...SIGN, '미연결'].map((s) => ({ key: s, label: `${s} ${n(s)}`, href: hrefWith(base, q, { sign: s }), on: sign === s })),
+          { key: 'progress', label: `진행중 ${n('진행중')}`, href: hrefWith(base, q, { sign: '진행중' }), on: sign === '진행중' },
         ]} />
         <PanelBody>
           <RowCards label="전자계약 목록">
@@ -92,7 +93,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
                     ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],
                     ['기간', c.term ? `${c.term}개월` : '—'],
                   ]}
-                  amount={won0(c.rent)} amountLabel="월 대여료" />
+                  amount={`월 ${manWon(c.rent)} 원`} unit="" />
               );
             })}
           </RowCards>

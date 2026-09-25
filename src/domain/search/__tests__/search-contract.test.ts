@@ -278,3 +278,17 @@ describe('White Label parity — vehicle facts stay separate from Offer facts', 
     assert.equal(matchProduct(p, { fuels: ['가솔린'] }), null);
   });
 });
+
+
+describe('White Label parity — customer vehicle class', () => {
+  it('validated detailed vehicle class projects into the same four customer buckets', () => {
+    const suv = product({ vehicleClass: '중형 SUV' });
+    assert.ok(matchProduct(suv, { customerVehicleClasses: ['SUV'] }));
+    assert.equal(matchProduct(suv, { customerVehicleClasses: ['승용'] }), null);
+  });
+
+  it('ambiguous vehicle class is not guessed into a customer bucket', () => {
+    const ambiguous = product({ vehicleClass: '경형' });
+    assert.equal(matchProduct(ambiguous, { customerVehicleClasses: ['승용'] }), null);
+  });
+});

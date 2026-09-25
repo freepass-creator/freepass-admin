@@ -33,7 +33,7 @@ export type 상품축 = FinderAxis;
 export const 상품축이름: [상품축, string][] = [
   ['status', '출고상태'], ['vc', '차종'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
   ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '연 약정주행'],
-  ['maker', '제조사'], ['cls', '차급'], ['year', '연식'], ['vmile', '현재 주행거리'],
+  ['maker', '제조사'], ['model', '모델'], ['cls', '차급'], ['year', '연식'], ['vmile', '현재 주행거리'],
   ['fuel', '연료'], ['credit', '심사'], ['supplier', '공급사'],
 ];
 

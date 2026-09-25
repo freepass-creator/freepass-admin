@@ -1935,3 +1935,22 @@ body > nav.fn-top :where(a, button):focus-visible,
 .fn-main .workspace :is(.dz-fs-sheet,.dz-popup,.dz-modal) {
   box-shadow: var(--ui-elevation-float);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Residual divider cleanup (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(
+    .panel-head,
+    .dz-listtop,
+    .dz-bar,
+    .dz-fs-head,
+    .dz-fs-foot,
+    .dz-month,
+    .summary-grid
+  ) {
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+}

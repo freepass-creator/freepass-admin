@@ -1,5 +1,25 @@
 # freepass-admin — AI/Developer Rules
 
+## -1. SINGLE UI LINEAGE — PR #92 RECOVERY
+
+UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
+1. `docs/ui/DESIGN-AUTHORITY.md`
+2. `docs/recovery/PR92-LATESTIZATION-STATUS.md`
+3. `docs/ui/ADMIN-UI-UX-SSOT.md`
+4. `docs/ui/admin-ui-ux-ssot.json`
+
+**PC 디자인 정본은 PR #92 actual route의 `src/app/_erp/*` 구현 한 계보뿐이다.**
+
+금지:
+- 삭제된 mockup/reference/screenshot을 Git history에서 찾아 복원하지 않는다.
+- isolated component browser fixture를 제품 최신 화면으로 해석하지 않는다.
+- main/다른 PR이 날짜가 더 최근이라는 이유로 시각 기준을 바꾸지 않는다.
+- 두 번째 디자인 SSOT, 대체 shell, 대체 theme를 만들지 않는다.
+- 기능 최신화를 이유로 #92의 3패널 line-free visual grammar를 교체하지 않는다.
+
+모바일 호환 코드나 test fixture가 남아 있어도 PC visual authority로 취급하지 않는다.
+
+
 ## 0. Mandatory Work handoff
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
 1. `AGENTS.md`

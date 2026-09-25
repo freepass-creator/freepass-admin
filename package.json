@@ -10,7 +10,8 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "uiux:map": "node scripts/check-uiux-consumer.mjs",
     "ui:check": "tsx scripts/check-ui-ssot.mts",
-    "data:check": "tsx scripts/check-live-data-wiring.mts"
+    "data:check": "tsx scripts/check-live-data-wiring.mts",
+    "test:contract-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts"
   },
   "dependencies": {
     "firebase-admin": "^14.4.0",

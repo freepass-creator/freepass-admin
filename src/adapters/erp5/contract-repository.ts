@@ -31,6 +31,9 @@ export interface ContractSummary {
   createdAt: number | null;
   signSentAt: number | null;
   signedAt: number | null;
+  terminationDate: string;
+  terminationReason: string;
+  terminatedAt: number | null;
   signUrl: string;
   signedPdfUrl: string;
 }
@@ -116,6 +119,9 @@ export class Erp5ContractRepository implements ContractLifecycleRepository {
         createdAt: N(c.created_at),
         signSentAt: N(c.sign_sent_at),
         signedAt: N(c.sign_signed_at),
+        terminationDate: S(c.contract_termination_date),
+        terminationReason: S(c.contract_termination_reason),
+        terminatedAt: N(c.contract_terminated_at),
         signUrl: S(c.esign_sign_url),
         signedPdfUrl: S(c.signed_pdf_url),
       });

@@ -30,6 +30,7 @@ export interface EsignFinalDocumentRenderer {
   render(input: {
     snapshot: EsignSession['snapshot'];
     submission: EsignPrivateSubmission;
+    signatureBytes: Uint8Array;
     sealHash: string;
   }): Promise<{ bytes: Uint8Array; contentType: 'application/pdf' }>;
 }

@@ -26,7 +26,13 @@ import { 고른값 } from './pick';
 
 export type FacetOption = { key: string; label: string; count: number };
 /** 축 하나 — key 는 곧 주소 칸 이름이다 */
-export type FacetAxis = { key: string; label: string; options: FacetOption[] };
+export type FacetAxis = {
+  key: string;
+  label: string;
+  options: FacetOption[];
+  /** 이 축이 바뀌면 의미가 무효가 되는 하위 축. 차량 계층에서 사용한다. */
+  clearOnChange?: string[];
+};
 
 /** 긴 목록은 머리 여덟만 — 원본 `HEAD_COUNT` */
 const HEAD_COUNT = 8;
@@ -74,12 +80,20 @@ export function FilterSheet({ axes, count, unit }: {
     u.delete('page');
     start(() => router.replace(`${path}?${u}`, { scroll: false }));
   };
+  const clearDescendants = (u: URLSearchParams, axis: string) => {
+    const config = axes.find((a) => a.key === axis);
+    for (const child of config?.clearOnChange ?? []) u.delete(child);
+  };
   const toggle = (axis: string, key: string) => go((u) => {
     const cur = 고른값(u.get(axis));
     const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
     if (next.length) u.set(axis, next.join(',')); else u.delete(axis);
+    clearDescendants(u, axis);
   });
-  const clearAxis = (axis: string) => go((u) => u.delete(axis));
+  const clearAxis = (axis: string) => go((u) => {
+    u.delete(axis);
+    clearDescendants(u, axis);
+  });
   const clearAll = () => go((u) => { for (const a of axes) u.delete(a.key); });
 
   const cur = shown.find((a) => a.key === active);

@@ -95,7 +95,7 @@ export interface SettlementMoney {
 export interface IntakeCatalogSnapshot {
   capturedAt: string;
   /** capturedAt을 제외한 계약상품 사본의 deterministic SHA-256. 같은 선택 재시도 판정에 쓴다. */
-  digest: string;
+  digest?: string;
   product: {
     id: string;
     version: number;
@@ -103,8 +103,8 @@ export interface IntakeCatalogSnapshot {
     supplierId: string;
     supplierName: Maybe<string>;
     productKind: Maybe<string>;
-    status: Maybe<string>;
-    consumerPrice: Maybe<number>;
+    status?: Maybe<string>;
+    consumerPrice?: Maybe<number>;
     vehicle: {
       nodeId: string;
       originId: string;
@@ -114,7 +114,7 @@ export interface IntakeCatalogSnapshot {
       trimId: Maybe<string>;
       matchLevel: string;
     };
-    specs: {
+    specs?: {
       modelYear: Maybe<number>;
       mileageKm: Maybe<number>;
       fuel: Maybe<string>;
@@ -129,7 +129,7 @@ export interface IntakeCatalogSnapshot {
       firstRegistrationDate: Maybe<string>;
     };
     /** Product-scope 정책 원본. Offer 정책과 합치기 전 사본. */
-    policyValues: PolicyValue[];
+    policyValues?: PolicyValue[];
   };
   offer: {
     id: string;
@@ -141,7 +141,7 @@ export interface IntakeCatalogSnapshot {
     /** Offer-scope 정책 원본. */
     policyValues: PolicyValue[];
     /** 당시 실제 적용된 Product+Offer 정책 결과. */
-    resolvedPolicyValues: PolicyValue[];
+    resolvedPolicyValues?: PolicyValue[];
   };
 }
 

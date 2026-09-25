@@ -2443,3 +2443,33 @@ body > nav.fn-top :where(a, button):focus-visible,
     transform: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Mobile list text rails
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) {
+    box-sizing: border-box;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .fn-main .workspace .dz-row-l2 {
+    text-align: left;
+  }
+
+  .fn-main .workspace .dz-row-l3 {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l3 > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

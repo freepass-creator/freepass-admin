@@ -703,6 +703,20 @@ const workspaceForListPolicy = await readFile(path.join(root, 'src/app/_erp/Work
 if (/amount=\{`남는 /.test(workspaceForListPolicy)) errors.push('Workspace.tsx: profit/margin must not be a default list-card amount');
 
 
+const threeLineCardGrammarBaseline = [
+  ['src/app/_erp/parts.tsx', /data-line-role="main"/, 'row card main role'],
+  ['src/app/_erp/parts.tsx', /data-line-role="key"/, 'row card key role'],
+  ['src/app/_erp/parts.tsx', /data-line-role="support"/, 'row card support role'],
+  ['src/app/_erp/shell.css', /Three-line list card semantics/, 'three-line semantic style block'],
+  ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake key line'],
+  ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구/, 'intake support fee line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`수수료 청구/, 'settlement support fee line'],
+] as const;
+for (const [file, re, label] of threeLineCardGrammarBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: three-line card grammar mismatch: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

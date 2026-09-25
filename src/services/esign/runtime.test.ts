@@ -629,3 +629,12 @@ test('contract cancellation retry repairs an active signing session and rejects 
     /다른 사유/,
   );
 });
+
+
+test('terminated contract cannot issue a new esign session', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{...contract(),contract_status:'계약해지',sign_status:'서명완료'});
+  await assert.rejects(()=>svc.issue('c1','tester'),/해지 계약/);
+  assert.equal(repo.sessions.size,0);
+});

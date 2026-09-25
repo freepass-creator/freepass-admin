@@ -21,7 +21,13 @@ export function planContractTermination(
   const reason=input.reason.trim();
   if(!reason)return {ok:false,error:'계약해지 사유를 적어 주세요.'};
   if(!DAY.test(input.effectiveDate))return {ok:false,error:'계약해지일은 YYYY-MM-DD 입니다.'};
+  const today=new Date(nowMs+9*3600_000).toISOString().slice(0,10);
+  if(input.effectiveDate>today)return {ok:false,error:`계약해지일은 오늘(${today})보다 뒤일 수 없습니다.`};
   if(!/^[A-Za-z0-9_-]{16,128}$/.test(input.operationId))return {ok:false,error:'계약해지 요청 식별자가 올바르지 않습니다.'};
+
+  if(S(contract.esign_id) && S(contract.sign_status)!=='서명완료'){
+    return {ok:false,error:'전자계약 서명 상태와 인도 상태가 맞지 않습니다 — 계약 상태를 먼저 확인해 주세요.'};
+  }
 
   if(B(intake.cancelled)||Number(intake.contractCancelledAt??0)>0||S(contract.contract_status)==='계약취소'){
     return {ok:false,error:'계약취소된 건은 계약해지할 수 없습니다.'};

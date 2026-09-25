@@ -727,3 +727,30 @@ test('revoked and expired public document tokens are blocked', async () => {
   s2!.expiresAt=Date.now()-1;
   await assert.rejects(()=>svc.publicDocument(token2),/만료된 전자계약 링크/);
 });
+
+
+test('admin esign asset read verifies stored sha', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  const stored=await assets.put('review/id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  repo.priv.set('esg_review',{
+    sessionId:'esg_review',
+    contractId:'c1',
+    assets:{
+      id_card:{...stored,name:'id.jpg',contentType:'image/jpeg'},
+    },
+  });
+
+  const ok=await svc.adminAsset('esg_review','id_card');
+  assert.ok(ok);
+  assert.equal(ok?.contentType,'image/jpeg');
+  assert.equal(ok?.bytes[0],0xff);
+
+  repo.priv.set('esg_bad',{
+    sessionId:'esg_bad',
+    contractId:'c1',
+    assets:{
+      id_card:{...stored,sha256:'0'.repeat(64),name:'id.jpg',contentType:'image/jpeg'},
+    },
+  });
+  assert.equal(await svc.adminAsset('esg_bad','id_card'),null);
+});

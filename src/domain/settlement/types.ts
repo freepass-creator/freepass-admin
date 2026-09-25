@@ -170,6 +170,9 @@ export interface SettlementRow {
   esignContractId?: Maybe<string>;
   contractCancelledAt?: Maybe<number>;
   contractCancellationReason?: Maybe<string>;
+  contractCancellationOperationId?: Maybe<string>;
+  contractCancellationContractId?: Maybe<string>;
+  contractCancellationBy?: Maybe<string>;
   contractTerminatedAt?: Maybe<number>;
   contractTerminationDate?: Maybe<string>;
   contractTerminationReason?: Maybe<string>;

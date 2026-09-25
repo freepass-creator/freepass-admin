@@ -8,6 +8,7 @@ import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from
 import { withContractHandoffDigest } from '../../domain/esign/handoff';
 import { toSettlementRow } from './to-settlement';
 import { intakeEventDocId } from '../../domain/settlement/code';
+import { finalizationBlockReason } from '../../domain/esign/finalization-gate';
 import { contractExitDecision } from '../../domain/esign/contract-exit';
 
 const CONTRACTS='contract';
@@ -329,21 +330,9 @@ export class Erp5EsignRepository implements EsignRepository {
         if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       }
 
-      const contractStatus=String(contractRaw.contract_status??'').trim();
       const intakeRawForGate=intakeDoc?.exists ? intakeDoc.data() as Record<string,unknown> : null;
-      const intakeCancelled=!!intakeRawForGate && (
-        intakeRawForGate.cancelled===true
-        || intakeRawForGate.cancelled==='true'
-        || intakeRawForGate.cancelled==='TRUE'
-        || Number(intakeRawForGate.contractCancelledAt??0)>0
-      );
-      const intakeTerminated=!!intakeRawForGate && Number(intakeRawForGate.contractTerminatedAt??0)>0;
-      if(contractStatus==='계약취소'||intakeCancelled){
-        throw new Error('계약취소된 계약은 전자서명 승인할 수 없습니다.');
-      }
-      if(contractStatus==='계약해지'||intakeTerminated){
-        throw new Error('계약해지된 계약은 전자서명 승인할 수 없습니다.');
-      }
+      const blocked=finalizationBlockReason(contractRaw,intakeRawForGate);
+      if(blocked)throw new Error(blocked);
 
       const signed=clean({...sessionPatch,status:'signed',finalizationId} as unknown as Record<string,unknown>);
       const finalizedAt=Date.now();

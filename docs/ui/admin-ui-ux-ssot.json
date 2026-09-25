@@ -1290,5 +1290,24 @@
       "numericVariant": "tabular-nums"
     },
     "rule": "Standardize line roles and rhythm, not the number of lines or total card height."
+  },
+  "listAmountLanguage": {
+    "unit": "ten-thousand-won",
+    "patterns": {
+      "monthlyRent": "월 N만 원",
+      "deposit": "보증 N만 원",
+      "settlement": "정산 N만 원",
+      "claim": "청구 N만 원",
+      "payout": "지급 N만 원",
+      "margin": "남는 N만 원"
+    },
+    "forbidden": [
+      "N만원/월",
+      "N원/월",
+      "월대여료 N원 as default list label"
+    ],
+    "detailUsesExactWon": true,
+    "displayOnly": true,
+    "rule": "Lists optimize scan speed with compact natural Korean amount wording; details retain exact won."
   }
 }

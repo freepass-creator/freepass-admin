@@ -73,7 +73,7 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
  * ★환수 세우기 — 인도된 줄(완납실적 · 분납실적)만. 금액은 사람이 넣는다(조건이 공급사마다 다르다) · 사유 필수.
  *   그 달 청구 · 지급 묶음에서 빠진다(정산관리 실적 줄 끝 «−금액» 줄). 같은 차 · 같은 달이 있으면 거절 글.
  */
-export function ClawbackForm({ code, today }: { code: string; today: string }) {
+export function ClawbackForm({ code, today, disabled = false }: { code: string; today: string; disabled?: boolean }) {
   const [s, act, pending] = useActionState<FormState, FormData>(clawbackAction, { errors: [] });
   return (
     <details className="dz-form-more">
@@ -87,7 +87,7 @@ export function ClawbackForm({ code, today }: { code: string; today: string }) {
           <label>영업채널에서 돌려받을 것<input name="agentAmt" inputMode="numeric" /></label>
           <label className="wide">사유 *<input name="reason" /></label>
           {s.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-          <button type="submit" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
+          <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '환수 세우기'}</button>
         </form>
       </div>
     </details>

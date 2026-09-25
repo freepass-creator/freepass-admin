@@ -30,7 +30,7 @@ export type IntakeOptions = {
  *   ★하는 일은 기능 쪽 그대로 — 영업채널·담당·공급사를 고르면 원장에 이미 있는 «코드» 를 따라 채운다(지어내지 않는다).
  *   ★필수는 도메인(validateIntake)이 정한다: 차량번호 · 공급사 · 접수일 · 고객명 · 영업채널 · 영업담당.
  */
-export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts }: {
+export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts, disabled = false }: {
   defaults: IntakeDefaults; options: IntakeOptions; cancelHref?: string; picked?: boolean;
   /** 차 골라 접수 — 서버가 미리 센 수수료(previewFeeAction 과 같은 셈) */
   fee?: FeePreview | null;
@@ -42,6 +42,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   productChoices?: string[];
   /** 원장 상품구분 전부(기능 LEDGER_PRODUCTS) — 직접 접수의 고를 말 */
   ledgerProducts?: readonly string[];
+  /** 쓰기 비활성 등 화면에서 이미 확정된 저장 불가 상태 */
+  disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
   const [channel, setChannel] = useState('');
@@ -222,7 +224,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         {state.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <div className="dz-bar-go">
           {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
-          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+          <button type="submit" className="primary" disabled={disabled || pending} aria-busy={pending}
+            aria-describedby={disabled ? 'intake-write-disabled' : undefined}>{pending ? '저장 중…' : '접수 저장'}</button>
         </div>
       </div>
     </form>

@@ -1489,6 +1489,12 @@
     "numericVariant": "tabular-nums",
     "money": "exact-won-with-unit",
     "productVisual": "photo-first-icon-fallback",
-    "rule": "List scans; detail reads exact key/value data with shared alignment."
+    "rule": "List scans; detail reads exact key/value data with shared alignment.",
+    "mobileRowMinHeightPx": 36,
+    "mobileComponents": [
+      "SummaryGrid",
+      "Sections"
+    ],
+    "crossShellParity": true
   }
 }

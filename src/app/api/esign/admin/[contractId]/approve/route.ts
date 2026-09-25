@@ -1,5 +1,5 @@
-import { esign } from '../../../../../../../server/esign';
-import { currentAdmin, requireAdmin } from '../../../../../../../server/require-admin';
+import { esign } from '../../../../../../server/esign';
+import { currentAdmin, requireAdmin } from '../../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
 

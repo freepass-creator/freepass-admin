@@ -2708,3 +2708,37 @@ QuickFilter / Seg / compact toggle:
 - Badge를 QuickFilter와 같은 크기로 만들기
 - 한 카드에 상태 Badge 여러 개 반복
 - 상태 아이콘에 pointer/elevation 부여
+
+
+# 60. No-wrap responsive density
+
+작은 화면에서 세로로 비대해지는 것보다
+**한 줄 유지 + ellipsis / horizontal scroll**을 우선한다.
+
+## Choice rows
+
+QuickFilter / Tabs / OfferPicker / Month selector:
+- flex-wrap 금지
+- horizontal scroll 허용
+- scrollbar는 숨김
+- item은 flex:none + nowrap
+
+## Cards
+
+- identity/title: 1줄 우선
+- primary value/money: 1줄 우선
+- support/meta: 1줄 + ellipsis
+- perks/secondary signals: 1줄 안에서 잘림/요약
+- 내용 때문에 모바일 카드가 100px 이상으로 상시 비대해지지 않게 한다
+
+## Actions
+
+- Primary / Secondary button text: nowrap
+- overflow 시 ellipsis
+- 버튼 높이를 텍스트 줄바꿈으로 늘리지 않는다
+
+## 원칙
+
+- 좁은 폭은 horizontal behavior로 해결
+- workflow/card hierarchy를 세로 wrap으로 재구성하지 않는다
+- touch target은 유지

@@ -190,6 +190,19 @@
 .dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
 .dz-choice input:focus-visible + span { box-shadow: 0 0 0 2px var(--ci스카이); }
 
+/* 전자계약 상세 위계 — 2026-09-25 */
+.dz-esign-focus {
+  margin-top: 2px;
+}
+.workspace[data-mode="esign"] .detail-panel > .dz-support-section {
+  margin-top: 12px;
+}
+.workspace[data-mode="esign"] .detail-panel > .dz-support-section .summary-grid {
+  margin-bottom: 8px;
+}
+.workspace[data-mode="esign"] .quick-filters {
+  padding-top: 8px; padding-bottom: 4px;
+}
 /* 정산관리 3패널 위계 — 2026-09-25 */
 .dz-settle-axis {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -5,6 +5,7 @@ import {
   findProducts,
   finderAxisMatches,
   matchFinderProduct,
+  sortFinderMatches,
   type FinderInput,
 } from '../finder';
 import { offer, product } from './fixtures';
@@ -95,4 +96,73 @@ test('Finder requirements stay AND while visible perk facet stays OR',()=>{
     selection,
     requirements:{perks:['경력무관'],driverAge:21},
   })),null);
+});
+
+
+test('finder sort uses matched offers, not hidden unmatched offers',()=>{
+  const a=product({
+    id:'a',
+    offers:[
+      offer({id:'a-selected',termMonths:36,monthlyRent:700_000}),
+      offer({id:'a-hidden',termMonths:60,monthlyRent:100_000}),
+    ],
+  });
+  const b=product({
+    id:'b',
+    offers:[offer({id:'b-selected',termMonths:36,monthlyRent:650_000})],
+  });
+  const selection=emptyFinderSelection();
+  selection.term=['36'];
+  const matches=findProducts([a,b],input({selection}));
+  assert.deepEqual(sortFinderMatches(matches,'asc').map((x)=>x.product.id),['b','a']);
+});
+
+test('white-label compatible sorts keep exact before partial and then apply requested value',()=>{
+  const exactOld=product({
+    id:'exact-old',
+    photoUrl:'https://example.com/a.jpg',
+    vehicle:{...product().vehicle,matchLevel:'SUB_MODEL',subModelId:'sub-dn8'},
+    specs:{modelYear:2022,mileageKm:50_000},
+    offers:[offer({monthlyRent:700_000,deposit:2_000_000})],
+  });
+  const exactNew=product({
+    id:'exact-new',
+    photoUrl:'https://example.com/b.jpg',
+    vehicle:{...product().vehicle,matchLevel:'SUB_MODEL',subModelId:'sub-dn8'},
+    specs:{modelYear:2025,mileageKm:20_000},
+    offers:[offer({monthlyRent:800_000,deposit:0})],
+  });
+  const partial=product({
+    id:'partial',
+    photoUrl:'https://example.com/c.jpg',
+    vehicle:{...product().vehicle,matchLevel:'MODEL'},
+    specs:{modelYear:2026,mileageKm:10_000},
+    offers:[offer({monthlyRent:500_000,deposit:0})],
+  });
+  const selection=emptyFinderSelection();
+  const matches=findProducts([partial,exactOld,exactNew],input({selection}),undefined);
+  // Force a sub-model query through the core contract so the MODEL row is PARTIAL.
+  const queried=[exactOld,exactNew,partial]
+    .map((p)=>matchFinderProduct(p,input({selection:{...selection}})))
+    .filter((x):x is NonNullable<typeof x>=>!!x);
+  // Basic value sorts on exact-only fixtures.
+  assert.deepEqual(sortFinderMatches(matches.filter((x)=>x.product.id!=='partial'),'year').map((x)=>x.product.id),['exact-new','exact-old']);
+  assert.deepEqual(sortFinderMatches(matches.filter((x)=>x.product.id!=='partial'),'mile').map((x)=>x.product.id),['exact-new','exact-old']);
+  assert.equal(queried.length,3);
+});
+
+test('same-car-many sort counts manufacturer + model in the filtered result',()=>{
+  const a1=product({id:'a1',vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저'}});
+  const a2=product({id:'a2',vehicle:{...product().vehicle,manufacturerId:'현대',modelId:'그랜저'}});
+  const b=product({id:'b',vehicle:{...product().vehicle,manufacturerId:'기아',modelId:'K5'}});
+  const matches=findProducts([b,a1,a2],input());
+  assert.deepEqual(sortFinderMatches(matches,'many').map((x)=>x.product.id).slice(0,2).sort(),['a1','a2']);
+});
+
+test('popular sort uses the same model ordering baseline as White Label',()=>{
+  const k5=product({id:'k5',vehicle:{...product().vehicle,modelId:'K5'},photoUrl:'https://example.com/k5.jpg'});
+  const sorento=product({id:'sorento',vehicle:{...product().vehicle,modelId:'쏘렌토'},photoUrl:'https://example.com/s.jpg'});
+  const unknown=product({id:'unknown',vehicle:{...product().vehicle,modelId:'미등록모델'},photoUrl:'https://example.com/u.jpg'});
+  const matches=findProducts([unknown,k5,sorento],input());
+  assert.deepEqual(sortFinderMatches(matches,'popular').map((x)=>x.product.id),['sorento','k5','unknown']);
 });

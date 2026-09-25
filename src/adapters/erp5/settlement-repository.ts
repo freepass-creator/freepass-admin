@@ -10,7 +10,7 @@ import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResp
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
-import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
+import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, nextInvoiceRevision, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
@@ -332,29 +332,15 @@ export class Erp5SettlementRepository {
       const live = new Set(plan.invoice.codes);
       const snapshot = snapshotOf(axis, party, month, freshG.lines.filter((l) => live.has(l.row.id)), freshClaws);
       /* ★다시 발행이면 번호는 그대로. 이전 snapshot/상대 답변까지 revision history에 봉인한다. */
-      const previousRevision = existing?.revision ?? 1;
-      const history = existing ? [
-        ...(existing.history ?? []),
-        {
-          revision: previousRevision,
-          supply: existing.supply,
-          vat: existing.vat,
-          total: existing.total,
-          lines: existing.lines,
-          clawback: existing.clawback ?? 0,
-          issuedAt: existing.issuedAt,
-          snapshot: existing.snapshot,
-          response: existing.response ?? null,
-        },
-      ] : [];
+      const revisionReceipt = nextInvoiceRevision(existing);
       tx.set(invRef, {
         ...(existing ?? {}),
         ...plan.invoice,
         ...party0,
         snapshot,
-        revision: existing ? previousRevision + 1 : 1,
+        revision: revisionReceipt.revision,
         ...(existing ? { response: null } : {}),
-        history,
+        history: revisionReceipt.history,
       });
       return { ok: true as const, invoice: plan.invoice };
     });

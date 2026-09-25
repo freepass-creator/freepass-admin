@@ -10,6 +10,7 @@ test('contract cancellation blocks esign finalization from either projection', (
   assert.match(String(finalizationBlockReason({contract_status:'계약취소'},{cancelled:false})),/계약취소/);
   assert.match(String(finalizationBlockReason({contract_status:'계약완료'},{cancelled:true})),/계약취소/);
   assert.match(String(finalizationBlockReason({contract_status:'계약완료'},{contractCancelledAt:1})),/계약취소/);
+  assert.match(String(finalizationBlockReason({contract_status:'계약완료'},{cancelled:'참'})),/계약취소/);
 });
 
 test('contract termination blocks esign finalization from either projection', () => {

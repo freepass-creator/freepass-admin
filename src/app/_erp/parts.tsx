@@ -137,7 +137,9 @@ export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge,
 }) {
   return (
     <article className={`erp-rowcard${steps ? '' : ' erp-rowcard--no-steps'}`} role="listitem"
-      data-tone={tone && tone !== 'neutral' ? tone : undefined} aria-current={current ? 'true' : undefined}>
+      data-tone={tone && tone !== 'neutral' ? tone : undefined}
+      data-thumb-status={thumbStatus ? 'true' : undefined}
+      aria-current={current ? 'true' : undefined}>
       {thumb ? <div className={`erp-rowcard-thumb${thumbStatus ? ' erp-rowcard-thumb--status' : ''}`}>{thumb}</div> : null}
       <div className="erp-rowcard-id">
         <h3 className="erp-rowcard-title"><Link className="erp-rowcard-link" href={href} aria-current={current ? 'true' : undefined}>{title}</Link>{badge}</h3>

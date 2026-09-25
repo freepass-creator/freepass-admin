@@ -1036,5 +1036,15 @@
     "compactSelection": "brand-solid+white",
     "semanticColors": "status-only",
     "rule": "Brand color is concentrated in primary actions and compact selection controls, not repeated across large selected cards."
+  },
+  "cardSignalBudget": {
+    "identity": 1,
+    "statusSignal": 1,
+    "metaLine": 1,
+    "primaryValue": 1,
+    "riskFlagMax": 1,
+    "compactStatusRule": "If a status thumbnail is visible, suppress a duplicate status badge.",
+    "iconRule": "Use icons only for action or state meaning; no decorative icons.",
+    "repeatedSemanticSignal": false
   }
 }

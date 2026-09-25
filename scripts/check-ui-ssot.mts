@@ -576,6 +576,27 @@ for (const [re, label] of mobileStateBaseline) {
   if (!re.test(cssFinal)) errors.push(`interaction state mismatch or missing: ${label}`);
 }
 
+/* QuickFilter business items are provisional until the user configures them.
+ * Guard the current admin from silently expanding example chips into a full taxonomy. */
+const quickFilterPolicyBaseline = [
+  ['src/app/_erp/Workspace.tsx', /QuickFilter 업무 항목은 아직 확정 전/, 'intake quick filters explicitly provisional'],
+  ['src/app/_erp/SettlementScreen.tsx', /상태 QuickFilter 업무 항목은 미확정/, 'settlement quick filters explicitly provisional'],
+] as const;
+for (const [file, re, label] of quickFilterPolicyBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: quick filter provisional contract missing: ${label}`);
+}
+
+const naturalTypographyBaseline = [
+  [/Natural ERP typography roles/, 'desktop natural ERP typography role block'],
+  [/\.erp-panel-head h2 \{ font-size: var\(--erp-fs-panel\); \}/, 'panel title role size'],
+  [/\.erp-rowcard-title,[\s\S]*?\.erp-facet-opt,[\s\S]*?font-size: var\(--erp-fs-body\)/, 'card/control body size role'],
+  [/\.erp-rowcard-amount strong,.erp-tile-row strong\) \{ font-size: var\(--erp-fs-section\); \}/, 'primary value section size'],
+] as const;
+for (const [re, label] of naturalTypographyBaseline) {
+  if (!re.test(desktopCss)) errors.push(`natural typography contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

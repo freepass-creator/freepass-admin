@@ -1046,5 +1046,26 @@
     "compactStatusRule": "If a status thumbnail is visible, suppress a duplicate status badge.",
     "iconRule": "Use icons only for action or state meaning; no decorative icons.",
     "repeatedSemanticSignal": false
+  },
+  "dividers": {
+    "default": "none",
+    "decorative": false,
+    "removedFrom": [
+      "panelHead",
+      "searchbar",
+      "quickFilterRow",
+      "panelFoot",
+      "cardTitle",
+      "cardFooter",
+      "simpleSection"
+    ],
+    "allowedFor": [
+      "timelineConnector",
+      "floatingLayerBoundary",
+      "focus",
+      "error",
+      "navigationStructure"
+    ],
+    "rule": "Use lines only when they communicate structure that spacing/surface cannot."
   }
 }

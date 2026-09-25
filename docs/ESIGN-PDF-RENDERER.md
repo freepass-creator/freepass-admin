@@ -33,6 +33,34 @@ The template references supplier logos relative to its public URL (`assets/…`)
 
 DECISION REQUIRED: `assets/logo-sonogong.webp` and `assets/logo-jpk.png` are referenced by the template but are not in the repository. Until those brand files are supplied, final PDFs for those suppliers show the company name instead of the logo.
 
+## Overflow / truncation guard
+
+Every page is a fixed A4 box, and its inner regions (`.pbody`, cards, special terms) use `overflow:hidden`. Text that does not fit is hidden inside those regions, never on the page box itself, so a page-level check alone passes while legal text is silently dropped. Before this guard, measured on the real template:
+
+- special terms of ~4,500+ chars: only the first ~67 clauses reached the PDF;
+- options of 300 chars: pushed the "초과주행 정산" clause (약관 제23조 안내) off page 2 — it vanished from the PDF.
+
+The renderer now checks every visible clipping container inside each page and fails closed (`영역을 넘쳐 잘리는 내용`), reporting only class names (no contract text).
+
+Measured limits with the current template (pass / blocked):
+
+| Field | Passes | Blocked |
+|---|---|---|
+| options | 150 chars | 200 chars |
+| special terms (prose) | 3,000 chars | 3,300 chars |
+| special terms (short lines) | 20 lines | 40 lines |
+| customer address | 200 chars | 300 chars |
+| vehicle remark | 120 chars | — |
+
+DECISION REQUIRED (outside this renderer): either cap these inputs at intake/issue time, or let the template flow long special terms onto continuation pages. Until then, an over-long contract cannot be finalized (it is never sealed with missing text).
+
+## Runtime footprint (measured locally, Chromium 147)
+
+- traced files for the approve route: ~89 MB (Chromium brotli 64 MB) — under Vercel's 250 MB function limit;
+- cold render incl. Chromium extraction ~4.1 s, warm ~1.9 s; end-to-end approval on emulators ~4–5 s;
+- peak RSS (node + Chromium, upper bound) ~0.7–0.8 GB;
+- no Chromium process or temp HTML/PDF left after a render.
+
 ## Browser-side code
 
 Code evaluated inside Chromium (`waitForFunction`/`evaluate`) is passed as source strings, never as TypeScript functions. Transpilers (tsx/esbuild `keepNames`, Next/SWC) may inject helpers such as `__name` into serialized functions; those do not exist in the page and previously made every render fail (`ReferenceError: __name is not defined`).

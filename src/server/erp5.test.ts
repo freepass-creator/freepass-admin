@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { CanonicalProduct } from '../domain/product/types';
-import { productByIdFresh, products } from './erp5';
+import { productByIdFresh, products } from './freepass-data';
 
-test('접수 저장용 상품 조회는 목록 캐시를 거치지 않고 ERP5 단건 정본을 읽는다', async (t) => {
+test('접수 저장용 상품 조회는 목록 캐시를 거치지 않고 FreePass Data 단건 정본을 읽는다', async (t) => {
   const originalGet = products.get;
   const originalList = products.list;
   const fresh = { id: 'product-fresh' } as CanonicalProduct;

@@ -2843,3 +2843,91 @@ Visual QA:
 - Panel/Card/Control computed radius 검사
 - Card horizontal padding 검사
 - 허용값에서 1px 이상 벗어나면 회귀로 취급
+
+# 65. Card line contract
+
+카드는 먼저 **몇 줄짜리 카드인지**가 정해지고,
+정보는 그 줄 안에 들어간다.
+내용이 늘었다고 카드 구조를 매번 새로 키우지 않는다.
+
+## 목록 카드
+
+기본 줄 높이:
+- line-height: 20px
+- line gap: 2px
+
+### 1줄 카드
+- identity/value 한 줄
+- 상태나 금액은 같은 줄 우측에 둘 수 있다
+- 줄바꿈 금지
+- overflow는 ellipsis
+
+### 2줄 카드
+- 1행: identity/title
+- 2행: context/meta 또는 primary value
+- 두 줄 모두 한 줄 유지
+- 각 줄 간 gap 2px
+
+### 3줄 카드
+- 1행: identity/title
+- 2행: context/meta
+- 3행: result/amount/support
+- 목록 카드의 기본 최대치
+- 3줄을 넘는 설명은 상세 화면으로 이동
+
+## Compact list card
+
+- 최대 3줄
+- title / sub / meta 순서
+- 없는 줄은 제거
+- 빈 줄을 자리만 차지하게 만들지 않는다
+- 카드 전체를 긴 문장 때문에 키우지 않는다
+
+## Wide RowCard
+
+가로 영역:
+- identity
+- progress
+- facts
+- amount
+
+각 영역 내부 텍스트는 원칙적으로 한 줄이다.
+facts의 label/value도 한 행에서 끝낸다.
+
+## Tile / content card
+
+- 기본 1~2줄
+- 1행: label ↔ primary value
+- 2행: support label ↔ support value
+- 3줄 이상 설명이 필요하면 Tile 안에 계속 쌓지 않고 Detail section으로 보낸다
+
+## 줄바꿈
+
+기본:
+- identity/title: nowrap + ellipsis
+- meta/context: nowrap + ellipsis
+- amount/value: nowrap
+- status/badge: nowrap
+- 긴 업무 설명문만 Detail section에서 자연 줄바꿈 허용
+
+## 정렬
+
+- identity/title/context: 좌측 정렬
+- 숫자/금액/result: 우측 정렬
+- 같은 카드 묶음의 금액 우측선은 동일해야 한다
+- tabular-nums 사용
+- 한 카드 안에서 왼쪽 정보와 오른쪽 값을 임의로 뒤집지 않는다
+
+## 금지
+
+- 카드마다 임의 line-height
+- 내용이 많다는 이유로 4~5줄 목록 카드 생성
+- 제목 두 줄 wrap을 기본값으로 사용
+- 금액 줄바꿈
+- 줄마다 서로 다른 vertical gap
+- 같은 역할의 카드인데 화면마다 줄 수/정렬 규칙 변경
+
+Visual QA:
+- card line computed line-height 20px 검사
+- 한 줄 요소가 22px 이상으로 커지면 FAIL
+- 예상치 못한 vertical wrap을 FAIL

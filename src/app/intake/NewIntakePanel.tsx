@@ -80,7 +80,7 @@ export async function NewIntakePanel({ rows, productId, offerId, back }: {
         ? <Notice tone="warn">선택한 상품을 더 이상 찾을 수 없습니다 — 상품 목록에서 다시 골라 주세요.</Notice>
         : <EmptyState>차 없이 직접 넣습니다. 차에서 고르려면 가운데 상세에서 기간을 고르고 「이 상품 접수하기」.</EmptyState>}
       {!writeEnabled() && <div id="intake-write-disabled"><Notice tone="warn">현재 조회 전용이라 접수를 저장할 수 없습니다.</Notice></div>}
-      <EmptyState>같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</EmptyState>
+      <p className="dz-form-hint">같은 차량번호 + 접수일이 원장에 이미 있으면 새로 만들지 않고 그 줄을 엽니다.</p>
       {(!selectedProductPath || (product && offer)) && (
         <div className="dz-form"><IntakeForm defaults={defaults} options={options} cancelHref={back} picked={!!(product && offer)} fee={수수료}
           productChoices={고를말} ledgerProducts={LEDGER_PRODUCTS} disabled={!writeEnabled()} /></div>

@@ -4,6 +4,19 @@ import type { EsignPrivateSubmission, EsignSnapshot } from './types';
 const S=(v:unknown)=>String(v??'').trim();
 export const sha256=(v:string|Uint8Array)=>createHash('sha256').update(v).digest('hex');
 
+export function stableJson(value: unknown): string {
+  const canonical=(v:unknown):unknown=>{
+    if(Array.isArray(v))return v.map(canonical);
+    if(v&&typeof v==='object')return Object.fromEntries(
+      Object.entries(v as Record<string,unknown>)
+        .sort(([a],[b])=>a.localeCompare(b))
+        .map(([k,x])=>[k,canonical(x)]),
+    );
+    return v;
+  };
+  return JSON.stringify(canonical(value));
+}
+
 export function signedSnapshot(snapshot:EsignSnapshot, submission:EsignPrivateSubmission) {
   return {
     ...snapshot,

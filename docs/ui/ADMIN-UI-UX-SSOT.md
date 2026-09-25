@@ -714,6 +714,8 @@ raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `
 - 접수목록만 실패하는 경우는 partial warning으로 남겨 상품/접수 다른 기능을 계속 사용
 - 정산/전자계약 핵심 목록 실패는 fatal error boundary
 - 조회 전용일 때 `접수 저장`은 실제 disabled이며 이유와 연결
+- 조회 전용은 접수 상세의 진행/회차/수수료/프로모션/가감/환수 및 정산 lifecycle 보조행동까지 전파된다.
+- 정산관리의 문서 발행과 청구링크 생성/회수도 조회 전용이면 실제 disabled이며 가까운 이유와 연결한다.
 - 정산 문서 발행 disabled는 `planInvoice`의 막힌 이유와 연결
 - 접수 상세의 blocked Primary는 막힘 사유 Notice와 연결
 

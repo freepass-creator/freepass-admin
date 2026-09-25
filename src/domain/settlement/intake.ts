@@ -242,9 +242,12 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
-    if (S(cur.esignContractId)) {
-      return { ok: false, error: '계약이 연결된 접수는 일반 접수 취소가 아니라 계약취소 절차로 처리합니다' };
-    }
+    /*
+     * 접수취소는 계약 연결 여부와 무관한 «접수의 종료»다.
+     * 전자계약이 연결돼 있어도 인도/정산 전이면 이 원장을 취소한다.
+     * 전자서명 세션 철회·증빙 보존 같은 기술적 후처리는 별도 전자계약 계층의 일이지,
+     * 별도의 업무 상태 「계약취소」를 만들 이유가 아니다.
+     */
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();
     if (!reason) return { ok: false, error: '취소 사유를 넣어야 합니다' };

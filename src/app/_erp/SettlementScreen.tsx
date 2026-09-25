@@ -118,10 +118,10 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
             tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
             title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
-            sub={`${name} ${g.done}/${g.lines.length} · 완료 ${g.completed}/${g.lines.length}`}
-            lines={g.unknown || g.broken || g.clawbacks.length
-              ? [`이슈 · 미확정 ${g.unknown} · 끊김 ${g.broken} · 환수 ${g.clawbacks.length}`]
-              : []}
+            sub={`${name} ${g.done}/${g.lines.length}`}
+            meta={g.unknown || g.broken || g.clawbacks.length
+              ? `이슈 · 미확정 ${g.unknown} · 끊김 ${g.broken} · 환수 ${g.clawbacks.length}`
+              : `완료 ${g.completed}/${g.lines.length}`}
             facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
             amount={`정산 ${won0(g.net)}원`} unit="" />
         );

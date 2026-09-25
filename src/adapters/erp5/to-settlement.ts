@@ -108,6 +108,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     contractTerminationDate: s(d.contractTerminationDate),
     contractTerminationReason: s(d.contractTerminationReason),
     contractTerminationOperationId: s(d.contractTerminationOperationId),
+    contractTerminationContractId: s(d.contractTerminationContractId),
 
     progress: {
       paper: b(d.paper),

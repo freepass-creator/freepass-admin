@@ -154,6 +154,7 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
       productVersion: 7,
       offerId: 'O-36',
       sourceSnapshotId: 'erp5-20260921',
+      snapshotDigest: null,
     });
   });
 

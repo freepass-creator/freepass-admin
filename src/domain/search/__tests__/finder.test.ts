@@ -29,7 +29,7 @@ test('Domain Finder keeps rent/deposit conditions on one Offer',()=>{
   selection.dep=['d0'];
   assert.equal(matchFinderProduct(p,input({selection})),null);
 
-  selection.rent=['r100'];
+  selection.rent=['r90'];
   const match=matchFinderProduct(p,input({selection}));
   assert.deepEqual(match?.matchedOfferIds,['no-deposit']);
 });

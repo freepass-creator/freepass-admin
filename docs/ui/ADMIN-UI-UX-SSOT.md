@@ -3071,3 +3071,19 @@ Web RowCard와 Mobile ListRow는 같은 3줄 의미를 공유한다.
 Visual QA:
 - visual/text top·bottom 차이 2px 초과 FAIL
 - primary value 우측 기준선 drift 검사
+
+# 72. Status tile semantic tones
+
+상태타일은 Web/Mobile에서 같은 의미에 같은 색을 사용한다.
+
+- 진행 / info: navy
+- 완료 / ok: green
+- 보류 / warn: amber
+- 오류·취소·이슈 / err: red
+- 대기·미연결·중립 / neutral: grey
+
+규칙:
+- 색은 상태 의미를 보조할 뿐, 텍스트/아이콘을 대체하지 않는다.
+- 같은 상태를 Web과 Mobile에서 다른 색으로 표현하지 않는다.
+- 상태타일이 있으면 Main 옆 Badge는 기본적으로 중복 표시하지 않는다.
+- 상품처럼 상태타일이 아닌 사진 visual에서는 필요 시 Badge를 사용할 수 있다.

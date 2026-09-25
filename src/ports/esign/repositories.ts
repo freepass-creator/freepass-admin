@@ -17,6 +17,11 @@ export interface EsignRepository {
     contractId: string,
     actor: string,
   ): Promise<{ revoked: boolean; session: EsignSession }>;
+  cancelSignedContract(
+    contractId: string,
+    reason: string,
+    actor: string,
+  ): Promise<{ cancelled: boolean; needsClawback: boolean; session: EsignSession }>;
   finalizeSigned(
     sessionId: string,
     finalizationId: string,

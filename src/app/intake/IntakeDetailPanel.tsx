@@ -161,7 +161,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
       <PanelHeader title="접수 상세" backHref={back} backLabel="목록으로" />
-      {created && <Notice tone="ok">ERP5 에 새 접수를 세웠습니다.</Notice>}
+      {created && <Notice tone="ok">새 접수를 저장했습니다.</Notice>}
       {exists && <Notice tone="warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</Notice>}
       <div className="vehicle-title">
         <div><h2>{txt(r.customer)}</h2><p>{txt(r.plate)} · {txt(r.model)} · 접수 {txt(r.receivedAt)}</p></div>

@@ -5,6 +5,7 @@ import {
   type FinderInput, type FinderSort,
 } from '../../domain/search/finder';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
+import { confirmedVehicleId } from '../../domain/search/vehicle-match';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
@@ -111,7 +112,8 @@ export async function ProductWorkspace({ q, mode, base }: {
     dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
     mile: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.annualMileageKm).filter((x): x is number => typeof x === 'number')))]
       .sort((a, b) => a - b).map((km) => ({ k: String(km), label: `연 ${(km / 10000).toLocaleString('ko-KR')}만km` })),
-    maker: 많은순(pool.map((h) => h.product.vehicle.manufacturerId ?? '')).map((k) => ({ k, label: k })),
+    maker: 많은순(pool.map((h) => confirmedVehicleId(h.product.vehicle, 'MANUFACTURER') ?? '')).map((k) => ({ k, label: k })),
+    model: 많은순(pool.map((h) => confirmedVehicleId(h.product.vehicle, 'MODEL') ?? '')).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
     year: [...new Set(pool.map((h) => h.product.specs.modelYear).filter((x): x is number => typeof x === 'number'))]
       .sort((a, b) => b - a).map((y) => ({ k: String(y), label: `${y}년` })),

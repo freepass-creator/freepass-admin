@@ -187,6 +187,16 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const noWrapResponsiveBaseline = [
+  [/\.erp-std \.erp-toolbar \.erp-facet-opts[\s\S]*?flex-wrap:\s*nowrap/, 'desktop quick filters nowrap'],
+  [/\.quick-filters,.tabs,.offer-picker,.dz-month[\s\S]*?flex-wrap:\s*nowrap/, 'mobile choice rows nowrap'],
+  [/\.dz-row:has\(\.dz-row-l2\.value\)[\s\S]*?contain-intrinsic-size:\s*auto 88px/, 'mobile value card intrinsic 88px'],
+] as const;
+for (const [re, label] of noWrapResponsiveBaseline) {
+  const target = label.startsWith('desktop') ? desktopCss : cssFinal;
+  if (!re.test(target)) errors.push(`no-wrap responsive contract missing: ${label}`);
+}
+
 const compactSignalBaseline = [
   ['src/app/_erp/parts.tsx', /data-thumb-status=\{thumbStatus \? 'true' : undefined\}/, 'status-thumbnail marker'],
   ['src/app/_erp/shell.css', /\.erp-rowcard\[data-thumb-status="true"\][\s\S]*?\.erp-rowcard-title > \.erp-badge[\s\S]*?display:\s*none/, 'compact duplicate badge suppression'],

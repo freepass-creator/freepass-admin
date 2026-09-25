@@ -2759,30 +2759,32 @@ QuickFilter의 **위치·높이·형태·선택 문법은 UI 규격**이지만,
 
 # 62. Natural ERP typography
 
-폰트는 디자인 장식이 아니라 정보 위계다.
+폰트 크기는 위계의 주 수단이 아니다.
+일상적인 ERP 화면은 가능한 한 **14px 하나를 기본 언어**로 사용하고,
+보조정보만 12px로 낮춘다.
 
-PC 기본 역할:
-- Panel title: 18 / 700
-- Section title: 16 / 600
+기본 역할:
+- Panel title: 14 / 700
+- Section title: 14 / 600
 - Card identity / body / input / button / QuickFilter: 14
-- Primary money/value: 16 / 700
+- Primary money/value: 기본 14 / 700
 - Support / label / meta / Badge / Tag: 12
-- KPI만 24 허용
 
-Mobile 기본 역할:
-- Panel title: 18 / 700
-- Card identity / body / input / action / QuickFilter: 14
+제한적 예외:
+- 16px 이상은 화면 단위 제목, KPI, 특수 결과값처럼 명확한 이유가 있을 때만 허용
+- 일반 Panel/Card 안에서는 크기 차이보다 weight / color / spacing으로 위계를 만든다
+
+Mobile도 동일:
+- Panel title / Card identity / body / input / action / QuickFilter: 14
 - Support / label / meta / Badge: 12
-- 모바일은 정보 위계를 위해 새로운 13/15/16px 중간 단계를 만들지 않는다.
 
 Visual QA:
-- 실제 computed font-size를 Panel title / Card title / Primary value / Control / Support 역할별로 검사한다.
-- PC와 Mobile 모두 역할 범위를 벗어나면 FAIL한다.
+- Panel title / Card title / Primary value / Control은 기본 14px 범위인지 검사한다.
+- Support는 12px 범위인지 검사한다.
+- 일반 업무 화면에서 제목이라는 이유만으로 16~18px로 커지면 FAIL한다.
 
 원칙:
 - 화면마다 새로운 폰트 크기를 만들지 않는다.
-- 작은 정보를 억지로 11px대로 줄이지 않는다.
-- 일반 본문/버튼을 16px 이상으로 키워 모바일 카드처럼 보이게 하지 않는다.
-- 제목과 금액을 동시에 과도하게 굵게 하지 않는다.
-- 선택 상태를 font-size/weight 증가로 표현하지 않는다.
-- 목표는 디자인한 티가 아니라 오래 써도 자연스러운 업무도구다.
+- 선택 상태는 font-size/weight 증가로 표현하지 않는다.
+- 제목은 크기보다 굵기·색·여백으로 구분한다.
+- 목표는 디자인한 티가 아니라 오래 써도 자연스러운 시판형 ERP다.

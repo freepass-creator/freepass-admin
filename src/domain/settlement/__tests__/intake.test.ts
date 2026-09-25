@@ -196,6 +196,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     const r = progressPatch({ paper: false }, { kind: 'paper', on: true });
     assert.ok(r.ok); assert.deepEqual(r.ok && r.patch, { paper: true }); assert.equal(r.ok && r.events.length, 1);
   });
+  it('전자계약 연결 건은 signed 전 수동 계약서 완료를 막는다', () => {
+    const r = progressPatch({ paper: false, esignContractId: 'ctr_1' }, { kind: 'paper', on: true });
+    assert.equal(r.ok, false);
+    assert.match(String((r as { error?: string }).error), /전자계약 연결 건/);
+  });
   it('차량번호를 나중에 배정할 수 있다', () => {
     const r = progressPatch({ plate: '', cancelled: false }, { kind: 'plate', plate: '12가 3456' });
     assert.ok(r.ok);

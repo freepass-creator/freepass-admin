@@ -1496,5 +1496,32 @@
       "Sections"
     ],
     "crossShellParity": true
+  },
+  "surfaceTypes": {
+    "list": {
+      "purpose": "find-compare-select",
+      "structure": "64px visual + Main/Key/Support 3-line card"
+    },
+    "content": {
+      "purpose": "read-selected-target",
+      "structure": "hero + grouped key/value + exact values"
+    },
+    "input": {
+      "purpose": "edit-process-save",
+      "structure": "field groups + validation + fixed action bar"
+    },
+    "rule": "Share semantics/tokens, not layout geometry."
+  },
+  "embeddedSelectableList": {
+    "allowedIn": "content",
+    "productOffer": {
+      "mainLeft": "term months",
+      "mainRight": "exact monthly rent",
+      "key": "deposit + prepayment + annual mileage when present",
+      "support": "selection state / proceed with this offer",
+      "selectedState": "tint + inset",
+      "actionBinding": "selected offer id drives intake action"
+    },
+    "rule": "Embedded selectable lists do not change the parent surface type."
   }
 }

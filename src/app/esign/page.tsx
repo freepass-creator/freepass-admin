@@ -125,12 +125,11 @@ async function EsignBoards({ searchParams }: {
               selected={c.id === selected?.id}
               status={서명상태(c)}
               title={txt(c.customer)}
+              mainValue={c.rent === null || c.rent === undefined ? '대여료 미확인' : `월 ${Math.round(c.rent / 10000).toLocaleString('ko-KR')}만 원`}
               badge={txt(c.signStatus) === '—' ? '미연결' : txt(c.signStatus)}
               tone={c.signStatus === '서명완료' ? 'plain' : 'act'}
-              flag={c.status && c.status !== '완료' ? txt(c.status) : undefined}
               meta={[c.plate, c.vehicle].filter(Boolean).join(' · ') || '—'}
-              value={c.rent === null || c.rent === undefined ? '대여료 미확인' : `${won(c.rent)}원`}
-              aside={c.term === null || c.term === undefined ? '기간 미확인' : `${num(c.term)}개월`}
+              value={`${c.term === null || c.term === undefined ? '기간 미확인' : `${num(c.term)}개월`} · ${txt(c.status)}`}
             />
           ))}
           {shown.length === 0 && <EmptyState>이 조건에 맞는 계약이 없습니다.</EmptyState>}

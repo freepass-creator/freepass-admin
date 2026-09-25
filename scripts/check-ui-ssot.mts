@@ -629,6 +629,21 @@ for (const [re, label] of solidMaterialityBaseline) {
   if (!re.test(target)) errors.push(`solid materiality contract missing: ${label}`);
 }
 
+const geometryContractBaseline = [
+  [/2026-09-25 — Geometry contract/, 'desktop geometry contract block'],
+  [/\.erp-std \.erp-panel \{[\s\S]*?border-radius: var\(--erp-r-lg\)/, 'desktop panel radius 8 role'],
+  [/\.erp-std :is\(\.erp-rowcard,\.erp-tile,\.erp-listcard,\.erp-kpi\) \{[\s\S]*?border-radius: var\(--erp-r-md\)/, 'desktop card radius 6 role'],
+  [/\.erp-std \.erp-rowcard \{[\s\S]*?padding: var\(--erp-sp-3\)/, 'desktop card padding 12'],
+  [/Geometry contract \(mobile\/live\)/, 'mobile geometry contract block'],
+  [/\.fn-main \.workspace > \.panel \{[\s\S]*?border-radius: 0/, 'mobile panel radius 0'],
+  [/panel radius mismatch/, 'visual QA panel radius check'],
+  [/card horizontal padding mismatch/, 'visual QA card padding check'],
+] as const;
+for (const [re, label] of geometryContractBaseline) {
+  const target = /visual QA/.test(label) ? visualQa : `${desktopCss}\n${cssFinal}`;
+  if (!re.test(target)) errors.push(`geometry contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

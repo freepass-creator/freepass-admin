@@ -21,7 +21,7 @@ import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
-import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField } from '../_design/Primitives';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
   많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 정책말,
@@ -62,11 +62,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
   const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);
-  let all: Awaited<ReturnType<typeof productList>>;
-  try { all = await productList(); }
-  catch (e) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
-  }
+  const all = await productList();
   const { rows } = all;
 
   /*
@@ -355,7 +351,7 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
           </div>
           </div>
-          {intakeErr ? <EmptyState>ERP5 접수를 못 읽었습니다 — {intakeErr}</EmptyState> : (
+          {intakeErr ? <Notice tone="warn">접수 목록만 불러오지 못했습니다 — {intakeErr}</Notice> : (
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}

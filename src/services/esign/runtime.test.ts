@@ -64,18 +64,6 @@ class Repo implements EsignRepository {
   }
 }
 
-class ReadbackFailAssets extends Assets {
-  async get(path:string,expected?:string){
-    if(path.startsWith('esign-final/'))return null;
-    return super.get(path,expected);
-  }
-}
-
-class Renderer implements EsignFinalDocumentRenderer {
-  calls=0;
-  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
-}
-
 class Assets implements EsignAssetStore {
   m=new Map<string,{bytes:Uint8Array;contentType:string;sha256:string}>();
   async put(path:string,bytes:Uint8Array,contentType:string){
@@ -88,6 +76,18 @@ class Assets implements EsignAssetStore {
     if(!x||expected&&x.sha256!==expected)return null;
     return {bytes:new Uint8Array(x.bytes),contentType:x.contentType};
   }
+}
+
+class ReadbackFailAssets extends Assets {
+  async get(path:string,expected?:string){
+    if(path.startsWith('esign-final/'))return null;
+    return super.get(path,expected);
+  }
+}
+
+class Renderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
 }
 
 function chunk(type:string,data:Buffer){

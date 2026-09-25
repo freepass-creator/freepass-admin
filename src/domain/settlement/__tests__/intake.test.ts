@@ -418,3 +418,33 @@ describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () 
     assert.ok(payLedger(rows, '2026-08', claw, NOW).find((g) => g.party === 'X')!.rows.some((r) => r.id === 'i'));
   });
 });
+
+
+describe('전자계약 연결 접수의 취소 경계', () => {
+  it('활성 전자계약 링크가 있으면 접수 취소를 먼저 못 한다', () => {
+    const r = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:null, paper:false },
+      { kind:'cancelled', on:true, reason:'고객 변심' },
+    );
+    assert.equal(r.ok,false);
+    assert.match(String((r as { error?: string }).error), /전자계약을 먼저 해지/);
+  });
+
+  it('전자계약을 해지한 뒤에는 정산 전 접수 취소를 허용한다', () => {
+    const r = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:Date.now(), paper:false },
+      { kind:'cancelled', on:true, reason:'고객 변심' },
+    );
+    assert.equal(r.ok,true);
+    assert.equal(r.ok && r.patch.cancelled,true);
+  });
+
+  it('서명완료 전자계약 연결 건은 일반 접수 취소로 내리지 않는다', () => {
+    const r = progressPatch(
+      { cancelled:false, esignContractId:'ctr_1', esignRevokedAt:null, paper:true },
+      { kind:'cancelled', on:true, reason:'고객 변심' },
+    );
+    assert.equal(r.ok,false);
+    assert.match(String((r as { error?: string }).error), /계약 취소\/환수/);
+  });
+});

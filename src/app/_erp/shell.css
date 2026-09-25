@@ -1582,3 +1582,32 @@
     display: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Residual divider cleanup
+ * 장식성 선은 제거하고, 의미 있는 구조선만 남긴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-panel-head,
+    .erp-panel-foot,
+    .erp-searchbar,
+    .erp-toolbar,
+    .erp-card-head,
+    .erp-listcard-foot,
+    .erp-grid-foot,
+    .erp-filter-panel-foot,
+    .erp-inline-form,
+    .erp-tile-title
+  ) {
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+  /* divider가 필요 없는 grouping은 spacing/surface만 사용 */
+  .erp-std :is(.erp-card-head,.erp-listcard-foot,.erp-grid-foot,.erp-tile-title) {
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+}

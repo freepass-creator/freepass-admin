@@ -1,5 +1,5 @@
 /* ⚠ 생성물 — 손대지 않는다. scripts/sync-erp-standard.mjs 가 만든다.
- * 정본: freepass-creator/ai-core @ 8ba9a20e1d4d7ad5e633d775fbed02b760a330ec
+ * 정본: freepass-creator/ai-core @ 96cbbae3fcd84397dcaff5ffce1788f406178058
  *   design/erp-standard/erp.css (테마 1 classic) + design/erp-standard/themes/retro.css (테마 2 retro)
  * 바꾼 것은 범위뿐: .erp-app → .erp-std · [data-theme="retro"] → body:has(> .erp-theme-flag[data-theme="retro"])
  */
@@ -25,10 +25,10 @@
  * 검사: npm run erp:check  (scripts/check-erp-standard.mjs)
  */
 :root {
-  --erp-color-primary: #1D4ED8;
-  --erp-color-primary-hover: #1E40AF;
-  --erp-color-primary-weak: #EFF4FF;
-  --erp-color-focus-ring: #D1E0FF;
+  --erp-color-primary: #1B2A4A;
+  --erp-color-primary-hover: #24395F;
+  --erp-color-primary-weak: #EEF3FA;
+  --erp-color-focus-ring: #D8E2F0;
   --erp-color-on-primary: #FFFFFF;
   --erp-color-nav: #0F1B2D;
   --erp-color-nav-raised: #1A2940;
@@ -1848,9 +1848,10 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
     height: 14px;
   }
 
-  /* 선택용 control만 pill을 쓴다. */
+  /* 퀵 필터도 버튼과 같은 모서리 6 — 알약은 쓰지 않는다(대표 2026-09-25 「원래 알약 안 하기로 했는데」 →
+   * 「모서리 6 네모로」). 배지(6) · 태그(4)도 네모. */
   .erp-std .erp-facet-opt {
-    border-radius: var(--erp-r-pill);
+    border-radius: var(--erp-r-md);
   }
 }
 /* ═══════════════════════════════════════════════════════════════════════

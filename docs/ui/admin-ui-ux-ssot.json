@@ -218,7 +218,7 @@
     "Desktop control tiers normalized to 32 small / 36 standard / 40 row / 56 topbar",
     "Mobile controls remain 44px with 44px minimum touch target",
     "Spacing uses 4/8/12/16/20/24/32 scale; shared panel padding normalized from 22 to 20",
-    "Radius scale remains 4/6/8/pill",
+    "Radius scale 4/6/8; pill only for naturally round marks (dots, avatars, count bubbles)",
     "Elevation remains 0/base/hover/float",
     "Web shell uses topbar + sidenav + multi-panel workspace + statusbar",
     "Mobile shell has no global topbar and uses panel-first navigation",
@@ -1071,7 +1071,7 @@
   },
   "compactSignals": {
     "quickFilter": {
-      "shape": "pill",
+      "shape": "desktop radius 6 (no pill, 대표 2026-09-25); mobile pill pending confirmation",
       "mobileVisualHeightPx": 34
     },
     "badge": {
@@ -1100,7 +1100,7 @@
       "mobileActionHitPx": 44,
       "bottomNavPx": 24
     },
-    "rule": "Selection controls may be pills; status signals stay compact and non-interactive."
+    "rule": "No pills on desktop controls (대표 2026-09-25 「모서리 6 네모로」); status signals stay compact and non-interactive."
   },
   "noWrapResponsive": {
     "choiceRows": {

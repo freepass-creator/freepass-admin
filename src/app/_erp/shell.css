@@ -7,7 +7,7 @@
  * 2026-09-25 공통 규칙 승격: 여기 날짜별로 쌓였던 공통 결정(표면 위계 · 선 없는 카드 · 글자 척도 ·
  *   목록 카드 골격 · 상태색 · focus halo …)은 ai-core design/erp-standard/erp.css v1.1 로 올라갔다.
  *   이 파일에는 앱 고유층만 남는다 — dz-* · fn-*(기능 부품) · erp-embed · erp-screen(Screen 틀) ·
- *   브랜드 색(navy #1B2A4A) · 작업판 여백(--fp-workspace-*, 폭 구간별). 새 공통 규칙은 여기 쌓지 말고
+ *   작업판 여백(--fp-workspace-*, 폭 구간별). 브랜드 navy #1B2A4A 는 2026-09-25 공통 기본색이 되어 여기서 덮어쓰지 않는다. 새 공통 규칙은 여기 쌓지 말고
  *   ai-core 에 올린 뒤 node scripts/sync-erp-standard.mjs 로 가져온다.
  * ══════════════════════════════════════════════════════════════════════ */
 .erp-theme-flag { display: none; }
@@ -419,18 +419,6 @@
 
   .erp-std :is(.dz-fs-sheet) {
     box-shadow: var(--erp-elevation-float);
-  }
-}
-/* ═══════════════════════════════════════════════════════════════════════
- * 2026-09-25 — Brand restraint & neutral selected-card text
- * 큰 카드 선택은 tint로, brand 색은 compact selection/action에 집중한다.
- * ═══════════════════════════════════════════════════════════════════════ */
-@media (min-width: 901px) {
-  .erp-std {
-    --erp-color-primary: #1B2A4A;
-    --erp-color-primary-hover: #24395F;
-    --erp-color-primary-weak: #EEF3FA;
-    --erp-color-focus-ring: #D8E2F0;
   }
 }
 /* ═══════════════════════════════════════════════════════════════════════

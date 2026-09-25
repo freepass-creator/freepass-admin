@@ -64,9 +64,8 @@ export function ListRow({ href, selected, thumb, status, title, mainValue, badge
   /** 셋째 줄 오른쪽 칩(혜택조건) — 받은 차례 그대로. 있으면 곁값 대신 선다 */
   chips?: string[];
   /**
-   * ★상품 줄 — 대표 2026-09-18 「맨 첫 줄에 세부 모델만(제조사 필요 없고) + 상태 배지 · 상품구분 배지 →
-   *   그다음이 바로 기간 · 대여료 · 보증금 → 세 번째 줄이 21세 되냐 뭐 되냐 이런 조건」 · 「재원 이런 건 필요 없어 — 눌러서 보면 되고」
-   *   ⇒ 1줄 이름 + 칩 · 2줄 값(굵게, 왼쪽) · 3줄 조건 표시(왼쪽). 곁 정보(차번·연식·주행·연료) 줄이 없다.
+   * 상품/업무 목록 모두 Main / Key / Support 3줄을 사용한다.
+   * product는 data-ai-list-mode 선택에만 쓰고, 줄 구조는 동일하다.
    */
   product?: boolean;
 }) {
@@ -99,26 +98,16 @@ export function ListRow({ href, selected, thumb, status, title, mainValue, badge
           </span>
           {mainValue !== undefined ? <strong className="dz-row-main-value">{mainValue}</strong> : null}
         </span>
-        {product ? (
-          <>
-            <span className="dz-row-l2" data-line-role="key">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
-            <span className="dz-row-l3" data-line-role="support">
-              <strong>{typeof value === 'string'
-                ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{i > 0 ? ' · ' : ''}{x}</span>)
-                : value}</strong>
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="dz-row-l2" data-line-role="key">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
-            <span className="dz-row-l3" data-line-role="support">
-              <strong>{value}</strong>
-              {칩.length
-                ? <PerkMarks marks={칩} compact />
-                : aside ? <small>{aside}</small> : null}
-            </span>
-          </>
-        )}
+        <span className="dz-row-l2" data-line-role="key">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
+        <span className="dz-row-l3" data-line-role="support">
+          <strong>{typeof value === 'string'
+            ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{i > 0 ? ' · ' : ''}{x}</span>)
+            : value}</strong>
+          {칩.length
+            ? <PerkMarks marks={칩} compact />
+            : aside ? <small>{aside}</small> : null}
+        </span>
+}
       </span>
     </Link>
   );

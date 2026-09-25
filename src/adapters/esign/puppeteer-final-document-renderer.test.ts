@@ -5,7 +5,9 @@ import type { EsignPrivateSubmission, EsignSnapshot } from '../../domain/esign/t
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { inlineContractTemplateAssets, prepareFinalContractHtml, PuppeteerEsignFinalDocumentRenderer } from './puppeteer-final-document-renderer';
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+import { inlineContractTemplateAssets, prepareFinalContractHtml, PuppeteerEsignFinalDocumentRenderer, withFinalDocumentCsp } from './puppeteer-final-document-renderer';
 
 const png = new Uint8Array(Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X1J6WQAAAABJRU5ErkJggg==',
@@ -152,7 +154,7 @@ test('production renderer fails closed when Chromium cannot launch', { timeout: 
   try {
     await assert.rejects(
       () => new PuppeteerEsignFinalDocumentRenderer().render({ snapshot, submission, signatureBytes: png, sealHash: 'c'.repeat(64) }),
-      (error: Error) => error.message === '전자계약 최종 PDF 생성에 실패했습니다.' && error.cause instanceof Error,
+      (error: Error) => error.message === '전자계약 최종 PDF 생성에 실패했습니다. (단계: launch, 원인: Error)' && error.cause instanceof Error,
     );
   } finally {
     if (previous === undefined) delete process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH;
@@ -248,4 +250,86 @@ test('production renderer seals realistic long inputs without false overflow', {
   const sub = { ...submission, customerName: '남궁제갈선우', customerAddress: '경기도 성남시 분당구 판교역로 235, 에이치스퀘어 엔동 7층 701호(삼평동, 판교테크노밸리)' };
   const result = await new PuppeteerEsignFinalDocumentRenderer().render({ snapshot: realistic, submission: sub, signatureBytes: png, sealHash: 'c'.repeat(64) });
   assert.equal(Buffer.from(result.bytes).subarray(0, 5).toString('ascii'), '%PDF-');
+});
+
+test('final document CSP pins the existing inline scripts and removes every network channel', () => {
+  const html = withFinalDocumentCsp('<html><head><title>t</title><script>var a=1;</script></head><body><script>var b=2;</script></body></html>');
+  const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html)?.[1] ?? '';
+  assert.match(policy, /default-src 'none'/);
+  assert.match(policy, /connect-src 'none'/);
+  assert.match(policy, /img-src data:/);
+  assert.equal((policy.match(/'sha256-/g) || []).length, 2);
+  assert.equal(/script-src[^;]*unsafe/.test(policy), false, 'no unsafe-inline/unsafe-hashes for scripts');
+  assert.ok(html.indexOf('Content-Security-Policy') < html.indexOf('<script>'), 'policy precedes all scripts');
+  assert.throws(() => withFinalDocumentCsp('<html><head><script src="x.js"></script></head></html>'), /허용되지 않은 스크립트/);
+});
+
+async function injectedExecutions(snap: EsignSnapshot) {
+  const html = await prepareFinalContractHtml({ snapshot: snap, submission, signatureBytes: png, sealHash: 'c'.repeat(64) });
+  const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless: 'shell' });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'load', timeout: 20_000 });
+    await new Promise(done => setTimeout(done, 300));
+    return await page.evaluate('window.__pwn || []') as string[];
+  } finally {
+    await browser.close();
+  }
+}
+
+test('field values cannot execute script inside the server renderer', { timeout: 120_000 }, async () => {
+  const payload = (id: string) => `"'><img src=x onerror="window.__pwn=(window.__pwn||[]).concat('${id}')">`;
+  const hostile = {
+    ...snapshot,
+    templateFields: {
+      ...snapshot.templateFields,
+      company_name: payload('company_name'),
+      company_seal: payload('company_seal'),
+      terms_title: payload('terms_title'),
+      special_terms: payload('special_terms'),
+    },
+  };
+  assert.deepEqual(await injectedExecutions(hostile), []);
+});
+
+test('markup in a company name renders as text and cannot break term pagination', { timeout: 120_000 }, async () => {
+  // Previously '</div>' in company_name broke the page structure and the pagination loop never ended.
+  const broken = { ...snapshot, templateFields: { ...snapshot.templateFields, company_name: '</div></section>렌트카' } };
+  const started = Date.now();
+  const result = await new PuppeteerEsignFinalDocumentRenderer()
+    .render({ snapshot: broken, submission, signatureBytes: png, sealHash: 'c'.repeat(64) });
+  assert.equal(Buffer.from(result.bytes).subarray(0, 5).toString('ascii'), '%PDF-');
+  assert.ok(Date.now() - started < 30_000);
+});
+
+test('CSP alone blocks injected handlers and network channels, while pinned scripts still run', { timeout: 120_000 }, async () => {
+  // Independent of template escaping: the pinned script itself injects hostile markup.
+  const html = withFinalDocumentCsp(`<!doctype html><html><head><title>t</title><script>
+    window.__ran = true;
+    window.__violations = [];
+    document.addEventListener('securitypolicyviolation', function (e) { window.__violations.push(e.effectiveDirective); });
+    document.addEventListener('DOMContentLoaded', function () {
+      var d = document.createElement('div');
+      d.innerHTML = '<img src="data:," onerror="window.__pwn=1">';
+      document.body.appendChild(d);
+      var s = document.createElement('script'); s.textContent = 'window.__pwn=2'; document.body.appendChild(s);
+      try { var ws = new WebSocket('ws://127.0.0.1:9/x'); ws.onopen = function () { window.__ws = 'opened'; }; } catch (e) { /* also acceptable */ }
+      fetch('data:text/plain,x').then(function () { window.__fetch = 'ok'; }, function () { window.__fetch = 'blocked'; });
+    });
+  </script></head><body></body></html>`);
+  const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless: 'shell' });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'load' });
+    await new Promise(done => setTimeout(done, 300));
+    const state = await page.evaluate('({ ran: window.__ran, pwn: window.__pwn, ws: window.__ws, fetch: window.__fetch, violations: window.__violations })') as { ran?: boolean; pwn?: unknown; ws?: string; fetch?: string; violations: string[] };
+    assert.equal(state.ran, true, 'hash-pinned script runs');
+    assert.equal(state.pwn, undefined, 'injected handler/script blocked');
+    assert.notEqual(state.ws, 'opened');
+    assert.equal(state.fetch, 'blocked');
+    assert.ok(state.violations.includes('connect-src'), 'WebSocket/fetch refused by CSP: ' + state.violations.join(','));
+    assert.ok(state.violations.includes('script-src-attr') || state.violations.includes('script-src-elem'), 'injection refused by CSP: ' + state.violations.join(','));
+  } finally {
+    await browser.close();
+  }
 });

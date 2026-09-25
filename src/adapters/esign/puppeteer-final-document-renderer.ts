@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import chromium from '@sparticuz/chromium';
@@ -217,6 +218,39 @@ export async function inlineContractTemplateAssets(
   return output;
 }
 
+/**
+ * Lock the final document down before Chromium sees it. Only the inline scripts already present in
+ * the prepared HTML (the template's own scripts + the server-injected sealed JSON, whose `<` is
+ * escaped) may run, pinned by SHA-256. Anything created later from field values — e.g. template code
+ * that concatenates company_name into innerHTML, or `<img onerror>` — cannot execute, and no
+ * network channel (fetch/XHR/WebSocket/frames/forms) exists even with --disable-web-security.
+ */
+export function withFinalDocumentCsp(html: string) {
+  const hashes = new Set<string>();
+  for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/gi)) {
+    hashes.add("'sha256-" + createHash('sha256').update(match[1], 'utf8').digest('base64') + "'");
+  }
+  if (/<script\s+[^>]*>/i.test(html)) throw new Error('전자계약 최종 HTML에 허용되지 않은 스크립트 형식이 있습니다.');
+  if (!hashes.size) throw new Error('전자계약 템플릿 스크립트를 찾을 수 없습니다.');
+  const policy = [
+    "default-src 'none'",
+    'script-src ' + [...hashes].join(' '),
+    "style-src 'unsafe-inline'",
+    'img-src data:',
+    'font-src data:',
+    "connect-src 'none'",
+    "frame-src 'none'",
+    "worker-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+  ].join('; ');
+  const meta = '<meta http-equiv="Content-Security-Policy" content="' + policy + '">';
+  const withMeta = html.replace(/<head([^>]*)>/i, '<head$1>' + meta);
+  if (withMeta === html) throw new Error('전자계약 최종 HTML에 head 요소가 없습니다.');
+  return withMeta;
+}
+
 function stripInteractivePrintHarness(html: string) {
   let output = html.replace(/<aside\s+class=["']builder["'][\s\S]*?<\/aside>/i, '');
   output = output.replace(/<button\s+class=["']fp-pdf-button["'][\s\S]*?<\/button>/gi, '');
@@ -245,7 +279,7 @@ export async function prepareFinalContractHtml(input: {
   if (!html.includes(input.sealHash) || !html.includes(signatureDataUrl)) {
     throw new Error('전자계약 봉인값 또는 서명이 최종 HTML에 반영되지 않았습니다.');
   }
-  return html;
+  return withFinalDocumentCsp(html);
 }
 
 async function closeQuietly(browser: Browser | undefined) {
@@ -261,6 +295,8 @@ async function closeQuietly(browser: Browser | undefined) {
   }
 }
 
+type RenderStage = 'prepare-browser' | 'launch' | 'load-document' | 'template-script' | 'readiness' | 'print-pdf';
+
 export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRenderer {
   constructor(private readonly options: { templateAssetDir?: string } = {}) {}
 
@@ -274,9 +310,12 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
     const launchTimeout = positiveMs(process.env.ESIGN_PDF_LAUNCH_TIMEOUT_MS, DEFAULT_LAUNCH_TIMEOUT_MS);
     const html = await prepareFinalContractHtml(input, this.options);
     let browser: Browser | undefined;
+    let stage: RenderStage = 'prepare-browser';
+    const started = Date.now();
 
     try {
       const executablePath = await resolveChromiumExecutablePath(launchTimeout);
+      stage = 'launch';
 
       browser = await puppeteer.launch({
         args: [...chromium.args, '--lang=ko-KR'],
@@ -286,6 +325,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         defaultViewport: { width: 1240, height: 1754, deviceScaleFactor: 1 },
       });
 
+      stage = 'load-document';
       const page = await browser.newPage();
       page.setDefaultTimeout(renderTimeout);
       page.setDefaultNavigationTimeout(renderTimeout);
@@ -304,7 +344,9 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
 
       // Browser-side code is passed as source strings: transpilers (tsx/esbuild keepNames, Next/SWC)
       // may inject helpers such as __name into serialized functions, which do not exist in the page.
+      stage = 'template-script';
       await page.waitForFunction(PAGE_UNCLOAKED_EXPRESSION, { timeout: renderTimeout });
+      stage = 'readiness';
       // page.evaluate has no timeout of its own; a never-settling font/image must not hang the request.
       await deadline(
         page.evaluate(PAGE_STRIP_CONTROLS_AND_WAIT_FONTS_EXPRESSION),
@@ -332,6 +374,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
       if (!readiness.hasSealEvidence) throw new Error('전자계약 PDF에 봉인 해시 증거가 렌더링되지 않았습니다.');
       if (readiness.hasPrintControl) throw new Error('최종 전자계약에 인쇄용 조작 UI가 남아 있습니다.');
 
+      stage = 'print-pdf';
       const printed = new Uint8Array(await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -348,8 +391,12 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
       if (!isCompletePdfBytes(bytes)) throw new Error('최종 PDF 생성 결과가 유효하지 않습니다.');
       return { bytes, contentType: 'application/pdf' as const };
     } catch (error) {
+      // Diagnostics carry only the stage and error class — never the Chromium message, which can echo
+      // contract content. The same line goes to the server log so a deployed failure is traceable.
+      const kind = error instanceof Error ? error.name : typeof error;
+      console.error('[esign-pdf] render failed', { stage, kind, ms: Date.now() - started });
       if (error instanceof Error && error.message.startsWith('전자계약')) throw error;
-      throw new Error('전자계약 최종 PDF 생성에 실패했습니다.', { cause: error });
+      throw new Error('전자계약 최종 PDF 생성에 실패했습니다. (단계: ' + stage + ', 원인: ' + kind + ')', { cause: error });
     } finally {
       await closeQuietly(browser);
     }

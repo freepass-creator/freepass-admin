@@ -331,6 +331,10 @@ export class EsignService {
 
   async issue(contractId: string, actor = 'admin') {
     const [current, raw] = await Promise.all([this.repo.getCurrentSession(contractId), this.repo.getContract(contractId)]);
+    // Lifecycle rejection precedes legacy-signature classification; neither may be reissued.
+    if (raw && /취소|철회|해지/.test(S(raw.contract_status))) {
+      throw new Error('취소·철회·해지 계약은 전자계약을 발행할 수 없습니다.');
+    }
     if (current?.status === 'signed') throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
     if (!current && raw) {
       const legacyStatus = S(raw.sign_status);

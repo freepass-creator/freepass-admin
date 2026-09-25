@@ -255,7 +255,7 @@ export class Erp5EsignRepository implements EsignRepository {
         'evt_'+createHash('sha256').update(contractId+'|'+sessionId+'|revoked').digest('hex').slice(0,24),
       );
       tx.set(eventRef,{contractId,sessionId,type:'revoked',by:actor,at:now,detail:{}},{merge:false});
-      return {revoked:true,session:{...session,status:'revoked',revokedAt:now}};
+      return {revoked:true,session:{...session,status:'revoked' as const,revokedAt:now}};
     });
   }
 

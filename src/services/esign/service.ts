@@ -60,6 +60,13 @@ export type CreateContractInput = {
 export class EsignService {
   constructor(private repo: EsignRepository, private assets: EsignAssetStore, private finalRenderer?: EsignFinalDocumentRenderer) {}
 
+  finalizationReadiness() {
+    return {
+      rendererConnected: Boolean(this.finalRenderer),
+      ready: Boolean(this.finalRenderer),
+    };
+  }
+
   private publicBase() {
     const raw = (process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '');
     try {

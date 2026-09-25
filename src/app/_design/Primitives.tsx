@@ -54,5 +54,6 @@ export function SummaryItem({ label, children }: { label: ReactNode; children: R
 
 
 export function Notice({ tone, children }: { tone: 'warn' | 'ok'; children: ReactNode }) {
-  return <p className={tone === 'warn' ? 'dz-warn' : 'dz-ok'}>{children}</p>;
+  return <p className={tone === 'warn' ? 'dz-warn' : 'dz-ok'}
+    aria-live={tone === 'ok' ? 'polite' : undefined}>{children}</p>;
 }

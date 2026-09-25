@@ -15,7 +15,7 @@ test('standard CSS is the generated ai-core projection, not a hand copy', () => 
   assert.ok(css.includes(`@ ${src.revision}`), 'header pins the source revision');
   assert.equal(css.replace(/\/\*[\s\S]*?\*\//g, '').includes('.erp-app'), false, 'root scope is rewritten to .erp-std');
   assert.equal(css.includes('erp-theme-flagbody'), false, 'retro scope rewritten exactly once');
-  for (const token of ['--erp-color-primary: #1D4ED8;', '--erp-topbar-h: 56px;', '--erp-sidenav-w: 240px;', '--erp-grid-row-h: 40px;']) assert.ok(css.includes(token), token);
+  for (const token of ['--erp-color-primary: #1B2A4A;', '--erp-topbar-h: 56px;', '--erp-sidenav-w: 240px;', '--erp-grid-row-h: 40px;']) assert.ok(css.includes(token), token);
   assert.ok(css.includes('body:has(> .erp-theme-flag[data-theme="retro"]) {'), 'retro theme block');
 });
 

@@ -11,7 +11,7 @@
  *   ⇒ 하단바([공유] [이 상품 접수하기])를 탭 «밖», 판 바닥에 둔다 — 어느 탭에서나, 어느 판에서나 같은 줄에 선다.
  *     기간 · 값 한 줄은 본문으로 돌아갔다(요약에서 구른다). 고른 요금은 OfferPicker 가 useChosenOffer 로 알려 준다.
  */
-import { useCallback, useId, useState, type ReactNode } from 'react';
+import { useCallback, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Share } from './Share';
 import { ChosenOffer } from './chosen-offer';
 import { ActionBar } from './Primitives';
@@ -28,13 +28,23 @@ export function DetailTabs({ summary, info, applyBase, initialOffer }: {
   const summaryTab = `${uid}-summary-tab`, infoTab = `${uid}-info-tab`;
   const summaryPanel = `${uid}-summary-panel`, infoPanel = `${uid}-info-panel`;
   const [offer, setOffer] = useState(initialOffer ?? '');
+  const tabs = useRef<HTMLDivElement>(null);
   const 알림 = useCallback((id: string) => setOffer(id), []);
+  const 탭키 = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const next = e.key === 'ArrowLeft' || e.key === 'Home' ? 'summary' : 'info';
+    setTab(next);
+    requestAnimationFrame(() => tabs.current?.querySelector<HTMLButtonElement>(`#${next === 'summary' ? CSS.escape(summaryTab) : CSS.escape(infoTab)}`)?.focus());
+  };
   return (
     <ChosenOffer.Provider value={알림}>
-      <div className="tabs" role="tablist" aria-label="상품 상세 보기">
+      <div ref={tabs} className="tabs" role="tablist" aria-label="상품 상세 보기" onKeyDown={탭키}>
         <button id={summaryTab} role="tab" aria-selected={tab === 'summary'} aria-controls={summaryPanel}
+          tabIndex={tab === 'summary' ? 0 : -1}
           type="button" className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
         <button id={infoTab} role="tab" aria-selected={tab === 'info'} aria-controls={infoPanel}
+          tabIndex={tab === 'info' ? 0 : -1}
           type="button" className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>상세정보</button>
       </div>
       <div className="dz-tabbody">

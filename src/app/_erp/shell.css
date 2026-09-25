@@ -1394,3 +1394,31 @@
     --fp-workspace-gap: 16px;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Detail panel inner rhythm
+ * 상세는 슬림하게, 카드/섹션 계층은 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-detail-body {
+    padding: var(--erp-sp-3);
+    gap: var(--fp-section-rhythm);
+  }
+
+  /* 소제목은 바로 아래 카드 묶음과 한 덩어리로 읽힌다. */
+  .erp-std .erp-subtitle {
+    margin: 0 0 var(--erp-sp-2);
+  }
+
+  /* 카드 안 제목은 line-free. 밑줄 대신 여백/타이포로 계층을 만든다. */
+  .erp-std .erp-tile-title {
+    margin: 0 0 var(--erp-sp-2);
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .erp-std .erp-info-card dl {
+    gap: var(--erp-sp-2);
+  }
+}

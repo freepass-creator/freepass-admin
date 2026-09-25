@@ -17,6 +17,12 @@ const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '손오
 const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '손오공', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
 const noRule: FeeResult = { status: 'NO_RULE', why: '표에 「새공급사 · 재렌트 48개월」 가 없다' };
 
+const row = (o: Record<string, unknown> = {}) => toSettlementRow({
+  code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01',
+  delivered: true, deliveredAt: '2026-06-05',
+  supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o,
+}, 'stl_x').row;
+
 describe('수수료 직접 입력 — 대표 「직접접수하는 방식」', () => {
   it('★신차발주(주는 대로)는 사유 없이 넣어도 된다 · 넣은 값이 선다', () => {
     const x = { ...base, feeManual: { claim: 5_100_000, pay: 4_200_000, reason: '' } };
@@ -75,7 +81,6 @@ describe('수수료 고침 — 레거시 완료표시도 잠근다', () => {
 });
 
 describe('환수 — 열어 둔다', () => {
-  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   it('신규 환수 id는 계약줄까지 포함해 같은 차·같은 달 재계약 충돌을 막는다', () => {
     const r = clawbackRecord(row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' }), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', 0);
     assert.ok(r.ok);

@@ -1,6 +1,7 @@
 import { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
 import { writeEnabled } from '../adapters/erp5/settlement-repository';
 import { contracts, products, settlements } from './erp5';
+import { esign } from './esign';
 
 export type DataProbe = {
   key: 'products' | 'intakes' | 'clawbacks' | 'cashEvents' | 'contracts';
@@ -22,6 +23,7 @@ async function probe(key: DataProbe['key'], label: string, read: () => Promise<u
 /** 관리자 실제 데이터 runtime 상태. 값을 만들거나 보정하지 않고 각 실제 repository를 그대로 읽는다. */
 export async function adminDataStatus() {
   const credential = erp5Ready();
+  const esignFinalization = esign.finalizationReadiness();
   const probes = await Promise.all([
     probe('products', '상품', () => products.list()),
     probe('intakes', '접수·정산원장', async () => (await settlements.list()).map((x) => x.row)),
@@ -35,6 +37,7 @@ export async function adminDataStatus() {
     credential,
     writeEnabled: writeEnabled(),
     live: probes.every((x) => x.ok),
+    esignFinalization,
     probes,
     checkedAt: new Date().toISOString(),
   };

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { contracts } from '../../server/erp5';
+import { contracts } from '../../server/freepass-data';
 import { num, sp, txt, when, won } from '../_fn/fmt';
 import { ListRow, type RowStatus } from '../_design/ListRow';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';

@@ -1100,5 +1100,24 @@
       "bottomNavPx": 24
     },
     "rule": "Selection controls may be pills; status signals stay compact and non-interactive."
+  },
+  "noWrapResponsive": {
+    "choiceRows": {
+      "wrap": false,
+      "overflowX": "auto",
+      "scrollbar": "hidden"
+    },
+    "cards": {
+      "identity": "single-line+ellipsis",
+      "primaryValue": "single-line",
+      "meta": "single-line+ellipsis",
+      "secondarySignals": "single-line+clip",
+      "mobilePreferredMaxHeightPx": 96
+    },
+    "actions": {
+      "wrap": false,
+      "overflow": "ellipsis"
+    },
+    "rule": "Prefer horizontal flow and truncation over vertical growth on narrow screens."
   }
 }

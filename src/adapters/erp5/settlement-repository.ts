@@ -5,7 +5,7 @@ import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
-import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
+import { clawbackId, clawbackRecord, sameClawbackPayload, type ClawbackInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
@@ -494,7 +494,7 @@ export class Erp5SettlementRepository {
    * 환수 세우기 (domain/settlement/clawback.ts) — settlement_clawbacks 에 한 줄 · 원장 줄에는 이력만.
    * ★같은 차·같은 달 환수가 이미 있으면 새로 안 세운다.
    */
-  async createClawback(code: string, input: ClawbackInput): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  async createClawback(code: string, input: ClawbackInput): Promise<{ ok: true; id: string; created: boolean } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
     const ref = db.collection(ROWS).doc(code);
@@ -509,14 +509,19 @@ export class Erp5SettlementRepository {
       const cref = db.collection('settlement_clawbacks').doc(r.id);
       const legacyRef = db.collection('settlement_clawbacks').doc(clawbackId(row.plate, String(r.doc.month)));
       const [currentDoc, legacyDoc] = await Promise.all([tx.get(cref), tx.get(legacyRef)]);
-      if (currentDoc.exists) return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있습니다 — 새로 세우지 않습니다` };
+      if (currentDoc.exists) {
+        if (sameClawbackPayload(currentDoc.data() as Record<string, unknown>, r.doc)) {
+          return { ok: true as const, id: r.id, created: false };
+        }
+        return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있지만 금액·사유가 다릅니다 — 기존 환수를 확인합니다` };
+      }
       if (legacyDoc.exists) {
         return { ok: false as const, error: `레거시 환수(${legacyRef.id})가 이미 있어 계약을 안전하게 구분할 수 없습니다 — 기존 환수를 확인한 뒤 처리합니다` };
       }
       tx.create(cref, r.doc);
       tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
         { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
-      return { ok: true as const, id: r.id };
+      return { ok: true as const, id: r.id, created: true };
     });
   }
 

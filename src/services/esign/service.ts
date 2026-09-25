@@ -31,6 +31,15 @@ function uploadMagicOk(type: string, bytes: Uint8Array) {
   return false;
 }
 
+export type CreateContractFromIntakeInput = {
+  intakeId: string;
+  customerPhone: string;
+  customerType: '개인' | '개인사업자' | '법인';
+  contractDate: string;
+  contractKind: string;
+  insuranceSide: '회사포함' | '고객직접';
+};
+
 export type CreateContractInput = {
   customerName: string;
   customerPhone: string;
@@ -63,6 +72,57 @@ export class EsignService {
   private token() { return randomBytes(32).toString('base64url'); }
   private tokenHash(token: string) { return sha256(token); }
   private sessionId(hash: string) { return 'esg_' + hash.slice(0, 24); }
+
+  async createContractFromIntake(input: CreateContractFromIntakeInput, actor = 'freepass-admin') {
+    const source = await this.repo.getIntakeContractSource(input.intakeId);
+    if (!source) throw new Error('접수를 찾을 수 없습니다.');
+    if (!source.customerName) throw new Error('접수 고객명이 없습니다.');
+    if (!source.vehicleName) throw new Error('접수 차량명이 없습니다.');
+    if (!source.supplierCode) throw new Error('접수 공급사 코드가 없습니다.');
+    if (source.rent === null || source.termMonths === null || source.deposit === null) {
+      throw new Error('접수의 기간·대여료·보증금이 확정되지 않았습니다.');
+    }
+    const phone = input.customerPhone.replace(/\D/g, '');
+    if (phone.length < 10 || phone.length > 11) throw new Error('고객 연락처를 확인해 주세요.');
+    if (!DAY.test(input.contractDate)) throw new Error('계약일은 YYYY-MM-DD 입니다.');
+    const spec = findContractKind(input.contractKind);
+    if (!spec) throw new Error('계약 유형을 확인해 주세요.');
+    if (!allowsInsuranceSide(spec, input.insuranceSide)) throw new Error('계약 유형과 보험 주체가 맞지 않습니다.');
+
+    const now = Date.now();
+    const id = 'ctr_intake_' + sha256(source.intakeId).slice(0, 20);
+    const code = 'FP-' + input.contractDate.replace(/-/g, '') + '-' + sha256(source.intakeId).slice(0, 6).toUpperCase();
+    const result = await this.repo.createContractFromIntake(source, id, {
+      contract_code: code,
+      contract_status: '계약대기',
+      sign_status: '',
+      contract_date: input.contractDate,
+      customer_name: source.customerName,
+      customer_phone: phone,
+      customer_type: input.customerType,
+      vehicle_name_snapshot: source.vehicleName,
+      car_number_snapshot: source.plate || '미정',
+      provider_company_code: source.supplierCode,
+      provider_company_name_snapshot: source.supplierName || source.supplierCode,
+      rent_amount_snapshot: Math.round(source.rent),
+      rent_month_snapshot: Math.round(source.termMonths),
+      deposit_amount_snapshot: Math.round(source.deposit),
+      esign_contract_kind: input.contractKind,
+      esign_insurance_side: input.insuranceSide,
+      source_intake_id: source.intakeId,
+      source_product_id: source.sourceProductId,
+      source_product_version: source.sourceProductVersion,
+      source_offer_id: source.sourceOfferId,
+      source_snapshot_id: source.sourceSnapshotId,
+      contract_source_digest: source.sourceDigest,
+      contract_source_snapshot: source,
+      created_at: now,
+      created_by: actor,
+      updated_at: now,
+      from_admin: true,
+    });
+    return { id, code, created: result.created, sourceDigest: source.sourceDigest };
+  }
 
   async createContract(input: CreateContractInput, actor = 'freepass-admin') {
     if (!input.customerName.trim()) throw new Error('고객명이 없습니다.');

@@ -1,5 +1,26 @@
 # freepass-admin — AI/Developer Rules
 
+## -1. UI DESIGN HARD LOCK — 2026-09-25
+
+UI/UX 작업은 **반드시** 아래 순서로 시작한다.
+
+1. `docs/ui/DESIGN-AUTHORITY.md`
+2. `docs/ui/ADMIN-UI-UX-SSOT.md`
+3. `docs/ui/admin-ui-ux-ssot.json`
+4. `docs/ui/SALES-APP-BASELINE.md`
+5. `src/app/_design/*` + `src/app/_design/admin-final.css`
+
+이 다섯 범위 밖의 과거 시각 자료는 구현 근거가 아니다.
+
+### 금지
+- 삭제된 `docs/ui/mockups/**`, `UI-HISTORY.md`, 2026-09-16 rail/topbar/mockup 계열을 Git history에서 찾아 복원하지 않는다.
+- 과거 PR/스크린샷/리뷰 문서를 “기존 디자인”이라고 해석해 현재 화면에 되살리지 않는다.
+- Claude/Codex/GPT 등 모델 고유 기억이나 임의 미감을 현재 Product Profile보다 우선하지 않는다.
+- 새 버튼 높이/반경/색/카드/내비게이션 문법을 별도로 만들지 않는다.
+- 정본과 충돌하면 임의 fallback 하지 말고 **FAIL / DECISION REQUIRED**로 남긴다.
+
+시각 규격 변경은 사용자의 명시 승인 후 `DESIGN-AUTHORITY.md` + MD/JSON SSOT + 공통 부품 + UI 회귀검사를 같은 변경에서 갱신해야 한다.
+
 ## 0. Mandatory Work handoff
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
 1. `AGENTS.md`

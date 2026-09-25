@@ -335,7 +335,7 @@ export class EsignService {
       const legacyLink = S(raw.esign_sign_url || raw.sign_url);
       if (legacyStatus === '서명완료') throw new Error('기존 ERP4에서 서명완료된 계약입니다. 완료본은 읽기 전용이며 수정하려면 새 계약을 만듭니다.');
       if (legacyLink && ['발행','열람','진행중','검토대기','반려'].includes(legacyStatus)) {
-        throw new Error('기존 ERP4 전자계약 링크가 아직 활성입니다. 기존 링크를 마무리하거나 해지한 뒤 새 ERP5 전자계약을 발행해 주세요.');
+        throw new Error('기존 ERP4 전자계약 링크가 아직 활성입니다. 기존 링크를 마무리하거나 철회한 뒤 새 ERP5 전자계약을 발행해 주세요.');
       }
     }
     const snapshot = await this.snapshot(contractId);
@@ -384,7 +384,7 @@ export class EsignService {
   async publicView(token: string, peek = false) {
     const session = await this.byToken(token);
     const now = Date.now();
-    if (session.status === 'revoked') throw new Error('해지된 전자계약 링크입니다.');
+    if (session.status === 'revoked') throw new Error('철회된 전자계약 링크입니다.');
     if (session.status === 'submitting' && Number(session.submittingAt || 0) <= now - SUBMIT_CLAIM_TTL) {
       if (await this.repo.transitionSession(session.id, ['submitting'], { status: 'in_progress', submittingAt: 0 })) {
         session.status = 'in_progress'; session.submittingAt = 0;

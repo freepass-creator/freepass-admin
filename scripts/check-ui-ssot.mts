@@ -753,6 +753,7 @@ for (const file of ['src/app/_erp/ProductsScreen.tsx','src/app/_erp/Workspace.ts
 }
 
 const listVisualTileBaseline = [
+  ['scripts/visual-qa.cjs', /list card outer height mismatch/, 'visual QA list-card outer height guard'],
   ['src/app/_erp/shell.css', /64px visual tile contract/, 'desktop 64px visual tile contract'],
   ['src/app/_design/admin-final.css', /64px visual parity \(mobile\/live\)/, 'mobile 64px visual tile contract'],
   ['src/app/_erp/ProductDetail.tsx', /export function ProductThumb/, 'product thumbnail helper'],

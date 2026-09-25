@@ -43,6 +43,7 @@ export function FilterSheet({ axes, count, unit }: {
   const params = useSearchParams();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
+  const [modal, setModal] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -59,9 +60,14 @@ export function FilterSheet({ axes, count, unit }: {
   const [active, setActive] = useState(() => (shown.find((a) => sel(a.key).length) ?? shown[0])?.key ?? '');
   useEffect(() => { if (shown.length && !shown.some((a) => a.key === active)) setActive(shown[0].key); }, [shown, active]);
 
-  /* 닫기 + 키보드 모달 계약 — 열리면 안으로 초점, Tab은 시트 안에서 순환, 닫으면 trigger로 복귀 */
+  /* 웹은 검색창 아래 non-modal popover, 모바일은 backdrop이 있는 modal sheet.
+     둘 다 열리면 안으로 focus, Esc/닫기 뒤 trigger 복귀. Tab trap은 실제 modal인 모바일에서만. */
   useEffect(() => {
     if (!open) return;
+    const mq = window.matchMedia('(max-width: 900px)');
+    const syncModal = () => setModal(mq.matches);
+    syncModal();
+    mq.addEventListener('change', syncModal);
     const focusables = () => Array.from(dialog.current?.querySelectorAll<HTMLElement>(
       'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     ) ?? []);
@@ -69,7 +75,7 @@ export function FilterSheet({ axes, count, unit }: {
     const down = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) close(); };
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.preventDefault(); close(); return; }
-      if (e.key !== 'Tab') return;
+      if (!mq.matches || e.key !== 'Tab') return;
       const nodes = focusables();
       if (!nodes.length) { e.preventDefault(); return; }
       const first = nodes[0], last = nodes[nodes.length - 1];
@@ -78,7 +84,11 @@ export function FilterSheet({ axes, count, unit }: {
     };
     document.addEventListener('mousedown', down);
     document.addEventListener('keydown', key);
-    return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key); };
+    return () => {
+      mq.removeEventListener('change', syncModal);
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+    };
   }, [open, close]);
 
   const go = (edit: (u: URLSearchParams) => void) => {
@@ -104,7 +114,8 @@ export function FilterSheet({ axes, count, unit }: {
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" aria-modal="true" aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
+          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog"
+            aria-modal={modal || undefined} aria-label="상세 조건" onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>

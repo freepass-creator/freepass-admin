@@ -1200,17 +1200,6 @@ body > nav.fn-top :where(a, button):focus-visible,
   text-align: right;
 }
 
-/* value 전용 2행도 숫자는 우측. */
-.fn-main .workspace .dz-row-l2.value {
-  justify-content: space-between;
-  align-items: baseline;
-}
-.fn-main .workspace .dz-row-l2.value strong {
-  margin-left: auto;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
 /* 요약/상세의 숫자 값은 우측 정렬. */
 .fn-main .workspace :is(.summary-grid,.dz-picked-grid) dd {
   text-align: right;
@@ -1222,7 +1211,7 @@ body > nav.fn-top :where(a, button):focus-visible,
   min-width: 0;
 }
 .fn-main .workspace .dz-row-l1 > b,
-.fn-main .workspace .dz-row-l2:not(.value) {
+.fn-main .workspace .dz-row-l2 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1363,7 +1352,7 @@ body > nav.fn-top :where(a, button):focus-visible,
     min-width: 0;
   }
 
-  .fn-main .workspace :is(.dz-row-l1 > b,.dz-row-l2:not(.value),.panel-head h1) {
+  .fn-main .workspace :is(.dz-row-l1 > b,.dz-row-l2,.panel-head h1) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1866,7 +1855,7 @@ body > nav.fn-top :where(a, button):focus-visible,
     input, select, textarea
   ) { font-size: var(--글메인); }
   .fn-main .workspace :is(
-    .dz-row-l2:not(.value),
+    .dz-row-l2,
     .dz-row-l3 small,
     .dz-muted,
     .panel-head > .count,
@@ -1886,7 +1875,7 @@ body > nav.fn-top :where(a, button):focus-visible,
 
 .fn-main .workspace :is(
   .dz-row-l1 > b,
-  .dz-row-l2:not(.value),
+  .dz-row-l2,
   .dz-sub,
   .dz-picked-label
 ) {
@@ -1894,8 +1883,7 @@ body > nav.fn-top :where(a, button):focus-visible,
 }
 
 .fn-main .workspace :is(
-  .dz-row-l2.value strong,
-  .dz-row-l3 > strong,
+    .dz-row-l3 > strong,
   .summary-grid dd
 ) {
   font-weight: 700;
@@ -1921,7 +1909,7 @@ body > nav.fn-top :where(a, button):focus-visible,
 }
 
 /* selected는 색/면으로 구분하고 글자 굵기는 그대로 유지 */
-.fn-main .workspace .dz-row.on :is(.dz-row-l1 > b,.dz-row-l2:not(.value)) {
+.fn-main .workspace .dz-row.on :is(.dz-row-l1 > b,.dz-row-l2) {
   font-weight: 600;
 }
 
@@ -2155,8 +2143,7 @@ body > nav.fn-top :where(a, button):focus-visible,
   .fn-main .workspace :is(
     .dz-row-l1 > b,
     .dz-row-l2,
-    .dz-row-l2.value strong,
-    .dz-row-l3 > strong,
+        .dz-row-l3 > strong,
     .dz-row-l3 > small
   ) {
     overflow: hidden;

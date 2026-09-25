@@ -166,6 +166,12 @@ export interface SettlementRow {
   /** 저장 순간의 계약상품 전체 조건. 현재 Catalog가 바뀌어도 이 사본은 변하지 않는다. */
   catalogSnapshot?: Maybe<IntakeCatalogSnapshot>;
 
+  /** 전자계약/계약 취소 provenance. signed 문서는 지우지 않고 운영 원장만 후속 절차로 전환한다. */
+  esignContractId?: Maybe<string>;
+  contractCancelledAt?: Maybe<number>;
+  contractCancellationReason?: Maybe<string>;
+  contractCancellationNeedsClawback?: boolean;
+
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;
   claimStage: ClaimStage;

@@ -227,6 +227,76 @@ export function findProducts(
 }
 
 
+export type VehicleHierarchyFinderAxis = 'maker'|'model'|'submodel'|'trim';
+const HIERARCHY_DESCENDANTS: Record<VehicleHierarchyFinderAxis, VehicleHierarchyFinderAxis[]> = {
+  maker:['model','submodel','trim'],
+  model:['submodel','trim'],
+  submodel:['trim'],
+  trim:[],
+};
+
+const hierarchyVehicleAxis: Record<VehicleHierarchyFinderAxis, 'MANUFACTURER'|'MODEL'|'SUB_MODEL'|'TRIM'> = {
+  maker:'MANUFACTURER',
+  model:'MODEL',
+  submodel:'SUB_MODEL',
+  trim:'TRIM',
+};
+
+function hierarchyParentMatches(product:CanonicalProduct,selection:FinderSelection,axis:VehicleHierarchyFinderAxis):boolean {
+  const checks: Array<[VehicleHierarchyFinderAxis, 'MANUFACTURER'|'MODEL'|'SUB_MODEL']> = [];
+  if(axis!=='maker') checks.push(['maker','MANUFACTURER']);
+  if(axis==='submodel'||axis==='trim') checks.push(['model','MODEL']);
+  if(axis==='trim') checks.push(['submodel','SUB_MODEL']);
+  return checks.every(([key,vehicleAxis])=>
+    !selection[key].length
+    || selection[key].includes(confirmedVehicleId(product.vehicle,vehicleAxis)??''));
+}
+
+/**
+ * 계층 facet의 «값 목록»은 부모 문맥 안에서만 만든다.
+ * - 모델: 제조사를 골랐으면 그 제조사 아래 모델
+ * - 세부모델: 모델을 골라야 열린다
+ * - 트림: 세부모델을 골라야 열린다
+ * 확정되지 않은 값은 option으로 지어내지 않는다.
+ */
+export function finderHierarchyValues(
+  products: readonly CanonicalProduct[],
+  selection: FinderSelection,
+  axis: VehicleHierarchyFinderAxis,
+): string[] {
+  if(axis==='submodel'&&!selection.model.length)return [];
+  if(axis==='trim'&&!selection.submodel.length)return [];
+  const vehicleAxis=hierarchyVehicleAxis[axis];
+  return products
+    .filter((product)=>hierarchyParentMatches(product,selection,axis))
+    .map((product)=>confirmedVehicleId(product.vehicle,vehicleAxis)??'')
+    .filter(Boolean);
+}
+
+/**
+ * 부모 facet을 바꿀 때 그 아래 선택은 같이 무효화된다.
+ * 교차 facet count도 같은 규칙으로 descendant 조건을 제거하고 센다.
+ */
+export function finderInputForFacet(input:FinderInput,axis:FinderAxis):FinderInput {
+  const selection=Object.fromEntries(
+    Object.entries(input.selection).map(([key,values])=>[key,[...values]]),
+  ) as FinderSelection;
+  selection[axis]=[];
+  if(axis in HIERARCHY_DESCENDANTS){
+    for(const child of HIERARCHY_DESCENDANTS[axis as VehicleHierarchyFinderAxis]) selection[child]=[];
+  }
+  return {...input,selection};
+}
+
+export function findProductsForFacet(
+  products: readonly CanonicalProduct[],
+  input: FinderInput,
+  axis: FinderAxis,
+): ProductSearchMatch[] {
+  return findProducts(products,finderInputForFacet(input,axis));
+}
+
+
 export const FINDER_SORTS = [
   { key:'popular', label:'인기순' },
   { key:'asc', label:'낮은 대여료순' },

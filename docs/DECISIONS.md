@@ -145,3 +145,41 @@ FreePass Admin의 운영 핵심을 다음으로 고정한다.
 - 환수 여부와 금액은 공급사/계약 조건에 따라 관리자가 확정한다.
 - 해지 사실만으로 환수 금액이나 환수 라인을 자동 생성하지 않는다.
 - 확정된 환수는 별도 `settlement_clawbacks` 음수 라인으로 환수 발생월에 반영한다.
+
+
+---
+
+## DEC-2026-09-25-04 — FreePass Data는 Admin의 유일한 데이터 읽기/쓰기 게이트
+상태: USER CONFIRMED / ADOPTED
+
+### 결정
+FreePass Admin의 모든 운영 데이터 접근은 **FreePass Data**를 통한다.
+
+```text
+FreePass Admin UI / Service
+        ↓
+FreePass Data Gateway
+        ↓
+Repository / Adapter
+        ↓
+Firestore project: freepasserp5
+```
+
+### 의미
+- `freepasserp5`는 기술 저장소의 Firebase project id다.
+- **FreePass Data**가 Admin이 의존하는 공식 데이터 계층/SSOT다.
+- 상품/Offer/Policy/차량뿐 아니라 접수·실적·계약 사실·정산·청구·수금·지급·환수도 동일한 FreePass Data 경계를 통해 읽고 쓴다.
+- Admin은 업무 규칙과 workflow 의미를 소유하지만 별도 persistence/두 번째 원장을 만들지 않는다.
+- UI/Action/Service가 Firebase Admin SDK나 `adapters/erp5/*`를 직접 부르는 것을 금지한다.
+- RTDB는 사용하지 않는다.
+
+### 구현 경계
+정본 조립점: `src/server/freepass-data.ts`.
+
+`src/server/erp5.ts`는 과거 import 호환용 deprecated alias일 뿐이며 새 코드는 사용하지 않는다.
+
+CI `freepass-data-boundary.test.ts`가 App/Server/Service의 직접 ERP5/Firebase adapter 접근을 차단한다.
+
+### 쓰기
+접수·실적·청구·지급·환수 mutation은 FreePass Data repository transaction을 통해 Firestore에 기록한다.
+상품 기반 접수는 저장 직전 FreePass Data에서 Product/Offer를 fresh read하여 version/snapshot drift를 fail-closed 한다.

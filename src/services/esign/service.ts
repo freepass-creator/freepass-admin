@@ -186,7 +186,7 @@ export class EsignService {
     const c = await this.repo.getContract(contractId);
     if (!c) throw new Error('계약을 찾을 수 없습니다.');
     if (B(c._deleted) || B(c.is_test) || B(c.test_only)) throw new Error('삭제/시험 계약은 발행할 수 없습니다.');
-    if (/취소|철회/.test(S(c.contract_status))) throw new Error('취소·철회 계약은 발행할 수 없습니다.');
+    if (/취소|철회|해지/.test(S(c.contract_status))) throw new Error('취소·철회·해지 계약은 전자계약을 발행할 수 없습니다.');
 
     const kind = S(c.esign_contract_kind || c.contract_kind) || 'rent_return';
     const spec = findContractKind(kind);

@@ -22,13 +22,20 @@
 ## 3. 운영 개시 전 남은 것 (P0)
 
 1. **배포 바인딩** — 사용자/운영자만 가능. `OPERATIONS-FIRST-USE.md` 순서대로 preview(`ERP5_WRITE=off`) → 로그인 허용/거부 계정 확인 → `/system/data-status` → 쓰기 on.
-2. **전자계약 관리자 화면 — DECISION REQUIRED.** `/esign`은 읽기 전용 목록이다. 접수→계약 생성, 승인, 취소, 해지 API는 있으나 화면에서 부르지 않고, 링크 발행(`issue`)·반려(`reject`)·철회(`revoke`)는 route조차 없다. 고객이 제출하면 `검토대기`에서 멈춘다. 또 `/esign` 목록이 `검토대기`를 "발송 전"으로 표시한다.
-   → 전자계약을 운영 개시 범위에 넣을지(화면 구현) / 개시 범위에서 빼고 종이계약으로 갈지 결정 필요.
+2. ~~전자계약 관리자 화면~~ → **운영 개시 범위에서 제외(사용자 확정)**. `ESIGN_ENABLED=off`로 화면·고객 링크·API를 닫았다. 다시 열려면 관리자 발행/승인/반려 화면과 `issue`/`reject`/`revoke` route가 먼저 필요하다.
+
+### Vercel 첫 배포 체크리스트 (도메인 없이)
+1. Vercel 프로젝트 생성 → 이 저장소 연결, Node 24.x.
+2. 환경변수: `SESSION_SECRET`(32자 이상 무작위), `GOOGLE_OAUTH_CLIENT_ID/SECRET`, `GOOGLE_WORKSPACE_DOMAIN=teamjpk.com`, `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON`, `ERP5_STORAGE_BUCKET`(필요 시), `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, `FREEPASS_DATA_ADMIN_CATALOG_READ_MODE=OBSERVE`.
+3. 첫 배포 후 production 주소(`https://<project>.vercel.app`)를 `APP_BASE_URL`·`PUBLIC_BASE_URL`·`CLAIM_LINK_BASE`에 넣고 재배포.
+4. Google Cloud OAuth 클라이언트에 승인된 리디렉션 URI `https://<project>.vercel.app/login/google/callback` 등록.
+5. Workspace 계정 로그인 / 외부 계정 거부 확인 → `/system/data-status` 확인 → 상품·접수·정산 조회 확인.
+6. 백업/롤백 확인 후 `ERP5_WRITE=on`, 비고객 테스트 접수 1건으로 저장·재조회·중복클릭 확인.
 
 ## 4. 첫 몇 주 안에 (P1)
 
-- **권한 등급 없음.** Google Workspace 도메인 전원이 전체 관리자(정산 쓰기·발행 포함). Google 세션 5일, 서버측 폐기 불가. → 허용 이메일 목록 또는 역할 모델 결정 필요.
-- **환수 섞인 청구서의 수금/지급 기록 잠김** — 현금 배분 정책 DECISION REQUIRED (`domain/settlement/lifecycle.ts`).
+- ~~권한 등급~~ → Workspace 구성원 전원 관리자(사용자 확정). 세션 즉시 차단은 `SESSION_SECRET` 교체로만 가능.
+- ~~환수 섞인 청구서 수금/지급 잠김~~ → 환수는 문서의 마이너스 줄·상계로 확정, 잠금 해제.
 - **인도 후 해지 → 환수 검토 대기열 화면 없음** — 도메인(`pendingTerminationClawbackRows`)만 있음.
 - **전체 컬렉션 읽기 / 페이지네이션 없음** — `/settlement`, `/intake`가 매 요청 원장 전체를 읽는다. 행 수가 늘면 느려진다.
 - **실적 "이슈" 필터** — 수금/지급 완료된 줄은 정정·보류·끊김이어도 "이슈"에 안 뜬다(`performance-filter.ts`). 의도인지 확인 필요.

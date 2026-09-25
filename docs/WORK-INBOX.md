@@ -7,6 +7,16 @@
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
 
 
+## 0-AAAA. 2026-09-25 운영 개시 범위 — 최신 확정
+
+상세: `docs/DECISIONS.md` DEC-2026-09-25-05, 체크리스트: `docs/LAUNCH-READINESS-2026-09-25.md`.
+- 전자계약은 운영 개시에서 제외. `ESIGN_ENABLED=off`면 `/esign`·`/sign/*`·`/api/esign/*`·접수→계약 API가 닫힌다.
+- 배포는 Vercel, 별도 도메인 없이 production `*.vercel.app` 주소 사용.
+- Google Workspace 구성원 전원이 관리자. 역할 등급 없음. 이력의 actor는 `이름 <이메일>`.
+- 환수는 청구서/지급명세서에 마이너스 한 줄로 상계. 정상 줄은 제 금액으로 수금/지급, 행별 배분 잠금 해제.
+
+---
+
 ## 0-AAA. 2026-09-25 Product/Offer → Intake sealed snapshot — 최신 확정
 
 상품찾기에서 선택한 `Product + matched Offer`는 접수 저장 시 FreePass Data에서 **fresh read**한 뒤 sealed snapshot으로 고정한다.

@@ -21,6 +21,12 @@ export function CarIcon() {
   );
 }
 
+export function ProductThumb({ p }: { p: CanonicalProduct }) {
+  if (!p.photoUrl) return <CarIcon />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={p.photoUrl} alt="" loading="lazy" />;
+}
+
 export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
   sel: { p: CanonicalProduct; offer: Offer } | undefined;
   selOffers: Offer[];

@@ -662,7 +662,7 @@ for (const [re, label] of cardLineContractBaseline) {
 
 const cardPriorityBaseline = [
   ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증금/, 'product card term/deposit priority line'],
-  ['src/app/_erp/ProductsScreen.tsx', /amount=\{manWon\(offer\.monthlyRent\)\}/, 'product list compact rent display'],
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product list natural monthly rent display'],
   ['src/app/_erp/parts.tsx', /lines\?: ReactNode\[\]/, 'row card flexible extra lines'],
 ] as const;
 for (const [file, re, label] of cardPriorityBaseline) {

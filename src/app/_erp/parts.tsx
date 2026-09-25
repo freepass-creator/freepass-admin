@@ -126,10 +126,8 @@ export function TileGroup({ children }: { children: ReactNode }) {
  *   steps 가 없으면(상품) ③ 이 ② 자리까지 넓어진다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다.
  */
 export type Fact = [label: string, value: ReactNode, sub?: ReactNode];
-export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, subId, sub, meta, lines = [], steps, facts, amount, amountLabel, unit = '원' }: {
+export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, subId, sub, meta, steps, facts, amount, amountLabel, unit = '원' }: {
   href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; subId?: ReactNode; sub?: ReactNode; meta?: ReactNode;
-  /** 목록 카드의 추가 정보줄. 줄 수는 화면이 아니라 정보 우선순위가 정한다. 각 줄은 한 행 문법을 따른다. */
-  lines?: ReactNode[];
   /** 좁은 목록(§5-4 compact)의 44px 정사각 썸네일 — 사진이 있으면 그 아이콘, 없으면 상태 아이콘 + 짧은 글자
    *  (thumbStatus, erp-rowcard-thumb--status). 넓은 카드(§5-3 원안)에서는 그리는 자리가 없어 그냥 안 보인다. */
   thumb?: ReactNode; thumbStatus?: boolean;
@@ -147,7 +145,6 @@ export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge,
         <h3 className="erp-rowcard-title" data-line-role="main"><Link className="erp-rowcard-link" href={href} aria-current={current ? 'true' : undefined}>{title}</Link>{badge}</h3>
         {subId || sub ? <div className="erp-rowcard-sub" data-line-role="key">{subId ? <b>{subId}</b> : null}{sub}</div> : null}
         {meta ? <div className="erp-rowcard-meta" data-line-role="support">{meta}</div> : null}
-        {lines.map((line, i) => <div className="erp-rowcard-line" data-line-role="support" key={i}>{line}</div>)}
       </div>
       {steps ? (
         <ol className="erp-rowcard-steps" aria-label="진행">

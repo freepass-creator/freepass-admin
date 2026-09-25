@@ -33,9 +33,14 @@ export function DetailTabs({ summary, info, applyBase, initialOffer }: {
   const 탭키 = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
-    const next = e.key === 'ArrowLeft' || e.key === 'Home' ? 'summary' : 'info';
+    const next = e.key === 'Home' ? 'summary'
+      : e.key === 'End' ? 'info'
+        : e.key === 'ArrowRight' ? (tab === 'summary' ? 'info' : 'summary')
+          : (tab === 'info' ? 'summary' : 'info');
     setTab(next);
-    requestAnimationFrame(() => tabs.current?.querySelector<HTMLButtonElement>(`#${next === 'summary' ? CSS.escape(summaryTab) : CSS.escape(infoTab)}`)?.focus());
+    requestAnimationFrame(() => tabs.current?.querySelector<HTMLButtonElement>(
+      `#${next === 'summary' ? CSS.escape(summaryTab) : CSS.escape(infoTab)}`
+    )?.focus());
   };
   return (
     <ChosenOffer.Provider value={알림}>

@@ -45,6 +45,13 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
       supplier: r.supplier ?? '', channel: r.channel ?? '',
       /* ★어느 줄의 환수인지 — 기존 23건에는 없던 칸이다(차번만 있었다). 재계약이면 차번만으로는 못 가른다 */
       code: r.id, receivedAt: r.receivedAt ?? '',
+      ...(r.contractTerminatedAt ? {
+        source: 'CONTRACT_TERMINATION',
+        contractId: r.esignContractId ?? '',
+        contractTerminatedAt: r.contractTerminatedAt,
+        contractTerminationDate: r.contractTerminationDate ?? '',
+        contractTerminationReason: r.contractTerminationReason ?? '',
+      } : {}),
       by, updatedAt: nowMs,
     },
   };

@@ -721,6 +721,12 @@ export class EsignService {
    * signed 봉인본이 있으면 그 파일을 그대로 돌리고, 그 전에는 발행 시 고정한 snapshot으로
    * 읽기 전용 작성본 HTML을 만든다. 최종 승인/PDF 봉인은 별도 단계에서 처리한다.
    */
+  async finalDocument(sessionId: string) {
+    const session = await this.repo.getSession(sessionId);
+    if (!session || session.status !== 'signed' || !session.documentStoragePath || !session.documentSha256) return null;
+    return this.assets.get(session.documentStoragePath, session.documentSha256);
+  }
+
   async publicDocument(token: string) {
     const session = await this.byToken(token);
     if (session.status === 'signed' && session.documentStoragePath && session.documentSha256) {

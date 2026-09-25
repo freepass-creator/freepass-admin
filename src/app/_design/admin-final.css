@@ -58,6 +58,44 @@
   .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */
 }
 
+/* 반응형 안정화 — 2026-09-25 전수검사
+ * 360/390/412에서 sticky header가 여러 줄로 비대해지지 않게 하고,
+ * 긴 identity가 badge/count/action 영역을 밀어내지 않게 한다. */
+.fn-main .workspace .vehicle-title { gap: 10px; min-width: 0; }
+.fn-main .workspace .vehicle-title > div { flex: 1 1 auto; min-width: 0; }
+.fn-main .workspace .vehicle-title h2 {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fn-main .workspace .vehicle-title p {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fn-main .workspace .vehicle-title > .dz-badge {
+  flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis;
+}
+.fn-main .workspace .panel-head > div { flex: 0 1 auto; min-width: 0; }
+.fn-main .workspace .panel-head > .count { flex: none; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  /* 모바일 quick filter는 세로로 쌓지 않고 한 줄에서 손가락으로 넘긴다.
+     44px hit target은 그대로라 시각 밀도만 줄고 조작성은 유지된다. */
+  .fn-main .workspace .quick-filters {
+    flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+    overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .fn-main .workspace .quick-filters::-webkit-scrollbar { display: none; }
+  .fn-main .workspace .quick-filters > * { flex: 0 0 auto; }
+
+  /* 모바일 상세 identity는 긴 차량/고객명만 최대 두 줄 허용한다. */
+  .fn-main .workspace .vehicle-title { align-items: flex-start; }
+  .fn-main .workspace .vehicle-title h2 {
+    white-space: normal; overflow: hidden; text-overflow: clip;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    line-height: 24px;
+  }
+  .fn-main .workspace .vehicle-title p { margin-top: 2px; }
+}
+
 /* 색 위계 — 카드 */
 .dz-row { background: var(--카드); }
 .dz-row:hover { background: var(--카드손); }

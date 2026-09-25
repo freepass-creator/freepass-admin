@@ -1,5 +1,5 @@
 import { esign } from '../../../../../../server/esign';
-import { currentAdmin, requireAdmin } from '../../../../../../server/require-admin';
+import { adminActor, requireAdmin } from '../../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
@@ -11,8 +11,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ con
   try {
     const body = await request.json() as { finalizationId?: unknown };
     const finalizationId = String(body.finalizationId ?? '').trim();
-    const admin = await currentAdmin();
-    const result = await esign.approve(contractId, finalizationId, admin?.name || 'freepass-admin');
+    const result = await esign.approve(contractId, finalizationId, await adminActor());
     return Response.json({
       ok: true,
       finalized: result.finalized,

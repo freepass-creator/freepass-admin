@@ -19,3 +19,15 @@ export async function currentAdmin(): Promise<{ name: string } | null> {
   const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
   return user ? { name: user.name } : null;
 }
+
+/**
+ * 감사 기록에 남길 «누가» — 이메일(없으면 uid). 표시 이름은 바뀌고 겹치므로 쓰지 않는다.
+ * 로그인이 꺼진 개발 환경에서는 그 사실을 그대로 남긴다(누군가인 척하지 않는다).
+ * 세션이 없으면 던진다 — requireAdmin() 을 통과한 뒤에만 부른다.
+ */
+export async function adminActor(): Promise<string> {
+  if (!authEnforced()) return 'dev:auth-disabled';
+  const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
+  if (!user) throw new Error('로그인이 필요합니다 — 다시 로그인해 주세요');
+  return user.email ? user.email : 'uid:' + user.uid;
+}

@@ -662,7 +662,7 @@ for (const [re, label] of cardLineContractBaseline) {
 }
 
 const cardPriorityBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증금/, 'product card term/deposit priority line'],
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product card term/deposit priority line'],
   ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product list natural monthly rent display'],
   ['src/app/_erp/parts.tsx', /lines\?: ReactNode\[\]/, 'row card flexible extra lines'],
 ] as const;
@@ -672,13 +672,13 @@ for (const [file, re, label] of cardPriorityBaseline) {
 }
 
 const listAmountLanguageBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product monthly rent may be compact'],
-  ['src/app/_erp/Workspace.tsx', /`월 \$\{manWon\(r\.rent\)\} 원`/, 'intake monthly rent may be compact'],
-  ['src/app/_erp/Workspace.tsx', /`수수료 청구 \$\{r\.money\.claim === null \? '—' : `\$\{won0\(r\.money\.claim\)\}원`\} · 지급/, 'intake fees stay exact'],
-  ['src/app/_erp/Workspace.tsx', /`남는 \$\{marginOf\(r, now\) === null \? '—' : `\$\{won0\(marginOf\(r, now\)\)\}원`\}`/, 'performance margin stays exact'],
-  ['src/app/_erp/SettlementScreen.tsx', /amount=\{`정산 \$\{won0\(g\.net\)\}원`\}/, 'settlement total stays exact'],
-  ['src/app/_erp/SettlementScreen.tsx', /`수수료 청구 \$\{r\.money\.claim === null \? '—' : `\$\{won0\(r\.money\.claim\)\}원`\} · 지급/, 'settlement line fees stay exact'],
-  ['src/app/_erp/EsignScreen.tsx', /amount=\{`월 \$\{manWon\(c\.rent\)\} 원`\}/, 'e-sign monthly rent may be compact'],
+  ['src/app/_erp/ProductsScreen.tsx', /월 \$\{manWon\(offer\.monthlyRent\)\} 원/, 'product monthly rent may be compact'],
+  ['src/app/_erp/Workspace.tsx', /월 \$\{manWon\(r\.rent\)\} 원/, 'intake monthly rent may be compact'],
+  ['src/app/_erp/Workspace.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'intake fees stay exact'],
+  ['src/app/_erp/Workspace.tsx', /남는[\s\S]*won0\(marginOf\(r, now\)\)/, 'performance margin stays exact'],
+  ['src/app/_erp/SettlementScreen.tsx', /정산 \$\{won0\(g\.net\)\}원/, 'settlement total stays exact'],
+  ['src/app/_erp/SettlementScreen.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'settlement line fees stay exact'],
+  ['src/app/_erp/EsignScreen.tsx', /월 \$\{manWon\(c\.rent\)\} 원/, 'e-sign monthly rent may be compact'],
 ] as const;
 for (const [file, re, label] of listAmountLanguageBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');

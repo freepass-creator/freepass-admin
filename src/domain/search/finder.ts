@@ -60,6 +60,12 @@ export type FinderInput = {
   text?: string;
 };
 
+export function emptyFinderSelection(): FinderSelection {
+  return Object.fromEntries(
+    [...OFFER_FINDER_AXES,...PRODUCT_FINDER_AXES].map((axis)=>[axis,[] as string[]]),
+  ) as FinderSelection;
+}
+
 const inBand=(bands:readonly FinderBand[],key:string,value:number|undefined|null)=>{
   const band=bands.find((x)=>x.k===key);
   return !!band && typeof value==='number' && Number.isFinite(value) && value>band.lo && value<=band.hi;

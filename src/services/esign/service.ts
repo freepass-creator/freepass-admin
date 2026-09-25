@@ -760,6 +760,11 @@ export class EsignService {
 
   async publicDocument(token: string) {
     const session = await this.byToken(token);
+    const now = Date.now();
+    if (session.status === 'revoked') throw new Error('철회된 전자계약 링크입니다.');
+    if (session.expiresAt < now && !['pending_review', 'approving', 'signed'].includes(session.status)) {
+      throw new Error('만료된 전자계약 링크입니다.');
+    }
     if (session.status === 'signed' && session.documentStoragePath && session.documentSha256) {
       return this.assets.get(session.documentStoragePath, session.documentSha256);
     }

@@ -23,7 +23,7 @@ type Repository={terminateContract(id:string,payload:typeof input,actor:string):
   terminated:boolean;effectiveDate:string;reason:string;
 }>};
 
-function fixture(overrides:Record<string,unknown>={}){
+function fixture(overrides:Record<string,unknown>={},contractOverrides:Record<string,unknown>={}){
   const writes:Write[]=[];
   const intake={
     cancelled:false,delivered:true,deliveredAt:'2026-09-10',esignContractId:contractId,
@@ -31,7 +31,7 @@ function fixture(overrides:Record<string,unknown>={}){
     ...overrides,
   };
   const documents=new Map<string,Record<string,unknown>>([
-    [`contract/${contractId}`,{source_intake_id:'intake_1',contract_status:'계약완료',sign_status:'서명완료',esign_id:'esg_1'}],
+    [`contract/${contractId}`,{source_intake_id:'intake_1',contract_status:'계약완료',sign_status:'서명완료',esign_id:'esg_1',...contractOverrides}],
     ['settlement_rows/intake_1',intake],
   ]);
   const record=(method:string,ref:Ref,data:Record<string,unknown>)=>{
@@ -99,15 +99,38 @@ test('정상 연결은 해지 사실과 감사이력만 기록하고 정산·서
   }
 });
 
-test('정상 연결의 동일 해지 재시도는 추가 쓰기를 만들지 않는다',async()=>{
+test('정상 연결의 동일 해지 재시도는 양쪽 mirror가 같을 때 추가 쓰기를 만들지 않는다',async()=>{
   const {repository,writes}=fixture({
     contractTerminatedAt:now,contractTerminationDate:input.effectiveDate,
     contractTerminationReason:input.reason,contractTerminationOperationId:input.operationId,
+  },{
+    contract_status:'계약해지',contract_terminated_at:now,
+    contract_termination_date:input.effectiveDate,
+    contract_termination_reason:input.reason,
+    contract_termination_operation_id:input.operationId,
   });
   const result=await repository.terminateContract(contractId,input,'admin_test');
   assert.equal(result.terminated,false);
   assert.equal(result.effectiveDate,input.effectiveDate);
   assert.equal(writes.length,0);
+});
+
+test('부분 해지 상태는 어댑터에서도 자동 덮어쓰기 없이 0건 쓰기로 차단한다',async()=>{
+  const intakeOnly=fixture({
+    contractTerminatedAt:now,contractTerminationDate:input.effectiveDate,
+    contractTerminationReason:input.reason,contractTerminationOperationId:input.operationId,
+  });
+  await assert.rejects(intakeOnly.repository.terminateContract(contractId,input,'admin_test'),/계약과 접수.*일치하지/);
+  assert.equal(intakeOnly.writes.length,0);
+
+  const contractOnly=fixture({},{
+    contract_status:'계약해지',contract_terminated_at:now,
+    contract_termination_date:input.effectiveDate,
+    contract_termination_reason:input.reason,
+    contract_termination_operation_id:input.operationId,
+  });
+  await assert.rejects(contractOnly.repository.terminateContract(contractId,input,'admin_test'),/계약과 접수.*일치하지/);
+  assert.equal(contractOnly.writes.length,0);
 });
 
 test('역방향 링크가 없는 레거시는 기존 link helper 정책을 유지한다',async()=>{

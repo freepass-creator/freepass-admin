@@ -185,7 +185,7 @@ html, body { font-size: var(--글메인); }
    ⚠ 앞서는 판 셋을 세로로 이어 붙여 문서가 2,411px 였다 — 상세를 보려면 한참 내려야 했고,
      위 메뉴도 폰에서 사라져 다른 판으로 가는 길이 스크롤뿐이었다.
    ⇒ 아래 탭 셋(상품 · 상세 · 접수)으로 한 장씩. 차를 누르면 상세로, 「이 상품 접수하기」는 접수로 넘어간다.
-   ★옷은 그대로다 — 탭은 단추 규격(33·메인 14), 켜진 것은 남색 면, 탭 띠는 «판 박스»라 선을 가진다.
+   ★옷은 그대로다 — 탭은 현행 44px 컨트롤·메인 14, 켜진 것은 남색 면으로 읽는다.
    ═══════════════════════════════════════════════════════════════════ */
 .phone-tabs { display: none; }
 @media (max-width: 900px) {
@@ -354,7 +354,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .summary-grid dt { font-size: var(--글보조); color: #6b7580; }
 .fn-main .workspace .summary-grid dd { margin: 2px 0 0; font-size: var(--글메인); }
 
-/* 머리 단추 셋(전부 보기 · 신규접수 · 접수 탭)이 이제 링크다 — 단추 규격(33) 그대로 */
+/* 머리 링크형 컨트롤도 현행 44px 토큰을 따른다 */
 .fn-main .workspace .icon-btn, .fn-main .workspace .new-app, .fn-main .workspace .work-tabs a {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px; border-radius: var(--ui-control-radius,6px); font-size: var(--글메인); white-space: nowrap;
@@ -409,17 +409,17 @@ body { background: var(--바닥); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) a:hover { text-decoration: underline; }
 /** 제목 옆 「+ 새 접수」 — 그 화면의 주 행동이라 남색 카드 단추. (뼈대가 인라인 13px 를 박아 두어 같은 힘으로 덮는다) */
 .fn-main:not(:has(> .workspace, > .admin-shell)) h1 > a {
-  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
-  border-radius: var(--r); background: var(--ci남색); color: #fff !important;
+  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px;
+  border-radius: var(--ui-control-radius,6px); background: var(--ci남색); color: #fff !important;
   font-size: var(--글메인) !important; font-weight: 600; margin-left: 0 !important; text-decoration: none !important;
 }
 
-/* 입력 — 선 없는 박스(규칙 ①) · 단추 규격 33(규칙 ⑦) */
+/* 입력 — 선 없는 박스(규칙 ①) · 현행 관리자 컨트롤 44 */
 .fn-main:not(:has(> .workspace, > .admin-shell)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea {
-  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
-  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 15px;
+  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px);
+  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 16px;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) textarea { height: auto; min-height: 66px; padding: 8px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) input:focus, .fn-main:not(:has(> .workspace, > .admin-shell)) select:focus,
@@ -432,8 +432,8 @@ body { background: var(--바닥); }
 
 /* ③ 단추는 글자만 · ④ 이 폼의 주 행동(보내기)은 남색 면 */
 .fn-main:not(:has(> .workspace, > .admin-shell)) button {
-  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
-  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 15px; cursor: pointer;
+  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px);
+  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 16px; cursor: pointer;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) button:hover:not(:disabled) { background: var(--박스손); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
@@ -442,8 +442,8 @@ body { background: var(--바닥); }
 /* 탭 — 글자만, 켜진 것은 남색 면(검은 알약이던 것) */
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a {
-  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
-  border: 0; border-radius: var(--r); background: transparent; color: #4f5862; text-decoration: none;
+  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px;
+  border: 0; border-radius: var(--ui-control-radius,6px); background: transparent; color: #4f5862; text-decoration: none;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a:hover { background: var(--박스손); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
@@ -610,7 +610,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-searchbox {
   position: relative; display: flex; align-items: center; gap: 8px;
-  height: var(--ui-control-h,40px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+  height: var(--ui-control-h,44px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace .dz-searchbox > input[name="q"] {
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;

@@ -17,7 +17,6 @@ import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
-import { marginOf } from '../../domain/settlement/money';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { NewIntakePanel } from '../intake/panels';
 import { writeEnabled } from '../../adapters/erp5/settlement-repository';

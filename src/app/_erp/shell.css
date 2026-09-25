@@ -174,9 +174,9 @@
 @media (min-width: 901px) {
   :root {
     --fp-elevation-0: none;
-    --fp-elevation-base: 0 1px 2px rgba(16, 24, 40, 0.07);
-    --fp-elevation-hover: 0 3px 7px rgba(16, 24, 40, 0.12);
-    --fp-elevation-float: 0 8px 22px rgba(16, 24, 40, 0.14);
+    --fp-elevation-base: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --fp-elevation-hover: 0 2px 6px rgba(16, 24, 40, 0.08);
+    --fp-elevation-float: 0 8px 22px rgba(16, 24, 40, 0.12);
     --fp-press-y: 1px;
 
     /* Borderless polish: layout box는 유지하고 보이는 선만 걷는다.
@@ -1476,5 +1476,61 @@
     .erp-tile--pressable[aria-pressed="true"]
   ) :is(.erp-rowcard-title,.erp-tile-row b) {
     font-weight: 600;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Flat resting surfaces, subtle interaction elevation
+ * 평상시는 납작하게, hover/floating에서만 elevation을 쓴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-rowcard,
+    .erp-tile,
+    .erp-listcard,
+    .erp-btn,
+    .erp-search,
+    .erp-facet-opt
+  ) {
+    box-shadow: none;
+  }
+
+  @media (hover:hover) {
+    .erp-std :is(
+      .erp-rowcard,
+      .erp-tile--pressable,
+      .erp-listcard
+    ):hover {
+      box-shadow: var(--fp-elevation-hover);
+    }
+  }
+
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-listcard[aria-current="true"]
+  ) {
+    box-shadow: inset 0 1px 2px rgba(29,78,216,.10);
+  }
+
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-listcard[aria-current="true"]
+  ):hover {
+    box-shadow: inset 0 1px 2px rgba(29,78,216,.12);
+  }
+
+  .erp-std .erp-panel {
+    box-shadow: var(--fp-elevation-base);
+  }
+
+  .erp-std :is(.erp-filter-panel,.dz-fs-sheet) {
+    box-shadow: var(--fp-elevation-float);
+  }
+
+  .erp-std :is(.erp-btn--primary,.erp-btn--danger) {
+    box-shadow: none;
   }
 }

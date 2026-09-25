@@ -7,8 +7,9 @@
  *
  * ```
  *   ✓무심사  ✓분납가능  ✓만21세                     ← 혜택(상자 없이 ✓ + 굵은 글자 — 화이트라벨 PerkMark)
- *   [36개월] 48개월  60개월                          ← 기간은 단추로 고른다
- *   월 510,000원 | 보증금 1,000,000원 | 주행 —        ← 값은 «한 줄», 기간을 누르면 이 줄만 바뀐다
+ *   36개월 | 510,000원/월 | 보증금 1,000,000원 · 연 2만km
+ *   48개월 | 490,000원/월 | 보증금 1,000,000원 · 연 2만km
+ *   ★각 Offer가 한 줄 선택 카드다. 선택상태는 카드 면으로만 표현한다.
  *   [        이 상품 접수하기        ]
  * ```
  * ⚠ 앞서 요약 네 칸(공급사·차종 매칭·보증금·약정주행) + 큰 남색 Offer 박스였다 — 보증금·주행이 두 번 섰고
@@ -54,23 +55,25 @@ export function OfferPicker({ offers, initial, perks, perksNote }: {
     <>
       <PerkMarks marks={perks ?? []} note={perksNote} />
       {줄.length === 0 ? <EmptyState>받은 요금이 없습니다 — 원자에 요금이 안 들어온 것입니다.</EmptyState> : (
-        /* 기간 · 값 한 줄 — 본문과 같이 구른다. ★고른 요금은 판 하단바(DetailTabs)가 받아 「이 상품 접수하기」에 싣는다 */
-        <div className="dz-apply">
-          <div className="offer-picker" data-ai-feature="data.list-presentation data.variant-selector" data-ai-list-mode="variant-card">
-            {줄.map((x) => (
-              <button key={x.id} type="button" onClick={() => set고름(x.id)} className={x.id === 고름 ? 'active' : ''}>
-                {x.termMonths}개월{겹침(x.termMonths) && x.annualMileageKm ? ` · ${x.annualMileageKm / 10000}만km` : ''}
+        <div className="dz-offer-select-list" role="list" aria-label="기간별 대여료 선택"
+          data-ai-feature="data.list-presentation data.variant-selector" data-ai-list-mode="variant-card">
+          {줄.map((x) => {
+            const 조건 = [
+              x.deposit ? `보증금 ${원(x.deposit)}` : '보증금 없음',
+              x.prepayment ? `선납 ${원(x.prepayment)}` : null,
+              x.annualMileageKm ? `연 ${x.annualMileageKm.toLocaleString('ko-KR')}km` : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <button key={x.id} type="button" role="listitem"
+                onClick={() => set고름(x.id)}
+                aria-pressed={x.id === 고름}
+                className={`dz-offer-select-row${x.id === 고름 ? ' active' : ''}`}>
+                <strong>{x.termMonths}개월{겹침(x.termMonths) && x.annualMileageKm ? ` · ${x.annualMileageKm / 10000}만km` : ''}</strong>
+                <b>{원(x.monthlyRent)}/월</b>
+                <span>{조건}</span>
               </button>
-            ))}
-          </div>
-          {o && (
-            <p className="dz-offer-line">
-              <b>월 {원(o.monthlyRent)}</b>
-              <span>보증금 {원(o.deposit)}</span>
-              {o.prepayment ? <span>선납 {원(o.prepayment)}</span> : null}
-              <span>주행 {주행(o.annualMileageKm)}</span>
-            </p>
-          )}
+            );
+          })}
         </div>
       )}
     </>

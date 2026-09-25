@@ -7,6 +7,47 @@
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
 
 
+## 0-AA. 2026-09-25 FreePass Data 읽기/쓰기 경계 — 최신 확정
+
+사용자 최신 확정:
+
+> Admin은 Firebase를 직접 소비하지 않는다. 상품을 포함한 모든 운영 데이터는 **FreePass Data를 통해 가져오고, FreePass Data를 통해 쓴다.**
+
+정확한 구조:
+
+```text
+FreePass Admin
+  ├─ 상품찾기
+  ├─ 접수
+  ├─ 실적
+  ├─ 계약 사실
+  ├─ 청구/수금
+  ├─ 지급
+  └─ 환수
+        ↓
+FreePass Data Gateway
+        ↓
+Repository / Adapter
+        ↓
+Firestore (project id: freepasserp5)
+```
+
+- `freepasserp5`는 Firebase 기술 project id다.
+- 사람이 보는/설계에서 부르는 공식 데이터 계층은 **FreePass Data**다.
+- Admin은 업무 규칙과 workflow 의미를 소유한다. 그러나 별도의 DB/원장/캐시 정본을 만들지 않는다.
+- Product/Offer/Policy뿐 아니라 Intake/Performance/Contract fact/Settlement/Claim/Collection/Pay/Clawback도 FreePass Data persistence를 사용한다.
+- 화면·Server Action·Service에서 Firebase Admin SDK 또는 `adapters/erp5/*` 직접 접근 금지.
+- 정본 조립점은 `src/server/freepass-data.ts`.
+- `src/server/erp5.ts`는 deprecated compatibility alias다.
+- RTDB는 금지.
+- CI `freepass-data-boundary.test.ts`가 App/Server/Service 우회를 차단한다.
+- 상품 기반 접수는 저장 직전 FreePass Data fresh read로 Product/Offer version/snapshot drift를 확인한다.
+
+아래 과거 문서의 “FreePass Data는 Product/Offer/Policy만 공급하고 Admin workflow/ledger는 별도 persistence”라는 표현과 충돌하면 **이 절이 우선**한다.  
+업무 의미 소유권과 persistence 소유권을 구분한다: **Admin이 workflow 의미를 소유하고, FreePass Data가 authoritative persistence gateway를 소유한다.**
+
+---
+
 ## 0-A. 2026-09-25 기능 기준 재정렬 — 이 절이 계약 중심 해석보다 우선
 
 사용자 최신 확정:
@@ -86,7 +127,7 @@ Admin 상품찾기
 - Offer 선택 → Intake → Contract → Esign → signed/PDF → Settlement 전체 journey integration test
 - Data Status에 contract/esign finalization readiness 추가
 
-**주의:** FreePass Data가 Admin의 workflow/settlement ledger를 흡수하지 않는다. FreePass Data는 Product/Offer/Policy 같은 공유 Canonical fact를 공급하고, Admin은 Intake/Contract/Esign/Settlement workflow를 소유한다.
+**주의(2026-09-25 superseded):** Admin은 Intake/Contract/Settlement의 **업무 의미와 workflow 규칙**을 소유하지만, 해당 사실의 조회/영속화는 FreePass Data gateway를 통한다. 별도의 Admin persistence/두 번째 원장을 만들지 않는다.
 
 관련 최신 커밋:
 - Admin audit handoff: `45a90b18b3609dbb54f50dd3080aaa025baf6a3f`

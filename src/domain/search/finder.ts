@@ -294,6 +294,7 @@ export function sortFinderMatches(matches: readonly ProductSearchMatch[], sort: 
         return typeof km==='number'&&Number.isFinite(km)&&km>0?km:Number.MAX_SAFE_INTEGER;
       }
     }
+    return 0;
   };
   return indexed.sort((a,b)=>
     a.exact-b.exact

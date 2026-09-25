@@ -1568,3 +1568,17 @@
     color: var(--erp-color-on-primary);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact card signal de-duplication
+ * 상태 썸네일이 이미 상태를 전달하면 같은 Badge를 제목 옆에 반복하지 않는다.
+ * wide card에서는 thumb가 사라지므로 Badge를 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact
+  .erp-rowcard[data-thumb-status="true"]
+  .erp-rowcard-title > .erp-badge {
+    display: none;
+  }
+}

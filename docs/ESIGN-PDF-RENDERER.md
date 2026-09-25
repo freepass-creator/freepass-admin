@@ -72,3 +72,41 @@ npm run build
 ```
 
 The renderer integration test launches real Chromium, feeds the real contract template, waits for Korean fonts, and validates a real multi-page PDF. Passing local/CI tests is TESTED, not DEPLOYMENT VERIFIED. Deployment verification additionally requires a successful deployed Node runtime invocation and a real private Storage write/read-back receipt.
+
+## Verification status — 2026-09-25
+
+| State | Status | Evidence / blocker |
+|---|---|---|
+| DESIGNED | PASS | Existing HTML/CSS is preserved; production boundary is `EsignFinalDocumentRenderer`. |
+| CODED | PASS | Production Chromium adapter is wired into `EsignService`; no UI/workflow redesign is included. |
+| STATIC CHECKED | PARTIAL | Manual source/boundary review and package-lock dependency-path checks pass. `npm run typecheck` has not executed because GitHub Actions jobs terminate before a runner is assigned. |
+| TESTED | NOT VERIFIED | Unit/regression/integration tests are coded, including real Chromium PDF generation, but current Actions jobs have `runner_id=0` and `steps=[]`. |
+| RUNTIME VERIFIED | NOT VERIFIED | No successful Node/Vercel invocation of the production adapter has been observed yet. |
+| STORAGE VERIFIED | NOT VERIFIED | Service code performs private Storage write + SHA read-back; mock regression coverage exists, but no real Firebase Storage/emulator receipt has been observed in this branch. |
+| DEPLOYMENT VERIFIED | NOT VERIFIED | The connected Vercel team currently exposes no project for this repository, so no deployed invocation can be claimed. |
+| USER APPROVED | NOT VERIFIED | Awaiting user acceptance after runtime/storage/deployment evidence. |
+
+Do not promote this PR out of Draft solely because the renderer compiles on inspection or because a local/synthetic PDF can be produced.
+
+## Additional fail-closed checks
+
+The renderer and service now reject the finalization path when any of the following is true:
+
+- final bytes do not contain a PDF header, minimum body, and tail `%%EOF`;
+- a rendered page is not A4-sized within a small CSS-pixel tolerance;
+- a page reports content overflow/clipping;
+- Pretendard is not loaded;
+- a visible image is broken;
+- no visible customer signature was rendered;
+- the visible seal-hash evidence is missing;
+- an interactive print control remains in the document;
+- Storage returns a SHA-256 different from the rendered bytes;
+- Storage read-back cannot verify the expected hash/content type.
+
+Chromium executable extraction is cached per warm Node process. Browser launch relies on Puppeteer's native timeout so a second wrapper timeout cannot abandon a late-launching Chromium process. Browser shutdown has a bounded graceful close and a best-effort process kill fallback.
+
+## Runtime baseline
+
+- Node runtime is pinned to `24.x` for CI/deployment consistency.
+- Current renderer pair remains `puppeteer-core@24.41.0` + `@sparticuz/chromium@147.0.2`.
+- These share the same browser major. A newer matching pair is not adopted in this Draft until the current branch can actually execute `npm ci / typecheck / test / build`; changing the browser dependency tree without executable validation would increase risk rather than reduce it.

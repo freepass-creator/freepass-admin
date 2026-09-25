@@ -54,6 +54,8 @@ type PageReadiness = {
   pages: number;
   nonA4Pages: number;
   clippedPages: number;
+  overflowingRegions: string[];
+  overflowingRegionCount: number;
   visibleCustomerSignatures: number;
   hasSealEvidence: boolean;
   hasPrintControl: boolean;
@@ -107,6 +109,20 @@ function pageReadinessExpression(sealPrefix: string) {
         || pageNode.scrollWidth > pageNode.clientWidth + 2,
     };
   });
+  // Pages are fixed A4 boxes whose inner regions (.pbody, cards, special terms) use overflow:hidden.
+  // Content that does not fit is silently hidden there, never on the page box itself, so every
+  // clipping container inside a page is checked. Only class names are reported (no contract text).
+  const clipsOverflow = value => value === 'hidden' || value === 'clip';
+  const overflowingRegions = [];
+  for (const pageNode of renderedPages) {
+    for (const node of pageNode.querySelectorAll('*')) {
+      if (!isVisible(node)) continue;
+      const style = getComputedStyle(node);
+      const clipY = clipsOverflow(style.overflowY) && node.scrollHeight > node.clientHeight + 2;
+      const clipX = clipsOverflow(style.overflowX) && node.scrollWidth > node.clientWidth + 2;
+      if (clipY || clipX) overflowingRegions.push((node.tagName.toLowerCase() + '.' + String(node.className || '').trim().split(/\s+/).join('.')).slice(0, 80));
+    }
+  }
   const nonA4Pages = pageMetrics.filter(metric =>
     Math.abs(metric.width - expectedA4.width) > 2 || Math.abs(metric.height - expectedA4.height) > 2).length;
   const clippedPages = pageMetrics.filter(metric => metric.clipped).length;
@@ -121,6 +137,8 @@ function pageReadinessExpression(sealPrefix: string) {
     pages: renderedPages.length,
     nonA4Pages,
     clippedPages,
+    overflowingRegions: overflowingRegions.slice(0, 5),
+    overflowingRegionCount: overflowingRegions.length,
     visibleCustomerSignatures,
     hasSealEvidence: document.body.innerText.includes(sealPrefix),
     hasPrintControl: Boolean(document.querySelector('[onclick*="window.print"],.fp-pdf-button,.builder')),
@@ -307,6 +325,9 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
       if (readiness.pages < 1) throw new Error('전자계약 PDF A4 페이지를 찾을 수 없습니다.');
       if (readiness.nonA4Pages > 0) throw new Error('전자계약 PDF 페이지 크기가 A4 규격과 다릅니다.');
       if (readiness.clippedPages > 0) throw new Error('전자계약 PDF 페이지에 잘리는 콘텐츠가 있습니다.');
+      if (readiness.overflowingRegionCount > 0) {
+        throw new Error('전자계약 PDF에 영역을 넘쳐 잘리는 내용이 있습니다: ' + readiness.overflowingRegions.join(', '));
+      }
       if (readiness.visibleCustomerSignatures < 1) throw new Error('전자계약 PDF에 고객 서명이 렌더링되지 않았습니다.');
       if (!readiness.hasSealEvidence) throw new Error('전자계약 PDF에 봉인 해시 증거가 렌더링되지 않았습니다.');
       if (readiness.hasPrintControl) throw new Error('최종 전자계약에 인쇄용 조작 UI가 남아 있습니다.');

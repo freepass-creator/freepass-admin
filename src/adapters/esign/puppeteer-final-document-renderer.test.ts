@@ -222,3 +222,30 @@ test('production renderer refuses to seal a signature image the browser cannot d
     /로딩되지 않은 이미지|고객 서명이 렌더링되지/,
   );
 });
+
+const longClause = '임차인은 차량을 선량한 관리자의 주의로 사용하며, 회사의 사전 서면 동의 없이 제3자에게 전대할 수 없다. ';
+
+test('production renderer refuses to seal special terms that overflow their fixed A4 region', { timeout: 120_000 }, async () => {
+  const overflowing = { ...snapshot, templateFields: { ...snapshot.templateFields, special_terms: longClause.repeat(120) } };
+  await assert.rejects(
+    () => new PuppeteerEsignFinalDocumentRenderer().render({ snapshot: overflowing, submission, signatureBytes: png, sealHash: 'c'.repeat(64) }),
+    /영역을 넘쳐 잘리는 내용/,
+  );
+});
+
+test('production renderer refuses to seal when a long field pushes another clause out of its page', { timeout: 120_000 }, async () => {
+  // Before region checks, this silently dropped the "초과주행 정산" clause at the bottom of page 2.
+  const options = '파노라마 선루프, 헤드업 디스플레이, 어라운드뷰 모니터, '.repeat(10);
+  const pushed = { ...snapshot, templateFields: { ...snapshot.templateFields, options } };
+  await assert.rejects(
+    () => new PuppeteerEsignFinalDocumentRenderer().render({ snapshot: pushed, submission, signatureBytes: png, sealHash: 'c'.repeat(64) }),
+    /영역을 넘쳐 잘리는 내용/,
+  );
+});
+
+test('production renderer seals realistic long inputs without false overflow', { timeout: 120_000 }, async () => {
+  const realistic = { ...snapshot, templateFields: { ...snapshot.templateFields, special_terms: longClause.repeat(20), options: '파노라마 선루프, 헤드업 디스플레이' } };
+  const sub = { ...submission, customerName: '남궁제갈선우', customerAddress: '경기도 성남시 분당구 판교역로 235, 에이치스퀘어 엔동 7층 701호(삼평동, 판교테크노밸리)' };
+  const result = await new PuppeteerEsignFinalDocumentRenderer().render({ snapshot: realistic, submission: sub, signatureBytes: png, sealHash: 'c'.repeat(64) });
+  assert.equal(Buffer.from(result.bytes).subarray(0, 5).toString('ascii'), '%PDF-');
+});

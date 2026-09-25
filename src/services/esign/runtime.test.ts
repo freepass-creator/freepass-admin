@@ -311,3 +311,50 @@ test('esign finalization does not sign when stored PDF read-back fails', async (
   assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
   assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
 });
+
+
+test('admin journey: intake -> contract -> esign submit -> approve -> signed', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.intakes.set('stl_e2e',{
+    intakeId:'stl_e2e',sourceDigest:'digest-e2e',customerName:'홍길동',vehicleName:'GV70',plate:'12가3456',
+    supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,
+    sourceProductId:'prd_e2e',sourceProductVersion:9,sourceOfferId:'off_e2e',sourceSnapshotId:'snap_e2e',
+    catalogSnapshot:{capturedAt:'2026-09-25T00:00:00.000Z'},
+  });
+
+  const created=await svc.createContractFromIntake({
+    intakeId:'stl_e2e',customerPhone:'01012345678',customerType:'개인',
+    contractDate:'2026-09-25',contractKind:'rent_return',insuranceSide:'회사포함',
+  },'tester');
+  assert.equal(created.created,true);
+  assert.equal(repo.contract.get(created.id)?.source_intake_id,'stl_e2e');
+  assert.equal(repo.contract.get(created.id)?.source_offer_id,'off_e2e');
+
+  const issued=await svc.issue(created.id,'tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  await svc.publicView(token);
+  await svc.progress(token,'summary');
+  await svc.progress(token,'document');
+  await svc.upload(token,'id_card','id.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
+  for(const d of issued.session.snapshot.requiredDocuments.filter(d=>d.required)){
+    await svc.upload(token,'support:'+d.key,d.key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)));
+  }
+
+  await svc.submit(token,{
+    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
+  });
+  assert.equal((await repo.getCurrentSession(created.id))?.status,'pending_review');
+
+  const approved=await svc.approve(created.id,'finalize_e2e_1234567890','tester');
+  assert.equal(approved.finalized,true);
+  assert.equal(approved.session.status,'signed');
+  assert.equal(repo.contract.get(created.id)?.sign_status,'서명완료');
+  assert.equal(repo.contract.get(created.id)?.contract_status,'계약완료');
+  assert.equal(repo.contract.get(created.id)?.source_intake_id,'stl_e2e');
+  assert.match(String(repo.contract.get(created.id)?.esign_document_sha256),/^[a-f0-9]{64}$/);
+});

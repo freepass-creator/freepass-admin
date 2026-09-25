@@ -29,9 +29,9 @@
 | 라운드 | **4px** 기본 |
 | 텍스트 | **제목 18 / 메인 14 / 보조 12** 3단 |
 | 뱃지 | White Label 규격 12px / radius 8 |
-| 업무 컨트롤 | **40px** |
+| 업무 컨트롤 | **44px** |
 | 주 실행 / 모바일 터치 | **44px** |
-| Desktop global chrome | **33px** — TopMenu compact 예외 |
+| Desktop global chrome | **60px 하단 탭바** — 내부 터치영역 44px 이상 |
 | 목록 줄 | 공통 `ListRow`, 3줄 구조 |
 | 선택 | 테두리보다 **옅은 네이비 면**으로 위계 |
 

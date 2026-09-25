@@ -2424,3 +2424,22 @@ body > nav.fn-top :where(a, button):focus-visible,
     column-gap: 8px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Stable mobile list card rhythm
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .list {
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row {
+    transform: none !important;
+  }
+
+  .fn-main .workspace .dz-row:hover,
+  .fn-main .workspace .dz-row.on,
+  .fn-main .workspace .dz-row.on:hover {
+    transform: none !important;
+  }
+}

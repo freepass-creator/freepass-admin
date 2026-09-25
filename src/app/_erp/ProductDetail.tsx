@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { txt } from '../_fn/fmt';
-import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, Tile, TileGroup, won0, type Tone } from './parts';
+import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
@@ -50,14 +50,31 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
             </div>
 
             <div>
-              <p className="erp-subtitle erp-subtitle--lead">대여료</p>
-              <TileGroup>
-                {selOffers.map((o) => (
-                  <Tile key={o.id} href={hrefWith(base, q, { offer: o.id })} pressed={selOffer?.id === o.id}
-                    lede={`${o.termMonths}개월`} figure={`${won0(o.monthlyRent)}원`}
-                    note={o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음'} />
-                ))}
-              </TileGroup>
+              <p className="erp-subtitle erp-subtitle--lead">기간별 대여료</p>
+              <div className="erp-offer-list" role="list" aria-label="기간별 대여료 선택">
+                {selOffers.map((o) => {
+                  const selected = selOffer?.id === o.id;
+                  const support = [
+                    o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음',
+                    o.prepayment ? `선납금 ${won0(o.prepayment)}원` : null,
+                    o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : null,
+                  ].filter(Boolean).join(' · ');
+                  return (
+                    <Link key={o.id} className="erp-offer-card" role="listitem"
+                      aria-current={selected ? 'true' : undefined}
+                      href={hrefWith(base, q, { offer: o.id })}>
+                      <span className="erp-offer-line erp-offer-main">
+                        <strong>{o.termMonths}개월</strong>
+                        <b>{won0(o.monthlyRent)}원/월</b>
+                      </span>
+                      <span className="erp-offer-line erp-offer-key">{support}</span>
+                      <span className="erp-offer-line erp-offer-support">
+                        {selected ? '선택됨 · 이 조건으로 접수' : '선택해서 접수'}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             {(sel.p.perks ?? []).length ? (

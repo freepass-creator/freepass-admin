@@ -16,6 +16,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ con
       ok: true,
       cancelled: result.cancelled,
       needsClawback: result.needsClawback,
+      clawback: result.clawback,
       sessionId: result.session.id,
       signedDocumentPreserved: result.session.status === 'signed',
     });

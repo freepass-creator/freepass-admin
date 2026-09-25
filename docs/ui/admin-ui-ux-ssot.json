@@ -1067,5 +1067,38 @@
       "navigationStructure"
     ],
     "rule": "Use lines only when they communicate structure that spacing/surface cannot."
+  },
+  "compactSignals": {
+    "quickFilter": {
+      "shape": "pill",
+      "mobileVisualHeightPx": 34
+    },
+    "badge": {
+      "heightPx": 20,
+      "radiusPx": 6,
+      "mobilePadding": [
+        3,
+        8
+      ],
+      "desktopPadding": [
+        1,
+        7
+      ],
+      "maxPerCard": 1,
+      "interactive": false
+    },
+    "tag": {
+      "heightPx": 18,
+      "radiusPx": 4
+    },
+    "icons": {
+      "desktopStatusPx": "14-16",
+      "desktopActionGlyphPx": 18,
+      "desktopActionHitPx": 36,
+      "mobileActionGlyphPx": 20,
+      "mobileActionHitPx": 44,
+      "bottomNavPx": 24
+    },
+    "rule": "Selection controls may be pills; status signals stay compact and non-interactive."
   }
 }

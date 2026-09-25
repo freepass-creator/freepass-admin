@@ -66,6 +66,31 @@ describe('청구서 발행 계획', () => {
     assert.match(driftOf({ supply: 1, vat: 0, lines: 1 } as never, { supply: 2, vat: 0, lines: 1 })!, /공급가/));
 });
 
+test('환수만 있는 달도 음수 정산명세를 발행할 수 있다', () => {
+  const claw = [{
+    plate: '12가3456', month: '2026-10', supplier: 'A', channel: 'X',
+    supplierAmt: 100_000, agentAmt: 80_000, reason: '계약 취소 환수', at: '2026-10-03',
+  }];
+  const claim = planInvoice('2026-10', '공급사', 'A', [], claw, null, [], NOW.getTime(), 't');
+  assert.equal(claim.ok, true);
+  if (claim.ok) {
+    assert.equal(claim.invoice.lines, 0);
+    assert.deepEqual(claim.invoice.codes, []);
+    assert.equal(claim.invoice.clawback, 100_000);
+    assert.equal(claim.invoice.supply, -100_000);
+    assert.equal(claim.invoice.vat, -10_000);
+    assert.equal(claim.invoice.total, -110_000);
+    assert.deepEqual(claim.patches, []);
+  }
+
+  const pay = planInvoice('2026-10', '영업채널', 'X', [], claw, null, [], NOW.getTime(), 't');
+  assert.equal(pay.ok, true);
+  if (pay.ok) {
+    assert.equal(pay.invoice.clawback, 80_000);
+    assert.equal(pay.invoice.total, -88_000);
+  }
+});
+
 describe('환수 포함 묶음 — 행별 현금 배분은 정책 확정 전 HOLD', () => {
   it('발행 문서에 환수 금액/사본이 있으면 행별 cash allocation이 필요하다고 표시한다', () => {
     assert.equal(invoiceNeedsCashAllocation(null), false);

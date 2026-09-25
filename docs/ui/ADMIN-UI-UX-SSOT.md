@@ -707,6 +707,9 @@ raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `
 - **busy**: write/request 진행 중. `aria-busy` + 중복 조작 방지 + 진행형 버튼 라벨을 함께 사용한다.
 - **success**: authoritative completion 뒤에만 표시. `Notice tone="ok"`는 polite live region으로 안내한다.
 - **retry**: 실패 뒤 동일 작업을 다시 실행할 수 있을 때만 제공한다. 시작을 성공처럼 표현하지 않는다.
+  - fatal route error의 「다시 시도」는 **실제 현재 URL 재요청**이어야 한다.
+  - Next production 실측에서 error-boundary `reset()`만 호출하면 서버 요청 없이 같은 오류 상태가 유지됐다.
+  - 따라서 공통 `RouteError`는 `reset()` 뒤 `window.location.reload()`로 실제 재시도를 보장한다.
 
 현재 적용:
 - products / intake / settlement / esign에 공통 `loading.tsx` + retry 가능한 `error.tsx`

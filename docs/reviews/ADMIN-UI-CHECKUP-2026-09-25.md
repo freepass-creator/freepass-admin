@@ -52,6 +52,20 @@
 상태: **CODE FIXED / STATIC REVIEWED**
 실제 360/390px 브라우저 재검증은 별도 시각 QA 환경에서 확인한다.
 
+## 1-2. 재검증 — 2026-09-25 (Claude)
+
+실제 브라우저 재검증 결과 **아직 안 고쳐졌다.**
+
+- `NODE_PATH=/opt/node22/lib/node_modules node shot-url.cjs "http://localhost:3419/products" out.png 390 844`
+  로 다시 캡처 — "월 36…", "월 40…" 처럼 금액이 여전히 화면 오른쪽 끝에서 잘려서 보인다.
+- `getBoundingClientRect()` 실측: `.dz-row-main-value` 여전히 `right: 420px`(뷰포트 390px,
+  30px 초과) — §1의 수치와 완전히 동일. 상태 뱃지를 2행으로 옮긴 건 반영됐지만(코드 diff 확인),
+  금액이 화면 밖으로 나가는 것 자체는 그대로다.
+- 즉, §1-1에서 "CODE FIXED / STATIC REVIEWED"라고 적은 것과 실제 렌더링 결과가 다르다 —
+  **코드만 보고 고쳤다고 판단하면 안 되는 정확한 사례.** `docs/reviews/ADMIN-UI-VISUAL-QA-GAP-2026-09-24.md`
+  가 처음부터 지적한 문제(코드 리뷰 ≠ 실제 화면 확인)가 여기서도 그대로 재현됐다.
+- 데스크톱(1440px) 5화면은 전부 정상 — 이 문제는 모바일 390px 폭에서만 발생한다.
+
 ## 2. 기능 축소(대표 지시로 확정됨) — 계약접수 목록 퀵필터 6개 → 2개
 
 - **화면**: `/intake` (계약접수), 오른쪽 접수목록 판

@@ -7,6 +7,7 @@ import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
 import { ClaimLink, IssueForm } from './LifeForms';
+import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
   const requestedTab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 
   const [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]);
+  const canWrite = writeEnabled();
   const rows = all.map((x) => x.row);
   const focusCode = sp(q.focus).trim();
   const focus = focusCode ? locateSettlementFocus(rows, cb, focusCode, requestedTab) : null;
@@ -218,11 +220,13 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 {계획.ok
                   ? <p className="dz-issue-sum">공급가 {won(계획.invoice.supply)} · 부가세 {won(계획.invoice.vat)} · <b>합계 {won(계획.invoice.total)}원</b>{계획.invoice.clawback ? ` (환수 −${won(계획.invoice.clawback)})` : ''}</p>
                   : <div id="issue-block-reason"><Notice tone="warn">{계획.error}</Notice></div>}
+                {!canWrite && <div id="settlement-write-disabled"><Notice tone="warn">현재 조회 전용이라 정산 변경을 저장할 수 없습니다.</Notice></div>}
                 {어긋남 && <Notice tone="warn">{어긋남} — 다시 발행하면 같은 번호로 새 합계가 섭니다.</Notice>}
                 <IssueForm id="issue-form" month={month} axis={axis} party={gSel.party} />
                 {장 && <ClaimLink month={month} axis={axis} party={gSel.party}
                   live={!!장.linkCreatedAt && !장.linkRevokedAt} openCount={장.openCount} openedAt={장.openedAt}
-                  failCount={장.failCount} locked={!!장.lockedUntil && 장.lockedUntil > Date.now()} lockedUntil={장.lockedUntil} response={장.response ?? null} />}
+                  failCount={장.failCount} locked={!!장.lockedUntil && 장.lockedUntil > Date.now()} lockedUntil={장.lockedUntil} response={장.response ?? null}
+                  disabled={!canWrite} />}
               </div>
             )}
           </div>
@@ -256,8 +260,8 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
           {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
           {gSel && (
             <ActionBar>
-              <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}
-                aria-describedby={!계획?.ok ? 'issue-block-reason' : undefined}>
+              <button type="submit" form="issue-form" className="primary" disabled={!canWrite || !계획?.ok}
+                aria-describedby={!canWrite ? 'settlement-write-disabled' : !계획?.ok ? 'issue-block-reason' : undefined}>
                 {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
               </button>
             </ActionBar>

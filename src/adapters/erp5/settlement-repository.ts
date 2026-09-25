@@ -431,7 +431,15 @@ export class Erp5SettlementRepository {
       const now = Date.now();
       const r = checkOpen(inv, bizNo, now);
       if (!r.ok) { if (r.reason === 'WRONG') tx.update(ref, failPatch(inv, now)); return { ok: false as const, error: r.message }; }
-      const responsePlan = planClaimResponse(inv.response ?? null, kind, memo, codes, inv.codes, now);
+      const responsePlan = planClaimResponse(
+        inv.response ?? null,
+        kind,
+        memo,
+        codes,
+        inv.codes,
+        now,
+        (inv.snapshot?.clawbacks?.length ?? 0) > 0,
+      );
       if (!responsePlan.ok) return responsePlan;
       if (responsePlan.idempotent) return { ok: true as const, response: responsePlan.response };
       const target = responsePlan.target;

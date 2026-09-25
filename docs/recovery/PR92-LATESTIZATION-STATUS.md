@@ -5,7 +5,7 @@
 통합 작업장: **#112** (`recovery/pr92-modernize-20260926`)  
 목표: #92의 3패널 line-free UI를 보존하면서 이후의 기능·데이터·보안·운영 지식을 모두 흡수해 **한 개의 최신 정본**으로 만든다.
 
-## 현재 진행률 — 74%
+## 현재 진행률 — 80%
 
 진행률은 임의 체감치가 아니라 아래 6개 gate의 가중치로 계산한다.
 
@@ -13,8 +13,8 @@
 |---|---:|---:|---|
 | 1. #92 디자인 기준선 식별·보존 | 15% | 15% | 완료 |
 | 2. 최신 core/data/runtime 지식 역이식 | 25% | 25% | 138개 비-디자인 파일 이식 완료 |
-| 3. 최신 계약과 #92 UI 연결부 정합화 | 20% | 15% | typecheck 통과 경험, 호환 seam 수정 중 |
-| 4. 테스트·FreePass Data·runtime gate | 20% | 7% | dependency + core-domain 통과, 전체 CI/runtime 마감 중 |
+| 3. 최신 계약과 #92 UI 연결부 정합화 | 20% | 18% | typecheck 통과, 데이터·route 경계 정합화 마감 중 |
+| 4. 테스트·FreePass Data·runtime gate | 20% | 10% | core-domain·persistence·dependency 통과, 전체 CI/runtime 재검증 중 |
 | 5. 비사용 UI 자료·분기 제거 | 10% | 10% | 비사용 시각 자료 37개와 테마 분기 제거 완료 |
 | 6. 실제 route Visual QA + #92 HEAD 승격 | 10% | 0% | 마지막 단계 |
 
@@ -55,16 +55,12 @@ PC 디자인 정본:
 - line-free Search / Panel / Control
 - 얇고 평평한 surface
 - 카드/퀵필터/선택 상태의 후반 고도화
-- 실제 PC route가 정본이며 isolated QA fixture는 정본이 아님
+- 실제 route 렌더 결과가 디자인 검증 기준
 
 ## 정리 완료
 
-현재 트리에는 실제 route와 현재 UI SSOT에 필요한 자료만 남기는 방향으로 정리했다.
-비사용 시각 자료 37개와 테마 선택 경로를 제거했다.
-
-## 남은 구조 정리
-
-- UI 보조 문서는 고유 지식을 현재 SSOT에 흡수한 뒤 정리한다.
+현재 트리에는 actual route와 현재 UI SSOT에 필요한 자료만 유지한다.
+비사용 시각 자료, 테마 선택 경로, 과거 UI 매핑 포인터와 보조 규격 문서를 제거했다.
 
 ## 현재 검증
 

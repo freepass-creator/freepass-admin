@@ -1233,5 +1233,29 @@
     "selected": "tint+shallow-inset",
     "selectedOuterElevation": false,
     "rule": "Stability comes from consistent geometry and surface hierarchy, not decorative shadow or border."
+  },
+  "geometry": {
+    "desktop": {
+      "panelRadiusPx": 8,
+      "cardRadiusPx": 6,
+      "tileRadiusPx": 6,
+      "controlRadiusPx": 6,
+      "cardPaddingPx": 12,
+      "compactCardPaddingPx": [
+        10,
+        12
+      ],
+      "panelChromePaddingInlinePx": 16
+    },
+    "mobile": {
+      "panelRadiusPx": 0,
+      "cardRadiusPx": 6,
+      "formGroupRadiusPx": 6,
+      "controlRadiusPx": 6,
+      "cardPaddingPx": 12,
+      "narrowUnder380CardPaddingInlinePx": 8
+    },
+    "tolerancePx": 1,
+    "rule": "Same role must keep the same radius and padding; geometry differences require a semantic role difference."
   }
 }

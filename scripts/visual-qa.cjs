@@ -242,6 +242,29 @@ async function inspect(page) {
           support: sample('.erp-rowcard-sub, .erp-rowcard-meta, .panel-head > .count, .dz-muted, .erp-badge, .dz-badge'),
         };
       })(),
+      listCardAlignment: (() => {
+        const cards = [...document.querySelectorAll('.erp-rowcard, .dz-row')].filter(visible).slice(0, 40);
+        return cards.map((card) => {
+          const visual = card.querySelector('.erp-rowcard-thumb, .dz-row-thumb, .dz-row-status');
+          const main = card.querySelector('[data-line-role="main"]');
+          const key = card.querySelector('[data-line-role="key"]');
+          const support = card.querySelector('[data-line-role="support"]');
+          const primary = card.querySelector('.erp-rowcard-amount, .dz-row-main-value');
+          const cr = card.getBoundingClientRect();
+          const rr = (el) => el ? el.getBoundingClientRect() : null;
+          const vr = rr(visual), mr = rr(main), kr = rr(key), sr = rr(support), pr = rr(primary);
+          return {
+            className: typeof card.className === 'string' ? card.className : '',
+            cardLeft: Math.round(cr.left), cardRight: Math.round(cr.right),
+            visualTop: vr ? Math.round(vr.top) : null, visualBottom: vr ? Math.round(vr.bottom) : null, visualLeft: vr ? Math.round(vr.left) : null,
+            mainTop: mr ? Math.round(mr.top) : null,
+            supportBottom: sr ? Math.round(sr.bottom) : null,
+            keyTop: kr ? Math.round(kr.top) : null,
+            primaryRight: pr ? Math.round(pr.right) : null,
+            text: (card.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+          };
+        });
+      })(),
       listVisualTiles: (() => {
         const tiles = [...document.querySelectorAll('.erp-rowcard-thumb, .dz-row-thumb, .dz-row-status')].filter(visible).slice(0, 40);
         return tiles.map((el) => {
@@ -632,6 +655,18 @@ async function runInteractiveStates(page, c) {
           expectRange(info.fontSamples.primaryValues, 13, 15, 'desktop primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
+        }
+      }
+      if (Array.isArray(info.listCardAlignment)) {
+        for (const card of info.listCardAlignment) {
+          if (card.visualTop !== null && card.mainTop !== null && card.visualBottom !== null && card.supportBottom !== null) {
+            if (Math.abs(card.visualTop - card.mainTop) > 2 || Math.abs(card.visualBottom - card.supportBottom) > 2) {
+              problems.push(`visual and 3-line text block vertical alignment drift: ${JSON.stringify(card)}`);
+            }
+          }
+          if (card.primaryRight !== null && Math.abs(card.cardRight - card.primaryRight) > 28) {
+            problems.push(`main primary value right-edge drift: ${JSON.stringify(card)}`);
+          }
         }
       }
       if (Array.isArray(info.listVisualTiles)) {

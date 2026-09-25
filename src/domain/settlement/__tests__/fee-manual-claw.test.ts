@@ -91,3 +91,28 @@ describe('환수 — 열어 둔다', () => {
     assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 1, reason: 'x' }, 't', 0).ok, false);
   });
 });
+
+
+test('계약 취소 후 환수는 취소된 전자계약 provenance를 함께 보존한다', () => {
+  const r = {
+    ...row(),
+    esignContractId: 'ctr_cancelled_1',
+    contractCancelledAt: Date.parse('2026-09-24T00:00:00+09:00'),
+    contractCancellationReason: '중도해지',
+    contractCancellationNeedsClawback: true,
+    progress: { ...row().progress, delivered: true, collected: true, paid: true },
+    claimStage: '수금' as const,
+    payStage: '지급' as const,
+  };
+  const result = clawbackRecord(r, {
+    at: '2026-09-25',
+    supplierAmt: 100000,
+    agentAmt: 80000,
+    reason: '계약 취소 환수',
+  }, 'tester', Date.now());
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.doc.source, 'CONTRACT_CANCELLATION');
+  assert.equal(result.doc.contractId, 'ctr_cancelled_1');
+  assert.equal(result.doc.contractCancellationReason, '중도해지');
+});

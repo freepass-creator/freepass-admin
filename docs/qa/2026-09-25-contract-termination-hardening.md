@@ -79,3 +79,59 @@ At the code/test HEAD above, the connector's pull-request-triggered workflow que
 GitHub PR #102 remains Draft/open/unmerged. The raw PR API reports `mergeable=false`, `rebaseable=false`, `mergeable_state=dirty`. Earlier immutable-commit comparison of `d911636bbf9243006429ebeb160bc1452353581e` to the inspected source reported ahead 71 / behind 0, so mergeability metadata and ancestry evidence require reconciliation. Do not invent a conflict resolution, force-push, retarget the PR or merge on the basis of the focused tests.
 
 Next: reconcile the stacked functional PRs and their CI against the actual current refs without changing the separate e-sign implementation; then run the full repository checks and Firestore transaction/concurrency coverage before promotion.
+
+
+---
+
+## Follow-up — mirrored idempotency + real Firestore persistence gate
+
+This section supersedes the earlier persistence/concurrency boundary for the follow-up code-bearing revision
+`44b1ce1660eb71df581983a1c093a9e9a6b3982a`.
+
+### Mirrored termination invariant
+
+A termination is persisted as one logical fact mirrored across:
+- `contract`
+- its source `settlement_rows` intake
+- append/audit evidence
+
+Idempotent success no longer trusts the intake record alone. If either side already contains termination evidence, the contract and intake must agree on:
+- terminated timestamp
+- operation/idempotency id
+- effective date
+- reason
+- contract status = `계약해지`
+
+One-sided or mismatched legacy/manual state fails closed and requires data inspection instead of being silently overwritten.
+
+### Firestore Emulator integration evidence
+
+A dedicated GitHub Actions gate now runs the real `firebase-admin` repository against the Cloud Firestore Emulator:
+- workflow: `.github/workflows/contract-persistence.yml`
+- run: `36121701761`
+- job: `firestore-contract-termination`
+- Firebase CLI: `firebase-tools@15.30.2`
+- Java: 21
+- project id: `freepasserp5`
+- production service-account credentials are not loaded in emulator mode
+
+Result: **4 PASS / 0 FAIL**.
+
+Verified cases:
+1. two concurrent identical termination requests result in exactly one committed termination and one idempotent retry result;
+2. two concurrent conflicting termination requests result in exactly one winner and one rejected request;
+3. a forced immutable `contract_event` create collision rolls back contract, intake, and settlement-audit writes atomically;
+4. one-sided partial termination state is rejected without repair/overwrite.
+
+The general repository TypeScript gate at the same code revision reports no new contract/settlement diagnostics. It remains blocked only by the separately owned e-sign diagnostics already recorded on PR #102.
+
+### Updated evidence status
+
+- CODED: PASS for termination hardening.
+- STATIC CHECKED: contract/settlement delta introduces no TypeScript diagnostic in full CI typecheck.
+- TESTED: focused domain/adapter coverage PASS; Firestore integration 4/4 PASS.
+- PERSISTENCE VERIFIED: **PASS for the tested Firestore Emulator transaction/concurrency/idempotency/rollback scenarios.**
+- PRODUCTION PERSISTENCE VERIFIED: NOT VERIFIED; emulator evidence does not prove production IAM, network, quota or live data behavior.
+- DEPLOYMENT VERIFIED: NOT VERIFIED.
+- USER APPROVED: not claimed.
+- No production data write, main merge, or deployment was performed.

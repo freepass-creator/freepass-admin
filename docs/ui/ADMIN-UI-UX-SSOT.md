@@ -2638,3 +2638,32 @@ QuickFilter / Seg / compact toggle:
 - 같은 상태를 icon + short label + badge로 중복 표시
 - 카드 한 장에 badge 여러 개를 기본값으로 사용
 - 금액/상태/이름이 이미 있는데 동일 의미 라벨 추가
+
+
+# 58. Divider restraint
+
+선은 장식이 아니라 **구조 의미가 있을 때만** 사용한다.
+
+## 제거 대상
+
+- PanelHead 아래 선
+- Search / QuickFilter 사이 선
+- PanelFoot 위 선
+- Card title divider
+- Card footer divider
+- 단순 section 구분선
+
+위 계층은 surface + spacing + typography로 구분한다.
+
+## 허용
+
+- Timeline connector
+- Popup/Sheet의 독립 레이어 경계
+- Focus/Error state
+- Navigation structure처럼 위치 관계를 설명하는 선
+
+## 원칙
+
+- line-free가 기본
+- 같은 정보를 spacing과 surface로 구분할 수 있으면 선을 쓰지 않는다
+- generated/legacy CSS가 decorative divider를 되살리면 Visual QA FAIL

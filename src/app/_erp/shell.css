@@ -2188,3 +2188,50 @@
     text-align: right;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Balanced compact list columns
+ * visual=64 fixed / body=fill / primary value=shared right column.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard--no-steps {
+    width: 100%;
+    grid-template-columns: 64px minmax(0, 1fr) clamp(108px, 24%, 136px);
+    grid-template-areas: "thumb id amount";
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb {
+    grid-area: thumb;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    grid-area: id;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount {
+    grid-area: amount;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    justify-self: stretch;
+    align-self: center;
+    text-align: right;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount :is(strong,span) {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* compact 목록은 3줄 본문만 보인다. 나머지는 상세가 맡는다. */
+  .erp-std .erp-panel--compact :is(.erp-rowcard-steps,.erp-rowcard-facts,.erp-rowcard-go) {
+    display: none;
+  }
+}

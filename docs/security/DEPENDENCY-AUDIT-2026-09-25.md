@@ -42,6 +42,40 @@ The resulting lock resolves:
 
 The critical/high findings from the baseline are no longer present in the candidate production audit.
 
+## Applied-state verification
+
+Verified repository HEAD: `ffda8f8da2d34d8c22afc711d333b76cc8cd8351`.
+
+On that actual branch state:
+
+- CI: PASS
+- tests: PASS
+- UI SSOT: PASS
+- live data wiring: PASS
+- backend production build: PASS
+- UI browser geometry/interactions: PASS
+- production dependency audit gate: PASS
+
+Final production audit counts:
+
+- info: 0
+- low: 0
+- moderate: 2
+- high: 0
+- critical: 0
+- total: 2
+
+Permanent audit run: https://github.com/freepass-creator/freepass-admin/actions/runs/36121662346
+
+Audit artifact:
+- ID: `10858426524`
+- name: `dependency-audit-ffda8f8da2d34d8c22afc711d333b76cc8cd8351`
+- SHA-256: `0973a2a0f8305fdd5e2c7249fa6af2679df58f062ca5d0afe334c5a8ce8aa669`
+- expires: 2026-10-02
+
+The permanent gate accepted exactly the two reviewed temporary findings: `gaxios` and `uuid`.
+
+
 ## Remaining reviewed findings
 
 ### 1. gaxios 6.7.1 — moderate, transitive

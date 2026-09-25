@@ -397,3 +397,71 @@ No second Admin database/ledger is introduced.
 - RTDB remains forbidden.
 
 E-sign implementation internals remain separately owned, but Admin-facing contract facts must converge on the same FreePass Data SSOT rather than creating a second contract truth.
+
+
+---
+
+# 2026-09-25 sealed Intake catalog snapshot — latest
+
+The Product Finder → Intake handoff now persists an immutable FreePass Data selection receipt.
+
+## Write path
+
+```text
+Finder matched Product + Offer
+        ↓
+Intake panel
+        ↓
+FreePass Data fresh Product read
+        ↓
+version / sourceSnapshot / Offer revalidation
+        ↓
+sealed catalog snapshot + SHA-256 digest
+        ↓
+FreePass Data settlement repository transaction
+        ↓
+Firestore settlement_rows
+```
+
+## Snapshot contents
+
+New product-backed Intake snapshot preserves:
+- Product id/version/source snapshot
+- supplier/product kind/status/consumer price
+- confirmed vehicle identity
+- vehicle specs + registration identity
+- Product-scope policy atoms
+- selected Offer id/term/rent/deposit/prepayment/annual mileage
+- Offer-scope policy atoms
+- resolved Product+Offer policy result
+- deterministic catalog snapshot digest
+
+`capturedAt` is excluded from the digest so an exact retry produces the same digest.
+
+## Idempotency boundary
+
+Same Product + same intake date is **not sufficient** to reuse an existing Intake.
+
+Existing Intake is idempotently reused only when these also match:
+- Product version
+- Offer id
+- FreePass Data source snapshot id
+- catalog snapshot digest
+
+If a different Offer/version/snapshot is submitted for the same Product/date, the repository fails closed instead of silently opening the existing Intake.
+
+Product-backed Intake without a sealed snapshot is rejected at Repository boundary even if an App action is bypassed.
+
+## Evidence
+
+Firestore Emulator suite `freepass-data-persistence`:
+- contract termination transaction tests: 4/4 PASS
+- intake sealed snapshot persistence tests: 3/3 PASS
+- total: **7/7 PASS**
+
+Domain/core suite after snapshot hardening:
+- FreePass Data boundary: 2/2 PASS
+- Product Finder: 62/62 PASS
+- Intake/Performance/Settlement/Clawback including snapshot tests: 115/115 PASS
+
+Production Firestore security rules/IAM remain a separate deployment verification item; the emulator currently uses permissive rules.

@@ -29,9 +29,9 @@ The versions are pinned to the same Chrome/Chromium major to avoid DevTools prot
 
 ## Font policy
 
-The template requires Pretendard 400/500/600/700. The repository carries exactly those four WOFF2 files under `public/fonts`, together with the upstream SIL Open Font License 1.1 text.
+The template requires Pretendard 400/500/600/700. `pretendard@1.3.9` is pinned as an OFL-1.1 dependency; `postinstall` copies exactly those four WOFF2 assets into `public/fonts`, while the upstream SIL Open Font License 1.1 text is retained in the repository.
 
-At render time every font URL is replaced with a data URL. Missing or undersized font files fail closed; system-font fallback is not accepted as production evidence.
+At render time every font URL is replaced with a data URL. Missing or undersized generated font files fail closed; system-font fallback is not accepted as production evidence.
 
 ## Security and network policy
 

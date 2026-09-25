@@ -263,9 +263,9 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               <div key={`환수-${k}`} className="dz-row dz-row-minus">
                 <StatusTile s={{ icon: 'repeat', label: '환수', tone: 'red' }} />
                 <span className="dz-row-body">
-                  <span className="dz-row-l1"><b>환수 · {c.plate}</b></span>
-                  <span className="dz-row-l2">{c.reason || '—'} · {c.at?.slice(0, 10)}</span>
-                  <span className="dz-row-l3"><strong>−{won(tab === 'claim' ? c.supplierAmt : c.agentAmt)}원</strong><small>{c.month}</small></span>
+                  <span className="dz-row-l1" data-line-role="main"><b>환수 · {c.plate}</b></span>
+                  <span className="dz-row-l2" data-line-role="key">{c.reason || '—'} · {c.at?.slice(0, 10)}</span>
+                  <span className="dz-row-l3" data-line-role="support"><strong>−{won(tab === 'claim' ? c.supplierAmt : c.agentAmt)}원</strong><small>{c.month}</small></span>
                 </span>
               </div>
             ))}

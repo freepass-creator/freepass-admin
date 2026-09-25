@@ -145,13 +145,13 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
     try {
       const executablePath = await resolveChromiumExecutablePath(launchTimeout);
 
-      browser = await deadline(puppeteer.launch({
+      browser = await puppeteer.launch({
         args: chromium.args,
         executablePath,
         headless: 'shell',
         timeout: launchTimeout,
         defaultViewport: { width: 1240, height: 1754, deviceScaleFactor: 1 },
-      }), launchTimeout, 'PDF 브라우저 실행 시간이 초과되었습니다.');
+      });
 
       const page = await browser.newPage();
       page.setDefaultTimeout(renderTimeout);

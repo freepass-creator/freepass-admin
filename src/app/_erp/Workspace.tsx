@@ -178,8 +178,13 @@ async function IntakeWorkspace({ q }: { q: Q }) {
                   thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
                   subId={txt(r.plate)} sub={txt(r.model)}
+                  meta={`${txt(r.product)} · ${r.term ?? '—'}개월 · 보증 ${r.deposit ? `${manWon(r.deposit)} 원` : '없음'}`}
+                  lines={[
+                    `${txt(r.supplier)} · ${txt(r.channel)} · ${txt(r.agent)}`,
+                    `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
+                  ]}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-                  amount={perfView ? `남는 ${manWon(marginOf(r, now))} 원` : `월 ${manWon(r.rent)} 원`}
+                  amount={perfView ? `남는 ${marginOf(r, now) === null ? '—' : `${won0(marginOf(r, now))}원`}` : `월 ${manWon(r.rent)} 원`}
                   unit="" />
               );
             })}
@@ -274,8 +279,13 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
           thumb={<><StatusIcon b={b} /><span>{INTAKE_SHORT[b]}</span></>} thumbStatus
           title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
           subId={txt(r.plate)} sub={txt(r.model)}
+          meta={`${txt(r.product)} · ${r.term ?? '—'}개월 · ${txt(r.payKind)}`}
+          lines={[
+            `수수료 청구 ${r.money.claim === null ? '—' : `${won0(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`,
+            `${txt(r.supplier)} · ${txt(r.channel)}`,
+          ]}
           facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-          amount={`남는 ${manWon(marginOf(r, now))} 원`} unit="" />
+          amount={`남는 ${marginOf(r, now) === null ? '—' : `${won0(marginOf(r, now))}원`}`} unit="" />
       ))}
     </RowCards>
   );

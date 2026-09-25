@@ -1,22 +1,14 @@
 import type { ReactNode } from 'react';
-import { cookies } from 'next/headers';
 import { demoMode, erp5Ready, writeEnabled } from '../../server/freepass-data';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
-import { SideMenu, ThemeSwitch } from './SideMenu';
+import { SideMenu } from './SideMenu';
 import { Icon } from './Icon';
-import { THEME_COOKIE, THEME_LABEL, themeOf } from './theme';
 import { currentAdmin } from '../../server/require-admin';
 
 /** 규격 기본 글꼴 — Pretendard Variable (OFL). 규격 erp.css 의 --erp-font-family 첫 글꼴. */
 const PRETENDARD = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
-/** 레트로 테마만 쓰는 글꼴 — 픽셀 제목(Galmuri11) · 고정폭 숫자(IBM Plex Mono). 둘 다 OFL. */
-const RETRO_FONTS = [
-  'https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css',
-  'https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5.3.0/400.css',
-  'https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5.3.0/600.css',
-];
 
 /**
  * 관리자 틀 — AI Core «ERP 표준 UI 규격 v1» 골격 (대표 2026-09-23 「이 컨셉으로 프리패스 어드민에 적용」).
@@ -29,20 +21,17 @@ const RETRO_FONTS = [
  *   루트 layout 이 아니라 «관리자 쪽마다»(products · intake · settlement · esign · system 의 layout) 이 틀을 쓴다.
  *   까닭: 청구 링크(/c/[token])는 공급사가 여는 문이다 — 관리자 띠 · 메뉴 · 「ERP5 쓰기」 상태가
  *   화면에도, 쪽 원본(RSC)에도 실리면 안 된다(기능 세션 2026-09-18 「루트 layout 밖으로」).
- *   테마 표지(.erp-theme-flag)도 그래서 이 틀에만 있다 — 청구 링크 화면은 테마를 타지 않는다.
+ *   Admin 표지(.erp-theme-flag)는 관리자 화면 범위와 PC 격자만 표시한다. 청구 링크(/c/…)에는 표지가 없어 관리자 shell이 실리지 않는다.
  */
 export async function AdminChrome({ children }: { children: ReactNode }) {
   /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
   const 나 = await currentAdmin();
   const data = erp5Ready();
-  const theme = themeOf((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <>
       <link rel="stylesheet" href={PRETENDARD} precedence="default" />
-      {theme === 'retro' && RETRO_FONTS.map((href) => <link key={href} rel="stylesheet" href={href} precedence="default" />)}
-      {/* 테마 표지 — 틀은 body 바로 아래 형제들로 선다(폰 규칙이 `body > main` 을 본다). 감싸지 않고 표지 하나로
-          테마와 PC 격자를 건다: `body:has(> .erp-theme-flag…)` (_erp/shell.css · _erp/erp-standard.css). */}
-      <i className="erp-theme-flag" data-theme={theme} hidden />
+      {/* 단일 UI 표지 — body 격자와 Admin 전용 범위를 세우는 구조 marker. */}
+      <i className="erp-theme-flag" hidden />
 
       {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
       <header className="erp-topbar erp-std" data-region="topbar">
@@ -90,7 +79,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         <span className={data.ok ? 'erp-statusbar-ok' : ''}>● ERP5 {data.ok ? '데이터 설정됨' : '데이터 설정 필요'}</span>
         <span>{writeEnabled() ? '쓰기 허용' : '조회 전용'}</span>
         {demoMode() && <span>가상 데이터 · 화면 확인용</span>}
-        <span className="erp-statusbar-keys"><ThemeSwitch current={theme} labels={THEME_LABEL} /></span>
       </footer>
 
       {/*

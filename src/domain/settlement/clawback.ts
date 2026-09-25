@@ -32,6 +32,17 @@ export function terminationClawbackReview(
   return clawbacks.some((c) => String(c.code ?? '').trim() === r.id) ? 'RECORDED' : 'PENDING';
 }
 
+export function pendingTerminationClawbackRows<T extends Pick<SettlementRow, 'id' | 'contractTerminatedAt' | 'contractTerminationDate'>>(
+  rows: readonly T[],
+  clawbacks: readonly { code?: string }[],
+): T[] {
+  return rows
+    .filter((r) => terminationClawbackReview(r, clawbacks) === 'PENDING')
+    .sort((a, b) =>
+      String(b.contractTerminationDate ?? '').localeCompare(String(a.contractTerminationDate ?? ''))
+      || a.id.localeCompare(b.id));
+}
+
 export interface ClawbackInput { at: string; supplierAmt: number | null; agentAmt: number | null; reason: string }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;

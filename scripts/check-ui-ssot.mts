@@ -795,6 +795,20 @@ for (const [file, re, label] of statusTileToneBaseline) {
   if (!re.test(src)) errors.push(`${file}: status tile tone contract missing: ${label}`);
 }
 
+const embeddedOfferListBaseline = [
+  ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-list"/, 'product detail embedded offer list'],
+  ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-card"/, 'selectable offer card'],
+  ['src/app/_erp/ProductDetail.tsx', /aria-current=\{selected \? 'true' : undefined\}/, 'offer selected state'],
+  ['src/app/_erp/ProductDetail.tsx', /\$\{o\.termMonths\}개월/, 'offer term main value'],
+  ['src/app/_erp/ProductDetail.tsx', /\$\{won0\(o\.monthlyRent\)\}원\/월/, 'offer exact monthly rent'],
+  ['src/app/_erp/ProductDetail.tsx', /선택됨 · 이 조건으로 접수/, 'offer selection support'],
+  ['src/app/_erp/shell.css', /Embedded offer selection list/, 'offer list styling contract'],
+] as const;
+for (const [file, re, label] of embeddedOfferListBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: embedded offer-list contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

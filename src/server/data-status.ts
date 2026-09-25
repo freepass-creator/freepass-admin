@@ -1,6 +1,11 @@
-import { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
-import { writeEnabled } from '../adapters/erp5/settlement-repository';
-import { contracts, products, settlements } from './erp5';
+import {
+  FREEPASS_DATA_PROJECT_ID,
+  contracts,
+  freePassDataReady,
+  freePassDataWriteEnabled,
+  products,
+  settlements,
+} from './freepass-data';
 import { esign } from './esign';
 
 export type DataProbe = {
@@ -22,7 +27,7 @@ async function probe(key: DataProbe['key'], label: string, read: () => Promise<u
 
 /** 관리자 실제 데이터 runtime 상태. 값을 만들거나 보정하지 않고 각 실제 repository를 그대로 읽는다. */
 export async function adminDataStatus() {
-  const credential = erp5Ready();
+  const credential = freePassDataReady();
   const esignFinalization = esign.finalizationReadiness();
   const probes = await Promise.all([
     probe('products', '상품', () => products.list()),
@@ -32,10 +37,10 @@ export async function adminDataStatus() {
     probe('contracts', '전자계약', () => contracts.list()),
   ]);
   return {
-    schema: 'freepass-admin-data-runtime/v1',
-    project: ERP5_PROJECT_ID,
+    schema: 'freepass-data-runtime/v1',
+    project: FREEPASS_DATA_PROJECT_ID,
     credential,
-    writeEnabled: writeEnabled(),
+    writeEnabled: freePassDataWriteEnabled(),
     live: probes.every((x) => x.ok),
     esignFinalization,
     probes,

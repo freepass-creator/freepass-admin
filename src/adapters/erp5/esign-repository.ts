@@ -65,12 +65,21 @@ export class Erp5EsignRepository implements EsignRepository {
     const db=erp5(), contractRef=db.collection(CONTRACTS).doc(id), intakeRef=db.collection(INTAKES).doc(source.intakeId);
     return db.runTransaction(async tx=>{
       const [existing,intake]=await Promise.all([tx.get(contractRef),tx.get(intakeRef)]);
-      if(existing.exists)return {created:false,contract:{id:existing.id,...existing.data()}};
       if(!intake.exists)throw new Error('접수를 찾을 수 없습니다.');
+      if(existing.exists){
+        const existingContract={id:existing.id,...existing.data()};
+        const linked=String(intake.data()?.esignContractId??'').trim();
+        if(linked && linked!==id)throw new Error('접수가 다른 전자계약에 이미 연결되어 있습니다.');
+        if(!linked)tx.update(intakeRef,{esignContractId:id,updatedAt:Date.now()});
+        return {created:false,contract:existingContract};
+      }
       const current=this.handoffSource(intake.id,intake.data() as Record<string,unknown>);
       if(current.sourceDigest!==source.sourceDigest)throw new Error('접수 정보가 변경되었습니다 — 다시 불러온 뒤 계약을 만들어 주세요.');
       const stored=clean(data);
+      const linked=String(intake.data()?.esignContractId??'').trim();
+      if(linked && linked!==id)throw new Error('접수가 다른 전자계약에 이미 연결되어 있습니다.');
       tx.create(contractRef,stored);
+      tx.update(intakeRef,{esignContractId:id,updatedAt:Date.now()});
       return {created:true,contract:{id,...stored}};
     });
   }

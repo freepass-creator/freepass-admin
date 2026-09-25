@@ -2473,3 +2473,44 @@ body > nav.fn-top :where(a, button):focus-visible,
     white-space: nowrap;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Content panel horizontal rails (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .detail-panel :is(
+    .vehicle-title,
+    .dz-offer-select-list,
+    .summary-grid,
+    .dz-secs,
+    .dz-form-group,
+    .fn-box
+  ) {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .fn-main .workspace .vehicle-title {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .fn-main .workspace .vehicle-title > div {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .vehicle-title > :last-child {
+    flex: none;
+  }
+
+  .fn-main .workspace .dz-offer-select-list {
+    width: 100%;
+  }
+
+  .fn-main .workspace .dz-offer-select-row {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

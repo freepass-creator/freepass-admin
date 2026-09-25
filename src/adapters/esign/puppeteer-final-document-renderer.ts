@@ -5,6 +5,7 @@ import puppeteer, { type Browser } from 'puppeteer-core';
 import type { EsignFinalDocumentRenderer } from '../../ports/esign/repositories';
 import type { EsignPrivateSubmission, EsignSnapshot } from '../../domain/esign/types';
 import { buildContractHtml } from '../../server/esign/document';
+import { isCompletePdfBytes } from '../../server/esign/pdf';
 
 const FONT_FILES = [
   'Pretendard-Regular.woff2',
@@ -44,6 +45,24 @@ async function deadline<T>(work: Promise<T>, timeoutMs: number, message: string)
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+let bundledExecutablePath: Promise<string> | undefined;
+
+async function resolveChromiumExecutablePath(timeoutMs: number) {
+  const explicit = process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH?.trim();
+  if (explicit) return explicit;
+  if (!bundledExecutablePath) {
+    bundledExecutablePath = deadline(
+      chromium.executablePath(),
+      timeoutMs,
+      'PDF 브라우저 준비 시간이 초과되었습니다.',
+    ).catch((error) => {
+      bundledExecutablePath = undefined;
+      throw error;
+    });
+  }
+  return bundledExecutablePath;
 }
 
 export async function inlineContractPdfFonts(html: string) {
@@ -98,15 +117,17 @@ export async function prepareFinalContractHtml(input: {
   return html;
 }
 
-function pdfLooksComplete(bytes: Uint8Array) {
-  if (bytes.byteLength < 1_024) return false;
-  if (Buffer.from(bytes.subarray(0, 5)).toString('ascii') !== '%PDF-') return false;
-  return Buffer.from(bytes.subarray(Math.max(0, bytes.byteLength - 2_048))).toString('latin1').includes('%%EOF');
-}
-
 async function closeQuietly(browser: Browser | undefined) {
   if (!browser) return;
-  await deadline(browser.close(), 5_000, 'PDF 브라우저 종료 시간이 초과되었습니다.').catch(() => undefined);
+  try {
+    await deadline(browser.close(), 5_000, 'PDF 브라우저 종료 시간이 초과되었습니다.');
+  } catch {
+    try {
+      browser.process()?.kill('SIGKILL');
+    } catch {
+      // Serverless runtime will reclaim the process; never mask the render result with cleanup failure.
+    }
+  }
 }
 
 export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRenderer {
@@ -122,8 +143,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
     let browser: Browser | undefined;
 
     try {
-      const executablePath = process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH?.trim()
-        || await deadline(chromium.executablePath(), launchTimeout, 'PDF 브라우저 준비 시간이 초과되었습니다.');
+      const executablePath = await resolveChromiumExecutablePath(launchTimeout);
 
       browser = await deadline(puppeteer.launch({
         args: chromium.args,
@@ -153,27 +173,61 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         await document.fonts.ready;
       });
 
-      const readiness = await page.evaluate(() => {
-        const visibleBrokenImages = Array.from(document.images).filter(img => {
-          const style = getComputedStyle(img);
-          const visible = style.display !== 'none'
+      const readiness = await page.evaluate((sealPrefix) => {
+        const isVisible = (node: Element) => {
+          const style = getComputedStyle(node);
+          return style.display !== 'none'
             && style.visibility !== 'hidden'
             && Number(style.opacity || '1') !== 0
-            && img.getClientRects().length > 0;
-          return visible && (!img.complete || img.naturalWidth === 0);
-        }).length;
+            && node.getClientRects().length > 0;
+        };
+        const visibleBrokenImages = Array.from(document.images).filter(img =>
+          isVisible(img) && (!img.complete || img.naturalWidth === 0),
+        ).length;
+        const renderedPages = Array.from(document.querySelectorAll<HTMLElement>('body > .page'))
+          .filter(isVisible);
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden;width:210mm;height:297mm;';
+        document.body.appendChild(probe);
+        const expectedA4 = probe.getBoundingClientRect();
+        probe.remove();
+        const pageMetrics = renderedPages.map(pageNode => {
+          const rect = pageNode.getBoundingClientRect();
+          return {
+            width: rect.width,
+            height: rect.height,
+            clipped: pageNode.scrollHeight > pageNode.clientHeight + 2
+              || pageNode.scrollWidth > pageNode.clientWidth + 2,
+          };
+        });
+        const nonA4Pages = pageMetrics.filter(metric =>
+          Math.abs(metric.width - expectedA4.width) > 2
+            || Math.abs(metric.height - expectedA4.height) > 2,
+        ).length;
+        const clippedPages = pageMetrics.filter(metric => metric.clipped).length;
+        const visibleCustomerSignatures = Array.from(
+          document.querySelectorAll<HTMLImageElement>('.esign-pad[data-sign="customer"] img[src^="data:image/"]'),
+        ).filter(img => isVisible(img) && img.complete && img.naturalWidth > 0).length;
         return {
           fontReady: document.fonts.status === 'loaded'
             && document.fonts.check('12px Pretendard', '전자계약 한글 검증'),
           visibleBrokenImages,
-          pages: document.querySelectorAll('body > .page').length,
+          pages: renderedPages.length,
+          nonA4Pages,
+          clippedPages,
+          visibleCustomerSignatures,
+          hasSealEvidence: document.body.innerText.includes(sealPrefix),
           hasPrintControl: Boolean(document.querySelector('[onclick*="window.print"],.fp-pdf-button,.builder')),
         };
-      });
+      }, input.sealHash.slice(0, 16));
 
       if (!readiness.fontReady) throw new Error('전자계약 PDF 한글 폰트 로딩에 실패했습니다.');
       if (readiness.visibleBrokenImages > 0) throw new Error('전자계약 PDF에 로딩되지 않은 이미지가 있습니다.');
       if (readiness.pages < 1) throw new Error('전자계약 PDF A4 페이지를 찾을 수 없습니다.');
+      if (readiness.nonA4Pages > 0) throw new Error('전자계약 PDF 페이지 크기가 A4 규격과 다릅니다.');
+      if (readiness.clippedPages > 0) throw new Error('전자계약 PDF 페이지에 잘리는 콘텐츠가 있습니다.');
+      if (readiness.visibleCustomerSignatures < 1) throw new Error('전자계약 PDF에 고객 서명이 렌더링되지 않았습니다.');
+      if (!readiness.hasSealEvidence) throw new Error('전자계약 PDF에 봉인 해시 증거가 렌더링되지 않았습니다.');
       if (readiness.hasPrintControl) throw new Error('최종 전자계약에 인쇄용 조작 UI가 남아 있습니다.');
 
       const bytes = new Uint8Array(await page.pdf({
@@ -186,7 +240,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         waitForFonts: true,
       }));
 
-      if (!pdfLooksComplete(bytes)) throw new Error('최종 PDF 생성 결과가 유효하지 않습니다.');
+      if (!isCompletePdfBytes(bytes)) throw new Error('최종 PDF 생성 결과가 유효하지 않습니다.');
       return { bytes, contentType: 'application/pdf' as const };
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('전자계약')) throw error;

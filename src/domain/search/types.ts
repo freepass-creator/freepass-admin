@@ -1,4 +1,5 @@
 import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import type { CustomerVehicleClass } from '../product/customer-vehicle-class';
 
 /** 차종 축 — 원산지 → 제조사 → 모델 → 세부모델 → 세부트림 (AGENTS.md §6) */
 export type VehicleAxis = 'ORIGIN' | 'MANUFACTURER' | 'MODEL' | 'SUB_MODEL' | 'TRIM';
@@ -23,6 +24,7 @@ export interface ProductSearchQuery {
   supplierIds?: string[];
   productKinds?: string[];
   credits?: string[];
+  customerVehicleClasses?: CustomerVehicleClass[];
 
   originIds?: string[];
   manufacturerIds?: string[];

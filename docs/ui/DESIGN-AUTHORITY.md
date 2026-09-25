@@ -1,6 +1,8 @@
 # FreePass Admin Design Authority — HARD LOCK
 
-상태: **CANONICAL / USER-LOCKED**  
+상태: **RECOVERY HOLD — 기존 USER-LOCKED 판정 재검증 중**  
+복구 사유: 2026-09-26 실제 승인 UI 계보와 current main 시각 구현 불일치가 확인됨. 
+복구가 끝날 때까지 **새 시각 규칙 추가·현 main 화면의 정본 승격·과거 브랜치 삭제 금지**. 기능/데이터 작업은 계속할 수 있다.
 잠금일: **2026-09-25**  
 적용 저장소: `freepass-creator/freepass-admin`
 

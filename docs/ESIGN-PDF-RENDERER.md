@@ -71,6 +71,25 @@ The template requires Pretendard 400/500/600/700. `pretendard@1.3.9` is pinned a
 
 At render time every font URL is replaced with a data URL. Missing or undersized generated font files fail closed; system-font fallback is not accepted as production evidence.
 
+## Script isolation (CSP) and template escaping
+
+Measured by injecting HTML/script payloads into every template field and every customer submission field:
+
+- all customer-submitted fields (name, address, phone, birth, licence, emergency contact, signer, consents) are written with `textContent` — no execution;
+- `company_seal` (via `sealHtml`) executed an injected `onerror` handler;
+- `company_name` containing `</div>` broke the terms page structure and the pagination loop never ended (render hung until the timeout). `company_name`/`terms_title` were concatenated into `innerHTML`.
+
+Fixes:
+
+1. The template escapes `company_name`, `terms_title`, `company_seal` and the auto-seal name before building HTML strings (no design change; normal renders are pixel- and text-identical).
+2. Independently, the renderer adds a Content-Security-Policy to the final HTML: only the inline scripts already present (template scripts + server-injected sealed JSON, whose `<` is escaped) may run, pinned by SHA-256; no `unsafe-inline` for scripts, so injected `<script>`/`on*=` never execute; `connect-src`/`frame-src`/`worker-src`/`form-action` are `'none'`, so fetch/XHR/WebSocket are refused even though the bundled Chromium runs with `--disable-web-security` (request interception alone does not cover WebSocket). Scripts with attributes (`<script src>`) are rejected.
+
+Tests prove each layer separately (reverting the template makes the pagination test time out; removing the CSP makes the CSP test fail).
+
+## Diagnostics
+
+A render failure returns and logs only the stage (`prepare-browser | launch | load-document | template-script | readiness | print-pdf`), the error class and elapsed ms — e.g. `[esign-pdf] render failed { stage: 'readiness', kind: 'Error', ms: 1188 }`. Chromium's own message is kept only as `cause` and is never logged, because it can echo contract content. Readiness failures name only CSS class names or template asset paths.
+
 ## Security and network policy
 
 - contract HTML/PDF stays in memory; no PII-bearing temporary file is written;
@@ -96,9 +115,11 @@ A retry never creates another object name. After upload, the service downloads t
 
 Measured on Chromium 147 (Skia/PDF m147): for the same HTML, the only bytes that differ between renders are the Info dictionary `/CreationDate` and `/ModDate` (render wall clock). The renderer replaces both, same-length, with the customer's `submittedAt` (immutable input), and fails closed if they are not present exactly once each. It also pins timezone (`Asia/Seoul`) and `--lang=ko-KR` so in-page formatting cannot drift between runtimes. The template's own script has no clock/random input.
 
-Result: the same sealed input produces identical PDF bytes/SHA-256 — verified across repeated renders, separate processes, and tsx vs. the Next production bundle. This matters for the deterministic path: if a stale claim's upload lands after a newer claim finalized, it writes the same bytes, so the signed `documentSha256` still matches the stored object.
+Result: for a given renderer + template version, the same sealed input produces identical PDF bytes/SHA-256 — verified across repeated renders, separate processes, and tsx vs. the Next production bundle. This matters for the deterministic path: if a stale claim's upload lands after a newer claim finalized, it writes the same bytes, so the signed `documentSha256` still matches the stored object.
 
 Determinism is still not used as an idempotency key. Safety comes from the finalization claim, deterministic Storage path, SHA-verified read-back, and transactional finalization. If PDF upload succeeds but DB finalization fails, the next retry re-renders the same bytes to the same path and verifies them; an orphan object is distinguishable because the session is not `signed` and the contract carries no `esign_document_sha256`. After `signed`, a retry with the same `finalizationId` is a no-op (no re-render, Storage object generation unchanged); a different id is refused.
+
+Determinism is per renderer/template version: a template or renderer change can reorder PDF objects (same pixels and text, different bytes). A retry that straddles a deploy therefore writes different bytes to the same path — still safe, because the service hashes what it wrote, verifies the read-back, and records that hash at finalization.
 
 A Chromium upgrade must re-run the renderer tests: they assert byte-identical re-renders and the pinned Info dates.
 

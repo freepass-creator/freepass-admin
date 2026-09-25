@@ -2,8 +2,7 @@
  * 관리자 PC 틀 — AI Core «ERP 표준 UI 규격 v1» 골격을 body 에 세운다 (DEC-2026-09-23-01)
  *   부품 모양은 전부 규격(_erp/erp-standard.css — ai-core 정본 생성물)이 그린다. 여기는 «자리»만 잡는다:
  *   규격 main.html 의 .erp-app 격자(상단바 56 · 좌측 240 · 상태바 26)를 body 에 그대로 옮긴 것.
- *   폰(≤900px)은 기존 틀 그대로 — 규격 부품(.erp-std)과 PC 화면(.erp-screen)을 숨기고 기존 판 · 하단바가 선다.
- *
+ * *
  * 2026-09-25 공통 규칙 승격: 여기 날짜별로 쌓였던 공통 결정(표면 위계 · 선 없는 카드 · 글자 척도 ·
  *   목록 카드 골격 · 상태색 · focus halo …)은 ai-core design/erp-standard/erp.css v1.1 로 올라갔다.
  *   이 파일에는 앱 고유층만 남는다 — dz-* · fn-*(기능 부품) · erp-embed · erp-screen(Screen 틀) ·
@@ -37,8 +36,6 @@
   body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen) { display: none !important; }
   body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
-  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-statusbar-keys a[aria-pressed="true"] { background: var(--erp-color-nav-active); color: var(--erp-color-nav); }
-  body:has(> .erp-theme-flag[data-theme="retro"]) .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-text); color: var(--erp-color-surface); }
   /* 가상 데이터 표지 — 운영 데이터로 오해하지 않게 상단바에 늘 보인다 */
   .erp-std .erp-demo-flag { padding: 3px 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-warn-bg); color: var(--erp-color-warn); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
   /* 규격 카드 안에 기능 쪽 판(접수 양식 · 처리)을 앉힐 때 — 판의 겉틀만 걷는다(안의 입력 · 단추는 기능 쪽 그대로) */

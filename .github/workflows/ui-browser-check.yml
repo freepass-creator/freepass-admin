@@ -5,6 +5,7 @@ on:
       - 'src/app/**'
       - 'scripts/browser/**'
       - 'scripts/check-ui-browser.mjs'
+      - 'scripts/check-ui-filter-browser.mjs'
       - '.github/workflows/ui-browser-check.yml'
       - 'package-lock.json'
 permissions:
@@ -35,10 +36,15 @@ jobs:
           sudo apt-get install -y fonts-noto-cjk
       - name: Verify actual components and stylesheet cascade
         run: UI_BROWSER_TOOLS="$RUNNER_TEMP/freepass-browser-tools" node scripts/check-ui-browser.mjs
+      - name: Verify FilterSheet focus and URL interactions
+        if: ${{ !cancelled() }}
+        run: UI_BROWSER_TOOLS="$RUNNER_TEMP/freepass-browser-tools" node scripts/check-ui-filter-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ui-browser-${{ github.event.pull_request.head.sha }}
-          path: artifacts/ui-browser/
+          path: |
+            artifacts/ui-browser/
+            artifacts/ui-filter-browser/
           retention-days: 7
           if-no-files-found: warn

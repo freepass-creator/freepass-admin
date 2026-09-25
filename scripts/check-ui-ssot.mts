@@ -648,16 +648,26 @@ const cardLineContractBaseline = [
   [/2026-09-25 — Card line contract/, 'desktop card line contract block'],
   [/--fp-card-line-h:\s*20px/, 'desktop card line height 20'],
   [/--fp-card-line-gap:\s*2px/, 'desktop card line gap 2'],
-  [/grid-auto-rows:\s*var\(--fp-card-line-h\)/, 'desktop compact card fixed line rows'],
+  [/grid-auto-rows:\s*var\(--fp-card-line-h\)/, 'desktop compact card consistent line rhythm'],
   [/Card line contract \(mobile\/live\)/, 'mobile card line contract block'],
   [/--ui-card-line-h:\s*20px/, 'mobile card line height 20'],
   [/--ui-card-line-gap:\s*2px/, 'mobile card line gap 2'],
   [/card line-height mismatch/, 'visual QA card line-height guard'],
-  [/card line wrapped or grew vertically/, 'visual QA card wrap guard'],
+  [/card line role grew vertically/, 'visual QA per-line wrap guard'],
 ] as const;
 for (const [re, label] of cardLineContractBaseline) {
   const target = /visual QA/.test(label) ? visualQa : `${desktopCss}\n${cssFinal}`;
   if (!re.test(target)) errors.push(`card line contract missing: ${label}`);
+}
+
+const cardPriorityBaseline = [
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증금/, 'product card term/deposit priority line'],
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{manWon\(offer\.monthlyRent\)\}/, 'product list compact rent display'],
+  ['src/app/_erp/parts.tsx', /lines\?: ReactNode\[\]/, 'row card flexible extra lines'],
+] as const;
+for (const [file, re, label] of cardPriorityBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: priority-driven card lines missing: ${label}`);
 }
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {

@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 
 export type Tone = 'ok' | 'info' | 'warn' | 'err' | 'neutral';
 
-/** 화면 한 장 — PC 에서만 선다(폰은 기존 판). data-region 은 규격 골격 이름. */
+/** 화면 한 장 — actual route의 responsive composition 단위. data-region은 규격 골격 이름. */
 export function Screen({ name, children, footer }: { name: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="erp-screen erp-std" data-screen={name}>

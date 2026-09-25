@@ -93,7 +93,7 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
             {/* 신원 칩 — 아이콘 + 글자(갈래마다 그림 · 좋은 소식은 초록). 할 일(act)은 기다림 그림 */}
             {/* 상품 칩 — 화이트라벨 그대로: 차례 = [상품구분, 출고상태] */}
             {(badges ?? []).map((x, i) => (x ? <Tag key={i} {...(typeof x === 'string' ? 상품신원(x, i === 0 && (badges ?? []).length > 1 ? 'kind' : 'status') : {})}>{x}</Tag> : null))}
-            {badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
+            {!status && badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
           </span>
         </span>
         {product ? (

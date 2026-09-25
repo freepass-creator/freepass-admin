@@ -31,8 +31,8 @@ const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
   return !!b && n !== undefined && n !== null && n > b.lo && n <= b.hi;
 };
 
-export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
-export const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
+export const 요금축 = ['term', 'rent', 'dep', 'mile', 'supplier'] as const;
+export const 차축 = ['status', 'kind', 'perk', 'cls', 'fuel'] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
 export type 상품축 = 요금축 | 차축;
@@ -47,6 +47,7 @@ export const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> =
   rent: (o, k) => 구간에(대여료구간, k, o.monthlyRent),
   dep: (o, k) => 구간에(보증금구간, k, o.deposit),
   mile: (o, k) => o.annualMileageKm !== undefined && String(o.annualMileageKm) === k,
+  supplier: (o, k) => (o.supplierName ?? o.supplierId ?? '') === k,
 };
 
 /** 받은 값의 차례 — 많이 있는 것부터, 동률은 가나다순. */

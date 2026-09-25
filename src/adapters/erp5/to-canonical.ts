@@ -112,7 +112,12 @@ export function policyValuesOf(policy: Erp5Doc | undefined): PolicyValue[] {
 }
 
 /** ERP5 `price` 중첩맵 → `Offer[]`. 실측 두 꼴: `{"12":{…}}` · `{"12_2만":{…}}` */
-export function offersOf(price: unknown, productId: string): { offers: Offer[]; warnings: string[] } {
+export function offersOf(
+  price: unknown,
+  productId: string,
+  supplierId?: string,
+  supplierName?: string,
+): { offers: Offer[]; warnings: string[] } {
   const warnings: string[] = [];
   if (!price || typeof price !== 'object') return { offers: [], warnings };
   const offers: Offer[] = [];
@@ -125,6 +130,8 @@ export function offersOf(price: unknown, productId: string): { offers: Offer[]; 
     if (monthlyRent === undefined) { warnings.push(`price["${key}"] 에 대여료가 없다`); continue; }
     offers.push({
       id: `${productId}#${key}`,
+      ...(supplierId ? { supplierId } : {}),
+      ...(supplierName ? { supplierName } : {}),
       termMonths,
       monthlyRent,
       /* ★보증금은 «없으면 undefined» 다. 0 을 넣으면 「무보증」 이 되어 버린다 */
@@ -197,7 +204,9 @@ export function toCanonicalProduct(
   if (!d.price || typeof d.price !== 'object') return { ok: false, reason: 'NO_PRICE', key };
 
   const id = S(d.product_code) ?? docId;
-  const { offers, warnings } = offersOf(d.price, id);
+  const supplierId = S(d.provider_company_code) ?? S(d.partner_code) ?? '';
+  const supplierName = S(d.provider_name);
+  const { offers, warnings } = offersOf(d.price, id, supplierId, supplierName);
   if (!offers.length) return { ok: false, reason: 'NO_VALID_OFFER', key };
 
   if (!policy && S(d.policy_code)) warnings.push(`정책 ${S(d.policy_code)} 을 못 찾았다`);
@@ -217,9 +226,9 @@ export function toCanonicalProduct(
     product: {
       id,
       version,
-      supplierId: S(d.provider_company_code) ?? S(d.partner_code) ?? '',
-      /* ★이름과 코드를 «둘 다» 든다 — 사람은 이름을, 대조는 코드를 본다 */
-      supplierName: S(d.provider_name),
+      supplierId,
+      /* Product-level supplier is legacy compatibility. Authoritative selection lives on Offer. */
+      supplierName,
       status: S(d.vehicle_status),
       ...(() => {
         const { photos, photoLink } = photosOf(d);

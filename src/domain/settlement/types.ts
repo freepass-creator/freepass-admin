@@ -118,6 +118,8 @@ export interface IntakeCatalogSnapshot {
   };
   offer: {
     id: string;
+    supplierId: string;
+    supplierName: Maybe<string>;
     termMonths: number;
     monthlyRent: number;
     deposit: Maybe<number>;

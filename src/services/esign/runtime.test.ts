@@ -25,15 +25,34 @@ class Repo implements EsignRepository {
     this.contract.set(id,contract);
     return {created:true,contract:structuredClone(contract)};
   }
-  async updateContract(id:string,patch:Record<string,unknown>){this.contract.set(id,{...(this.contract.get(id)||{}),...structuredClone(patch)});}
+  async updateContract(id:string,patch:Record<string,unknown>){
+    const current=this.contract.get(id); if(!current)throw new Error('missing contract');
+    if(/취소|철회|해지/.test(String(current.contract_status??''))){
+      throw new Error('취소·철회·해지 계약의 전자계약 상태는 변경할 수 없습니다.');
+    }
+    this.contract.set(id,{...current,...structuredClone(patch)});
+  }
   async getCurrentSession(contractId:string){return [...this.sessions.values()].filter(x=>x.contractId===contractId).sort((a,b)=>b.issuedAt-a.issuedAt)[0]??null;}
   async getSession(id:string){return this.sessions.get(id)??null;}
   async findSessionByTokenHash(hash:string){return [...this.sessions.values()].find(x=>x.tokenHash===hash)??null;}
-  async createSession(session:EsignSession,publicUrl:string){
-    for(const s of this.sessions.values()) if(s.contractId===session.contractId&&!['signed','revoked'].includes(s.status)) s.status='revoked';
+  async issueSession(
+    session:EsignSession,
+    publicUrl:string,
+    contractPatch:Record<string,unknown>,
+    actor:string,
+  ){
+    const current=this.contract.get(session.contractId); if(!current)throw new Error('missing contract');
+    if(/취소|철회|해지/.test(String(current.contract_status??'')))throw new Error('계약 상태상 발행할 수 없습니다.');
+    if(String(current.sign_status??'')==='서명완료')throw new Error('이미 서명완료된 계약입니다.');
+    const old=await this.getCurrentSession(session.contractId);
+    if(old?.status==='signed')throw new Error('이미 서명완료된 계약입니다.');
+    if(old&&!['signed','revoked'].includes(old.status)){old.status='revoked';old.revokedAt=Date.now();}
     this.sessions.set(session.id,structuredClone(session));
     this.priv.set(session.id,{sessionId:session.id,contractId:session.contractId,publicUrl});
+    this.contract.set(session.contractId,{...current,...structuredClone(contractPatch)});
+    this.events.push({contractId:session.contractId,sessionId:session.id,type:'issued',by:actor,detail:{revision:session.revision},at:Date.now()});
   }
+
   async updateSession(id:string,patch:Partial<EsignSession>){Object.assign(this.sessions.get(id)!,structuredClone(patch));}
   async transitionSession(id:string,allowed:EsignSession['status'][],patch:Partial<EsignSession>){
     const s=this.sessions.get(id); if(!s||!allowed.includes(s.status)) return false;
@@ -516,4 +535,15 @@ test('terminated contract cannot issue a new esign session', async () => {
   repo.contract.set('c1',{...contract(),contract_status:'계약해지',sign_status:'서명완료'});
   await assert.rejects(()=>svc.issue('c1','tester'),/해지 계약/);
   assert.equal(repo.sessions.size,0);
+});
+
+
+test('stale esign contract update is blocked after cancellation', async () => {
+  const repo=new Repo();
+  repo.contract.set('c1',{...contract(),contract_status:'계약취소'});
+  await assert.rejects(
+    ()=>repo.updateContract('c1',{sign_status:'열람'}),
+    /변경할 수 없습니다/,
+  );
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'열람');
 });

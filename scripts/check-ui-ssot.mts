@@ -187,6 +187,16 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const detailPanelRhythmBaseline = [
+  [/\.erp-std \.erp-detail-body[\s\S]*?padding:\s*var\(--erp-sp-3\)/, 'detail body padding 12px'],
+  [/\.erp-std \.erp-subtitle[\s\S]*?margin:\s*0 0 var\(--erp-sp-2\)/, 'subtitle gap 8px'],
+  [/\.erp-std \.erp-tile-title[\s\S]*?border-bottom:\s*0/, 'tile title line-free'],
+  [/\.erp-std \.erp-info-card dl[\s\S]*?gap:\s*var\(--erp-sp-2\)/, 'detail info gap 8px'],
+] as const;
+for (const [re, label] of detailPanelRhythmBaseline) {
+  if (!re.test(desktopCss)) errors.push(`detail panel rhythm missing: ${label}`);
+}
+
 const fullWidthLayoutBaseline = [
   [/--fp-workspace-gutter-x:\s*20px/, 'desktop standard gutter 20px'],
   [/--fp-workspace-gutter-y:\s*16px/, 'desktop standard gutter y 16px'],

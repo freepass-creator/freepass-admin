@@ -68,9 +68,16 @@ function monthOfRow(r: SettlementRow, locked: ReadonlySet<string>, now: Date): s
   return r.progress.delivered ? NO_MONTH : null;
 }
 
-/** 돈 원장에 설 수 있나 — 취소/제외뿐 아니라 차량 identity와 계약서가 확인돼야 한다. */
-const inLedger = (r: SettlementRow) =>
-  !r.progress.cancelled && !r.progress.settleExclude && !!r.plate && r.progress.paper;
+/** 돈 원장에 설 수 있나 — 계약서와 실차 identity가 있고 실제 인도 완료까지 관측돼야 한다. */
+export const settlementEligible = (r: SettlementRow) =>
+  !r.progress.cancelled
+  && !r.progress.settleExclude
+  && !!r.plate
+  && r.progress.paper
+  && r.progress.delivered
+  && /^\d{4}-\d{2}-\d{2}$/.test(String(r.progress.deliveredAt ?? ''));
+
+const inLedger = settlementEligible;
 
 /* 금액은 한 곳(money.ts)에서 — 목록·상세·남는 것이 같은 셈을 쓴다 */
 import { claimAmountOf, payAmountOf } from './money';

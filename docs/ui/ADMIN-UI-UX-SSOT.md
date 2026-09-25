@@ -3192,3 +3192,17 @@ Mobile:
 
 목표:
 > 카드가 왼쪽부터 오른쪽까지 균일하게 차고, 제목 길이가 달라도 금액/대표값의 오른쪽 기준선은 맞아야 한다.
+
+# 77. List card rhythm and interaction
+
+같은 목록 안의 카드는 geometry가 흔들리지 않는다.
+
+- card gap: 8px
+- Web list inner padding: 12px
+- hover: surface/elevation만 변경
+- selected: tint + inset만 변경
+- hover/selected에서 translate/height/width 변화 금지
+- 카드 사이 간격보다 panel/section 간격이 더 크다
+
+목표:
+> 카드 여러 장을 세로로 봤을 때 한 덩어리의 정돈된 목록처럼 보여야 하며, 선택해도 행 위치가 움직이지 않아야 한다.

@@ -1,0 +1,70 @@
+name: Dependency upgrade probe
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/dependency-upgrade-probe.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare candidate dependency set
+        shell: bash
+        run: |
+          mkdir -p artifacts/dependency-upgrade
+          cp package.json artifacts/dependency-upgrade/package.before.json
+          cp package-lock.json artifacts/dependency-upgrade/package-lock.before.json
+          npm install next@16.3.6 --save-exact --package-lock-only
+          npm audit fix --package-lock-only || true
+          cp package.json artifacts/dependency-upgrade/package.candidate.json
+          cp package-lock.json artifacts/dependency-upgrade/package-lock.candidate.json
+          npm ls next gaxios uuid postcss sharp firebase-admin google-auth-library --all > artifacts/dependency-upgrade/npm-ls.txt || true
+          npm audit --json > artifacts/dependency-upgrade/audit-all.json || true
+          npm audit --json --omit=dev > artifacts/dependency-upgrade/audit-prod.json || true
+          git diff -- package.json package-lock.json > artifacts/dependency-upgrade/dependency.patch
+      - name: Install candidate
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: UI SSOT
+        run: npm run ui:check
+      - name: Live data wiring
+        run: npm run data:check
+      - name: Production build
+        run: npm run build
+      - name: Print audit summary
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          for(const file of ['audit-all.json','audit-prod.json']){
+            const p='artifacts/dependency-upgrade/'+file;
+            if(!fs.existsSync(p)) continue;
+            const j=JSON.parse(fs.readFileSync(p,'utf8'));
+            console.log(file, JSON.stringify(j.metadata?.vulnerabilities ?? {}));
+            for(const [name,v] of Object.entries(j.vulnerabilities ?? {})){
+              console.log(name, v.severity, v.isDirect?'direct':'transitive', v.range, JSON.stringify(v.fixAvailable));
+            }
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-upgrade-probe-${{ github.event.pull_request.head.sha }}
+          path: artifacts/dependency-upgrade/
+          retention-days: 7
+          if-no-files-found: error

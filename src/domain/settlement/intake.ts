@@ -244,7 +244,7 @@ export function progressPatch(
         return { ok: false, error: '서명완료된 전자계약 연결 건은 일반 접수 취소가 아니라 계약취소 절차로 처리합니다' };
       }
       if (!cur.esignRevokedAt) {
-        return { ok: false, error: '전자계약 링크가 살아 있습니다 — 전자계약을 먼저 해지한 뒤 접수를 취소합니다' };
+        return { ok: false, error: '전자계약 링크가 살아 있습니다 — 전자계약 발행을 먼저 철회한 뒤 접수를 취소합니다' };
       }
     }
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };

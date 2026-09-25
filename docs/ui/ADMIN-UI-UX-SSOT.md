@@ -3206,3 +3206,22 @@ Mobile:
 
 목표:
 > 카드 여러 장을 세로로 봤을 때 한 덩어리의 정돈된 목록처럼 보여야 하며, 선택해도 행 위치가 움직이지 않아야 한다.
+
+# 78. Content panel horizontal rails
+
+Content 패널은 List와 geometry를 공유하지 않지만, 내부 섹션의 좌우 레일은 공유한다.
+
+Desktop:
+- Hero / 기간별 대여료 / 정보그룹이 같은 content width 사용
+- Hero: 이미지 34% 내외 + 정보 66% 내외
+- Hero image: 4:3
+- section 간 폭 차이 금지
+- Offer row / Info card는 content rail 100%
+
+Mobile:
+- vehicle title / 기간별 대여료 / SummaryGrid / Sections 모두 패널 content width 100%
+- 상태/배지는 우측 고정, 제목 블록이 남는 폭 사용
+- 내부 카드가 패널보다 좁아지는 임의 max-width 금지
+
+목표:
+> 상세는 풍부하지만 좌우 기준선은 하나여야 한다.

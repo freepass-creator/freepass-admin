@@ -19,3 +19,15 @@ export async function currentAdmin(): Promise<{ name: string } | null> {
   const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
   return user ? { name: user.name } : null;
 }
+
+/** 이력에 남길 «누가» — 기본값 문자열이 아니라 로그인한 그 사람(이름 + 이메일, 없으면 uid). 로그인이 꺼진 개발에서만 기본값 */
+export const DEV_ACTOR = 'freepass-admin';
+export function actorLabel(user: { uid: string; name: string; email?: string }): string {
+  return `${user.name} <${user.email || user.uid}>`;
+}
+export async function currentActor(): Promise<string> {
+  if (!authEnforced()) return DEV_ACTOR;
+  const user = await verifySession((await cookies()).get(AUTH_COOKIE)?.value);
+  if (!user) throw new Error('로그인이 필요합니다 — 다시 로그인해 주세요');
+  return actorLabel(user);
+}

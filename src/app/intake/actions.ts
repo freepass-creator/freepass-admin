@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { productByIdFresh } from '../../server/freepass-data';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
-import { requireAdmin } from '../../server/require-admin';
+import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
 import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
@@ -109,7 +109,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   if (errors.length) return { errors };
 
   let res: { code: string; created: boolean };
-  try { res = await settlements.createIntake(input); }
+  try { res = await settlements.createIntake(input, await currentActor()); }
   catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
   }
@@ -138,7 +138,7 @@ export async function progressAction(_: FormState, f: FormData): Promise<FormSta
   else return { errors: [`모르는 진행 칸: ${kind}`] };
 
   try {
-    const r = await settlements.setProgress(code, change);
+    const r = await settlements.setProgress(code, change, await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
@@ -170,7 +170,7 @@ export async function moneyAction(_: FormState, f: FormData): Promise<FormState>
     Object.assign(patch, adjustPatch(a.adjust));
   }
   try {
-    const r = await settlements.setMoney(code, patch);
+    const r = await settlements.setMoney(code, patch, await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
@@ -189,7 +189,7 @@ export async function issueInvoiceAction(_: FormState, f: FormData): Promise<For
   const axis = S(f, 'axis') as Axis;
   if (axis !== '공급사' && axis !== '영업채널') return { errors: ['축은 공급사 또는 영업채널'] };
   try {
-    const r = await settlements.issueInvoice(S(f, 'month'), axis, S(f, 'party'));
+    const r = await settlements.issueInvoice(S(f, 'month'), axis, S(f, 'party'), await currentActor());
     if (!r.ok) return { errors: [r.error] };
     revalidatePath('/settlement');
     revalidatePath('/intake');
@@ -229,7 +229,7 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
     return { errors: ['수금·지급 요청 식별자가 없습니다 — 화면을 새로 열어 다시 처리합니다'] };
   }
   try {
-    const r = await settlements.setLifecycle(S(f, 'code'), change, operationId || undefined);
+    const r = await settlements.setLifecycle(S(f, 'code'), change, operationId || undefined, await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
@@ -269,7 +269,7 @@ export async function previewFeeAction(f: FormData): Promise<FeePreview> {
 export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   try {
-    const r = await settlements.setFee(S(f, 'code'), S(f, 'feeClaim') ? N(f, 'feeClaim') : null, S(f, 'feePay') ? N(f, 'feePay') : null, S(f, 'feeReason'));
+    const r = await settlements.setFee(S(f, 'code'), S(f, 'feeClaim') ? N(f, 'feeClaim') : null, S(f, 'feePay') ? N(f, 'feePay') : null, S(f, 'feeReason'), await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
@@ -288,7 +288,7 @@ export async function clawbackAction(_: FormState, f: FormData): Promise<FormSta
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const n = (k: string) => { const v = N(f, k); return v === null ? null : v; };
   try {
-    const r = await settlements.createClawback(S(f, 'code'), { at: S(f, 'at'), supplierAmt: n('supplierAmt'), agentAmt: n('agentAmt'), reason: S(f, 'reason') });
+    const r = await settlements.createClawback(S(f, 'code'), { at: S(f, 'at'), supplierAmt: n('supplierAmt'), agentAmt: n('agentAmt'), reason: S(f, 'reason') }, await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('저장하지 못했습니다', e)] };
@@ -317,7 +317,7 @@ export async function createClaimLinkAction(_: FormState, f: FormData): Promise<
     return { errors: ['외부 청구 링크 주소(CLAIM_LINK_BASE)가 설정되지 않았습니다 — 링크를 만들지 않았습니다'] };
   }
   try {
-    const r = await settlements.createClaimLink(S(f, 'month'), axis, S(f, 'party'));
+    const r = await settlements.createClaimLink(S(f, 'month'), axis, S(f, 'party'), await currentActor());
     if (!r.ok) return { errors: [r.error] };
     revalidatePath('/settlement');
     return { errors: [], url: `${base}/c/${r.token}`, ...(r.warn ? { warn: r.warn } : {}) };
@@ -331,7 +331,7 @@ export async function revokeClaimLinkAction(_: FormState, f: FormData): Promise<
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   const axis = S(f, 'axis') as Axis;
   try {
-    const r = await settlements.revokeClaimLink(S(f, 'month'), axis, S(f, 'party'));
+    const r = await settlements.revokeClaimLink(S(f, 'month'), axis, S(f, 'party'), await currentActor());
     if (!r.ok) return { errors: [r.error] };
   } catch (e) {
     return { errors: [writeError('거두지 못했습니다', e)] };

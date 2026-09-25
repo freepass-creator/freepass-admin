@@ -1,5 +1,5 @@
 import { contractLifecycle } from '../../../../../server/contracts';
-import { currentAdmin, requireAdmin } from '../../../../../server/require-admin';
+import { currentActor, requireAdmin } from '../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
 
@@ -10,12 +10,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ con
 
   try {
     const body = await request.json() as Record<string, unknown>;
-    const admin = await currentAdmin();
+    const actor = await currentActor();
     const result = await contractLifecycle.terminate(contractId, {
       effectiveDate: String(body.effectiveDate ?? ''),
       reason: String(body.reason ?? ''),
       operationId: String(body.operationId ?? ''),
-    }, admin?.name || 'freepass-admin');
+    }, actor);
 
     return Response.json({
       ok: true,

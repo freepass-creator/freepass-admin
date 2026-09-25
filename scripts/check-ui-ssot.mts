@@ -751,6 +751,19 @@ for (const file of ['src/app/_erp/ProductsScreen.tsx','src/app/_erp/Workspace.ts
   if (/\blines=\{/.test(src)) errors.push(`${file}: list cards must not add a fourth information line`);
 }
 
+const listVisualTileBaseline = [
+  ['src/app/_erp/shell.css', /64px visual tile contract/, 'desktop 64px visual tile contract'],
+  ['src/app/_design/admin-final.css', /64px visual parity \(mobile\/live\)/, 'mobile 64px visual tile contract'],
+  ['src/app/_erp/ProductDetail.tsx', /export function ProductThumb/, 'product thumbnail helper'],
+  ['src/app/_erp/parts.tsx', /thumbStatus \? null : badge/, 'desktop duplicate status badge suppression'],
+  ['src/app/_design/ListRow.tsx', /!status && badge/, 'mobile duplicate status badge suppression'],
+  ['scripts/visual-qa.cjs', /list visual tile must be 64x64/, 'visual QA 64px tile guard'],
+] as const;
+for (const [file, re, label] of listVisualTileBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: list visual tile contract missing: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

@@ -99,7 +99,7 @@ describe('환수 — 열어 둔다', () => {
 test('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
   const terminated = {
     ...row({ collected:true, paid:true, claimStage:'수금', payStage:'지급' }),
-    esignContractId:'ctr_term_1',
+    contractTerminationContractId:'ctr_term_1',
     contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),
     contractTerminationDate:'2026-09-25',
     contractTerminationReason:'중도해지',

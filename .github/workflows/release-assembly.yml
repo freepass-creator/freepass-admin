@@ -50,17 +50,28 @@ jobs:
               test -f ".github/release/resolve-$label.py"
               python3 ".github/release/resolve-$label.py"
               test -z "$(git diff --name-only --diff-filter=U)"
-              git diff --check --cached
+              # Retain historical Markdown hard breaks and EOF spacing; reject conflict markers.
+              git -c core.whitespace=-blank-at-eol,-blank-at-eof diff --check --cached
               git commit -m "merge: apply reviewed $label integration resolutions"
             fi
           done
-          # The source tree was reviewed locally using exactly these pinned parents.
           test "$(git rev-parse HEAD:src)" = 80618659b0a4d304588dbb85785b267fada5d9a1
           test "$(git rev-parse HEAD:package.json)" = 93ed44f89c5508996f57301107a5ef7b26c90705
           test "$(git rev-parse HEAD:package-lock.json)" = 1903241af41548903ea3173af618779647f4aaee
           git rev-parse HEAD | tee /tmp/admin-release-evidence/integrated-sha.txt
-          # Publish only the isolated candidate. Never force-push, main, or production data.
           git push origin HEAD:refs/heads/release/admin-operational-20260925
+      - name: Deployment binding presence only
+        if: ${{ !cancelled() }}
+        env:
+          HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+          HAS_VERCEL_PROJECT: ${{ secrets.VERCEL_PROJECT_ID != '' || vars.VERCEL_PROJECT_ID != '' }}
+          HAS_VERCEL_ORG: ${{ secrets.VERCEL_ORG_ID != '' || vars.VERCEL_ORG_ID != '' }}
+          HAS_ERP5_CREDENTIAL: ${{ secrets.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
+          HAS_SESSION_SECRET: ${{ secrets.SESSION_SECRET != '' }}
+          HAS_GOOGLE_OAUTH: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID != '' && secrets.GOOGLE_OAUTH_CLIENT_SECRET != '' }}
+        run: |
+          mkdir -p /tmp/admin-release-evidence
+          node -e 'const o=Object.fromEntries(Object.entries(process.env).filter(([k])=>k.startsWith("HAS_")));console.log(JSON.stringify(o,null,2))' | tee /tmp/admin-release-evidence/binding-presence.json
       - name: Locked dependency install
         id: install
         run: npm ci

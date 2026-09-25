@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord, terminationClawbackReview } from '../clawback.js';
+import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, terminationClawbackReview } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -146,5 +146,16 @@ describe('계약해지 → 환수 검토대상', () => {
       terminationClawbackReview({ id: 'stl_normal', contractTerminatedAt: null } as never, []),
       'NONE',
     );
+  });
+
+  it('환수 검토 큐는 해지됐고 아직 환수 등록이 없는 건만 최신 해지일부터 세운다', () => {
+    const rows = [
+      { id: 'old', contractTerminatedAt: 1, contractTerminationDate: '2026-09-20' },
+      { id: 'new', contractTerminatedAt: 2, contractTerminationDate: '2026-09-25' },
+      { id: 'done', contractTerminatedAt: 3, contractTerminationDate: '2026-09-24' },
+      { id: 'live', contractTerminatedAt: null, contractTerminationDate: null },
+    ];
+    const pending = pendingTerminationClawbackRows(rows as never, [{ code: 'done' }]);
+    assert.deepEqual(pending.map((r) => r.id), ['new', 'old']);
   });
 });

@@ -1,37 +1,33 @@
 # Admin operational integration verification — 2026-09-25
 
-## Single operating candidate
+## Single integrated candidate
 
-PR #106: `release/admin-operational-20260925`.
-UI #96, workflow stack through #102, Claude e-contract #104, fixture privacy #105 were merged without rewriting their source branches. Temporary assembly and dependency-bootstrap workflows were removed after use. Catalog authority remains FreePass Data; Admin owns workflow composition. Catalog mode OBSERVE is the explicit transitional read-only legacy bridge, not final Data cutover.
+PR #106 / `release/admin-operational-20260925` integrates UI #96, the workflow stack through #102, Claude electronic-contract #104 and fixture privacy #105. Original source branches were not rewritten. Temporary branch-mutating assembly and dependency workflows were removed after use.
 
-## Inspected baseline evidence
+## Data ownership — WORK-INBOX 0-AA remains authoritative
 
-Exact revision `78d187cffadc1a782b07426443cb6867ced65435`, operational run 36135213725; all three downloaded artifacts name and record this exact SHA:
-- Typecheck PASS; full test suite 561/561, zero skipped/failed; UI and Data checks PASS; production build PASS.
-- Isolated Firestore tests 7/7, zero skipped/failed; idempotent intake, competing Offer conflict, missing snapshot rejection, concurrent termination, audit rollback and partial-state protection.
-- Real Chromium final PDF + private Storage emulator: competing approvals have one winner; independent read-back hash matches; retry does not rewrite the PDF; same sealed input reproduces the PDF; cancellation during rendering cannot finish signing. E2E EMULATOR OK.
-- Actual Next production runtime (NO production data): 35/35 checks, protected-route auth/error/retry boundaries, 390/1440px; no external browser requests.
-- Isolated actual-component UI browser: 24 layout cases + 2 interactions; filter browser: 5 widths. Receipts report failed=false and zero external requests. Representative 390px and 1440px screenshots were visually inspected.
+Admin owns business commands and workflow semantics, NOT a second persistence authority. All catalog/intake/contract/settlement/e-sign persistence enters `src/server/freepass-data.ts`. `src/server/erp5.ts` is a deprecated re-export only: it constructs no repository and holds no independent state. The e-sign service obtains its persistence ports through the same Data gateway; the renderer remains the existing Claude implementation.
 
-These are not real-account login, live Firestore IAM, customer-contract acceptance or Galaxy hardware evidence.
+This corrects the intermediate integration that separated the catalog and workflow persistence composition. Its old boundary assertion was inconsistent with the owner's explicit read-and-write-through-FreePass-Data instruction. Five boundary regressions now enforce one gateway, shared instance identity, and no App/Service/server-helper direct adapter access.
 
-## Invalid earlier badge
+Catalog OBSERVE remains the explicit transitional legacy reader. This is not proof that the final dedicated FreePass Data Admin API and ACTIVE catalog cutover are deployed.
 
-Run 36134238491 was not a passing release receipt despite a green badge: raw logs contained type errors, 560/561 tests and a failed build. The replacement workflow explicitly uses Bash pipefail and probes failure propagation. Do not cite that old run as PASS.
+## Inspected evidence before final gateway correction
 
-## Dependency closeout and final recheck
+Revision `78d187cffadc1a782b07426443cb6867ced65435`, run 36135213725: typecheck, 561/561 tests, UI/Data checks, build, Firestore 7/7, real Chromium/Storage PDF seal and concurrency tests, Next runtime 35/35, responsive UI 24 layout + 2 interaction cases and filter 5 widths passed. Raw logs and representative screenshots were inspected. A separate audit found high 6 / moderate 2, preventing release promotion.
 
-The separate baseline audit run 36135217991 found high 6 / moderate 2 / critical 0. This prevented release promotion despite functional PASS. No exception was added.
+Dependency-corrected revision `89bd36f9e2e6e805b0dc9bf37241f80914e5c95a`, run 36136416818: raw code and persistence artifacts confirm typecheck, 561/561 tests, UI/Data checks, production build, Firestore 7/7 and E2E PDF emulator PASS. Audit run 36136421427 on that exact SHA reports high 0 / critical 0 / moderate 2 (existing gaxios/uuid exceptions only). No security exception was added. The fail-closed audit evidence validator has ten regression tests.
 
-Dependency correction commit `1045d929380652c749c8ef65a769f6d9ab7cbabf` uses exact puppeteer-core 25.1.0 + @sparticuz/chromium 149.0.0, the upstream Chrome 149.0.7827.22 pairing, and compatible transitive refresh. Refer to the final exact-revision audit rather than assuming the baseline lock remains valid. npm ci and generated PDF fonts are required before renderer tests.
+These results do not automatically approve the subsequent gateway correction. Final exact-revision code/persistence/browser/audit checks and inspected artifact IDs are recorded in PR #106's release receipt after this checkpoint. A merge is code integration, not production activation.
 
-The audit validator now rejects missing/errored/malformed/inconsistent reports; ten validator regression cases preserve the existing reviewed gaxios/uuid moderate exceptions without widening them. An unavailable audit service must not produce a clean result.
+## Invalid previous badge
 
-FINAL SAME-REVISION CHECK: PENDING for the commit containing this checkpoint. Its CI must cover complete tests/build, the new dependency lock, Firestore/Storage PDF emulator and browser receipts before promotion. Baseline PASS does not automatically apply to new dependencies.
+Run 36134238491 is NOT a passing release receipt. Piped commands masked type errors, a failing test and failed build. The permanent operational workflow now specifies Bash pipefail and probes failure propagation. Audit evidence errors, missing fields or inconsistent counts fail closed instead of appearing clean.
 
-## Operational activation still unverified
+## Real operations remain separate
 
-The connected Vercel team listed zero projects; the exposed deploy action failed schema validation. Presence-only repository checks found no Vercel token/project/org, ERP5 credential, session secret or complete Google OAuth pair in that checked context. Other accounts/environments are not ruled out. No secrets were read or copied, no real customer/financial record was changed, and no live deployment URL was established.
+The connected Vercel team listed zero projects; the exposed deploy action failed schema validation. Presence-only repository checks found no Vercel token/project/org, ERP5 credential, session secret or complete Google OAuth pair in that checked context. Other accounts/environments are not ruled out. No secret values were read or copied and no live Admin deployment URL was established.
 
-Use `.env.example` and `docs/OPERATIONS-FIRST-USE.md`: bind the correct approved Admin deployment and authentication/Data environment; start read-only; verify accounts and live read-back before enabling operational writes. Mixed-clawback allocation remains guarded; external tax-invoice issuance and bank transfers are not automatically certified by a ledger record. Keep these explicit scope limits during first use.
+Use `.env.example` and `docs/OPERATIONS-FIRST-USE.md`: bind the approved deployment/auth/Data environment, start read-only, verify authorized/unauthorized accounts and live persistence before enabling writes. Mixed-clawback allocation is still guarded; a ledger record is not proof of external tax-invoice issuance or a bank transfer. Galaxy hardware acceptance remains unverified.
+
+No actual customer contract, production financial record, outbound claim or payment was changed during integration.

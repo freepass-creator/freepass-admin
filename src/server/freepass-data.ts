@@ -1,16 +1,19 @@
 /**
- * FreePass Admin Catalog consumer boundary.
+ * FreePass Data: single Admin read/write gateway.
  *
  * Authority = FreePass Data.
  * Current migration stage = OBSERVE, so the returned product rows still come through
  * a read-only freepasserp5 legacy bridge until FreePass Data exposes an approved
  * Admin-specific consumer contract and ACTIVE Release.
  *
- * Do not move intake/settlement/e-sign workflow ownership into this module.
+ * Admin Services own workflow semantics; this module owns their persistence entrypoint.
+ * No separate Admin database or ledger authority is created.
  */
 import { AdminCatalogSwitchboard } from '../adapters/freepass-data/admin-catalog-reader';
 import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
+import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository';
+import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
 
@@ -60,3 +63,16 @@ export async function adminCatalogListFresh() {
 export function adminCatalogStatus() {
   return adminCatalog.receipt();
 }
+
+/** Shared persistence ports; business commands and transitions remain in Admin Services. */
+export const settlements = new Erp5SettlementRepository();
+export const contracts = new Erp5ContractRepository();
+export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
+export { writeEnabled, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
+export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
+export { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
+
+export const today = () => {
+  const d = new Date(Date.now() + 9 * 3600_000);
+  return d.toISOString().slice(0, 10);
+};

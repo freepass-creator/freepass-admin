@@ -94,10 +94,10 @@ test('가짜 Firestore 읽기 — doc · where · limit · data() 사본', async
 
 test('실제 repository 가 가상 데이터를 그대로 읽는다 — 상품 · 정산 · 계약', async (t) => {
   withEnv(t, { FPA_DEMO: 'on' });
-  const { rows: products, report } = await productList();
+  const { rows: products, receipt } = await productList();
   assert.ok(products.length >= 20, `상품 ${products.length}`);
-  assert.equal(report?.docs, 24);
-  assert.equal(report?.project, 'demo');
+  assert.equal(receipt.legacy?.docs, 24);
+  assert.equal(receipt.legacy?.project, 'demo');
 
   const rows = await settlements.list();
   assert.ok(rows.length >= 18, `정산 ${rows.length}`);

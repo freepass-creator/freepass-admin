@@ -29,13 +29,18 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/admin-dependency-evidence
           test "$(git rev-parse HEAD:package.json)" = 93ed44f89c5508996f57301107a5ef7b26c90705
-          # Upstream supported-browser matrix maps Puppeteer 25.1 to Chromium 149.0.7827.22.
-          # No blanket npm audit fix --force and no new security exceptions.
+          # Official supported-browser pair. No force updates or new audit exceptions.
           npm install --save-exact @sparticuz/chromium@149.0.0 puppeteer-core@25.1.0
           npm update basic-ftp ip-address ws
           cp package.json package-lock.json /tmp/admin-dependency-evidence/
           npm ls @sparticuz/chromium puppeteer-core @puppeteer/browsers basic-ftp ip-address ws > /tmp/admin-dependency-evidence/versions.txt
           git diff --stat > /tmp/admin-dependency-evidence/changed-files.txt
+      - name: Reinstall the exact candidate as a deployment would
+        run: |
+          set -euo pipefail
+          npm ci
+          node scripts/install-pdf-fonts.mjs
+          test -s public/fonts/Pretendard-Regular.woff2
       - name: Strict production audit before publishing
         run: |
           set -euo pipefail

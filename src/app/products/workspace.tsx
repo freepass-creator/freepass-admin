@@ -272,9 +272,8 @@ export async function ProductWorkspace({ q, mode, base }: {
                 thumb={사진(p) ?? null}
                 product
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
-                badges={[txt(p.status)]}
                 mainValue={o ? `월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원` : '요금 없음'}
-                meta={[txt(p.registration?.vehicleNumber), txt(p.productKind)].filter((x) => x !== '—').join(' · ') || '—'}
+                meta={[txt(p.registration?.vehicleNumber), txt(p.productKind), txt(p.status)].filter((x) => x !== '—').join(' · ') || '—'}
                 value={o ? `${o.termMonths}개월 · 보증 ${o.deposit ? `${Math.round(o.deposit / 10000).toLocaleString('ko-KR')}만 원` : '없음'}` : '—'} />
             ))}
             {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}

@@ -4,9 +4,9 @@
 FreePass Admin은 내부 관리자가 하나의 Canonical Product 기준으로 상품을 찾고, 조건을 확인하고, 접수하고, 계약 진행과 정산까지 처리하기 위한 관리자 제품이다.
 
 ## Current priority
-2026-09-21 기준 AI Core UI/UX Contract와 Development Center Design Hub 실행 경계가 확정되어 **공통 규격 대기 HOLD는 해제**됐다.
-
-다만 이 프로젝트가 새 디자인 방향을 독자 발명하는 것은 금지한다. 사용자 승인 시각 기준은 `docs/ui/mockups/admin-product-to-application.html` rev 5(SHA-256 `6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d`)이고, `.ai-core/ui-ux.consumer.json`과 `.devcenter/design-authority.json`이 현재 mapping 경계를 고정한다.
+UI/UX의 현재 권위는 `docs/ui/DESIGN-AUTHORITY.md`와 PR #92 actual route 구현이다.
+AI Core는 공통 개발·계약 규격을 제공하지만 FreePass Admin의 시각 정본을 별도로 소유하지 않는다.
+UI 변경은 현재 actual route와 UI SSOT 안에서만 수행하고 Visual QA로 검증한다.
 
 기능 우선순위는 그대로 유지하면서 실제 UI를 Domain/Service에 연결하고, 승인된 시각 기준으로 점진 이식한 뒤 Design Hub Visual QA/Quality Receipt를 받는다.
 
@@ -83,4 +83,4 @@ DB / External System
 - Production auth/permission: NOT VERIFIED
 - Audit trail: DESIGN REQUIRED
 - Settlement domain: PARTIAL / MOCKUP-HEAVY
-- UI/UX adoption: MAPPED to AI Core/Design Hub / NOT PILOT / NOT CONFORMANT
+- UI/UX authority: PR #92 actual route / Visual QA required

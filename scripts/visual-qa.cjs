@@ -174,6 +174,33 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      signalSamples: (() => {
+        const sample = (selector, limit = 30) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const r = el.getBoundingClientRect();
+            const s = getComputedStyle(el);
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              width: Math.round(r.width),
+              height: Math.round(r.height),
+              radius: parseFloat(s.borderTopLeftRadius) || 0,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
+            };
+          });
+        const cardStatusCounts = [...document.querySelectorAll('.erp-rowcard, .erp-listcard, .dz-row')]
+          .filter(visible)
+          .slice(0, 30)
+          .map((card) => ({
+            text: (card.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            count: card.querySelectorAll('.erp-badge, .dz-badge').length,
+          }));
+        return {
+          badges: sample('.erp-badge, .dz-badge'),
+          tags: sample('.erp-tag'),
+          quickFilters: sample('.erp-facet-opt, .quick-filters a'),
+          cardStatusCounts,
+        };
+      })(),
       dividerSamples: (() => {
         const nodes = [...document.querySelectorAll(
           '.erp-panel-head, .erp-panel-foot, .erp-searchbar, .erp-toolbar, .erp-card-head, .erp-listcard-foot, .erp-grid-foot, .erp-tile-title, .panel-head, .dz-listtop, .dz-bar'
@@ -477,6 +504,19 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.signalSamples) {
+        for (const b of info.signalSamples.badges || []) {
+          if (b.height > 22) problems.push(`badge too tall: ${JSON.stringify(b)}`);
+          if (b.radius > 8) problems.push(`badge too pill-like: ${JSON.stringify(b)}`);
+        }
+        for (const t of info.signalSamples.tags || []) {
+          if (t.height > 20) problems.push(`tag too tall: ${JSON.stringify(t)}`);
+        }
+        for (const x of info.signalSamples.cardStatusCounts || []) {
+          if (x.count > 1) problems.push(`multiple status badges in one card: ${JSON.stringify(x)}`);
+        }
+      }
+
       if (Array.isArray(info.dividerSamples)) {
         const visibleColor = (value) => value && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)';
         for (const x of info.dividerSamples) {
@@ -663,6 +703,7 @@ async function runInteractiveStates(page, c) {
         radiusSamples: info.radiusSamples,
         shadowSamples: info.shadowSamples,
         dividerSamples: info.dividerSamples,
+        signalSamples: info.signalSamples,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

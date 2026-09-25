@@ -1,5 +1,5 @@
-import { esign } from '../../../../../../server/esign';
-import { requireAdmin } from '../../../../../../server/require-admin';
+import { esign } from '../../../../../server/esign';
+import { requireAdmin } from '../../../../../server/require-admin';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

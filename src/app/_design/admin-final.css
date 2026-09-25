@@ -1862,7 +1862,7 @@ body > nav.fn-top :where(a, button):focus-visible,
    모바일도 18 / 14 / 12만 쓴다. 디자인 강조보다 익숙한 업무도구 위계를 우선한다.
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .fn-main .workspace .panel-head h1 { font-size: var(--글제목); }
+  .fn-main .workspace .panel-head h1 { font-size: var(--글메인); }
   .fn-main .workspace :is(
     .dz-row-l1 > b,
     .dz-row-l2.value strong,

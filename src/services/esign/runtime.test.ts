@@ -3,7 +3,7 @@ import test from 'node:test';
 import { deflateSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { EsignService } from './service';
-import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
+import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } from '../../ports/esign/repositories';
 import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
 
 class Repo implements EsignRepository {
@@ -39,6 +39,21 @@ class Repo implements EsignRepository {
     const s=this.sessions.get(id); if(!s||!allowed.includes(s.status)) return false;
     Object.assign(s,structuredClone(patch)); return true;
   }
+  async finalizeSigned(
+    sessionId:string,finalizationId:string,sessionPatch:Partial<EsignSession>,contractPatch:Record<string,unknown>,
+    actor:string,detail:Record<string,unknown>,
+  ){
+    const s=this.sessions.get(sessionId); if(!s)throw new Error('missing');
+    if(s.status==='signed'){
+      if(s.finalizationId!==finalizationId)throw new Error('different finalization');
+      return {finalized:false,session:structuredClone(s)};
+    }
+    if(s.status!=='approving'||s.finalizationId!==finalizationId)throw new Error('bad state');
+    Object.assign(s,structuredClone(sessionPatch),{status:'signed',finalizationId});
+    this.contract.set(s.contractId,{...(this.contract.get(s.contractId)||{}),...structuredClone(contractPatch)});
+    this.events.push({contractId:s.contractId,sessionId,type:'approved',by:actor,detail:structuredClone(detail),at:Date.now()});
+    return {finalized:true,session:structuredClone(s)};
+  }
   async getPrivate(id:string){return (this.priv.get(id)??null) as (EsignPrivateSubmission&Record<string,unknown>)|null;}
   async putPrivate(id:string,data:Record<string,unknown>){this.priv.set(id,{...(this.priv.get(id)||{}),...structuredClone(data)});}
   async appendEvent(contractId:string,sessionId:string,type:string,by:string,detail:Record<string,unknown>={}){
@@ -47,6 +62,11 @@ class Repo implements EsignRepository {
   async listEvents(contractId:string){
     return this.events.filter(x=>x.contractId===contractId).map(({type,at,by,detail})=>({type,at,by,detail})).sort((a,b)=>b.at-a.at);
   }
+}
+
+class Renderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
 }
 
 class Assets implements EsignAssetStore {
@@ -173,4 +193,53 @@ test('intake contract handoff is immutable and idempotent', async () => {
   const third=await svc.createContractFromIntake(input,'tester');
   assert.equal(third.created,false);
   assert.equal(repo.contract.get(first.id)?.rent_amount_snapshot,690000);
+});
+
+
+test('esign finalization claims once, seals immutable PDF, and is idempotent', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',contract());
+  const snapshot=(await (async()=>{
+    process.env.PUBLIC_BASE_URL='https://admin.example.test';
+    const issued=await svc.issue('c1','tester');
+    return issued.session.snapshot;
+  })());
+  const current=await repo.getCurrentSession('c1');
+  assert.ok(current);
+  current!.status='pending_review';
+  current!.submittedAt=Date.now();
+
+  const signatureAsset=await assets.put('sig.png',new Uint8Array([137,80,78,71,13,10,26,10]),'image/png');
+  const requiredDocs=snapshot.requiredDocuments.filter(d=>d.required).map(d=>({
+    key:d.key,path:'doc/'+d.key,sha256:'sha-'+d.key,label:d.label,
+  }));
+  repo.priv.set(current!.id,{
+    sessionId:current!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    consents:[...snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
+    signaturePath:signatureAsset.path,signatureSha256:signatureAsset.sha256,
+    supportingDocuments:requiredDocs,submittedAt:Date.now(),
+  });
+
+  const operation='finalize_1234567890abcdef';
+  const first=await svc.approve('c1',operation,'tester');
+  assert.equal(first.finalized,true);
+  assert.equal(first.session.status,'signed');
+  assert.equal(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal(repo.contract.get('c1')?.contract_status,'계약완료');
+  assert.match(String(repo.contract.get('c1')?.esign_document_sha256),/^[a-f0-9]{64}$/);
+  assert.equal(String(repo.contract.get('c1')?.esign_template_version),snapshot.templateVersion);
+
+  const second=await svc.approve('c1',operation,'tester');
+  assert.equal(second.finalized,false);
+  assert.equal(renderer.calls,1);
+  assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
+});
+
+test('esign finalization fails closed when PDF renderer is unavailable', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  await assert.rejects(()=>svc.approve('c1','finalize_1234567890abcdef','tester'),/PDF 생성기/);
+  assert.equal(repo.contract.get('c1')?.sign_status,undefined);
 });

@@ -222,6 +222,25 @@ async function inspect(page) {
           cardStatusCounts,
         };
       })(),
+      fontSamples: (() => {
+        const sample = (selector, limit = 24) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const s = getComputedStyle(el);
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              fontSize: parseFloat(s.fontSize) || 0,
+              fontWeight: parseInt(s.fontWeight, 10) || 0,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            };
+          });
+        return {
+          panelTitles: sample('.erp-panel-head h2, .panel-head h1'),
+          cardTitles: sample('.erp-rowcard-title, .dz-row-l1 > b'),
+          primaryValues: sample('.erp-rowcard-amount strong, .erp-tile-row strong, .dz-row-l2.value strong, .dz-row-l3 > strong'),
+          controls: sample('.erp-btn, .quick-filters a, .erp-facet-opt, .primary, .dz-bar-sub'),
+          support: sample('.erp-rowcard-sub, .erp-rowcard-meta, .panel-head > .count, .dz-muted, .erp-badge, .dz-badge'),
+        };
+      })(),
       dividerSamples: (() => {
         const nodes = [...document.querySelectorAll(
           '.erp-panel-head, .erp-panel-foot, .erp-searchbar, .erp-toolbar, .erp-card-head, .erp-listcard-foot, .erp-grid-foot, .erp-tile-title, .panel-head, .dz-listtop, .dz-bar'
@@ -558,6 +577,28 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.fontSamples) {
+        const expectRange = (items, min, max, label) => {
+          for (const x of items || []) {
+            if (x.fontSize < min || x.fontSize > max) {
+              problems.push(`${label} font-size out of range ${x.fontSize}px: ${JSON.stringify(x)}`);
+            }
+          }
+        };
+        if (c.width <= 900) {
+          expectRange(info.fontSamples.panelTitles, 17, 19, 'mobile panel title');
+          expectRange(info.fontSamples.cardTitles, 13, 15, 'mobile card title');
+          expectRange(info.fontSamples.primaryValues, 13, 15, 'mobile primary value');
+          expectRange(info.fontSamples.controls, 13, 15, 'mobile control');
+          expectRange(info.fontSamples.support, 11.5, 12.5, 'mobile support');
+        } else {
+          expectRange(info.fontSamples.panelTitles, 17, 19, 'desktop panel title');
+          expectRange(info.fontSamples.cardTitles, 13, 15, 'desktop card title');
+          expectRange(info.fontSamples.primaryValues, 15, 17, 'desktop primary value');
+          expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
+          expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
+        }
+      }
       if (Array.isArray(info.dividerSamples)) {
         const visibleColor = (value) => value && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)';
         for (const x of info.dividerSamples) {
@@ -745,6 +786,7 @@ async function runInteractiveStates(page, c) {
         shadowSamples: info.shadowSamples,
         dividerSamples: info.dividerSamples,
         signalSamples: info.signalSamples,
+        fontSamples: info.fontSamples,
         wrapSamples: info.wrapSamples,
         actionBars: info.actionBars,
         interactiveStates,

@@ -17,10 +17,18 @@ const FONT_FILES = [
 
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_LAUNCH_TIMEOUT_MS = 30_000;
+const DEFAULT_TOTAL_TIMEOUT_MS = 65_000;
+const MAX_TOTAL_TIMEOUT_MS = 80_000;
 
 function positiveMs(raw: string | undefined, fallback: number) {
   const value = Number(raw);
   return Number.isFinite(value) && value >= 1_000 && value <= 120_000 ? Math.floor(value) : fallback;
+}
+
+function remainingMs(deadlineAt: number, capMs: number, message: string) {
+  const remaining = deadlineAt - Date.now();
+  if (remaining < 1_000) throw new Error(message);
+  return Math.min(capMs, remaining);
 }
 
 function signatureContentType(bytes: Uint8Array) {
@@ -308,27 +316,34 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
   }) {
     const renderTimeout = positiveMs(process.env.ESIGN_PDF_RENDER_TIMEOUT_MS, DEFAULT_RENDER_TIMEOUT_MS);
     const launchTimeout = positiveMs(process.env.ESIGN_PDF_LAUNCH_TIMEOUT_MS, DEFAULT_LAUNCH_TIMEOUT_MS);
+    const totalTimeout = Math.min(
+      positiveMs(process.env.ESIGN_PDF_TOTAL_TIMEOUT_MS, DEFAULT_TOTAL_TIMEOUT_MS),
+      MAX_TOTAL_TIMEOUT_MS,
+    );
+    const deadlineAt = Date.now() + totalTimeout;
     const html = await prepareFinalContractHtml(input, this.options);
     let browser: Browser | undefined;
     let stage: RenderStage = 'prepare-browser';
     const started = Date.now();
 
     try {
-      const executablePath = await resolveChromiumExecutablePath(launchTimeout);
+      const executablePath = await resolveChromiumExecutablePath(
+        remainingMs(deadlineAt, launchTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+      );
       stage = 'launch';
 
       browser = await puppeteer.launch({
         args: [...chromium.args, '--lang=ko-KR'],
         executablePath,
         headless: 'shell',
-        timeout: launchTimeout,
+        timeout: remainingMs(deadlineAt, launchTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         defaultViewport: { width: 1240, height: 1754, deviceScaleFactor: 1 },
       });
 
       stage = 'load-document';
       const page = await browser.newPage();
-      page.setDefaultTimeout(renderTimeout);
-      page.setDefaultNavigationTimeout(renderTimeout);
+      page.setDefaultTimeout(Math.min(renderTimeout, totalTimeout));
+      page.setDefaultNavigationTimeout(Math.min(renderTimeout, totalTimeout));
 
       // Pin environment-dependent formatting so local, CI and serverless runtimes render identically.
       await page.emulateTimezone('Asia/Seoul');
@@ -339,23 +354,28 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         else void request.abort('blockedbyclient');
       });
 
-      await page.setContent(html, { waitUntil: 'load', timeout: renderTimeout });
+      await page.setContent(html, {
+        waitUntil: 'load',
+        timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+      });
       await page.emulateMediaType('print');
 
       // Browser-side code is passed as source strings: transpilers (tsx/esbuild keepNames, Next/SWC)
       // may inject helpers such as __name into serialized functions, which do not exist in the page.
       stage = 'template-script';
-      await page.waitForFunction(PAGE_UNCLOAKED_EXPRESSION, { timeout: renderTimeout });
+      await page.waitForFunction(PAGE_UNCLOAKED_EXPRESSION, {
+        timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+      });
       stage = 'readiness';
       // page.evaluate has no timeout of its own; a never-settling font/image must not hang the request.
       await deadline(
         page.evaluate(PAGE_STRIP_CONTROLS_AND_WAIT_FONTS_EXPRESSION),
-        renderTimeout,
+        remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         '전자계약 PDF 글꼴·이미지 준비 시간이 초과되었습니다.',
       );
       const readiness = await deadline(
         page.evaluate(pageReadinessExpression(input.sealHash.slice(0, 16))) as Promise<PageReadiness>,
-        renderTimeout,
+        remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         '전자계약 PDF 렌더링 점검 시간이 초과되었습니다.',
       );
 
@@ -381,7 +401,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         preferCSSPageSize: true,
         displayHeaderFooter: false,
         margin: { top: '0', right: '0', bottom: '0', left: '0' },
-        timeout: renderTimeout,
+        timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         waitForFonts: true,
       }));
 

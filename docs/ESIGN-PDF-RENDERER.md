@@ -125,8 +125,9 @@ A Chromium upgrade must re-run the renderer tests: they assert byte-identical re
 
 ## Runtime controls
 
-- `ESIGN_PDF_RENDER_TIMEOUT_MS`: render/page/PDF timeout, 1s..120s, default 45s.
-- `ESIGN_PDF_LAUNCH_TIMEOUT_MS`: Chromium preparation/launch timeout, 1s..120s, default 30s.
+- `ESIGN_PDF_RENDER_TIMEOUT_MS`: per render/page/PDF operation cap, 1s..120s, default 45s.
+- `ESIGN_PDF_LAUNCH_TIMEOUT_MS`: Chromium preparation/launch operation cap, 1s..120s, default 30s.
+- `ESIGN_PDF_TOTAL_TIMEOUT_MS`: whole renderer budget, default 65s and hard-capped at 80s so the 90s approval route retains time for Storage verification and DB finalization.
 - `ESIGN_CHROMIUM_EXECUTABLE_PATH`: explicit browser path for controlled local/runtime verification. Production normally uses the bundled Sparticuz executable.
 
 ## Verification
@@ -151,3 +152,41 @@ npx tsx scripts/verify-esign-pdf-emulator.mts
 It checks: concurrent approvals -> exactly one signed; Firestore session/contract/audit evidence; independent Storage download SHA-256, `application/pdf`, `private,no-store`; exactly one object under the contract prefix; `finalDocument()` bytes; same-id retry no-op with unchanged object generation; different-id refusal; re-render reproduces the stored SHA-256.
 
 The renderer integration test launches real Chromium, feeds the real contract template, waits for Korean fonts, and validates a real multi-page PDF. Passing local/CI tests is TESTED, not DEPLOYMENT VERIFIED. Deployment verification additionally requires a successful deployed Node runtime invocation and a real private Storage write/read-back receipt.
+
+## Verification status — 2026-09-25 (updated after local/emulator verification)
+
+| State | Status | Evidence / blocker |
+|---|---|---|
+| DESIGNED | PASS | Existing HTML/CSS is preserved; production boundary is `EsignFinalDocumentRenderer`. |
+| CODED | PASS | Production Chromium adapter is wired into `EsignService`; no UI/workflow redesign is included. |
+| STATIC CHECKED | PASS (local) | `typecheck`, `ui:check`, `data:check`, `next build` pass locally. GitHub Actions still assigns no runner (`runner_id=0`, `steps=[]`), so there is no CI receipt. |
+| TESTED | PASS (local) | `npm test` 423/423 on Node 22; renderer/PDF/service suites pass on Node 24.21 — real Chromium PDF, A4, fonts, determinism, overflow, CSP, fail-closed paths. |
+| RUNTIME VERIFIED | PARTIAL | Local `next start` production bundle rendered via the adapter (~1.7–2.0 s warm, ~4.1 s cold). No Vercel invocation. |
+| STORAGE VERIFIED | PARTIAL | Firebase emulators with the real ERP5 adapters (`scripts/verify-esign-pdf-emulator.mts`): private write, independent SHA read-back, atomic signing, retries. No real Firebase Storage receipt. |
+| DEPLOYMENT VERIFIED | NOT VERIFIED | The connected Vercel team exposes no project for this repository, so no deployed invocation is possible yet. |
+| USER APPROVED | NOT VERIFIED | Awaiting user acceptance after deployment evidence. |
+
+Do not promote this PR out of Draft solely because the renderer compiles on inspection or because a local/synthetic PDF can be produced.
+
+## Additional fail-closed checks
+
+The renderer and service now reject the finalization path when any of the following is true:
+
+- final bytes do not contain a PDF header, minimum body, and tail `%%EOF`;
+- a rendered page is not A4-sized within a small CSS-pixel tolerance;
+- a page reports content overflow/clipping;
+- Pretendard is not loaded;
+- a visible image is broken;
+- no visible customer signature was rendered;
+- the visible seal-hash evidence is missing;
+- an interactive print control remains in the document;
+- Storage returns a SHA-256 different from the rendered bytes;
+- Storage read-back cannot verify the expected hash/content type.
+
+Chromium executable extraction is cached per warm Node process. Browser launch relies on Puppeteer's native timeout so a second wrapper timeout cannot abandon a late-launching Chromium process. Browser shutdown has a bounded graceful close and a best-effort process kill fallback.
+
+## Runtime baseline
+
+- Node runtime is pinned to `24.x` for CI/deployment consistency.
+- Current renderer pair remains `puppeteer-core@24.41.0` + `@sparticuz/chromium@147.0.2`.
+- These share the same browser major. A newer matching pair is not adopted in this Draft until the current branch can actually execute `npm ci / typecheck / test / build`; changing the browser dependency tree without executable validation would increase risk rather than reduce it.

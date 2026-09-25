@@ -103,13 +103,6 @@ class Repo implements EsignRepository {
   }
 }
 
-class ReadbackFailAssets extends Assets {
-  async get(path:string,expected?:string){
-    if(path.startsWith('esign-final/'))return null;
-    return super.get(path,expected);
-  }
-}
-
 function completeFakePdf(){
   return new Uint8Array(Buffer.concat([
     Buffer.from('%PDF-1.4\n'),
@@ -123,6 +116,14 @@ class Renderer implements EsignFinalDocumentRenderer {
   async render(){this.calls+=1;return {bytes:completeFakePdf(),contentType:'application/pdf' as const};}
 }
 
+class InvalidRenderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){
+    this.calls+=1;
+    return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\ntruncated')),contentType:'application/pdf' as const};
+  }
+}
+
 class Assets implements EsignAssetStore {
   m=new Map<string,{bytes:Uint8Array;contentType:string;sha256:string}>();
   async put(path:string,bytes:Uint8Array,contentType:string){
@@ -134,6 +135,22 @@ class Assets implements EsignAssetStore {
     const x=this.m.get(path);
     if(!x||expected&&x.sha256!==expected)return null;
     return {bytes:new Uint8Array(x.bytes),contentType:x.contentType};
+  }
+}
+
+class ReadbackFailAssets extends Assets {
+  async get(path:string,expected?:string){
+    if(path.startsWith('esign-final/'))return null;
+    return super.get(path,expected);
+  }
+}
+
+class HashMismatchAssets extends Assets {
+  async put(path:string,bytes:Uint8Array,contentType:string){
+    const stored=await super.put(path,bytes,contentType);
+    return path.startsWith('esign-final/')
+      ? {...stored,sha256:'0'.repeat(64)}
+      : stored;
   }
 }
 

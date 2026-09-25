@@ -163,3 +163,36 @@ test('popular sort uses the same model ordering baseline as White Label',()=>{
   const matches=findProducts([unknown,k5,sorento],input());
   assert.deepEqual(sortFinderMatches(matches,'popular').map((x)=>x.product.id),['sorento','k5','unknown']);
 });
+
+
+test('model facet trusts confirmed vehicle identity and ignores UNMATCHED leftovers',()=>{
+  const confirmed=product({
+    id:'confirmed-model',
+    vehicle:{...product().vehicle,matchLevel:'MODEL',manufacturerId:'현대',modelId:'그랜저'},
+  });
+  const unmatched=product({
+    id:'unmatched-leftover',
+    vehicle:{...product().vehicle,matchLevel:'UNMATCHED',manufacturerId:'현대',modelId:'그랜저',nodeId:''},
+  });
+  const selection=emptyFinderSelection();
+  selection.model=['그랜저'];
+
+  assert.deepEqual(findProducts([confirmed,unmatched],input({selection})).map((x)=>x.product.id),['confirmed-model']);
+
+  const pool=findProducts([confirmed,unmatched],input());
+  const modelCandidates=pool.filter((m)=>finderAxisMatches(m,'model','그랜저'));
+  assert.deepEqual(modelCandidates.map((x)=>x.product.id),['confirmed-model']);
+});
+
+test('manufacturer facet also ignores UNMATCHED identity leftovers',()=>{
+  const confirmed=product({
+    id:'confirmed-maker',
+    vehicle:{...product().vehicle,matchLevel:'MODEL',manufacturerId:'현대',modelId:'그랜저'},
+  });
+  const unmatched=product({
+    id:'unmatched-maker',
+    vehicle:{...product().vehicle,matchLevel:'UNMATCHED',manufacturerId:'현대',modelId:'',nodeId:''},
+  });
+  const pool=findProducts([confirmed,unmatched],input());
+  assert.deepEqual(pool.filter((m)=>finderAxisMatches(m,'maker','현대')).map((x)=>x.product.id),['confirmed-maker']);
+});

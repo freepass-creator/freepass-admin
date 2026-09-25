@@ -1450,6 +1450,14 @@
     "verticalTolerancePx": 2,
     "primaryValue": "right-aligned-to-card-padding",
     "numericVariant": "tabular-nums",
-    "rule": "Visual tile and Main/Key/Support text block share top and bottom alignment."
+    "rule": "Visual tile and Main/Key/Support text block share top and bottom alignment.",
+    "outerCardHeightPx": {
+      "desktopCompact": 84,
+      "mobile": 88
+    },
+    "paddingBlockPx": {
+      "desktopCompact": 10,
+      "mobile": 12
+    }
   }
 }

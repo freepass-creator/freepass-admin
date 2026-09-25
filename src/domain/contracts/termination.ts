@@ -10,7 +10,7 @@ export type ContractTerminationPlan =
 
 const DAY=/^\d{4}-\d{2}-\d{2}$/;
 const S=(v:unknown)=>String(v??'').trim();
-const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v===1;
+const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v==='참'||v===1;
 
 export function planContractTermination(
   contract: Record<string, unknown>,

@@ -599,6 +599,19 @@ async function runInteractiveStates(page, c) {
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
         }
       }
+      if (info.shadowSamples) {
+        const hasOuterShadow = (v) => {
+          if (!v || v === 'none') return false;
+          return !/\binset\b/.test(v);
+        };
+        for (const x of info.shadowSamples.panels || []) {
+          if (hasOuterShadow(x.boxShadow)) problems.push(`resting panel has outer shadow: ${JSON.stringify(x)}`);
+        }
+        for (const x of info.shadowSamples.cards || []) {
+          if (!x.selected && hasOuterShadow(x.boxShadow)) problems.push(`resting card/tile has outer shadow: ${JSON.stringify(x)}`);
+          if (x.selected && hasOuterShadow(x.boxShadow)) problems.push(`selected card/tile has outer shadow: ${JSON.stringify(x)}`);
+        }
+      }
       if (Array.isArray(info.dividerSamples)) {
         const visibleColor = (value) => value && value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)';
         for (const x of info.dividerSamples) {

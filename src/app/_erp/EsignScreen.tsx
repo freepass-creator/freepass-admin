@@ -88,7 +88,6 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
                   title={txt(c.customer)} badge={<Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{s}</Badge>}
                   subId={txt(c.plate)} sub={txt(c.vehicle)}
                   meta={`${c.term ? `${c.term}개월` : '—'} · ${txt(c.status)}`}
-                  lines={[txt(c.code)]}
                   steps={{ labels: [...SIGN], at }}
                   facts={[
                     ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],

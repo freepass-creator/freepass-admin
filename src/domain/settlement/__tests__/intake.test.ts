@@ -224,6 +224,21 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
+  it('계약해지 뒤에는 계약 핵심 사실을 바꾸지 않는다', () => {
+    const cur = {
+      contractTerminatedAt: Date.now(),
+      paper: true,
+      delivered: true,
+      deliveredAt: '2026-09-18',
+      plate: '12가3456',
+      claimStage: '접수',
+      payStage: '접수',
+    };
+    assert.equal(progressPatch(cur, { kind: 'plate', plate: '34나5678' }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'paper', on: false }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'cancelled', on: true, reason: '잘못된 취소' }).ok, false);
+  });
+
   it('계약해지 뒤에는 인도완료와 인도일을 바꾸지 않는다', () => {
     const cur = {
       contractTerminatedAt: Date.now(),

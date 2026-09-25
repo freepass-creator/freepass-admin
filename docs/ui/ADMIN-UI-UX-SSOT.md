@@ -718,6 +718,25 @@ depth 0 목록
 
 ---
 
+## 16-1. 반응형 전수검사 규칙 — 2026-09-25
+
+검증 기준 viewport:
+- Mobile: **360 / 390 / 412**
+- Desktop: **1280 / 1440**
+
+Mobile:
+- Quick filter는 여러 줄로 쌓지 않고 **한 줄 가로 스크롤**을 기본으로 한다.
+- 스크롤바는 숨기되 44px touch target은 유지한다.
+- Sticky list header가 필터 줄바꿈 때문에 과도하게 높아지지 않아야 한다.
+- 고객명/차량명 같은 detail identity는 최대 2줄까지 허용하고, 그 외 보조정보는 한 줄 ellipsis를 우선한다.
+- 상태 Tag는 identity 텍스트를 밀어내지 않도록 별도 고정 영역으로 둔다.
+- ActionBar 3:7 비율과 safe-area를 유지한다.
+
+Desktop:
+- 1280에서도 panel 간 gap 12와 panel padding 22를 먼저 보존한다.
+- 긴 identity/금액 때문에 다른 panel 폭이 밀리지 않게 각 panel 내부에서 overflow를 해결한다.
+- 1440 이상이라고 정보 행 수를 임의로 늘리지 않는다.
+
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
 ## A. CSS cascade가 정본 역할을 하고 있음

@@ -351,7 +351,29 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
   .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong { white-space: normal; }
   .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks .dz-perks.compact { height: auto; flex-wrap: wrap; }
 }
-.dz-seg { white-space: nowrap; }
+/* 상품 목록 카드 — 카드 폭을 남기지 않고 좌/중/우 축으로 쓴다.
+ * 기간 = 좌측, 월 대여료 = 중앙 핵심, 보증금 = 우측.
+ * 문자열 자체의 구분점 대신 CSS 구분점을 써서 폭 배분과 모바일 줄바꿈이 충돌하지 않게 한다. */
+.dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 1 auto; min-width: 0; }
+.dz-row:has(.dz-row-l2.value) .dz-row-badges { margin-left: auto; }
+.dz-row-l2.value strong {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center; width: 100%; column-gap: 12px;
+}
+.dz-row-l2.value .dz-seg { min-width: 0; white-space: nowrap; }
+.dz-row-l2.value .dz-seg:nth-child(2) { text-align: center; }
+.dz-row-l2.value .dz-seg:last-child { text-align: right; }
+.dz-row-l2.value .dz-seg + .dz-seg::before { content: '·'; margin-right: 8px; color: #9aa3ad; }
+
+@media (max-width: 900px) {
+  .dz-row-l2.value strong {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+    column-gap: 8px; row-gap: 2px; width: 100%;
+  }
+  .dz-row-l2.value .dz-seg:nth-child(2),
+  .dz-row-l2.value .dz-seg:last-child { text-align: left; }
+  .dz-row-l2.value .dz-seg + .dz-seg::before { margin-right: 6px; }
+}
 /* 폰 — 가로로 흐르는 퀵 단추 줄은 굴림 막대를 안 보인다(손가락으로 민다) */
 @media (max-width: 900px) {
   .fn-main .workspace .quick-filters { scrollbar-width: none; }

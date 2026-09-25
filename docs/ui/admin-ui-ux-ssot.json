@@ -1549,5 +1549,18 @@
     ],
     "rightEdgeAligned": true,
     "rule": "Fill available width with stable visual/body/value columns."
+  },
+  "listCardRhythm": {
+    "gapPx": 8,
+    "webInnerPaddingPx": 12,
+    "hoverGeometryStable": true,
+    "selectedGeometryStable": true,
+    "interaction": [
+      "surface",
+      "elevation",
+      "tint",
+      "inset"
+    ],
+    "rule": "List cards never shift position on hover or selection."
   }
 }

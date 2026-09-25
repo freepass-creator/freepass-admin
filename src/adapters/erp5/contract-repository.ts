@@ -1,5 +1,10 @@
 import { erp5 } from './firestore';
 import { strOf as S, numOrNull as N } from './atom';
+import { createHash } from 'node:crypto';
+import { WriteDisabledError, writeEnabled } from './settlement-repository';
+import { intakeEventDocId } from '../../domain/settlement/code';
+import { planContractTermination, type ContractTerminationInput } from '../../domain/contracts/termination';
+import type { ContractLifecycleRepository } from '../../ports/contracts/repositories';
 
 /**
  * **전자계약 — ERP5 `contract` 읽기.**
@@ -32,7 +37,60 @@ export interface ContractSummary {
 
 const T = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 
-export class Erp5ContractRepository {
+export class Erp5ContractRepository implements ContractLifecycleRepository {
+  async terminateContract(
+    contractId: string,
+    input: ContractTerminationInput,
+    actor: string,
+  ): Promise<{ terminated: boolean; effectiveDate: string; reason: string }> {
+    if (!writeEnabled()) throw new WriteDisabledError();
+    const db=erp5();
+    const contractRef=db.collection('contract').doc(contractId);
+
+    return db.runTransaction(async tx=>{
+      const contractDoc=await tx.get(contractRef);
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const contract=contractDoc.data() as Record<string,unknown>;
+      const intakeId=S(contract.source_intake_id);
+      if(!intakeId)throw new Error('계약의 원본 접수 연결이 없습니다.');
+
+      const intakeRef=db.collection('settlement_rows').doc(intakeId);
+      const intakeDoc=await tx.get(intakeRef);
+      if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+      const intake=intakeDoc.data() as Record<string,unknown>;
+
+      const now=Date.now();
+      const plan=planContractTermination(contract,intake,input,now);
+      if(!plan.ok)throw new Error(plan.error);
+      if(plan.idempotent){
+        return {
+          terminated:false,
+          effectiveDate:S(intake.contractTerminationDate),
+          reason:S(intake.contractTerminationReason),
+        };
+      }
+
+      tx.update(contractRef,plan.patch);
+      tx.update(intakeRef,plan.intakePatch);
+
+      const eventRef=db.collection('settlement_events').doc(
+        intakeEventDocId(
+          intake.plate,intake.sourceProductId,intake.receivedAt,
+          intake.intakeRequestId,intake.intakeIdentityMode,
+        ),
+      );
+      const eventKey='aud_contract_terminate_'+createHash('sha256')
+        .update(contractId+'|'+input.operationId).digest('hex').slice(0,16);
+      tx.set(eventRef,{[eventKey]:{
+        at:now,by:actor,operationId:input.operationId,
+        field:'계약해지',from:S(contract.contract_status),to:'계약해지',
+        effectiveDate:input.effectiveDate,reason:input.reason.trim(),contractId,
+      }},{merge:true});
+
+      return {terminated:true,effectiveDate:input.effectiveDate,reason:input.reason.trim()};
+    });
+  }
+
   async list(): Promise<ContractSummary[]> {
     const snap = await erp5().collection('contract').get();
     const out: ContractSummary[] = [];

@@ -2742,3 +2742,37 @@ QuickFilter / Tabs / OfferPicker / Month selector:
 - 좁은 폭은 horizontal behavior로 해결
 - workflow/card hierarchy를 세로 wrap으로 재구성하지 않는다
 - touch target은 유지
+# 61. QuickFilter content is provisional until business rules are set
+
+QuickFilter의 **위치·높이·형태·선택 문법은 UI 규격**이지만,
+어떤 업무 항목을 둘지는 별도 업무 설정이다.
+
+현재 업무 항목이 확정되지 않은 화면에서는:
+- 전체 + 대표 예시 1개 정도만 둔다.
+- 월/기간처럼 이미 필요한 context selector는 유지할 수 있다.
+- 가능한 상태를 전부 미리 버튼으로 만들지 않는다.
+- URL/domain이 더 많은 상태를 지원하더라도 UI에 선제 노출하지 않는다.
+
+목적은 자리와 interaction을 검증하는 것이지,
+사용자 결정 전에 업무 분류를 대신 확정하는 것이 아니다.
+
+
+# 62. Natural ERP typography
+
+폰트는 디자인 장식이 아니라 정보 위계다.
+
+PC 기본 역할:
+- Panel title: 18 / 700
+- Section title: 16 / 600
+- Card identity / body / input / button / QuickFilter: 14
+- Primary money/value: 16 / 700
+- Support / label / meta / Badge / Tag: 12
+- KPI만 24 허용
+
+원칙:
+- 화면마다 새로운 폰트 크기를 만들지 않는다.
+- 작은 정보를 억지로 11px대로 줄이지 않는다.
+- 일반 본문/버튼을 16px 이상으로 키워 모바일 카드처럼 보이게 하지 않는다.
+- 제목과 금액을 동시에 과도하게 굵게 하지 않는다.
+- 선택 상태를 font-size/weight 증가로 표현하지 않는다.
+- 목표는 디자인한 티가 아니라 오래 써도 자연스러운 업무도구다.

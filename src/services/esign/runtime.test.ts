@@ -64,18 +64,6 @@ class Repo implements EsignRepository {
   }
 }
 
-class ReadbackFailAssets extends Assets {
-  async get(path:string,expected?:string){
-    if(path.startsWith('esign-final/'))return null;
-    return super.get(path,expected);
-  }
-}
-
-class Renderer implements EsignFinalDocumentRenderer {
-  calls=0;
-  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
-}
-
 class Assets implements EsignAssetStore {
   m=new Map<string,{bytes:Uint8Array;contentType:string;sha256:string}>();
   async put(path:string,bytes:Uint8Array,contentType:string){
@@ -87,6 +75,43 @@ class Assets implements EsignAssetStore {
     const x=this.m.get(path);
     if(!x||expected&&x.sha256!==expected)return null;
     return {bytes:new Uint8Array(x.bytes),contentType:x.contentType};
+  }
+}
+
+class ReadbackFailAssets extends Assets {
+  async get(path:string,expected?:string){
+    if(path.startsWith('esign-final/'))return null;
+    return super.get(path,expected);
+  }
+}
+
+class HashMismatchAssets extends Assets {
+  async put(path:string,bytes:Uint8Array,contentType:string){
+    const stored=await super.put(path,bytes,contentType);
+    return path.startsWith('esign-final/')
+      ? {...stored,sha256:'0'.repeat(64)}
+      : stored;
+  }
+}
+
+function completeFakePdf(){
+  return new Uint8Array(Buffer.concat([
+    Buffer.from('%PDF-1.4\n'),
+    Buffer.alloc(2_048,0x20),
+    Buffer.from('\n%%EOF\n'),
+  ]));
+}
+
+class Renderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){this.calls+=1;return {bytes:completeFakePdf(),contentType:'application/pdf' as const};}
+}
+
+class InvalidRenderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(){
+    this.calls+=1;
+    return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\ntruncated')),contentType:'application/pdf' as const};
   }
 }
 
@@ -113,6 +138,54 @@ const contract = () => ({
   rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-22',
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
 });
+
+
+async function seedPendingReview(
+  svc:EsignService,
+  repo:Repo,
+  assets:Assets,
+  options:{missingSignature?:boolean;missingRequiredDocument?:boolean}={},
+){
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const session=await repo.getCurrentSession('c1');
+  assert.ok(session);
+  session!.status='pending_review';
+  session!.submittedAt=Date.now();
+
+  let signaturePath='',signatureSha256='';
+  if(!options.missingSignature){
+    const signatureAsset=await assets.put(
+      'sig.png',
+      new Uint8Array([137,80,78,71,13,10,26,10]),
+      'image/png',
+    );
+    signaturePath=signatureAsset.path;
+    signatureSha256=signatureAsset.sha256;
+  }
+  const idCard=await assets.put('id.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const selfie=await assets.put('selfie.jpg',new Uint8Array([0xff,0xd8,0xff,0xd9]),'image/jpeg');
+  const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required);
+  const supportingDocuments=[];
+  for(let i=0;i<required.length;i++){
+    if(options.missingRequiredDocument&&i===0)continue;
+    const d=required[i]!;
+    const a=await assets.put('doc/'+d.key,new Uint8Array(Buffer.from('%PDF-1.4\n'+d.key)),'application/pdf');
+    supportingDocuments.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
+  }
+  if(options.missingRequiredDocument)assert.ok(required.length>0);
+
+  repo.priv.set(session!.id,{
+    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
+    summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
+    signaturePath,signatureSha256,supportingDocuments,submittedAt:Date.now(),
+    assets:{id_card:{...idCard,name:'id.jpg',contentType:'image/jpeg'},selfie:{...selfie,name:'selfie.jpg',contentType:'image/jpeg'}},
+  });
+  return {issued,session:session!};
+}
 
 test('esign runtime: issue -> open -> assets -> submit -> review -> reject -> revoke', async () => {
   process.env.PUBLIC_BASE_URL='https://admin.example.test';
@@ -311,3 +384,51 @@ test('esign finalization does not sign when stored PDF read-back fails', async (
   assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
   assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
 });
+
+test('esign finalization rejects truncated PDF bytes before Storage/signing', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new InvalidRenderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_invalid_pdf_1234567890','tester'),
+    /완전한 PDF/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal([...assets.m.keys()].some(path=>path.startsWith('esign-final/')),false);
+});
+
+test('esign finalization rejects Storage upload hash mismatch', async () => {
+  const repo=new Repo(), assets=new HashMismatchAssets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets);
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_hash_mismatch_1234567890','tester'),
+    /저장 검증/,
+  );
+  assert.equal(renderer.calls,1);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+});
+
+test('esign finalization rejects a missing verified signature before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingSignature:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_no_signature_1234567890','tester'),
+    /서명 원본/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+
+test('esign finalization rejects a missing required document before rendering', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  await seedPendingReview(svc,repo,assets,{missingRequiredDocument:true});
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_missing_doc_1234567890','tester'),
+    /필수 서류/,
+  );
+  assert.equal(renderer.calls,0);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+});
+

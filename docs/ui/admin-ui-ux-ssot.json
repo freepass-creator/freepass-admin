@@ -1,11 +1,12 @@
 {
-  "version": "2026-09-24",
-  "status": "CURRENT_PRODUCT_STANDARD / AI_CORE_PROMOTION_CANDIDATE",
+  "version": "2026-09-25",
+  "status": "CURRENT_PRODUCT_STANDARD / PROMOTED_TO_AI_CORE_ERP_STANDARD_V1_1",
   "authority": [
     "latest-user-decision",
     "current-freepass-admin-implementation",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
-    "src/app/_erp/shell.css",
+    "ai-core design/erp-standard/tokens.json + erp.css v1.1 (via src/app/_erp/erp-standard.css)",
+    "src/app/_erp/shell.css (app-only layer)",
     "src/app/_erp/parts.tsx",
     "src/app/_design/admin-final.css",
     "docs/ui/ai-core-bindings.json",
@@ -206,14 +207,14 @@
   },
   "knownDebt": [
     "globals.css still contains historical/legacy visual values below the current final layer",
-    "generated erp-standard.css still contains upstream 22/17/15/13/11.5 and 28/32/34 values; FreePass Admin overrides them in shell.css while validating the new product scale",
     "PC _erp and mobile _design remain two implementation generations sharing one semantic contract",
     "some legacy public/login surfaces retain their own shells and are explicit exceptions"
   ],
   "implementedFixes": [
     "Line-free surface hierarchy: canvas #F2F6FC, white web panels, screen-flat mobile panels",
     "Signal/action/selection semantics separated for Badge, Button, QuickFilter and Card",
-    "Desktop typography normalized to 24/20/18/16/14/12 through consumer override",
+    "Desktop typography normalized to 24/20/18/16/14/12 — promoted to ai-core ERP standard tokens v1.1 (2026-09-25), no consumer override",
+    "Common desktop rules (surface/elevation, line-free, list card geometry, status tones, focus halo) promoted from shell.css into ai-core design/erp-standard/erp.css v1.1; shell.css keeps only app-specific layout (dz-*, fn-*, erp-embed, erp-screen, brand navy, workspace gutters)",
     "Desktop control tiers normalized to 32 small / 36 standard / 40 row / 56 topbar",
     "Mobile controls remain 44px with 44px minimum touch target",
     "Spacing uses 4/8/12/16/20/24/32 scale; shared panel padding normalized from 22 to 20",

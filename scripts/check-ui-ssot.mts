@@ -62,8 +62,17 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+/* PC 화면 CSS = 공통 규격 생성물 + 앱 고유층. 이 가상 경로를 읽으면 두 파일을 순서대로 이어 붙인다. */
+const DESKTOP_CSS = 'src/app/_erp/{erp-standard,shell}.css';
+const SHELL_MARK = '/* ═══ app shell.css ═══ */';
+async function readSource(file: string): Promise<string> {
+  if (file !== DESKTOP_CSS) return readFile(path.join(root, file), 'utf8');
+  const [std, shell] = await Promise.all(['src/app/_erp/erp-standard.css', 'src/app/_erp/shell.css'].map((f) => readFile(path.join(root, f), 'utf8')));
+  return `${std}\n${SHELL_MARK}\n${shell}`;
+}
+
 for (const file of coreFiles) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const rule of forbidden) {
     rule.re.lastIndex = 0;
     if (rule.re.test(src)) errors.push(`${file}: raw shared markup found; use ${rule.use}`);
@@ -71,7 +80,7 @@ for (const file of coreFiles) {
 }
 
 for (const file of noInlineStyleFiles) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (/style=\{\{/.test(src)) errors.push(`${file}: inline visual style found; move stable UI values to globals.css / SSOT tokens`);
   if (/<style[\s>]/.test(src)) errors.push(`${file}: page-local <style> found; internal admin visuals must come from shared CSS/tokens`);
   if (/\b(?:borderRadius|boxShadow|backgroundColor|fontSize|padding|margin)\s*:/.test(src)) {
@@ -82,7 +91,7 @@ for (const file of noInlineStyleFiles) {
 /* 내부 Admin route가 자기 시각 체계를 새로 만들지 못하게 한다.
  * 도메인 class(dz-money 등)는 허용하지만 stable visual 값은 shared CSS/token에서만 온다. */
 for (const file of internalAdminUiFiles) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (/className=["'`]\s*(?:lg|cl|sg)-/.test(src)) {
     errors.push(`${file}: public/login surface class prefix used inside internal Admin UI`);
   }
@@ -95,7 +104,7 @@ for (const file of [
   'src/app/settlement/page.tsx',
   'src/app/esign/page.tsx',
 ]) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   const rawPanels = [...src.matchAll(/<section className="[^"]*\bpanel\b[^"]*"(?![^>]*data-panel-role=)/g)];
   if (rawPanels.length) errors.push(`${file}: ${rawPanels.length} panel(s) missing data-panel-role=list|detail|work`);
   for (const m of src.matchAll(/data-panel-role="([^"]+)"/g)) {
@@ -130,7 +139,16 @@ for (const [re, label] of cssBaseline) {
   if (!re.test(css)) errors.push(`admin CSS: baseline mismatch or missing: ${label}`);
 }
 
-const desktopCss = await readFile(path.join(root, 'src/app/_erp/shell.css'), 'utf8');
+/* PC 화면의 실제 CSS는 두 겹이다 — ai-core 공통 규격(erp-standard.css, 생성물)과 앱 고유층(shell.css).
+ * 2026-09-25 공통 규칙을 ai-core erp.css 로 승격한 뒤로 계약은 «두 겹을 합친 결과»에 건다. */
+const desktopCss = await readSource(DESKTOP_CSS);
+/* 새 값 금지(off-scale)는 이 앱이 쓴 층에만 건다 — 승격된 v1.1 공통 층 + 앱 shell.css.
+ * 생성물 앞부분(v1 기본 규칙)과 retro 테마는 ai-core 가 따로 검사한다(npm run erp:check). */
+const desktopOwnCss = (() => {
+  const start = desktopCss.indexOf('v1.1 — PC 관리자 실적용 규격');
+  const end = desktopCss.indexOf('/* ── themes/retro.css');
+  return start >= 0 && end > start ? desktopCss.slice(start, end) + desktopCss.slice(desktopCss.indexOf(SHELL_MARK)) : desktopCss;
+})();
 const visualQa = await readFile(path.join(root, 'scripts/visual-qa.cjs'), 'utf8');
 const desktopScaleBaseline = [
   [/--erp-fs-kpi:\s*24px/, 'desktop KPI 24px'],
@@ -158,7 +176,7 @@ const desktopOffScaleRules = [
 ] as const;
 for (const [re, label] of desktopOffScaleRules) {
   re.lastIndex = 0;
-  if (re.test(desktopCss)) errors.push(`desktop scale: ${label}`);
+  if (re.test(desktopOwnCss)) errors.push(`desktop scale: ${label}`);
 }
 if (!/:focus-visible/.test(css)) errors.push('admin CSS: missing shared focus-visible behavior');
 if (!/prefers-reduced-motion:\s*reduce/.test(css)) errors.push('admin CSS: missing reduced-motion behavior');
@@ -174,7 +192,7 @@ const actionRatioBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of actionRatioBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: action ratio contract missing: ${re}`);
   }
@@ -200,17 +218,17 @@ for (const [re, label] of noWrapResponsiveBaseline) {
 
 const compactSignalBaseline = [
   ['src/app/_erp/parts.tsx', /data-thumb-status=\{thumbStatus \? 'true' : undefined\}/, 'status-thumbnail marker'],
-  ['src/app/_erp/shell.css', /\.erp-rowcard\[data-thumb-status="true"\][\s\S]*?\.erp-rowcard-title > \.erp-badge[\s\S]*?display:\s*none/, 'compact duplicate badge suppression'],
+  [DESKTOP_CSS, /\.erp-rowcard\[data-thumb-status="true"\][\s\S]*?\.erp-rowcard-title > \.erp-badge[\s\S]*?display:\s*none/, 'compact duplicate badge suppression'],
 ] as const;
 for (const [file, re, label] of compactSignalBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: compact signal contract missing: ${label}`);
 }
 
 const brandRestraintBaseline = [
   [/--erp-color-primary:\s*#1B2A4A/i, 'desktop primary navy #1B2A4A'],
   [/--erp-color-primary-weak:\s*#EEF3FA/i, 'desktop primary weak #EEF3FA'],
-  [/\.erp-tile--pressable\[aria-pressed="true"\][\s\S]*?color:\s*var\(--fp-text-strong\)/, 'selected tile text stays neutral'],
+  [/\.erp-tile--pressable\[aria-pressed="true"\][\s\S]*?color:\s*var\(--erp-color-text\)/, 'selected tile text stays neutral'],
 ] as const;
 for (const [re, label] of brandRestraintBaseline) {
   if (!re.test(desktopCss)) errors.push(`brand restraint missing: ${label}`);
@@ -248,7 +266,7 @@ for (const [re, label] of quickFilterVisualBaseline) {
 
 const cardRhythmBaseline = [
   [/64px visual tile contract/, 'desktop compact list visual tile 64px'],
-  [/--fp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
+  [/--erp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
   [/--ui-row-min-h:\s*88px/, 'mobile card min 88px'],
   [/--ui-list-gap:\s*12px/, 'mobile list gap 12px'],
 ] as const;
@@ -258,9 +276,9 @@ for (const [re, label] of cardRhythmBaseline) {
 }
 
 const panelCardSurfaceBaseline = [
-  [/--fp-component-surface:\s*#F7F9FC/i, 'desktop card surface #F7F9FC'],
+  [/--erp-color-surface-soft:\s*#F7F9FC/i, 'desktop card surface #F7F9FC'],
   [/--ui-component-surface:\s*#F7F9FC/i, 'mobile card surface #F7F9FC'],
-  [/--fp-surface:\s*#FFFFFF/i, 'desktop panel surface #FFFFFF'],
+  [/--erp-color-surface:\s*#FFFFFF/i, 'desktop panel surface #FFFFFF'],
   [/--ui-surface:\s*#FFFFFF/i, 'mobile panel surface #FFFFFF'],
 ] as const;
 for (const [re, label] of panelCardSurfaceBaseline) {
@@ -287,7 +305,7 @@ const businessFlowBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of businessFlowBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: business flow contract missing: ${re}`);
   }
@@ -311,16 +329,16 @@ const terminologyBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of terminologyBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: terminology contract missing: ${re}`);
   }
 }
 
 const motionBaseline = [
-  [/--fp-motion-press:\s*80ms/, 'desktop press motion 80ms'],
-  [/--fp-motion-state:\s*120ms/, 'desktop state motion 120ms'],
-  [/--fp-motion-float:\s*160ms/, 'desktop float motion 160ms'],
+  [/--erp-motion-press:\s*80ms/, 'desktop press motion 80ms'],
+  [/--erp-motion-state:\s*120ms/, 'desktop state motion 120ms'],
+  [/--erp-motion-float:\s*160ms/, 'desktop float motion 160ms'],
   [/--ui-motion-press:\s*80ms/, 'mobile press motion 80ms'],
   [/--ui-motion-state:\s*120ms/, 'mobile state motion 120ms'],
   [/--ui-motion-float:\s*160ms/, 'mobile float motion 160ms'],
@@ -342,7 +360,7 @@ const riskActionBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of riskActionBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: action risk contract missing: ${re}`);
   }
@@ -361,7 +379,7 @@ const formContractBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of formContractBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: form contract missing: ${re}`);
   }
@@ -395,15 +413,15 @@ const accessibilityBehaviorBaseline = [
   ]],
 ] as const;
 for (const [file, rules] of accessibilityBehaviorBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: accessibility behavior missing: ${re}`);
   }
 }
 
 const iconTouchBaseline = [
-  [/--fp-icon-action-hit:\s*36px/, 'desktop icon-only hit area 36px'],
-  [/--fp-icon-md:\s*18px/, 'desktop action glyph 18px'],
+  [/--erp-icon-hit:\s*36px/, 'desktop icon-only hit area 36px'],
+  [/--erp-icon-nav:\s*18px/, 'desktop action glyph 18px'],
   [/--ui-icon-action:\s*20px/, 'mobile action glyph 20px'],
   [/\.dz-phone-back[\s\S]*?width:\s*var\(--ui-touch-min\)[\s\S]*?height:\s*var\(--ui-touch-min\)/, 'mobile back hit area uses touch minimum'],
 ] as const;
@@ -413,8 +431,8 @@ for (const [re, label] of iconTouchBaseline) {
 }
 
 const contrastBaseline = [
-  [/--fp-text-muted:\s*#667085/i, 'desktop muted text #667085'],
-  [/--fp-nav-text:\s*#AEB9CA/i, 'desktop nav text #AEB9CA'],
+  [/--erp-color-text-muted:\s*#667085/i, 'desktop muted text #667085'],
+  [/--erp-color-nav-text:\s*#AEB9CA/i, 'desktop nav text #AEB9CA'],
   [/--ui-text-muted-color:\s*#667085/i, 'mobile muted text #667085'],
 ] as const;
 for (const [re, label] of contrastBaseline) {
@@ -473,7 +491,7 @@ const pageQaRules = [
 ] as const;
 
 for (const [file, rules] of pageQaRules) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   for (const re of rules) {
     if (!re.test(src)) errors.push(`${file}: page QA structural invariant missing: ${re}`);
   }
@@ -495,8 +513,8 @@ for (const [re, label] of liveAdminScaleBaseline) {
 const surfaceDepthBaseline = [
   [/--ui-canvas:\s*#F2F6FC/i, 'mobile canvas #F2F6FC'],
   [/--ui-component-surface:\s*#F7F9FC/i, 'mobile component surface #F7F9FC'],
-  [/--fp-canvas:\s*#F2F6FC/i, 'desktop canvas #F2F6FC'],
-  [/--fp-component-surface:\s*#F7F9FC/i, 'desktop component surface #F7F9FC'],
+  [/--erp-color-canvas:\s*#F2F6FC/i, 'desktop canvas #F2F6FC'],
+  [/--erp-color-surface-soft:\s*#F7F9FC/i, 'desktop component surface #F7F9FC'],
 ] as const;
 for (const [re, label] of surfaceDepthBaseline) {
   const target = label.startsWith('desktop') ? desktopCss : cssFinal;
@@ -510,13 +528,13 @@ if (/\.dz-perk\s*\{[^}]*font-size:\s*13px/s.test(cssFinal)) {
 }
 
 const densityBaseline = [
-  [/--fp-row-compact-min-h:\s*84px/, 'desktop compact row 84px'],
-  [/--fp-panel-head-h:\s*44px/, 'desktop panel head 44px'],
-  [/--fp-query-row-h:\s*48px/, 'desktop query row 48px'],
-  [/--fp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],
-  [/--fp-panel-foot-h:\s*56px/, 'desktop panel foot 56px'],
+  [/--erp-row-compact-min-h:\s*84px/, 'desktop compact row 84px'],
+  [/--erp-panel-head-h:\s*44px/, 'desktop panel head 44px'],
+  [/--erp-query-row-h:\s*48px/, 'desktop query row 48px'],
+  [/--erp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],
+  [/--erp-panel-foot-h:\s*56px/, 'desktop panel foot 56px'],
   [/64px visual tile contract/, 'desktop compact visual tile 64px'],
-  [/--fp-row-standard-min-h:\s*72px/, 'desktop standard row 72px'],
+  [/--erp-row-standard-min-h:\s*72px/, 'desktop standard row 72px'],
 ] as const;
 for (const [re, label] of densityBaseline) {
   if (!re.test(desktopCss)) errors.push(`density mismatch or missing: ${label}`);
@@ -565,7 +583,7 @@ for (const [re, label] of mobileSystemStateBaseline) {
 
 const stateContractBaseline = [
   [/Interaction state consistency/, 'desktop interaction state contract'],
-  [/--fp-focus-halo:/, 'desktop soft focus halo token'],
+  [/--erp-focus-halo:/, 'desktop soft focus halo token'],
 ] as const;
 for (const [re, label] of stateContractBaseline) {
   if (!re.test(desktopCss)) errors.push(`interaction state mismatch or missing: ${label}`);
@@ -586,7 +604,7 @@ const quickFilterPolicyBaseline = [
   ['src/app/_erp/EsignScreen.tsx', /전자서명 QuickFilter 업무 항목은 미확정/, 'e-sign quick filters explicitly provisional'],
 ] as const;
 for (const [file, re, label] of quickFilterPolicyBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: quick filter provisional contract missing: ${label}`);
 }
 
@@ -648,9 +666,9 @@ for (const [re, label] of geometryContractBaseline) {
 
 const cardLineContractBaseline = [
   [/2026-09-25 — Card line contract/, 'desktop card line contract block'],
-  [/--fp-card-line-h:\s*20px/, 'desktop card line height 20'],
-  [/--fp-card-line-gap:\s*2px/, 'desktop card line gap 2'],
-  [/grid-auto-rows:\s*var\(--fp-card-line-h\)/, 'desktop compact card consistent line rhythm'],
+  [/--erp-card-line-h:\s*20px/, 'desktop card line height 20'],
+  [/--erp-card-line-gap:\s*2px/, 'desktop card line gap 2'],
+  [/grid-auto-rows:\s*var\(--erp-card-line-h\)/, 'desktop compact card consistent line rhythm'],
   [/Card line contract \(mobile\/live\)/, 'mobile card line contract block'],
   [/--ui-card-line-h:\s*20px/, 'mobile card line height 20'],
   [/--ui-card-line-gap:\s*2px/, 'mobile card line gap 2'],
@@ -668,7 +686,7 @@ const cardPriorityBaseline = [
   ['src/app/_erp/parts.tsx', /lines\?: ReactNode\[\]/, 'row card flexible extra lines'],
 ] as const;
 for (const [file, re, label] of cardPriorityBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: priority-driven card lines missing: ${label}`);
 }
 
@@ -681,7 +699,7 @@ const listAmountLanguageBaseline = [
   ['src/app/_erp/EsignScreen.tsx', /월 \$\{manWon\(c\.rent\)\} 원/, 'e-sign monthly rent may be compact'],
 ] as const;
 for (const [file, re, label] of listAmountLanguageBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: list amount language mismatch: ${label}`);
 }
 
@@ -696,7 +714,7 @@ const cardInformationMatrixBaseline = [
   ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign support line'],
 ] as const;
 for (const [file, re, label] of cardInformationMatrixBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: strict three-line card matrix mismatch: ${label}`);
 }
 
@@ -709,13 +727,13 @@ const threeLineCardGrammarBaseline = [
   ['src/app/_erp/parts.tsx', /data-line-role="main"/, 'row card main role'],
   ['src/app/_erp/parts.tsx', /data-line-role="key"/, 'row card key role'],
   ['src/app/_erp/parts.tsx', /data-line-role="support"/, 'row card support role'],
-  ['src/app/_erp/shell.css', /Three-line list card semantics/, 'three-line semantic style block'],
+  [DESKTOP_CSS, /Three-line list card semantics/, 'three-line semantic style block'],
   ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake key line'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구/, 'intake support fee line'],
   ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement opposite-axis support fee'],
 ] as const;
 for (const [file, re, label] of threeLineCardGrammarBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: three-line card grammar mismatch: ${label}`);
 }
 
@@ -740,7 +758,7 @@ const strictThreeLineNoEscapeBaseline = [
   ['scripts/visual-qa.cjs', /list card must be exactly Main\/Key\/Support/, 'visual QA exact three-line guard'],
 ] as const;
 for (const [file, re, label] of strictThreeLineNoEscapeBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: strict three-line card contract missing: ${label}`);
 }
 const rowCardSource = await readFile(path.join(root, 'src/app/_erp/parts.tsx'), 'utf8');
@@ -748,13 +766,13 @@ if (/lines\?:\s*ReactNode\[\]/.test(rowCardSource) || /erp-rowcard-line/.test(ro
   errors.push('RowCard: arbitrary fourth-line escape hatch must not exist');
 }
 for (const file of ['src/app/_erp/ProductsScreen.tsx','src/app/_erp/Workspace.tsx','src/app/_erp/SettlementScreen.tsx','src/app/_erp/EsignScreen.tsx']) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (/\blines=\{/.test(src)) errors.push(`${file}: list cards must not add a fourth information line`);
 }
 
 const listVisualTileBaseline = [
   ['scripts/visual-qa.cjs', /list card outer height mismatch/, 'visual QA list-card outer height guard'],
-  ['src/app/_erp/shell.css', /64px visual tile contract/, 'desktop 64px visual tile contract'],
+  [DESKTOP_CSS, /64px visual tile contract/, 'desktop 64px visual tile contract'],
   ['src/app/_design/admin-final.css', /64px visual parity \(mobile\/live\)/, 'mobile 64px visual tile contract'],
   ['src/app/_erp/ProductDetail.tsx', /export function ProductThumb/, 'product thumbnail helper'],
   ['src/app/_erp/parts.tsx', /thumbStatus \? null : badge/, 'desktop duplicate status badge suppression'],
@@ -762,7 +780,7 @@ const listVisualTileBaseline = [
   ['scripts/visual-qa.cjs', /list visual tile must be 64x64/, 'visual QA 64px tile guard'],
 ] as const;
 for (const [file, re, label] of listVisualTileBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: list visual tile contract missing: ${label}`);
 }
 
@@ -778,20 +796,20 @@ const crossShellListParityBaseline = [
   ['src/app/esign/page.tsx', /mainValue=\{c\.rent === null/, 'mobile esign monthly rent main value'],
 ] as const;
 for (const [file, re, label] of crossShellListParityBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: cross-shell list parity mismatch: ${label}`);
 }
 
 const statusTileToneBaseline = [
-  ['src/app/_erp/shell.css', /Status tile semantic tones/, 'desktop status tile tones'],
-  ['src/app/_erp/shell.css', /data-tone="info"[\s\S]*?#EEF3FA[\s\S]*?#1B2A4A/, 'desktop info/navy tile'],
-  ['src/app/_erp/shell.css', /data-tone="ok"[\s\S]*?#ECFDF3[\s\S]*?#067647/, 'desktop ok/green tile'],
-  ['src/app/_erp/shell.css', /data-tone="warn"[\s\S]*?#FFFAEB[\s\S]*?#B54708/, 'desktop warn/amber tile'],
-  ['src/app/_erp/shell.css', /data-tone="err"[\s\S]*?#FEF3F2[\s\S]*?#B42318/, 'desktop err/red tile'],
+  [DESKTOP_CSS, /Status tile semantic tones/, 'desktop status tile tones'],
+  [DESKTOP_CSS, /data-tone="info"[\s\S]*?var\(--erp-color-primary-weak\)[\s\S]*?var\(--erp-color-primary\)/, 'desktop info/navy tile'],
+  [DESKTOP_CSS, /data-tone="ok"[\s\S]*?var\(--erp-color-ok-bg\)[\s\S]*?var\(--erp-color-ok\)/, 'desktop ok/green tile'],
+  [DESKTOP_CSS, /data-tone="warn"[\s\S]*?var\(--erp-color-warn-bg\)[\s\S]*?var\(--erp-color-warn\)/, 'desktop warn/amber tile'],
+  [DESKTOP_CSS, /data-tone="err"[\s\S]*?var\(--erp-color-err-bg\)[\s\S]*?var\(--erp-color-err\)/, 'desktop err/red tile'],
   ['src/app/globals.css', /\.dz-row-status\.navy[\s\S]*?\.dz-row-status\.green[\s\S]*?\.dz-row-status\.red[\s\S]*?\.dz-row-status\.grey[\s\S]*?\.dz-row-status\.amber/, 'mobile status tile semantic tones'],
 ] as const;
 for (const [file, re, label] of statusTileToneBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: status tile tone contract missing: ${label}`);
 }
 
@@ -802,10 +820,10 @@ const embeddedOfferListBaseline = [
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-term"/, 'one-line offer term'],
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-rent"/, 'one-line offer monthly rent'],
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-conditions"/, 'one-line offer conditions'],
-  ['src/app/_erp/shell.css', /Embedded offer selection list/, 'offer list styling contract'],
+  [DESKTOP_CSS, /Embedded offer selection list/, 'offer list styling contract'],
 ] as const;
 for (const [file, re, label] of embeddedOfferListBaseline) {
-  const src = await readFile(path.join(root, file), 'utf8');
+  const src = await readSource(file);
   if (!re.test(src)) errors.push(`${file}: embedded offer-list contract missing: ${label}`);
 }
 const productDetailOfferSource = await readFile(path.join(root, 'src/app/_erp/ProductDetail.tsx'), 'utf8');

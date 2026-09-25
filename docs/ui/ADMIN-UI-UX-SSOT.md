@@ -746,6 +746,35 @@ Desktop:
 - panel/grid/flex child는 intrinsic width 때문에 전체 workspace를 밀어내지 않도록 `min-width:0` 경계를 둔다.
 - 1440 이상이라고 정보 행 수를 임의로 늘리지 않는다.
 
+## 16-2. 상호작용·접근성 전수검사 — 2026-09-25
+
+Keyboard:
+- FilterSheet는 열릴 때 dialog 내부로 focus가 들어간다.
+- FilterSheet의 Tab/Shift+Tab은 dialog 내부에서 순환하고 Esc로 닫힌 뒤 trigger로 focus가 돌아간다.
+- DetailTabs는 roving `tabIndex`를 사용하고 **ArrowLeft / ArrowRight / Home / End**로 이동한다.
+- focus-visible은 기존 전역 규칙을 유지한다.
+
+Validation / async:
+- 서버 검증 오류 `.dz-errs`는 동적으로 생길 때 `role="alert"` / `aria-live="assertive"`로 안내한다.
+- pending write는 기존 `aria-busy`와 disabled 중복제출 방지를 유지한다.
+- disabled Primary는 가능한 경우 버튼 라벨 또는 바로 인접한 Notice가 막힌 이유를 설명해야 한다.
+
+Virtual keyboard / zoom:
+- Mobile focused control에는 sticky header/ActionBar를 피할 scroll-margin을 둔다.
+- Panel은 하단 ActionBar + safe-area만큼 scroll-padding을 둔다.
+- 약 320px CSS viewport(400% reflow에 대응하는 좁은 폭)에서는 Summary / form / money / settlement axis를 1열로 reflow한다.
+- ActionBar의 44px은 **minimum touch height**다. 긴 번역/확대에서는 문구가 wrap되며 버튼 높이가 늘어날 수 있다.
+
+Visible labels:
+- 업무 입력 필드는 visible label을 기본으로 한다.
+- 정산 SideStep의 청구월/계산서 날짜/사업자번호도 aria-label-only가 아니라 compact visible label을 사용한다.
+- 검색창은 현재 검색 아이콘 + 구체적 placeholder + accessible name을 사용한다. persistent visible text label 적용 여부는 검색 밀도와 함께 별도 SearchBox 공통화 때 검토한다.
+
+I18N / RTL:
+- 현재 루트는 `<html lang="ko">` 단일 런타임이며 실제 locale switch/RTL 경로가 없다.
+- 따라서 en-US/de-DE/ar-SA는 **현재 완료로 간주하지 않는다.**
+- 긴 문자열·reflow 안전성은 지금 보호하되, RTL/locale conformance receipt는 i18n runtime boundary가 생긴 뒤 실제 `lang/dir` 전환으로 검증한다.
+
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
 ## A. CSS cascade가 정본 역할을 하고 있음

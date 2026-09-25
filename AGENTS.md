@@ -1,6 +1,9 @@
 # freepass-admin — AI/Developer Rules
 
-## -1. UI DESIGN HARD LOCK — 2026-09-25
+## -1. UI DESIGN RECOVERY HOLD — 2026-09-26
+
+**중요:** 2026-09-25 HARD LOCK의 시각 기준선은 재검증 중이다. 실제 승인 UI 계보(`claude/erp-platform-ui-ux-hvfyfa`, PR #92)를 current main과 대조해 복구하기 전까지 현 main의 시각 결과를 최종 정본이라고 가정하지 않는다. 새 디자인 발명, PR #92/관련 UI 이력 삭제, 현행 시각을 기준으로 한 추가 polish는 금지한다.
+
 
 UI/UX 작업은 **반드시** 아래 순서로 시작한다.
 

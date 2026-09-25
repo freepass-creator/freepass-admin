@@ -9,6 +9,20 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({
 }[ch]!));
 const safeJson = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
 
+/**
+ * 전자서명 시각 — 봉인 문서에 찍히는 글자이므로 Node/ICU 버전에 맡기지 않는다.
+ * (Node 22 ICU 78.2 는 "PM 2:30", Node 24 ICU 78.3 은 "오후 2:30" 을 낸다.)
+ * Node 24 운영 출력과 같은 모양으로 KST(UTC+9, 서머타임 없음)를 직접 만든다.
+ */
+export function formatKstSignedAt(epochMs: number) {
+  const kst = new Date(Number(epochMs) + 9 * 60 * 60 * 1000);
+  const hour = kst.getUTCHours();
+  const ampm = hour < 12 ? '오전' : '오후';
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return kst.getUTCFullYear() + '. ' + (kst.getUTCMonth() + 1) + '. ' + kst.getUTCDate() + '. '
+    + ampm + ' ' + h12 + ':' + String(kst.getUTCMinutes()).padStart(2, '0');
+}
+
 export async function buildContractHtml(snapshot: EsignSnapshot, options: {
   submission?: EsignPrivateSubmission | null;
   signatureDataUrl?: string;
@@ -28,7 +42,7 @@ export async function buildContractHtml(snapshot: EsignSnapshot, options: {
       signer_name: options.submission.signerName ?? '',
       signer_role: options.submission.signerRole ?? '',
       emergency_contact: [options.submission.emergencyRelation, options.submission.emergencyName, options.submission.emergencyPhone].filter(Boolean).join(' · '),
-      esign_signed_at: new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(options.submission.submittedAt)),
+      esign_signed_at: formatKstSignedAt(options.submission.submittedAt),
       esign_consent_status: String(options.submission.consents.length) + '건 필수 동의 완료',
       esign_consent_summary: options.submission.consents.join(' · '),
       esign_seal_hash: options.sealHash ? options.sealHash.slice(0, 16) + '…' : '',

@@ -98,6 +98,9 @@ export type EsignSession = {
   sealHash?: string;
   documentSha256?: string;
   documentStoragePath?: string;
+  documentContentType?: string;
+  finalizationId?: string;
+  approvedBy?: string;
 };
 
 export type EsignPrivateSubmission = {

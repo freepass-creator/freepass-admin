@@ -2,7 +2,7 @@
  * PR #92 actual-route implementation is the visual authority.
  * Alternate historical themes and generated theme projections are not part of the current product.
  */
-/* 뿌리 틀 대신 — 규격 부품이 규격 글꼴 · 글자 · 색을 쓰게. ★맨 앞에 둔다(규격의 .erp-app 자리) — 뒤의 부품 규칙이 이긴다 */
+/* 규격 부품이 공통 글꼴 · 글자 · 색을 사용한다. */
 .erp-std { box-sizing: border-box; font-family: var(--erp-font-family); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-regular); font-variant-numeric: tabular-nums; color: var(--erp-color-text); }
 /* 규격 템플릿은 단추를 <button> 으로 쓴다. 관리자는 이동 단추를 <a> 로 쓰므로 링크 색이 단추 색을 덮지 않게 한다 */
 .erp-std a.erp-btn { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }

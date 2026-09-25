@@ -1204,5 +1204,34 @@
         ]
       }
     }
+  },
+  "materiality": {
+    "principle": "solid-commercial-erp",
+    "resting": {
+      "panel": "flat",
+      "card": "flat",
+      "tile": "flat",
+      "button": "flat",
+      "search": "flat",
+      "quickFilter": "flat"
+    },
+    "hierarchy": [
+      "surface",
+      "spacing",
+      "alignment",
+      "weight",
+      "color"
+    ],
+    "borderDefault": "none",
+    "shadowAllowedFor": [
+      "interactive-hover",
+      "focus",
+      "popup",
+      "sheet",
+      "modal"
+    ],
+    "selected": "tint+shallow-inset",
+    "selectedOuterElevation": false,
+    "rule": "Stability comes from consistent geometry and surface hierarchy, not decorative shadow or border."
   }
 }

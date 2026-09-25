@@ -56,6 +56,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
   let 걸음: React.ReactNode = null;
+  let 막힘안내: React.ReactNode = null;
   if (life) {
     const 청구축 = life.axis === '공급사';
     const stage = 청구축 ? r.claimStage : r.payStage;
@@ -137,7 +138,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     } else if (nextAction.kind === 'settlement') {
       주액션 = <Link className="primary" href={`/settlement?tab=${nextAction.tab}&focus=${encodeURIComponent(r.id)}`}>정산관리</Link>;
     } else {
-      주액션 = <button type="button" className="primary" disabled>다음 · {nextAction.label}</button>;
+      막힘안내 = <Notice tone="warn">현재 「{nextAction.label}」 문제를 먼저 해결해야 다음 단계로 진행할 수 있습니다.</Notice>;
+      주액션 = <button type="button" className="primary" disabled aria-describedby="intake-block-reason">다음 · {nextAction.label}</button>;
     }
     바 = (
       <ActionBar>
@@ -230,6 +232,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
           </div>
         )}
       </details>
+      {막힘안내 ? <div id="intake-block-reason">{막힘안내}</div> : null}
       {바}
     </>
   );

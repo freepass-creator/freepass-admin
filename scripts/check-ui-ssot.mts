@@ -190,6 +190,9 @@ const interactionExpected = [
   ['money validation live region', interactionFiles.moneyForm, /role="alert" aria-live="assertive"/],
   ['settlement validation live region', interactionFiles.lifeForms, /role="alert" aria-live="assertive"/],
   ['settlement compact visible labels', interactionFiles.lifeForms, /className="dz-side-field"/],
+  ['settlement write actions accept disabled state', interactionFiles.lifeForms, /disabled = false/],
+  ['paid-round validation live region', await readFile(path.join(root, 'src/app/intake/PaidRounds.tsx'), 'utf8'), /role="alert" aria-live="assertive"/],
+  ['progress accepts read-only state', await readFile(path.join(root, 'src/app/intake/[code]/Progress.tsx'), 'utf8'), /disabled = false/],
 ] as const;
 for (const [label, src, re] of interactionExpected) {
   if (!re.test(src)) errors.push(`accessibility regression: missing ${label}`);
@@ -208,6 +211,9 @@ const currentPassExpected = [
   ['intake save disabled reason binding', currentPassFiles.intakeForm, /aria-describedby=\{disabled \? 'intake-write-disabled'/],
   ['intake blocked action reason', currentPassFiles.intakeDetail, /intake-block-reason/],
   ['settlement issue blocked reason', currentPassFiles.settlementPage, /issue-block-reason/],
+  ['intake read-only state propagation', currentPassFiles.intakeDetail, /const canWrite = writeEnabled\(\)/],
+  ['settlement read-only state propagation', currentPassFiles.settlementPage, /const canWrite = writeEnabled\(\)/],
+  ['settlement read-only disabled reason', currentPassFiles.settlementPage, /settlement-write-disabled/],
 ] as const;
 
 for (const [label, src, re] of currentPassExpected) {

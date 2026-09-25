@@ -12,6 +12,26 @@
  */
 import type { SettlementRow } from './types';
 
+export type TerminationClawbackReview = 'NONE' | 'PENDING' | 'RECORDED';
+
+/**
+ * 계약해지는 «환수 확정»이 아니라 환수 검토를 시작시키는 사실이다.
+ * - 해지 아님: NONE
+ * - 해지 + 이 접수에 연결된 환수 없음: PENDING
+ * - 해지 + 이 접수(code)에 연결된 환수 존재: RECORDED
+ *
+ * 금액/적용 여부는 공급사·계약 조건마다 달라 여기서 계산하지 않는다.
+ * legacy 환수처럼 code가 없는 줄은 어느 재계약 건의 환수인지 확정할 수 없으므로
+ * 자동으로 RECORDED 처리하지 않는다.
+ */
+export function terminationClawbackReview(
+  r: Pick<SettlementRow, 'id' | 'contractTerminatedAt'>,
+  clawbacks: readonly { code?: string }[],
+): TerminationClawbackReview {
+  if (!r.contractTerminatedAt) return 'NONE';
+  return clawbacks.some((c) => String(c.code ?? '').trim() === r.id) ? 'RECORDED' : 'PENDING';
+}
+
 export interface ClawbackInput { at: string; supplierAmt: number | null; agentAmt: number | null; reason: string }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;

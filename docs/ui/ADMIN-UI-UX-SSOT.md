@@ -341,7 +341,7 @@ Mobile:
 
 ---
 
-## 8-4. AI Core List Presentation
+## 8-5. AI Core List Presentation
 
 목록 표현 방식의 선택은 FreePass Admin이 새로 정하지 않는다.
 AI Core `data.list-presentation`을 따른다.

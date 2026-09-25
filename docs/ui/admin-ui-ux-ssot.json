@@ -1277,10 +1277,11 @@
     "amountDisplay": {
       "list": "compact-ten-thousand-won-allowed",
       "examples": [
-        "67만원/월",
-        "보증금 500만"
+        "월 67만 원",
+        "보증 500만 원"
       ],
-      "detail": "exact-won-preferred"
+      "detail": "exact-won-preferred",
+      "listPattern": "term · 월 N만 원 · 보증 N만 원"
     },
     "alignment": {
       "text": "left",

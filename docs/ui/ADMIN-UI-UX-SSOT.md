@@ -2667,3 +2667,44 @@ QuickFilter / Seg / compact toggle:
 - line-free가 기본
 - 같은 정보를 spacing과 surface로 구분할 수 있으면 선을 쓰지 않는다
 - generated/legacy CSS가 decorative divider를 되살리면 Visual QA FAIL
+
+
+# 59. Compact signal hierarchy
+
+작은 정보 신호는 작게 유지한다.
+
+## QuickFilter
+
+- selection control
+- pill 허용
+- mobile visual 34px
+- selected = brand solid + white
+
+## Badge / Status
+
+- signal only
+- visual height: 약 20px
+- padding: 3x8 mobile / 1x7 desktop
+- radius: 6px
+- 한 Card에 대표 상태 Badge 1개
+- hover / elevation 없음
+
+## Tag
+
+- Badge보다 한 단계 작음
+- visual height: 약 18px
+- radius: 4px
+
+## Icon
+
+- desktop status/decorative: 14~16px
+- desktop icon-only action: glyph 18 / hit 36
+- mobile icon-only action: glyph 20 / hit 44
+- bottom nav: 24px
+
+## 금지
+
+- 모든 작은 신호를 pill로 만들기
+- Badge를 QuickFilter와 같은 크기로 만들기
+- 한 카드에 상태 Badge 여러 개 반복
+- 상태 아이콘에 pointer/elevation 부여

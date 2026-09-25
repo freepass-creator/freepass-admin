@@ -135,7 +135,7 @@ describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나
 });
 
 
-test('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () => {
+it('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () => {
   const { row } = toSettlementRow({
     code:'stl_term',
     contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),

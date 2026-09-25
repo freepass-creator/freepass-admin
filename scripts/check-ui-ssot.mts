@@ -675,7 +675,6 @@ const listAmountLanguageBaseline = [
   ['src/app/_erp/ProductsScreen.tsx', /월 \$\{manWon\(offer\.monthlyRent\)\} 원/, 'product monthly rent may be compact'],
   ['src/app/_erp/Workspace.tsx', /월 \$\{manWon\(r\.rent\)\} 원/, 'intake monthly rent may be compact'],
   ['src/app/_erp/Workspace.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'intake fees stay exact'],
-  ['src/app/_erp/Workspace.tsx', /남는[\s\S]*won0\(marginOf\(r, now\)\)/, 'performance margin stays exact'],
   ['src/app/_erp/SettlementScreen.tsx', /정산 \$\{won0\(g\.net\)\}원/, 'settlement total stays exact'],
   ['src/app/_erp/SettlementScreen.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'settlement line fees stay exact'],
   ['src/app/_erp/EsignScreen.tsx', /월 \$\{manWon\(c\.rent\)\} 원/, 'e-sign monthly rent may be compact'],
@@ -686,18 +685,23 @@ for (const [file, re, label] of listAmountLanguageBaseline) {
 }
 
 const cardInformationMatrixBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증/, 'product line 3 term/deposit'],
-  ['src/app/_erp/ProductsScreen.tsx', /lines=\{\[txt\(p\.supplierName \?\? p\.supplierId\)\]\}/, 'product line 4 supplier'],
-  ['src/app/_erp/Workspace.tsx', /lines=\{\[\s*`\$\{txt\(r\.supplier\)\} · \$\{txt\(r\.channel\)\} · \$\{txt\(r\.agent\)\}`,[\s\S]*?`수수료 청구/, 'intake lines 4-5 operations and fees'],
-  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group line 2 document progress'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`완료 \$\{g\.completed\}\/\$\{g\.lines\.length\}`\}/, 'settlement group line 3 completion'],
-  ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign line 3 term/state'],
-  ['src/app/_erp/EsignScreen.tsx', /lines=\{\[txt\(c\.code\)\]\}/, 'e-sign line 4 contract code'],
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product third line term/deposit'],
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product primary rent value'],
+  ['src/app/_erp/Workspace.tsx', /meta=\{`\$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance third line product/term'],
+  ['src/app/_erp/Workspace.tsx', /lines=\{\[\s*`수수료 청구/, 'intake/performance exact fee line'],
+  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\} · 완료 \$\{g\.completed\}\/\$\{g\.lines\.length\}`\}/, 'settlement group compact progress line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`\$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'settlement line product/term'],
+  ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign third line term/state'],
 ] as const;
 for (const [file, re, label] of cardInformationMatrixBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
-  if (!re.test(src)) errors.push(`${file}: card information matrix mismatch: ${label}`);
+  if (!re.test(src)) errors.push(`${file}: scan-first card matrix mismatch: ${label}`);
 }
+
+// Profit/margin is detail-owned by default and must not be promoted into list-card amount text.
+const workspaceForListPolicy = await readFile(path.join(root, 'src/app/_erp/Workspace.tsx'), 'utf8');
+if (/amount=\{`남는 /.test(workspaceForListPolicy)) errors.push('Workspace.tsx: profit/margin must not be a default list-card amount');
+
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };

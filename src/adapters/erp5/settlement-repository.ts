@@ -6,6 +6,7 @@ import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, sameClawbackPayload, type ClawbackInput } from '../../domain/settlement/clawback';
+import { cancellationClawbackCompletionPatch, validateCancellationClawbackInput } from '../../domain/settlement/cancellation-clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
@@ -518,9 +519,19 @@ export class Erp5SettlementRepository {
       if (legacyDoc.exists) {
         return { ok: false as const, error: `레거시 환수(${legacyRef.id})가 이미 있어 계약을 안전하게 구분할 수 없습니다 — 기존 환수를 확인한 뒤 처리합니다` };
       }
+      const cancellationError = validateCancellationClawbackInput(row, input);
+      if (cancellationError) return { ok: false as const, error: cancellationError };
+
+      const completionPatch = cancellationClawbackCompletionPatch(row, input);
       tx.create(cref, r.doc);
+      if (Object.keys(completionPatch).length) {
+        tx.update(ref, { ...completionPatch, updatedAt: now, stateAt: new Date(now).toISOString() });
+      }
       tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
-        { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
+        { [audId()]: {
+          at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}`,
+          ...(Object.keys(completionPatch).length ? { contractCancellationFollowup: completionPatch } : {}),
+        } }, { merge: true });
       return { ok: true as const, id: r.id, created: true };
     });
   }

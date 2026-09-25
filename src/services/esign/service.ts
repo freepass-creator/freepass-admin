@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { buildConsentProfile } from '../../domain/esign/consents';
 import { allowsInsuranceSide, findContractKind, type InsuranceSide } from '../../domain/esign/contract-kind';
 import {
-  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, applySignerRole, mergeRequiredDocuments, normalizeRequiredDocuments,
+  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, allowedUploadKinds, applySignerRole, mergeRequiredDocuments, normalizeRequiredDocuments,
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
 import { sha256, signedSnapshot, stableJson } from '../../domain/esign/snapshot';
@@ -378,6 +378,11 @@ export class EsignService {
     return { session, publicUrl };
   }
 
+  /** 제출 전 단계의 링크는 만료되면 더 쓰지 못한다(열람 publicView · 제출 submit 과 같은 기준) */
+  private assertNotExpired(session: EsignSession) {
+    if (Number(session.expiresAt || 0) < Date.now()) throw new Error('만료된 전자계약 링크입니다.');
+  }
+
   private async byToken(token: string) {
     const session = await this.repo.findSessionByTokenHash(this.tokenHash(token));
     if (!session) throw new Error('전자계약 링크를 찾을 수 없습니다.');
@@ -443,6 +448,7 @@ export class EsignService {
     if (!['sent', 'opened', 'in_progress', 'rejected'].includes(session.status)) {
       throw new Error('현재 링크에서는 작성내용을 저장할 수 없습니다.');
     }
+    this.assertNotExpired(session);
     const max = (key: string, n: number) => S(payload[key]).slice(0, n);
     const stepRaw = Number(payload.step);
     const consentRaw = Array.isArray(payload.consents) ? payload.consents.map(S).filter((x) => session.snapshot.consentProfile.requiredKeys.includes(x)) : [];
@@ -481,6 +487,7 @@ export class EsignService {
     if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) {
       throw new Error('현재 링크에서는 진행상태를 바꿀 수 없습니다.');
     }
+    this.assertNotExpired(session);
     const progress = { ...(session.progress || {}), [step]: now };
     await this.repo.updateSession(session.id, { status: 'in_progress', progress });
     await this.repo.updateContract(session.contractId, { sign_status: '진행중', esign_progress: Object.keys(progress).length });
@@ -490,13 +497,16 @@ export class EsignService {
   async upload(token: string, kind: string, name: string, contentType: string, bytes: Uint8Array) {
     const session = await this.byToken(token);
     if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) throw new Error('지금은 파일을 올릴 수 없습니다.');
+    this.assertNotExpired(session);
+    if (!allowedUploadKinds(session.snapshot.requiredDocuments).has(kind)) throw new Error('이 계약에서 받지 않는 파일 종류입니다.');
     if (bytes.byteLength <= 0 || bytes.byteLength > 10 * 1024 * 1024) throw new Error('파일은 10MB 이하만 올릴 수 있습니다.');
     if (!/^image\/(jpeg|png|webp)$/.test(contentType) && contentType !== 'application/pdf') throw new Error('JPG·PNG·WEBP·PDF만 올릴 수 있습니다.');
     if (!uploadMagicOk(contentType, bytes)) throw new Error('파일 형식과 실제 내용이 맞지 않습니다.');
     const safe = kind.replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 80);
     const ext = contentType === 'application/pdf' ? 'pdf' : contentType.split('/')[1] || 'bin';
+    // 종류마다 자리가 하나다 — 다시 올리면 덮어쓴다. 무작위 이름이면 다시 올릴 때마다 개인자료 사본이 쌓인다.
     const asset = await this.assets.put(
-      'esign-private/' + session.contractCode + '/' + session.id + '/' + safe + '-' + randomBytes(4).toString('hex') + '.' + ext,
+      'esign-private/' + session.contractCode + '/' + session.id + '/' + safe + '.' + ext,
       bytes,
       contentType,
     );

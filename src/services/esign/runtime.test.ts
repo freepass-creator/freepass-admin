@@ -545,3 +545,39 @@ test('approve refuses to seal when contract terms changed after issue', async ()
   assert.equal(renderer.calls,0);
   assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
 });
+
+test('public upload accepts only this contract\'s kinds and overwrites instead of piling up copies', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  const jpg=new Uint8Array([0xff,0xd8,0xff,0xd9]);
+
+  for(const kind of ['junk','support:not_in_this_contract','id_card2','../id_card'])
+    await assert.rejects(()=>svc.upload(token,kind,'x.jpg','image/jpeg',jpg),/받지 않는 파일 종류/);
+
+  const first=await svc.upload(token,'id_card','a.jpg','image/jpeg',jpg);
+  const second=await svc.upload(token,'id_card','b.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0x00,0xd9]));
+  assert.equal(first.path,second.path);
+  const idCopies=[...assets.m.keys()].filter(p=>p.includes('/'+issued.session.id+'/id_card'));
+  assert.equal(idCopies.length,1);
+
+  const doc=issued.session.snapshot.requiredDocuments[0]!;
+  await svc.upload(token,'support:'+doc.key,'d.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
+  // Delegated-signer documents are allowed even if not in the base list.
+  await svc.upload(token,'support:delegation_letter','l.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n')));
+});
+
+test('an expired link can no longer upload, save a draft or move progress', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+  repo.sessions.get(issued.session.id)!.expiresAt=Date.now()-1;
+  await assert.rejects(()=>svc.upload(token,'id_card','a.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9])),/만료/);
+  await assert.rejects(()=>svc.saveDraft(token,{customer_address:'서울'}),/만료/);
+  await assert.rejects(()=>svc.progress(token,'summary'),/만료/);
+  assert.equal([...assets.m.keys()].length,0);
+});

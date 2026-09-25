@@ -58,3 +58,12 @@ export function applySignerRole(documents: EsignRequiredDocument[], role: unknow
     { key:'employment_certificate', label:'재직증명서', note:'서명자의 재직 확인 서류', required:true },
   ]);
 }
+
+/**
+ * 고객 링크로 올릴 수 있는 파일 종류 — 신분증 · 얼굴 · 이 계약의 서류(위임 서명 서류 포함)뿐.
+ * ★아무 문자열이나 받으면 링크 하나로 저장소와 개인자료 문서를 끝없이 부풀릴 수 있다.
+ */
+export function allowedUploadKinds(documents: EsignRequiredDocument[]): Set<string> {
+  const keys = applySignerRole(documents, DELEGATED_SIGNER_ROLE).map((d) => 'support:' + d.key);
+  return new Set(['id_card', 'selfie', ...keys]);
+}

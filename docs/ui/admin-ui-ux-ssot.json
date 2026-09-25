@@ -1411,5 +1411,33 @@
     "duplicateStatusBadgeWhenStatusTile": false,
     "alignment": "center",
     "rule": "The 64px visual tile and 3-line text block share the same height and geometry."
+  },
+  "crossShellListParity": {
+    "shells": [
+      "web-rowcard",
+      "mobile-listrow"
+    ],
+    "slots": [
+      "visual",
+      "main-left",
+      "main-right",
+      "key",
+      "support"
+    ],
+    "visualPx": 64,
+    "representativeValue": {
+      "product": "compact monthly rent",
+      "intake": "compact monthly rent",
+      "performance": null,
+      "claim": "exact claim fee",
+      "payout": "exact pay fee",
+      "settlementGroup": "exact settlement amount",
+      "esign": "compact monthly rent"
+    },
+    "oppositeAxisSupport": {
+      "claim": "exact pay fee",
+      "payout": "exact claim fee"
+    },
+    "rule": "Web and mobile must preserve the same Main/Key/Support meaning for the same business list."
   }
 }

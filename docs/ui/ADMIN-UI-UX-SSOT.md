@@ -730,11 +730,14 @@ Mobile:
 - Sticky list header가 필터 줄바꿈 때문에 과도하게 높아지지 않아야 한다.
 - 고객명/차량명 같은 detail identity는 최대 2줄까지 허용하고, 그 외 보조정보는 한 줄 ellipsis를 우선한다.
 - 상태 Tag는 identity 텍스트를 밀어내지 않도록 별도 고정 영역으로 둔다.
+- 상품찾기 목록은 **고정 400px track을 만들지 않는다.** 360/390/412에서는 한 열 `minmax(0,1fr)`로 수축한다.
 - ActionBar 3:7 비율과 safe-area를 유지한다.
 
 Desktop:
 - 1280에서도 panel 간 gap 12와 panel padding 22를 먼저 보존한다.
+- 상품찾기 2/3 목록은 1280에서도 2개 카드가 설 수 있도록 카드 최소폭을 **360px** 기준으로 잡는다.
 - 긴 identity/금액 때문에 다른 panel 폭이 밀리지 않게 각 panel 내부에서 overflow를 해결한다.
+- panel/grid/flex child는 intrinsic width 때문에 전체 workspace를 밀어내지 않도록 `min-width:0` 경계를 둔다.
 - 1440 이상이라고 정보 행 수를 임의로 늘리지 않는다.
 
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상

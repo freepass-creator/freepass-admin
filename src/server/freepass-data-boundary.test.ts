@@ -27,11 +27,21 @@ test('one FreePass Data gateway composes catalog and workflow persistence withou
   assert.doesNotMatch(data, /firebase-admin|new EsignService|from ['"][^'"]*services\//);
 });
 
-test('server helpers cannot independently construct or reach ERP5 persistence', () => {
-  const allowed = new Set(['src/server/freepass-data.ts']);
+test('server helpers cannot independently reach operational persistence; identity keeps its approved boundary', () => {
+  // Owner's 2026-09-18 decision: ERP4 Auth + its user-role directory are the login authority.
+  // Identity is not ERP5 operational data and must not be moved into the catalog/workflow database.
+  const allowed = new Set(['src/server/freepass-data.ts', 'src/server/auth.ts']);
   const violations = sources('src/server').filter((path) => !allowed.has(path)
     && /(?:from|import\()\s*['"][^'"]*(?:adapters\/erp5|firebase-admin|firebase\/database)/.test(readFileSync(path, 'utf8')));
   assert.deepEqual(violations, []);
+  const identity = readFileSync('src/server/auth.ts', 'utf8');
+  assert.doesNotMatch(identity, /from ['"][^'"]*(?:adapters\/erp5|firebase\/database)/);
+  assert.match(identity, /getFirestore\(erp4App\(\)\)/);
+  assert.doesNotMatch(identity, /getFirestore\((?!erp4App\(\)\))/);
+  assert.doesNotMatch(identity, /\.collection\((?!'user'\))/);
+  const collections = [...identity.matchAll(/\.collection\('([^']+)'\)/g)].map(match => match[1]);
+  assert.deepEqual([...new Set(collections)], ['user']);
+  assert.match(identity, /AUTH_PROJECT_ID \?\? 'freepasserp3'/);
 });
 
 test('deprecated ERP5 alias preserves gateway instance identity instead of creating a second ledger', () => {

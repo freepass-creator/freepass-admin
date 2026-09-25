@@ -1525,5 +1525,29 @@
       "actionBinding": "selected offer id drives intake action"
     },
     "rule": "Embedded selectable lists do not change the parent surface type."
+  },
+  "listCardHorizontalDistribution": {
+    "web": {
+      "visualPx": 64,
+      "body": "1fr",
+      "primaryValue": "clamp(108px,24%,136px)",
+      "gapPx": 12
+    },
+    "mobile": {
+      "visualPx": 64,
+      "body": "1fr",
+      "primaryValue": "clamp(92px,30vw,124px)",
+      "narrowPrimaryValuePx": [
+        88,
+        112
+      ],
+      "gapPx": 10
+    },
+    "overflowPriority": [
+      "identity-yields-first",
+      "primary-value-preserved"
+    ],
+    "rightEdgeAligned": true,
+    "rule": "Fill available width with stable visual/body/value columns."
   }
 }

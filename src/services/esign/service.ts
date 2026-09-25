@@ -712,8 +712,8 @@ export class EsignService {
     }
   }
 
-  async cancelSignedContract(contractId: string, reason: string, actor = 'admin') {
-    const result = await this.repo.cancelSignedContract(contractId, reason, actor);
+  async cancelContract(contractId: string, reason: string, actor = 'admin') {
+    const result = await this.repo.cancelContract(contractId, reason, actor);
     return { ok: true as const, ...result };
   }
 

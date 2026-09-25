@@ -688,9 +688,9 @@ const cardInformationMatrixBaseline = [
   ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product third line term/deposit'],
   ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product primary rent value'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`\$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance third line product/term'],
-  ['src/app/_erp/Workspace.tsx', /lines=\{\[\s*`수수료 청구/, 'intake/performance exact fee line'],
-  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\} · 완료 \$\{g\.completed\}\/\$\{g\.lines\.length\}`\}/, 'settlement group compact progress line'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`\$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'settlement line product/term'],
+  ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구/, 'intake/performance support fee line'],
+  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key progress line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement line opposite-axis support'],
   ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign third line term/state'],
 ] as const;
 for (const [file, re, label] of cardInformationMatrixBaseline) {
@@ -726,6 +726,28 @@ const settlementFeeAxisBaseline = [
 const settlementUiSource = await readFile(path.join(root, 'src/app/_erp/SettlementScreen.tsx'), 'utf8');
 for (const [re, label] of settlementFeeAxisBaseline) {
   if (!re.test(settlementUiSource)) errors.push(`SettlementScreen.tsx: settlement fee axis mismatch: ${label}`);
+}
+
+const strictThreeLineNoEscapeBaseline = [
+  ['src/app/_erp/parts.tsx', /data-line-role="main"/, 'main slot exists'],
+  ['src/app/_erp/parts.tsx', /data-line-role="key"/, 'key slot exists'],
+  ['src/app/_erp/parts.tsx', /data-line-role="support"/, 'support slot exists'],
+  ['src/app/_design/ListRow.tsx', /data-line-role="main"/, 'mobile main slot exists'],
+  ['src/app/_design/ListRow.tsx', /data-line-role="key"/, 'mobile key slot exists'],
+  ['src/app/_design/ListRow.tsx', /data-line-role="support"/, 'mobile support slot exists'],
+  ['scripts/visual-qa.cjs', /list card must be exactly Main\/Key\/Support/, 'visual QA exact three-line guard'],
+] as const;
+for (const [file, re, label] of strictThreeLineNoEscapeBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: strict three-line card contract missing: ${label}`);
+}
+const rowCardSource = await readFile(path.join(root, 'src/app/_erp/parts.tsx'), 'utf8');
+if (/lines\?:\s*ReactNode\[\]/.test(rowCardSource) || /erp-rowcard-line/.test(rowCardSource)) {
+  errors.push('RowCard: arbitrary fourth-line escape hatch must not exist');
+}
+for (const file of ['src/app/_erp/ProductsScreen.tsx','src/app/_erp/Workspace.tsx','src/app/_erp/SettlementScreen.tsx','src/app/_erp/EsignScreen.tsx']) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (/\blines=\{/.test(src)) errors.push(`${file}: list cards must not add a fourth information line`);
 }
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {

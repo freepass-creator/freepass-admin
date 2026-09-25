@@ -242,6 +242,14 @@ async function inspect(page) {
           support: sample('.erp-rowcard-sub, .erp-rowcard-meta, .panel-head > .count, .dz-muted, .erp-badge, .dz-badge'),
         };
       })(),
+      cardRoleGrammar: (() => {
+        const cards = [...document.querySelectorAll('.erp-rowcard, .dz-row')].filter(visible).slice(0, 40);
+        return cards.map((card) => ({
+          className: typeof card.className === 'string' ? card.className : '',
+          roles: [...card.querySelectorAll('[data-line-role]')].filter(visible).map((el) => el.getAttribute('data-line-role')),
+          text: (card.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120),
+        }));
+      })(),
       cardLineSamples: (() => {
         const sample = (selector, limit = 30) =>
           [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
@@ -611,6 +619,14 @@ async function runInteractiveStates(page, c) {
           expectRange(info.fontSamples.primaryValues, 13, 15, 'desktop primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
+        }
+      }
+      if (Array.isArray(info.cardRoleGrammar)) {
+        for (const card of info.cardRoleGrammar) {
+          const roles = card.roles || [];
+          if (roles.length !== 3 || roles[0] !== 'main' || roles[1] !== 'key' || roles[2] !== 'support') {
+            problems.push(`list card must be exactly Main/Key/Support: ${JSON.stringify(card)}`);
+          }
         }
       }
       if (info.cardLineSamples) {

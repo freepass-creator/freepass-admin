@@ -695,6 +695,28 @@ raw `.panel-head / .dz-bar / .dz-empty / .summary-grid` 마크업 재도입은 `
 
 ---
 
+## 15-1. UX 상태 전수검사 — 2026-09-25
+
+상태는 아래 의미를 섞지 않는다.
+
+- **loading**: 데이터를 아직 받는 중. 화면 구조는 유지하고 `aria-busy` + 짧은 skeleton/support text를 사용한다.
+- **empty**: 읽기는 성공했지만 결과가 0건. `EmptyState`.
+- **partial error**: 일부 데이터만 실패했고 나머지 업무는 가능. 해당 Panel 안의 `Notice tone="warn"`으로 표시하고 사용 가능한 UI는 유지한다.
+- **fatal error**: 화면 핵심 데이터 자체를 읽지 못함. route `error.tsx`에서 오류와 **다시 시도** Primary를 제공한다.
+- **disabled**: 행동 자체가 현재 불가능. disabled control 가까이에 이유를 보이고 `aria-describedby`로 연결한다.
+- **busy**: write/request 진행 중. `aria-busy` + 중복 조작 방지 + 진행형 버튼 라벨을 함께 사용한다.
+- **success**: authoritative completion 뒤에만 표시. `Notice tone="ok"`는 polite live region으로 안내한다.
+- **retry**: 실패 뒤 동일 작업을 다시 실행할 수 있을 때만 제공한다. 시작을 성공처럼 표현하지 않는다.
+
+현재 적용:
+- products / intake / settlement / esign에 공통 `loading.tsx` + retry 가능한 `error.tsx`
+- 상품 원장 전체 실패는 fatal error boundary
+- 접수목록만 실패하는 경우는 partial warning으로 남겨 상품/접수 다른 기능을 계속 사용
+- 정산/전자계약 핵심 목록 실패는 fatal error boundary
+- 조회 전용일 때 `접수 저장`은 실제 disabled이며 이유와 연결
+- 정산 문서 발행 disabled는 `planInvoice`의 막힌 이유와 연결
+- 접수 상세의 blocked Primary는 막힘 사유 Notice와 연결
+
 # 16. Responsive hierarchy
 
 Mobile은 PC를 축소하지 않는다.

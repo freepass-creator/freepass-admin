@@ -82,6 +82,28 @@ export interface IssuedInvoice {
   response?: { state: '확인' | '이의'; at: number; memo?: string; codes?: string[] };
 }
 
+export function nextInvoiceRevision(existing: IssuedInvoice | null): { revision: number; history: InvoiceRevision[] } {
+  if (!existing) return { revision: 1, history: [] };
+  const previousRevision = existing.revision ?? 1;
+  return {
+    revision: previousRevision + 1,
+    history: [
+      ...(existing.history ?? []),
+      {
+        revision: previousRevision,
+        supply: existing.supply,
+        vat: existing.vat,
+        total: existing.total,
+        lines: existing.lines,
+        clawback: existing.clawback ?? 0,
+        issuedAt: existing.issuedAt,
+        snapshot: existing.snapshot,
+        response: existing.response ?? null,
+      },
+    ],
+  };
+}
+
 /** 발행 뒤 원장이 바뀌었나 — ★조용히 다른 금액을 인쇄하지 않는다 */
 export function driftOf(issued: IssuedInvoice | null, now: { supply: number; vat: number; lines: number }): string | null {
   if (!issued) return null;

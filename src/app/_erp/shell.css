@@ -1558,7 +1558,7 @@
   }
 
   .erp-std .erp-panel {
-    box-shadow: var(--fp-elevation-base);
+    box-shadow: none;
   }
 
   .erp-std :is(.erp-filter-panel,.dz-fs-sheet) {
@@ -1710,5 +1710,24 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Solid commercial ERP materiality
+ * 기본 화면은 뜨지 않는다. Canvas → Panel → Component의 surface 차이와
+ * 정렬/간격으로 구조를 만들고, shadow는 hover/floating에만 제한한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard,.erp-btn,.erp-search,.erp-facet-opt) {
+    box-shadow: none;
+  }
+
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard) {
+    border-color: transparent;
+  }
+
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard,.erp-btn,.erp-search,.erp-facet-opt) {
+    background-clip: padding-box;
   }
 }

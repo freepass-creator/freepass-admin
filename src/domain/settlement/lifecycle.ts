@@ -94,7 +94,12 @@ export function planInvoice(
   | { ok: false; error: string } {
   if (!/^\d{4}-\d{2}$/.test(month)) return { ok: false, error: '청구월이 정해진 달에서만 발행합니다 — 「청구월 미정」 줄은 먼저 달을 정합니다' };
   const live = lines.filter((l) => !(axis === '공급사' && l.row.progress.billHold));
-  if (!live.length) return { ok: false, error: '발행할 줄이 없습니다' };
+  const relevantClawbacks = clawbacks.filter((c) =>
+    c.month === month && (axis === '공급사'
+      ? c.supplier === party && c.supplierAmt > 0
+      : c.channel === party && c.agentAmt > 0),
+  );
+  if (!live.length && !relevantClawbacks.length) return { ok: false, error: '발행할 줄이 없습니다' };
   const unknown = live.filter((l) => l.amount === null);
   if (unknown.length) return { ok: false, error: `금액 모름 ${unknown.length}줄 — 금액을 먼저 정해야 발행합니다` };
   const corr = live.filter((l) => (axis === '공급사' ? l.row.claimStage : l.row.payStage) === '정정');
@@ -111,10 +116,8 @@ export function planInvoice(
   for (const l of live) { const m = invoiceMoneyOf(l.amount ?? 0, l.row.money.vatIncluded); supply += m.net; vat += m.vat; }
   /* 환수 — 공급가로 적힌 값에 부가세를 붙여 뺀다 (erp4 clawMoneyOf) */
   let clawback = 0;
-  for (const c of clawbacks) {
-    if (c.month !== month) continue;
-    const amt = axis === '공급사' ? (c.supplier === party ? c.supplierAmt : 0) : (c.channel === party ? c.agentAmt : 0);
-    if (!amt) continue;
+  for (const c of relevantClawbacks) {
+    const amt = axis === '공급사' ? c.supplierAmt : c.agentAmt;
     clawback += amt; supply -= amt; vat -= Math.round(amt * VAT);
   }
   const day = new Date(now + 9 * 3600_000).toISOString().slice(0, 10);

@@ -1300,8 +1300,7 @@
       "fee",
       "claim",
       "payout",
-      "settlement",
-      "margin"
+      "settlement"
     ],
     "patterns": {
       "monthlyRent": "월 N만 원",
@@ -1314,71 +1313,67 @@
     },
     "detailUsesExactWon": true,
     "displayOnly": true,
-    "rule": "Only rent and deposit may be compacted in lists; fee-derived money stays exact everywhere."
+    "rule": "Rent and deposit may be compacted; fee-derived transactional money stays exact when shown. Profit/margin belongs in detail by default.",
+    "profitOrMargin": "not-default-list-field"
   },
   "cardInformationMatrix": {
+    "principle": "scan-identify-select; detail owns completeness",
+    "preferredLineRange": "3-4",
     "product": {
-      "standardLines": 4,
+      "standardLines": 3,
       "lines": [
         "vehicle identity + status | monthly rent compact",
         "plate + product kind",
-        "term + deposit compact",
-        "supplier"
-      ],
-      "optional": [
-        "year",
-        "mileage",
-        "color"
+        "term + deposit compact"
       ]
     },
     "intake": {
-      "standardLines": 5,
+      "standardLines": 4,
       "lines": [
         "customer + state | monthly rent compact",
         "plate + model",
-        "product + term + deposit compact",
-        "supplier + channel + agent",
+        "product + term",
         "exact claim fee + exact pay fee"
       ]
     },
     "performance": {
-      "standardLines": 5,
+      "standardLines": 4,
       "lines": [
-        "customer + state | exact margin",
+        "customer + state",
         "plate + model",
-        "product + term + payment",
-        "exact claim fee + exact pay fee",
-        "supplier + channel"
+        "product + term",
+        "exact claim fee + exact pay fee"
+      ],
+      "excludedByDefault": [
+        "profit",
+        "margin"
       ]
     },
     "settlementGroup": {
-      "standardLines": 3,
+      "standardLines": 2,
       "conditionalExtraLine": "unknown/broken/clawback issue",
       "lines": [
         "party + state | exact settlement amount",
-        "document progress",
-        "completion"
+        "document progress + completion"
       ]
     },
     "settlementLine": {
-      "standardLines": 5,
+      "standardLines": 4,
       "lines": [
         "customer + stage | exact claim/pay amount",
         "plate + model",
         "product + term",
-        "payment/broken state",
         "exact claim fee + exact pay fee"
       ]
     },
     "esign": {
-      "standardLines": 4,
+      "standardLines": 3,
       "lines": [
         "customer + sign state | monthly rent compact",
         "plate + vehicle",
-        "term + contract state",
-        "contract code"
+        "term + contract state"
       ]
     },
-    "rule": "Card type owns its line roles. Global UI owns rhythm/alignment, not one universal line count."
+    "rule": "Add a list line only when it materially helps identify or select the target before opening detail."
   }
 }

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { getStorage } from 'firebase-admin/storage';
+import type { DocumentSnapshot } from 'firebase-admin/firestore';
 import { erp5, erp5App, ERP5_PROJECT_ID } from './firestore';
 import { WriteDisabledError, writeEnabled } from './settlement-repository';
 import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
@@ -166,7 +167,7 @@ export class Erp5EsignRepository implements EsignRepository {
       if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
       const contractRaw=contractDoc.data() as Record<string,unknown>;
       const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
-      let intakeDoc: Awaited<ReturnType<typeof tx.get>> | null=null;
+      let intakeDoc: DocumentSnapshot | null=null;
       if(sourceIntakeId){
         intakeDoc=await tx.get(db.collection(INTAKES).doc(sourceIntakeId));
         if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');

@@ -2,7 +2,7 @@ import { esign } from '../../../../../../server/esign';
 import { currentAdmin, requireAdmin } from '../../../../../../server/require-admin';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 export async function POST(request: Request, { params }: { params: Promise<{ contractId: string }> }) {
   const denied = await requireAdmin();

@@ -248,3 +248,22 @@ test('esign finalization fails closed when PDF renderer is unavailable', async (
   await assert.rejects(()=>svc.approve('c1','finalize_1234567890abcdef','tester'),/PDF 생성기/);
   assert.equal(repo.contract.get('c1')?.sign_status,undefined);
 });
+
+
+test('esign finalization blocks concurrent retry with the same finalization id', async () => {
+  const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
+  repo.contract.set('c1',contract());
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const issued=await svc.issue('c1','tester');
+  const session=await repo.getCurrentSession('c1');
+  assert.ok(session);
+  session!.status='approving';
+  session!.approvingAt=Date.now();
+  session!.finalizationId='finalize_1234567890abcdef';
+
+  await assert.rejects(
+    ()=>svc.approve('c1','finalize_1234567890abcdef','tester'),
+    /같은 승인 요청이 처리 중/,
+  );
+  assert.equal(renderer.calls,0);
+});

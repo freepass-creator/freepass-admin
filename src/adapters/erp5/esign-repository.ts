@@ -150,6 +150,44 @@ export class Erp5EsignRepository implements EsignRepository {
     });
   }
 
+  async revokeSession(sessionId:string,contractId:string,actor:string){
+    mustWrite();
+    const db=erp5(), sessionRef=db.collection(SESSIONS).doc(sessionId), contractRef=db.collection(CONTRACTS).doc(contractId);
+    return db.runTransaction(async tx=>{
+      const [sessionDoc,contractDoc]=await Promise.all([tx.get(sessionRef),tx.get(contractRef)]);
+      if(!sessionDoc.exists)throw new Error('전자계약 세션을 찾을 수 없습니다.');
+      if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
+      const session={id:sessionDoc.id,...sessionDoc.data()} as EsignSession;
+      if(session.status==='signed')throw new Error('서명완료 계약은 해지할 수 없습니다.');
+      if(session.status==='revoked')return {revoked:false,session};
+      if(!['sent','opened','in_progress','rejected'].includes(session.status)){
+        throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
+      }
+      const now=Date.now();
+      tx.update(sessionRef,{status:'revoked',revokedAt:now});
+      const contractRaw=contractDoc.data() as Record<string,unknown>;
+      tx.update(contractRef,{sign_status:'미발송',sign_revoked_at:now,esign_progress:0,updated_at:now});
+      const sourceIntakeId=String(contractRaw.source_intake_id??'').trim();
+      if(sourceIntakeId){
+        const intakeRef=db.collection(INTAKES).doc(sourceIntakeId);
+        const intakeDoc=await tx.get(intakeRef);
+        if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
+        tx.update(intakeRef,{esignRevokedAt:now,updatedAt:now,stateAt:new Date(now).toISOString()});
+        const raw=intakeDoc.data() as Record<string,unknown>;
+        const evRef=db.collection('settlement_events').doc(
+          intakeEventDocId(raw.plate,raw.sourceProductId,raw.receivedAt,raw.intakeRequestId,raw.intakeIdentityMode),
+        );
+        const evKey='aud_esign_revoke_'+createHash('sha256').update(contractId+'|'+sessionId).digest('hex').slice(0,16);
+        tx.set(evRef,{[evKey]:{at:now,by:actor,field:'전자계약',from:'활성',to:'해지',contractId,sessionId}},{merge:true});
+      }
+      const eventRef=db.collection(EVENTS).doc(
+        'evt_'+createHash('sha256').update(contractId+'|'+sessionId+'|revoked').digest('hex').slice(0,24),
+      );
+      tx.set(eventRef,{contractId,sessionId,type:'revoked',by:actor,at:now,detail:{}},{merge:false});
+      return {revoked:true,session:{...session,status:'revoked',revokedAt:now}};
+    });
+  }
+
   async finalizeSigned(
     sessionId:string,
     finalizationId:string,

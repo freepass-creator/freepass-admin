@@ -16,7 +16,7 @@ import type { ContractLifecycleRepository } from '../../ports/contracts/reposito
 export interface ContractSummary {
   id: string;
   code: string;
-  status: string;          // 계약요청 · 계약완료 · 계약취소 · 계약철회 · 계약대기
+  status: string;          // 계약요청 · 계약완료 · 계약취소 · 계약해지 · 계약철회 · 계약대기
   signStatus: string;      // 발행 · 열람 · 진행중 · 서명완료 · (빈 값 = 전자계약 아님)
   kind: string;            // rent_return · sub_return …
   insurance: string;       // 보험 포함/별도

@@ -219,6 +219,9 @@ export function progressPatch(
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }
   if (c.kind === 'delivered') {
+    if (Number(cur.contractTerminatedAt ?? 0) > 0) {
+      return { ok: false, error: '계약해지된 건은 인도완료·인도일을 변경할 수 없습니다' };
+    }
     if (c.on) {
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();

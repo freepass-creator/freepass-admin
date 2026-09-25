@@ -510,6 +510,7 @@ if (/\.dz-perk\s*\{[^}]*font-size:\s*13px/s.test(cssFinal)) {
 }
 
 const densityBaseline = [
+  [/--fp-row-compact-min-h:\s*84px/, 'desktop compact row 84px'],
   [/--fp-panel-head-h:\s*44px/, 'desktop panel head 44px'],
   [/--fp-query-row-h:\s*48px/, 'desktop query row 48px'],
   [/--fp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],

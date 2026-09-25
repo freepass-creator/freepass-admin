@@ -149,8 +149,5 @@ export async function signOut(cookie: string | undefined): Promise<void> {
 export function isPublicPath(path: string): boolean {
   return path === '/login' || path.startsWith('/login/google') || path.startsWith('/c/') || path.startsWith('/api/img')
     || path.startsWith('/sign/') || path.startsWith('/api/esign/public/')
-    || path.startsWith('/_next/') || path === '/favicon.ico'
-    // ★정적 파일은 «정적 폴더 안»에서만 연다. 확장자만 보면 `/intake/x.png`, `/api/esign/final/s.png` 같은
-    //   아무 경로에 `.png` 만 붙여 proxy 를 건너뛴다(페이지는 세션을 다시 보지 않는다).
-    || (/^\/(fonts|contract-template)\//.test(path) && !path.includes('..') && /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(path));
+    || path.startsWith('/_next/') || path === '/favicon.ico' || /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(path);
 }

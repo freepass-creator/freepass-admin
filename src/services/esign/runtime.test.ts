@@ -110,9 +110,17 @@ class ReadbackFailAssets extends Assets {
   }
 }
 
+function completeFakePdf(){
+  return new Uint8Array(Buffer.concat([
+    Buffer.from('%PDF-1.4\n'),
+    Buffer.alloc(2_048,0x20),
+    Buffer.from('\n%%EOF\n'),
+  ]));
+}
+
 class Renderer implements EsignFinalDocumentRenderer {
   calls=0;
-  async render(){this.calls+=1;return {bytes:new Uint8Array(Buffer.from('%PDF-1.4\nsealed')),contentType:'application/pdf' as const};}
+  async render(){this.calls+=1;return {bytes:completeFakePdf(),contentType:'application/pdf' as const};}
 }
 
 class Assets implements EsignAssetStore {

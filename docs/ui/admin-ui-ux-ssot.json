@@ -1257,5 +1257,48 @@
     },
     "tolerancePx": 1,
     "rule": "Same role must keep the same radius and padding; geometry differences require a semantic role difference."
+  },
+  "cardLines": {
+    "lineHeightPx": 20,
+    "lineGapPx": 2,
+    "listCard": {
+      "allowedLines": [
+        1,
+        2,
+        3
+      ],
+      "maxLines": 3,
+      "roles": [
+        "identity",
+        "context",
+        "result"
+      ],
+      "overflow": "ellipsis",
+      "wrap": false
+    },
+    "wideRow": {
+      "regions": [
+        "identity",
+        "progress",
+        "facts",
+        "amount"
+      ],
+      "regionTextWrap": false
+    },
+    "tile": {
+      "preferredLines": [
+        1,
+        2
+      ],
+      "maxLines": 2,
+      "overflowContent": "move-to-detail-section"
+    },
+    "alignment": {
+      "text": "left",
+      "numeric": "right",
+      "money": "right",
+      "numericVariant": "tabular-nums"
+    },
+    "rule": "List cards have a fixed line grammar; do not grow vertically to accommodate extra detail."
   }
 }

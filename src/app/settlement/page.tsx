@@ -180,11 +180,11 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               return (
                 <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
                   status={묶음상태(g)}
-                  title={g.party} badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
+                  title={g.party} mainValue={`정산 ${won(g.net)}원`}
+                  badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
                   tone={묶음톤(g)}
-                  flag={위험표시 || undefined}
-                  meta={`${g.lines.length}줄 · ${tab === 'claim' ? '수금' : '지급'} ${g.completed}/${g.lines.length}`}
-                  value={`${won(g.net)}원`} aside={who} />
+                  meta={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
+                  value={위험표시 || `완료 ${g.completed}/${g.lines.length}`} />
               );
             })}
             {shownGroups.length === 0 && <EmptyState>이 달에 선 {who}가 없습니다.</EmptyState>}
@@ -246,11 +246,16 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               return (
                 <ListRow key={r.id} href={keep({ g: gSel?.party ?? '', ic: r.id, v: 'work' })} selected={r.id === ic}
                   status={줄상태(tab === 'claim' ? r.claimStage : r.payStage, r.progress.billHold && tab === 'claim', broken)}
-                  title={txt(r.customer)} badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
+                  title={txt(r.customer)}
+                  mainValue={tab === 'claim'
+                    ? `청구 수수료 ${r.money.claim === null ? '—' : `${won(r.money.claim)}원`}`
+                    : `지급 수수료 ${r.money.pay === null ? '—' : `${won(r.money.pay)}원`}`}
+                  badge={r.progress.billHold ? '보류' : (tab === 'claim' ? r.claimStage : r.payStage)}
                   tone={r.progress.billHold || !끝 ? 'act' : 'plain'}
-                  flag={broken ? `끊김 · 받은 몫 ${Math.round(ratio * 100)}%` : undefined}
-                  meta={[r.plate, r.model, tab === 'claim' ? r.channel : r.supplier].filter(Boolean).join(' · ') || '—'}
-                  value={금액(amount)} aside={txt(r.payKind)} />
+                  meta={[r.plate, r.model, r.product, r.term ? `${r.term}개월` : ''].filter(Boolean).join(' · ') || '—'}
+                  value={tab === 'claim'
+                    ? `지급 수수료 ${r.money.pay === null ? '—' : `${won(r.money.pay)}원`}`
+                    : `청구 수수료 ${r.money.claim === null ? '—' : `${won(r.money.claim)}원`}`} />
               );
             })}
             {/* 환수 — 접수 줄의 체크가 아니라 «반대 부호의 한 줄»(기능 세션) */}

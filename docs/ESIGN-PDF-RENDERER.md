@@ -58,8 +58,9 @@ Chromium may emit binary metadata that is not guaranteed byte-for-byte determini
 
 ## Runtime controls
 
-- `ESIGN_PDF_RENDER_TIMEOUT_MS`: render/page/PDF timeout, 1s..120s, default 45s.
-- `ESIGN_PDF_LAUNCH_TIMEOUT_MS`: Chromium preparation/launch timeout, 1s..120s, default 30s.
+- `ESIGN_PDF_RENDER_TIMEOUT_MS`: per render/page/PDF operation cap, 1s..120s, default 45s.
+- `ESIGN_PDF_LAUNCH_TIMEOUT_MS`: Chromium preparation/launch operation cap, 1s..120s, default 30s.
+- `ESIGN_PDF_TOTAL_TIMEOUT_MS`: whole renderer budget, default 65s and hard-capped at 80s so the 90s approval route retains time for Storage verification and DB finalization.
 - `ESIGN_CHROMIUM_EXECUTABLE_PATH`: explicit browser path for controlled local/runtime verification. Production normally uses the bundled Sparticuz executable.
 
 ## Verification

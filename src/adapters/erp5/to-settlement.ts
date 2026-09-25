@@ -105,6 +105,12 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     contractCancelledAt: n(d.contractCancelledAt),
     contractCancellationReason: s(d.contractCancellationReason),
     contractCancellationNeedsClawback: b(d.contractCancellationNeedsClawback),
+    contractCancellationSupplierClawbackState: ['NONE','REQUIRED','COMPLETED'].includes(String(d.contractCancellationSupplierClawbackState??''))
+      ? String(d.contractCancellationSupplierClawbackState) as 'NONE'|'REQUIRED'|'COMPLETED'
+      : undefined,
+    contractCancellationChannelClawbackState: ['NONE','REQUIRED','COMPLETED'].includes(String(d.contractCancellationChannelClawbackState??''))
+      ? String(d.contractCancellationChannelClawbackState) as 'NONE'|'REQUIRED'|'COMPLETED'
+      : undefined,
 
     progress: {
       paper: b(d.paper),

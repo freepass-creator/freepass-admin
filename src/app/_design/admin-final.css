@@ -117,6 +117,50 @@
 .dz-form-more > .dz-form-grid, .dz-form-more > .dz-money { padding: 12px; background: var(--박스); border-radius: 0 0 var(--r) var(--r); }
 .dz-form-more[open] > summary { border-radius: var(--r) var(--r) 0 0; }
 .dz-form-more > .dz-money form { background: none; padding: 0; }
+/* 신규 접수 WORK 문법 — 2026-09-25
+ * 섹션 자체는 카드가 아니라 구조다. 입력값만 면으로 구분해 카드 안 카드 느낌을 줄인다. */
+.dz-form-group {
+  padding: 0; border: 0; border-radius: 0; background: transparent;
+}
+.dz-form-group + .dz-form-group {
+  padding-top: 12px; border-top: 1px solid var(--선);
+}
+.dz-form-group > legend {
+  margin-bottom: 8px; color: var(--글); font-size: var(--글메인); font-weight: 800;
+}
+.fn-main .workspace .dz-intake-form input:not([type="checkbox"]):not([type="hidden"]),
+.fn-main .workspace .dz-intake-form select,
+.fn-main .workspace .dz-intake-form textarea {
+  background: var(--박스);
+}
+.fn-main .workspace .dz-intake-form input:focus,
+.fn-main .workspace .dz-intake-form select:focus,
+.fn-main .workspace .dz-intake-form textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--ci남색) 28%, transparent);
+  outline-offset: 1px;
+}
+.dz-form-hint {
+  margin: -4px 0 12px; font-size: var(--글보조); line-height: 18px; color: #6b7580;
+}
+.fn-main .workspace .dz-picked-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+  margin-top: 10px; border-top: 1px solid color-mix(in srgb, var(--ci남색) 14%, transparent);
+}
+.fn-main .workspace .dz-picked-grid > div {
+  padding: 8px 10px 0; border-radius: 0; background: transparent;
+}
+.fn-main .workspace .dz-picked-grid > div + div {
+  border-left: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
+}
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-picked-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fn-main .workspace .dz-picked-grid > div:nth-child(odd) { border-left: 0; }
+  .fn-main .workspace .dz-picked-grid > div:nth-child(n+3) {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
+  }
+}
+
 /* 수수료 한 줄 — 표대로 청구 · 지급 / 표가 못 내면 붉게 */
 .dz-fee-line { margin: 0 0 8px; font-size: var(--글메인); color: var(--글); clear: both; }
 .dz-fee-line small { margin-left: 6px; font-size: var(--글보조); color: #9aa3ad; }

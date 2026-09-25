@@ -7,6 +7,29 @@
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
 
 
+## 0-AAA. 2026-09-25 Product/Offer → Intake sealed snapshot — 최신 확정
+
+상품찾기에서 선택한 `Product + matched Offer`는 접수 저장 시 FreePass Data에서 **fresh read**한 뒤 sealed snapshot으로 고정한다.
+
+새 상품접수 저장 규칙:
+- 브라우저 hidden 값의 가격/보증금/기간을 정본으로 믿지 않는다.
+- `sourceProductId + productVersion + sourceSnapshotId + sourceOfferId`를 FreePass Data fresh read와 대조한다.
+- 선택 Offer의 기간/대여료/보증금/선납/연약정주행을 snapshot에 고정한다.
+- Product 정책 원본과 Offer 정책 원본을 **두 겹 그대로** 보존한다.
+- 당시 실제 적용된 resolved policy도 별도로 보존한다.
+- 차량 identity/spec/등록정보/차량가/상품상태도 계약상품 사본에 보존한다.
+- `capturedAt`을 제외한 사본에 deterministic SHA-256 `catalogSnapshotDigest`를 계산한다.
+- 같은 상품·같은 날의 재시도는 Product/version/Offer/source snapshot/digest가 모두 같을 때만 idempotent 성공이다.
+- 하나라도 다르면 기존 접수를 조용히 재사용하지 않고 conflict로 막는다.
+- sealed snapshot 없는 상품접수는 Repository 경계에서 저장을 거부한다.
+
+Firestore Emulator 증거:
+- 동일 sealed Product/Offer 재시도 → 실제 접수 1건만 생성
+- 같은 Product/날짜 + 다른 Offer → conflict, 기존 접수 유지
+- sealed snapshot 없는 상품접수 → write 전 거부
+
+---
+
 ## 0-AA. 2026-09-25 FreePass Data 읽기/쓰기 경계 — 최신 확정
 
 사용자 최신 확정:

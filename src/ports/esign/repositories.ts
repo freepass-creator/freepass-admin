@@ -9,7 +9,12 @@ export interface EsignRepository {
   getCurrentSession(contractId: string): Promise<EsignSession | null>;
   getSession(id: string): Promise<EsignSession | null>;
   findSessionByTokenHash(hash: string): Promise<EsignSession | null>;
-  createSession(session: EsignSession, publicUrl: string): Promise<void>;
+  issueSession(
+    session: EsignSession,
+    publicUrl: string,
+    contractPatch: Record<string, unknown>,
+    actor: string,
+  ): Promise<void>;
   updateSession(id: string, patch: Partial<EsignSession>): Promise<void>;
   transitionSession(id: string, allowed: EsignSession['status'][], patch: Partial<EsignSession>): Promise<boolean>;
   revokeSession(

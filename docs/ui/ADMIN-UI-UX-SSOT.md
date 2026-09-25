@@ -3110,5 +3110,11 @@ Desktop 상세 정보행:
 - 상품 상세도 목록과 동일하게 실제 차량사진 우선
 - 사진이 없을 때만 차량 아이콘 fallback
 
+Mobile 상세도 같은 의미 위계를 유지한다.
+- SummaryGrid / Sections row min-height: 36px
+- label 12 / 400 / muted
+- value 14 / 500 / strong
+- numeric/money right + tabular-nums
+
 목표:
 > 목록에서는 빠르게 고르고, 상세에서는 같은 정렬 규칙으로 정확히 읽는다.

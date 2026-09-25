@@ -95,3 +95,72 @@ test('legacy cancelled 참 cannot be converted into termination', () => {
   assert.equal(result.ok,false);
   assert.match(String((result as {error?:string}).error),/계약취소된/);
 });
+
+const now=Date.parse('2026-09-25T06:00:00Z');
+
+for(const day of [
+  '2026-02-29','2026-02-30','2026-04-31','1900-02-29',
+  '2026-00-10','2026-13-10','2026-01-00','2026-01-32',
+  '0000-01-01','2026-9-10',
+]){
+  test(`존재하지 않거나 형식이 잘못된 해지일 거부: ${day}`,()=>{
+    const result=planContractTermination(
+      contract(),intake({deliveredAt:'1900-01-01'}),
+      {...input,effectiveDate:day},now,
+    );
+    assert.equal(result.ok,false);
+    if(result.ok)return;
+    assert.match(result.error,/계약해지일.*유효한 날짜/);
+  });
+}
+
+for(const day of ['2024-02-29','2000-02-29','2026-04-30','2026-09-25']){
+  test(`윤년과 월말의 유효한 해지일 허용: ${day}`,()=>{
+    const result=planContractTermination(
+      contract(),intake({deliveredAt:day}),{...input,effectiveDate:day},now,
+    );
+    assert.equal(result.ok,true);
+  });
+}
+
+for(const day of ['', '2026-02-30','2026-04-31','1900-02-29','2026-13-01','2026-9-10']){
+  test(`인도 완료의 잘못된 인도일은 취소로 분류하지 않고 기록 정정 요구: ${day}`,()=>{
+    const result=planContractTermination(contract(),intake({deliveredAt:day}),input,now);
+    assert.equal(result.ok,false);
+    if(result.ok)return;
+    assert.match(result.error,/인도일.*인도 기록/);
+    assert.doesNotMatch(result.error,/계약취소/);
+  });
+}
+
+for(const clock of [NaN,Infinity,-Infinity,Number.MAX_VALUE]){
+  test(`유효하지 않은 서버 시각은 예외 대신 실패 결과 반환: ${String(clock)}`,()=>{
+    const result=planContractTermination(contract(),intake(),input,clock);
+    assert.equal(result.ok,false);
+    if(result.ok)return;
+    assert.match(result.error,/처리 시각/);
+  });
+}
+
+test('오늘 판정은 UTC가 아니라 한국 시간의 자정 경계를 따른다',()=>{
+  const tomorrow={...input,effectiveDate:'2026-09-26'};
+  const before=planContractTermination(contract(),intake(),tomorrow,Date.parse('2026-09-25T14:59:59.999Z'));
+  const after=planContractTermination(contract(),intake(),tomorrow,Date.parse('2026-09-25T15:00:00.000Z'));
+  assert.equal(before.ok,false);
+  assert.equal(after.ok,true);
+});
+
+test('검증은 원본 계약과 접수의 청구·지급·계산서·현금 기록을 변경하지 않는다',()=>{
+  const rawContract=Object.freeze(contract());
+  const rawIntake=Object.freeze(intake({
+    billed:true,claimStage:'확인',payStage:'통보',collectedAmt:200000,paidAmt:100000,
+  }));
+  const before=JSON.stringify({rawContract,rawIntake});
+  const result=planContractTermination(rawContract,rawIntake,input,now);
+  assert.equal(result.ok,true);
+  assert.equal(JSON.stringify({rawContract,rawIntake}),before);
+  if(!result.ok)return;
+  for(const field of ['billed','claimStage','payStage','collectedAmt','paidAmt','cancelled','settleExclude','clawback']){
+    assert.equal(field in result.intakePatch,false,field);
+  }
+});

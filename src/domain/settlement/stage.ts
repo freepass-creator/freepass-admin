@@ -31,11 +31,20 @@ const dateOf = (v: unknown): Date | null => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(S(v));
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 };
-const addMonths = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth() + n, d.getDate());
+/**
+ * n 개월 뒤 같은 날 — 그 달에 그날이 없으면 그 달 말일 (10/31 + 1개월 = 11/30).
+ * ★JS Date 에 그대로 맡기면 10/31 + 1 = 12/1 로 넘쳐 분납 청구월이 한 달 밀린다.
+ */
+const addMonths = (d: Date, n: number) => {
+  const first = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), lastDay));
+};
 /** ★«오늘» 은 자정이다 — 시각이 붙으면 만료가 오늘인 건이 「지났다」 가 된다(erp4 2026-08-25 사고) */
 export const midnight = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-export const roundsOf = (payKind: unknown) => { const m = /(\d)\s*회/.exec(S(payKind)); const n = m ? Number(m[1]) : 1; return n >= 2 ? n : 1; };
+/** 분납 회차 — 「12회분납」 은 12 다(한 자리만 읽으면 2 가 된다) */
+export const roundsOf = (payKind: unknown) => { const m = /(\d+)\s*회/.exec(S(payKind)); const n = m ? Number(m[1]) : 1; return n >= 2 ? n : 1; };
 
 type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
   progress: Pick<SettlementRow['progress'], 'delivered' | 'deliveredAt' | 'cancelled' | 'billMonth'>;

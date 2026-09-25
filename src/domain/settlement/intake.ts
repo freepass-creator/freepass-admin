@@ -185,6 +185,9 @@ export function progressPatch(
       || claimStage !== '접수' || payStage !== '접수';
   };
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
+  if (Number(cur.contractTerminatedAt ?? 0) > 0 && ['plate','paper','delivered','cancelled'].includes(c.kind)) {
+    return { ok: false, error: '계약해지된 건은 차량·계약서·인도·취소 사실을 변경할 수 없습니다' };
+  }
 
   if (c.kind === 'plate') {
     const plate = c.plate.replace(/\s/g, '').trim();
@@ -219,9 +222,6 @@ export function progressPatch(
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }
   if (c.kind === 'delivered') {
-    if (Number(cur.contractTerminatedAt ?? 0) > 0) {
-      return { ok: false, error: '계약해지된 건은 인도완료·인도일을 변경할 수 없습니다' };
-    }
     if (c.on) {
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();

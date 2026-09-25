@@ -115,8 +115,8 @@ test('인도완료 boolean만 있고 인도일이 없으면 정산 원장에 서
 test('signed 계약 취소가 기록된 줄은 일반 정산 원장에서 빠진다', () => {
   const cancelledContract = row({
     contractCancelledAt: Date.parse('2026-09-22T00:00:00+09:00'),
-    contractCancellationReason: '중도해지',
-    contractCancellationNeedsClawback: true,
+    contractCancellationReason: '출고 전 고객 취소',
+    progress: { ...row().progress, cancelled: true, settleExclude: true },
   });
   assert.equal(settlementEligible(cancelledContract), false);
   assert.deepEqual(ledgerMonths([cancelledContract], [], new Date('2026-09-25T00:00:00+09:00')), []);

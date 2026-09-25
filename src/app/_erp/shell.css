@@ -1948,3 +1948,34 @@
     align-content: center;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Status tile semantic tones
+ * 진행/info=navy, 완료/ok=green, 보류/warn=amber, 오류/err=red, neutral=grey.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-rowcard[data-thumb-status="true"] .erp-rowcard-thumb--status {
+    background: #F2F4F7;
+    color: #667085;
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="info"] .erp-rowcard-thumb--status {
+    background: #EEF3FA;
+    color: #1B2A4A;
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="ok"] .erp-rowcard-thumb--status {
+    background: #ECFDF3;
+    color: #067647;
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="warn"] .erp-rowcard-thumb--status {
+    background: #FFFAEB;
+    color: #B54708;
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="err"] .erp-rowcard-thumb--status {
+    background: #FEF3F2;
+    color: #B42318;
+  }
+}

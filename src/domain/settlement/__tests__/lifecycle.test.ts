@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice } from '../lifecycle.js';
+import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice, type LifeChange } from '../lifecycle.js';
 import { claimLedger } from '../ledgers.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -155,7 +155,7 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
 });
 
 
-test('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한다', () => {
+it('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한다', () => {
   const dirty = mk({
     paper: true,
     delivered: false,
@@ -164,11 +164,12 @@ test('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한�
     claimStage: '청구',
     payStage: '통보',
   });
-  for (const change of [
-    { kind: 'confirm', axis: '공급사' as const },
-    { kind: 'confirm', axis: '영업채널' as const },
-    { kind: 'billMonth', month: '2026-09' } as const,
-  ]) {
+  const changes: LifeChange[] = [
+    { kind: 'confirm', axis: '공급사' },
+    { kind: 'confirm', axis: '영업채널' },
+    { kind: 'billMonth', month: '2026-09' },
+  ];
+  for (const change of changes) {
     const r = lifePatch(dirty, change);
     assert.equal(r.ok, false);
     assert.match(String((r as { error?: string }).error), /인도완료/);

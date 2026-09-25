@@ -1611,3 +1611,34 @@
     border-bottom-width: 0;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact signal hierarchy
+ * QuickFilter=pill, Badge/Status=compact rounded rect, Tag=smallest signal.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-badge {
+    min-height: 20px;
+    padding: 1px 7px;
+    border-radius: 6px;
+    line-height: 16px;
+  }
+
+  .erp-std .erp-tag {
+    min-height: 18px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    line-height: 14px;
+  }
+
+  .erp-std :is(.erp-badge svg,.erp-tag svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 선택용 control만 pill을 쓴다. */
+  .erp-std .erp-facet-opt {
+    border-radius: 999px;
+  }
+}

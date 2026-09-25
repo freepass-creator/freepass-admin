@@ -30,3 +30,11 @@ test('인도 전이어도 정산 흔적이 있으면 데이터 이상으로 보�
     );
   }
 });
+
+
+test('legacy delivered 참 is treated as delivered and requires termination', () => {
+  assert.deepEqual(
+    contractExitDecision({delivered:'참',deliveredAt:'2026-09-25',claimStage:'접수',payStage:'접수'}),
+    {kind:'TERMINATION_REQUIRED',reason:'DELIVERED'},
+  );
+});

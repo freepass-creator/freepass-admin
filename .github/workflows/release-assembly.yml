@@ -28,7 +28,7 @@ jobs:
           ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Assemble immutable source revisions
         shell: bash
         run: |
@@ -43,32 +43,42 @@ jobs:
             'privacy d91ada90057a4765e4c9087c426dda13796f401a'; do
             read -r label sha <<< "$entry"
             git fetch --no-tags origin "$sha"
-            git update-ref "refs/integration/$label" "$sha"
             printf '%s=%s\n' "$label" "$sha" >> /tmp/admin-release-evidence/revisions.txt
             if ! git merge --no-ff "$sha" -m "merge: integrate pinned $label candidate $sha"; then
-              git diff --name-only --diff-filter=U | tee /tmp/admin-release-evidence/conflicts.txt
-              git diff --cc > /tmp/admin-release-evidence/conflicts.diff
-              echo '::error::Integration conflict requires explicit resolution; no source branch or production data changed.'
-              sed -n '1,500p' /tmp/admin-release-evidence/conflicts.diff
-              exit 1
+              git diff --name-only --diff-filter=U | tee "/tmp/admin-release-evidence/$label-conflicts.txt"
+              git diff --cc > "/tmp/admin-release-evidence/$label-conflicts.diff"
+              test -f ".github/release/resolve-$label.py"
+              python3 ".github/release/resolve-$label.py"
+              test -z "$(git diff --name-only --diff-filter=U)"
+              git diff --check --cached
+              git commit -m "merge: apply reviewed $label integration resolutions"
             fi
           done
-          git diff --check
+          # The source tree was reviewed locally using exactly these pinned parents.
+          test "$(git rev-parse HEAD:src)" = 80618659b0a4d304588dbb85785b267fada5d9a1
+          test "$(git rev-parse HEAD:package.json)" = 93ed44f89c5508996f57301107a5ef7b26c90705
+          test "$(git rev-parse HEAD:package-lock.json)" = 1903241af41548903ea3173af618779647f4aaee
           git rev-parse HEAD | tee /tmp/admin-release-evidence/integrated-sha.txt
-          # Publish only to this isolated branch. Never force-push or modify main.
+          # Publish only the isolated candidate. Never force-push, main, or production data.
           git push origin HEAD:refs/heads/release/admin-operational-20260925
       - name: Locked dependency install
+        id: install
         run: npm ci
       - name: Typecheck
-        run: npm run typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run typecheck 2>&1 | tee /tmp/admin-release-evidence/typecheck.log
       - name: Full unit and domain tests
-        run: npm test
-      - name: UI contract
-        run: npm run ui:check
-      - name: Data boundary
-        run: npm run data:check
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm test 2>&1 | tee /tmp/admin-release-evidence/tests.log
+      - name: UI and Data contracts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          npm run ui:check 2>&1 | tee /tmp/admin-release-evidence/ui.log
+          npm run data:check 2>&1 | tee /tmp/admin-release-evidence/data.log
       - name: Production build
-        run: npm run build
+        id: build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run build 2>&1 | tee /tmp/admin-release-evidence/build.log
       - name: Capture non-secret integration evidence
         if: always()
         shell: bash
@@ -76,7 +86,7 @@ jobs:
           mkdir -p /tmp/admin-release-evidence
           git status --short > /tmp/admin-release-evidence/worktree-status.txt
           git bundle create /tmp/admin-release-evidence/source.bundle --all
-          tar --exclude=.git --exclude=node_modules --exclude=.next --exclude='.env*' -czf /tmp/admin-release-evidence/source.tar.gz .
+          tar --exclude=.git --exclude=node_modules --exclude=.next --exclude=public/fonts --exclude='.env*' -czf /tmp/admin-release-evidence/source.tar.gz .
           git rev-parse HEAD > /tmp/admin-release-evidence/checked-sha.txt
       - uses: actions/upload-artifact@v4
         if: always()

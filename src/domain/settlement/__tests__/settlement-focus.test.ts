@@ -110,3 +110,15 @@ test('인도완료 boolean만 있고 인도일이 없으면 정산 원장에 서
   assert.equal(settlementEligible(incomplete), false);
   assert.equal(locateSettlementFocus([incomplete], [], 'stl_focus', 'claim'), null);
 });
+
+
+test('signed 계약 취소가 기록된 줄은 일반 정산 원장에서 빠진다', () => {
+  const cancelledContract = row({
+    contractCancelledAt: Date.parse('2026-09-22T00:00:00+09:00'),
+    contractCancellationReason: '중도해지',
+    contractCancellationNeedsClawback: true,
+  });
+  assert.equal(settlementEligible(cancelledContract), false);
+  assert.deepEqual(ledgerMonths([cancelledContract], [], new Date('2026-09-25T00:00:00+09:00')), []);
+  assert.equal(locateSettlementFocus([cancelledContract], [], 'stl_focus', 'claim'), null);
+});

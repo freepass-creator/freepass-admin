@@ -10,14 +10,10 @@ UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 
 **PC 디자인 정본은 PR #92 actual route의 `src/app/_erp/*` 구현 한 계보뿐이다.**
 
-금지:
-- 삭제된 mockup/reference/screenshot을 Git history에서 찾아 복원하지 않는다.
-- isolated component browser fixture를 제품 최신 화면으로 해석하지 않는다.
-- main/다른 PR이 날짜가 더 최근이라는 이유로 시각 기준을 바꾸지 않는다.
-- 두 번째 디자인 SSOT, 대체 shell, 대체 theme를 만들지 않는다.
-- 기능 최신화를 이유로 #92의 3패널 line-free visual grammar를 교체하지 않는다.
-
-모바일 호환 코드나 test fixture가 남아 있어도 PC visual authority로 취급하지 않는다.
+UI 규칙:
+- 현재 actual route와 UI SSOT만 사용한다.
+- 기능 최신화는 #92의 3패널 line-free visual grammar 안에서만 반영한다.
+- UI 구조 변경은 actual route, UI SSOT, Visual QA를 같은 변경에서 갱신한다.
 
 
 ## 0. Mandatory Work handoff
@@ -43,7 +39,7 @@ AI Core/DevCenter의 운영 규격을 이 프로젝트에 적용한다. 기능 �
 - `docs/RELEASE.md` — 검증·배포·rollback gate
 - `contracts/BACKEND-BOUNDARIES.md` — Domain/Service/Port/Adapter/Repository 경계
 
-이 문서들은 `docs/MASTER-v1.md`의 업무 의미를 대체하지 않는다. 새로운 두 번째 SSOT를 만들지 말고 각 문서의 소유 범위를 지킨다.
+이 문서들은 `docs/MASTER-v1.md`의 업무 의미를 대체하지 않는다. 각 문서의 소유 범위를 지키고 `docs/SSOT.md`의 정본 지도를 따른다.
 
 ## 1. Source of truth
 이 저장소가 freepass-admin(관리자 화면) 개발의 코드 SSOT다. 개발 상세 기준은 `docs/MASTER-v1.md`를 먼저 읽는다. 이후 사용자의 명시적 변경이 있으면 변경 이유와 영향을 기록한 뒤 반영한다. 과거 저장소·과거 메일의 규칙을 현재 MASTER보다 우선하지 않는다.
@@ -88,7 +84,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline
-- UI/UX는 AI Core/DevCenter 공통 규격과 `.ai-core/ui-ux.consumer.json`을 따른다. 공통 규격 대기 HOLD는 해제됐지만, 승인 rev 5와 다른 새 디자인 방향을 독자 발명하지 않는다. 구현 후 Design Hub Visual QA/Quality Receipt 없이는 PILOT/CONFORMANT를 주장하지 않는다.
+- UI/UX는 `docs/ui/DESIGN-AUTHORITY.md`와 `docs/ui/ADMIN-UI-UX-SSOT.md`의 현재 actual-route 규격을 따른다.
 - backend write는 가능하면 `UI → Service → Domain → Port → Adapter/Repository` 경계를 통과한다.
 - 운영 저장소 연결 전 transaction, concurrency, idempotency, unique number, retry/failure semantics를 계약과 테스트로 먼저 고정한다.
 - 상태 변경/취소/정산 같은 민감 작업은 actor와 audit evidence를 남길 수 있는 경계를 마련한다.

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
-import { erp5Ready } from '../../adapters/erp5/firestore';
+import { freePassDataReady, freePassDataWriteEnabled } from '../../server/freepass-data';
 import { TopMenu } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { currentAdmin } from '../../server/require-admin';
@@ -24,13 +23,13 @@ const MENU = [
 export async function AdminChrome({ children }: { children: ReactNode }) {
   /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
   const 나 = await currentAdmin();
-  const data = erp5Ready();
+  const data = freePassDataReady();
   return (
     <>
       <header className="fn-top dz-statusbar" aria-label="관리자 상태">
         {/* 설정 확인은 실제 읽기 성공과 다르다. 상세 진단과 로그아웃은 상태 화면에서 제공한다. */}
         <a className="fn-state" href="/system/data-status" aria-label="데이터 상태 상세 및 계정">
-          {data.ok ? '데이터 설정됨' : '데이터 설정 필요'} · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
+          {data.ok ? '프리패스 데이터 연결됨' : '프리패스 데이터 연결 필요'} · {freePassDataWriteEnabled() ? '쓰기 허용' : '조회 전용'}
         </a>
         {나 && <span className="dz-me">{나.name}</span>}
       </header>

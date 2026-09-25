@@ -51,3 +51,22 @@ test('dispute validates memo and selected issued lines', () => {
   if (!r.ok) return;
   assert.deepEqual(r.response.codes, ['a', 'b']);
 });
+
+
+test('clawback-only issued statement can be confirmed or disputed without row codes', () => {
+  const confirmed = planClaimResponse(null, '확인', '', [], [], 100, true);
+  assert.deepEqual(confirmed, {
+    ok: true,
+    response: { state: '확인', at: 100 },
+    target: [],
+    idempotent: false,
+  });
+
+  const disputed = planClaimResponse(null, '이의', '환수 금액 확인 요청', [], [], 100, true);
+  assert.equal(disputed.ok, true);
+  if (!disputed.ok) return;
+  assert.deepEqual(disputed.target, []);
+  assert.deepEqual(disputed.response.codes, []);
+
+  assert.equal(planClaimResponse(null, '확인', '', [], [], 100, false).ok, false);
+});

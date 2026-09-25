@@ -1857,3 +1857,27 @@
     text-align: right;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Three-line list card semantics
+ * 1행 Main / 2행 Key / 3행 Support. 상태는 Main 옆 compact badge.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std [data-line-role="main"] {
+    color: var(--fp-text-strong);
+    font-size: var(--erp-fs-body);
+    font-weight: 600;
+  }
+
+  .erp-std [data-line-role="key"] {
+    color: var(--fp-text-secondary);
+    font-size: var(--erp-fs-body);
+    font-weight: 500;
+  }
+
+  .erp-std [data-line-role="support"] {
+    color: var(--fp-text-muted);
+    font-size: var(--erp-fs-label);
+    font-weight: 400;
+  }
+}

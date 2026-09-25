@@ -2,11 +2,11 @@
   "contract": "devcenter-design-authority/v1",
   "product": "freepass-admin",
   "approved_visual": {
-    "path": "docs/ui/mockups/admin-product-to-application.html",
-    "sha256": "6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d",
+    "path": "docs/ui/ADMIN-UI-UX-SSOT.md",
+    "sha256": "4e7ad9925aea5468a7eba6402d5c9201351aeaa7653a2ec6bc7c2db100894a09",
     "status": "USER_APPROVED",
-    "approved_on": "2026-09-16",
-    "source": "docs/WORK-INBOX.md#13"
+    "approved_on": "2026-09-25",
+    "source": "user-chat-2026-09-25-ui-design-hard-lock"
   },
   "design_hub": {
     "repository": "freepass-creator/devcenter",
@@ -16,5 +16,16 @@
     "repository": "freepass-creator/ai-core",
     "revision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
     "feature_registry_version": "1.8.0"
+  },
+  "machine_ssot": {
+    "path": "docs/ui/admin-ui-ux-ssot.json",
+    "sha256": "f62133200b1c383143aad425628c519ded4b2d230709c864dc8be79e53a9c9a2",
+    "status": "CANONICAL"
+  },
+  "design_lock": {
+    "policy": "SINGLE_AUTHORITY",
+    "authority": "docs/ui/DESIGN-AUTHORITY.md",
+    "legacy_visuals": "FORBIDDEN",
+    "fallback": "FAIL_CHECK"
   }
 }

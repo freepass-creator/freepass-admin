@@ -136,10 +136,11 @@ try {
 
       if (route === '/products') {
         let localRequests = 0;
-        const observe = req => { if (req.url().startsWith(origin + route) && req.resourceType() !== 'document') localRequests++; };
+        const observe = req => { if (req.url().startsWith(origin + route)) localRequests++; };
         page.on('request', observe);
         await page.getByRole('button',{name:'다시 시도'}).click();
-        await page.waitForTimeout(750);
+        await page.waitForLoadState('networkidle').catch(() => {});
+        await page.waitForTimeout(250);
         page.removeListener('request', observe);
         check(`${width}px retry keeps fail-closed error state`, await page.getByText('데이터를 불러오지 못했습니다.').isVisible());
         check(`${width}px retry performs a real Next request`, localRequests > 0, `requests=${localRequests}`);

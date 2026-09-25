@@ -799,21 +799,17 @@ I18N / RTL:
 
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
-## A. CSS cascade가 정본 역할을 하고 있음
-`globals.css` 상단에 옛 규격이 남고 아래에서 계속 덮는 구조다. **파일 맨 위에 LEGACY BASE 경고를 추가해 새 코드가 그 값을 복사하지 않게 표시했다.**
+## A. CSS cascade / legacy base — 해결 완료
+- `globals.css` 상단의 초기 mockup/base는 **LEGACY BASE LAYER**로 격리했다.
+- 실제 관리자 호환 규칙 시작점에 **CURRENT ADMIN COMPATIBILITY LAYER** 마커를 추가했다.
+- 이 호환층의 실제 workspace/control 규칙은 33px/40px을 제거하고 44px 공통 토큰으로 승격했다.
+- 검색창 안 세부검색만 machine SSOT에 정의된 **embedded 32px 예외**를 유지한다.
+- 최종 권위는 계속 `admin-final.css` + 이 문서다.
 
-**위험:** 다음 AI가 위쪽 값을 읽고 되돌릴 수 있음.
-
-권장 후속:
-- legacy block 명시
-- 최종 token/component CSS를 파일 하단이 아니라 별도 SSOT CSS로 분리
-
-## B. UI-SPEC 옛 절이 최신 절 아래에 같이 있음
-맨 위 “실제 앱 정본”이 우선이지만, 옛 22/30/34/38 규격이 계속 보인다.
-
-권장:
-- 옛 절을 `UI-HISTORY.md`로 이동
-- UI-SPEC은 현행만 남김
+## B. UI-SPEC 역사 규격 혼재 — 해결 완료
+- `UI-SPEC.md`에는 현행 baseline만 남겼다.
+- 2026-09-16 mockup의 rail/22·30·34·38·46px 규격은 `UI-HISTORY.md`로 이동했다.
+- `UI-HISTORY.md`는 HISTORICAL ONLY이며 구현 기준으로 사용하지 않는다.
 
 ## C. 목록 높이 용어
 문서 주석은 “64px row”라고 하나 실제 outer row는 padding 포함 약 88px.

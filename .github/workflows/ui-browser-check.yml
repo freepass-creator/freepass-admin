@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 15
     env:
       ERP5_WRITE: 'off'
+      UI_BROWSER_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
         with:

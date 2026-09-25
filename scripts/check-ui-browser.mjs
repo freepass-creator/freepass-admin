@@ -12,13 +12,24 @@ const { build } = requireTool('esbuild');
 const root = process.cwd();
 const out = path.join(root, 'artifacts/ui-browser');
 await mkdir(out, { recursive: true });
-const sources = ['src/app/globals.css', 'src/app/_design/admin-final.css',
+// Derive CSS order from the production layout instead of maintaining a second order.
+const layout = await readFile('src/app/layout.tsx', 'utf8');
+const styles = [...layout.matchAll(/import\s+['"](\.\/[^'"]+\.css)['"]/g)]
+  .map(([, relative]) => path.posix.join('src/app', relative));
+if (styles.length === 0) throw new Error('No production stylesheets discovered');
+const sources = [...styles, 'src/app/layout.tsx',
   'src/app/_design/ListRow.tsx', 'src/app/_design/OfferPicker.tsx',
   'src/app/_design/DetailTabs.tsx', 'src/app/_design/Primitives.tsx',
   'scripts/browser/fixture.tsx', 'scripts/check-ui-browser.mjs'];
 const hashes = {};
-for (const file of sources) hashes[file] = createHash('sha256').update(await readFile(file)).digest('hex');
-const css = await readFile(sources[0], 'utf8') + '\n' + await readFile(sources[1], 'utf8');
+for (const file of sources) {
+  const bytes = await readFile(file);
+  hashes[file] = createHash('sha256').update(bytes).digest('hex');
+  const copy = path.join(out, 'source', file);
+  await mkdir(path.dirname(copy), { recursive: true });
+  await writeFile(copy, bytes);
+}
+const css = (await Promise.all(styles.map(file => readFile(file, 'utf8')))).join('\n');
 const bundle = await build({
   entryPoints: ['scripts/browser/fixture.tsx'], bundle: true, write: false,
   platform: 'browser', format: 'iife', jsx: 'automatic',
@@ -50,8 +61,9 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 const receipt = { scope: 'ISOLATED_COMPONENT_BROWSER',
   excludes: ['production deployment', 'Firestore/IAM', 'real authentication', 'Next routing', 'mobile soft keyboard', 'RTL', 'FilterSheet'],
   data: 'synthetic-only; no credentials; external requests blocked',
+  pullRequestHead: process.env.UI_BROWSER_HEAD_SHA ?? null,
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-  sources: hashes, browser: '', cases: [], interactions: [], externalRequests: [] };
+  styles, sources: hashes, browser: '', cases: [], interactions: [], externalRequests: [] };
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
@@ -82,7 +94,9 @@ try {
         }
         for (const row of document.querySelectorAll('.dz-row-l2.value')) if (visible(row)) {
           const r = row.getBoundingClientRect();
-          const segments = [...row.querySelectorAll('.dz-seg')].map(el => el.getBoundingClientRect());
+          const elements = [...row.querySelectorAll('.dz-seg')];
+          const segments = elements.map(el => el.getBoundingClientRect());
+          for (const el of elements) check(el.scrollWidth <= el.clientWidth + 1, 'product value text clipped');
           for (const s of segments) check(s.left >= r.left - 1 && s.right <= r.right + 1, 'product value outside row');
           for (let i=0;i<segments.length;i++) for (let j=i+1;j<segments.length;j++) {
             const a=segments[i], b=segments[j];
@@ -126,11 +140,14 @@ try {
         await page.keyboard.press('Home');
         checks.push(['Home selects summary', await tabs.nth(0).getAttribute('aria-selected') === 'true']);
         await page.locator('.dz-offer-rows > button').nth(2).click();
+        // useChosenOffer publishes through a React effect: await the observable result.
+        await page.waitForFunction(() => document.querySelector('.detail-panel .primary')?.getAttribute('href')?.endsWith('offer=test-60'));
         checks.push(['offer changes intake link', (await page.locator('.detail-panel .primary').getAttribute('href')).endsWith('offer=test-60')]);
         checks.push(['one offer selected', await page.locator('.dz-offer-rows [aria-pressed="true"]').count() === 1]);
         await tabs.nth(1).click(); await tabs.nth(0).click();
         checks.push(['offer survives tab change', (await page.locator('.detail-panel .primary').getAttribute('href')).endsWith('offer=test-60')]);
         receipt.interactions.push({ width, checks });
+        await page.screenshot({ path: path.join(out, `${width}-selected-offer.png`), fullPage: true });
       }
       await context.close();
     }

@@ -125,6 +125,35 @@ if (!/data-ai-feature="data\.list-presentation"/.test(listRow)) errors.push('Lis
 if (!/product-media-row/.test(listRow) || !/business-row/.test(listRow)) errors.push('ListRow: missing product-media-row/business-row semantic modes');
 if (!/data-ai-list-mode="variant-card"/.test(offerPicker)) errors.push('OfferPicker: missing AI Core variant-card mode');
 
+const currentPassFiles = {
+  listRow,
+  offerPicker,
+  intakeForm: await readFile(path.join(root, 'src/app/intake/new/IntakeForm.tsx'), 'utf8'),
+  intakeDetail: await readFile(path.join(root, 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8'),
+  settlementPage: await readFile(path.join(root, 'src/app/settlement/page.tsx'), 'utf8'),
+  esignPage: await readFile(path.join(root, 'src/app/esign/page.tsx'), 'utf8'),
+};
+
+const currentPassExpected = [
+  ['product list segmented values', currentPassFiles.listRow, /className="dz-seg"/],
+  ['detail offer one-line rows', currentPassFiles.offerPicker, /dz-offer-rows/],
+  ['intake support helper', currentPassFiles.intakeForm, /dz-form-hint/],
+  ['intake detail current work', currentPassFiles.intakeDetail, /dz-work-focus/],
+  ['intake detail diagnostic disclosure', currentPassFiles.intakeDetail, /dz-support-section/],
+  ['settlement axis separation', currentPassFiles.settlementPage, /dz-settle-axis/],
+  ['settlement period context', currentPassFiles.settlementPage, /dz-settle-period/],
+  ['esign admin stage mapping', currentPassFiles.esignPage, /type 관리자단계/],
+  ['esign current stage focus', currentPassFiles.esignPage, /dz-esign-focus/],
+] as const;
+
+for (const [label, src, re] of currentPassExpected) {
+  if (!re.test(src)) errors.push(`2026-09-25 UI pass regression: missing ${label}`);
+}
+
+if (/control 40|inside 40px search box/.test(JSON.stringify(ssot))) {
+  errors.push('docs/ui/admin-ui-ux-ssot.json: stale 40px UI wording remains');
+}
+
 const expected = [
   ['typography.title.px', ssot.typography?.title?.px, 18],
   ['typography.main.px', ssot.typography?.main?.px, 14],

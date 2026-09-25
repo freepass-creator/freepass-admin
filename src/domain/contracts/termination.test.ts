@@ -83,3 +83,15 @@ test('동일 operationId와 동일 payload 재시도만 idempotent다', () => {
   assert.equal(changed.ok,false);
   assert.match(String((changed as {error?:string}).error),/이미 계약해지/);
 });
+
+
+test('legacy cancelled 참 cannot be converted into termination', () => {
+  const result=planContractTermination(
+    contract(),
+    intake({cancelled:'참'}),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(result.ok,false);
+  assert.match(String((result as {error?:string}).error),/계약취소된/);
+});

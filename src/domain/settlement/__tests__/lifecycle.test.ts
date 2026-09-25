@@ -215,3 +215,19 @@ test('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한�
     assert.match(String((r as { error?: string }).error), /인도완료/);
   }
 });
+
+
+test('legacy invoice history without revision still advances monotonically', () => {
+  const legacy = {
+    key: '2026-09|공급사|A', invoiceNo: 'FP-S-202609-001', month: '2026-09', axis: '공급사' as const, party: 'A',
+    supply: 1_000_000, vat: 100_000, total: 1_100_000, lines: 1, codes: ['a'], clawback: 0,
+    issuedAt: 300, issuedBy: 'tester',
+    history: [
+      { supply: 800_000, vat: 80_000, total: 880_000, lines: 1, clawback: 0, issuedAt: 100 },
+      { supply: 900_000, vat: 90_000, total: 990_000, lines: 1, clawback: 0, issuedAt: 200 },
+    ],
+  } as never;
+  const receipt = nextInvoiceRevision(legacy);
+  assert.equal(receipt.revision, 4);
+  assert.equal(receipt.history.at(-1)?.revision, 3);
+});

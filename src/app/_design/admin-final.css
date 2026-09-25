@@ -58,6 +58,26 @@
   .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */
 }
 
+/* grid/flex 자식의 intrinsic width가 panel을 밀어내지 않게 공통으로 끊는다. */
+.fn-main .workspace > .panel { min-width: 0; }
+.fn-main .workspace .summary-grid > div,
+.fn-main .workspace .summary-grid dd { min-width: 0; }
+.fn-main .workspace .summary-grid dd { overflow-wrap: anywhere; }
+.fn-main .workspace .dz-bar-go > * { min-width: 0; }
+
+/* 상품찾기 넓은 목록: 1280에서도 두 카드가 설 수 있고 360에서는 400px 고정트랙이 생기지 않는다. */
+@media (min-width: 901px) {
+  .fn-main .workspace[data-mode="find"] .list {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .fn-main .workspace[data-mode="find"] .list {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+}
+
 /* 반응형 안정화 — 2026-09-25 전수검사
  * 360/390/412에서 sticky header가 여러 줄로 비대해지지 않게 하고,
  * 긴 identity가 badge/count/action 영역을 밀어내지 않게 한다. */

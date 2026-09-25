@@ -21,6 +21,11 @@ test('UI authority surface is singular and contains only current SSOT documents'
     'src/app/theme/route.ts',
     'scripts/sync-erp-standard.mjs',
     'src/app/_erp/erp-standard.source.json',
+    '.ai-core/ui-ux.consumer.json',
+    '.devcenter/design-authority.json',
+    '.devcenter/design-job.json',
+    '.devcenter/visual-job.json',
+    'scripts/check-uiux-consumer.mjs',
   ]) assert.equal(exists(path), false, path);
 
   const chrome = read('src/app/_design/AdminChrome.tsx');

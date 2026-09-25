@@ -242,6 +242,9 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
+    if (B(cur.delivered) || S(cur.deliveredAt)) {
+      return { ok: false, error: '인도된 건은 접수취소가 아니라 계약해지 후 환수 검토 대상으로 처리합니다' };
+    }
     /*
      * 접수취소는 계약 연결 여부와 무관한 «접수의 종료»다.
      * 전자계약이 연결돼 있어도 인도/정산 전이면 이 원장을 취소한다.

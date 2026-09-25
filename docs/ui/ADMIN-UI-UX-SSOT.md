@@ -2769,6 +2769,16 @@ PC 기본 역할:
 - Support / label / meta / Badge / Tag: 12
 - KPI만 24 허용
 
+Mobile 기본 역할:
+- Panel title: 18 / 700
+- Card identity / body / input / action / QuickFilter: 14
+- Support / label / meta / Badge: 12
+- 모바일은 정보 위계를 위해 새로운 13/15/16px 중간 단계를 만들지 않는다.
+
+Visual QA:
+- 실제 computed font-size를 Panel title / Card title / Primary value / Control / Support 역할별로 검사한다.
+- PC와 Mobile 모두 역할 범위를 벗어나면 FAIL한다.
+
 원칙:
 - 화면마다 새로운 폰트 크기를 만들지 않는다.
 - 작은 정보를 억지로 11px대로 줄이지 않는다.

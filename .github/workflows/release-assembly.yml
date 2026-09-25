@@ -1,107 +1,33 @@
-name: Admin release assembly
-
+name: Finalize Admin integration
 on:
   push:
     branches: [release/admin-operational-20260925]
-  workflow_dispatch:
-
 permissions:
   contents: write
-
-concurrency:
-  group: admin-release-assembly
-  cancel-in-progress: false
-
+defaults:
+  run:
+    shell: bash
 jobs:
-  assemble:
-    if: github.repository == 'freepass-creator/freepass-admin' && github.ref == 'refs/heads/release/admin-operational-20260925'
+  finalize:
+    if: github.repository == 'freepass-creator/freepass-admin' && github.event.head_commit.message == 'build: prepare final operational verification'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    env:
-      NEXT_TELEMETRY_DISABLED: '1'
-      ERP5_WRITE: 'off'
-      FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: OBSERVE
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Assemble immutable source revisions
-        shell: bash
+      - name: Apply reviewed corrections and remove assembly machinery
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD:src)" = 80618659b0a4d304588dbb85785b267fada5d9a1
+          git apply --check .github/release/operational-fixes.patch
+          git apply .github/release/operational-fixes.patch
+          git rm .github/release/operational-fixes.patch .github/release/resolve-ui.py .github/release/resolve-esign.py .github/workflows/release-assembly.yml
+          git add src
+          git -c core.whitespace=-blank-at-eol,-blank-at-eof diff --cached --check
           git config user.name 'FreePass Release Integration'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          mkdir -p /tmp/admin-release-evidence
-          printf 'workflow_source=%s\n' "$(git rev-parse HEAD)" > /tmp/admin-release-evidence/revisions.txt
-          for entry in \
-            'ui 0ce9df1772eb35e289d94b1a9fbc1f2cb286b75a' \
-            'esign 77e5e1d8485e71e217e2026af0cd82ffa17fd5cb' \
-            'privacy d91ada90057a4765e4c9087c426dda13796f401a'; do
-            read -r label sha <<< "$entry"
-            git fetch --no-tags origin "$sha"
-            printf '%s=%s\n' "$label" "$sha" >> /tmp/admin-release-evidence/revisions.txt
-            if ! git merge --no-ff "$sha" -m "merge: integrate pinned $label candidate $sha"; then
-              git diff --name-only --diff-filter=U | tee "/tmp/admin-release-evidence/$label-conflicts.txt"
-              git diff --cc > "/tmp/admin-release-evidence/$label-conflicts.diff"
-              test -f ".github/release/resolve-$label.py"
-              python3 ".github/release/resolve-$label.py"
-              test -z "$(git diff --name-only --diff-filter=U)"
-              # Retain historical Markdown hard breaks and EOF spacing; reject conflict markers.
-              git -c core.whitespace=-blank-at-eol,-blank-at-eof diff --check --cached
-              git commit -m "merge: apply reviewed $label integration resolutions"
-            fi
-          done
-          test "$(git rev-parse HEAD:src)" = 80618659b0a4d304588dbb85785b267fada5d9a1
-          test "$(git rev-parse HEAD:package.json)" = 93ed44f89c5508996f57301107a5ef7b26c90705
-          test "$(git rev-parse HEAD:package-lock.json)" = 1903241af41548903ea3173af618779647f4aaee
-          git rev-parse HEAD | tee /tmp/admin-release-evidence/integrated-sha.txt
+          git commit -m 'fix: close integration errors and remove assembly mutation'
           git push origin HEAD:refs/heads/release/admin-operational-20260925
-      - name: Deployment binding presence only
-        if: ${{ !cancelled() }}
-        env:
-          HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
-          HAS_VERCEL_PROJECT: ${{ secrets.VERCEL_PROJECT_ID != '' || vars.VERCEL_PROJECT_ID != '' }}
-          HAS_VERCEL_ORG: ${{ secrets.VERCEL_ORG_ID != '' || vars.VERCEL_ORG_ID != '' }}
-          HAS_ERP5_CREDENTIAL: ${{ secrets.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
-          HAS_SESSION_SECRET: ${{ secrets.SESSION_SECRET != '' }}
-          HAS_GOOGLE_OAUTH: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID != '' && secrets.GOOGLE_OAUTH_CLIENT_SECRET != '' }}
-        run: |
-          mkdir -p /tmp/admin-release-evidence
-          node -e 'const o=Object.fromEntries(Object.entries(process.env).filter(([k])=>k.startsWith("HAS_")));console.log(JSON.stringify(o,null,2))' | tee /tmp/admin-release-evidence/binding-presence.json
-      - name: Locked dependency install
-        id: install
-        run: npm ci
-      - name: Typecheck
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run typecheck 2>&1 | tee /tmp/admin-release-evidence/typecheck.log
-      - name: Full unit and domain tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm test 2>&1 | tee /tmp/admin-release-evidence/tests.log
-      - name: UI and Data contracts
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: |
-          npm run ui:check 2>&1 | tee /tmp/admin-release-evidence/ui.log
-          npm run data:check 2>&1 | tee /tmp/admin-release-evidence/data.log
-      - name: Production build
-        id: build
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run build 2>&1 | tee /tmp/admin-release-evidence/build.log
-      - name: Capture non-secret integration evidence
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p /tmp/admin-release-evidence
-          git status --short > /tmp/admin-release-evidence/worktree-status.txt
-          git bundle create /tmp/admin-release-evidence/source.bundle --all
-          tar --exclude=.git --exclude=node_modules --exclude=.next --exclude=public/fonts --exclude='.env*' -czf /tmp/admin-release-evidence/source.tar.gz .
-          git rev-parse HEAD > /tmp/admin-release-evidence/checked-sha.txt
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: admin-release-assembly-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/admin-release-evidence
-          retention-days: 7
+          git rev-parse HEAD

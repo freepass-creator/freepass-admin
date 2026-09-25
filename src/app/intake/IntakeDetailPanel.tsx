@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
-import { settlements, today } from '../../server/erp5';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
+import { freePassDataWriteEnabled, settlements, today } from '../../server/freepass-data';
 import { blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { txt, when, won } from '../_fn/fmt';
@@ -166,7 +165,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {걸음}
 
       <h3 className="dz-sub">진행</h3>
-      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</Notice>}
+      {!freePassDataWriteEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 눌러도 저장되지 않습니다.</Notice>}
       <Progress code={r.id} plate={r.plate ?? ''} paper={r.progress.paper} delivered={r.progress.delivered}
         deliveredAt={r.progress.deliveredAt ?? ''} cancelled={r.progress.cancelled} today={today()} />
       {/* 받은 회차 — 분납 · 인도된 줄에서만(기능 세션 2026-09-18) */}
@@ -193,7 +192,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
       <h3 className="dz-sub">돈 고치기 — 수수료 · 프로모션 · 가감</h3>
       <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled} />
-      {!writeEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</Notice>}
+      {!freePassDataWriteEnabled() && <Notice tone="warn">ERP5 쓰기가 꺼져 있어 저장되지 않습니다.</Notice>}
       <MoneyForm code={r.id}
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
         promoReason={r.money.promoReason} claimAdjust={r.money.claimAdjust} payAdjust={r.money.payAdjust}

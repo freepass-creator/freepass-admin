@@ -16,10 +16,18 @@ const FONT_FILES = [
 
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_LAUNCH_TIMEOUT_MS = 30_000;
+const DEFAULT_TOTAL_TIMEOUT_MS = 65_000;
+const MAX_TOTAL_TIMEOUT_MS = 80_000;
 
 function positiveMs(raw: string | undefined, fallback: number) {
   const value = Number(raw);
   return Number.isFinite(value) && value >= 1_000 && value <= 120_000 ? Math.floor(value) : fallback;
+}
+
+function remainingMs(deadlineAt: number, capMs: number, message: string) {
+  const remaining = deadlineAt - Date.now();
+  if (remaining < 1_000) throw new Error(message);
+  return Math.min(capMs, remaining);
 }
 
 function signatureContentType(bytes: Uint8Array) {
@@ -139,23 +147,30 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
   }) {
     const renderTimeout = positiveMs(process.env.ESIGN_PDF_RENDER_TIMEOUT_MS, DEFAULT_RENDER_TIMEOUT_MS);
     const launchTimeout = positiveMs(process.env.ESIGN_PDF_LAUNCH_TIMEOUT_MS, DEFAULT_LAUNCH_TIMEOUT_MS);
+    const totalTimeout = Math.min(
+      positiveMs(process.env.ESIGN_PDF_TOTAL_TIMEOUT_MS, DEFAULT_TOTAL_TIMEOUT_MS),
+      MAX_TOTAL_TIMEOUT_MS,
+    );
+    const deadlineAt = Date.now() + totalTimeout;
     const html = await prepareFinalContractHtml(input);
     let browser: Browser | undefined;
 
     try {
-      const executablePath = await resolveChromiumExecutablePath(launchTimeout);
+      const executablePath = await resolveChromiumExecutablePath(
+        remainingMs(deadlineAt, launchTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+      );
 
       browser = await puppeteer.launch({
         args: chromium.args,
         executablePath,
         headless: 'shell',
-        timeout: launchTimeout,
+        timeout: remainingMs(deadlineAt, launchTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         defaultViewport: { width: 1240, height: 1754, deviceScaleFactor: 1 },
       });
 
       const page = await browser.newPage();
-      page.setDefaultTimeout(renderTimeout);
-      page.setDefaultNavigationTimeout(renderTimeout);
+      page.setDefaultTimeout(Math.min(renderTimeout, totalTimeout));
+      page.setDefaultNavigationTimeout(Math.min(renderTimeout, totalTimeout));
 
       await page.setRequestInterception(true);
       page.on('request', request => {
@@ -164,16 +179,26 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         else void request.abort('blockedbyclient');
       });
 
-      await page.setContent(html, { waitUntil: 'load', timeout: renderTimeout });
+      await page.setContent(html, {
+        waitUntil: 'load',
+        timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+      });
       await page.emulateMediaType('print');
 
-      await page.waitForFunction(() => !document.body.classList.contains('cloak'), { timeout: renderTimeout });
-      await page.evaluate(async () => {
-        document.querySelectorAll('.builder,.toolbar,.fp-pdf-button').forEach(node => node.remove());
-        await document.fonts.ready;
-      });
+      await page.waitForFunction(
+        () => !document.body.classList.contains('cloak'),
+        { timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.') },
+      );
+      await deadline(
+        page.evaluate(async () => {
+          document.querySelectorAll('.builder,.toolbar,.fp-pdf-button').forEach(node => node.remove());
+          await document.fonts.ready;
+        }),
+        remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+        '전자계약 PDF 전체 처리 시간이 초과되었습니다.',
+      );
 
-      const readiness = await page.evaluate((sealPrefix) => {
+      const readiness = await deadline(page.evaluate((sealPrefix) => {
         const isVisible = (node: Element) => {
           const style = getComputedStyle(node);
           return style.display !== 'none'
@@ -219,7 +244,10 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
           hasSealEvidence: document.body.innerText.includes(sealPrefix),
           hasPrintControl: Boolean(document.querySelector('[onclick*="window.print"],.fp-pdf-button,.builder')),
         };
-      }, input.sealHash.slice(0, 16));
+      }, input.sealHash.slice(0, 16)),
+        remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
+        '전자계약 PDF 전체 처리 시간이 초과되었습니다.',
+      );
 
       if (!readiness.fontReady) throw new Error('전자계약 PDF 한글 폰트 로딩에 실패했습니다.');
       if (readiness.visibleBrokenImages > 0) throw new Error('전자계약 PDF에 로딩되지 않은 이미지가 있습니다.');
@@ -236,7 +264,7 @@ export class PuppeteerEsignFinalDocumentRenderer implements EsignFinalDocumentRe
         preferCSSPageSize: true,
         displayHeaderFooter: false,
         margin: { top: '0', right: '0', bottom: '0', left: '0' },
-        timeout: renderTimeout,
+        timeout: remainingMs(deadlineAt, renderTimeout, '전자계약 PDF 전체 처리 시간이 초과되었습니다.'),
         waitForFonts: true,
       }));
 

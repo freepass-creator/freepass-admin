@@ -241,3 +241,40 @@ describe('공급사 축', () => {
     assert.equal(matchProduct(p, { supplierIds: ['supplier-a'] }), null);
   });
 });
+
+
+describe('White Label parity — vehicle facts stay separate from Offer facts', () => {
+  const p = product({
+    productKind: '중고렌트',
+    credit: '무심사',
+    specs: { modelYear: 2024, mileageKm: 42_000, fuel: '하이브리드' },
+    offers: [offer({ annualMileageKm: 20_000 })],
+  });
+
+  it('현재 차량 주행거리와 연 약정주행거리는 서로 다른 조건이다', () => {
+    assert.ok(matchProduct(p, {
+      vehicleMileageKm: { max: 50_000 },
+      annualMileageKm: { min: 20_000, max: 20_000 },
+    }));
+    assert.equal(matchProduct(p, { vehicleMileageKm: { max: 30_000 } }), null);
+    assert.equal(matchProduct(p, { annualMileageKm: { max: 10_000 } }), null);
+  });
+
+  it('현재 주행거리 미확인은 0km로 취급하지 않는다', () => {
+    const unknown = product({ specs: { modelYear: 2024, fuel: '하이브리드' } });
+    assert.equal(matchProduct(unknown, { vehicleMileageKm: { max: 10_000 } }), null);
+  });
+
+  it('상품구분·심사·연식·연료도 공통 finder 계약에서 판정한다', () => {
+    assert.ok(matchProduct(p, {
+      productKinds: ['중고렌트'],
+      credits: ['무심사'],
+      modelYears: [2024],
+      fuels: ['하이브리드'],
+    }));
+    assert.equal(matchProduct(p, { productKinds: ['신차렌트'] }), null);
+    assert.equal(matchProduct(p, { credits: ['신용조회'] }), null);
+    assert.equal(matchProduct(p, { modelYears: [2025] }), null);
+    assert.equal(matchProduct(p, { fuels: ['가솔린'] }), null);
+  });
+});

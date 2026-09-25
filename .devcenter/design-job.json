@@ -3,7 +3,7 @@
   "target": {
     "project_id": "freepass-admin",
     "repository": "freepass-creator/freepass-admin",
-    "revision": "92e2838b6da2df5f0b8733db494e879bd25d2e74"
+    "revision": "4c37c736416ac897db6435cff171608efd94485f"
   },
   "surface": {
     "id": "admin-product-application",
@@ -87,11 +87,15 @@
     }
   ],
   "approved_design_refs": [
-    "docs/ui/mockups/admin-product-to-application.html#sha256=6d2c26dc171d0c519d8ba5d8f9d7ab4be29cfeb371f6c8e639606863b62cef7d",
-    "docs/WORK-INBOX.md#13"
+    "docs/ui/DESIGN-AUTHORITY.md",
+    "docs/ui/ADMIN-UI-UX-SSOT.md#sha256=4e7ad9925aea5468a7eba6402d5c9201351aeaa7653a2ec6bc7c2db100894a09",
+    "docs/ui/admin-ui-ux-ssot.json#sha256=f62133200b1c383143aad425628c519ded4b2d230709c864dc8be79e53a9c9a2",
+    "docs/ui/SALES-APP-BASELINE.md"
   ],
   "quality": {
     "require_runtime_implementation": true,
-    "require_visual_receipt": true
+    "require_visual_receipt": true,
+    "reject_legacy_visual_sources": true,
+    "require_single_design_authority": true
   }
 }

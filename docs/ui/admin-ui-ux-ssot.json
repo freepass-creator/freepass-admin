@@ -1145,6 +1145,63 @@
       "tagPx": 12,
       "kpiPx": 24
     },
-    "rule": "Typography should feel conventional and native to an ERP; hierarchy comes from role, not decorative size jumps."
+    "rule": "Typography should feel conventional and native to an ERP; hierarchy comes from role, not decorative size jumps.",
+    "mobile": {
+      "panelTitlePx": 18,
+      "cardIdentityPx": 14,
+      "bodyPx": 14,
+      "inputPx": 14,
+      "actionPx": 14,
+      "quickFilterPx": 14,
+      "supportPx": 12,
+      "badgePx": 12
+    },
+    "visualQa": {
+      "computedSizeByRole": true,
+      "desktop": {
+        "panelTitlePx": [
+          17,
+          19
+        ],
+        "cardTitlePx": [
+          13,
+          15
+        ],
+        "primaryValuePx": [
+          15,
+          17
+        ],
+        "controlPx": [
+          13,
+          15
+        ],
+        "supportPx": [
+          11.5,
+          12.5
+        ]
+      },
+      "mobile": {
+        "panelTitlePx": [
+          17,
+          19
+        ],
+        "cardTitlePx": [
+          13,
+          15
+        ],
+        "primaryValuePx": [
+          13,
+          15
+        ],
+        "controlPx": [
+          13,
+          15
+        ],
+        "supportPx": [
+          11.5,
+          12.5
+        ]
+      }
+    }
   }
 }

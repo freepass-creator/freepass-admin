@@ -2204,10 +2204,10 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 ## Desktop rhythm
 
-- PanelHead: 48px
-- Search row: 52px
-- QuickFilter row: 48px
-- PanelFoot: 60px
+- PanelHead: 44px
+- Search row: 48px
+- QuickFilter row: 40px
+- PanelFoot: 56px
 
 ## Alignment
 
@@ -2224,8 +2224,8 @@ Panel과 Card는 **같은 resting background를 사용하지 않는다.**
 
 ## Mobile
 
-- PanelHead: 56px
-- Search row: 52px
+- PanelHead: 52px
+- Search row: 48px
 - QuickFilter controls: 44px touch/control 기준
 - 모바일은 단일 Panel 구조라 cross-panel y축 정렬보다 내부 rhythm 유지가 우선
 
@@ -2465,3 +2465,33 @@ Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
 - workspace content left/right edge와 visible panel group edge 비교
 - mobile gutter 16px / narrow 12px 확인
 - panel/card가 남는 폭을 채우는지 확인
+
+
+# 53. Slim vertical shell density
+
+전체적인 세련됨을 위해 카드 내용보다 **shell row의 불필요한 세로 부피를 먼저 줄인다.**
+
+## Desktop
+
+- PanelHead: 44px
+- Search row: 48px
+- QuickFilter row: 40px
+- PanelFoot: 56px
+- standard control: 36px
+- compact control: 32px
+
+## Mobile
+
+- PanelHead: 52px
+- Search row: 48px
+- QuickFilter touch row: 44px
+- QuickFilter visual pill: 34px
+- Action / touch minimum: 44px
+
+## 원칙
+
+- 카드 자체를 억지로 눌러 정보가 답답해지게 하지 않는다.
+- 먼저 header/search/filter/footer shell 높이를 줄인다.
+- touch target은 줄이지 않는다.
+- 시각 높이와 hit area를 분리한다.
+- mobile primary/action 44px은 유지한다.

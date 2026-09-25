@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { matchProduct } from '../match-product';
 import {
   emptyFinderSelection,
   findProducts,
@@ -139,16 +140,12 @@ test('white-label compatible sorts keep exact before partial and then apply requ
     specs:{modelYear:2026,mileageKm:10_000},
     offers:[offer({monthlyRent:500_000,deposit:0})],
   });
-  const selection=emptyFinderSelection();
-  const matches=findProducts([partial,exactOld,exactNew],input({selection}),undefined);
-  // Force a sub-model query through the core contract so the MODEL row is PARTIAL.
   const queried=[exactOld,exactNew,partial]
-    .map((p)=>matchFinderProduct(p,input({selection:{...selection}})))
+    .map((p)=>matchProduct(p,{subModelIds:['sub-dn8']}))
     .filter((x):x is NonNullable<typeof x>=>!!x);
-  // Basic value sorts on exact-only fixtures.
-  assert.deepEqual(sortFinderMatches(matches.filter((x)=>x.product.id!=='partial'),'year').map((x)=>x.product.id),['exact-new','exact-old']);
-  assert.deepEqual(sortFinderMatches(matches.filter((x)=>x.product.id!=='partial'),'mile').map((x)=>x.product.id),['exact-new','exact-old']);
-  assert.equal(queried.length,3);
+  // PARTIAL has newer year / shorter mileage, but EXACT must still remain first (S-12).
+  assert.deepEqual(sortFinderMatches(queried,'year').map((x)=>x.product.id),['exact-new','exact-old','partial']);
+  assert.deepEqual(sortFinderMatches(queried,'mile').map((x)=>x.product.id),['exact-new','exact-old','partial']);
 });
 
 test('same-car-many sort counts manufacturer + model in the filtered result',()=>{

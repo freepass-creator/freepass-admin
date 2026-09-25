@@ -445,6 +445,6 @@ describe('전자계약 연결 접수의 취소 경계', () => {
       { kind:'cancelled', on:true, reason:'고객 변심' },
     );
     assert.equal(r.ok,false);
-    assert.match(String((r as { error?: string }).error), /계약 취소\/환수/);
+    assert.match(String((r as { error?: string }).error), /계약취소 절차/);
   });
 });

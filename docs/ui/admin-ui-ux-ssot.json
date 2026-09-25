@@ -1439,5 +1439,17 @@
       "payout": "exact claim fee"
     },
     "rule": "Web and mobile must preserve the same Main/Key/Support meaning for the same business list."
+  },
+  "listCardAlignment": {
+    "visualPx": 64,
+    "textBlockPx": 64,
+    "visualTextGapPx": 12,
+    "lineGapPx": 2,
+    "statusIconPx": 24,
+    "statusIconLabelGapPx": 4,
+    "verticalTolerancePx": 2,
+    "primaryValue": "right-aligned-to-card-padding",
+    "numericVariant": "tabular-nums",
+    "rule": "Visual tile and Main/Key/Support text block share top and bottom alignment."
   }
 }

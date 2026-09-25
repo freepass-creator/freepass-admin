@@ -162,9 +162,10 @@ async function IntakeWorkspace({ q }: { q: Q }) {
         <PanelHead kind="목록" title={iTitle} count={`전체 ${iShown.length}건`} />
         <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']}
           filter={<FilterSheet axes={접수판축} count={iShown.length} unit="건" label="필터" />} />
+        {/* QuickFilter 업무 항목은 아직 확정 전. UI 규격 확인용으로 전체 + 대표 예시 1개만 둔다. */}
         <QuickFilter label="접수 칸" items={[
           { key: 'all', label: `전체 ${iSearched.length}`, href: hrefWith(base, q, { wiv: 'all', wpage: null }), on: iv === 'all' },
-          ...BUCKETS.map((b) => ({ key: b, label: `${b} ${iCount(b)}`, href: hrefWith(base, q, { wiv: b === '당월접수' ? null : b, wpage: null }), on: iv === b })),
+          { key: 'current', label: `당월접수 ${iCount('당월접수')}`, href: hrefWith(base, q, { wiv: null, wpage: null }), on: iv === '당월접수' },
         ]} />
         <PanelBody>
           <RowCards label={`${iTitle} 목록`}>

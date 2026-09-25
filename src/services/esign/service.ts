@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { buildConsentProfile } from '../../domain/esign/consents';
 import { allowsInsuranceSide, findContractKind, type InsuranceSide } from '../../domain/esign/contract-kind';
 import {
-  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, mergeRequiredDocuments, normalizeRequiredDocuments,
+  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, applySignerRole, mergeRequiredDocuments, normalizeRequiredDocuments,
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
 import { sha256, signedSnapshot, stableJson } from '../../domain/esign/snapshot';
@@ -599,10 +599,26 @@ export class EsignService {
         .filter((key) => !priv.consents?.includes(key));
       if (missingConsents.length) throw new Error('필수 동의가 누락되었습니다: ' + missingConsents.join(' · '));
 
-      const requiredDocs = session.snapshot.requiredDocuments.filter((d) => d.required).map((d) => d.key);
-      const uploadedDocs = new Set((priv.supportingDocuments || []).map((d) => d.key));
-      const missingDocs = requiredDocs.filter((key) => !uploadedDocs.has(key));
-      if (missingDocs.length) throw new Error('필수 서류가 누락되었습니다: ' + missingDocs.join(' · '));
+      const requiredDocs = applySignerRole(session.snapshot.requiredDocuments, priv.signerRole)
+        .filter((d) => d.required);
+      const supporting = new Map((priv.supportingDocuments || []).map((d) => [d.key, d]));
+      const missingDocs = requiredDocs.filter((d) => !supporting.has(d.key));
+      if (missingDocs.length) throw new Error('필수 서류가 누락되었습니다: ' + missingDocs.map((d) => d.label).join(' · '));
+
+      const privateAssets = (priv.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
+      if (session.snapshot.customerType !== '법인') {
+        for (const [key, label] of [['id_card', '운전면허증'], ['selfie', '본인 얼굴']] as const) {
+          const asset = privateAssets[key];
+          const path = S(asset?.path), hash = S(asset?.sha256);
+          if (!path || !hash || !(await this.assets.get(path, hash))) throw new Error(label + ' 원본 검증에 실패했습니다.');
+        }
+      }
+      for (const doc of requiredDocs) {
+        const asset = supporting.get(doc.key);
+        if (!asset?.path || !asset.sha256 || !(await this.assets.get(asset.path, asset.sha256))) {
+          throw new Error(doc.label + ' 원본 검증에 실패했습니다.');
+        }
+      }
 
       if (!priv.signaturePath || !priv.signatureSha256) throw new Error('고객 서명 원본이 없습니다.');
       const signature = await this.assets.get(priv.signaturePath, priv.signatureSha256);

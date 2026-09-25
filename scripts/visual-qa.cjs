@@ -242,6 +242,19 @@ async function inspect(page) {
           support: sample('.erp-rowcard-sub, .erp-rowcard-meta, .panel-head > .count, .dz-muted, .erp-badge, .dz-badge'),
         };
       })(),
+      listVisualTiles: (() => {
+        const tiles = [...document.querySelectorAll('.erp-rowcard-thumb, .dz-row-thumb, .dz-row-status')].filter(visible).slice(0, 40);
+        return tiles.map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            className: typeof el.className === 'string' ? el.className : '',
+            width: Math.round(r.width),
+            height: Math.round(r.height),
+            status: el.matches('.erp-rowcard-thumb--status,.dz-row-status'),
+            text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
+          };
+        });
+      })(),
       cardRoleGrammar: (() => {
         const cards = [...document.querySelectorAll('.erp-rowcard, .dz-row')].filter(visible).slice(0, 40);
         return cards.map((card) => ({
@@ -619,6 +632,13 @@ async function runInteractiveStates(page, c) {
           expectRange(info.fontSamples.primaryValues, 13, 15, 'desktop primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
+        }
+      }
+      if (Array.isArray(info.listVisualTiles)) {
+        for (const tile of info.listVisualTiles) {
+          if (Math.abs(tile.width - 64) > 1 || Math.abs(tile.height - 64) > 1) {
+            problems.push(`list visual tile must be 64x64: ${JSON.stringify(tile)}`);
+          }
         }
       }
       if (Array.isArray(info.cardRoleGrammar)) {

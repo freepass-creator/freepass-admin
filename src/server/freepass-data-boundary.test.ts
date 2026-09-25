@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT=process.cwd();
-const SCAN_ROOTS=['src/app','src/server'];
+const SCAN_ROOTS=['src/app','src/server','src/services'];
 const ALLOWED=new Set([
   'src/server/freepass-data.ts',
   'src/server/erp5.ts', // deprecated compatibility re-export only

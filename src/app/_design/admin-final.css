@@ -1982,3 +1982,72 @@ body > nav.fn-top :where(a, button):focus-visible,
   box-shadow: none !important;
   transform: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — No-wrap responsive density (mobile/live)
+   긴 내용은 세로 확장보다 ellipsis/horizontal scroll을 우선한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) > * {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) {
+    contain-intrinsic-size: auto 88px;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-body {
+    min-height: 64px;
+    height: 64px;
+    overflow: hidden;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l1 {
+    flex-wrap: nowrap;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks .dz-perks.compact {
+    min-width: 0;
+    height: 20px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .fn-main .workspace :is(
+    .primary,
+    .dz-bar-sub,
+    .quick-filters a,
+    .tabs a,
+    .tabs button,
+    .offer-picker button
+  ) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

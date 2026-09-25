@@ -1008,5 +1008,16 @@
       "tileTitleBottomBorder": false
     },
     "rule": "Use spacing and typography for detail hierarchy; do not reintroduce internal divider lines."
+  },
+  "typographyWeight": {
+    "panelHead": 700,
+    "cardTitle": 600,
+    "primaryValue": 700,
+    "subtitle": 600,
+    "action": 600,
+    "badge": 600,
+    "meta": "400-500",
+    "selectedAddsWeight": false,
+    "rule": "Use weight for hierarchy, not selection state."
   }
 }

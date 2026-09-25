@@ -185,3 +185,49 @@ Current remaining parity gaps:
 4. parity fixtures that can be replayed against both deployed surfaces from the same canonical snapshot.
 
 Do not solve the remaining gaps by copying another independent filtering implementation.
+
+
+---
+
+## Implementation follow-up — parity phase 2
+
+The Admin product workspace no longer owns a second product-filtering engine.
+
+New authoritative runtime:
+- `src/domain/search/match-product.ts` — canonical Search Contract primitives
+- `src/domain/search/finder.ts` — surface-facing Finder selection, bands, cross-facet skip-axis, exact limits and sorting
+- `src/app/products/workspace-config.ts` — URL/natural-language parsing + labels only
+- `src/app/products/workspace.tsx` — projection/rendering only
+
+Removed from the workspace path:
+- local product-axis match table
+- local Offer-axis match table
+- local same-Offer filtering loop
+- local free-text result filtering
+- local exact-limit filtering
+
+The Admin workspace now calls `findProducts()` for both visible results and per-axis cross counts.
+
+### Sorting parity
+
+Common sort meanings now live in Domain Finder:
+- popular
+- lower/higher matched monthly rent
+- lower matched deposit
+- newer model year
+- shorter current vehicle mileage
+- more inventory of the same manufacturer+model
+
+Admin keeps its existing operational default (delivery status first), but selecting one of the common keys uses the same meaning as White Label.
+
+### Vehicle hierarchy
+
+Added confirmed `model` facet in addition to manufacturer.
+
+Important non-shortcut:
+- sub-model and trim are **not** exposed as global flat facets yet.
+- Search Contract intentionally allows a MODEL-confirmed product to remain PARTIAL when a deeper sub-model/trim is queried.
+- A flat global sub-model filter without parent model context can therefore make unrelated MODEL-only inventory appear as partial candidates.
+- Next implementation must preserve manufacturer → model → sub-model → trim context instead of guessing.
+
+This is an intentional safety boundary, not a missing checkbox.

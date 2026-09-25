@@ -212,6 +212,9 @@ export function progressPatch(
   }
   if (c.kind === 'paper') {
     if (B(cur.paper) === c.on) return { ok: true, patch: {}, events: [] };
+    if (c.on && S(cur.esignContractId)) {
+      return { ok: false, error: '전자계약 연결 건은 서명완료 시 자동으로 계약서 완료됩니다 — 수동 완료할 수 없습니다' };
+    }
     if (!c.on && settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 계약서 확인을 해제할 수 없습니다' };
     return { ok: true, patch: { paper: c.on }, events: [{ field: '계약서', from: S(B(cur.paper)), to: S(c.on) }] };
   }

@@ -512,6 +512,10 @@ export class Erp5SettlementRepository {
       const [currentDoc, legacyDoc] = await Promise.all([tx.get(cref), tx.get(legacyRef)]);
       if (currentDoc.exists) {
         if (sameClawbackPayload(currentDoc.data() as Record<string, unknown>, r.doc)) {
+          const completionPatch = cancellationClawbackCompletionPatch(row, input);
+          if (Object.keys(completionPatch).length) {
+            tx.update(ref, { ...completionPatch, updatedAt: now, stateAt: new Date(now).toISOString() });
+          }
           return { ok: true as const, id: r.id, created: false };
         }
         return { ok: false as const, error: `이 계약의 ${String(r.doc.month)} 환수가 이미 있지만 금액·사유가 다릅니다 — 기존 환수를 확인합니다` };

@@ -1,14 +1,15 @@
 {
-  "version": "2026-09-21",
-  "status": "PRODUCT_PROFILE / AI_CORE_CONSUMER",
+  "version": "2026-09-25",
+  "status": "CANONICAL / USER_LOCKED / AI_CORE_CONSUMER",
   "authority": [
     "latest-user-decision",
+    "docs/ui/DESIGN-AUTHORITY.md",
+    "docs/ui/ADMIN-UI-UX-SSOT.md",
+    "docs/ui/admin-ui-ux-ssot.json",
     "docs/ui/ai-core-bindings.json",
     "freepass-creator/ai-core UI/UX registry + interaction contracts",
-    "docs/ui/ADMIN-UI-UX-SSOT.md",
     "src/app/_design/*",
-    "src/app/globals.css final rules",
-    "mockups-and-history"
+    "src/app/_design/admin-final.css"
   ],
   "typography": {
     "title": {
@@ -201,11 +202,13 @@
     "listSelectionBySurface": true,
     "mobileOnePanelAtATime": true,
     "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true,
-    "salesAppIsVisualBaseline": true
+    "salesAppIsVisualBaseline": true,
+    "legacyVisualInputsForbidden": true,
+    "canonicalDesignAuthority": "docs/ui/DESIGN-AUTHORITY.md",
+    "userApprovalRequiredForVisualRuleChange": true
   },
   "knownDebt": [
-    "globals.css contains legacy rules overridden later by final rules",
-    "UI-SPEC still contains historical specs below the current-baseline section",
+    "globals.css contains compatibility/base declarations; these are implementation-only and forbidden as visual authority",
     "row body height 64 vs rendered row about 88 needs explicit terminology",
     "--박스 and --카드 must keep separate roles: info box vs list row"
   ],
@@ -233,6 +236,10 @@
     "command": "npm run ui:check",
     "workflow": ".github/workflows/ci.yml",
     "checks": [
+      "deleted mockup/history sources cannot reappear",
+      "DevCenter/AI Core manifests cannot reference legacy visual authority/evidence",
+      "Design Authority must point to current ADMIN-UI-UX-SSOT.md",
+      "machine SSOT legacy visual inputs must remain forbidden",
       "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
       "required --ui-* CSS tokens exist",
       "machine SSOT baseline remains 18/14/12, control/action/touch 44, control radius 6, panel radius 4",
@@ -289,5 +296,21 @@
       "denseComparison": "data-table"
     },
     "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
+  },
+  "legacyPolicy": {
+    "visualInputsForbidden": true,
+    "forbiddenPaths": [
+      "docs/ui/mockups/**",
+      "docs/ui/UI-HISTORY.md",
+      "docs/DESIGN-HUB-IMPLEMENTATION-2026-09-21.md",
+      "docs/DESIGN-HUB-MAPPING-2026-09-21.md"
+    ],
+    "forbiddenFamilies": [
+      "admin-shell*",
+      "classic.css",
+      "retro-intake*",
+      "2026-09-16 rail/topbar mockup"
+    ],
+    "fallback": "FAIL_CHECK"
   }
 }

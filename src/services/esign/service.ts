@@ -571,7 +571,12 @@ export class EsignService {
     const now = Date.now();
     if (session.status === 'approving') {
       const stale = Number(session.approvingAt || 0) <= now - FINALIZE_CLAIM_TTL;
-      if (session.finalizationId !== finalizationId && !stale) throw new Error('다른 승인 요청이 처리 중입니다.');
+      if (!stale) {
+        if (session.finalizationId === finalizationId) {
+          throw new Error('같은 승인 요청이 처리 중입니다 — 잠시 후 같은 요청 식별자로 다시 확인해 주세요.');
+        }
+        throw new Error('다른 승인 요청이 처리 중입니다.');
+      }
       if (stale) {
         const released = await this.repo.transitionSession(session.id, ['approving'], {
           status: 'pending_review', approvingAt: 0, finalizationId: '',

@@ -174,6 +174,27 @@ async function inspect(page) {
         }).filter((x) => x.actions.length > 0);
         return { contracted: bars, uncontracted };
       })(),
+      wrapSamples: (() => {
+        const sample = (selector, limit = 30) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const r = el.getBoundingClientRect();
+            const s = getComputedStyle(el);
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              height: Math.round(r.height),
+              lineHeight: parseFloat(s.lineHeight) || 0,
+              whiteSpace: s.whiteSpace,
+              scrollWidth: Math.round(el.scrollWidth),
+              clientWidth: Math.round(el.clientWidth),
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+            };
+          });
+        return {
+          choiceRows: sample('.quick-filters, .erp-facet-opts, .tabs, .offer-picker'),
+          actions: sample('.erp-btn, .primary, .dz-bar-sub'),
+          cards: sample('.erp-rowcard, .dz-row'),
+        };
+      })(),
       signalSamples: (() => {
         const sample = (selector, limit = 30) =>
           [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
@@ -504,6 +525,26 @@ async function runInteractiveStates(page, c) {
         }
       }
 
+      if (info.wrapSamples) {
+        for (const row of info.wrapSamples.choiceRows || []) {
+          if (row.height > 48) {
+            problems.push(`choice row wrapped vertically: ${JSON.stringify(row)}`);
+          }
+        }
+        for (const a of info.wrapSamples.actions || []) {
+          if (a.whiteSpace !== 'nowrap') {
+            problems.push(`action text may wrap: ${JSON.stringify(a)}`);
+          }
+        }
+        if (c.width <= 900) {
+          for (const card of info.wrapSamples.cards || []) {
+            if (/dz-row/.test(card.className) && card.height > 96) {
+              problems.push(`mobile card grew too tall: ${JSON.stringify(card)}`);
+            }
+          }
+        }
+      }
+
       if (info.signalSamples) {
         for (const b of info.signalSamples.badges || []) {
           if (b.height > 22) problems.push(`badge too tall: ${JSON.stringify(b)}`);
@@ -704,6 +745,7 @@ async function runInteractiveStates(page, c) {
         shadowSamples: info.shadowSamples,
         dividerSamples: info.dividerSamples,
         signalSamples: info.signalSamples,
+        wrapSamples: info.wrapSamples,
         actionBars: info.actionBars,
         interactiveStates,
         problems,

@@ -128,8 +128,8 @@ export function TileGroup({ children }: { children: ReactNode }) {
 export type Fact = [label: string, value: ReactNode, sub?: ReactNode];
 export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge, subId, sub, meta, steps, facts, amount, amountLabel, unit = '원' }: {
   href: string; tone?: Tone; current?: boolean; title: ReactNode; badge?: ReactNode; subId?: ReactNode; sub?: ReactNode; meta?: ReactNode;
-  /** 좁은 목록(§5-4 compact)의 44px 정사각 썸네일 — 사진이 있으면 그 아이콘, 없으면 상태 아이콘 + 짧은 글자
-   *  (thumbStatus, erp-rowcard-thumb--status). 넓은 카드(§5-3 원안)에서는 그리는 자리가 없어 그냥 안 보인다. */
+  /** 목록 visual tile — 64×64. 상품은 사진/차량 아이콘, 일반 목록은 상태 아이콘 + 짧은 글자.
+   *  본문 Main/Key/Support 64px와 같은 높이로 맞춘다. */
   thumb?: ReactNode; thumbStatus?: boolean;
   /** labels · at: 지금 단계 번호(labels.length 면 다 끝, -1 이면 멈춤) */
   steps?: { labels: string[]; at: number };

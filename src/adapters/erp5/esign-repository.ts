@@ -269,8 +269,8 @@ export class Erp5EsignRepository implements EsignRepository {
       if(!intakeDoc.exists)throw new Error('계약의 원본 접수를 찾을 수 없습니다.');
       const intake=intakeDoc.data() as Record<string,unknown>;
 
-      const sessionId=String(contractRaw.esign_id??'').trim()
-        || String(lockDoc.data()?.currentSessionId??'').trim();
+      const sessionId=String(lockDoc.data()?.currentSessionId??'').trim()
+        || String(contractRaw.esign_id??'').trim();
       const sessionRef=sessionId ? db.collection(SESSIONS).doc(sessionId) : null;
       const sessionDoc=sessionRef ? await tx.get(sessionRef) : null;
       const session=sessionDoc?.exists ? ({id:sessionDoc.id,...sessionDoc.data()} as EsignSession) : null;

@@ -26,20 +26,33 @@ export const 보증금구간: RangeBand[] = [
   { k: 'd4', label: '300만↑', lo: 3000000, hi: Infinity },
 ];
 
+/** White Label `mile`과 같은 의미 — 차량 자체의 현재 누적 주행거리. */
+export const 현재주행구간: RangeBand[] = [
+  { k: 'm1', label: '1만km↓', lo: -1, hi: 10000 },
+  { k: 'm3', label: '1~3만km', lo: 10000, hi: 30000 },
+  { k: 'm5', label: '3~5만km', lo: 30000, hi: 50000 },
+  { k: 'm10', label: '5~10만km', lo: 50000, hi: 100000 },
+  { k: 'm99', label: '10만km↑', lo: 100000, hi: Infinity },
+];
+
 const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
   const b = bands.find((x) => x.k === k);
   return !!b && n !== undefined && n !== null && n > b.lo && n <= b.hi;
 };
 
+/** `mile`은 기존 Admin URL 호환을 위해 남긴 «연 약정주행» Offer 축이다. */
 export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
-export const 차축 = ['status', 'kind', 'perk', 'supplier', 'cls', 'fuel'] as const;
+/** `vmile`은 White Label과 같은 «현재 차량 주행거리»다. 둘을 합치지 않는다. */
+export const 차축 = ['status', 'kind', 'perk', 'supplier', 'maker', 'cls', 'year', 'vmile', 'fuel', 'credit'] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
 export type 상품축 = 요금축 | 차축;
 
 export const 상품축이름: [상품축, string][] = [
   ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
-  ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '약정주행'], ['supplier', '공급사'], ['cls', '차급'], ['fuel', '연료'],
+  ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '연 약정주행'],
+  ['maker', '제조사'], ['cls', '차급'], ['year', '연식'], ['vmile', '현재 주행거리'],
+  ['fuel', '연료'], ['credit', '심사'], ['supplier', '공급사'],
 ];
 
 export const 요금맞음: Record<요금축, (o: Offer, k: string) => boolean> = {
@@ -67,7 +80,7 @@ export type ParsedProductSearch = {
   text: string;
   inferred: Partial<Record<상품축, string[]>>;
   tokens: { axis: 상품축; key: string; label: string }[];
-  limits: { rentMax?: number; depositMax?: number };
+  limits: { rentMax?: number; depositMax?: number; vehicleMileageMax?: number };
   /** 검색창에서 따로 적은 혜택조건은 각각 AND다. facet의 같은 축 OR 규칙과 섞지 않는다. */
   requirements: { perks: string[]; driverAge?: number };
 };
@@ -112,9 +125,19 @@ export function parseProductSearch(raw: string): ParsedProductSearch {
     return ' ';
   });
 
-  rest = rest.replace(/(?:연\s*)?(\d+(?:\.\d+)?)\s*만\s*km/gi, (_, n: string) => {
+  // «연 N만km»만 약정주행이다. «N만km / 주행 N만km»는 차량 현재 주행거리로 읽는다.
+  rest = rest.replace(/연\s*(\d+(?:\.\d+)?)\s*만\s*km/gi, (_, n: string) => {
     const km = Math.round(Number(n) * 10000);
     if (Number.isFinite(km) && km > 0) add('mile', String(km), `연 ${Number(n).toLocaleString('ko-KR')}만km`);
+    return ' ';
+  });
+  rest = rest.replace(/(?:현재\s*)?(?:주행(?:거리)?\s*)?(\d+(?:\.\d+)?)\s*만\s*km\s*(?:이하|이내|밑)?/gi, (_, n: string) => {
+    const max = Math.round(Number(n) * 10000);
+    if (Number.isFinite(max) && max > 0) {
+      limits.vehicleMileageMax = max;
+      for (const b of 현재주행구간) if (max > b.lo) infer('vmile', b.k);
+      token('vmile', `max:${max}`, `현재 주행 ${Number(n).toLocaleString('ko-KR')}만km 이하`);
+    }
     return ' ';
   });
   // 금액 상한 — 기존 구간 facet을 여러 값 OR로 켠다. 별도 가격 엔진을 만들지 않는다.
@@ -191,6 +214,15 @@ export function mergeProductSelections(
 
 
 /** 자연어에서 읽은 임의 금액 상한을 Offer 실제 숫자로 마지막 확인한다. */
+export function productWithinSearchLimits(
+  product: { specs: { mileageKm?: number } },
+  limits: ParsedProductSearch['limits'],
+): boolean {
+  if (limits.vehicleMileageMax === undefined) return true;
+  const km = product.specs.mileageKm;
+  return typeof km === 'number' && Number.isFinite(km) && km > 0 && km <= limits.vehicleMileageMax;
+}
+
 export function offerWithinSearchLimits(
   o: Pick<Offer, 'monthlyRent' | 'deposit'>,
   limits: ParsedProductSearch['limits'],

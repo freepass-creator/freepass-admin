@@ -30,7 +30,7 @@ export function RouteError({ title, error, reset }: {
         <PanelHeader title={title} />
         <div className="dz-state-block error" role="alert">
           <strong>데이터를 불러오지 못했습니다.</strong>
-          <p>{error.message || '일시적인 오류가 발생했습니다.'}</p>
+          <p>일시적인 오류가 발생했습니다. 다시 시도해 주세요.</p>
           {error.digest ? <small>오류번호 {error.digest}</small> : null}
         </div>
         <ActionBar>

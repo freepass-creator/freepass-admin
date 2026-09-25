@@ -1806,8 +1806,8 @@
     white-space: nowrap;
   }
 
-  /* compact 목록은 필요한 정보줄만큼 자연스럽게 늘어난다.
-   * 줄 수를 고정하지 않고 각 줄의 역할/리듬만 고정한다. */
+  /* compact 목록은 Main / Key / Support 3줄을 고정한다.
+   * 더 많은 정보는 상세 화면이 책임진다. */
   .erp-std .erp-panel--compact .erp-rowcard-id {
     grid-auto-rows: var(--fp-card-line-h);
   }
@@ -1837,7 +1837,7 @@
     white-space: nowrap;
   }
 
-  /* 내용 카드(Tile)는 label/value 한 행 문법을 반복한다. 줄 수 자체는 정보량이 정한다. */
+  /* Tile은 목록 RowCard와 별도인 상세/내용 부품이다. label/value 행을 필요한 만큼 반복할 수 있다. */
   .erp-std .erp-tile-row {
     min-height: var(--fp-card-line-h);
     line-height: var(--fp-card-line-h);

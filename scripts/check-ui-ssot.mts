@@ -187,6 +187,15 @@ for (const [re, label] of actionRatioCss) {
   if (!re.test(cssFinal)) errors.push(`action ratio CSS missing: ${label}`);
 }
 
+const compactSignalBaseline = [
+  ['src/app/_erp/parts.tsx', /data-thumb-status=\{thumbStatus \? 'true' : undefined\}/, 'status-thumbnail marker'],
+  ['src/app/_erp/shell.css', /\.erp-rowcard\[data-thumb-status="true"\][\s\S]*?\.erp-rowcard-title > \.erp-badge[\s\S]*?display:\s*none/, 'compact duplicate badge suppression'],
+] as const;
+for (const [file, re, label] of compactSignalBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: compact signal contract missing: ${label}`);
+}
+
 const brandRestraintBaseline = [
   [/--erp-color-primary:\s*#1B2A4A/i, 'desktop primary navy #1B2A4A'],
   [/--erp-color-primary-weak:\s*#EEF3FA/i, 'desktop primary weak #EEF3FA'],

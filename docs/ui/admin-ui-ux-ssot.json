@@ -1260,28 +1260,26 @@
   "cardLines": {
     "lineHeightPx": 20,
     "lineGapPx": 2,
-    "lineCount": "content-driven",
-    "maxLines": null,
-    "listCard": {
-      "firstLine": "highest-priority identity + optional primary value",
-      "subsequentLines": "descending business priority",
-      "wrap": false,
-      "overflow": "ellipsis",
-      "vehicleExample": [
-        "vehicle/model identity + monthly rent",
-        "vehicle number + product kind",
-        "term + deposit",
-        "supplier/year/mileage/color/other operational facts as needed"
-      ]
-    },
+    "lineCount": 3,
+    "roles": [
+      "main",
+      "key",
+      "support"
+    ],
+    "wrap": false,
+    "overflow": "ellipsis",
+    "statusPlacement": "main-inline-badge",
     "amountDisplay": {
-      "list": "compact-ten-thousand-won-allowed",
-      "examples": [
-        "월 67만 원",
-        "보증 500만 원"
+      "compactAllowedFor": [
+        "monthlyRent",
+        "deposit"
       ],
-      "detail": "exact-won-preferred",
-      "listPattern": "term · 월 N만 원 · 보증 N만 원"
+      "exactWonRequiredFor": [
+        "fee",
+        "claim",
+        "payout",
+        "settlement"
+      ]
     },
     "alignment": {
       "text": "left",
@@ -1289,7 +1287,7 @@
       "money": "right",
       "numericVariant": "tabular-nums"
     },
-    "rule": "Standardize line roles and rhythm, not the number of lines or total card height."
+    "rule": "Internal Admin list cards are exactly Main/Key/Support; additional information belongs in detail."
   },
   "listAmountLanguage": {
     "compactAllowedFor": [

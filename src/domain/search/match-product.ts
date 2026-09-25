@@ -57,6 +57,8 @@ export function matchOffer(
   if (!inRange(offer.monthlyRent, query.monthlyRent)) return false;
   if (!inRange(offer.deposit, query.deposit)) return false;
   if (!inRange(offer.annualMileageKm, query.annualMileageKm)) return false;
+  if (query.annualMileageKmValues?.length
+    && (offer.annualMileageKm === undefined || !query.annualMileageKmValues.includes(offer.annualMileageKm))) return false;
 
   if (query.policies?.length) {
     const resolved = resolveOfferPolicies(product, offer);

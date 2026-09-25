@@ -27,6 +27,7 @@
 ### Vercel 첫 배포 체크리스트 (도메인 없이)
 1. Vercel 프로젝트 생성 → 이 저장소 연결, Node 24.x.
 2. 환경변수: `SESSION_SECRET`(32자 이상 무작위), `GOOGLE_OAUTH_CLIENT_ID/SECRET`, `GOOGLE_WORKSPACE_DOMAIN=teamjpk.com`, `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON`, `ERP5_STORAGE_BUCKET`(필요 시), `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, `FREEPASS_DATA_ADMIN_CATALOG_READ_MODE=OBSERVE`.
+   - 값 확인: `npm run deploy:check` (값은 출력하지 않음). Vercel에 넣은 값은 `vercel env pull .env.check --environment=production && node --env-file=.env.check --import tsx scripts/check-deploy-env.mts && rm .env.check`.
 3. 첫 배포 후 production 주소(`https://<project>.vercel.app`)를 `APP_BASE_URL`·`PUBLIC_BASE_URL`·`CLAIM_LINK_BASE`에 넣고 재배포.
 4. Google Cloud OAuth 클라이언트에 승인된 리디렉션 URI `https://<project>.vercel.app/login/google/callback` 등록.
 5. Workspace 계정 로그인 / 외부 계정 거부 확인 → `/system/data-status` 확인 → 상품·접수·정산 조회 확인.

@@ -11,6 +11,7 @@
     "uiux:map": "node scripts/check-uiux-consumer.mjs",
     "ui:check": "tsx scripts/check-ui-ssot.mts",
     "data:check": "tsx scripts/check-live-data-wiring.mts",
+    "deploy:check": "tsx scripts/check-deploy-env.mts",
     "test:contract-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts",
     "test:intake-firestore": "tsx --test src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
     "test:freepass-data-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",

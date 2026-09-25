@@ -2813,3 +2813,33 @@ Visual QA:
 - resting Panel/Card/Button/Search/QuickFilter에 outer shadow가 있으면 FAIL
 - floating layer는 shadow 허용
 - selected card는 outer shadow 금지
+
+# 64. Geometry consistency
+
+상용 ERP의 단단함은 요소를 두껍게 만드는 것이 아니라
+**같은 역할이 항상 같은 geometry를 갖는 것**에서 만든다.
+
+Desktop:
+- Panel radius: 8px
+- Card / Tile / ListCard: 6px
+- Button / Input / Search / Select: 6px
+- Card / Tile padding: 12px
+- Compact RowCard: vertical 10px / horizontal 12px
+- Panel head/search/quick/footer horizontal padding: 16px
+
+Mobile:
+- 현재 Panel은 화면 surface이므로 radius 0
+- Card / Form group / Search / Control: 6px
+- 일반 card padding: 12px
+- 380px 미만 narrow device에서만 card horizontal padding 8px 허용
+
+원칙:
+- 같은 역할의 radius/padding을 페이지별로 다시 만들지 않는다.
+- 장식용 큰 radius를 추가하지 않는다.
+- 1~2px optical correction을 새 token처럼 확산하지 않는다.
+- geometry 차이는 역할 차이가 있을 때만 허용한다.
+
+Visual QA:
+- Panel/Card/Control computed radius 검사
+- Card horizontal padding 검사
+- 허용값에서 1px 이상 벗어나면 회귀로 취급

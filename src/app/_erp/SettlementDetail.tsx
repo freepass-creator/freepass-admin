@@ -4,13 +4,12 @@
  *   그리지 않는다). 원래 Workspace.tsx 안에 있던 것을 그대로 뽑았다 — 모양 · 계산 전부 그대로.
  */
 import Link from 'next/link';
-import { settlements, today } from '../../server/erp5';
+import { settlements, today, writeEnabled } from '../../server/freepass-data';
 import { bucketOf } from '../../domain/settlement/stage';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
 import { adminBlockLabel, adminWorkflowPhaseOf, blockOf, type SettlementRow } from '../../domain/settlement/types';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
-import { writeEnabled } from '../../adapters/erp5/settlement-repository';
 import { txt, when } from '../_fn/fmt';
 import { IntakeProgress } from './IntakeProgress';
 import { hrefWith, PanelBody, PanelFoot, PanelHead, Steps, won0 } from './parts';

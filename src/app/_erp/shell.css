@@ -1422,3 +1422,59 @@
     gap: var(--erp-sp-2);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Typography weight hierarchy
+ * 굵기는 위계에, 선택 상태는 surface에 맡긴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-head h2 {
+    font-weight: 700;
+  }
+
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-listcard-title,
+    .erp-subtitle,
+    .erp-tile-title,
+    .erp-tile-row b
+  ) {
+    font-weight: 600;
+  }
+
+  .erp-std :is(
+    .erp-rowcard-amount strong,
+    .erp-kpi-value,
+    .erp-tile-row strong
+  ) {
+    font-weight: 700;
+  }
+
+  .erp-std :is(
+    .erp-btn,
+    .erp-btn--primary,
+    .erp-facet-opt,
+    .erp-badge,
+    .erp-tag
+  ) {
+    font-weight: 600;
+  }
+
+  .erp-std :is(
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-docstate,
+    .erp-info-card dd
+  ) {
+    font-weight: 400;
+  }
+
+  /* selected는 굵기로 재강조하지 않는다. */
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"]
+  ) :is(.erp-rowcard-title,.erp-tile-row b) {
+    font-weight: 600;
+  }
+}

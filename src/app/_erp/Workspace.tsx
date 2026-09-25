@@ -27,7 +27,7 @@ import { AutoSelect } from './AutoSelect';
 import { CarIcon, ProductDetail, STATUS_TONE, carName } from './ProductDetail';
 import { buildProductList } from './productList';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -133,9 +133,11 @@ async function IntakeWorkspace({ q }: { q: Q }) {
               <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
                 tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<CarIcon />}
                 title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-                subId={txt(p.registration?.vehicleNumber)} sub={`${txt(p.vehicle.manufacturerId)} · ${txt(p.supplierName ?? p.supplierId)}`}
+                subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
+                meta={`${offer.termMonths}개월 · 보증금 ${offer.deposit ? `${manWon(offer.deposit)}원` : '없음'}`}
+                lines={[txt(p.supplierName ?? p.supplierId)]}
                 facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
-                amount={won0(offer.monthlyRent)} unit="원/월" />
+                amount={manWon(offer.monthlyRent)} unit="원/월" />
             ))}
           </RowCards>
         </PanelBody>

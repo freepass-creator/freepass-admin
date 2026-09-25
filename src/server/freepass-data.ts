@@ -70,7 +70,7 @@ export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
 export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
-export { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
+export { ERP5_PROJECT_ID, erp5Ready, demoMode } from '../adapters/erp5/firestore';
 
 export const today = () => {
   const d = new Date(Date.now() + 9 * 3600_000);

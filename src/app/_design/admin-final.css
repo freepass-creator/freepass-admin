@@ -2269,3 +2269,35 @@ body > nav.fn-top :where(a, button):focus-visible,
     text-align: right;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Mobile list main-line overflow safety
+   Main 우측 대표값은 보존하고, 긴 identity가 먼저 줄어든다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row-l1 {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row-l1 > b {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-badges {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    flex: 0 0 auto;
+    max-width: 42%;
+  }
+}

@@ -49,6 +49,7 @@ jobs:
         run: >
           npx tsx --test
           src/domain/settlement/__tests__/intake.test.ts
+          src/domain/settlement/__tests__/catalog-snapshot.test.ts
           src/domain/settlement/__tests__/fee-manual-claw.test.ts
           src/domain/settlement/performance-filter.test.ts
           src/domain/settlement/__tests__/lifecycle.test.ts

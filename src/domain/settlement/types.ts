@@ -170,7 +170,6 @@ export interface SettlementRow {
   esignContractId?: Maybe<string>;
   contractCancelledAt?: Maybe<number>;
   contractCancellationReason?: Maybe<string>;
-  contractCancellationNeedsClawback?: boolean;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

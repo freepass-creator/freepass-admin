@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { productList, settlements, today } from '../../server/erp5';
-import { emptyFinderSelection, findProducts, finderAxisMatches, type FinderInput } from '../../domain/search/finder';
+import {
+  emptyFinderSelection, FINDER_SORTS, findProducts, finderAxisMatches, sortFinderMatches,
+  type FinderInput, type FinderSort,
+} from '../../domain/search/finder';
 import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
@@ -74,10 +77,10 @@ export async function ProductWorkspace({ q, mode, base }: {
     text: '',
   });
   const hits = findProducts(rows, finderInput);
-  const sorted = hits
-    .map((h) => ({ ...h, lead: lead(h.matchedOffers) }))
-    .sort((a, b) => (STATUS_ORDER[a.product.status ?? ''] ?? 9) - (STATUS_ORDER[b.product.status ?? ''] ?? 9)
-      || (a.lead?.monthlyRent ?? Infinity) - (b.lead?.monthlyRent ?? Infinity));
+  const requestedSort = FINDER_SORTS.some((x) => x.key === sp(q.sort))
+    ? sp(q.sort) as FinderSort : 'admin';
+  const sorted = sortFinderMatches(hits, requestedSort)
+    .map((h) => ({ ...h, lead: lead(h.matchedOffers) }));
   /* ★쪽을 나누지 않는다 — 목록은 쭉 구른다(대표 2026-09-18 「스크롤이 쭉쭉쭉 되어야 함」). 사진은 화면에 올 때 부른다(lazy) */
   const shown = sorted;
 
@@ -255,6 +258,17 @@ export async function ProductWorkspace({ q, mode, base }: {
                 href={keep({ dep: 켜끔(explicitPsel.dep, 'd0'), page: '' })}>무보증</Link>
             )}
           </div>
+          <form className="dz-sort" action={base}>
+            {숨김(['sort', 'id', 'offer'])}
+            <label>
+              <span>정렬</span>
+              <select name="sort" defaultValue={requestedSort === 'admin' ? '' : requestedSort}>
+                <option value="">기본 · 출고상태</option>
+                {FINDER_SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </label>
+            <button type="submit">적용</button>
+          </form>
           </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (

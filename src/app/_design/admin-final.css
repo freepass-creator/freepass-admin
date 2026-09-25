@@ -1954,3 +1954,31 @@ body > nav.fn-top :where(a, button):focus-visible,
     border-bottom-color: transparent !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Compact signal hierarchy (mobile/live)
+   QuickFilter=pill, Badge=compact rounded rect.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-badge,
+.fn-main .workspace .dz-row .dz-badge,
+.fn-main .workspace .dz-row.on .dz-badge {
+  min-height: 20px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  line-height: 14px;
+  gap: 4px;
+}
+
+.fn-main .workspace .dz-badge .dz-ico {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+/* status/signal은 action처럼 커지거나 떠오르지 않는다. */
+.fn-main .workspace :is(.dz-badge,.dz-row-status,.dz-perk) {
+  min-width: 0;
+  box-shadow: none !important;
+  transform: none !important;
+}

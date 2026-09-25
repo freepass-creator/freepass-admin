@@ -131,11 +131,10 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       <Panel compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
         <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" facets={[claimKindFacet]} keep={['month', 'cgs']} />
+        {/* 상태 QuickFilter 업무 항목은 미확정. 정산월 + 전체/미처리 예시만 유지한다. */}
         <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
-          { key: 'issue', label: `이슈 ${claimCount('issue')}`, href: hrefWith(base, q, { cgs: 'issue' }), on: cgs === 'issue' },
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
-          { key: 'done', label: `완료 ${claimCount('done')}`, href: hrefWith(base, q, { cgs: 'done' }), on: cgs === 'done' },
         ]} />
         <PanelBody>{list('청구', shownClaim, '청구서')}</PanelBody>
       </Panel>
@@ -192,11 +191,10 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       <Panel compact>
         <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
         <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" facets={[payKindFacet]} keep={['month', 'pgs']} />
+        {/* 상태 QuickFilter 업무 항목은 미확정. 정산월 + 전체/미처리 예시만 유지한다. */}
         <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${payCount('all')}`, href: hrefWith(base, q, { pgs: null }), on: pgs === 'all' },
-          { key: 'issue', label: `이슈 ${payCount('issue')}`, href: hrefWith(base, q, { pgs: 'issue' }), on: pgs === 'issue' },
           { key: 'todo', label: `미처리 ${payCount('todo')}`, href: hrefWith(base, q, { pgs: 'todo' }), on: pgs === 'todo' },
-          { key: 'done', label: `완료 ${payCount('done')}`, href: hrefWith(base, q, { pgs: 'done' }), on: pgs === 'done' },
         ]} />
         <PanelBody>{list('지급', shownPay, '지급명세')}</PanelBody>
       </Panel>

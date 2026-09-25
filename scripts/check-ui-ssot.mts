@@ -180,8 +180,9 @@ const interactionFiles = {
 };
 
 const interactionExpected = [
-  ['filter dialog aria-modal', interactionFiles.filterSheet, /aria-modal="true"/],
-  ['filter dialog focus trap', interactionFiles.filterSheet, /e\.key !== 'Tab'/],
+  ['filter mobile modal semantics', interactionFiles.filterSheet, /aria-modal=\{modal \|\| undefined\}/],
+  ['filter modal breakpoint', interactionFiles.filterSheet, /matchMedia\('\(max-width: 900px\)'\)/],
+  ['filter mobile-only focus trap', interactionFiles.filterSheet, /!mq\.matches \|\| e\.key !== 'Tab'/],
   ['filter dialog focus entry', interactionFiles.filterSheet, /focusables\(\)\[0\]\?\.focus/],
   ['detail tabs roving tabindex', interactionFiles.detailTabs, /tabIndex=\{tab === 'summary' \? 0 : -1\}/],
   ['detail tabs arrow navigation', interactionFiles.detailTabs, /ArrowLeft.*ArrowRight.*Home.*End/s],

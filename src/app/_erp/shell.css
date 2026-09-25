@@ -2235,3 +2235,26 @@
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Stable list card rhythm
+ * 카드 간격은 일정, hover/selected는 면만 바뀌고 geometry는 움직이지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-rowcards {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    transform: none !important;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard:hover {
+    transform: none !important;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard[aria-current="true"] {
+    transform: none !important;
+  }
+}

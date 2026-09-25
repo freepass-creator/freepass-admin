@@ -25,7 +25,7 @@ export function RouteError({ title, error, reset }: {
   reset: () => void;
 }) {
   return (
-    <section className="workspace dz-route-state" data-phone="list">
+    <section className="workspace erp-screen dz-route-state" data-phone="list">
       <section className="panel product-panel">
         <PanelHeader title={title} />
         <div className="dz-state-block error" role="alert">

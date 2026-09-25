@@ -81,7 +81,7 @@ test('no page renders the older §4 skeleton (PageHeader/erp-cols) any more', ()
   assert.ok(read('src/app/_erp/Workspace.tsx').includes("const 실적칸: Bucket[] = ['분납실적', '완납실적']"));
 });
 
-test('each page renders the standard screen for PC and keeps the phone board', () => {
+test('each actual route preserves responsive composition across target viewports', () => {
   for (const [page, screen, board] of [
     ['src/app/products/page.tsx', '<ProductsScreen', '<ProductWorkspace'],
     ['src/app/intake/page.tsx', '<WorkspaceScreen', '<ProductWorkspace'],
@@ -90,8 +90,8 @@ test('each page renders the standard screen for PC and keeps the phone board', (
   ]) {
     const src = read(page);
     assert.ok(src.includes(screen), `${page}: ${screen}`);
-    assert.ok(src.includes(board), `${page}: ${board}`);
+    assert.ok(src.includes(board), `${page}: responsive composition`);
   }
   const shell = read('src/app/_erp/shell.css');
-  assert.ok(/max-width: 900px[\s\S]*\.erp-screen/.test(shell), 'phone hides the PC screens');
+  assert.ok(/max-width: 900px[\s\S]*\.erp-screen/.test(shell), 'responsive breakpoint is explicit');
 });

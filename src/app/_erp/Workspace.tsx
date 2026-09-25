@@ -179,8 +179,8 @@ async function IntakeWorkspace({ q }: { q: Q }) {
                   title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
                   subId={txt(r.plate)} sub={txt(r.model)}
                   facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-                  amount={won0(perfView ? marginOf(r, now) : r.rent)}
-                  {...(perfView ? { amountLabel: '남는 것' } : { unit: '원/월' })} />
+                  amount={perfView ? `남는 ${manWon(marginOf(r, now))} 원` : `월 ${manWon(r.rent)} 원`}
+                  unit="" />
               );
             })}
           </RowCards>
@@ -275,7 +275,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
           title={txt(r.customer)} badge={<Badge tone={INTAKE_TONE[b]}>{b}</Badge>}
           subId={txt(r.plate)} sub={txt(r.model)}
           facts={[['공급사', txt(r.supplier)], ['상품 · 기간', `${txt(r.product)} · ${r.term ?? '—'}개월`]]}
-          amount={won0(marginOf(r, now))} amountLabel="남는 것" />
+          amount={`남는 ${manWon(marginOf(r, now))} 원`} unit="" />
       ))}
     </RowCards>
   );

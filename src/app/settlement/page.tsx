@@ -137,19 +137,16 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 <SearchField name="gq" defaultValue={sp(q.gq)} placeholder={`${who} 이름`} />
               </div>
             </form>
-            <div className="quick-filters">
-              <Link className={tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', g: '', ic: '' })}>청구 · 공급사</Link>
-              <Link className={tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', g: '', ic: '' })}>지급 · 영업채널</Link>
-              <Link className={gs === 'all' ? 'active' : ''} href={keep({ gs: 'all', g: '', ic: '', v: 'list' })}>전체 <small>{groupCount('all')}</small></Link>
-              <Link className={gs === 'issue' ? 'active warn' : 'warn'} href={keep({ gs: 'issue', g: '', ic: '', v: 'list' })}>이슈 <small>{groupCount('issue')}</small></Link>
-              <Link className={gs === 'todo' ? 'active' : ''} href={keep({ gs: 'todo', g: '', ic: '', v: 'list' })}>미처리 <small>{groupCount('todo')}</small></Link>
-              <Link className={gs === 'done' ? 'active' : ''} href={keep({ gs: 'done', g: '', ic: '', v: 'list' })}>완료 <small>{groupCount('done')}</small></Link>
-              {미정수 > 0 && (
-                <Link className={`${month === NO_MONTH ? 'active ' : ''}warn`} href={달로(NO_MONTH)}>{NO_MONTH} <small>{미정수}</small></Link>
-              )}
+            <div className="dz-settle-axis" aria-label="정산 축">
+              <Link className={tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', g: '', ic: '' })}>
+                <span>청구</span><small>공급사 기준</small>
+              </Link>
+              <Link className={tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', g: '', ic: '' })}>
+                <span>지급</span><small>영업채널 기준</small>
+              </Link>
             </div>
             {/* 달 — ‹ 앞 달 | 2026-09 | 뒤 달 › · 합 */}
-            <div className="dz-month">
+            <div className="dz-month dz-settle-period">
               {앞달 && month !== NO_MONTH ? <Link href={달로(앞달)} aria-label="앞 달">‹</Link> : <span />}
               <b>{month}</b>
               {뒤달 && month !== NO_MONTH ? <Link href={달로(뒤달)} aria-label="뒤 달">›</Link> : <span />}
@@ -158,6 +155,15 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
                 {t.clawback ? <small> · 환수 −{won(t.clawback)}</small> : null}
                 {t.unknown ? <small className="dz-warn-txt"> · 금액 모름 {t.unknown}</small> : null}
               </span>
+            </div>
+            <div className="quick-filters dz-settle-status">
+              <Link className={gs === 'all' ? 'active' : ''} href={keep({ gs: 'all', g: '', ic: '', v: 'list' })}>전체 <small>{groupCount('all')}</small></Link>
+              <Link className={gs === 'issue' ? 'active warn' : 'warn'} href={keep({ gs: 'issue', g: '', ic: '', v: 'list' })}>이슈 <small>{groupCount('issue')}</small></Link>
+              <Link className={gs === 'todo' ? 'active' : ''} href={keep({ gs: 'todo', g: '', ic: '', v: 'list' })}>미처리 <small>{groupCount('todo')}</small></Link>
+              <Link className={gs === 'done' ? 'active' : ''} href={keep({ gs: 'done', g: '', ic: '', v: 'list' })}>완료 <small>{groupCount('done')}</small></Link>
+              {미정수 > 0 && (
+                <Link className={`${month === NO_MONTH ? 'active ' : ''}warn`} href={달로(NO_MONTH)}>{NO_MONTH} <small>{미정수}</small></Link>
+              )}
             </div>
             {month === NO_MONTH && <Notice tone="warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</Notice>}
           </div>
@@ -202,16 +208,15 @@ export default async function SettlementPage({ searchParams }: { searchParams: P
             )}
             {gSel && (
               <SummaryGrid>
-                <SummaryItem label="합">{won(gSel.total)}원</SummaryItem>
-                <SummaryItem label="환수">{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</SummaryItem>
                 <SummaryItem label={tab === 'claim' ? '청구할 돈' : '줄 돈'}><b>{won(gSel.net)}원</b></SummaryItem>
-                <SummaryItem label={tab === 'claim' ? '청구서 보냄' : '지급 통보'}>{gSel.done} / {gSel.lines.length}</SummaryItem>
-                <SummaryItem label={tab === 'claim' ? '수금 완료' : '지급 완료'}><b>{gSel.completed} / {gSel.lines.length}</b></SummaryItem>
+                <SummaryItem label="원 실적">{won(gSel.total)}원</SummaryItem>
+                <SummaryItem label="환수">{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</SummaryItem>
+                <SummaryItem label="진행">{gSel.done} / {gSel.lines.length} · 완료 {gSel.completed}</SummaryItem>
               </SummaryGrid>
             )}
             {/* 발행 — 번호 · 미리보기(공급가 · 부가세 · 합계) · 막힌 까닭 · 발행 뒤 원장이 바뀜 */}
             {gSel && 계획 && (
-              <div className="dz-issue">
+              <div className="dz-issue dz-settle-doc">
                 <p><b>{문서}</b> {장 ? <>{장.invoiceNo} · 발행 {new Date(장.issuedAt).toISOString().slice(0, 10)}</> : <span className="dz-muted">아직 안 나감</span>}</p>
                 {계획.ok
                   ? <p className="dz-issue-sum">공급가 {won(계획.invoice.supply)} · 부가세 {won(계획.invoice.vat)} · <b>합계 {won(계획.invoice.total)}원</b>{계획.invoice.clawback ? ` (환수 −${won(계획.invoice.clawback)})` : ''}</p>

@@ -1430,8 +1430,8 @@
  * 화면마다 예쁘게 꾸미지 않고, 통상적인 업무도구의 크기 위계만 고정한다.
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
-  .erp-std .erp-panel-head h2 { font-size: var(--erp-fs-panel); }
-  .erp-std :is(.erp-subtitle,.erp-section-title) { font-size: var(--erp-fs-section); }
+  .erp-std .erp-panel-head h2 { font-size: var(--erp-fs-body); }
+  .erp-std :is(.erp-subtitle,.erp-section-title) { font-size: var(--erp-fs-body); }
   .erp-std :is(
     .erp-rowcard-title,
     .erp-listcard-title,
@@ -1445,7 +1445,7 @@
     .erp-input,
     .erp-info-card dd
   ) { font-size: var(--erp-fs-body); }
-  .erp-std :is(.erp-rowcard-amount strong,.erp-tile-row strong) { font-size: var(--erp-fs-section); }
+  .erp-std :is(.erp-rowcard-amount strong,.erp-tile-row strong) { font-size: var(--erp-fs-body); }
   .erp-std :is(
     .erp-panel-kind,
     .erp-panel-count,

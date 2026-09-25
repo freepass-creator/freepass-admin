@@ -43,13 +43,13 @@ const 구간에 = (bands: RangeBand[], k: string, n?: number | null) => {
 /** `mile`은 기존 Admin URL 호환을 위해 남긴 «연 약정주행» Offer 축이다. */
 export const 요금축 = ['term', 'rent', 'dep', 'mile'] as const;
 /** `vmile`은 White Label과 같은 «현재 차량 주행거리»다. 둘을 합치지 않는다. */
-export const 차축 = ['status', 'kind', 'perk', 'supplier', 'maker', 'cls', 'year', 'vmile', 'fuel', 'credit'] as const;
+export const 차축 = ['status', 'vc', 'kind', 'perk', 'supplier', 'maker', 'cls', 'year', 'vmile', 'fuel', 'credit'] as const;
 export type 요금축 = (typeof 요금축)[number];
 export type 차축 = (typeof 차축)[number];
 export type 상품축 = 요금축 | 차축;
 
 export const 상품축이름: [상품축, string][] = [
-  ['status', '출고상태'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
+  ['status', '출고상태'], ['vc', '차종'], ['kind', '상품구분'], ['perk', '혜택'], ['term', '계약기간'],
   ['rent', '월 대여료'], ['dep', '보증금'], ['mile', '연 약정주행'],
   ['maker', '제조사'], ['cls', '차급'], ['year', '연식'], ['vmile', '현재 주행거리'],
   ['fuel', '연료'], ['credit', '심사'], ['supplier', '공급사'],

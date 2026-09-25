@@ -147,11 +147,11 @@ export function planInvoice(
   return { ok: true, invoice, patches };
 }
 
-/** 환수 포함 묶음은 행별 현금 배분 정책이 확정되기 전까지 개별 행 수금/지급을 잠근다. */
-export function invoiceNeedsCashAllocation(inv: IssuedInvoice | null | undefined): boolean {
-  if (!inv) return false;
-  return (inv.clawback ?? 0) > 0 || (inv.snapshot?.clawbacks?.length ?? 0) > 0;
-}
+/*
+ * ★환수가 든 문서의 돈 — 사용자 확정 2026-09-25: 환수는 청구서·지급명세서에 «마이너스 한 줄»로 들어간다.
+ *   정상 줄은 각자 제 금액(cashTargetOf)으로 수금/지급하고, 환수 줄은 같은 문서 안에서 상계로 회수된다.
+ *   통장에 오가는 돈 = 정상 줄 합계 − 환수(부가세 포함) = 문서 total. 환수를 정상 줄들에 나눠 싣지 않는다.
+ */
 
 /** 실제 통장 기준 목표/남은 금액 — 공급가가 아니라 부가세 포함 실제 현금 기준. */
 export function cashTargetOf(axis: Axis, r: SettlementRow): number | null {

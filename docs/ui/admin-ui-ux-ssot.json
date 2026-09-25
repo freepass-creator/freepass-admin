@@ -208,7 +208,6 @@
     "userApprovalRequiredForVisualRuleChange": true
   },
   "knownDebt": [
-    "globals.css contains compatibility/base declarations; these are implementation-only and forbidden as visual authority",
     "row body height 64 vs rendered row about 88 needs explicit terminology",
     "--박스 and --카드 must keep separate roles: info box vs list row"
   ],
@@ -219,7 +218,6 @@
     "mobile back visual remains 32px but hit area is expanded to 44px",
     "core products/intake/settlement/esign routes use shared visual primitives",
     "CI runs typecheck, tests, and UI SSOT regression check",
-    "globals.css legacy base layer is explicitly marked as non-authoritative",
     "shared primitives replace repeated markup across core routes",
     "FilterSheet restores focus to trigger and uses per-instance dialog ids",
     "DetailTabs exposes tab semantics",
@@ -230,7 +228,8 @@
     "global focus-visible treatment is standardized",
     "stable inline visual styles moved to shared CSS classes",
     "badge/list/section icon names are partially compile-time constrained with IconName",
-    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT"
+    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT",
+    "globals.css legacy mockup visual layer removed; only canonical foundation + compatibility/final rules remain"
   ],
   "automation": {
     "command": "npm run ui:check",
@@ -275,7 +274,8 @@
     ],
     "intakePanelsBoundary": "src/app/intake/panels.tsx",
     "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
-    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
+    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx",
+    "baseCssRole": "canonical-foundation-and-compatibility"
   },
   "aiCore": {
     "consumerBinding": "docs/ui/ai-core-bindings.json",

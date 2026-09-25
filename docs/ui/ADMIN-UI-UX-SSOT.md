@@ -3,7 +3,7 @@
 상태: **CANONICAL / USER-LOCKED / AI CORE CONSUMER**  
 기준일: 2026-09-25
 적용: `freepass-admin` 실제 관리자 화면  
-코드 기준: `src/app/globals.css`(base/legacy) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
+코드 기준: `src/app/globals.css`(canonical foundation/compatibility) · `src/app/_design/admin-final.css`(현행 final) · `src/app/_design/*` · 실제 route workspace
 
 > 공통 UI/UX 의미·선택 규칙의 정본은 **AI Core**다.
 > **실제 화면 형태의 기본은 FreePass Sales 운영 앱이다(사용자 2026-09-21 정정).**
@@ -821,12 +821,12 @@ I18N / RTL:
 
 # 17. 현재 발견된 “규격 부채” — 디자인 변경 없이 정리 대상
 
-## A. CSS cascade / legacy base — 해결 완료
-- `globals.css` 상단의 초기 mockup/base는 **LEGACY BASE LAYER**로 격리했다.
-- 실제 관리자 호환 규칙 시작점에 **CURRENT ADMIN COMPATIBILITY LAYER** 마커를 추가했다.
-- 이 호환층의 실제 workspace/control 규칙은 33px/40px을 제거하고 44px 공통 토큰으로 승격했다.
+## A. CSS cascade / legacy base — 제거 완료
+- `globals.css` 상단의 2026-09-16 초기 mockup 시각 규칙은 **2026-09-25 삭제**했다.
+- 파일 앞에는 box-sizing/기본 글꼴/기본 바탕 등 전역 foundation만 남긴다.
+- `CURRENT ADMIN COMPATIBILITY LAYER` 아래 실제 workspace/control 규칙과 `admin-final.css`만 현행 구현으로 사용한다.
 - 검색창 안 세부검색만 machine SSOT에 정의된 **embedded 32px 예외**를 유지한다.
-- 최종 권위는 계속 `admin-final.css` + 이 문서다.
+- 과거 mockup selector/value를 새 구현 근거로 되살리지 않는다.
 
 ## B. 과거 UI 시각자료 — 제거 완료
 - `UI-SPEC.md`는 정본으로 이동시키는 포인터만 남겼다.
@@ -926,7 +926,7 @@ PR/푸시에서 GitHub Actions `.github/workflows/ci.yml`이 다음을 확인한
 
 ## F. 파일 책임 분리 — 2026-09-18 정리
 
-- `src/app/globals.css` — base/legacy 및 기존 화면 호환 규칙
+- `src/app/globals.css` — canonical foundation 및 기존 화면 호환 규칙
 - `src/app/_design/admin-final.css` — 현재 관리자 UI의 final override / token / mobile / login / accessibility
 - `src/app/products/workspace-config.ts` — 상품 workspace의 정적 필터축·가격구간·대표요금·표시 helper
 - `src/app/intake/intake-options.ts` — 신규 접수의 기존 원장 선택지/code-map 준비

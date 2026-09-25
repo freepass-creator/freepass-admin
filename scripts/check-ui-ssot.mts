@@ -764,6 +764,22 @@ for (const [file, re, label] of listVisualTileBaseline) {
   if (!re.test(src)) errors.push(`${file}: list visual tile contract missing: ${label}`);
 }
 
+const crossShellListParityBaseline = [
+  ['src/app/_design/ListRow.tsx', /mainValue\?: ReactNode/, 'mobile main-right primary value slot'],
+  ['src/app/products/workspace.tsx', /mainValue=\{o \? `월 /, 'mobile product monthly rent main value'],
+  ['src/app/products/workspace.tsx', /meta=\{\[txt\(p\.registration\?\.vehicleNumber\), txt\(p\.productKind\)\]/, 'mobile product key line'],
+  ['src/app/products/workspace.tsx', /value=\{o \? `\$\{o\.termMonths\}개월 · 보증 /, 'mobile product support line'],
+  ['src/app/products/workspace.tsx', /mainValue=\{r\.rent \? `월 /, 'mobile intake monthly rent main value'],
+  ['src/app/products/workspace.tsx', /value=\{`청구 \$\{r\.money\.claim/, 'mobile intake exact fee support'],
+  ['src/app/settlement/page.tsx', /mainValue=\{tab === 'claim'/, 'mobile settlement active-axis main fee'],
+  ['src/app/settlement/page.tsx', /value=\{tab === 'claim'/, 'mobile settlement opposite-axis support fee'],
+  ['src/app/esign/page.tsx', /mainValue=\{c\.rent === null/, 'mobile esign monthly rent main value'],
+] as const;
+for (const [file, re, label] of crossShellListParityBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: cross-shell list parity mismatch: ${label}`);
+}
+
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
   upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
   list_presentation?: Record<string,string>;

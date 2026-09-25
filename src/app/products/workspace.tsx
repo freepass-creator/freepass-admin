@@ -137,7 +137,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   });
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
-  const selId = sp(q.id);
+  /* ★신규 접수(w=new)는 product= 로 차를 넘긴다 — 가운데 상세도 그 차를 보여야 오른쪽 접수와 같은 차가 된다 */
+  const selId = sp(q.id) || (sp(q.w) === 'new' ? sp(q.product) : '');
   const sel = sorted.find((h) => h.product.id === selId) ?? sorted[0];
   const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v) && (v !== 'work' || mode === 'intake')) ?? (selId ? 'detail' : 'list');
   const keep = (extra: Record<string, string>) => {

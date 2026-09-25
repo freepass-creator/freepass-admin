@@ -33,6 +33,25 @@
 - **재현**: `NODE_PATH=/opt/node22/lib/node_modules node shot-url.cjs "http://localhost:3419/products" out.png 390 844`
   로 스크린샷 찍으면 바로 보인다.
 
+## 1-1. 조치 — 2026-09-25
+
+§1 모바일 상품목록 잘림에 대해 다음을 반영했다.
+
+- 상품 Main 행에서 상태 Badge 제거
+- 상태는 2행 분류 정보로 이동
+- Main 행은 `차명 ↔ 월 대여료` 중심으로 단순화
+- `.dz-row-l1 > b`는 먼저 줄어들고 ellipsis
+- `.dz-row-main-value`는 flex 고정으로 금액을 우선 보존
+- 모바일 primary value max-width 42%
+
+판단:
+- 상태를 Main에서 빼는 것은 정보 삭제가 아니라 **Main 강조 규칙과 분류 행 역할에 맞춘 재배치**다.
+- 상품은 사진 visual이 있으므로 상태를 별도 상태타일로 중복하지 않는다.
+- 좁은 화면에서는 identity가 먼저 줄고 금액은 온전히 남는 것이 비교/선택 UX에 맞다.
+
+상태: **CODE FIXED / STATIC REVIEWED**
+실제 360/390px 브라우저 재검증은 별도 시각 QA 환경에서 확인한다.
+
 ## 2. 기능 축소(대표 지시로 확정됨) — 계약접수 목록 퀵필터 6개 → 2개
 
 - **화면**: `/intake` (계약접수), 오른쪽 접수목록 판

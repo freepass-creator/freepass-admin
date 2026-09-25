@@ -39,7 +39,7 @@ export class Erp5EsignRepository implements EsignRepository {
       sourceProductVersion:row.catalogRef?.productVersion??null,
       sourceOfferId:row.catalogRef?.offerId??null,
       sourceSnapshotId:row.catalogRef?.sourceSnapshotId??null,
-      catalogSnapshot:(row.catalogSnapshot??null) as Record<string,unknown>|null,
+      catalogSnapshot:(row.catalogSnapshot??null) as unknown as Record<string,unknown>|null,
     });
   }
 

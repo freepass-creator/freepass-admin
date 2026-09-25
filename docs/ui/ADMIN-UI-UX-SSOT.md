@@ -2612,3 +2612,29 @@ QuickFilter / Seg / compact toggle:
 - 큰 카드 선택 시 title + amount + border + shadow까지 모두 brand color
 - brand blue/navy를 여러 계층에서 반복
 - Desktop만 선명한 SaaS blue를 쓰고 Mobile은 navy를 쓰는 불일치
+
+
+# 58. Card signal budget
+
+카드 한 장에서 같은 의미를 아이콘·배지·텍스트로 반복하지 않는다.
+
+## 기본 예산
+
+- identity/title: 1
+- status signal: 1
+- meta line: 1
+- primary value/result: 1
+- risk flag: 필요할 때만 1
+
+## Status 표현
+
+- compact card에서 status thumbnail이 있으면 동일 status Badge를 다시 표시하지 않는다.
+- wide card에서 thumbnail이 사라지면 Badge를 유지할 수 있다.
+- icon은 행동/상태 의미가 있을 때만 사용한다.
+- 장식용 icon은 넣지 않는다.
+
+## 금지
+
+- 같은 상태를 icon + short label + badge로 중복 표시
+- 카드 한 장에 badge 여러 개를 기본값으로 사용
+- 금액/상태/이름이 이미 있는데 동일 의미 라벨 추가

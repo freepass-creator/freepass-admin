@@ -2576,3 +2576,39 @@ Workspace/Panel/Card는 `max-width`로 임의 축소하지 않는다.
 - selected card를 hover보다 더 띄우기
 - passive card hover elevation
 - 모든 버튼에 기본 shadow 적용
+
+
+# 57. Brand color restraint
+
+브랜드 색은 넓은 면 전체에 반복하지 않고
+**주요 액션과 compact selection control에 집중한다.**
+
+## Brand
+
+- primary/navy: #1B2A4A
+- primary hover: #24395F
+- primary weak: #EEF3FA
+- focus ring: #D8E2F0
+
+## Selected Card
+
+- selected surface: soft primary tint
+- title/value text: neutral strong text 유지
+- support/meta: neutral secondary text 유지
+- selected 카드 내부 텍스트를 전부 brand blue/navy로 바꾸지 않는다
+
+## Compact selection
+
+QuickFilter / Seg / compact toggle:
+- selected = solid brand + white text 허용
+
+## Semantic colors
+
+- info / success / warning / error는 status/badge 용도
+- semantic info blue를 primary brand 대용으로 쓰지 않는다
+
+## 금지
+
+- 큰 카드 선택 시 title + amount + border + shadow까지 모두 brand color
+- brand blue/navy를 여러 계층에서 반복
+- Desktop만 선명한 SaaS blue를 쓰고 Mobile은 navy를 쓰는 불일치

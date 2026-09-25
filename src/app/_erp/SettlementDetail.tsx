@@ -67,8 +67,8 @@ export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementR
               <dl>
                 <div><dt>상품구분</dt><dd>{txt(cur.product)}</dd></div>
                 <div><dt>계약기간</dt><dd>{cur.term ? `${cur.term}개월` : '—'}</dd></div>
-                <div><dt>보증금</dt><dd>{won0(cur.deposit)}</dd></div>
-                <div><dt>월 대여료</dt><dd>{won0(cur.rent)}</dd></div>
+                <div><dt>보증금</dt><dd data-type="money">{won0(cur.deposit)}원</dd></div>
+                <div><dt>월 대여료</dt><dd data-type="money">{won0(cur.rent)}원</dd></div>
                 <div><dt>결제</dt><dd>{txt(cur.payKind)}</dd></div>
                 <div><dt>계약 방식</dt><dd>{txt(cur.contractType)}</dd></div>
               </dl>

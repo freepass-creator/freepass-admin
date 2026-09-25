@@ -242,6 +242,26 @@ async function inspect(page) {
           support: sample('.erp-rowcard-sub, .erp-rowcard-meta, .panel-head > .count, .dz-muted, .erp-badge, .dz-badge'),
         };
       })(),
+      cardLineSamples: (() => {
+        const sample = (selector, limit = 30) =>
+          [...document.querySelectorAll(selector)].filter(visible).slice(0, limit).map((el) => {
+            const s = getComputedStyle(el);
+            const r = el.getBoundingClientRect();
+            return {
+              className: typeof el.className === 'string' ? el.className : '',
+              height: Math.round(r.height),
+              lineHeight: parseFloat(s.lineHeight) || 0,
+              whiteSpace: s.whiteSpace,
+              overflow: s.overflow,
+              textOverflow: s.textOverflow,
+              text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            };
+          });
+        return {
+          desktopLines: sample('.erp-rowcard-title, .erp-rowcard-sub, .erp-rowcard-meta, .erp-tile-row'),
+          mobileLines: sample('.dz-row-l1, .dz-row-l2, .dz-row-l3'),
+        };
+      })(),
       dividerSamples: (() => {
         const nodes = [...document.querySelectorAll(
           '.erp-panel-head, .erp-panel-foot, .erp-searchbar, .erp-toolbar, .erp-card-head, .erp-listcard-foot, .erp-grid-foot, .erp-tile-title, .panel-head, .dz-listtop, .dz-bar'
@@ -598,6 +618,17 @@ async function runInteractiveStates(page, c) {
           expectRange(info.fontSamples.primaryValues, 13, 15, 'desktop primary value');
           expectRange(info.fontSamples.controls, 13, 15, 'desktop control');
           expectRange(info.fontSamples.support, 11.5, 12.5, 'desktop support');
+        }
+      }
+      if (info.cardLineSamples) {
+        const lines = c.width <= 900 ? info.cardLineSamples.mobileLines : info.cardLineSamples.desktopLines;
+        for (const x of lines || []) {
+          if (x.lineHeight && (x.lineHeight < 19 || x.lineHeight > 21)) {
+            problems.push(`card line-height mismatch ${x.lineHeight}px: ${JSON.stringify(x)}`);
+          }
+          if (x.height > 22) {
+            problems.push(`card line wrapped or grew vertically: ${JSON.stringify(x)}`);
+          }
         }
       }
       if (info.shadowSamples) {

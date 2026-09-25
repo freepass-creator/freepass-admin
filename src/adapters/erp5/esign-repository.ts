@@ -159,10 +159,10 @@ export class Erp5EsignRepository implements EsignRepository {
       if(!sessionDoc.exists)throw new Error('전자계약 세션을 찾을 수 없습니다.');
       if(!contractDoc.exists)throw new Error('계약을 찾을 수 없습니다.');
       const session={id:sessionDoc.id,...sessionDoc.data()} as EsignSession;
-      if(session.status==='signed')throw new Error('서명완료 계약은 해지할 수 없습니다.');
+      if(session.status==='signed')throw new Error('서명완료 계약의 전자계약 발행은 철회할 수 없습니다.');
       if(session.status==='revoked')return {revoked:false,session};
       if(!['sent','opened','in_progress','rejected'].includes(session.status)){
-        throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
+        throw new Error('제출·승인 처리 중인 링크는 철회할 수 없습니다.');
       }
       const now=Date.now();
       const contractRaw=contractDoc.data() as Record<string,unknown>;

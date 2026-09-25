@@ -2106,3 +2106,34 @@ body > nav.fn-top :where(a, button):focus-visible,
   border-color: transparent;
   background-clip: padding-box;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Geometry contract (mobile/live)
+   모바일 panel은 화면 자체라 radius 0, 내부 card/control은 6px.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel {
+    border-radius: 0;
+  }
+
+  .fn-main .workspace :is(
+    .dz-row,
+    .dz-form-group,
+    .summary-grid,
+    .dz-offer-line,
+    .dz-picked,
+    .fn-box,
+    .dz-searchbox,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .primary,
+    .dz-bar-sub
+  ) {
+    border-radius: var(--ui-control-radius);
+  }
+
+  .fn-main .workspace .dz-row {
+    padding: var(--ui-item-pad);
+  }
+}

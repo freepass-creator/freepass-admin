@@ -50,7 +50,7 @@
 .dz-fs-axis { height: var(--ui-control-h); }
 /* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
 .dz-fs-open { top: 6px; right: 4px; height: 32px; line-height: 16px; }
-/* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
+/* 모바일 판 탭 액션도 공통 44px 컨트롤을 사용한다. */
 @media (max-width: 900px) {
   :root { --판탭: 56px; }
   .phone-tabs { height: var(--판탭); }
@@ -72,7 +72,7 @@
 /* ① 글 — 12 밑으로 내려간 것(상태 칸 11 · 조항 11 · 내부 딱지 11 · 건수 동그라미 11 · 달 합계 곁글 10) → 보조 12 */
 .dz-row-status em, .dz-article, .dz-internal, .dz-fs-open i, .dz-fs-body nav i, .dz-month-sum small { font-size: var(--글보조); }
 .dz-fs-open i, .dz-fs-body nav i { min-width: 20px; height: 20px; border-radius: 10px; }
-/* ② 컨트롤 40 — 폼 칸 · 진행 체크 · 곁 걸음 · 프로모션/가감 칸이 33 이었다(옛 .fn-main 규칙이 더 셌다) */
+/* ② 컨트롤 44 — 폼 칸 · 진행 체크 · 곁 걸음 · 프로모션/가감의 옛 33px 규칙을 공통값으로 덮는다. */
 .fn-main .workspace .panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .fn-main .workspace .panel select,
 .fn-main .workspace .panel .fn-box button,
@@ -179,7 +179,7 @@
 .fn-main .workspace > .work-panel > .dz-form { flex: 1 0 auto; display: flex; flex-direction: column; }
 .dz-intake-form { flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; }
 .dz-intake-form > .dz-bar { margin-top: auto; }
-/* 상품구분 고르기 — 단추 줄(40 · 켜진 것 남색 면). 신차렌트는 선출고 · 견적출고 · 신차발주 중 사람이 고른다 */
+/* 상품구분 고르기 — 공통 44px 선택 컨트롤. 신차렌트는 선출고 · 견적출고 · 신차발주 중 사람이 고른다 */
 .dz-choice { display: flex; flex-wrap: wrap; gap: 4px; clear: both; }
 .dz-choice label { position: relative; flex-direction: row !important; }
 .dz-choice input { position: absolute; opacity: 0; pointer-events: none; }

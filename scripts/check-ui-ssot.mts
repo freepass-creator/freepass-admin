@@ -131,6 +131,7 @@ for (const [re, label] of cssBaseline) {
 }
 
 const desktopCss = await readFile(path.join(root, 'src/app/_erp/shell.css'), 'utf8');
+const visualQa = await readFile(path.join(root, 'scripts/visual-qa.cjs'), 'utf8');
 const desktopScaleBaseline = [
   [/--erp-fs-kpi:\s*24px/, 'desktop KPI 24px'],
   [/--erp-fs-title:\s*20px/, 'desktop screen title 20px'],

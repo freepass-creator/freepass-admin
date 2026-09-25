@@ -33,7 +33,7 @@ type Q = Record<string, string | string[] | undefined>;
 const INTAKE_TONE: Record<Bucket, Tone> = { 당월접수: 'info', 미완료: 'warn', 분납실적: 'neutral', 완납실적: 'ok', 취소: 'err' };
 const 실적칸: Bucket[] = ['분납실적', '완납실적'];
 const IPAGE = 15;
-/** 44px 정사각 썸네일 안 보조 글씨 — §5-4 규격대로 「당월」·「미완」처럼 짧은 두 글자만 쓴다. */
+/** 64×64 상태타일 안 보조 글씨 — 「당월」·「미완」처럼 짧은 상태어만 쓴다. */
 const INTAKE_SHORT: Record<Bucket, string> = { 당월접수: '당월', 미완료: '미완', 완납실적: '완납', 분납실적: '분납', 취소: '취소' };
 
 /** 접수 상태 썸네일 아이콘 — 레퍼런스는 당월(반짝임) · 미완(시계) 둘만 그렸다. 완납/분납/취소는 같은

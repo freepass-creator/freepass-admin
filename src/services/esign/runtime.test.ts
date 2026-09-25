@@ -707,3 +707,23 @@ test('contract cancellation respects fresh claims but recovers stale claims', as
   assert.equal(staleSubmit.cancelled,true);
   assert.equal(staleSubmit.session?.status,'revoked');
 });
+
+
+test('revoked and expired public document tokens are blocked', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+  const issued=await svc.issue('c1','tester');
+  const token=issued.publicUrl.split('/').pop()!;
+
+  await svc.revoke('c1','tester');
+  await assert.rejects(()=>svc.publicDocument(token),/철회된 전자계약 링크/);
+
+  repo.contract.set('c2',contract());
+  const issued2=await svc.issue('c2','tester');
+  const token2=issued2.publicUrl.split('/').pop()!;
+  const s2=await repo.getCurrentSession('c2');
+  assert.ok(s2);
+  s2!.expiresAt=Date.now()-1;
+  await assert.rejects(()=>svc.publicDocument(token2),/만료된 전자계약 링크/);
+});

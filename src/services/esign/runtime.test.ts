@@ -432,3 +432,49 @@ test('esign finalization rejects a missing required document before rendering', 
   assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
 });
 
+
+class FinalizeFailsOnceRepo extends Repo {
+  failures=1;
+  async finalizeSigned(...args:Parameters<Repo['finalizeSigned']>){
+    if(this.failures>0){this.failures-=1;throw new Error('transaction aborted');}
+    return super.finalizeSigned(...args);
+  }
+}
+
+class SealBoundRenderer implements EsignFinalDocumentRenderer {
+  calls=0;
+  async render(input:{sealHash:string}){
+    this.calls+=1;
+    return {bytes:new Uint8Array(Buffer.concat([
+      Buffer.from('%PDF-1.4\n% '+input.sealHash+'\n'),
+      Buffer.alloc(2_048,0x20),
+      Buffer.from('\n%%EOF\n'),
+    ])),contentType:'application/pdf' as const};
+  }
+}
+
+test('esign finalization recovers when PDF is stored but DB finalization fails', async () => {
+  const repo=new FinalizeFailsOnceRepo(), assets=new Assets(), renderer=new SealBoundRenderer(), svc=new EsignService(repo,assets,renderer);
+  const {session}=await seedPendingReview(svc,repo,assets);
+  const finalPath='esign-final/'+session.contractCode+'/'+session.id+'.pdf';
+
+  await assert.rejects(()=>svc.approve('c1','finalize_db_fail_1234567890','tester'),/transaction aborted/);
+  // Orphan object may exist, but it is never mistaken for a signed contract.
+  assert.equal(assets.m.has(finalPath),true);
+  assert.equal((await repo.getCurrentSession('c1'))?.status,'pending_review');
+  assert.notEqual(repo.contract.get('c1')?.sign_status,'서명완료');
+  assert.equal(repo.contract.get('c1')?.esign_document_sha256,undefined);
+  const orphanSha=assets.m.get(finalPath)!.sha256;
+
+  const retried=await svc.approve('c1','finalize_db_fail_1234567890','tester');
+  assert.equal(retried.finalized,true);
+  assert.equal(retried.session.status,'signed');
+  assert.equal(renderer.calls,2);
+  // Same deterministic path is overwritten and read-back verified; no second object name appears.
+  assert.deepEqual([...assets.m.keys()].filter(p=>p.startsWith('esign-final/')),[finalPath]);
+  const stored=assets.m.get(finalPath)!;
+  assert.equal(stored.sha256,retried.session.documentSha256);
+  assert.equal(stored.sha256,orphanSha);
+  assert.equal(repo.contract.get('c1')?.esign_document_sha256,stored.sha256);
+  assert.equal(repo.events.filter(e=>e.type==='approved').length,1);
+});

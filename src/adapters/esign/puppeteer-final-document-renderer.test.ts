@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import type { EsignPrivateSubmission, EsignSnapshot } from '../../domain/esign/types';
-import { prepareFinalContractHtml, PuppeteerEsignFinalDocumentRenderer } from './puppeteer-final-document-renderer';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { inlineContractTemplateAssets, prepareFinalContractHtml, PuppeteerEsignFinalDocumentRenderer } from './puppeteer-final-document-renderer';
 
 const png = new Uint8Array(Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X1J6WQAAAABJRU5ErkJggg==',
@@ -86,19 +90,135 @@ test('final contract HTML embeds seal/signature/fonts and strips print controls'
   assert.equal(html.includes('class="builder"'), false);
 });
 
-test('production renderer launches Chromium and returns a real multi-page PDF', { timeout: 120_000 }, async () => {
+function latin1(bytes: Uint8Array) {
+  return Buffer.from(bytes).toString('latin1');
+}
+
+test('production renderer launches Chromium and returns a deterministic multi-page A4 PDF', { timeout: 180_000 }, async () => {
   const renderer = new PuppeteerEsignFinalDocumentRenderer();
-  const result = await renderer.render({
-    snapshot,
-    submission,
-    signatureBytes: png,
-    sealHash: 'c'.repeat(64),
-  });
+  const input = { snapshot, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
+  const result = await renderer.render(input);
   const buf = Buffer.from(result.bytes);
+  const raw = latin1(result.bytes);
   assert.equal(result.contentType, 'application/pdf');
   assert.equal(buf.subarray(0, 5).toString('ascii'), '%PDF-');
   assert.ok(buf.length > 50_000);
   assert.ok(buf.subarray(Math.max(0, buf.length - 2048)).toString('latin1').includes('%%EOF'));
-  const pageObjects = (buf.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length;
-  assert.ok(pageObjects >= 2);
+
+  const pageObjects = (raw.match(/\/Type\s*\/Page\b/g) || []).length;
+  assert.ok(pageObjects >= 2, 'contract conditions and terms span multiple pages');
+  const mediaBoxes = raw.match(/\/MediaBox\s*\[[^\]]*\]/g) || [];
+  assert.equal(mediaBoxes.length, pageObjects);
+  for (const box of mediaBoxes) {
+    const [, , w, h] = box.replace(/.*\[/, '').replace(']', '').trim().split(/\s+/).map(Number);
+    assert.ok(Math.abs(w - 595.28) < 1 && Math.abs(h - 841.89) < 1, 'A4 page: ' + box);
+  }
+
+  // Korean glyphs come from the embedded Pretendard subsets only (no system-font fallback).
+  const fontNames = new Set(raw.match(/\/FontName\s*\/[A-Z]{6}\+[A-Za-z-]+/g) || []);
+  assert.ok(fontNames.size >= 1);
+  for (const name of fontNames) assert.match(name, /\+Pretendard-/);
+
+  // No browser header/footer or render clock leaks into the sealed document.
+  assert.ok(raw.includes("/CreationDate (D:20260925053000+00'00')"));
+  assert.ok(raw.includes("/ModDate (D:20260925053000+00'00')"));
+  assert.equal(raw.includes('about:blank'), false);
+
+  const again = await renderer.render(input);
+  assert.equal(
+    createHash('sha256').update(again.bytes).digest('hex'),
+    createHash('sha256').update(result.bytes).digest('hex'),
+    'same sealed input must yield identical PDF bytes',
+  );
+
+  const otherSeal = await renderer.render({ ...input, sealHash: 'd'.repeat(64) });
+  assert.notEqual(
+    createHash('sha256').update(otherSeal.bytes).digest('hex'),
+    createHash('sha256').update(result.bytes).digest('hex'),
+  );
+});
+
+test('production renderer rejects an unknown signature image format before launching Chromium', async () => {
+  const renderer = new PuppeteerEsignFinalDocumentRenderer();
+  await assert.rejects(
+    () => renderer.render({ snapshot, submission, signatureBytes: new Uint8Array(Buffer.from('<svg/>')), sealHash: 'c'.repeat(64) }),
+    /서명 이미지 형식/,
+  );
+});
+
+test('production renderer fails closed when Chromium cannot launch', { timeout: 60_000 }, async () => {
+  const previous = process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH;
+  process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH = '/nonexistent/chromium-for-esign-test';
+  try {
+    await assert.rejects(
+      () => new PuppeteerEsignFinalDocumentRenderer().render({ snapshot, submission, signatureBytes: png, sealHash: 'c'.repeat(64) }),
+      (error: Error) => error.message === '전자계약 최종 PDF 생성에 실패했습니다.' && error.cause instanceof Error,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH;
+    else process.env.ESIGN_CHROMIUM_EXECUTABLE_PATH = previous;
+  }
+});
+
+async function withTemplateAssetDir(files: Record<string, Uint8Array>, run: (dir: string) => Promise<void>) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'esign-template-assets-'));
+  try {
+    await mkdir(path.join(dir, 'assets'));
+    for (const [name, bytes] of Object.entries(files)) await writeFile(path.join(dir, 'assets', name), bytes);
+    await run(dir);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+test('template-relative logo assets are inlined wherever the template references them', async () => {
+  await withTemplateAssetDir({ 'logo-a.png': png }, async (dir) => {
+    const html = '<img src="assets/logo-a.png"><script>var c={logo:\'assets/logo-a.png\'};var m=\'assets/missing.webp\';</script>';
+    const out = await inlineContractTemplateAssets(html, dir);
+    assert.equal(out.includes('assets/logo-a.png'), false);
+    assert.equal(out.split('data:image/png;base64,').length - 1, 2);
+    assert.equal(out.includes('assets/missing.webp'), false);
+    assert.ok(out.includes("var m='';"), 'assets that do not ship resolve to the template no-logo path');
+    assert.equal(await inlineContractTemplateAssets('<img src="assets/../../etc/passwd.png">', dir), '<img src="assets/../../etc/passwd.png">');
+  });
+});
+
+const sonogong: EsignSnapshot = {
+  ...snapshot,
+  supplierName: '주식회사 손오공렌터카',
+  templateFields: { ...snapshot.templateFields, company_name: '주식회사 손오공렌터카' },
+};
+
+test('production renderer deterministically takes the no-logo path when a supplier logo does not ship', { timeout: 120_000 }, async () => {
+  await withTemplateAssetDir({}, async (dir) => {
+    const renderer = new PuppeteerEsignFinalDocumentRenderer({ templateAssetDir: dir });
+    const input = { snapshot: sonogong, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
+    const html = await prepareFinalContractHtml(input, { templateAssetDir: dir });
+    assert.equal(html.includes('assets/logo-sonogong.webp'), false);
+    const first = await renderer.render(input);
+    const second = await renderer.render(input);
+    assert.equal(createHash('sha256').update(first.bytes).digest('hex'), createHash('sha256').update(second.bytes).digest('hex'));
+  });
+});
+
+test('production renderer embeds a shipped supplier logo without network access', { timeout: 120_000 }, async () => {
+  await withTemplateAssetDir({ 'logo-sonogong.webp': png }, async (dir) => {
+    const input = { snapshot: sonogong, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
+    const withLogo = await new PuppeteerEsignFinalDocumentRenderer({ templateAssetDir: dir }).render(input);
+    assert.equal(Buffer.from(withLogo.bytes).subarray(0, 5).toString('ascii'), '%PDF-');
+    await withTemplateAssetDir({}, async (emptyDir) => {
+      const withoutLogo = await new PuppeteerEsignFinalDocumentRenderer({ templateAssetDir: emptyDir }).render(input);
+      const images = (bytes: Uint8Array) => (latin1(bytes).match(/\/Subtype\s*\/Image\b/g) || []).length;
+      assert.ok(images(withLogo.bytes) > images(withoutLogo.bytes), 'shipped logo is drawn into the PDF');
+    });
+  });
+});
+
+test('production renderer refuses to seal a signature image the browser cannot decode', { timeout: 120_000 }, async () => {
+  const corrupt = new Uint8Array(png);
+  corrupt[29] ^= 0xff; // PNG magic intact, IHDR CRC broken -> undecodable
+  await assert.rejects(
+    () => new PuppeteerEsignFinalDocumentRenderer().render({ snapshot, submission, signatureBytes: corrupt, sealHash: 'c'.repeat(64) }),
+    /로딩되지 않은 이미지|고객 서명이 렌더링되지/,
+  );
 });

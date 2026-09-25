@@ -2245,40 +2245,6 @@ body > nav.fn-top :where(a, button):focus-visible,
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   2026-09-25 — Retire legacy four-line product rows
-   상품도 다른 목록과 동일하게 Main / Key / Support 3줄을 사용한다.
-   ═══════════════════════════════════════════════════════════════════ */
-@media (max-width: 900px) {
-  .fn-main .workspace .dz-row:has(.dz-row-l2.value) {
-    contain-intrinsic-size: auto 64px;
-  }
-
-  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-body {
-    min-height: 64px;
-    height: 64px;
-    max-height: 64px;
-    gap: var(--ui-card-line-gap);
-    justify-content: center;
-  }
-
-  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l1 {
-    flex-wrap: nowrap;
-    row-gap: 0;
-  }
-
-  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b {
-    flex: 0 1 auto;
-    min-width: 0;
-  }
-
-  .fn-main .workspace .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
 @media (max-width: 900px) {
   .fn-main .workspace .dz-row-l1 .dz-row-main-value {
     margin-left: auto;

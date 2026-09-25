@@ -94,3 +94,23 @@ describe('환수 — 열어 둔다', () => {
 
 
 
+
+
+test('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
+  const terminated = {
+    ...row({ collected:true, paid:true, claimStage:'수금', payStage:'지급' }),
+    esignContractId:'ctr_term_1',
+    contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),
+    contractTerminationDate:'2026-09-25',
+    contractTerminationReason:'중도해지',
+  };
+  const result=clawbackRecord(terminated,{
+    at:'2026-09-25',supplierAmt:100000,agentAmt:80000,reason:'해지 환수',
+  },'tester',Date.now());
+  assert.equal(result.ok,true);
+  if(!result.ok)return;
+  assert.equal(result.doc.source,'CONTRACT_TERMINATION');
+  assert.equal(result.doc.contractId,'ctr_term_1');
+  assert.equal(result.doc.contractTerminationDate,'2026-09-25');
+  assert.equal(result.doc.contractTerminationReason,'중도해지');
+});

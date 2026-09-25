@@ -12,10 +12,26 @@ export interface EsignRepository {
   createSession(session: EsignSession, publicUrl: string): Promise<void>;
   updateSession(id: string, patch: Partial<EsignSession>): Promise<void>;
   transitionSession(id: string, allowed: EsignSession['status'][], patch: Partial<EsignSession>): Promise<boolean>;
+  finalizeSigned(
+    sessionId: string,
+    finalizationId: string,
+    sessionPatch: Partial<EsignSession>,
+    contractPatch: Record<string, unknown>,
+    actor: string,
+    detail: Record<string, unknown>,
+  ): Promise<{ finalized: boolean; session: EsignSession }>;
   getPrivate(sessionId: string): Promise<(EsignPrivateSubmission & Record<string, unknown>) | null>;
   putPrivate(sessionId: string, data: Record<string, unknown>): Promise<void>;
   appendEvent(contractId: string, sessionId: string, type: string, by: string, detail?: Record<string, unknown>): Promise<void>;
   listEvents(contractId: string): Promise<Array<{ type: string; at: number; by: string; detail: Record<string, unknown> }>>;
+}
+
+export interface EsignFinalDocumentRenderer {
+  render(input: {
+    snapshot: EsignSession['snapshot'];
+    submission: EsignPrivateSubmission;
+    sealHash: string;
+  }): Promise<{ bytes: Uint8Array; contentType: 'application/pdf' }>;
 }
 
 export interface EsignAssetStore {

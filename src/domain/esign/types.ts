@@ -1,3 +1,21 @@
+export type ContractHandoffSource = {
+  intakeId: string;
+  sourceDigest: string;
+  customerName: string;
+  vehicleName: string;
+  plate: string | null;
+  supplierCode: string | null;
+  supplierName: string | null;
+  rent: number | null;
+  termMonths: number | null;
+  deposit: number | null;
+  sourceProductId: string | null;
+  sourceProductVersion: number | null;
+  sourceOfferId: string | null;
+  sourceSnapshotId: string | null;
+  catalogSnapshot: Record<string, unknown> | null;
+};
+
 export type EsignSessionStatus =
   | 'sent' | 'opened' | 'in_progress' | 'submitting' | 'pending_review'
   | 'rejected' | 'approving' | 'signed' | 'revoked';

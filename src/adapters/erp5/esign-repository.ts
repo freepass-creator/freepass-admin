@@ -180,7 +180,7 @@ export class Erp5EsignRepository implements EsignRepository {
           intakeEventDocId(raw.plate,raw.sourceProductId,raw.receivedAt,raw.intakeRequestId,raw.intakeIdentityMode),
         );
         const evKey='aud_esign_revoke_'+createHash('sha256').update(contractId+'|'+sessionId).digest('hex').slice(0,16);
-        tx.set(evRef,{[evKey]:{at:now,by:actor,field:'전자계약',from:'활성',to:'해지',contractId,sessionId}},{merge:true});
+        tx.set(evRef,{[evKey]:{at:now,by:actor,field:'전자계약',from:'활성',to:'철회',contractId,sessionId}},{merge:true});
       }
       const eventRef=db.collection(EVENTS).doc(
         'evt_'+createHash('sha256').update(contractId+'|'+sessionId+'|revoked').digest('hex').slice(0,24),
@@ -215,9 +215,27 @@ export class Erp5EsignRepository implements EsignRepository {
 
       const alreadyAt=Number(intake.contractCancelledAt??0);
       if(alreadyAt>0){
+        const storedReason=String(intake.contractCancellationReason??'').trim();
+        if(storedReason&&storedReason!==why){
+          throw new Error('이미 다른 사유로 계약취소 처리된 계약입니다 — 기존 취소 기록을 확인해 주세요.');
+        }
+        const now=Date.now();
+        const repairRevoke=!!session&&!['signed','revoked'].includes(session.status);
+        if(repairRevoke&&sessionRef){
+          tx.update(sessionRef,{status:'revoked',revokedAt:now});
+          tx.update(contractRef,{sign_status:'미발송',sign_revoked_at:now,esign_progress:0,updated_at:now});
+          tx.update(intakeRef,{esignRevokedAt:now,updatedAt:now,stateAt:new Date(now).toISOString()});
+          const repairEventRef=db.collection(EVENTS).doc(
+            'evt_'+createHash('sha256').update(contractId+'|cancel-repair|'+session.id).digest('hex').slice(0,24),
+          );
+          tx.set(repairEventRef,{
+            contractId,sessionId:session.id,type:'cancel_repaired_active_esign',by:actor,at:now,
+            detail:{reason:storedReason||why},
+          },{merge:false});
+        }
         return {
           cancelled:false,
-          session,
+          session:repairRevoke&&session ? {...session,status:'revoked',revokedAt:now} as EsignSession : session,
           signedDocumentPreserved:session?.status==='signed',
         };
       }

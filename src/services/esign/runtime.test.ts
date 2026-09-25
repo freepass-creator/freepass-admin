@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { EsignService } from './service';
 import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } from '../../ports/esign/repositories';
 import type { ContractHandoffSource, EsignPrivateSubmission, EsignSession } from '../../domain/esign/types';
+import { claimIsFresh, FINALIZE_CLAIM_TTL, SUBMIT_CLAIM_TTL } from '../../domain/esign/claim-ttl';
 
 class Repo implements EsignRepository {
   contract = new Map<string, Record<string, unknown>>();
@@ -74,8 +75,9 @@ class Repo implements EsignRepository {
     }
     if(contract.__testDelivered)throw new Error('이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.');
     if(contract.__testSettlementStarted)throw new Error('정산 흔적이 있는 계약은 계약취소로 처리할 수 없습니다 — 데이터 상태를 확인한 뒤 계약해지 절차를 사용합니다.');
-    if(session?.status==='approving')throw new Error('전자계약 승인 처리 중입니다');
-    if(session?.status==='submitting')throw new Error('고객 제출 처리 중입니다');
+    const now=Date.now();
+    if(session?.status==='approving'&&claimIsFresh(session.approvingAt,now,FINALIZE_CLAIM_TTL))throw new Error('전자계약 승인 처리 중입니다');
+    if(session?.status==='submitting'&&claimIsFresh(session.submittingAt,now,SUBMIT_CLAIM_TTL))throw new Error('고객 제출 처리 중입니다');
 
     const signedDocumentPreserved=session?.status==='signed';
     let nextSession=session?structuredClone(session):null;
@@ -537,4 +539,41 @@ test('stale esign contract update is blocked after cancellation', async () => {
     /변경할 수 없습니다/,
   );
   assert.notEqual(repo.contract.get('c1')?.sign_status,'열람');
+});
+
+
+test('contract cancellation respects fresh claims but recovers stale claims', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  const mk=(id:string,status:'approving'|'submitting',at:number):EsignSession=>({
+    id,contractId:'c1',contractCode:'FP-1',tokenHash:id,status,revision:1,
+    issuedAt:1,issuedBy:'tester',expiresAt:Date.now()+100000,progress:{},snapshot:{} as EsignSession['snapshot'],
+    ...(status==='approving'?{approvingAt:at,finalizationId:'finalize_claim_fresh_1234'}:{submittingAt:at}),
+  });
+
+  repo.contract.set('c1',{...contract(),contract_status:'계약완료'});
+  repo.sessions.set('fresh_approve',mk('fresh_approve','approving',Date.now()));
+  await assert.rejects(()=>svc.cancelContract('c1','취소','tester'),/승인 처리 중/);
+
+  repo.sessions.clear();
+  repo.sessions.set('stale_approve',mk('stale_approve','approving',Date.now()-FINALIZE_CLAIM_TTL-1));
+  const staleApprove=await svc.cancelContract('c1','취소','tester');
+  assert.equal(staleApprove.cancelled,true);
+  assert.equal(staleApprove.session?.status,'revoked');
+
+  repo.contract.set('c2',{...contract(),contract_status:'계약완료'});
+  repo.sessions.clear();
+  repo.sessions.set('fresh_submit',{
+    ...mk('fresh_submit','submitting',Date.now()),
+    contractId:'c2',
+  });
+  await assert.rejects(()=>svc.cancelContract('c2','취소','tester'),/제출 처리 중/);
+
+  repo.sessions.clear();
+  repo.sessions.set('stale_submit',{
+    ...mk('stale_submit','submitting',Date.now()-SUBMIT_CLAIM_TTL-1),
+    contractId:'c2',
+  });
+  const staleSubmit=await svc.cancelContract('c2','취소','tester');
+  assert.equal(staleSubmit.cancelled,true);
+  assert.equal(staleSubmit.session?.status,'revoked');
 });

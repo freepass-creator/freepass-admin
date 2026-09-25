@@ -63,14 +63,9 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                     <Link key={o.id} className="erp-offer-card" role="listitem"
                       aria-current={selected ? 'true' : undefined}
                       href={hrefWith(base, q, { offer: o.id })}>
-                      <span className="erp-offer-line erp-offer-main">
-                        <strong>{o.termMonths}개월</strong>
-                        <b>{won0(o.monthlyRent)}원/월</b>
-                      </span>
-                      <span className="erp-offer-line erp-offer-key">{support}</span>
-                      <span className="erp-offer-line erp-offer-support">
-                        {selected ? '선택됨 · 이 조건으로 접수' : '선택해서 접수'}
-                      </span>
+                      <strong className="erp-offer-term">{o.termMonths}개월</strong>
+                      <b className="erp-offer-rent">{won0(o.monthlyRent)}원/월</b>
+                      <span className="erp-offer-conditions">{support}</span>
                     </Link>
                   );
                 })}

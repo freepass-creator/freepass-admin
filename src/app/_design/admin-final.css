@@ -2137,3 +2137,58 @@ body > nav.fn-top :where(a, button):focus-visible,
     padding: var(--ui-item-pad);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Card line contract (mobile/live)
+   1/2/3줄 카드 문법을 고정하고, 긴 내용은 세로 팽창보다 ellipsis를 우선한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root {
+    --ui-card-line-h: 20px;
+    --ui-card-line-gap: 2px;
+  }
+
+  .fn-main .workspace .dz-row-body {
+    justify-content: center;
+    gap: var(--ui-card-line-gap);
+  }
+
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) {
+    min-height: var(--ui-card-line-h);
+    max-height: var(--ui-card-line-h);
+    line-height: var(--ui-card-line-h);
+    overflow: hidden;
+  }
+
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) > * {
+    min-width: 0;
+  }
+
+  .fn-main .workspace :is(
+    .dz-row-l1 > b,
+    .dz-row-l2,
+    .dz-row-l2.value strong,
+    .dz-row-l3 > strong,
+    .dz-row-l3 > small
+  ) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-row-l1,
+  .fn-main .workspace .dz-row-l2 {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .fn-main .workspace .dz-row-l3 > :is(strong,b,small) {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  /* 카드 줄 수는 최대 3줄. 3줄을 넘어가는 설명은 상세 화면으로 보낸다. */
+  .fn-main .workspace .dz-row-body {
+    max-height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
+  }
+}

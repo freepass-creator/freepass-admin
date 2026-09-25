@@ -331,14 +331,30 @@ export class Erp5SettlementRepository {
       /* ★상대에게 보일 사본 — 발행한 줄(보류 뺀)만 · 그 축 금액만 */
       const live = new Set(plan.invoice.codes);
       const snapshot = snapshotOf(axis, party, month, freshG.lines.filter((l) => live.has(l.row.id)), freshClaws);
-      /* ★다시 발행이면 번호는 그대로 · 합계·줄은 새로 (옛 합계는 history 로 남긴다) · 링크는 그대로 둔다(같은 링크로 새 사본이 보인다) */
+      /* ★다시 발행이면 번호는 그대로. 이전 snapshot/상대 답변까지 revision history에 봉인한다. */
+      const previousRevision = existing?.revision ?? 1;
+      const history = existing ? [
+        ...(existing.history ?? []),
+        {
+          revision: previousRevision,
+          supply: existing.supply,
+          vat: existing.vat,
+          total: existing.total,
+          lines: existing.lines,
+          clawback: existing.clawback ?? 0,
+          issuedAt: existing.issuedAt,
+          snapshot: existing.snapshot,
+          response: existing.response ?? null,
+        },
+      ] : [];
       tx.set(invRef, {
         ...(existing ?? {}),
         ...plan.invoice,
         ...party0,
         snapshot,
+        revision: existing ? previousRevision + 1 : 1,
         ...(existing ? { response: null } : {}),
-        ...(existing ? { history: [...((existing as unknown as { history?: unknown[] }).history ?? []), { supply: existing.supply, vat: existing.vat, lines: existing.lines, issuedAt: existing.issuedAt }] } : {}),
+        history,
       });
       return { ok: true as const, invoice: plan.invoice };
     });

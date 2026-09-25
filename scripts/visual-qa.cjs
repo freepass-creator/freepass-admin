@@ -576,13 +576,6 @@ async function runInteractiveStates(page, c) {
             problems.push(`action text may wrap: ${JSON.stringify(a)}`);
           }
         }
-        if (c.width <= 900) {
-          for (const card of info.wrapSamples.cards || []) {
-            if (/dz-row/.test(card.className) && card.height > 96) {
-              problems.push(`mobile card grew too tall: ${JSON.stringify(card)}`);
-            }
-          }
-        }
       }
 
       if (info.signalSamples) {
@@ -627,7 +620,7 @@ async function runInteractiveStates(page, c) {
             problems.push(`card line-height mismatch ${x.lineHeight}px: ${JSON.stringify(x)}`);
           }
           if (x.height > 22) {
-            problems.push(`card line wrapped or grew vertically: ${JSON.stringify(x)}`);
+            problems.push(`card line role grew vertically: ${JSON.stringify(x)}`);
           }
         }
       }

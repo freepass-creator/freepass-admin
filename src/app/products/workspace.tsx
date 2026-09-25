@@ -3,6 +3,7 @@ import { productList, settlements, today } from '../../server/erp5';
 import { searchProducts } from '../../domain/search/search-products';
 import type { ProductSearchQuery } from '../../domain/search/types';
 import type { Offer } from '../../domain/product/types';
+import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
@@ -43,6 +44,7 @@ import {
 type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
 const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
   status: (p, k) => p.status === k,
+  vc: (p, k) => customerVehicleClass(p) === k,
   kind: (p, k) => p.productKind === k,
   perk: (p, k) => (p.perks ?? []).includes(k),
   supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
@@ -121,6 +123,8 @@ export async function ProductWorkspace({ q, mode, base }: {
    */
   const 값명단: Record<상품축, { k: string; label: string }[]> = {
     status: 많은순(pool.map((h) => h.product.status ?? '')).sort((a, b) => (STATUS_ORDER[a] ?? 9) - (STATUS_ORDER[b] ?? 9))
+      .map((k) => ({ k, label: k })),
+    vc: CUSTOMER_VEHICLE_CLASSES.filter((k) => pool.some((h) => customerVehicleClass(h.product) === k))
       .map((k) => ({ k, label: k })),
     kind: 많은순(pool.map((h) => h.product.productKind ?? '')).map((k) => ({ k, label: k })),
     perk: 많은순(pool.flatMap((h) => h.product.perks ?? [])).map((k) => ({ k, label: k })),

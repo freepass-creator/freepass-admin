@@ -4,7 +4,7 @@ import { ActionBar, PanelHeader } from './Primitives';
 
 export function RouteLoading({ title }: { title: string }) {
   return (
-    <section className="workspace dz-route-state" data-phone="list" aria-busy="true" aria-live="polite">
+    <section className="workspace erp-screen dz-route-state" data-phone="list" aria-busy="true" aria-live="polite">
       <section className="panel product-panel">
         <PanelHeader title={title} />
         <div className="dz-state-block">

@@ -672,15 +672,31 @@ for (const [file, re, label] of cardPriorityBaseline) {
 }
 
 const listAmountLanguageBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product monthly rent wording'],
-  ['src/app/_erp/Workspace.tsx', /`월 \$\{manWon\(r\.rent\)\} 원`/, 'intake monthly rent wording'],
-  ['src/app/_erp/Workspace.tsx', /`남는 \$\{manWon\(marginOf\(r, now\)\)\} 원`/, 'performance margin wording'],
-  ['src/app/_erp/SettlementScreen.tsx', /`정산 \$\{manWon\(g\.net\)\} 원`/, 'settlement total wording'],
-  ['src/app/_erp/EsignScreen.tsx', /amount=\{`월 \$\{manWon\(c\.rent\)\} 원`\}/, 'e-sign monthly rent wording'],
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product monthly rent may be compact'],
+  ['src/app/_erp/Workspace.tsx', /`월 \$\{manWon\(r\.rent\)\} 원`/, 'intake monthly rent may be compact'],
+  ['src/app/_erp/Workspace.tsx', /`수수료 청구 \$\{r\.money\.claim === null \? '—' : `\$\{won0\(r\.money\.claim\)\}원`\} · 지급/, 'intake fees stay exact'],
+  ['src/app/_erp/Workspace.tsx', /`남는 \$\{marginOf\(r, now\) === null \? '—' : `\$\{won0\(marginOf\(r, now\)\)\}원`\}`/, 'performance margin stays exact'],
+  ['src/app/_erp/SettlementScreen.tsx', /amount=\{`정산 \$\{won0\(g\.net\)\}원`\}/, 'settlement total stays exact'],
+  ['src/app/_erp/SettlementScreen.tsx', /`수수료 청구 \$\{r\.money\.claim === null \? '—' : `\$\{won0\(r\.money\.claim\)\}원`\} · 지급/, 'settlement line fees stay exact'],
+  ['src/app/_erp/EsignScreen.tsx', /amount=\{`월 \$\{manWon\(c\.rent\)\} 원`\}/, 'e-sign monthly rent may be compact'],
 ] as const;
 for (const [file, re, label] of listAmountLanguageBaseline) {
   const src = await readFile(path.join(root, file), 'utf8');
   if (!re.test(src)) errors.push(`${file}: list amount language mismatch: ${label}`);
+}
+
+const cardInformationMatrixBaseline = [
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증/, 'product line 3 term/deposit'],
+  ['src/app/_erp/ProductsScreen.tsx', /lines=\{\[txt\(p\.supplierName \?\? p\.supplierId\)\]\}/, 'product line 4 supplier'],
+  ['src/app/_erp/Workspace.tsx', /lines=\{\[\s*`\$\{txt\(r\.supplier\)\} · \$\{txt\(r\.channel\)\} · \$\{txt\(r\.agent\)\}`,[\s\S]*?`수수료 청구/, 'intake lines 4-5 operations and fees'],
+  ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group line 2 document progress'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{`완료 \$\{g\.completed\}\/\$\{g\.lines\.length\}`\}/, 'settlement group line 3 completion'],
+  ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign line 3 term/state'],
+  ['src/app/_erp/EsignScreen.tsx', /lines=\{\[txt\(c\.code\)\]\}/, 'e-sign line 4 contract code'],
+] as const;
+for (const [file, re, label] of cardInformationMatrixBaseline) {
+  const src = await readFile(path.join(root, file), 'utf8');
+  if (!re.test(src)) errors.push(`${file}: card information matrix mismatch: ${label}`);
 }
 
 const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {

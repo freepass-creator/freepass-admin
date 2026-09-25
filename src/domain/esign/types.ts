@@ -1,3 +1,21 @@
+export type ContractHandoffSource = {
+  intakeId: string;
+  sourceDigest: string;
+  customerName: string;
+  vehicleName: string;
+  plate: string | null;
+  supplierCode: string | null;
+  supplierName: string | null;
+  rent: number | null;
+  termMonths: number | null;
+  deposit: number | null;
+  sourceProductId: string | null;
+  sourceProductVersion: number | null;
+  sourceOfferId: string | null;
+  sourceSnapshotId: string | null;
+  catalogSnapshot: Record<string, unknown> | null;
+};
+
 export type EsignSessionStatus =
   | 'sent' | 'opened' | 'in_progress' | 'submitting' | 'pending_review'
   | 'rejected' | 'approving' | 'signed' | 'revoked';
@@ -80,6 +98,9 @@ export type EsignSession = {
   sealHash?: string;
   documentSha256?: string;
   documentStoragePath?: string;
+  documentContentType?: string;
+  finalizationId?: string;
+  approvedBy?: string;
 };
 
 export type EsignPrivateSubmission = {
@@ -107,6 +128,8 @@ export type EsignPrivateSubmission = {
   signaturePath: string;
   signatureSha256: string;
   supportingDocuments: Array<{ key: string; path: string; sha256: string; label: string }>;
+  /** 제출 순간의 신분증·얼굴 사진 — 봉인은 이 해시로만 검증한다(제출 뒤 바뀐 사진은 봉인하지 않는다) */
+  identityAssets?: Array<{ key: 'id_card' | 'selfie'; path: string; sha256: string }>;
   submittedAt: number;
 };
 

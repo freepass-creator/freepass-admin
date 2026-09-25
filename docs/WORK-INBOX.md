@@ -1,11 +1,122 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-22
+최종 갱신: 2026-09-25
 프로젝트: freepass-admin (구 freepasserp.com 저장소)
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
 
+
+## 0-AAA. 2026-09-25 Product/Offer → Intake sealed snapshot — 최신 확정
+
+상품찾기에서 선택한 `Product + matched Offer`는 접수 저장 시 FreePass Data에서 **fresh read**한 뒤 sealed snapshot으로 고정한다.
+
+새 상품접수 저장 규칙:
+- 브라우저 hidden 값의 가격/보증금/기간을 정본으로 믿지 않는다.
+- `sourceProductId + productVersion + sourceSnapshotId + sourceOfferId`를 FreePass Data fresh read와 대조한다.
+- 선택 Offer의 기간/대여료/보증금/선납/연약정주행을 snapshot에 고정한다.
+- Product 정책 원본과 Offer 정책 원본을 **두 겹 그대로** 보존한다.
+- 당시 실제 적용된 resolved policy도 별도로 보존한다.
+- 차량 identity/spec/등록정보/차량가/상품상태도 계약상품 사본에 보존한다.
+- `capturedAt`을 제외한 사본에 deterministic SHA-256 `catalogSnapshotDigest`를 계산한다.
+- 같은 상품·같은 날의 재시도는 Product/version/Offer/source snapshot/digest가 모두 같을 때만 idempotent 성공이다.
+- 하나라도 다르면 기존 접수를 조용히 재사용하지 않고 conflict로 막는다.
+- sealed snapshot 없는 상품접수는 Repository 경계에서 저장을 거부한다.
+
+Firestore Emulator 증거:
+- 동일 sealed Product/Offer 재시도 → 실제 접수 1건만 생성
+- 같은 Product/날짜 + 다른 Offer → conflict, 기존 접수 유지
+- sealed snapshot 없는 상품접수 → write 전 거부
+
+---
+
+## 0-AA. 2026-09-25 FreePass Data 읽기/쓰기 경계 — 최신 확정
+
+사용자 최신 확정:
+
+> Admin은 Firebase를 직접 소비하지 않는다. 상품을 포함한 모든 운영 데이터는 **FreePass Data를 통해 가져오고, FreePass Data를 통해 쓴다.**
+
+정확한 구조:
+
+```text
+FreePass Admin
+  ├─ 상품찾기
+  ├─ 접수
+  ├─ 실적
+  ├─ 계약 사실
+  ├─ 청구/수금
+  ├─ 지급
+  └─ 환수
+        ↓
+FreePass Data Gateway
+        ↓
+Repository / Adapter
+        ↓
+Firestore (project id: freepasserp5)
+```
+
+- `freepasserp5`는 Firebase 기술 project id다.
+- 사람이 보는/설계에서 부르는 공식 데이터 계층은 **FreePass Data**다.
+- Admin은 업무 규칙과 workflow 의미를 소유한다. 그러나 별도의 DB/원장/캐시 정본을 만들지 않는다.
+- Product/Offer/Policy뿐 아니라 Intake/Performance/Contract fact/Settlement/Claim/Collection/Pay/Clawback도 FreePass Data persistence를 사용한다.
+- 화면·Server Action·Service에서 Firebase Admin SDK 또는 `adapters/erp5/*` 직접 접근 금지.
+- 정본 조립점은 `src/server/freepass-data.ts`.
+- `src/server/erp5.ts`는 deprecated compatibility alias다.
+- RTDB는 금지.
+- CI `freepass-data-boundary.test.ts`가 App/Server/Service 우회를 차단한다.
+- 상품 기반 접수는 저장 직전 FreePass Data fresh read로 Product/Offer version/snapshot drift를 확인한다.
+
+아래 과거 문서의 “FreePass Data는 Product/Offer/Policy만 공급하고 Admin workflow/ledger는 별도 persistence”라는 표현과 충돌하면 **이 절이 우선**한다.  
+업무 의미 소유권과 persistence 소유권을 구분한다: **Admin이 workflow 의미를 소유하고, FreePass Data가 authoritative persistence gateway를 소유한다.**
+
+---
+
+## 0-A. 2026-09-25 기능 기준 재정렬 — 이 절이 계약 중심 해석보다 우선
+
+사용자 최신 확정:
+
+```text
+화이트라벨 상품찾기
+        ≒
+Admin 상품찾기
+(같은 상품검색 기능 계약)
+        ↓
+접수
+        ↓
+실적
+   ↙          ↘
+공급사 청구/수금   영업채널 지급
+        ↘      ↙
+          정산
+
+인도 전 종료 = 접수취소
+인도 후 계약해지 = 환수 검토대상
+```
+
+### 상품찾기
+- White Label은 Admin의 상품찾기 기능을 외부 고객면으로 꺼내 보여 주는 관계로 본다.
+- 따라서 **검색 의미, 필터 의미, Offer 선택, 같은-Offer 가격 조건, 결과 정렬의 핵심 기능은 가능한 한 같은 계약을 사용**한다.
+- Admin이 추가로 가질 수 있는 것은 공급사·출고상태·내부 진단처럼 **내부 전용 축/표시**다. 공통 고객 상품조건의 의미를 별도 구현으로 갈라 새 규칙을 만들지 않는다.
+- 현재 코드 대조에서 공통 원칙(축 내 OR/축 간 AND, 동일 Offer 가격조건, URL 상태, 교차 facet count)은 대체로 일치한다.
+- 현재 드리프트: Admin의 `mile`은 Offer 약정주행(`annualMileageKm`)인데 White Label의 `mile`은 차량 현재 주행거리다. 이름만 같고 의미가 다르므로 공통화 전에 분리/정리한다.
+- White Label에 있고 Admin에 빠진 고객 검색축(차종 대분류, 제조사, 심사, 연식 등)과 정렬 기능은 parity 검증 대상으로 둔다.
+- 상세 대조 증거: `docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md`.
+
+### Admin 운영 핵심
+- Admin의 운영 본체는 **접수 → 실적화 → 공급사 청구/수금 + 영업채널 지급**이다.
+- 계약은 이 흐름의 증빙/사실이지 별도 운영 중심축이 아니다.
+- 정산 원장은 공급사 청구축과 영업채널 지급축을 분리 유지한다.
+
+### 취소 / 해지 / 환수
+- **접수취소:** 인도 전 접수가 끝난 사실. 전자계약 연결 여부가 별도의 업무상 “계약취소” 흐름을 만들지 않는다.
+- 전자계약 링크 철회·세션 정리·서명 증거 보존은 e-sign 기술 계층의 후처리이며 접수취소의 업무 의미를 바꾸지 않는다.
+- **계약해지:** 인도 후 종료 사실. 기존 청구/지급/수금 이력은 보존하며 **환수 검토대상**이 된다.
+- 해지했다고 환수금액을 자동 생성하지 않는다. 공급사/계약별 조건이 다르므로 관리자가 실제 환수 여부·금액·사유를 확정해 `settlement_clawbacks`에 별도 음수 라인으로 기록한다.
+- 이미 청구·지급한 과거 월을 해지 때문에 재작성하지 않는다. 환수는 환수 발생월에 반영한다.
+
+이 절의 기능 의미가 아래 과거 “계약취소/계약해지 독립 lifecycle” 해석과 충돌하면 **이 절을 따른다**.
+
+---
 
 ## 0. 2026-09-22 최신 Chat → Work 인계 — 반드시 먼저 반영
 
@@ -39,7 +150,7 @@
 - Offer 선택 → Intake → Contract → Esign → signed/PDF → Settlement 전체 journey integration test
 - Data Status에 contract/esign finalization readiness 추가
 
-**주의:** FreePass Data가 Admin의 workflow/settlement ledger를 흡수하지 않는다. FreePass Data는 Product/Offer/Policy 같은 공유 Canonical fact를 공급하고, Admin은 Intake/Contract/Esign/Settlement workflow를 소유한다.
+**주의(2026-09-25 superseded):** Admin은 Intake/Contract/Settlement의 **업무 의미와 workflow 규칙**을 소유하지만, 해당 사실의 조회/영속화는 FreePass Data gateway를 통한다. 별도의 Admin persistence/두 번째 원장을 만들지 않는다.
 
 관련 최신 커밋:
 - Admin audit handoff: `45a90b18b3609dbb54f50dd3080aaa025baf6a3f`

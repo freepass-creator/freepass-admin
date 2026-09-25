@@ -33,7 +33,7 @@
 
 
 /* 실데이터 runtime 상태 — 내부 관리자 진단 전용 */
-.fn-data-status { max-width: 980px; margin: 12px auto; padding: 20px; background: var(--판); border-radius: var(--r); }
+.fn-data-status { max-width: 980px; margin: 12px auto; padding: 22px; background: var(--판); border-radius: var(--r); }
 .fn-data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .fn-data-grid .fn-box { margin: 0; }
 .fn-top a.fn-state { color: inherit; text-decoration: none; }

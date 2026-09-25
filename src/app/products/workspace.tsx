@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { productList, settlements, today } from '../../server/erp5';
-import { searchProducts } from '../../domain/search/search-products';
-import type { ProductSearchQuery } from '../../domain/search/types';
-import type { Offer } from '../../domain/product/types';
+import { productList } from '../../server/freepass-data';
+import { settlements, today } from '../../server/erp5';
+import {
+  emptyFinderSelection, FINDER_SORTS, findProducts, findProductsForFacet, finderAxisMatches,
+  finderHierarchyValues, sortFinderMatches,
+  type FinderInput, type FinderSort,
+} from '../../domain/search/finder';
+import { CUSTOMER_VEHICLE_CLASSES, customerVehicleClass } from '../../domain/product/customer-vehicle-class';
 import { vehicleName } from '../_fn/product';
 import { sp, txt, vocab, won } from '../_fn/fmt';
 import { blockOf, intakeTaskOf, type SettlementRow } from '../../domain/settlement/types';
@@ -21,11 +25,11 @@ import { IntakeDetailPanel, NewIntakePanel } from '../intake/panels';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
-import { ActionBar, EmptyState, PanelHeader, SearchField } from '../_design/Primitives';
+import { ActionBar, EmptyState, Notice, PanelHeader, SearchField } from '../_design/Primitives';
 import {
-  STATUS_ORDER, lead, 대여료구간, 보증금구간, 요금축, 차축, 상품축이름, 요금맞음,
-  많은순, mergeProductSelections, offerWithinSearchLimits, parseProductSearch, productMeetsSearchRequirements, 보증금, 정책말,
-  type 상품축, type 요금축 as 요금축Type, type 차축 as 차축Type,
+  STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 상품축이름,
+  많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
+  type 상품축,
 } from './workspace-config';
 
 
@@ -39,17 +43,6 @@ import {
  * 폰은 `?v=list|detail|work` 로 판을 한 장씩(규칙 ⑧).
  */
 
-/** 실제 Canonical product shape에 붙는 차 축 판정은 workspace 가까이에 둔다. */
-type 상품 = Awaited<ReturnType<typeof productList>>['rows'][number];
-const 차맞음: Record<차축Type, (p: 상품, k: string) => boolean> = {
-  status: (p, k) => p.status === k,
-  kind: (p, k) => p.productKind === k,
-  perk: (p, k) => (p.perks ?? []).includes(k),
-  supplier: (p, k) => (p.supplierName ?? p.supplierId) === k,
-  cls: (p, k) => p.vehicleClass === k,
-  fuel: (p, k) => p.specs.fuel === k,
-};
-
 /** 사진 URL은 서버 proxy 규칙을 반드시 거친다. */
 const 사진 = (p: { photoUrl?: string }): string | undefined =>
   p.photoUrl && p.photoUrl.trim() ? imgSrc(p.photoUrl) : undefined;
@@ -58,41 +51,34 @@ export async function ProductWorkspace({ q, mode, base }: {
   q: Record<string, string | string[] | undefined>; mode: 'find' | 'intake'; base: string;
 }) {
   const parsedSearch = parseProductSearch(sp(q.q));
-  const text = parsedSearch.text.toLowerCase();
   /** URL facet + 검색창에서 읽은 업무조건은 같은 축으로 합쳐 한 번만 판정한다. */
   const explicitPsel = Object.fromEntries(상품축이름.map(([a]) => [a, 고른값(sp(q[a]))])) as Record<상품축, string[]>;
   const psel = mergeProductSelections(explicitPsel, parsedSearch.inferred);
-  let all: Awaited<ReturnType<typeof productList>>;
-  try { all = await productList(); }
-  catch (e) {
-    return <><h1>상품찾기</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
-  }
+  // Catalog authority stays FreePass Data; OBSERVE uses its explicit legacy bridge.
+  const all = await productList();
   const { rows } = all;
 
-  /*
-   * ★요금 축(기간 · 대여료 · 보증금)은 «한 요금이 모두» 만족해야 걸린다(S-02) — 그래서 차가 아니라 요금을 거른다.
-   *   남은 요금이 곧 matchedOffers 다(S-03 — 상세·접수는 여기서 고른다). 여러 구간은 하나의 범위로 못 적어
-   *   도메인 질의(monthlyRent: {min,max})에 못 넣으므로, 도메인이 돌려준 요금을 같은 규칙으로 한 번 더 거른다.
+  /**
+   * 상품찾기 의미는 Domain Finder 한 곳에서만 판정한다.
+   * 화면은 URL 선택값/자연어를 FinderInput으로 바꾸고 결과를 그리기만 한다.
    */
-  const pool = searchProducts(rows, {} as ProductSearchQuery);
-  const 남은요금 = (h: (typeof pool)[number], skip?: 상품축) => h.matchedOffers.filter((o) =>
-    요금축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 요금맞음[a](o, k)))
-    && offerWithinSearchLimits(o, parsedSearch.limits));
-  const 통과 = (h: (typeof pool)[number], skip?: 상품축) =>
-    productMeetsSearchRequirements(h.product, parsedSearch.requirements)
-    && 차축.every((a) => a === skip || !psel[a].length || psel[a].some((k) => 차맞음[a](h.product, k)))
-    && 남은요금(h, skip).length > 0;
-  const searched = text ? pool.filter(({ product: p }) =>
-    `${vehicleName(p)} ${p.registration?.vehicleNumber ?? ''} ${p.supplierName ?? ''} ${p.supplierId}`
-      .toLowerCase().includes(text)) : pool;
-  const hits = searched.filter((h) => 통과(h)).map((h) => {
-    const matchedOffers = 남은요금(h);
-    return { ...h, matchedOffers, matchedOfferIds: matchedOffers.map((o) => o.id) };
+  const finderInput: FinderInput = {
+    selection: psel,
+    limits: parsedSearch.limits,
+    requirements: parsedSearch.requirements,
+    text: parsedSearch.text,
+  };
+  const pool = findProducts(rows, {
+    selection: emptyFinderSelection(),
+    limits: {},
+    requirements: { perks: [] },
+    text: '',
   });
-  const sorted = hits
-    .map((h) => ({ ...h, lead: lead(h.matchedOffers) }))
-    .sort((a, b) => (STATUS_ORDER[a.product.status ?? ''] ?? 9) - (STATUS_ORDER[b.product.status ?? ''] ?? 9)
-      || (a.lead?.monthlyRent ?? Infinity) - (b.lead?.monthlyRent ?? Infinity));
+  const hits = findProducts(rows, finderInput);
+  const requestedSort = FINDER_SORTS.some((x) => x.key === sp(q.sort))
+    ? sp(q.sort) as FinderSort : 'admin';
+  const sorted = sortFinderMatches(hits, requestedSort)
+    .map((h) => ({ ...h, lead: lead(h.matchedOffers) }));
   /* ★쪽을 나누지 않는다 — 목록은 쭉 구른다(대표 2026-09-18 「스크롤이 쭉쭉쭉 되어야 함」). 사진은 화면에 올 때 부른다(lazy) */
   const shown = sorted;
 
@@ -113,6 +99,8 @@ export async function ProductWorkspace({ q, mode, base }: {
   const 값명단: Record<상품축, { k: string; label: string }[]> = {
     status: 많은순(pool.map((h) => h.product.status ?? '')).sort((a, b) => (STATUS_ORDER[a] ?? 9) - (STATUS_ORDER[b] ?? 9))
       .map((k) => ({ k, label: k })),
+    vc: CUSTOMER_VEHICLE_CLASSES.filter((k) => pool.some((h) => customerVehicleClass(h.product) === k))
+      .map((k) => ({ k, label: k })),
     kind: 많은순(pool.map((h) => h.product.productKind ?? '')).map((k) => ({ k, label: k })),
     perk: 많은순(pool.flatMap((h) => h.product.perks ?? [])).map((k) => ({ k, label: k })),
     term: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.termMonths)))].sort((a, b) => a - b)
@@ -121,18 +109,31 @@ export async function ProductWorkspace({ q, mode, base }: {
     dep: 보증금구간.map((b) => ({ k: b.k, label: b.label })),
     mile: [...new Set(pool.flatMap((h) => h.matchedOffers.map((o) => o.annualMileageKm).filter((x): x is number => typeof x === 'number')))]
       .sort((a, b) => a - b).map((km) => ({ k: String(km), label: `연 ${(km / 10000).toLocaleString('ko-KR')}만km` })),
-    supplier: 많은순(pool.map((h) => h.product.supplierName ?? h.product.supplierId)).map((k) => ({ k, label: k })),
+    maker: 많은순(finderHierarchyValues(rows, psel, 'maker')).map((k) => ({ k, label: k })),
+    model: 많은순(finderHierarchyValues(rows, psel, 'model')).map((k) => ({ k, label: k })),
+    submodel: 많은순(finderHierarchyValues(rows, psel, 'submodel')).map((k) => ({ k, label: k })),
+    trim: 많은순(finderHierarchyValues(rows, psel, 'trim')).map((k) => ({ k, label: k })),
     cls: 많은순(pool.map((h) => h.product.vehicleClass ?? '')).map((k) => ({ k, label: k })),
+    year: [...new Set(pool.map((h) => h.product.specs.modelYear).filter((x): x is number => typeof x === 'number'))]
+      .sort((a, b) => b - a).map((y) => ({ k: String(y), label: `${y}년` })),
+    vmile: 현재주행구간.map((b) => ({ k: b.k, label: b.label })),
     fuel: 많은순(pool.map((h) => h.product.specs.fuel ?? '')).map((k) => ({ k, label: k })),
+    credit: 많은순(pool.map((h) => h.product.credit ?? '')).map((k) => ({ k, label: k })),
+    supplier: 많은순(pool.flatMap((h) => h.matchedOffers.map((o) => o.supplierName ?? o.supplierId ?? h.product.supplierName ?? h.product.supplierId))).map((k) => ({ k, label: k })),
   };
-  const 걸림 = (a: 상품축, h: (typeof pool)[number], k: string, 요금: Offer[]) =>
-    (요금축 as readonly string[]).includes(a) ? 요금.some((o) => 요금맞음[a as 요금축Type](o, k)) : 차맞음[a as 차축Type](h.product, k);
   const 상품판축: FacetAxis[] = 상품축이름.map(([a, label]) => {
     const keys = 값명단[a].map((x) => x.k);
     const name = new Map(값명단[a].map((x) => [x.k, x.label]));
-    const base = tallyMatch(pool, keys, (h, k) => 걸림(a, h, k, h.matchedOffers));
-    const live = tallyMatch(searched.filter((h) => 통과(h, a)), keys, (h, k) => 걸림(a, h, k, 남은요금(h, a)));
-    return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })) };
+    const base = tallyMatch(pool, keys, (h, k) => finderAxisMatches(h, a, k));
+    const cross = findProductsForFacet(rows, finderInput, a);
+    const live = tallyMatch(cross, keys, (h, k) => finderAxisMatches(h, a, k));
+    const clearOnChange = a === 'maker' ? ['model','submodel','trim']
+      : a === 'model' ? ['submodel','trim']
+        : a === 'submodel' ? ['trim'] : undefined;
+    return {
+      key: a, label, clearOnChange,
+      options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: name.get(o.key) ?? o.key, count: o.count })),
+    };
   });
 
   /* ── 고른 차 · 고른 요금 · 접수 목록 — 모양을 위해 «고르기»만 더한다(값은 위에서 센 그대로) ── */
@@ -154,7 +155,7 @@ export async function ProductWorkspace({ q, mode, base }: {
   let irows: SettlementRow[] = [];
   let intakeErr = '';
   if (mode === 'intake') {
-    try { irows = (await settlements.list()).map((x) => x.row); } catch (e) { intakeErr = (e as Error).message; }
+    try { irows = (await settlements.list()).map((x) => x.row); } catch { intakeErr = '접수 목록을 불러오지 못했습니다. 다시 시도해 주세요.'; }
   }
   /**
    * ★★접수 목록 판 = 상품 목록 판과 «같은 규격» — 대표 2026-09-18
@@ -217,7 +218,7 @@ export async function ProductWorkspace({ q, mode, base }: {
     <>
       <section className="workspace" data-phone={view} data-mode={mode}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
-        <section className="panel product-panel" data-panel-role="list">
+        <section className="panel product-panel">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
           <PanelHeader title="상품 목록" count={`${sorted.length.toLocaleString()}대`} />
@@ -264,6 +265,17 @@ export async function ProductWorkspace({ q, mode, base }: {
                 href={keep({ dep: 켜끔(explicitPsel.dep, 'd0'), page: '' })}>무보증</Link>
             )}
           </div>
+          <form className="dz-sort" action={base}>
+            {숨김(['sort', 'id', 'offer'])}
+            <label>
+              <span>정렬</span>
+              <select name="sort" defaultValue={requestedSort === 'admin' ? '' : requestedSort}>
+                <option value="">기본 · 출고상태</option>
+                {FINDER_SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </label>
+            <button type="submit">적용</button>
+          </form>
           </div>
           <div className="list">
             {shown.map(({ product: p, lead: o }) => (
@@ -272,16 +284,16 @@ export async function ProductWorkspace({ q, mode, base }: {
                 thumb={사진(p) ?? null}
                 product
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
-                mainValue={o ? `월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원` : '요금 없음'}
-                meta={[txt(p.registration?.vehicleNumber), txt(p.productKind), txt(p.status)].filter((x) => x !== '—').join(' · ') || '—'}
-                value={o ? `${o.termMonths}개월 · 보증 ${o.deposit ? `${Math.round(o.deposit / 10000).toLocaleString('ko-KR')}만 원` : '없음'}` : '—'} />
+                badges={[p.productKind, txt(p.status)]}
+                value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
+                chips={p.perks} />
             ))}
             {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>
         </section>
 
         {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
-        <section className="panel detail-panel" data-panel-role="detail">
+        <section className="panel detail-panel">
           <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
@@ -303,7 +315,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                   <div className="vehicle-title">
                     <div>
                       <h2>{vehicleName(car) || car.id}</h2>
-                      <p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p>
+                      <p>{txt(car.registration?.vehicleNumber)} · {sel.lead?.supplierName ?? sel.lead?.supplierId ?? car.supplierName ?? car.supplierId}</p>
                       {!매칭끝(car.vehicle.matchLevel) && (
                         <p className="dz-note">차종 {매칭(car.vehicle.matchLevel)}{car.vehicle.matchNote ? ` — ${car.vehicle.matchNote}` : ''}</p>
                       )}
@@ -318,7 +330,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 </>}
                 info={<>
                   <div className="vehicle-title">
-                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {car.supplierName ?? car.supplierId}</p></div>
+                    <div><h2>{vehicleName(car) || car.id}</h2><p>{txt(car.registration?.vehicleNumber)} · {sel.lead?.supplierName ?? sel.lead?.supplierId ?? car.supplierName ?? car.supplierId}</p></div>
                     <Tag {...상품신원(txt(car.status), 'status')}>{txt(car.status)}</Tag>
                   </div>
                   {/* ★상세정보 — erp4 읽는 차례로 묶었다(차량 → 대여료 → 운전자 → 보험 → 계약 → 영업 전용 → 기타) · 원자는 기능 쪽 productSections 그대로 */}
@@ -330,14 +342,14 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
-        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel" data-panel-role="work">
+        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
           <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
+        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}
             newHref={keep({ w: 'new', product: '', offer: '', ic: '', created: '', exists: '', v: 'work' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
+        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
           <div className="dz-listtop">
           <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">
@@ -355,17 +367,16 @@ export async function ProductWorkspace({ q, mode, base }: {
             ))}
           </div>
           </div>
-          {intakeErr ? <EmptyState>ERP5 접수를 못 읽었습니다 — {intakeErr}</EmptyState> : (
+          {intakeErr ? <Notice tone="warn">{intakeErr}</Notice> : (
             <div className="list">
               {ishown.map((r, i) => (
                 <ListRow key={`${r.plate ?? '차번없음'}-${r.receivedAt}-${i}`}
                   href={keep({ ic: r.id, w: '', v: 'work' })} status={접수상태(r, 칸의.get(r))}
-                  title={txt(r.customer)} mainValue={r.rent ? `월 ${Math.round(r.rent / 10000).toLocaleString('ko-KR')}만 원` : '—'}
-                  badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
+                  title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   flag={지연표시(r)}
-                  meta={[r.plate, r.model, r.product, r.term ? `${r.term}개월` : ''].filter(Boolean).join(' · ') || '—'}
-                  value={`청구 ${r.money.claim === null ? '—' : `${won(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won(r.money.pay)}원`}`} />
+                  meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
+                  value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
               ))}
               {ishown.length === 0 && <EmptyState>조건에 맞는 접수가 없습니다.</EmptyState>}
             </div>

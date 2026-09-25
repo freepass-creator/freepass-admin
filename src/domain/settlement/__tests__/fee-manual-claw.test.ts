@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord } from '../clawback.js';
+import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, terminationClawbackReview } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -89,5 +89,73 @@ describe('환수 — 열어 둔다', () => {
     assert.equal(clawbackRecord(row({ delivered: false, deliveredAt: '', collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
     assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
     assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 1, reason: 'x' }, 't', 0).ok, false);
+  });
+});
+
+
+
+
+
+it('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
+  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
+  const terminated = {
+    ...row({ collected:true, paid:true, claimStage:'수금', payStage:'지급' }),
+    contractTerminationContractId:'ctr_term_1',
+    contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),
+    contractTerminationDate:'2026-09-25',
+    contractTerminationReason:'중도해지',
+  };
+  const result=clawbackRecord(terminated,{
+    at:'2026-09-25',supplierAmt:100000,agentAmt:80000,reason:'해지 환수',
+  },'tester',Date.now());
+  assert.equal(result.ok,true);
+  if(!result.ok)return;
+  assert.equal(result.doc.source,'CONTRACT_TERMINATION');
+  assert.equal(result.doc.contractId,'ctr_term_1');
+  assert.equal(result.doc.contractTerminationDate,'2026-09-25');
+  assert.equal(result.doc.contractTerminationReason,'중도해지');
+});
+
+
+describe('계약해지 → 환수 검토대상', () => {
+  const baseRow = {
+    id: 'stl_term_target',
+    contractTerminatedAt: Date.parse('2026-09-25T00:00:00Z'),
+  };
+
+  it('계약해지가 찍히면 환수를 자동 생성하지 않고 검토대상으로 분류한다', () => {
+    assert.equal(terminationClawbackReview(baseRow as never, []), 'PENDING');
+  });
+
+  it('같은 접수 code의 환수가 실제 등록되면 검토 완료로 본다', () => {
+    assert.equal(
+      terminationClawbackReview(baseRow as never, [{ code: 'stl_term_target' }]),
+      'RECORDED',
+    );
+  });
+
+  it('다른 재계약 건의 환수나 code 없는 레거시 환수는 이 해지의 완료로 추측하지 않는다', () => {
+    assert.equal(
+      terminationClawbackReview(baseRow as never, [{ code: 'stl_other' }, {}]),
+      'PENDING',
+    );
+  });
+
+  it('계약해지가 아니면 환수 검토대상이 아니다', () => {
+    assert.equal(
+      terminationClawbackReview({ id: 'stl_normal', contractTerminatedAt: null } as never, []),
+      'NONE',
+    );
+  });
+
+  it('환수 검토 큐는 해지됐고 아직 환수 등록이 없는 건만 최신 해지일부터 세운다', () => {
+    const rows = [
+      { id: 'old', contractTerminatedAt: 1, contractTerminationDate: '2026-09-20' },
+      { id: 'new', contractTerminatedAt: 2, contractTerminationDate: '2026-09-25' },
+      { id: 'done', contractTerminatedAt: 3, contractTerminationDate: '2026-09-24' },
+      { id: 'live', contractTerminatedAt: null, contractTerminationDate: null },
+    ];
+    const pending = pendingTerminationClawbackRows(rows as never, [{ code: 'done' }]);
+    assert.deepEqual(pending.map((r) => r.id), ['new', 'old']);
   });
 });

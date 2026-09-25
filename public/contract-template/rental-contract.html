@@ -1633,6 +1633,8 @@
 <script>
 /* ===== 약관 2단 자동 페이지네이션 ===== */
 (function(){
+  /* 필드 값(회사명·약관 제목 등)을 HTML 문자열에 붙일 때는 글자로만 넣는다 — 태그로 해석되면 조판이 깨진다. */
+  function escHtml(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   /* ★흐름 모드는 «세 가지» 방법으로 켠다 — 서식이 어디에 놓이든 켜져야 하기 때문이다.
        ① ?flow=1        브라우저로 직접 열 때
        ② window.__FLOW__ 서버가 HTML 을 지을 때 심어 줄 때
@@ -1755,10 +1757,10 @@
     function newPage(){
       var p=document.createElement('section'); p.className='page';
       p.innerHTML='<div class="pbody">'
-        +'<div class="rhead"><div class="rh-doc">'+tt+'</div>'
-        +'<div class="rh-meta">'+co+'</div></div>'
+        +'<div class="rhead"><div class="rh-doc">'+escHtml(tt)+'</div>'
+        +'<div class="rh-meta">'+escHtml(co)+'</div></div>'
         +'<div class="terms-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:7.2mm;font-size:var(--fs-terms);line-height:1.32;color:var(--ink)"><div class="tc tcL"></div><div class="tc tcR"></div></div>'
-        +'</div><div class="pagefoot"><span class="pf-co">'+co+'</span><span>약관 · <span class="num"></span></span></div>';
+        +'</div><div class="pagefoot"><span class="pf-co">'+escHtml(co)+'</span><span>약관 · <span class="num"></span></span></div>';
       stage.appendChild(p);
       return p;
     }
@@ -2076,6 +2078,8 @@
 <script>
 /* ===== ERP 선택 미리보기: 회사 · 상품 · 구독보험 · 계약유형 ===== */
 (function(){
+  /* 필드 값(회사명·약관 제목 등)을 HTML 문자열에 붙일 때는 글자로만 넣는다 — 태그로 해석되면 조판이 깨진다. */
+  function escHtml(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   var COMPANIES={
     sonogong:{logo:'assets/logo-sonogong.webp', name:'주식회사 손오공렌터카', ceo:'조규진', title:'대표이사', biz:'000-00-00000', phone:'-', bank:'-', acct:'-'},
     switchplan:{logo:'', name:'스위치플랜 주식회사', ceo:'박영현', title:'사내이사', biz:'000-00-00000', phone:'-', bank:'-', acct:'-'},
@@ -2233,9 +2237,9 @@
 
   /* ── 직인(도장) / 서명 렌더 ── 회사 직인: 이미지(company_seal) 우선, 없으면 자동 전자직인 */
   function sealHtml(){
-    if(DATA.company_seal) return '<img class="seal-img" src="'+DATA.company_seal+'" alt="직인">';
+    if(DATA.company_seal) return '<img class="seal-img" src="'+escHtml(DATA.company_seal)+'" alt="직인">';
     var nm=(DATA.company_name||defaults.company_name||'').replace(/주식회사|㈜|\(주\)|주식회사/g,'').trim();
-    return '<span class="seal-auto">'+(nm||'직인')+'<i>(인)</i></span>';
+    return '<span class="seal-auto">'+escHtml(nm||'직인')+'<i>(인)</i></span>';
   }
   function applySeals(){
     document.querySelectorAll('[data-seal="company"]').forEach(function(pad){ pad.innerHTML=sealHtml(); });

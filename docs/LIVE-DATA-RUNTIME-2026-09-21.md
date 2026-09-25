@@ -1,100 +1,109 @@
-# FreePass Admin Live Data Runtime — 2026-09-21
+# FreePass Admin Live Data Runtime — 2026-09-25 authority correction
 
-Status: **LIVE DATA CODED / DEPLOYMENT ENV REQUIRED**
+Status: **FREEPASS DATA CONSUMER BOUNDARY CODED / ADMIN CATALOG CUTOVER HOLD**
+
+## Authority
+
+상품 Catalog의 정본 권한은 **FreePass Data**다.
+
+현재 FreePass Data 중앙 스위치보드 기준 Admin Catalog 단계는 **OBSERVE**이며,
+Admin 전용 consumer contract, non-empty ACTIVE Release, policy parity, 인증/운영 persistence 증거가
+모두 준비되기 전에는 `FREEPASS_DATA_READ`를 활성화하지 않는다.
+
+현재 `freepasserp5` 상품 read는 **legacy bridge**다. Firestore `products/policy` collection shape는
+Admin public contract가 아니며 UI/use case가 직접 의존하지 않는다.
 
 ## Actual screen chain
 
 ```
-/intake
-  ├ Product list       -> Erp5ProductRepository -> Firestore products
-  ├ Product detail     -> same Canonical Product + matched Offers
-  └ Work panel
-       ├ Intake list   -> Erp5SettlementRepository -> settlement_rows
-       ├ New intake    -> createIntakeAction -> settlement_rows + settlement_events
-       └ Intake detail -> settlement_rows + lifecycle/progress/money actions
+/products + /intake product panels
+  -> AdminCatalogReader (authority: FreePass Data)
+      -> OBSERVE
+          -> Legacy ERP5 product bridge (temporary read-only)
+      -> SHADOW_READ / PARITY_VERIFIED / FREEPASS_DATA_READ
+          -> HOLD until Admin-specific FreePass Data contract exists
 
-/settlement
-  ├ Claim/Pay groups   -> settlement_rows + settlement_clawbacks
-  ├ Performance lines -> derived ledgers from same rows
-  └ Intake detail     -> same IntakeDetailPanel
-       ├ confirm/correct
-       ├ collect/pay
-       ├ hold
-       ├ bill month
-       ├ tax invoice state
-       └ clawback
+/intake workflow
+  -> Erp5SettlementRepository -> settlement_rows + events
+
+/settlement workflow
+  -> Erp5SettlementRepository -> rows/clawbacks/invoices/cash events
 
 /esign
-  ├ Contract list      -> Erp5ContractRepository -> contract
-  └ Contract detail    -> same contract document projection
+  -> Erp5ContractRepository + EsignService -> contract/session/private/assets
 ```
 
-No runtime mock/fixture fallback is permitted on these routes.
+Catalog read cutover and Admin workflow persistence/writer cutover are separate operations.
 
-## Required deployment environment
+## Read-mode switch
 
-Read:
-- `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` for hosted runtime, or
-- `ERP5_SERVICE_ACCOUNT_PATH` for local development.
+```bash
+FREEPASS_DATA_ADMIN_CATALOG_READ_MODE=OBSERVE
+```
 
-The credential must have `project_id=freepasserp5`. A different Firebase project fails closed.
+Allowed values:
+- `LEGACY_DIRECT`
+- `OBSERVE` — current default
+- `SHADOW_READ`
+- `PARITY_VERIFIED`
+- `FREEPASS_DATA_READ`
 
-Write:
+Unknown values fail. Until the real Admin consumer adapter exists, requesting SHADOW_READ or later also fails
+instead of silently returning legacy data and pretending the requested stage is active.
+
+This follows the central FreePass Data switchboard:
+`LEGACY_DIRECT -> OBSERVE -> SHADOW_READ -> PARITY_VERIFIED -> FREEPASS_DATA_READ`.
+
+## Transitional physical binding
+
+The legacy Catalog bridge and current Admin workflow adapters use the `freepasserp5` Firebase project.
+
+Read credential:
+- `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON`, or
+- `ERP5_SERVICE_ACCOUNT_PATH`
+
+Write gate for Admin workflow adapters:
 - `ERP5_WRITE=on`
 
-Without it, read screens work but all ERP5 writes fail closed with a visible error.
-
-Optional:
-- `CLAIM_LINK_BASE` for external claim/confirmation links.
+These keys do **not** make freepasserp5 the Catalog authority.
 
 ## Runtime proof
 
-Internal admin route:
-- `/system/data-status`
+Internal route: `/system/data-status`
 
-It probes:
-- products
-- settlement_rows
-- settlement_clawbacks
-- contract
-
-and shows real repository counts or exact read errors.
-
-Admin chrome also displays:
-- ERP5 project
-- read credential state
-- write gate state
-
-## Demo data mode (`FPA_DEMO=on`) — screen review only
-
-When the ERP5 credentials are not available, the admin screens can be reviewed with **fictional** data:
-
-```bash
-FPA_DEMO=on npx next dev --webpack -p 4300
-```
-
-- Gate: `demoMode()` in `src/adapters/erp5/demo.ts` = `FPA_DEMO=on` **and** `VERCEL_ENV !== 'production'`. It is off by default and is forced off in a production deployment, whatever the env says. Use it only in local dev or a preview deployment.
-- `erp5()` returns an in-memory, read-only fake of the Firestore read surface; it never connects to the real `freepasserp5` project, even if credentials are present. `erp5App()` (Storage) throws, so e-sign files and photos read as absent.
-- Read-only: every write on the fake (`set` / `update` / `create` / `delete` / `add` / `batch` / transaction writes) throws `데모 데이터 모드는 읽기 전용입니다`, and `writeEnabled()` returns false even with `ERP5_WRITE=on`.
-- Data: `src/adapters/erp5/demo-fixtures.ts` — 24 products, 22 settlement rows across 당월접수/미완료/분납실적/완납실적/취소, 1 clawback, 11 contracts. Every name, plate, supplier (한빛렌터카 등) and customer (masked) is invented. Dates are relative to today (KST).
-- `erp5Ready()` reports `{ ok: true, project: 'demo' }`; the product read report also says `project: 'demo'`. The UI should show a «가상 데이터» badge using `demoMode()`.
-- Guard: `src/adapters/erp5/__tests__/demo.test.ts`.
+It reports separately:
+- data authority: FreePass Data
+- Admin Catalog read mode
+- current Catalog serving path (legacy bridge vs FreePass Data)
+- Catalog HOLD reasons
+- transitional Firebase project/credential state
+- Admin workflow write gate
+- product/intake/clawback/cash/contract read probes
 
 ## Regression guard
 
 `npm run data:check`
 
 It fails if:
-- products route stops calling `productList()`
-- intake stops calling `settlements.list()`
-- settlement stops using rows/clawbacks/invoices
-- esign stops using `contracts.list()`
-- server repository instances stop being ERP5 adapters
-- runtime fake arrays are reintroduced into core routes
-- ERP5 write gate disappears
+- product workspace bypasses `server/freepass-data`
+- Catalog server loses `AdminCatalogReader`
+- current switch key diverges from `FREEPASS_DATA_ADMIN_CATALOG_READ_MODE`
+- premature post-OBSERVE modes silently fallback to ERP5
+- ERP5 workflow server again owns the Product reader
+- intake/settlement/e-sign live wiring disappears
+- runtime fake arrays are introduced
 
-## Current remaining runtime blocker
+## Current HOLD
 
-There is no connected Vercel project in the current team, and the available deployment connector cannot create/deploy a new project from this chat session.
+FreePass Data currently records:
+- FreePass Admin Catalog: **OBSERVE**
+- Admin Catalog read cutover: HOLD
+- Admin-specific projection/contract: not active
+- policy parity / auth / operational persistence evidence: incomplete
+- current Canonical ACTIVE Catalog release: not available for Admin cutover
 
-Therefore production/preview runtime still needs a host with the environment above. This does **not** block the code/data wiring work in this repository.
+Therefore this repository must not claim `FREEPASS_DATA_READ` or production Catalog cutover yet.
+
+The next cross-repository step belongs first in `freepass-creator/freepass-data`: complete the Admin-specific
+Catalog consumer contract/release evidence. After that, this repository can add the server-side FreePass Data adapter,
+run SHADOW_READ parity while still returning the legacy result, and only then advance the read switch.

@@ -1,25 +1,28 @@
 import { randomBytes } from 'node:crypto';
 import { buildConsentProfile } from '../../domain/esign/consents';
+import { FINALIZE_CLAIM_TTL, SUBMIT_CLAIM_TTL } from '../../domain/esign/claim-ttl';
 import { allowsInsuranceSide, findContractKind, type InsuranceSide } from '../../domain/esign/contract-kind';
 import {
-  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, mergeRequiredDocuments, normalizeRequiredDocuments,
+  CUSTOMER_INSURANCE_CERTIFICATE, DOCUMENT_PRESETS, allowedUploadKinds, applySignerRole, mergeRequiredDocuments, normalizeRequiredDocuments,
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
-import { sha256 } from '../../domain/esign/snapshot';
+import { sha256, signedSnapshot, stableJson } from '../../domain/esign/snapshot';
 import { templateFieldsFromContract } from '../../domain/esign/template-fields';
 import type {
   EsignAdminState, EsignPrivateSubmission, EsignSession, EsignSnapshot,
 } from '../../domain/esign/types';
-import type { EsignAssetStore, EsignRepository } from '../../ports/esign/repositories';
+import type { EsignAssetStore, EsignFinalDocumentRenderer, EsignRepository } from '../../ports/esign/repositories';
 import { validateSubmission, type PublicSubmissionPayload } from '../../server/esign/submission';
 import { buildContractHtml, fallbackContractHtml } from '../../server/esign/document';
+import { isCompletePdfBytes } from '../../server/esign/pdf';
+import { signabilityProblem } from '../../domain/esign/signability';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
-const SUBMIT_CLAIM_TTL = 90_000;
+const POST_SUBMISSION = new Set<string>(['pending_review', 'approving', 'signed']);
 
 function uploadMagicOk(type: string, bytes: Uint8Array) {
   if (type === 'application/pdf') return bytes.length >= 5 && Buffer.from(bytes.subarray(0, 5)).toString('ascii') === '%PDF-';
@@ -30,6 +33,15 @@ function uploadMagicOk(type: string, bytes: Uint8Array) {
     && Buffer.from(bytes.subarray(8,12)).toString('ascii')==='WEBP';
   return false;
 }
+
+export type CreateContractFromIntakeInput = {
+  intakeId: string;
+  customerPhone: string;
+  customerType: '개인' | '개인사업자' | '법인';
+  contractDate: string;
+  contractKind: string;
+  insuranceSide: '회사포함' | '고객직접';
+};
 
 export type CreateContractInput = {
   customerName: string;
@@ -48,7 +60,14 @@ export type CreateContractInput = {
 };
 
 export class EsignService {
-  constructor(private repo: EsignRepository, private assets: EsignAssetStore) {}
+  constructor(private repo: EsignRepository, private assets: EsignAssetStore, private finalRenderer?: EsignFinalDocumentRenderer) {}
+
+  finalizationReadiness() {
+    return {
+      rendererConnected: Boolean(this.finalRenderer),
+      ready: Boolean(this.finalRenderer),
+    };
+  }
 
   private publicBase() {
     const raw = (process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '');
@@ -63,6 +82,62 @@ export class EsignService {
   private token() { return randomBytes(32).toString('base64url'); }
   private tokenHash(token: string) { return sha256(token); }
   private sessionId(hash: string) { return 'esg_' + hash.slice(0, 24); }
+
+  async createContractFromIntake(input: CreateContractFromIntakeInput, actor = 'freepass-admin') {
+    const source = await this.repo.getIntakeContractSource(input.intakeId);
+    if (!source) throw new Error('접수를 찾을 수 없습니다.');
+    if (!source.customerName) throw new Error('접수 고객명이 없습니다.');
+    if (!source.vehicleName) throw new Error('접수 차량명이 없습니다.');
+    if (!source.supplierCode) throw new Error('접수 공급사 코드가 없습니다.');
+    if (source.rent === null || source.termMonths === null || source.deposit === null) {
+      throw new Error('접수의 기간·대여료·보증금이 확정되지 않았습니다.');
+    }
+    const phone = input.customerPhone.replace(/\D/g, '');
+    if (phone.length < 10 || phone.length > 11) throw new Error('고객 연락처를 확인해 주세요.');
+    if (!DAY.test(input.contractDate)) throw new Error('계약일은 YYYY-MM-DD 입니다.');
+    const spec = findContractKind(input.contractKind);
+    if (!spec) throw new Error('계약 유형을 확인해 주세요.');
+    if (!allowsInsuranceSide(spec, input.insuranceSide)) throw new Error('계약 유형과 보험 주체가 맞지 않습니다.');
+
+    const now = Date.now();
+    const id = 'ctr_intake_' + sha256(source.intakeId).slice(0, 20);
+    const code = 'FP-' + input.contractDate.replace(/-/g, '') + '-' + sha256(source.intakeId).slice(0, 6).toUpperCase();
+    const result = await this.repo.createContractFromIntake(source, id, {
+      contract_code: code,
+      contract_status: '계약대기',
+      sign_status: '',
+      contract_date: input.contractDate,
+      customer_name: source.customerName,
+      customer_phone: phone,
+      customer_type: input.customerType,
+      vehicle_name_snapshot: source.vehicleName,
+      car_number_snapshot: source.plate || '미정',
+      provider_company_code: source.supplierCode,
+      provider_company_name_snapshot: source.supplierName || source.supplierCode,
+      rent_amount_snapshot: Math.round(source.rent),
+      rent_month_snapshot: Math.round(source.termMonths),
+      deposit_amount_snapshot: Math.round(source.deposit),
+      esign_contract_kind: input.contractKind,
+      esign_insurance_side: input.insuranceSide,
+      source_intake_id: source.intakeId,
+      source_product_id: source.sourceProductId,
+      source_product_version: source.sourceProductVersion,
+      source_offer_id: source.sourceOfferId,
+      source_snapshot_id: source.sourceSnapshotId,
+      contract_source_digest: source.sourceDigest,
+      contract_source_snapshot: source,
+      created_at: now,
+      created_by: actor,
+      updated_at: now,
+      from_admin: true,
+    });
+    return {
+      id,
+      code: S(result.contract.contract_code) || code,
+      created: result.created,
+      sourceDigest: S(result.contract.contract_source_digest) || source.sourceDigest,
+    };
+  }
 
   async createContract(input: CreateContractInput, actor = 'freepass-admin') {
     if (!input.customerName.trim()) throw new Error('고객명이 없습니다.');
@@ -113,7 +188,7 @@ export class EsignService {
     const c = await this.repo.getContract(contractId);
     if (!c) throw new Error('계약을 찾을 수 없습니다.');
     if (B(c._deleted) || B(c.is_test) || B(c.test_only)) throw new Error('삭제/시험 계약은 발행할 수 없습니다.');
-    if (/취소|철회/.test(S(c.contract_status))) throw new Error('취소·철회 계약은 발행할 수 없습니다.');
+    if (/취소|철회|해지/.test(S(c.contract_status))) throw new Error('취소·철회·해지 계약은 전자계약을 발행할 수 없습니다.');
 
     const kind = S(c.esign_contract_kind || c.contract_kind) || 'rent_return';
     const spec = findContractKind(kind);
@@ -216,7 +291,7 @@ export class EsignService {
     const attention: string[] = [];
     if (session) {
       const stage = esignStage(session);
-      if (['반려', '만료', '해지'].includes(stage.state)) attention.push(stage.label);
+      if (['반려', '만료', '철회'].includes(stage.state)) attention.push(stage.label);
       if (session.status === 'pending_review') attention.push('승인 필요');
     }
     const assetMap = (priv?.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
@@ -256,13 +331,17 @@ export class EsignService {
 
   async issue(contractId: string, actor = 'admin') {
     const [current, raw] = await Promise.all([this.repo.getCurrentSession(contractId), this.repo.getContract(contractId)]);
+    // Lifecycle rejection precedes legacy-signature classification; neither may be reissued.
+    if (raw && /취소|철회|해지/.test(S(raw.contract_status))) {
+      throw new Error('취소·철회·해지 계약은 전자계약을 발행할 수 없습니다.');
+    }
     if (current?.status === 'signed') throw new Error('이미 서명완료된 계약입니다. 수정하려면 새 계약을 만들어야 합니다.');
     if (!current && raw) {
       const legacyStatus = S(raw.sign_status);
       const legacyLink = S(raw.esign_sign_url || raw.sign_url);
       if (legacyStatus === '서명완료') throw new Error('기존 ERP4에서 서명완료된 계약입니다. 완료본은 읽기 전용이며 수정하려면 새 계약을 만듭니다.');
       if (legacyLink && ['발행','열람','진행중','검토대기','반려'].includes(legacyStatus)) {
-        throw new Error('기존 ERP4 전자계약 링크가 아직 활성입니다. 기존 링크를 마무리하거나 해지한 뒤 새 ERP5 전자계약을 발행해 주세요.');
+        throw new Error('기존 ERP4 전자계약 링크가 아직 활성입니다. 기존 링크를 마무리하거나 철회한 뒤 새 ERP5 전자계약을 발행해 주세요.');
       }
     }
     const snapshot = await this.snapshot(contractId);
@@ -285,8 +364,7 @@ export class EsignService {
       progress: {},
       snapshot,
     };
-    await this.repo.createSession(session, publicUrl);
-    await this.repo.updateContract(contractId, {
+    await this.repo.issueSession(session, publicUrl, {
       esign_id: id,
       sign_status: '발행',
       sign_sent_at: now,
@@ -297,9 +375,13 @@ export class EsignService {
       esign_template_version: snapshot.templateVersion,
       sign_consent_version: snapshot.agreementVersion,
       signed_pdf_url: '',
-    });
-    await this.repo.appendEvent(contractId, id, 'issued', actor, { revision });
+    }, actor);
     return { session, publicUrl };
+  }
+
+  /** 제출 전 단계의 링크는 만료되면 더 쓰지 못한다(열람 publicView · 제출 submit 과 같은 기준) */
+  private assertNotExpired(session: EsignSession) {
+    if (Number(session.expiresAt || 0) < Date.now()) throw new Error('만료된 전자계약 링크입니다.');
   }
 
   private async byToken(token: string) {
@@ -311,7 +393,7 @@ export class EsignService {
   async publicView(token: string, peek = false) {
     const session = await this.byToken(token);
     const now = Date.now();
-    if (session.status === 'revoked') throw new Error('해지된 전자계약 링크입니다.');
+    if (session.status === 'revoked') throw new Error('철회된 전자계약 링크입니다.');
     if (session.status === 'submitting' && Number(session.submittingAt || 0) <= now - SUBMIT_CLAIM_TTL) {
       if (await this.repo.transitionSession(session.id, ['submitting'], { status: 'in_progress', submittingAt: 0 })) {
         session.status = 'in_progress'; session.submittingAt = 0;
@@ -321,11 +403,35 @@ export class EsignService {
       throw new Error('만료된 전자계약 링크입니다.');
     }
     if (!peek && session.status === 'sent') {
-      await this.repo.updateSession(session.id, { status: 'opened', openedAt: now });
+      const opened = await this.repo.transitionSession(session.id, ['sent'], { status: 'opened', openedAt: now });
+      if (!opened) throw new Error('전자계약 상태가 바뀌었습니다 — 링크를 다시 열어 주세요.');
       await this.repo.updateContract(session.contractId, { sign_status: '열람', esign_opened_at: now });
       await this.repo.appendEvent(session.contractId, session.id, 'opened', 'customer');
       session.status = 'opened';
       session.openedAt = now;
+    }
+    // 제출 뒤(검토·승인·완료)에는 링크 화면이 계약번호와 상태만 쓴다.
+    // 봉인 스냅샷(생년월일·면허·주소·CMS 계좌), 작성본(draft), 내부 경로·승인자는 링크로 내주지 않는다.
+    if (POST_SUBMISSION.has(session.status)) {
+      return {
+        session: {
+          id: session.id,
+          status: session.status,
+          submittedAt: session.submittedAt,
+          approvedAt: session.approvedAt,
+          snapshot: {
+            contractCode: session.snapshot.contractCode,
+            customerType: session.snapshot.customerType,
+            requiredDocuments: session.snapshot.requiredDocuments,
+            consentProfile: session.snapshot.consentProfile,
+          },
+        },
+        stage: esignStage(session),
+        rejectReason: '',
+        supplementItems: [],
+        uploadedKeys: [],
+        draft: null,
+      };
     }
     const priv = await this.repo.getPrivate(session.id);
     const assetKeys = Object.keys((priv?.assets as Record<string, unknown>) || {});
@@ -344,6 +450,7 @@ export class EsignService {
     if (!['sent', 'opened', 'in_progress', 'rejected'].includes(session.status)) {
       throw new Error('현재 링크에서는 작성내용을 저장할 수 없습니다.');
     }
+    this.assertNotExpired(session);
     const max = (key: string, n: number) => S(payload[key]).slice(0, n);
     const stepRaw = Number(payload.step);
     const consentRaw = Array.isArray(payload.consents) ? payload.consents.map(S).filter((x) => session.snapshot.consentProfile.requiredKeys.includes(x)) : [];
@@ -382,8 +489,14 @@ export class EsignService {
     if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) {
       throw new Error('현재 링크에서는 진행상태를 바꿀 수 없습니다.');
     }
+    this.assertNotExpired(session);
     const progress = { ...(session.progress || {}), [step]: now };
-    await this.repo.updateSession(session.id, { status: 'in_progress', progress });
+    const moved = await this.repo.transitionSession(
+      session.id,
+      ['sent', 'opened', 'in_progress', 'rejected'],
+      { status: 'in_progress', progress },
+    );
+    if (!moved) throw new Error('전자계약 상태가 바뀌었습니다 — 다시 열어 주세요.');
     await this.repo.updateContract(session.contractId, { sign_status: '진행중', esign_progress: Object.keys(progress).length });
     return { ok: true };
   }
@@ -391,13 +504,16 @@ export class EsignService {
   async upload(token: string, kind: string, name: string, contentType: string, bytes: Uint8Array) {
     const session = await this.byToken(token);
     if (['revoked', 'signed', 'pending_review', 'approving', 'submitting'].includes(session.status)) throw new Error('지금은 파일을 올릴 수 없습니다.');
+    this.assertNotExpired(session);
+    if (!allowedUploadKinds(session.snapshot.requiredDocuments).has(kind)) throw new Error('이 계약에서 받지 않는 파일 종류입니다.');
     if (bytes.byteLength <= 0 || bytes.byteLength > 10 * 1024 * 1024) throw new Error('파일은 10MB 이하만 올릴 수 있습니다.');
     if (!/^image\/(jpeg|png|webp)$/.test(contentType) && contentType !== 'application/pdf') throw new Error('JPG·PNG·WEBP·PDF만 올릴 수 있습니다.');
     if (!uploadMagicOk(contentType, bytes)) throw new Error('파일 형식과 실제 내용이 맞지 않습니다.');
     const safe = kind.replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 80);
     const ext = contentType === 'application/pdf' ? 'pdf' : contentType.split('/')[1] || 'bin';
+    // 종류마다 자리가 하나다 — 다시 올리면 덮어쓴다. 무작위 이름이면 다시 올릴 때마다 개인자료 사본이 쌓인다.
     const asset = await this.assets.put(
-      'esign-private/' + session.contractCode + '/' + session.id + '/' + safe + '-' + randomBytes(4).toString('hex') + '.' + ext,
+      'esign-private/' + session.contractCode + '/' + session.id + '/' + safe + '.' + ext,
       bytes,
       contentType,
     );
@@ -442,6 +558,9 @@ export class EsignService {
           label: session.snapshot.requiredDocuments.find((d) => d.key === key)?.label || key,
         };
       });
+      const identityAssets = (['id_card', 'selfie'] as const)
+        .filter((key) => assets[key])
+        .map((key) => ({ key, path: S(assets[key]?.path), sha256: S(assets[key]?.sha256) }));
       const consentTimes = Object.fromEntries(result.consents.map((key) => [key, now]));
       const submission: EsignPrivateSubmission = {
         sessionId: session.id,
@@ -453,6 +572,8 @@ export class EsignService {
         driverLicenseNo: result.license || undefined,
         signerName: result.signerName || undefined,
         signerRole: result.signerRole || undefined,
+        // 자동이체(CMS) 계좌는 검증만 하고 버리면 봉인본의 CMS 칸이 비어 「출금 동의」만 있는 계약서가 된다.
+        cms: result.cms || undefined,
         emergencyRelation: result.emergencyRelation,
         emergencyName: result.emergencyName,
         emergencyPhone: result.emergencyPhone,
@@ -465,6 +586,7 @@ export class EsignService {
         signaturePath: signatureAsset.path,
         signatureSha256: signatureAsset.sha256,
         supportingDocuments,
+        identityAssets,
         submittedAt: now,
       };
       await this.repo.putPrivate(session.id, { ...submission, assets });
@@ -485,6 +607,172 @@ export class EsignService {
       }).catch(() => false);
       throw e;
     }
+  }
+
+  async approve(contractId: string, finalizationId: string, actor = 'admin') {
+    if (!/^[A-Za-z0-9_-]{16,128}$/.test(finalizationId)) {
+      throw new Error('승인 요청 식별자가 없습니다 — 화면을 새로 열어 다시 승인해 주세요.');
+    }
+    if (!this.finalRenderer) {
+      throw new Error('최종 PDF 생성기가 연결되지 않았습니다 — 계약을 완료 처리하지 않았습니다.');
+    }
+
+    let session = await this.repo.getCurrentSession(contractId);
+    if (!session) throw new Error('전자계약 세션이 없습니다.');
+    if (session.status === 'signed') {
+      if (session.finalizationId !== finalizationId) throw new Error('이미 다른 승인 요청으로 완료된 계약입니다.');
+      return { ok: true as const, finalized: false, session };
+    }
+
+    const now = Date.now();
+    if (session.status === 'approving') {
+      const stale = Number(session.approvingAt || 0) <= now - FINALIZE_CLAIM_TTL;
+      if (!stale) {
+        if (session.finalizationId === finalizationId) {
+          throw new Error('같은 승인 요청이 처리 중입니다 — 잠시 후 같은 요청 식별자로 다시 확인해 주세요.');
+        }
+        throw new Error('다른 승인 요청이 처리 중입니다.');
+      }
+      if (stale) {
+        const released = await this.repo.transitionSession(session.id, ['approving'], {
+          status: 'pending_review', approvingAt: 0, finalizationId: '',
+        });
+        if (!released) throw new Error('승인 상태가 바뀌었습니다 — 다시 확인해 주세요.');
+        session = { ...session, status: 'pending_review', approvingAt: 0, finalizationId: '' };
+      }
+    }
+
+    if (session.status === 'pending_review') {
+      const claimed = await this.repo.transitionSession(session.id, ['pending_review'], {
+        status: 'approving', approvingAt: now, finalizationId,
+      });
+      if (!claimed) throw new Error('이미 승인·보완 처리가 시작된 계약입니다.');
+      session = { ...session, status: 'approving', approvingAt: now, finalizationId };
+    } else if (session.status !== 'approving' || session.finalizationId !== finalizationId) {
+      throw new Error('검토 대기 상태의 계약만 승인할 수 있습니다.');
+    }
+
+    try {
+      // 고객 제출 뒤 ERP 에서 계약이 취소·변경됐을 수 있다 — 봉인 전에 발행 때 기준으로 다시 본다.
+      // (확정 트랜잭션 안에서도 같은 검사를 한 번 더 한다: repo.finalizeSigned)
+      const signability = signabilityProblem(await this.repo.getContract(session.contractId), session.snapshot);
+      if (signability) throw new Error(signability);
+
+      const priv = await this.repo.getPrivate(session.id);
+      if (!priv || Number(priv.submittedAt || 0) <= 0) throw new Error('고객 제출 자료를 찾을 수 없습니다.');
+
+      const missingConsents = session.snapshot.consentProfile.requiredKeys
+        .filter((key) => !priv.consents?.includes(key));
+      if (missingConsents.length) throw new Error('필수 동의가 누락되었습니다: ' + missingConsents.join(' · '));
+
+      const requiredDocs = applySignerRole(session.snapshot.requiredDocuments, priv.signerRole)
+        .filter((d) => d.required);
+      const supporting = new Map((priv.supportingDocuments || []).map((d) => [d.key, d]));
+      const missingDocs = requiredDocs.filter((d) => !supporting.has(d.key));
+      if (missingDocs.length) throw new Error('필수 서류가 누락되었습니다: ' + missingDocs.map((d) => d.label).join(' · '));
+
+      const privateAssets = (priv.assets && typeof priv.assets === 'object' ? priv.assets : {}) as Record<string, Record<string, unknown>>;
+      // 제출 때 굳힌 신분증·얼굴 사진으로 검증한다. 굳힌 기록이 없는 옛 제출만 현재 업로드 목록을 본다.
+      const frozenIdentity = new Map((priv.identityAssets || []).map((a) => [a.key, a]));
+      const identityOf = (key: 'id_card' | 'selfie') => (priv.identityAssets ? frozenIdentity.get(key) : privateAssets[key]);
+      if (session.snapshot.customerType !== '법인') {
+        for (const [key, label] of [['id_card', '운전면허증'], ['selfie', '본인 얼굴']] as const) {
+          const asset = identityOf(key);
+          const path = S(asset?.path), hash = S(asset?.sha256);
+          if (!path || !hash || !(await this.assets.get(path, hash))) throw new Error(label + ' 원본 검증에 실패했습니다.');
+        }
+      }
+      for (const doc of requiredDocs) {
+        const asset = supporting.get(doc.key);
+        if (!asset?.path || !asset.sha256 || !(await this.assets.get(asset.path, asset.sha256))) {
+          throw new Error(doc.label + ' 원본 검증에 실패했습니다.');
+        }
+      }
+
+      if (!priv.signaturePath || !priv.signatureSha256) throw new Error('고객 서명 원본이 없습니다.');
+      const signature = await this.assets.get(priv.signaturePath, priv.signatureSha256);
+      if (!signature || !signature.contentType.startsWith('image/')) throw new Error('고객 서명 원본 검증에 실패했습니다.');
+
+      const sealedSnapshot = signedSnapshot(session.snapshot, priv);
+      const sealHash = sha256(stableJson({
+        sessionId: session.id,
+        revision: session.revision,
+        snapshot: sealedSnapshot,
+        signatureSha256: priv.signatureSha256,
+        consents: [...(priv.consents || [])].sort(),
+        documents: [...(priv.supportingDocuments || [])]
+          .map((d) => ({ key: d.key, sha256: d.sha256 }))
+          .sort((a, b) => a.key.localeCompare(b.key)),
+        identity: [...(priv.identityAssets || [])]
+          .map((a) => ({ key: a.key, sha256: a.sha256 }))
+          .sort((a, b) => a.key.localeCompare(b.key)),
+      }));
+
+      const rendered = await this.finalRenderer.render({
+        snapshot: session.snapshot,
+        submission: priv,
+        signatureBytes: signature.bytes,
+        sealHash,
+      });
+      if (rendered.contentType !== 'application/pdf' || !isCompletePdfBytes(rendered.bytes)) {
+        throw new Error('최종 문서 생성기가 완전한 PDF가 아닌 결과를 반환했습니다.');
+      }
+
+      const documentSha256 = sha256(rendered.bytes);
+      const documentStoragePath = 'esign-final/' + session.contractCode + '/' + session.id + '.pdf';
+      const stored = await this.assets.put(documentStoragePath, rendered.bytes, 'application/pdf');
+      if (stored.sha256 !== documentSha256) throw new Error('최종 PDF 저장 검증에 실패했습니다.');
+      const persisted = await this.assets.get(stored.path, documentSha256);
+      if (!persisted || persisted.contentType !== 'application/pdf') {
+        throw new Error('최종 PDF 저장 후 재조회 검증에 실패했습니다.');
+      }
+
+      const approvedAt = Date.now();
+      const result = await this.repo.finalizeSigned(
+        session.id,
+        finalizationId,
+        {
+          approvedAt,
+          approvedBy: actor,
+          approvingAt: 0,
+          signedSnapshot: sealedSnapshot,
+          sealHash,
+          documentSha256,
+          documentStoragePath,
+          documentContentType: 'application/pdf',
+        },
+        {
+          sign_status: '서명완료',
+          contract_status: '계약완료',
+          sign_signed_at: approvedAt,
+          signed_pdf_url: '/api/esign/final/' + encodeURIComponent(session.id),
+          esign_seal_hash: sealHash,
+          esign_document_sha256: documentSha256,
+          esign_document_storage_path: documentStoragePath,
+          esign_template_version: session.snapshot.templateVersion,
+          sign_consent_version: session.snapshot.agreementVersion,
+        },
+        actor,
+        {
+          finalizationId,
+          sealHash,
+          documentSha256,
+          documentStoragePath,
+          templateVersion: session.snapshot.templateVersion,
+          agreementVersion: session.snapshot.agreementVersion,
+        },
+      );
+      return { ok: true as const, finalized: result.finalized, session: result.session };
+    } catch (error) {
+      // 내 claim 일 때만 푼다 — 그 사이 stale 로 넘어가 다른 승인 요청이 잡았다면 그 claim 은 그대로 둔다.
+      await this.repo.releaseFinalizationClaim(session.id, finalizationId).catch(() => false);
+      throw error;
+    }
+  }
+
+  async cancelContract(contractId: string, reason: string, actor = 'admin') {
+    const result = await this.repo.cancelContract(contractId, reason, actor);
+    return { ok: true as const, ...result };
   }
 
   async reject(contractId: string, reason: string, items: string[], actor = 'admin') {
@@ -511,16 +799,7 @@ export class EsignService {
   async revoke(contractId: string, actor = 'admin') {
     const session = await this.repo.getCurrentSession(contractId);
     if (!session) return;
-    if (session.status === 'signed') throw new Error('서명완료 계약은 해지할 수 없습니다.');
-    const now = Date.now();
-    const claimed = await this.repo.transitionSession(
-      session.id,
-      ['sent', 'opened', 'in_progress', 'rejected'],
-      { status: 'revoked', revokedAt: now },
-    );
-    if (!claimed) throw new Error('제출·승인 처리 중인 링크는 해지할 수 없습니다.');
-    await this.repo.updateContract(contractId, { sign_status: '미발송', sign_revoked_at: now, esign_progress: 0 });
-    await this.repo.appendEvent(contractId, session.id, 'revoked', actor);
+    await this.repo.revokeSession(session.id, contractId, actor);
   }
 
   /**
@@ -528,8 +807,19 @@ export class EsignService {
    * signed 봉인본이 있으면 그 파일을 그대로 돌리고, 그 전에는 발행 시 고정한 snapshot으로
    * 읽기 전용 작성본 HTML을 만든다. 최종 승인/PDF 봉인은 별도 단계에서 처리한다.
    */
+  async finalDocument(sessionId: string) {
+    const session = await this.repo.getSession(sessionId);
+    if (!session || session.status !== 'signed' || !session.documentStoragePath || !session.documentSha256) return null;
+    return this.assets.get(session.documentStoragePath, session.documentSha256);
+  }
+
   async publicDocument(token: string) {
     const session = await this.byToken(token);
+    const now = Date.now();
+    if (session.status === 'revoked') throw new Error('철회된 전자계약 링크입니다.');
+    if (session.expiresAt < now && !['pending_review', 'approving', 'signed'].includes(session.status)) {
+      throw new Error('만료된 전자계약 링크입니다.');
+    }
     if (session.status === 'signed' && session.documentStoragePath && session.documentSha256) {
       return this.assets.get(session.documentStoragePath, session.documentSha256);
     }

@@ -1,14 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { DEMO_PROJECT, demoFirestore, demoMode } from './demo';
-
-export { demoMode } from './demo';
 
 /**
- * **ERP5 SSOT 로 가는 문** — 대표 2026-09-18
- *   「너는 erp5 ssot를 «직접» 읽는거야. 상품이랑 정산도 다 여기서 관리할거야」
- *   「어드민이 «메인집»이야. 여기에 이제 프리패스어드민 «터를 잡는거야»」
+ * **FreePass Data의 Firestore 기술 Adapter.**
+ *   Admin/UI가 이 파일을 직접 부르지 않는다. 공식 진입점은 `src/server/freepass-data.ts`다.
+ *   `freepasserp5`는 FreePass Data가 사용하는 Firebase project id다.
  *
  * ★`src/ports/repositories.ts` 가 예고해 둔 그 순간이다 —
  *   「독립 Firestore 자격증명이 아직 없다 … 자격증명이 오면 «문 뒤만» 갈아 끼운다」
@@ -65,32 +62,34 @@ function ensureErp5App(): App {
     app = getApps().find((a) => a.name === APP_NAME) ?? null;
   }
   if (!app) {
-    const sa = credential();
-    app = initializeApp({
-      credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
-      projectId: sa.project_id,
-    }, APP_NAME);
+    // Firebase Admin automatically routes Firestore traffic to the emulator when
+    // FIRESTORE_EMULATOR_HOST is set. In that isolated mode, never require or
+    // load a production service-account credential.
+    if (process.env.FIRESTORE_EMULATOR_HOST?.trim()) {
+      app = initializeApp({ projectId: ERP5_PROJECT_ID }, APP_NAME);
+    } else {
+      const sa = credential();
+      app = initializeApp({
+        credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key }),
+        projectId: sa.project_id,
+      }, APP_NAME);
+    }
   }
   return app;
 }
 
 /** ERP5 Admin app — Firestore와 Storage가 반드시 같은 자격증명/프로젝트를 공유한다. */
 export function erp5App(): App {
-  /* ★가상 데이터 모드에서는 실제 프로젝트(Storage 포함)에 붙지 않는다 — 사진·서명 파일은 «없다» 로 읽힌다. */
-  if (demoMode()) throw new Error('가상 데이터 모드(FPA_DEMO=on)에서는 ERP5 Storage 를 쓰지 않습니다');
   return ensureErp5App();
 }
 
-/** ERP5 Firestore. ★지금은 «읽기만» 한다 — 쓰기는 따로 양식을 열고 시작한다. */
+/** FreePass Data Firestore transport. 읽기/쓰기는 상위 repository가 통제한다. */
 export function erp5(): Firestore {
-  /* ★가상 데이터 모드 — 실 ERP5 대신 읽기 전용 가짜(src/adapters/erp5/demo.ts). 운영 배포에서는 켜지지 않는다. */
-  if (demoMode()) return demoFirestore();
   return getFirestore(ensureErp5App());
 }
 
 /** 붙었나 — 화면·상태줄이 「어디를 보고 있나」 를 말할 수 있게. */
 export function erp5Ready(): { ok: true; project: string } | { ok: false; project: string; why: string } {
-  if (demoMode()) return { ok: true, project: DEMO_PROJECT };
   try { erp5(); return { ok: true, project: ERP5_PROJECT_ID }; }
   catch (e) { return { ok: false, project: ERP5_PROJECT_ID, why: (e as Error).message }; }
 }

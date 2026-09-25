@@ -94,6 +94,8 @@ export interface SettlementMoney {
 
 export interface IntakeCatalogSnapshot {
   capturedAt: string;
+  /** capturedAt을 제외한 계약상품 사본의 deterministic SHA-256. 같은 선택 재시도 판정에 쓴다. */
+  digest?: string;
   product: {
     id: string;
     version: number;
@@ -101,6 +103,8 @@ export interface IntakeCatalogSnapshot {
     supplierId: string;
     supplierName: Maybe<string>;
     productKind: Maybe<string>;
+    status?: Maybe<string>;
+    consumerPrice?: Maybe<number>;
     vehicle: {
       nodeId: string;
       originId: string;
@@ -110,20 +114,37 @@ export interface IntakeCatalogSnapshot {
       trimId: Maybe<string>;
       matchLevel: string;
     };
+    specs?: {
+      modelYear: Maybe<number>;
+      mileageKm: Maybe<number>;
+      fuel: Maybe<string>;
+      displacementCc: Maybe<number>;
+      seats: Maybe<number>;
+      drivetrain: Maybe<string>;
+      batteryKwh: Maybe<number>;
+    };
     registration: {
       vehicleNumber: Maybe<string>;
       vin: Maybe<string>;
       firstRegistrationDate: Maybe<string>;
     };
+    /** Product-scope 정책 원본. Offer 정책과 합치기 전 사본. */
+    policyValues?: PolicyValue[];
   };
   offer: {
     id: string;
+    /** Added for FreePass Data multi-supplier Offer parity. Older snapshots may not contain these fields. */
+    supplierId?: Maybe<string>;
+    supplierName?: Maybe<string>;
     termMonths: number;
     monthlyRent: number;
     deposit: Maybe<number>;
     prepayment: Maybe<number>;
     annualMileageKm: Maybe<number>;
+    /** Offer-scope 정책 원본. */
     policyValues: PolicyValue[];
+    /** 당시 실제 적용된 Product+Offer 정책 결과. */
+    resolvedPolicyValues?: PolicyValue[];
   };
 }
 
@@ -162,9 +183,24 @@ export interface SettlementRow {
     productVersion: Maybe<number>;
     offerId: Maybe<string>;
     sourceSnapshotId: Maybe<string>;
+    snapshotDigest?: Maybe<string>;
   };
   /** 저장 순간의 계약상품 전체 조건. 현재 Catalog가 바뀌어도 이 사본은 변하지 않는다. */
   catalogSnapshot?: Maybe<IntakeCatalogSnapshot>;
+
+  /** 전자계약/계약 취소 provenance. signed 문서는 지우지 않고 운영 원장만 후속 절차로 전환한다. */
+  esignContractId?: Maybe<string>;
+  contractCancelledAt?: Maybe<number>;
+  contractCancellationReason?: Maybe<string>;
+  contractCancellationOperationId?: Maybe<string>;
+  contractCancellationContractId?: Maybe<string>;
+  contractCancellationBy?: Maybe<string>;
+  contractTerminatedAt?: Maybe<number>;
+  contractTerminationDate?: Maybe<string>;
+  contractTerminationReason?: Maybe<string>;
+  contractTerminationOperationId?: Maybe<string>;
+  contractTerminationContractId?: Maybe<string>;
+  contractTerminationBy?: Maybe<string>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;
@@ -241,46 +277,4 @@ export function intakeTaskOf(r: SettlementRow): IntakeTask {
   if (block === '차량번호 없음') return '차량';
   if (block === '인도') return '인도';
   return '정산';
-}
-
-/**
- * FreePass Admin의 상위 업무 흐름.
- * 화면이 각자 상태를 해석하지 않고 이 한 함수로
- * 접수 → 공급사 청구/수금 → 영업자 지급 → 완료 위치를 말한다.
- */
-export type AdminWorkflowPhase =
-  | '접수 진행'
-  | '공급사 청구'
-  | '공급사 수금'
-  | '영업자 지급'
-  | '완료'
-  | '취소';
-
-export function adminWorkflowPhaseOf(r: SettlementRow): AdminWorkflowPhase {
-  if (r.progress.cancelled) return '취소';
-
-  const block = blockOf(r);
-  if (!block) return '완료';
-
-  if (block === '계약서' || block === '차량번호 없음' || block === '공급사 없음' || block === '인도') {
-    return '접수 진행';
-  }
-
-  if (block === '청구금액 모름' || block === '청구') return '공급사 청구';
-  if (block === '계산서' || block === '수금') return '공급사 수금';
-
-  /* 공급-only 건은 공급사 수금이 끝나면 blockOf가 null이라 위에서 완료된다.
-   * 영업-only/양쪽 건은 여기서 지급 축으로 이어진다. */
-  if (block === '영업채널 없음' || block === '지급금액 모름' || block === '지급') return '영업자 지급';
-
-  return '접수 진행';
-}
-
-/** raw blocker를 버튼/표시에 바로 노출하지 않고 사람이 다음 행동으로 읽게 바꾼다. */
-export function adminBlockLabel(block: Block): string {
-  if (block === '공급사 없음') return '공급사 입력 필요';
-  if (block === '영업채널 없음') return '영업채널 입력 필요';
-  if (block === '청구금액 모름') return '청구금액 확인 필요';
-  if (block === '지급금액 모름') return '지급금액 확인 필요';
-  return block;
 }

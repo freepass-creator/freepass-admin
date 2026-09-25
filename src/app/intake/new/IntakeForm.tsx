@@ -30,7 +30,7 @@ export type IntakeOptions = {
  *   ★하는 일은 기능 쪽 그대로 — 영업채널·담당·공급사를 고르면 원장에 이미 있는 «코드» 를 따라 채운다(지어내지 않는다).
  *   ★필수는 도메인(validateIntake)이 정한다: 차량번호 · 공급사 · 접수일 · 고객명 · 영업채널 · 영업담당.
  */
-export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts }: {
+export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts, disabled = false }: {
   defaults: IntakeDefaults; options: IntakeOptions; cancelHref?: string; picked?: boolean;
   /** 차 골라 접수 — 서버가 미리 센 수수료(previewFeeAction 과 같은 셈) */
   fee?: FeePreview | null;
@@ -42,6 +42,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   productChoices?: string[];
   /** 원장 상품구분 전부(기능 LEDGER_PRODUCTS) — 직접 접수의 고를 말 */
   ledgerProducts?: readonly string[];
+  /** 쓰기 비활성 등 화면에서 이미 확정된 저장 불가 상태 */
+  disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
   const [channel, setChannel] = useState('');
@@ -128,7 +130,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           : sel('rentKind', options.rentKinds, '렌트구분'))}
         {sel('contractType', options.contractTypes, '계약방식')}
         {sel('payKind', options.payKinds, '분납여부')}
-        {picked && 코드}
+        {!picked && <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>}
+        {코드}
         {picked && !직접 && 수수료칸}
         {/* 프로모션 — 공급사가 더 주는 돈 · 영업자 몫은 비우면 100% */}
         <label>프로모션 금액<input name="promoAmount" inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
@@ -193,10 +196,9 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
               <label>모델<input name="model" defaultValue={defaults.model} /></label>
               <label>공급사 *<input name="supplier" list="dl-supplier" defaultValue={defaults.supplier} required
                 onChange={(e) => setSupplierCode(options.supplierCode[e.target.value] ?? '')} /></label>
-              <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>
             </div>
           ))}
-          {묶음('고객 · 영업', <div className="dz-form-grid">{사람}{코드}</div>)}
+          {묶음('고객 · 영업', <div className="dz-form-grid">{사람}</div>)}
           {묶음('조건', (
             <div className="dz-form-grid">
               <label>접수일 *<input name="receivedAt" type="date" defaultValue={defaults.receivedAt} required /></label>
@@ -207,7 +209,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
                 </select>
               </label>
               <label>계약기간(개월)<input name="term" defaultValue={defaults.term} inputMode="numeric" /></label>
-              <label>월 대여료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
+              <label>렌탈료<input name="rent" defaultValue={defaults.rent} inputMode="numeric" /></label>
               <label>보증금<input name="deposit" defaultValue={defaults.deposit} inputMode="numeric" /></label>
               <label>차량가액 <small>신차 자동수수료 기준</small><input name="price" inputMode="numeric" /></label>
             </div>
@@ -220,9 +222,10 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       {/* 하단바 규격(dz-bar) — 판 바닥. 신규 접수 중에는 [취소] [접수 저장] (대표 2026-09-18) */}
       <div className="dz-bar">
         {state.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{state.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
-        <div className="dz-bar-go" data-action-balance="primary">
+        <div className="dz-bar-go">
           {cancelHref && <a className="dz-bar-sub" href={cancelHref}>취소</a>}
-          <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
+          <button type="submit" className="primary" disabled={disabled || pending} aria-busy={pending}
+            aria-describedby={disabled ? 'intake-write-disabled' : undefined}>{pending ? '저장 중…' : '접수 저장'}</button>
         </div>
       </div>
     </form>

@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, terminationClawbackReview } from '../clawback.js';
+import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, planTerminationClawbackReview, terminationClawbackReview } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -148,14 +148,88 @@ describe('계약해지 → 환수 검토대상', () => {
     );
   });
 
-  it('환수 검토 큐는 해지됐고 아직 환수 등록이 없는 건만 최신 해지일부터 세운다', () => {
+  it('환수 검토 큐는 미검토와 환수 필요 확정 건만 최신 해지일부터 세운다', () => {
     const rows = [
       { id: 'old', contractTerminatedAt: 1, contractTerminationDate: '2026-09-20' },
       { id: 'new', contractTerminatedAt: 2, contractTerminationDate: '2026-09-25' },
-      { id: 'done', contractTerminatedAt: 3, contractTerminationDate: '2026-09-24' },
+      { id: 'required', contractTerminatedAt: 3, contractTerminationDate: '2026-09-24',
+        contractClawbackReviewDecision: 'REQUIRED', contractClawbackReviewedAt: 100,
+        contractClawbackReviewReason: '공급사 유지조건 검토', contractClawbackReviewOperationId: 'clawreview_required_1234' },
+      { id: 'none', contractTerminatedAt: 4, contractTerminationDate: '2026-09-23',
+        contractClawbackReviewDecision: 'NOT_REQUIRED', contractClawbackReviewedAt: 101,
+        contractClawbackReviewReason: '유지기간 충족', contractClawbackReviewOperationId: 'clawreview_none_123456' },
+      { id: 'done', contractTerminatedAt: 5, contractTerminationDate: '2026-09-22' },
       { id: 'live', contractTerminatedAt: null, contractTerminationDate: null },
     ];
     const pending = pendingTerminationClawbackRows(rows as never, [{ code: 'done' }]);
-    assert.deepEqual(pending.map((r) => r.id), ['new', 'old']);
+    assert.deepEqual(pending.map((r) => r.id), ['new', 'required', 'old']);
+  });
+
+  it('환수 없음 확정은 PENDING을 종료하고 같은 operation 재시도는 idempotent다', () => {
+    const row = { id: 'stl_none', contractTerminatedAt: 1, contractTerminationDate: '2026-09-25' };
+    const input = { decision: 'NOT_REQUIRED' as const, reason: '유지기간 충족', operationId: 'clawreview_none_123456' };
+    const planned = planTerminationClawbackReview(row, [], input, 100);
+    assert.equal(planned.ok, true);
+    if (!planned.ok) return;
+    assert.equal(planned.idempotent, false);
+    assert.equal(planned.patch.contractClawbackReviewDecision, 'NOT_REQUIRED');
+
+    const stored = { ...row, ...planned.patch };
+    assert.equal(terminationClawbackReview(stored as never, []), 'NOT_REQUIRED');
+    assert.deepEqual(
+      planTerminationClawbackReview(stored as never, [], input, 200),
+      { ok: true, idempotent: true, patch: {} },
+    );
+  });
+
+  it('환수 필요 확정은 실제 환수 등록 전 REQUIRED, 등록 뒤 RECORDED다', () => {
+    const row = { id: 'stl_required', contractTerminatedAt: 1, contractTerminationDate: '2026-09-25' };
+    const input = { decision: 'REQUIRED' as const, reason: '3개월 유지조건 미충족', operationId: 'clawreview_need_123456' };
+    const planned = planTerminationClawbackReview(row, [], input, 100);
+    assert.equal(planned.ok, true);
+    if (!planned.ok) return;
+    const stored = { ...row, ...planned.patch };
+    assert.equal(terminationClawbackReview(stored as never, []), 'REQUIRED');
+    assert.equal(terminationClawbackReview(stored as never, [{ code: 'stl_required' }]), 'RECORDED');
+  });
+
+  it('해지 아닌 건·사유 없는 검토·잘못된 operation은 환수 검토 확정할 수 없다', () => {
+    assert.equal(planTerminationClawbackReview(
+      { id: 'live', contractTerminatedAt: null, contractTerminationDate: null }, [],
+      { decision: 'NOT_REQUIRED', reason: '없음', operationId: 'clawreview_live_12345' }, 100,
+    ).ok, false);
+    assert.equal(planTerminationClawbackReview(
+      baseRow as never, [],
+      { decision: 'NOT_REQUIRED', reason: '', operationId: 'clawreview_none_123456' }, 100,
+    ).ok, false);
+    assert.equal(planTerminationClawbackReview(
+      baseRow as never, [],
+      { decision: 'NOT_REQUIRED', reason: '유지기간 충족', operationId: 'bad' }, 100,
+    ).ok, false);
+  });
+
+  it('환수 없음 확정과 실제 환수가 동시에 있으면 모순으로 fail closed', () => {
+    const row = {
+      ...baseRow,
+      contractClawbackReviewDecision: 'NOT_REQUIRED',
+      contractClawbackReviewedAt: 100,
+      contractClawbackReviewReason: '환수 없음',
+      contractClawbackReviewOperationId: 'clawreview_none_123456',
+    };
+    assert.equal(terminationClawbackReview(row as never, [{ code: 'stl_term_target' }]), 'INCONSISTENT');
+    const replanned = planTerminationClawbackReview(
+      row as never, [{ code: 'stl_term_target' }],
+      { decision: 'REQUIRED', reason: '뒤늦은 변경', operationId: 'clawreview_change_1234' }, 200,
+    );
+    assert.equal(replanned.ok, false);
+  });
+
+  it('부분 저장된 환수 검토 기록은 자동 보정하지 않고 INCONSISTENT로 본다', () => {
+    const dirty = { ...baseRow, contractClawbackReviewDecision: 'REQUIRED' };
+    assert.equal(terminationClawbackReview(dirty as never, []), 'INCONSISTENT');
+    assert.equal(planTerminationClawbackReview(
+      dirty as never, [],
+      { decision: 'REQUIRED', reason: '환수 필요', operationId: 'clawreview_dirty_12345' }, 200,
+    ).ok, false);
   });
 });

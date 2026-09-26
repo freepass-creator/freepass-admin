@@ -360,4 +360,7 @@ emulatorTest('Firestore: cash idempotency key only accepts an identical retry pa
   assert.equal(mine.length,1);
   assert.equal(mine[0].amount,100);
   assert.equal(mine[0].kind,'collected');
+  assert.equal(mine[0].billMonth,'2026-09');
+  assert.equal(mine[0].party,'공급사A');
+  assert.equal(mine[0].invoiceNo,issued.ok?issued.invoice.invoiceNo:undefined);
 });

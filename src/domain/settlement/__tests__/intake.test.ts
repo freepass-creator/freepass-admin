@@ -54,10 +54,12 @@ describe('validateIntake — 최초 접수 필수값', () => {
     const e = validateIntake({ ...base, plate: '', customer: ' ', channel: '', agent: '', supplier: '' }, '2026-09-18');
     assert.equal(e.length, 5);
   });
-  it('분납여부는 접수 필수값이다', () => {
+  it('분납여부는 신규 접수 정본값(일시납/2회/3회)만 받는다', () => {
     assert.match(validateIntake({ ...base, payKind: '' }, '2026-09-18').join(), /분납여부/);
-    assert.match(validateIntake({ ...base, payKind: '나중에' }, '2026-09-18').join(), /일시납 또는 N회분납/);
+    assert.match(validateIntake({ ...base, payKind: '나중에' }, '2026-09-18').join(), /일시납, 2회분납, 3회분납/);
+    assert.match(validateIntake({ ...base, payKind: '4회분납' }, '2026-09-18').join(), /일시납, 2회분납, 3회분납/);
     assert.deepEqual(validateIntake({ ...base, payKind: '2회분납' }, '2026-09-18'), []);
+    assert.deepEqual(validateIntake({ ...base, payKind: '3회분납' }, '2026-09-18'), []);
   });
   it('차량번호 없는 상품접수는 Product ID가 있으면 받는다', () => {
     const e = validateIntake({ ...base, plate: '', sourceProductId: 'P-NEW' }, '2026-09-18');
@@ -99,6 +101,10 @@ describe('validateIntake — 최초 접수 필수값', () => {
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
+  it('존재하지 않는 접수일은 저장하지 않는다', () => {
+    assert.match(validateIntake({ ...base, receivedAt: '2026-02-30' }, '2026-09-18').join(), /유효한 날짜/);
+    assert.deepEqual(validateIntake({ ...base, receivedAt: '2024-02-29' }, '2026-09-18'), []);
+  });
   it('★인도는 계약서와 독립 사실이고, 인도일만 함께 요구한다', () => {
     const e = validateIntake({ ...base, paper: false, delivered: true }, '2026-09-18').join();
     assert.doesNotMatch(e, /계약서/);
@@ -225,6 +231,10 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('차량번호 없으면 인도 완료를 막는다', () =>
     assert.match(String((progressPatch({ paper: true, plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
   it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
+  it('존재하지 않는 인도일은 진행 사실로 기록하지 않는다', () => {
+    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-02-30' }).ok, false);
+    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2024-02-29' }).ok, true);
+  });
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
     const r = progressPatch({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);

@@ -16,6 +16,7 @@ const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '손오
 const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '손오공', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
 const noRule: FeeResult = { status: 'NO_RULE', why: '표에 「새공급사 · 재렌트 48개월」 가 없다' };
 const CLAW_NOW = Date.parse('2026-09-30T12:00:00+09:00');
+const REVIEW_NOW = Date.parse('2026-09-26T12:00:00+09:00');
 
 describe('수수료 직접 입력 — 대표 「직접접수하는 방식」', () => {
   it('★신차발주(주는 대로)는 사유 없이 넣어도 된다 · 넣은 값이 선다', () => {
@@ -227,14 +228,14 @@ describe('계약해지 → 환수 검토대상', () => {
     const row = {
       ...baseRow,
       contractClawbackReviewDecision: 'NOT_REQUIRED',
-      contractClawbackReviewedAt: 100,
+      contractClawbackReviewedAt: REVIEW_NOW,
       contractClawbackReviewReason: '환수 없음',
       contractClawbackReviewOperationId: 'clawreview_none_123456',
     };
     assert.equal(terminationClawbackReview(row as never, [{ code: 'stl_term_target' }]), 'INCONSISTENT');
     const replanned = planTerminationClawbackReview(
       row as never, [{ code: 'stl_term_target' }],
-      { decision: 'REQUIRED', reason: '뒤늦은 변경', operationId: 'clawreview_change_1234' }, 200,
+      { decision: 'REQUIRED', reason: '뒤늦은 변경', operationId: 'clawreview_change_1234' }, REVIEW_NOW + 1,
     );
     assert.equal(replanned.ok, false);
   });
@@ -247,6 +248,29 @@ describe('계약해지 → 환수 검토대상', () => {
       { decision: 'REQUIRED', reason: '환수 필요', operationId: 'clawreview_dirty_12345' }, 200,
     ).ok, false);
   });
+  it('환수 검토는 해지 이후 시각에만 확정하고 허용된 decision만 받는다', () => {
+    const before = Number(baseRow.contractTerminatedAt) - 1;
+    assert.equal(planTerminationClawbackReview(
+      baseRow as never, [],
+      { decision: 'NOT_REQUIRED', reason: '유지기간 충족', operationId: 'clawreview_before_1234' }, before,
+    ).ok, false);
+
+    assert.equal(planTerminationClawbackReview(
+      baseRow as never, [],
+      { decision: 'UNKNOWN' as never, reason: '잘못된 값', operationId: 'clawreview_unknown_123' }, REVIEW_NOW,
+    ).ok, false);
+  });
+
+  it('기존 검토시각이 해지시각보다 빠르면 INCONSISTENT로 본다', () => {
+    const dirty = {
+      ...baseRow,
+      contractClawbackReviewDecision: 'REQUIRED',
+      contractClawbackReviewedAt: Number(baseRow.contractTerminatedAt) - 1,
+      contractClawbackReviewReason: '환수 필요',
+      contractClawbackReviewOperationId: 'clawreview_oldtime_123',
+    };
+    assert.equal(terminationClawbackReview(dirty as never, []), 'INCONSISTENT');
+  });
 
   it('환수 후속업무는 정산 blocker와 별도로 검토/등록/데이터확인을 가리킨다', () => {
     assert.equal(terminationClawbackFollowUp(baseRow as never, []), 'REVIEW');
@@ -254,7 +278,7 @@ describe('계약해지 → 환수 검토대상', () => {
     const required = {
       ...baseRow,
       contractClawbackReviewDecision: 'REQUIRED',
-      contractClawbackReviewedAt: 100,
+      contractClawbackReviewedAt: REVIEW_NOW,
       contractClawbackReviewReason: '환수 필요',
       contractClawbackReviewOperationId: 'clawreview_required_1234',
     };
@@ -264,7 +288,7 @@ describe('계약해지 → 환수 검토대상', () => {
     const noClawback = {
       ...baseRow,
       contractClawbackReviewDecision: 'NOT_REQUIRED',
-      contractClawbackReviewedAt: 100,
+      contractClawbackReviewedAt: REVIEW_NOW,
       contractClawbackReviewReason: '유지기간 충족',
       contractClawbackReviewOperationId: 'clawreview_none_123456',
     };

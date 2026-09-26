@@ -107,11 +107,13 @@ describe('feeOf — 깨진 SSOT 정규식은 접수 전체를 죽이지 않는�
     const bad: FeeRuleSet = { ...set, evModel: '[' };
     const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'EV6', term: 48, rent: 700_000 }));
     assert.equal(result.status, 'NO_RULE');
+    assert.match(result.why, /SSOT 정규식/);
   });
 
   it('갈래 match 정규식이 깨져도 NO_RULE로 내려간다', () => {
     const bad: FeeRuleSet = { ...set, kindRules: [{ match: '[', kind: '재렌트' }] };
     const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'K8', term: 48, rent: 700_000 }));
     assert.equal(result.status, 'NO_RULE');
+    assert.match(result.why, /SSOT 정규식/);
   });
 });

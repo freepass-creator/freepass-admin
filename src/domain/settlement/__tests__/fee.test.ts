@@ -100,3 +100,18 @@ describe('feeOf — 깨진 자동 규칙은 조용히 금액을 만들지 않는
     assert.equal(feeOf(set, c({ supplier: '손오공', product: '장기렌트', term: 48, rent: 0 })).status, 'NO_BASE');
   });
 });
+
+
+describe('feeOf — 깨진 SSOT 정규식은 접수 전체를 죽이지 않는다', () => {
+  it('전기차 정규식이 깨지면 NO_RULE로 내려 사람 확인을 요구한다', () => {
+    const bad: FeeRuleSet = { ...set, evModel: '[' };
+    const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'EV6', term: 48, rent: 700_000 }));
+    assert.equal(result.status, 'NO_RULE');
+  });
+
+  it('갈래 match 정규식이 깨져도 NO_RULE로 내려간다', () => {
+    const bad: FeeRuleSet = { ...set, kindRules: [{ match: '[', kind: '재렌트' }] };
+    const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'K8', term: 48, rent: 700_000 }));
+    assert.equal(result.status, 'NO_RULE');
+  });
+});

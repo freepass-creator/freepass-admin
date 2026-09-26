@@ -20,6 +20,7 @@ PC 정산 실적줄은 정산 route를 벗어나지 않는다. `focus`로 가운
 정산 focus 상세은 첫 화면에서 `현재 업무 → 정산 핵심 → 고객·차량`만 우선 노출한다. 계약·접수 정보와 이력은 기본 닫힌 보조 disclosure로 두고, 정산 중에는 접수 mutation control을 반복 노출하지 않는다.
 1280~1439 PC에서는 3패널 구조를 줄이지 않고 왼쪽 업무메뉴만 64px icon rail로 접어 각 패널 가독폭을 확보한다. 1440+에서는 full sidenav를 복원한다.
 긴 식별문자열은 identity/support에서 말줄임하고 원문 tooltip을 유지하되 정확 금액·상태·주 액션은 줄이거나 숨기지 않는다. FilterSheet는 modal focus trap과 Escape focus-return을 갖는다.
+빈 결과는 하얀 Panel로 두지 않고 공통 상태 surface로 이유/다음 확인을 설명한다. route loading/error는 공통 RouteState boundary로 수렴하며, 조회전용은 이유를 노출하고 mutation action을 disabled+aria-describedby로 연결한다.
 
 ## 현재 단일 디자인 정본
 

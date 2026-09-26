@@ -3,6 +3,10 @@
 ## Mission
 FreePass Admin은 내부 관리자가 하나의 Canonical Product 기준으로 상품을 찾고, 조건을 확인하고, 접수하고, 계약 진행과 정산까지 처리하기 위한 관리자 제품이다.
 
+## Functional authority
+
+기능 고도화의 단일 진입점은 `docs/FUNCTION-AUTHORITY.md`다. 코드 정본은 `main`이며, 과거 기능 브랜치/PR은 merge 전 정본이 아니다. 접수 런타임은 Intake/`settlement_rows`를 사용하고 과거 Application aggregate는 LEGACY_QUARANTINED다.
+
 ## Current priority
 2026-09-21 기준 AI Core UI/UX Contract와 Development Center Design Hub 실행 경계가 확정되어 **공통 규격 대기 HOLD는 해제**됐다.
 
@@ -14,12 +18,12 @@ FreePass Admin은 내부 관리자가 하나의 Canonical Product 기준으로 �
 
 1. Canonical Product / Offer / Policy
 2. Search Engine
-3. Application Engine
-4. Port / Adapter / Repository
-5. Persistence / transaction / idempotency
-6. Auth / permission / actor boundary
-7. Audit / error / evidence
-8. Performance / settlement domain
+3. Intake / delivery / performance workflow
+4. Contract-payment fact + cancellation guard
+5. Claim / collection / pay / settlement lifecycle
+6. Port / Adapter / Repository
+7. Persistence / transaction / idempotency
+8. Auth / permission / actor / audit evidence
 
 ## Users
 - 내부 관리자

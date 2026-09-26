@@ -193,16 +193,19 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   };
 }
 
-function config() {
-  const raw = process.env.FREEPASS_DATA_BASE_URL?.trim().replace(/\/$/, '') ?? '';
-  const token = process.env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
+function config(env: Record<string,string|undefined> = process.env) {
+  const raw = env.FREEPASS_DATA_BASE_URL?.trim().replace(/\/$/, '') ?? '';
+  const token = env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
   if (!raw || !token) throw new Error('FREEPASS_DATA_SHADOW_CONFIG_MISSING');
   let base: URL;
   try { base = new URL(raw); } catch { throw new Error('FREEPASS_DATA_BASE_URL_INVALID'); }
   if (!['http:','https:'].includes(base.protocol)) throw new Error('FREEPASS_DATA_BASE_URL_INVALID');
-  if (process.env.NODE_ENV === 'production' && base.protocol !== 'https:') throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_HTTPS');
+  if (base.username || base.password || (base.pathname !== '/' && base.pathname !== '') || base.search || base.hash) {
+    throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_ORIGIN');
+  }
+  if (env.NODE_ENV === 'production' && base.protocol !== 'https:') throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_HTTPS');
   if (token.length < 32) throw new Error('FREEPASS_DATA_ADMIN_CATALOG_TOKEN_INVALID');
-  return { base: base.toString().replace(/\/$/, ''), token };
+  return { base: base.origin, token };
 }
 
 export class FreePassDataAdminCatalogClient {
@@ -229,4 +232,4 @@ export class FreePassDataAdminCatalogClient {
   }
 }
 
-export const __test = { ResponseSchema, mapProduct };
+export const __test = { ResponseSchema, mapProduct, config };

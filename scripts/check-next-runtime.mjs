@@ -13,9 +13,9 @@ await mkdir(out, { recursive: true });
 const port = 3217;
 const origin = `http://127.0.0.1:${port}`;
 const secret = 'freepass-admin-runtime-smoke-secret-2026-09-25';
-const ALLOWED_EXTERNAL = new Set([
-  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css',
-]);
+const ALLOWED_EXTERNAL_PREFIXES = [
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/',
+];
 const domain = 'runtime.invalid';
 const childEnv = { ...process.env,
   SESSION_SECRET: secret,
@@ -120,7 +120,7 @@ try {
       const u = route.request().url();
       if (u.startsWith(origin + '/') || u.startsWith('data:')) return route.continue();
       const external = u.split('?')[0];
-      if (ALLOWED_EXTERNAL.has(external)) return route.continue();
+      if (ALLOWED_EXTERNAL_PREFIXES.some((prefix) => external.startsWith(prefix))) return route.continue();
       receipt.externalRequests.push(external); return route.abort();
     });
     const page = await ctx.newPage();

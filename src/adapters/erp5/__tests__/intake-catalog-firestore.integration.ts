@@ -5,6 +5,7 @@ import { erp5 } from '../firestore';
 import { Erp5SettlementRepository } from '../settlement-repository';
 import { buildIntakeCatalogSnapshot } from '../../../domain/settlement/catalog-snapshot';
 import { intakeEventDocId } from '../../../domain/settlement/code';
+import { koreaDay } from '../../../domain/settlement/calendar';
 import type { IntakeInput } from '../../../domain/settlement/intake';
 import type { CanonicalProduct, Offer } from '../../../domain/product/types';
 
@@ -160,8 +161,12 @@ emulatorTest('Firestore: installment progress, locked bill month, and actor audi
   assert.deepEqual(await repo.setProgress(created.code,{kind:'paper',on:true},actor),{ok:true,changed:1});
   const delivered=await repo.setProgress(created.code,{kind:'delivered',on:true,deliveredAt:'2026-09-25'},actor);
   assert.equal(delivered.ok,true);
-  assert.equal(delivered.ok && delivered.changed,2);
-  assert.deepEqual(await repo.setProgress(created.code,{kind:'paidRounds',rounds:1},actor),{ok:true,changed:1});
+  // Delivery records delivered, deliveredAt and the first installment atomically.
+  assert.equal(delivered.ok && delivered.changed,3);
+  const afterDelivery=await repo.get(created.code);
+  assert.ok(afterDelivery);
+  assert.equal(afterDelivery.row.paidRounds,1);
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paidRounds',rounds:1},actor),{ok:true,changed:0});
   assert.deepEqual(
     await repo.setLifecycle(created.code,{kind:'billMonth',month:'2026-09'},undefined,actor),
     {ok:true,changed:1},
@@ -202,6 +207,9 @@ emulatorTest('Firestore: installment progress, locked bill month, and actor audi
   );
   assert.ok(audits.length>=6);
   assert.equal(audits.every((v)=>v.by===actor),true);
+  const installmentAudits=audits.filter((v)=>v.field==='받은회차');
+  assert.equal(installmentAudits.length,1);
+  assert.equal(installmentAudits[0].to,'1');
   const fields=new Set(audits.map((v)=>String(v.field??'')));
   for(const field of ['접수','계약서','인도완료','인도일','받은회차','청구월','청구서']){
     assert.equal(fields.has(field),true,`audit field missing: ${field}`);
@@ -332,29 +340,32 @@ emulatorTest('Firestore: cash idempotency key only accepts an identical retry pa
 
   const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
   assert.equal(issued.ok,true);
+  // Use the actual issued document day, not a date preceding its issuance.
+  const settlementDay=koreaDay(issued.invoice.issuedAt);
+  assert.ok(settlementDay);
   assert.deepEqual(
     await repo.setLifecycle(created.code,{kind:'confirm',axis:'공급사'},undefined,actor),
     {ok:true,changed:1},
   );
   assert.deepEqual(
-    await repo.setLifecycle(created.code,{kind:'invoice',on:true,biz:'1234567890',day:'2026-09-25'},undefined,actor),
+    await repo.setLifecycle(created.code,{kind:'invoice',on:true,biz:'1234567890',day:settlementDay},undefined,actor),
     {ok:true,changed:1},
   );
 
   const operationId=`cash_retry_${suffix}_123456`;
   const first=await repo.setLifecycle(
-    created.code,{kind:'collected',amount:100,day:'2026-09-25'},operationId,actor,
+    created.code,{kind:'collected',amount:100,day:settlementDay},operationId,actor,
   );
   assert.equal(first.ok,true);
   assert.equal(first.ok&&first.changed,1);
 
   const identical=await repo.setLifecycle(
-    created.code,{kind:'collected',amount:100,day:'2026-09-25'},operationId,actor,
+    created.code,{kind:'collected',amount:100,day:settlementDay},operationId,actor,
   );
   assert.deepEqual(identical,{ok:true,changed:0});
 
   const conflicting=await repo.setLifecycle(
-    created.code,{kind:'collected',amount:200,day:'2026-09-25'},operationId,actor,
+    created.code,{kind:'collected',amount:200,day:settlementDay},operationId,actor,
   );
   assert.equal(conflicting.ok,false);
   assert.match(conflicting.ok?'':conflicting.error,/같은 요청 식별자/);

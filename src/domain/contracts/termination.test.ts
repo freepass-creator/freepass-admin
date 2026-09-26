@@ -22,6 +22,33 @@ const input = {
   operationId:'terminate_1234567890abcdef',
 };
 
+test('분납 계약은 실제 납입회차가 명시돼야 해지할 수 있다', () => {
+  const missing=planContractTermination(
+    contract(),
+    intake({payKind:'3회분납',paidRounds:null}),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(missing.ok,false);
+  if(!missing.ok)assert.match(missing.error,/실제 납입회차/);
+
+  const invalid=planContractTermination(
+    contract(),
+    intake({payKind:'3회분납',paidRounds:4}),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(invalid.ok,false);
+
+  const valid=planContractTermination(
+    contract(),
+    intake({payKind:'3회분납',paidRounds:1}),
+    input,
+    Date.parse('2026-09-25T06:00:00Z'),
+  );
+  assert.equal(valid.ok,true);
+});
+
 test('인도된 계약은 계약해지 사실만 기록하고 정산 필드는 건드리지 않는다', () => {
   const result=planContractTermination(contract(),intake({
     billed:true,claimStage:'확인',payStage:'통보',collectedAmt:0,paidAmt:0,

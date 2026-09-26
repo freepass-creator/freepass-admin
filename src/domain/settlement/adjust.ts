@@ -73,8 +73,11 @@ export function moneyEditPatch(
     claimIncentive: '프로모션(공급사)', payIncentive: '프로모션(영업자)', promoShare: '프로모션 영업자 비율', promoReason: '프로모션 사유',
     claimAdjust: '가감(청구)', payAdjust: '가감(지급)', adjustReason: '가감 사유',
   };
-  const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust']);
-  const PAY_SIDE = new Set(['payIncentive', 'payAdjust']);
+  // 금액뿐 아니라 그 금액의 근거/사유도 발행된 축에서는 과거 증거다.
+  // promoReason/adjustReason은 양쪽 축에 공통으로 설명을 제공하므로 어느 한쪽이 발행되면
+  // 해당 사유를 조용히 다시 쓰지 않는다. promoShare는 지급액 배분 근거이므로 지급축에 묶는다.
+  const CLAIM_SIDE = new Set(['claimIncentive', 'claimAdjust', 'promoReason', 'adjustReason']);
+  const PAY_SIDE = new Set(['payIncentive', 'payAdjust', 'promoShare', 'promoReason', 'adjustReason']);
   if (legacyBool(cur.cancelled)) return { ok: false, error: '취소된 줄입니다' };
   const changed = Object.entries(patch).filter(([k, v]) => k in LABEL && String(cur[k] ?? '') !== String(v ?? ''));
   if (legacyBool(cur.billed) && changed.some(([k]) => CLAIM_SIDE.has(k))) {

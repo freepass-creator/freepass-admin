@@ -56,11 +56,17 @@ test('인도 후에는 계약취소가 아니라 계약해지다', () => {
   assert.match(result.error, /계약해지/);
 });
 
-test('동일 계약취소 operation 재시도는 기존 계약금 기록이 없어도 기존 기록을 보존하며 idempotent다', () => {
+test('동일 계약취소 operation 재시도는 양쪽 mirror가 일치하면 기존 계약금 기록이 없어도 idempotent다', () => {
   const result = planContractCancellation(
-    contract({ contract_status: '계약취소' }),
+    contract({
+      contract_status: '계약취소',
+      contract_cancelled_at: 100,
+      contract_cancel_operation_id: input.operationId,
+      contract_cancel_reason: input.reason,
+    }),
     intake({
       cancelled: true,
+      settleExclude: true,
       contractCancelledAt: 100,
       contractCancellationOperationId: input.operationId,
       contractCancellationReason: input.reason,
@@ -71,9 +77,72 @@ test('동일 계약취소 operation 재시도는 기존 계약금 기록이 없�
   assert.deepEqual(result, { ok: true, idempotent: true, patch: {}, intakePatch: {} });
 });
 
+test('계약취소가 접수 쪽에만 남은 partial state는 동일 operation이어도 fail closed', () => {
+  const result = planContractCancellation(
+    contract(),
+    intake({
+      cancelled: true,
+      settleExclude: true,
+      contractCancelledAt: 100,
+      contractCancellationOperationId: input.operationId,
+      contractCancellationReason: input.reason,
+    }),
+    input,
+    2000,
+  );
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.match(result.error, /계약과 접수의 기존 취소 기록이 일치하지 않습니다/);
+});
+
+test('계약취소가 contract 쪽에만 남은 partial state도 fail closed', () => {
+  const result = planContractCancellation(
+    contract({
+      contract_status: '계약취소',
+      contract_cancelled_at: 100,
+      contract_cancel_operation_id: input.operationId,
+      contract_cancel_reason: input.reason,
+    }),
+    intake(),
+    input,
+    2000,
+  );
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.match(result.error, /계약과 접수의 기존 취소 기록이 일치하지 않습니다/);
+});
+
+test('양쪽 취소 operation 또는 timestamp가 다르면 재시도로 덮어쓰지 않는다', () => {
+  for (const dirty of [
+    {
+      contract: { contract_status: '계약취소', contract_cancelled_at: 100, contract_cancel_operation_id: 'other_operation_1234', contract_cancel_reason: input.reason },
+      intake: { cancelled: true, settleExclude: true, contractCancelledAt: 100, contractCancellationOperationId: input.operationId, contractCancellationReason: input.reason },
+    },
+    {
+      contract: { contract_status: '계약취소', contract_cancelled_at: 101, contract_cancel_operation_id: input.operationId, contract_cancel_reason: input.reason },
+      intake: { cancelled: true, settleExclude: true, contractCancelledAt: 100, contractCancellationOperationId: input.operationId, contractCancellationReason: input.reason },
+    },
+  ]) {
+    const result = planContractCancellation(contract(dirty.contract), intake(dirty.intake), input, 2000);
+    assert.equal(result.ok, false);
+    if (result.ok) continue;
+    assert.match(result.error, /계약과 접수의 기존 취소 기록이 일치하지 않습니다/);
+  }
+});
+
 test('정산이 시작된 건은 계약취소하지 않는다', () => {
   const result = planContractCancellation(contract(), intake({ ...payment, billed: true, claimStage: '청구' }), input, 2000);
   assert.equal(result.ok, false);
   if (result.ok) return;
   assert.match(result.error, /정산 흔적/);
 });
+
+
+for (const clock of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.MAX_VALUE]) {
+  test(`유효하지 않은 계약취소 처리 시각은 예외 대신 실패: ${String(clock)}`, () => {
+    const result = planContractCancellation(contract(), intake(payment), input, clock);
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.match(result.error, /처리 시각/);
+  });
+}

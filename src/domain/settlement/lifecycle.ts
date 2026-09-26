@@ -22,6 +22,8 @@ import { claimAmountOf, payAmountOf } from './money';
 import type { Clawback, LedgerLine } from './ledgers';
 import type { SettlementRow } from './types';
 import { settlementEligible } from './eligibility';
+import { isCalendarDay, isCalendarMonth, koreaDay } from './calendar';
+import { workflowConsistencyIssues, workflowMutationBlockedReason } from './consistency';
 
 export const CLAIM_STAGES = ['접수', '청구', '정정', '확인', '수금'] as const;
 export const PAY_STAGES = ['접수', '통보', '정정', '확인', '지급'] as const;
@@ -92,9 +94,15 @@ export function planInvoice(
   existing: IssuedInvoice | null, takenNos: readonly string[], now: number, by: string,
 ): { ok: true; invoice: IssuedInvoice; patches: { code: string; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] }[] }
   | { ok: false; error: string } {
-  if (!/^\d{4}-\d{2}$/.test(month)) return { ok: false, error: '청구월이 정해진 달에서만 발행합니다 — 「청구월 미정」 줄은 먼저 달을 정합니다' };
+  if (!isCalendarMonth(month)) return { ok: false, error: '청구월이 정해진 실제 달에서만 발행합니다 — 「청구월 미정」 줄은 먼저 달을 정합니다' };
+  const issueDay = koreaDay(now);
+  if (!issueDay) return { ok: false, error: '발행 처리 시각이 올바르지 않습니다' };
   const live = lines.filter((l) => !(axis === '공급사' && l.row.progress.billHold));
   if (!live.length) return { ok: false, error: '발행할 줄이 없습니다' };
+  const inconsistent = live.filter((l) => workflowConsistencyIssues(l.row).length > 0);
+  if (inconsistent.length) {
+    return { ok: false, error: `업무 상태가 서로 맞지 않는 줄 ${inconsistent.length}건 — 데이터를 먼저 확인한 뒤 발행합니다` };
+  }
   const unknown = live.filter((l) => l.amount === null);
   if (unknown.length) return { ok: false, error: `금액 모름 ${unknown.length}줄 — 금액을 먼저 정해야 발행합니다` };
   const corr = live.filter((l) => (axis === '공급사' ? l.row.claimStage : l.row.payStage) === '정정');
@@ -117,7 +125,7 @@ export function planInvoice(
     if (!amt) continue;
     clawback += amt; supply -= amt; vat -= Math.round(amt * VAT);
   }
-  const day = new Date(now + 9 * 3600_000).toISOString().slice(0, 10);
+  const day = issueDay;
   const invoice: IssuedInvoice = {
     key: invoiceKey(month, axis, party),
     invoiceNo: existing?.invoiceNo ?? nextInvoiceNo(month, axis, takenNos),
@@ -177,16 +185,23 @@ export type LifeChange =
   | { kind: 'hold'; on: boolean }                                           // 청구 보류
   | { kind: 'billMonth'; month: string };                                   // 청구월을 사람이 정한다(청구월 미정 줄)
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const MONTH = /^\d{4}-\d{2}$/;
-
-export function lifePatch(r: SettlementRow, c: LifeChange):
+export function lifePatch(r: SettlementRow, c: LifeChange, nowMs = Date.now()):
   { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
+  const inconsistent = workflowMutationBlockedReason(r);
+  if (inconsistent) return { ok: false, error: inconsistent };
   if (r.progress.cancelled) return { ok: false, error: '취소된 줄입니다' };
   if (!settlementEligible(r)) {
     return { ok: false, error: '계약서·차량번호·인도완료·인도일이 확인된 건만 정산 처리할 수 있습니다' };
   }
   const ev = (field: string, from: unknown, to: unknown) => ({ field, from: String(from ?? ''), to: String(to ?? '') });
+  const today = koreaDay(nowMs);
+  if (!today) return { ok: false, error: '정산 처리 시각이 올바르지 않습니다' };
+  const dayError = (day: string, label: string, min?: string | null) => {
+    if (!isCalendarDay(day)) return `${label}은 YYYY-MM-DD 형식의 유효한 날짜여야 합니다`;
+    if (day > today) return `${label} ${day} 은 오늘(${today}) 뒤일 수 없습니다`;
+    if (min && isCalendarDay(min) && day < min) return `${label}은 선행일(${min})보다 빠를 수 없습니다`;
+    return null;
+  };
 
   switch (c.kind) {
     case 'confirm': {
@@ -204,6 +219,9 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       if (stage === '접수') return { ok: false, error: '아직 상대에게 안 나갔습니다 — 정정할 것이 없습니다' };
       if (stage === '수금' || stage === '지급') return { ok: false, error: '이미 돈 처리가 끝난 줄입니다 — 정정이 아니라 환수/가감으로 처리합니다' };
       if (!c.memo.trim()) return { ok: false, error: '정정 사유(상대가 뭐라고 했는지)를 적어야 합니다' };
+      if (c.amount !== null && (!Number.isFinite(c.amount) || c.amount < 0)) {
+        return { ok: false, error: '정정 금액은 0 이상의 숫자여야 합니다' };
+      }
       const p = c.axis === '공급사'
         ? { supplierFix: true, supplierOk: false, supplierFixAmt: c.amount ?? 0, supplierMemo: c.memo.trim(), claimStage: '정정' }
         : { channelFix: true, channelOk: false, channelFixAmt: c.amount ?? 0, channelMemo: c.memo.trim(), payStage: '정정' };
@@ -222,7 +240,10 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       if (c.on && r.claimStage === '정정') return { ok: false, error: '정정 중에는 계산서를 끊을 수 없습니다' };
       if (c.on && !r.progress.invoiceIssued && r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 계산서를 끊습니다' };
       if (!c.on && (r.progress.collected || (r.progress.collectedAmt ?? 0) > 0)) return { ok: false, error: '수금이 시작된 줄의 계산서는 되돌릴 수 없습니다' };
-      if (c.on && c.day && !DAY.test(c.day)) return { ok: false, error: '계산서 날짜는 YYYY-MM-DD' };
+      if (c.on) {
+        const err = dayError(String(c.day ?? ''), '계산서 날짜', r.progress.billedAt);
+        if (err) return { ok: false, error: err };
+      }
       if (c.on && biz.length !== 10) return { ok: false, error: '계산서 사업자번호는 숫자 10자리로 넣습니다' };
       if (r.progress.invoiceIssued === c.on) return { ok: true, patch: {}, events: [] };
       return {
@@ -235,7 +256,7 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       if (!r.progress.billed) return { ok: false, error: '청구서가 나간 뒤에 수금을 찍습니다' };
       if (r.claimStage !== '확인') return { ok: false, error: '공급사 확인이 끝난 뒤에 수금을 찍습니다' };
       if (!r.progress.invoiceIssued) return { ok: false, error: '계산서를 끊은 뒤에 수금을 찍습니다' };
-      if (!DAY.test(c.day)) return { ok: false, error: '받은 날은 YYYY-MM-DD' };
+      { const err = dayError(c.day, '받은 날', r.progress.invoiceAt); if (err) return { ok: false, error: err }; }
       const target = cashTargetOf('공급사', r);
       if (target === null) return { ok: false, error: '청구금액을 모르는 줄은 수금을 찍을 수 없습니다' };
       const before = Math.max(0, r.progress.collectedAmt ?? 0);
@@ -252,7 +273,7 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
     case 'paid': {
       if (r.payStage === '접수') return { ok: false, error: '통보 전입니다 — 지급명세를 먼저 냅니다' };
       if (r.payStage !== '확인') return { ok: false, error: '영업채널 확인이 끝난 뒤에 지급을 찍습니다' };
-      if (!DAY.test(c.day)) return { ok: false, error: '준 날은 YYYY-MM-DD' };
+      { const err = dayError(c.day, '준 날', r.progress.deliveredAt); if (err) return { ok: false, error: err }; }
       const target = cashTargetOf('영업채널', r);
       if (target === null) return { ok: false, error: '지급금액을 모르는 줄은 지급을 찍을 수 없습니다' };
       const before = Math.max(0, r.progress.paidAmt ?? 0);
@@ -272,7 +293,7 @@ export function lifePatch(r: SettlementRow, c: LifeChange):
       return { ok: true, patch: { billHold: c.on }, events: [ev('청구 보류', r.progress.billHold, c.on)] };
     }
     case 'billMonth': {
-      if (!MONTH.test(c.month)) return { ok: false, error: '청구월은 YYYY-MM' };
+      if (!isCalendarMonth(c.month)) return { ok: false, error: '청구월은 YYYY-MM 형식의 실제 월이어야 합니다' };
       if (r.progress.billed) return { ok: false, error: '청구서가 나간 줄은 달을 못 바꿉니다' };
       if (!r.progress.delivered) return { ok: false, error: '인도 전 줄은 청구월이 없습니다 — 인도를 먼저 찍습니다' };
       if (r.progress.billMonth === c.month) return { ok: true, patch: {}, events: [] };

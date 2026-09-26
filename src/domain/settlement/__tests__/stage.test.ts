@@ -169,3 +169,22 @@ test('명시 완납은 실적으로는 완료지만 실제 완납일 없이는 �
   const dated = { ...r, paidRoundsAt: '2026-09-20' };
   assert.equal(billingMonth(dated, new Date('2026-09-20T12:00:00+09:00')), '2026-09');
 });
+
+
+test('잘못된 legacy billMonth는 확정월로 믿지 않고 fail-closed 한다', () => {
+  const r = row('2026-09-10', '일시납', null, {
+    progress: {
+      delivered: true,
+      deliveredAt: '2026-09-10',
+      cancelled: false,
+      billMonth: '2026-99',
+      billed: false,
+      invoiceIssued: false,
+      collected: false,
+      paid: false,
+      settleExclude: false,
+    },
+  });
+  assert.equal(billingMonth(r), null);
+  assert.equal(lockedMonthsOf([r], new Date('2026-09-20T12:00:00+09:00')).has('2026-99'), false);
+});

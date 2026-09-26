@@ -21,7 +21,9 @@
       ],
       "merge_order": 1,
       "writer_policy": "SINGLE_WRITER_HANDOFF_SAME_BRANCH",
-      "work_order": "docs/work/UI-FINALIZATION.md"
+      "work_order": "docs/work/UI-FINALIZATION.md",
+      "status": "SUPERSEDED_BY_PR_121",
+      "note": "UI baseline decided by user 2026-09-26; after PR #121 merges this branch only syncs main or is discarded"
     },
     {
       "id": "operational-launch",
@@ -43,16 +45,19 @@
   ],
   "archived": [
     {
+      "branch": "work/uiux",
+      "status": "DISCARDED",
+      "note": "PR #92 UI donor; content merged to main via PR #121"
+    },
+    {
       "branch": "work/function",
-      "status": "ARCHIVE_NO_NEW_DEVELOPMENT"
+      "status": "DISCARDED",
+      "note": "not a development basis; user-confirmed launch items are re-applied on work/release/operational-launch only"
     },
     {
       "branch": "work/esign",
-      "status": "ARCHIVE_NO_NEW_DEVELOPMENT"
-    },
-    {
-      "branch": "work/uiux",
-      "status": "REFERENCE_ONLY_UI_DONOR"
+      "status": "DISCARDED",
+      "note": "not a development basis; e-sign restarts from then-current main"
     }
   ],
   "branch_creation": {
@@ -66,5 +71,12 @@
       "*/final",
       "*/latest"
     ]
+  },
+  "ui_authority": {
+    "status": "CANONICAL_USER_APPROVED",
+    "decided_at": "2026-09-26",
+    "lineage": "PR #92 actual route (src/app/_erp/*)",
+    "merged_via": "PR #121",
+    "doc": "docs/ui/DESIGN-AUTHORITY.md"
   }
 }

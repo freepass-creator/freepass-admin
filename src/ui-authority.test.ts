@@ -83,3 +83,22 @@ test('current project documents contain no removed UI source references', () => 
   });
   assert.deepEqual(hits, []);
 });
+
+test('PR #92 PC screen is the user-approved canonical UI and other lineages stay discarded (2026-09-26)', () => {
+  const authority = read('docs/ui/DESIGN-AUTHORITY.md');
+  assert.ok(authority.includes('CANONICAL — USER APPROVED 2026-09-26'), 'authority status');
+  assert.ok(authority.includes('## 폐기 (DISCARDED)'), 'discard list');
+  const registry = JSON.parse(read('registry/active-work.json')) as {
+    ui_authority?: { status?: string; lineage?: string };
+    archived?: { branch: string; status: string }[];
+  };
+  assert.equal(registry.ui_authority?.status, 'CANONICAL_USER_APPROVED');
+  for (const branch of ['work/uiux', 'work/function', 'work/esign']) {
+    assert.equal(registry.archived?.find((a) => a.branch === branch)?.status, 'DISCARDED', branch);
+  }
+  // PC 골격 = #92: 좌측 메뉴 + 규격 화면. 옛 셸 · 목업이 돌아오면 실패한다.
+  const chrome = read('src/app/_design/AdminChrome.tsx');
+  assert.ok(chrome.includes('<SideMenu'), 'PC side menu');
+  assert.ok(chrome.includes('erp-topbar'), 'PC top bar');
+  assert.equal(exists('docs/ui/mockups'), false, 'mockups stay deleted');
+});

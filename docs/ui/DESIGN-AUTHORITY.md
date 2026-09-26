@@ -1,8 +1,18 @@
 # FreePass Admin Design Authority
 
-상태: **RECOVERY CANONICAL — PR #92 actual route only**  
-기준 브랜치: `claude/erp-platform-ui-ux-hvfyfa`  
-복구 작업장: `recovery/pr92-modernize-20260926`
+상태: **CANONICAL — USER APPROVED 2026-09-26 (PC) · PR #92 actual route only**  
+확정: 사용자 2026-09-26 「큰 화면으로 준 92버전이 정본이고 그게 메인으로 합쳐져야 돼」 「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」  
+main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기능)
+
+## 폐기 (DISCARDED)
+
+아래는 **구현 근거가 아니다.** 되살리거나 참고해 현재 화면을 바꾸지 않는다.
+- #121 이전 main의 화면(하단 탭 5개 · 네 줄 목록 카드 · dz 셸)과 그 잠금 문서(2026-09-25 HARD LOCK, #108~#111)
+- 삭제된 과거 목업(rev 5 포함) · 캡처 · 리뷰 문서
+- `work/uiux`, `recovery/pr92-modernize-20260926`, `claude/erp-platform-ui-ux-hvfyfa` 브랜치 자체 — 내용은 #121로 main에 들어왔고 브랜치는 폐기
+- 사용자 확정 없이 다른 브랜치 · PR · AI가 만든 화면 · 토큰 · 레이아웃
+
+폰(≤900px) 화면은 같은 계보 안에서 다듬는 중이며 사용자 최종 확정 전이다. 다듬기는 이 계보 안에서만 한다.
 
 ## 현재 단일 디자인 정본
 

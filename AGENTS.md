@@ -28,7 +28,9 @@
 - 현재 merge 순서: UI 최종확정 → main → 운영개시 branch 최신화 → production 검증/배포 → main.
 - 상세 규칙은 `docs/BRANCH-WORKFLOW.md`, machine-readable 상태는 `registry/active-work.json`을 따른다.
 
-## -1. SINGLE UI LINEAGE — PR #92 RECOVERY
+## -1. SINGLE UI LINEAGE — PR #92 · USER APPROVED 2026-09-26
+
+**화면 정본 확정.** PC 화면은 PR #92 계보(현재 main의 `src/app/_erp/*`) 하나다. 그 밖의 화면·목업·브랜치·과거 잠금 문서는 **폐기(DISCARDED)** 이며, `docs/ui/DESIGN-AUTHORITY.md`의 폐기 목록을 되살리거나 참고해 화면을 바꾸지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
 
 UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 1. `docs/ui/DESIGN-AUTHORITY.md`

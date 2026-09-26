@@ -103,34 +103,36 @@ test('명시된 납입회차가 전체 회차면 여유기간 전에도 완납�
   assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '완납실적');
 });
 
-test('현재 달 billMonth 메모만으로 달 전체를 닫지 않고, 실제 정산 진행이 있으면 잠근다', () => {
+test('현재 달 문서 발행과 월마감을 분리하고 explicit CLOSED만 새 계산을 막는다', () => {
   const current = new Date('2026-09-20T12:00:00+09:00');
-  const writtenOnly = row('2026-09-10', '일시납', null, {
+  const issued = row('2026-09-10', '일시납', null, {
     progress: {
       delivered: true,
       deliveredAt: '2026-09-10',
       cancelled: false,
       billMonth: '2026-09',
-      billed: false,
+      billed: true,
       invoiceIssued: false,
       collected: false,
       paid: false,
       settleExclude: false,
     },
+    claimStage: '청구',
   });
-  assert.equal(lockedMonthsOf([writtenOnly], current).has('2026-09'), false);
 
-  const issued = {
-    ...writtenOnly,
-    progress: { ...writtenOnly.progress, billed: true },
-    claimStage: '청구' as const,
-  };
-  const locked = lockedMonthsOf([issued], current);
-  assert.equal(locked.has('2026-09'), true);
+  // 거래처 문서가 나간 것만으로 달 전체를 마감했다고 추정하지 않는다.
+  assert.equal(lockedMonthsOf([issued], current).has('2026-09'), false);
 
   const newcomer = row('2026-09-18', '일시납');
-  assert.equal(billingMonthIn(newcomer, lockedMonthsOf([writtenOnly], current), current), '2026-09');
-  assert.equal(billingMonthIn(newcomer, locked, current), null);
+  assert.equal(billingMonthIn(newcomer, lockedMonthsOf([issued], current), current), '2026-09');
+
+  // 월마감은 별도 CLOSED 사실이 들어왔을 때만 현재월 자동편입을 막는다.
+  const closed = lockedMonthsOf([issued], current, new Set(['2026-09']));
+  assert.equal(closed.has('2026-09'), true);
+  assert.equal(billingMonthIn(newcomer, closed, current), null);
+
+  // 이미 박힌 기존 행의 billMonth는 CLOSED 뒤에도 그대로 보존된다.
+  assert.equal(billingMonthIn(issued, closed, current), '2026-09');
 });
 
 test('지난 달의 확정 billMonth는 정산 흔적이 부족한 legacy 행도 다시 흔들지 않는다', () => {

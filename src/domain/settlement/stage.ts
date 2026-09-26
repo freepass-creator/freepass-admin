@@ -31,7 +31,16 @@ const dateOf = (v: unknown): Date | null => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(S(v));
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 };
-const addMonths = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth() + n, d.getDate());
+/**
+ * 달을 더할 때 원래 일자가 대상 월에 없으면 그 달의 마지막 날로 붙인다.
+ * 예: 2026-01-31 + 1개월 = 2026-02-28, 2026-10-31 + 1개월 = 2026-11-30.
+ * JS Date 생성자의 overflow(2월 31일 → 3월 3일)가 회차일·청구월을 밀지 못하게 한다.
+ */
+const addMonths = (d: Date, n: number) => {
+  const targetFirst = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const lastDay = new Date(targetFirst.getFullYear(), targetFirst.getMonth() + 1, 0).getDate();
+  return new Date(targetFirst.getFullYear(), targetFirst.getMonth(), Math.min(d.getDate(), lastDay));
+};
 /** ★«오늘» 은 자정이다 — 시각이 붙으면 만료가 오늘인 건이 「지났다」 가 된다(erp4 2026-08-25 사고) */
 export const midnight = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 

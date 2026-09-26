@@ -1,0 +1,175 @@
+{
+  "schema": "ai-core-canonical-development-lines/v1",
+  "updated_at": "2026-09-26",
+  "policy": {
+    "one_canonical_line_per_concern": true,
+    "historical_assets_must_not_claim_authority": true,
+    "superseded_branches_are_not_runtime_authority": true
+  },
+  "lines": [
+    {
+      "id": "product-scope",
+      "canonical_entrypoint": "docs/MASTER-v1.md",
+      "canonical_roots": [
+        "docs/MASTER-v1.md",
+        "PROJECT.md"
+      ],
+      "notes": [
+        "제품 범위·장기 업무 규칙. docs/memory/EMAIL-RND-*.md 는 장기 기억(REFERENCE)이며 MASTER 보다 앞서지 않는다(docs/SSOT.md §1)."
+      ]
+    },
+    {
+      "id": "latest-decisions",
+      "canonical_entrypoint": "docs/DECISIONS.md",
+      "canonical_roots": [
+        "docs/DECISIONS.md",
+        "docs/WORK-INBOX.md"
+      ],
+      "notes": [
+        "사용자 확정 결정은 DECISIONS.md, 채팅→Work 최신 인수인계는 WORK-INBOX.md."
+      ]
+    },
+    {
+      "id": "ssot-map",
+      "canonical_entrypoint": "docs/SSOT.md",
+      "canonical_roots": [
+        "docs/SSOT.md",
+        "src/domain/",
+        "src/services/",
+        "src/ports/",
+        "src/adapters/"
+      ],
+      "notes": [
+        "종류별 정본 지도. Product/Offer/Policy 데이터 정본은 FreePass Data 이고, Admin 읽기는 현재 OBSERVE 단계(freepasserp5 legacy bridge)다 — docs/SSOT.md §1 표 그대로."
+      ]
+    },
+    {
+      "id": "search-contract",
+      "canonical_entrypoint": "docs/contracts/SEARCH-CONTRACT.md",
+      "canonical_roots": [
+        "docs/contracts/SEARCH-CONTRACT.md",
+        "src/domain/search/"
+      ]
+    },
+    {
+      "id": "backend-boundaries",
+      "canonical_entrypoint": "contracts/BACKEND-BOUNDARIES.md",
+      "canonical_roots": [
+        "contracts/"
+      ]
+    },
+    {
+      "id": "functional-runtime",
+      "canonical_entrypoint": "docs/FUNCTION-AUTHORITY.md",
+      "canonical_roots": [
+        "docs/FUNCTION-AUTHORITY.md",
+        "src/domain/search/",
+        "src/domain/settlement/",
+        "src/domain/contracts/",
+        "src/services/contracts/",
+        "src/server/freepass-data.ts"
+      ],
+      "status": "ACTIVE",
+      "notes": [
+        "기능 런타임 정본은 main 한 곳이다. PR/작업 브랜치는 merge 전 staging/evidence일 뿐 정본이 아니다.",
+        "접수 런타임 정본은 Intake/settlement_rows다. src/domain/application/** 및 src/services/applications.ts는 LEGACY_QUARANTINED이며 신규 기능이 의존하지 않는다.",
+        "취소 판정은 계약금 수납 전=접수취소, 계약금 수납 후·인도 전=계약취소, 인도 후=계약해지+환수검토다. 차량 보증금(deposit)과 계약금은 별도 사실이다.",
+        "오래 diverged된 브랜치는 통째로 merge하지 않고 current main에 필요한 의미와 회귀테스트만 선별 이식한다."
+      ]
+    },
+    {
+      "id": "ui-ux",
+      "canonical_entrypoint": "docs/ui/DESIGN-AUTHORITY.md",
+      "canonical_roots": [
+        "docs/ui/DESIGN-AUTHORITY.md",
+        "docs/ui/ADMIN-UI-UX-SSOT.md",
+        "docs/ui/admin-ui-ux-ssot.json",
+        "docs/ui/SALES-APP-BASELINE.md",
+        "docs/ui/ai-core-bindings.json",
+        ".devcenter/design-authority.json",
+        "src/app/_design/"
+      ],
+      "status": "RECOVERY_HOLD",
+      "notes": [
+        "등록한 것은 «지금 main 에 있는 파일» 이다. 시각 기준선(main _design/admin-final.css 계보 vs PR #92 _erp/* 계보)은 대표 결정 대기이며 이 등록부는 그것을 정하지 않는다.",
+        "AGENTS.md §-1·DESIGN-AUTHORITY.md 머리(RECOVERY HOLD) 와 DESIGN-AUTHORITY.md §2(mockup·classic.css 계열 금지)·.devcenter/design-authority.json(USER_APPROVED/CANONICAL) 이 서로 어긋난다 — 기준선이 정해지는 PR 에서 한 번에 맞춘다(DESIGN-AUTHORITY §4).",
+        "기준선이 정해지기 전이라 CSS 토큰 가드는 두지 않았다. 가드를 두면 한 계보를 기계로 정본 삼는 결정이 된다.",
+        "docs/ui/reference/retro/** 는 어느 계보의 입력인지가 같은 미결정에 걸려 있어 historical 로 등록하지 않았다."
+      ]
+    }
+  ],
+  "repository_guards": {
+    "entry_files": {
+      "canonical": "AGENTS.md",
+      "mirrors": [
+        "CLAUDE.md",
+        "GEMINI.md"
+      ],
+      "why": "AI 가 처음 읽는 지시문은 한 벌이다."
+    },
+    "workflow_refs": {
+      "allow": [
+        "main"
+      ],
+      "why": "예약·운영 작업은 main 에서만 돈다."
+    },
+    "pull_request": {
+      "max_behind_main": 30,
+      "single_open_pr_per_canonical_path": true,
+      "why": "묵은 가지·같은 정본을 동시에 고치는 PR 이 갈림의 원인이다(2026-09-25 점검: ADMIN-UI-UX-SSOT.md 가 가지마다 다섯 판).",
+      "allowed_head_patterns": [
+        "^work/[a-z0-9._-]+/[a-z0-9._-]+$",
+        "^dependabot/",
+        "^renovate/"
+      ],
+      "forbidden_actor_prefixes": [
+        "gpt/",
+        "claude/",
+        "codex/",
+        "cursor/",
+        "gemini/",
+        "work/gpt/",
+        "work/claude/",
+        "work/codex/",
+        "work/cursor/",
+        "work/gemini/"
+      ],
+      "legacy_head_exceptions": [
+        {
+          "branch": "recovery/pr92-modernize-20260926",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "claude/freepass-admin-launch-irkl4q",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "claude/esign-pdf-renderer-m6lasu",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "backend/esign-finalize",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "claude/erp-platform-ui-ux-hvfyfa",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "codex/admin-mobile-five-functions-ai-core",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "codex/review-gpt-handoff-audit",
+          "expires": "2026-10-07"
+        },
+        {
+          "branch": "claude/ai-core-integration-standardization-ntmoli",
+          "expires": "2026-10-07",
+          "reason": "이 Claude 세션에 배정된 가지 이름이라 세션이 바꿀 수 없다."
+        }
+      ]
+    }
+  },
+  "baseline": []
+}

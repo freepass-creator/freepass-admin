@@ -3,6 +3,10 @@
 ## Mission
 FreePass Admin은 내부 관리자가 하나의 Canonical Product 기준으로 상품을 찾고, 조건을 확인하고, 접수하고, 계약 진행과 정산까지 처리하기 위한 관리자 제품이다.
 
+## Functional authority
+
+기능 고도화의 단일 진입점은 `docs/FUNCTION-AUTHORITY.md`다. 코드 정본은 `main`이며, 과거 기능 브랜치/PR은 merge 전 정본이 아니다. 접수 런타임은 Intake/`settlement_rows`를 사용하고 과거 Application aggregate는 LEGACY_QUARANTINED다.
+
 ## Current priority
 2026-09-21 기준 AI Core UI/UX Contract와 Development Center Design Hub 실행 경계가 확정되어 **공통 규격 대기 HOLD는 해제**됐다.
 
@@ -14,12 +18,12 @@ FreePass Admin은 내부 관리자가 하나의 Canonical Product 기준으로 �
 
 1. Canonical Product / Offer / Policy
 2. Search Engine
-3. Application Engine
-4. Port / Adapter / Repository
-5. Persistence / transaction / idempotency
-6. Auth / permission / actor boundary
-7. Audit / error / evidence
-8. Performance / settlement domain
+3. Intake / delivery / performance workflow
+4. Contract-payment fact + cancellation guard
+5. Claim / collection / pay / settlement lifecycle
+6. Port / Adapter / Repository
+7. Persistence / transaction / idempotency
+8. Auth / permission / actor / audit evidence
 
 ## Users
 - 내부 관리자
@@ -63,11 +67,12 @@ DB / External System
 우선순위는 다음과 같다.
 
 1. 사용자의 최신 명시 결정
-2. `docs/WORK-INBOX.md`
-3. `docs/MASTER-v1.md`
-4. `docs/SSOT.md`
-5. 현재 Domain/Service/Port/Adapter 코드
-6. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — 장기 배경, 최신 결정보다 우선하지 않음
+2. `docs/FUNCTION-AUTHORITY.md` — 기능 의미·브랜치·정본 경계
+3. `docs/WORK-INBOX.md`
+4. `docs/MASTER-v1.md`
+5. `docs/SSOT.md`
+6. 현재 Domain/Service/Port/Adapter 코드
+7. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — 장기 배경, 최신 결정보다 우선하지 않음
 
 ## Non-goals
 - UI/UX 공통 규격을 이 저장소가 독자 확정하지 않는다.
@@ -78,9 +83,9 @@ DB / External System
 
 ## Status
 - Product/domain model: ACTIVE DEVELOPMENT
-- Search/Application domain: CODED / PARTIALLY TESTED
+- Search/Intake/Settlement domain: CODED / PARTIALLY TESTED
 - Production persistence: NOT VERIFIED
 - Production auth/permission: NOT VERIFIED
 - Audit trail: DESIGN REQUIRED
-- Settlement domain: PARTIAL / MOCKUP-HEAVY
+- Settlement domain: ACTIVE / PARTIALLY VERIFIED
 - UI/UX adoption: MAPPED to AI Core/Design Hub / NOT PILOT / NOT CONFORMANT

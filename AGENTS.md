@@ -1,6 +1,23 @@
 # freepass-admin — AI/Developer Rules
 
-## -1. UI DESIGN HARD LOCK — 2026-09-25
+## -2. FUNCTION AUTHORITY — 2026-09-26
+
+기능 작업의 단일 진입점은 `docs/FUNCTION-AUTHORITY.md`다. **기능 런타임 정본은 `main` 한 곳**이며 과거 브랜치/PR/모델별 작업 가지를 정본으로 해석하지 않는다.
+
+- 현재 접수 정본: `Intake / settlement_rows / src/domain/settlement/**`
+- 과거 `src/domain/application/**` + `src/services/applications.ts`: **LEGACY_QUARANTINED**. 신규 런타임 의존 금지.
+- 데이터 출입구: `src/server/freepass-data.ts` 하나. `src/server/erp5.ts`는 호환 alias일 뿐 신규 진입점이 아니다.
+- 취소 기준: **계약금 수납 전=접수취소 / 계약금 수납 후·인도 전=계약취소 / 인도 후=계약해지+환수 검토**.
+- 계약금 수납과 차량 보증금(deposit)은 다른 사실이다.
+- diverged 과거 브랜치를 통째로 merge하지 않는다. 필요한 의미와 테스트만 current main에 선별 이식한다.
+
+기능을 새 파일/새 엔진/새 상태머신으로 만들기 전에 반드시 current main의 기존 정본을 확장할 수 있는지 먼저 확인한다.
+
+
+## -1. UI DESIGN RECOVERY HOLD — 2026-09-26
+
+**중요:** 2026-09-25 HARD LOCK의 시각 기준선은 재검증 중이다. 실제 승인 UI 계보(`claude/erp-platform-ui-ux-hvfyfa`, PR #92)를 current main과 대조해 복구하기 전까지 현 main의 시각 결과를 최종 정본이라고 가정하지 않는다. 새 디자인 발명, PR #92/관련 UI 이력 삭제, 현행 시각을 기준으로 한 추가 polish는 금지한다.
+
 
 UI/UX 작업은 **반드시** 아래 순서로 시작한다.
 
@@ -25,9 +42,10 @@ UI/UX 작업은 **반드시** 아래 순서로 시작한다.
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
 1. `AGENTS.md`
 2. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
-3. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
-4. `docs/MASTER-v1.md` — 장기 제품 기준
-5. 해당 작업의 PR / Issue / AI Core Gate
+3. `docs/FUNCTION-AUTHORITY.md` — 기능 작업 단일 정본 진입점
+4. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
+5. `docs/MASTER-v1.md` — 장기 제품 기준
+6. 해당 작업의 PR / Issue / AI Core Gate
 
 메일 원문 출처 추적이 필요하면 `docs/memory/EMAIL-RND-INDEX.md`에서 Gmail message id와 제목을 확인한다.
 
@@ -71,7 +89,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 `freepasserp.com` 도메인은 **운영 중인 `freepasserp4` 저장소가 갖고 있다**(`lib/brand.ts`의 `BRAND`). 이 저장소를 그 도메인 이름으로 부르지 않는다.
 
 ## 4. Current priority — ADMIN vertical slice
-현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Application → Application List → Application Detail → 계약서/필수서류/잔금/인도/취소`다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
+현재 우선 개발은 `Canonical Product → Search/Filter → Product Detail → Intake → 인도 → Performance → 공급사 청구/수금 + 영업채널 지급 → Settlement`다. 계약/전자계약은 이 운영 흐름의 계약 사실·증빙 계층이며 별도 운영 원장을 만들지 않는다. ADMIN PC는 `상품목록 1/3 | 상품상세 1/3 | 업무패널 1/3`을 기본 골격으로 한다. 상품의 `접수하기`는 오른쪽 업무패널만 신규접수로 전환한다.
 
 ## 5. Search first
 검색 가능성과 정확성이 상품 데이터 설계의 최우선 목적이다. 차량/제원/Offer/Policy 필드를 의미 없이 합치지 않는다. 서로 다른 Offer의 값을 섞어 존재하지 않는 계약조건을 만들지 않는다. 목록에서 일치한 Offer는 상세와 접수까지 유지한다.
@@ -85,7 +103,9 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 ## 8. Offers and Policies
 대여기간은 고정 컬럼이 아니라 반복 가능한 Offer다. Policy는 확장 가능하게 정의하되 이름 난립을 허용하지 않는다. FreePass Policy Definition에 매핑한다. 새 정책 때문에 Product 테이블에 임의 컬럼을 계속 추가하지 않는다.
 
-## 9. Applications
+## 9. Intake / legacy Application
+현재 런타임 접수 정본은 `Intake / settlement_rows`다. 과거 `src/domain/application/**`, `src/services/applications.ts`, file/json Application Repository는 LEGACY_QUARANTINED이며 신규 런타임 기능이 의존하지 않는다. 유효한 불변식·idempotency·audit 규칙은 현재 Intake에 없는지 확인한 뒤 의미와 회귀테스트만 이식한다.
+
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline

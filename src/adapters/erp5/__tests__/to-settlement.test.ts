@@ -149,3 +149,37 @@ it('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () => 
   assert.equal(row.contractTerminationOperationId,'terminate_1234567890abcdef');
   assert.equal(row.contractTerminationContractId,'ctr_term_1');
 });
+
+describe('계약금 수납 projection', () => {
+  it('완전한 계약금 수납 사실은 보증금/선납과 별도로 읽는다', () => {
+    const { row, warnings } = toSettlementRow({
+      code: 'c',
+      plate: '11가1111',
+      supplier: '손오공',
+      deposit: 0,
+      prepaid: 300000,
+      contractPaymentAmount: 500000,
+      contractPaymentReceivedAt: 1000,
+      contractPaymentOperationId: 'contractpay_1234567890abcdef',
+      contractPaymentReceiptId: 'bank-1',
+      contractPaymentBy: '관리자',
+    }, 'd');
+    assert.equal(row.deposit, 0);
+    assert.equal(row.money.prepaid, 300000);
+    assert.equal(row.contractPayment?.amount, 500000);
+    assert.equal(row.contractPayment?.receiptId, 'bank-1');
+    assert.equal(warnings.some((w) => w.includes('계약금 수납 기록 불완전')), false);
+  });
+
+  it('부분 계약금 기록은 계약금 없음으로 숨기지 않고 경고한다', () => {
+    const { row, warnings } = toSettlementRow({
+      code: 'c',
+      plate: '11가1111',
+      supplier: '손오공',
+      contractPaymentAmount: 500000,
+    }, 'd');
+    assert.equal(row.contractPayment, null);
+    assert.ok(warnings.some((w) => w.includes('계약금 수납 기록 불완전')));
+  });
+});
+

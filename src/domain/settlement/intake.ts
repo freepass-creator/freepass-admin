@@ -13,6 +13,7 @@ import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
 import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-kind';
+import { contractPaymentStateOf } from '../contracts/payment';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -144,6 +145,11 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     claimAdjust: 0, payAdjust: 0, adjustReason: '',
     paper: x.paper, delivered: x.delivered, deliveredAt: x.delivered ? x.deliveredAt : '',
     cancelled: false,
+    contractPaymentAmount: null,
+    contractPaymentReceivedAt: null,
+    contractPaymentOperationId: null,
+    contractPaymentReceiptId: null,
+    contractPaymentBy: null,
     billMonth: '', settleTarget: '양쪽', settleRatio: 1,
     billHold: false, settleExclude: false, settledAlready: false, vatIncluded: false,
     settleNote: feeNote, stage: '접수', claimStage: '접수', payStage: '접수',
@@ -194,6 +200,9 @@ export function progressPatch(
       || B(cur.settledAlready) || datedOrNumbered || legacyFinancialStage
       || claimStage !== '접수' || payStage !== '접수';
   };
+  if (B(cur.cancelled) && c.kind === 'cancelled' && !c.on && Number(cur.contractCancelledAt ?? 0) > 0) {
+    return { ok: false, error: '계약취소된 건은 접수취소 풀기로 되돌릴 수 없습니다 — 계약취소 기록을 확인해 주세요' };
+  }
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
   if (Number(cur.contractTerminatedAt ?? 0) > 0 && ['plate','paper','delivered','cancelled'].includes(c.kind)) {
     return { ok: false, error: '계약해지된 건은 차량·계약서·인도·취소 사실을 변경할 수 없습니다' };
@@ -256,11 +265,16 @@ export function progressPatch(
       return { ok: false, error: '인도된 건은 접수취소가 아니라 계약해지 후 환수 검토 대상으로 처리합니다' };
     }
     /*
-     * 접수취소는 계약 연결 여부와 무관한 «접수의 종료»다.
-     * 전자계약이 연결돼 있어도 인도/정산 전이면 이 원장을 취소한다.
-     * 전자서명 세션 철회·증빙 보존 같은 기술적 후처리는 별도 전자계약 계층의 일이지,
-     * 별도의 업무 상태 「계약취소」를 만들 이유가 아니다.
+     * 취소 판정축은 전자계약 여부가 아니라 계약금 수납 사실이다.
+     * 계약금 수납 전 = 접수취소 / 수납 후·인도 전 = 계약취소 / 인도 후 = 계약해지.
      */
+    const payment = contractPaymentStateOf(cur);
+    if (payment.state === 'INCONSISTENT') {
+      return { ok: false, error: `계약금 수납 기록이 불완전합니다 — ${payment.reason}` };
+    }
+    if (payment.state === 'RECEIVED') {
+      return { ok: false, error: '계약금 수납 후에는 접수취소가 아니라 계약취소로 처리합니다' };
+    }
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 건은 일반 취소할 수 없습니다 — 정정/환수/가감으로 처리합니다' };
     const reason = S(c.reason).trim();
     if (!reason) return { ok: false, error: '취소 사유를 넣어야 합니다' };

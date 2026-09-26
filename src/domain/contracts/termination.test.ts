@@ -36,10 +36,10 @@ test('인도된 계약은 계약해지 사실만 기록하고 정산 필드는 �
   assert.equal('clawback' in result.intakePatch,false);
 });
 
-test('인도 전 계약은 계약해지가 아니라 계약취소다', () => {
+test('인도 전에는 계약금 수납 여부에 따라 접수취소 또는 계약취소다', () => {
   const result=planContractTermination(contract(),intake({delivered:false,deliveredAt:''}),input,Date.parse('2026-09-25T06:00:00Z'));
   assert.equal(result.ok,false);
-  assert.match(String((result as {error?:string}).error),/계약취소/);
+  assert.match(String((result as {error?:string}).error),/접수취소.*계약취소/);
 });
 
 test('계약해지일은 인도일보다 빠르거나 오늘보다 미래일 수 없다', () => {

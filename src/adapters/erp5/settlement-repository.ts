@@ -15,6 +15,7 @@ import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
+import { planContractPayment, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -168,6 +169,50 @@ export class Erp5SettlementRepository {
     const raw = d.data()!;
     const { row, warnings } = toSettlementRow(raw, d.id);
     return { row, raw, warnings };
+  }
+
+  /**
+   * 고객 계약금 실제 수납 사실. 차량 보증금(deposit)·정산 선납(prepaid)과 분리한다.
+   * operationId로 재시도 안전성을 보장하고 settlement_events에 동일 사실을 남긴다.
+   */
+  async recordContractPayment(
+    code: string,
+    input: ContractPaymentInput,
+    by: string = BY,
+  ): Promise<{ ok: true; recorded: boolean; fact: ContractPaymentFact } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const doc = await tx.get(ref);
+      if (!doc.exists) return { ok: false as const, error: `없는 접수입니다: ${code}` };
+      const cur = doc.data() as Record<string, unknown>;
+      const now = Date.now();
+      const plan = planContractPayment(cur, input, now);
+      if (!plan.ok) return plan;
+      if (plan.idempotent) return { ok: true as const, recorded: false, fact: plan.fact };
+
+      const fact: ContractPaymentFact = { ...plan.fact, by };
+      tx.update(ref, {
+        ...plan.patch,
+        contractPaymentBy: by,
+        updatedAt: now,
+        stateAt: new Date(now).toISOString(),
+      });
+      const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
+      const eventKey = 'aud_contract_payment_' + createHash('sha256')
+        .update(code + '|' + input.operationId.trim()).digest('hex').slice(0, 16);
+      tx.set(eventRef, { [eventKey]: {
+        at: now,
+        by,
+        operationId: input.operationId.trim(),
+        field: '계약금수납',
+        from: '',
+        to: String(input.amount),
+        ...(input.receiptId?.trim() ? { receiptId: input.receiptId.trim() } : {}),
+      } }, { merge: true });
+      return { ok: true as const, recorded: true, fact };
+    });
   }
 
   /**

@@ -254,6 +254,7 @@ export function progressPatch(
       const day = S(c.deliveredAt).trim();
       if (!isCalendarDay(day)) return { ok: false, error: '인도완료를 켜려면 유효한 인도일을 같이 넣어야 합니다' };
       const today = koreaDay(nowMs);
+      if (!today) return { ok: false, error: '인도 처리 시각이 올바르지 않습니다' };
       if (day > today) return { ok: false, error: `인도일 ${day} 은 오늘(${today}) 뒤일 수 없습니다` };
       const receivedAt = S(cur.receivedAt);
       if (isCalendarDay(receivedAt) && day < receivedAt) {

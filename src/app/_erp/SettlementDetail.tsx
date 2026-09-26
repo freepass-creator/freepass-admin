@@ -16,7 +16,7 @@ import { txt, when } from '../_fn/fmt';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { settlementPrimaryAction } from '../settlement/primary-action';
 import { IntakeProgress } from './IntakeProgress';
-import { hrefWith, PanelBody, PanelFoot, PanelHead, Steps, won0 } from './parts';
+import { hrefWith, PanelBody, PanelFoot, PanelHead, PanelState, Steps, won0 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 
@@ -43,10 +43,11 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
   const events = hit ? await settlements.events(cur.plate, cur.receivedAt, cur.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode) : [];
   const block = blockOf(cur);
   const phase = adminWorkflowPhaseOf(cur);
+  const canWrite = writeEnabled();
   const next = intakeNextAction(block, p.cancelled, p.delivered);
-  const intakePrimary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
-    : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
-    : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
+  const intakePrimary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1" disabled={!canWrite} aria-describedby={!canWrite ? 'erp-write-disabled-reason' : undefined}>계약서 받음</button>
+    : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')} disabled={!canWrite} aria-describedby={!canWrite ? 'erp-write-disabled-reason' : undefined}>차량번호 저장</button>
+    : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1" disabled={!canWrite} aria-describedby={!canWrite ? 'erp-write-disabled-reason' : undefined}>인도 완료</button>
     : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
     : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href="/intake?w=new">신규 접수</Link>
     : <span className="erp-btn erp-btn--primary" aria-disabled="true">{adminBlockLabel(next.label)}</span>;
@@ -74,25 +75,25 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
     settlementActionLabel = actionLabel;
 
     if (correcting) {
-      settlementWork = <LifeForm id={formId} code={cur.id} kind="correct" axis={life.axis} need="correct" disabled={!writeEnabled()} />;
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="correct" axis={life.axis} need="correct" disabled={!canWrite} />;
       settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('')}>정정 취소</Link>;
-      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>정정 저장</button>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!canWrite}>정정 저장</button>;
     } else if (action === 'confirm') {
-      settlementWork = <LifeForm id={formId} code={cur.id} kind="confirm" axis={life.axis} need="none" disabled={!writeEnabled()} />;
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="confirm" axis={life.axis} need="none" disabled={!canWrite} />;
       settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
-      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!canWrite}>{actionLabel}</button>;
     } else if (action === 'uncorrect') {
-      settlementWork = <LifeForm id={formId} code={cur.id} kind="uncorrect" axis={life.axis} need="none" disabled={!writeEnabled()} />;
-      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="uncorrect" axis={life.axis} need="none" disabled={!canWrite} />;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!canWrite}>{actionLabel}</button>;
     } else if (action === 'invoice') {
-      settlementWork = <SideStep id={formId} code={cur.id} kind="invoice" label="계산서" on={false} day={today()} biz={life.invoiceBiz} externalSubmit disabled={!writeEnabled()} />;
+      settlementWork = <SideStep id={formId} code={cur.id} kind="invoice" label="계산서" on={false} day={today()} biz={life.invoiceBiz} externalSubmit disabled={!canWrite} />;
       settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
-      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!canWrite}>{actionLabel}</button>;
     } else if (action === 'cash') {
       settlementWork = <LifeForm id={formId} code={cur.id} kind={supplierAxis ? 'collected' : 'paid'} axis={life.axis} need="money"
-        amount={remaining ?? 0} day={today()} operationId={randomUUID()} disabled={!writeEnabled()} />;
+        amount={remaining ?? 0} day={today()} operationId={randomUUID()} disabled={!canWrite} />;
       settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
-      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!canWrite}>{actionLabel}</button>;
     } else if (action === 'done') {
       settlementPrimary = life.nextHref
         ? <Link className="erp-btn erp-btn--primary" href={life.nextHref}>다음 할 일</Link>
@@ -111,9 +112,9 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
         <div className="erp-embed">
           {settlementWork}
           <div className="dz-side-steps">
-            {supplierAxis && !p.billed && <SideStep code={cur.id} kind="hold" label={p.billHold ? '청구 보류 중' : '청구 보류'} on={p.billHold} disabled={!writeEnabled()} />}
-            {!p.billed && p.delivered && <SideStep code={cur.id} kind="billMonth" label="청구월" month={p.billMonth ?? today().slice(0, 7)} disabled={!writeEnabled()} />}
-            {supplierAxis && p.billed && action !== 'invoice' && <SideStep code={cur.id} kind="invoice" label={p.invoiceIssued ? '계산서 끊음' : '계산서'} on={p.invoiceIssued} day={today()} biz={life.invoiceBiz} disabled={!writeEnabled()} />}
+            {supplierAxis && !p.billed && <SideStep code={cur.id} kind="hold" label={p.billHold ? '청구 보류 중' : '청구 보류'} on={p.billHold} disabled={!canWrite} />}
+            {!p.billed && p.delivered && <SideStep code={cur.id} kind="billMonth" label="청구월" month={p.billMonth ?? today().slice(0, 7)} disabled={!canWrite} />}
+            {supplierAxis && p.billed && action !== 'invoice' && <SideStep code={cur.id} kind="invoice" label={p.invoiceIssued ? '계산서 끊음' : '계산서'} on={p.invoiceIssued} day={today()} biz={life.invoiceBiz} disabled={!canWrite} />}
           </div>
         </div>
       </div>
@@ -125,6 +126,9 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
       <PanelHead kind="상세내용" title={txt(cur.customer)} count={life ? `${life.axis} · ${settlementActionLabel}` : `${b} · ${phase}`} />
       <PanelBody>
         <div className="erp-detail-body" data-detail-context={life ? 'settlement-focus' : 'intake'}>
+          {!canWrite && <div id="erp-write-disabled-reason"><PanelState kind="readonly" title="현재 조회 전용입니다.">
+            상태와 금액은 확인할 수 있지만 변경사항은 저장할 수 없습니다.
+          </PanelState></div>}
           {life ? (
             <>
               {settlementWork}

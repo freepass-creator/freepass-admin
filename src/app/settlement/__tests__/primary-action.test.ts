@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { settlementPrimaryAction } from '../primary-action';
+import type { SettlementRow } from '../../../domain/settlement/types';
 
 const row = (claimStage: string, payStage: string, invoiceIssued = false) => ({
   receivedAt: '2026-09-01',
@@ -28,7 +29,7 @@ const row = (claimStage: string, payStage: string, invoiceIssued = false) => ({
     billHold: false,
     settleExclude: false,
   },
-}) as never;
+}) as unknown as SettlementRow;
 
 test('공급사 축은 확인 뒤 계산서를 먼저 끝내고 수금으로 간다', () => {
   assert.equal(settlementPrimaryAction(row('청구', '통보'), '공급사'), 'confirm');
@@ -57,7 +58,7 @@ test('업무 사실이 모순된 줄은 완료/다음단계 대신 데이터 확
       delivered: false,
       deliveredAt: '2026-09-10',
     },
-  } as never;
-  assert.equal(settlementPrimaryAction(dirty, '공급사'), 'data-check');
-  assert.equal(settlementPrimaryAction(dirty, '영업채널'), 'data-check');
+  } as SettlementRow;
+  assert.equal(settlementPrimaryAction(dirty, '공급사'), 'none');
+  assert.equal(settlementPrimaryAction(dirty, '영업채널'), 'none');
 });

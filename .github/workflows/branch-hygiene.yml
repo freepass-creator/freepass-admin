@@ -1,0 +1,133 @@
+name: Branch Hygiene
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/branch-hygiene.yml
+  pull_request:
+    types:
+      - closed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prune-initial-legacy-branches:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete only pre-verified merged branch tips
+        shell: bash
+        env:
+          VERIFIED_BRANCHES: |
+            claude/ai-core-integration-standardization-ntmoli|88d76ab207d1afa20f490af4914680938ac11cdc
+            fix/ui-authority-recovery-hold-20260926|0655f81960f46c322d5f66e8ff796c5a55e39a4d
+            fix/remove-stale-ui-rev-reference-20260925|08f80a28c620bd7b26d944a16b6f3676b78c3e1b
+            fix/remove-legacy-ui-css-20260925|1af2ffe9ea1f25a44bf64cf8a453f471f9a73dcf
+            fix/lock-ui-design-authority-20260925|d449c3d3072c7f0e97dd01dcf3ed687607d9cf33
+            claude/mockup-phone-scrub|d91ada90057a4765e4c9087c426dda13796f401a
+            backend/intake-contract-handoff|4ac46306b3850ca5240fbe4ab8facce00dd96657
+            release/admin-operational-20260925|31aa03970452efbd9542cf095a3c0e265c148da6
+            fix/intake-fee-basis-or-manual-20260923|8bf67a2ef807f1430682706c36d0b0d7aa84c202
+            fix/intake-plate-assignment-duplicate-20260923|dc6296f32d2552c82a26f99dead793ea47549892
+            fix/intake-party-code-consistency-20260923|3d1378749eb0df7031f2a4a4a3cf6693c954ca84
+            fix/direct-newcar-rentkind-and-delivery-20260923|0a2cdb2c1d81af21bf078fc67aa873e5049786ed
+            fix/direct-newcar-intake-without-plate-20260923|a8ad06177623a822d718ddeb6b0ab8821ca1a80e
+            fix/catalog-newcar-is-prestock-20260923|852adaf6abb248bfe7f0415a21d997c6a78694e2
+            fix/intake-server-ledger-kind-validation-20260923|be0155226e454ba7218f9984c266dc2ac1f275ef
+            fix/product-search-required-perks-20260923|435563b9d72eb383d98b9e4d956b6609cce2eb1e
+            fix/product-stable-source-revision-20260922|292139aa2923f5cf48cec5452ee1225331df51a5
+            fix/product-offer-selection-sync-20260922|5a12dfe7406a3d333225613fccf3b8654dca6609
+            fix/intake-uncertain-product-kind-choice-20260922|86f9aa78d00d8bda5daf2cd7aa990880d39780b0
+            fix/intake-selected-offer-fail-closed-r2-20260922|a657fc9428f84000cd5adc79ab61b2d9c6a168c6
+            fix/product-search-no-deposit-offer-20260922|4b8078bf93a00fc7a2c5aecbc8ff8ec2374dfb9a
+            feat/esign-public-runtime-ui-20260922|96fa48b3972972bb01b5bd9d6da5be5300ac04c7
+            fix/esign-public-auth-boundary-20260922|aaa0dd4d8b1b5b3c43707cca2bfe95bf61134bf1
+            fix/intake-fresh-product-read-20260922|4417513b09523563184fab3742eff0e4cb7361a3
+            codex/refresh-ai-core-kit-v2-20260922|3fb63a1c00a440e682db450abca04028d7be5a80
+            codex/ai-core-starter-kit-20260922-v2|5b4ff75b5ee4413e3ce8ff291364b07aa9cd47f1
+            work/gpt/admin-esign-runtime-core-20260922|1758f6ded5c201de4307b9789f36c65d0349ad10
+            work/gpt/admin-claim-link-finality-20260922|e20df45d5c27aee97755d72c9f9ba4fbc858bcd8
+            work/gpt/admin-settlement-completion-visibility-20260921|f91f6e50ee9c4ab487d1694c8292243d192f0c5e
+            work/gpt/admin-settlement-true-completion-20260921|b9e2a2deff6675654d0e1f4abf5283ef60d3d2ee
+            work/gpt/admin-settlement-step-order-20260921|4c8ed32ae462987991f40d85e9eecd9af13f1c8d
+            work/gpt/admin-live-status-probe-20260921|a1e4947c52689bae1265f08f769eb0eda2414ec1
+            work/gpt/admin-settlement-focus-handoff-20260921|1d9c52b65186f57f88bf7fc8e308a16dca851bb2
+            work/gpt/admin-search-recognition-20260921|4b9cbb283ec993c6752447104aa85bdd3c0062e0
+            work/gpt/admin-settlement-group-filter-20260921|41eeba6ff0173eb3ebb104ca065766d49bce9855
+            work/gpt/admin-next-action-bar-20260921|d855fe461b15a61b341d0b6c3704be3d2f4695f7
+            work/gpt/admin-exact-price-search-20260921|b271e50f63131465ccf9d90f505de7d371d4b0d4
+            work/gpt/admin-esign-domain-replay-20260921|7585a68c6f08de2b50a45327d185c7eba7fbc13c
+            work/gpt/admin-settlement-attention-20260921|1f1077375bcb90e61aafb472231403c27fb8c437
+            work/gpt/admin-stalled-age-20260921|ea69c9eec596f66e0c2e45b7beea0a5f062da15e
+            work/gpt/admin-stale-intake-priority-20260921|4359bdee797e430656badfb35fed2e838c577c8b
+            work/gpt/admin-live-guidance-20260921|dcb7be66a9967b2784d020745275ec90dfd8504f
+            work/gpt/admin-canonical-routes-20260921|e017bf4165801cf9405480c97e500fd3e9ff47aa
+            work/gpt/admin-integration-main-p25-20260921|0562c58460a5d4c3e3294d03ad861ecd6c4eb8dc
+            chore/rebind-design-hub-revision-20260921|c789fddf3c56ac6507bac939053ab84090c7891d
+            feat/admin-approved-shell-v1-20260921|72e1c6fba5f17445eb45c9991844265d6d0f2894
+            feat/design-hub-consumer-map-20260921|993e47fb3c780b14951dd6b046a7424362709ba6
+            work/gpt/ai-core-governance-p0-shadow-20260920|212ed5c19e98b631e46310a509720feb990d3e4b
+            work/gpt/d6-workflow-shadow-adoption-20260920|63e88a35516efccb4618a85071b585f001d2852c
+            c-adoption/core-contract-shadow|b76a70fb58a0317678c713ff031be34eb633f844
+        run: |
+          set -euo pipefail
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          deleted=0
+          skipped=0
+
+          while IFS='|' read -r branch expected_sha; do
+            [[ -n "${branch:-}" ]] || continue
+            [[ "$branch" != "main" ]] || { echo "::error::refusing to delete main"; exit 1; }
+
+            remote_ref="refs/remotes/origin/$branch"
+            if ! git show-ref --verify --quiet "$remote_ref"; then
+              echo "already absent: $branch"
+              continue
+            fi
+
+            current_sha="$(git rev-parse "$remote_ref")"
+            if [[ "$current_sha" != "$expected_sha" ]]; then
+              echo "::warning::skip changed branch $branch: expected $expected_sha, found $current_sha"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "deleting merged branch: $branch @ $current_sha"
+            git push origin --delete "$branch"
+            deleted=$((deleted + 1))
+          done <<< "$VERIFIED_BRANCHES"
+
+          echo "deleted=$deleted skipped=$skipped"
+
+  delete-merged-pr-head:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Delete merged PR branch
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          echo "deleting merged PR branch: $HEAD_REF"
+          git push origin --delete "$HEAD_REF"

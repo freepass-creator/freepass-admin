@@ -173,6 +173,48 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
   async list() {
     const mode = this.mode();
     const approval = this.cutoverApproval(mode);
+
+    if (mode === 'FREEPASS_DATA_READ') {
+      if (!this.freepass || !approval) {
+        throw new FreePassDataCatalogHoldError('프리패스 데이터 최종 읽기 HOLD — reader/approval 없음');
+      }
+      try {
+        const live = await this.freepass.list();
+        const holds = [
+          ...(live.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
+          ...(assertApprovedRelease(approval, live.meta) ? [assertApprovedRelease(approval, live.meta)!] : []),
+        ];
+        if (holds.length) {
+          throw new FreePassDataCatalogHoldError(
+            `프리패스 데이터 최종 읽기 HOLD — ${holds.join(' · ')}`,
+          );
+        }
+        const receipt: AdminCatalogReceipt = {
+          authority: 'FREEPASS_DATA',
+          mode,
+          servedBy: 'FREEPASS_DATA',
+          cutoverAuthorized: true,
+          holdReasons: [],
+          freepass: {
+            releaseId: live.meta.releaseId,
+            manifestId: live.meta.manifestId,
+            inputDigest: live.meta.inputDigest,
+            revision: live.meta.revision,
+            dataDigest: live.meta.dataDigest,
+            policyParity: live.meta.policyParity,
+            rows: live.rows.length,
+          },
+        };
+        this.lastReceipt = receipt;
+        return { rows: live.rows, receipt };
+      } catch (e) {
+        if (e instanceof FreePassDataCatalogHoldError) throw e;
+        throw new FreePassDataCatalogHoldError(
+          `프리패스 데이터 최종 읽기 실패 — ${e instanceof Error ? e.message : 'UNKNOWN'}`,
+        );
+      }
+    }
+
     const rows = await this.legacy.list();
     if (mode === 'LEGACY_DIRECT' || mode === 'OBSERVE') {
       const receipt = this.legacyReceipt(mode);
@@ -217,21 +259,6 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
         },
         shadow: { ...comparison, comparedAt: new Date().toISOString() },
       };
-      if (mode === 'FREEPASS_DATA_READ') {
-        if (holds.length) {
-          throw new FreePassDataCatalogHoldError(
-            `프리패스 데이터 최종 읽기 HOLD — ${holds.join(' · ')}`,
-          );
-        }
-        const receipt: AdminCatalogReceipt = {
-          ...baseReceipt,
-          servedBy: 'FREEPASS_DATA',
-          cutoverAuthorized: true,
-          holdReasons: [],
-        };
-        this.lastReceipt = receipt;
-        return { rows: shadow.rows, receipt };
-      }
       this.lastReceipt = baseReceipt;
       return { rows, receipt: baseReceipt };
     } catch (e) {

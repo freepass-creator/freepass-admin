@@ -125,6 +125,27 @@ jobs:
             work/gpt/admin-micro-polish-r1|fb83004ba9f90599473592557ba16b4727c844de
             work/gpt/admin-visual-implementation-r1|74a4531e24fdeffff2650355758fc770b941ec66
             work/gpt/mobile-nav-flow-r1|26b1692b688f7205a01bfeec3f1540bc4410694e
+            ai-core/gate-01|ba36646bca0e9d50bb1d2043674d834858b9194d
+            backend/cancellation-clawback-axis|f5ec5100e34d015d6378f140bd62449c5215469d
+            backend/esign-pdf-renderer|eb615657d2d908a47fad6bf79ec31edf45313f68
+            backend/full-journey-integration|93f2cd6c0d71e4d4f5ce47f4995bbc23139fb7a2
+            backend/settlement-post-cancel-adjustments|e971e83ab1b7749b3fab082ce870da3546ae7db9
+            chat-assist/atom-first-ui-contract|6bdbf69974ccb44fc215de59109628dd19e0ed9d
+            chat-assist/snapshot-policy-isolation|420ff90e104d456daa3add5e098a6d2b08836b8f
+            codex/admin-mobile-five-functions-ai-core|44a070d9bacc40c479edae841306d53485df8ccf
+            codex/admin-mobile-five-functions-mockup|025064c56876fbbba76ee408292396bd70d5cd11
+            codex/ai-core-starter-kit-20260922|d95aeb40bb9f8a9da3b7b5ec9bc2559e5652610a
+            codex/functional-settlement-mvp-20260913|a5a9ee0947e284ae5cf937e71f2ab167489a73c2
+            codex/review-gpt-handoff-audit|b1c1b558cb63db5105dff725a7804db5de025368
+            cursor/codex-rails-p0-59b7|5a091a8c164b0bd053488178dfc0fe813f62529c
+            docs/ai-core-ui-reference-20260919|8a392c11142fdcab955d2bc74b6b7ef6a48de5b6
+            fix/intake-selected-offer-fail-closed-20260922|bad1a71f003759e8b58aab4c4f99717e8613ce83
+            gpt/fix-deposit-rule-semantics-20260925|0aeea4e8aea53af5449cc8bf9e5d66c662d8dfc5
+            review/fperp-ui-p2-001|91fe93ffe7fc81282aacbd77d6192b5eb585b205
+            ui/admin-consistency-pass-20260925|5c845397a5b9b42a72dd98b906faac4de0195217
+            work/claude/esign-center-v1|878646bb0459acf0007e0f7f36dfe0c2900c6e6a
+            work/gpt/admin-esign-public-runtime-20260922|b82a78e731b16d99e6b1b84b0dc2ecfa87603492
+            work/gpt/esign-port-plan-r1|5206e2c6a1874318c18df29e5545898e968e7216
         run: |
           set -euo pipefail
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'

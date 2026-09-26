@@ -34,9 +34,11 @@ test('missing login and data credentials are errors', () => {
   assert.deepEqual(errors({}).sort(), ['ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET', 'SESSION_SECRET'].sort());
 });
 
-test('service account from another Firebase project is rejected', () => {
-  const other = JSON.stringify({ project_id: 'freepasserp3', client_email: 'x', private_key: 'k' });
+test('service account from another Firebase project or principal is rejected', () => {
+  const other = JSON.stringify({ project_id: 'freepasserp3', client_email: 'x@freepasserp3.iam.gserviceaccount.com', private_key: 'k' });
+  const wrongPrincipal = JSON.stringify({ project_id: 'freepasserp5', client_email: 'x@freepasserp3.iam.gserviceaccount.com', private_key: 'k' });
   assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: other }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
+  assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: wrongPrincipal }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
   assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: '{broken' }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
 });
 

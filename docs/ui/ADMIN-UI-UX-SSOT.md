@@ -2301,6 +2301,10 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 - 1280-class 3-panel: 각 Panel computed width >= 350px
 - 1280-class main work area >= 1200px, sidenav <= 72px
 - compact card의 정확 금액은 ellipsis/clipping 금지
+- 긴 고객명/차량명/거래처명은 identity/support 영역에서만 ellipsis 허용하고, Panel title/RowCard title은 full-text tooltip을 보존한다.
+- 정산 핵심 행에서 긴 상대명은 좌측 label 영역만 줄어들 수 있고 우측 정확 금액은 shrink/wrap하지 않는다.
+- FilterSheet dialog는 `aria-modal=true`, Tab/Shift+Tab focus trap, Escape 닫기 후 trigger focus 복귀를 보장한다.
+- 1280 icon rail의 navigation link와 detail disclosure summary도 visible focus ring을 가진다.
 - wide + detail: wide/detail ratio 1.85~2.15
 - 실제 computed width 기준으로 검사
 

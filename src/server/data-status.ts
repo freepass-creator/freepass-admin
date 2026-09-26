@@ -50,6 +50,7 @@ export async function adminDataStatus() {
       reason: gate.reason,
       approvalRef: gate.approval?.approvalRef ?? null,
       approvedAt: gate.approval?.approvedAt ?? null,
+      validUntil: gate.approval?.validUntil ?? null,
     },
     live: probes.every((x) => x.ok),
     esignFinalization,

@@ -11,6 +11,7 @@ export type ContractTerminationPlan =
 const DAY=/^\d{4}-\d{2}-\d{2}$/;
 const S=(v:unknown)=>String(v??'').trim();
 const B=(v:unknown)=>v===true||v==='true'||v==='TRUE'||v==='Y'||v==='참'||v===1;
+const roundsOf=(payKind:unknown)=>{const m=/(\d+)\s*회/.exec(S(payKind));const n=m?Number(m[1]):1;return n>=2?n:1;};
 
 // Reject calendar overflow (for example, February 30) instead of normalizing it.
 function isCalendarDay(value: string): boolean {
@@ -89,6 +90,18 @@ export function planContractTermination(
       && S(intake.contractTerminationReason)===reason;
     if(sameOperation&&samePayload)return {ok:true,idempotent:true,patch:{},intakePatch:{}};
     return {ok:false,error:'이미 계약해지 처리된 계약입니다 — 기존 해지 기록을 확인해 주세요.'};
+  }
+
+  const installments=roundsOf(intake.payKind);
+  if(installments>=2){
+    const raw=intake.paidRounds;
+    const paid=raw===undefined||raw===null||S(raw)===''?null:Number(raw);
+    if(paid===null){
+      return {ok:false,error:'분납 계약해지 전 실제 납입회차를 먼저 확정해 주세요 — 날짜 경과만으로 납입을 추정하지 않습니다.'};
+    }
+    if(!Number.isInteger(paid)||paid<1||paid>installments){
+      return {ok:false,error:`분납 납입회차가 올바르지 않습니다 — 1~${installments}회 사이인지 확인해 주세요.`};
+    }
   }
 
   return {

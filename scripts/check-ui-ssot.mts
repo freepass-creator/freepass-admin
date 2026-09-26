@@ -315,6 +315,37 @@ for (const [file, rules] of businessFlowBaseline) {
   }
 }
 
+const accessibilityAndLongTextBaseline = [
+  ['src/app/_design/FilterSheet.tsx', [
+    /aria-modal="true"/,
+    /keepDialogFocus/,
+    /e\.shiftKey && activeEl === first/,
+    /!e\.shiftKey && activeEl === last/,
+    /trigger\.current\?\.focus\(\)/,
+  ]],
+  ['src/app/_erp/parts.tsx', [
+    /title=\{typeof title === 'string' \|\| typeof title === 'number' \? String\(title\) : undefined\}/,
+  ]],
+  ['src/app/_erp/erp-standard.css', [
+    /\.erp-panel-head h2 \{ min-width: 0;[\s\S]*text-overflow: ellipsis; white-space: nowrap;/,
+    /\.erp-tile-row b \{ min-width: 0;[\s\S]*text-overflow: ellipsis; white-space: nowrap;/,
+    /\.erp-tile-row strong \{ flex: 0 0 auto;/,
+    /\.erp-nav-item,[\s\S]*\.erp-detail-support > summary/,
+  ]],
+  ['scripts/visual-qa.cjs', [
+    /filter-keyboard-trap/,
+    /settlement-long-text-stress/,
+    /Shift\+Tab escaped filter dialog/,
+    /long settlement content broke layout/,
+  ]],
+] as const;
+for (const [file, rules] of accessibilityAndLongTextBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: accessibility/long-text contract missing: ${re}`);
+  }
+}
+
 const laptopThreePanelBaseline = [
   ['src/app/_design/SideMenu.tsx', [
     /className="erp-nav-label"/,

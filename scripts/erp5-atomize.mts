@@ -37,6 +37,9 @@ if (DST === SRC) throw new Error('★원본을 덮으려 한다. 대상이 원�
 
 const sa = JSON.parse(readFileSync(SA, 'utf8'));
 if (sa.project_id !== 'freepasserp5') throw new Error(`★ERP5 가 아니다: ${sa.project_id}`);
+if (!String(sa.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
+  throw new Error(`★ERP5 서비스계정이 아니다: ${String(sa.client_email ?? '')}`);
+}
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'atomize'));
 
 const won = (x: number | null) => x === null ? '모름' : Math.round(x).toLocaleString('ko-KR');

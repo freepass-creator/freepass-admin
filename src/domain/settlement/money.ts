@@ -16,18 +16,28 @@
 import { noPayIfBroken, paidRatioOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
 
+/** 정산비율 — 0은 유효한 사실, 음수/비정상 숫자는 조용히 돈으로 만들지 않는다. */
+export function settlementRatioOf(r: Pick<SettlementRow, 'settleRatio'>): Maybe<number> {
+  const v = Number(r.settleRatio);
+  return Number.isFinite(v) && v >= 0 ? v : null;
+}
+
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
-  const k = paidRatioOf(r, now) * (r.settleRatio ?? 1);
+  const settleRatio = settlementRatioOf(r);
+  if (settleRatio === null) return null;
+  const k = paidRatioOf(r, now) * settleRatio;
   return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
 }
 
 export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.money.pay === null) return null;
+  const settleRatio = settlementRatioOf(r);
+  if (settleRatio === null) return null;
   const ratio = paidRatioOf(r, now);
   if (ratio < 1 && noPayIfBroken(r)) return r.money.payAdjust ?? 0;
-  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * (r.settleRatio ?? 1)) + (r.money.payAdjust ?? 0);
+  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
 }
 
 /** 남는 것. ★받을 돈을 «모르면» 남는 것도 모른다 */

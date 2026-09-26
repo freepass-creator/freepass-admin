@@ -426,6 +426,12 @@
     gap: 0;
   }
   .erp-sidenav .erp-nav-label { display: none; }
+
+  /* 좁은 3-panel에서 identity는 ellipsis 가능하지만 정확 금액은 잘리면 안 된다. */
+  .erp-std .erp-panel--compact .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard--no-steps {
+    grid-template-columns: 64px minmax(0, 1fr) 128px;
+  }
 }
 @media (min-width: 1440px) {
   :root {

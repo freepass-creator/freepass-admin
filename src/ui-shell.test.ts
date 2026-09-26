@@ -12,6 +12,8 @@ const mobileTabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+const settlementDesktop=read('src/app/_erp/SettlementScreen.tsx');
+const settlementDetailDesktop=read('src/app/_erp/SettlementDetail.tsx');
 const settlementSignals=read('src/app/settlement/group-signal.ts');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
@@ -105,6 +107,24 @@ test('intake settlement handoff carries focus and settlement resolves it',()=>{
   assert.ok(intakeDetail.includes('focus=${encodeURIComponent(r.id)}'));
   assert.ok(settlementPage.includes('locateSettlementFocus'));
   assert.ok(settlementPage.includes("u.delete('focus')"));
+});
+
+test('desktop settlement drill-in keeps settlement context and resolves focus in place',()=>{
+  assert.ok(settlementDesktop.includes('locateSettlementFocus'));
+  assert.ok(settlementDesktop.includes("focus: r.id"));
+  assert.ok(settlementDesktop.includes('<SettlementDetail cur={focusedLine.row}'));
+  assert.equal(settlementDesktop.includes('/intake?ic='),false);
+  assert.ok(settlementDetailDesktop.includes('backHref'));
+  assert.ok(settlementDetailDesktop.includes('정산 묶음으로'));
+});
+
+test('desktop settlement detail exposes authoritative lifecycle actions without leaving settlement',()=>{
+  assert.ok(settlementDetailDesktop.includes('settlementPrimaryAction'));
+  assert.ok(settlementDetailDesktop.includes('<LifeForm'));
+  assert.ok(settlementDetailDesktop.includes('<SideStep'));
+  for (const label of ['확인','정정','계산서 발행','수금','지급']) {
+    assert.ok(settlementDetailDesktop.includes(label), `desktop settlement detail missing ${label}`);
+  }
 });
 
 

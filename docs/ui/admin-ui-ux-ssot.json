@@ -1,98 +1,120 @@
 {
-  "version": "2026-09-25",
-  "status": "CANONICAL / USER_LOCKED / AI_CORE_CONSUMER",
+  "version": "2026-09-26",
+  "status": "RECOVERY_CANONICAL / PR92_ACTUAL_ROUTE",
   "authority": [
     "latest-user-decision",
+    "current-freepass-admin-actual-route",
     "docs/ui/DESIGN-AUTHORITY.md",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
-    "docs/ui/admin-ui-ux-ssot.json",
-    "docs/ui/ai-core-bindings.json",
-    "freepass-creator/ai-core UI/UX registry + interaction contracts",
-    "src/app/_design/*",
+    "src/app/_erp/Workspace.tsx",
+    "src/app/_erp/ProductsScreen.tsx",
+    "src/app/_erp/SettlementScreen.tsx",
+    "src/app/_erp/EsignScreen.tsx",
+    "src/app/_erp/parts.tsx",
+    "src/app/_erp/ProductDetail.tsx",
+    "src/app/_erp/erp-standard.css",
+    "src/app/_erp/shell.css",
     "src/app/_design/admin-final.css"
   ],
   "typography": {
-    "title": {
-      "px": 18,
-      "token": "--글제목"
+    "kpi": {
+      "px": 24,
+      "usage": "large numeric KPI only"
     },
-    "main": {
+    "screen": {
+      "px": 20,
+      "usage": "rare screen-level title"
+    },
+    "panel": {
+      "px": 18,
+      "usage": "panel/local screen title"
+    },
+    "section": {
+      "px": 16,
+      "usage": "section heading only when needed"
+    },
+    "body": {
       "px": 14,
-      "token": "--글메인"
+      "usage": "body, controls, values"
     },
     "support": {
       "px": 12,
-      "token": "--글보조"
+      "usage": "labels, metadata, captions"
     },
+    "scalePx": [
+      12,
+      14,
+      16,
+      18,
+      20,
+      24
+    ],
+    "rule": "Internal Admin uses 24/20/18/16/14/12 only. Do not create 11.5/13/15/17/22px hierarchy levels in new internal UI.",
     "approvedExceptions": {
-      "ciWordmark": "~20px",
       "loginBrand": "24px",
-      "mobileTextInput": "16px",
-      "whiteLabelPerkDetail": "13px",
-      "whiteLabelPerkCompact": "12px"
+      "mobileTextInput": "16px minimum when browser zoom prevention requires it"
     }
   },
   "radii": {
-    "defaultPx": 4,
-    "whiteLabelIdentityBadgePx": 8
+    "scalePx": [
+      4,
+      6,
+      8
+    ],
+    "defaultPanelPx": 8,
+    "controlPx": 6,
+    "smallPx": 4,
+    "pill": "999px",
+    "rule": "Do not add new radius levels without updating SSOT."
   },
   "surfaces": {
-    "ground": "#eef1f4",
-    "panel": "#ffffff",
-    "box": "--박스",
-    "listCard": "--카드",
-    "hover": [
-      "--박스손",
-      "--카드손"
-    ],
-    "selected": "--고름",
-    "brand": "#1B2A4A"
+    "canvas": "#F2F6FC",
+    "panel": "#FFFFFF",
+    "component": "#F7F9FC",
+    "soft": "#F5F7FA",
+    "hover": "#F3F6FA",
+    "selected": "#EAF1FF",
+    "brand": "#1B2A4A",
+    "lineFree": true,
+    "hierarchy": "canvas -> panel -> component/card -> selected/interaction",
+    "rule": "Panel and Card must not share the same resting surface; do not compensate with stronger shadows."
   },
   "controls": {
-    "standard": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-control-h"
+    "desktop": {
+      "smallHeightPx": 32,
+      "standardHeightPx": 36,
+      "rowHeightPx": 40,
+      "topbarHeightPx": 56,
+      "bodyFontPx": 14
     },
-    "searchField": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-control-h"
-    },
-    "primary": {
-      "heightPx": 44,
-      "fontPx": 14,
-      "token": "--ui-action-h"
-    },
-    "mobileTouchMinimumPx": 44,
-    "whiteLabelIdentityBadge": {
-      "fontPx": 12,
-      "paddingY": 5,
-      "paddingX": 10,
-      "radiusPx": 8
-    },
-    "searchEmbeddedFacet": {
-      "visualHeightPx": 32,
-      "note": "inside 44px search box; not a standalone workspace control"
-    },
-    "desktopGlobalNavigation": {
-      "heightPx": 60,
+    "mobile": {
+      "standardHeightPx": 44,
+      "actionHeightPx": 44,
       "touchMinimumPx": 44,
-      "note": "Sales white icon/label tabs; no filled active background"
+      "navigationHeightPx": "56-60",
+      "bodyFontPx": 14
     },
     "radiusPx": 6,
-    "gapPx": 8
+    "gapPx": 8,
+    "rule": "Controls sharing a row use the same height tier. Primary priority is color/weight, not extra elevation."
   },
   "panels": {
     "desktop": {
-      "workspaceGapPx": 12,
-      "workspacePaddingPx": 12,
-      "panelPaddingPx": 22
+      "workspaceGapPx": 16,
+      "workspacePaddingXpx": 20,
+      "workspacePaddingYpx": 16,
+      "panelSurface": "#FFFFFF",
+      "border": false,
+      "elevation": "base"
     },
     "mobile": {
-      "workspaceGapPx": 8,
-      "workspacePaddingPx": 8,
-      "panelPaddingPx": 16
+      "workspaceGapPx": 0,
+      "panelPaddingPx": 16,
+      "border": false,
+      "elevation": "0",
+      "behavior": "panel is the current screen surface",
+      "screenGutterPx": 16,
+      "screenGutterNarrowPx": 12
     },
     "roles": [
       "LIST",
@@ -100,10 +122,11 @@
       "WORK"
     ],
     "layouts": {
-      "products": "2/3 list + 1/3 detail",
+      "products": "wide list (2 columns) + detail",
       "intake": "product list + product detail + intake/work",
-      "settlement": "group + performance lines + intake detail",
-      "esign": "2/3 list + 1/3 detail"
+      "performance": "installment performance + detail + paid performance",
+      "settlement": "billing list + settlement detail + payout list",
+      "esign": "contract list + contract detail"
     }
   },
   "listRow": {
@@ -111,7 +134,7 @@
     "outerPaddingPx": 12,
     "bodyHeightPx": 64,
     "renderedHeightApproxPx": 88,
-    "gapPx": 8,
+    "gapPx": 12,
     "productThumb": {
       "widthPx": 82,
       "heightPx": 64
@@ -119,147 +142,131 @@
     "statusTile": {
       "widthPx": 64,
       "heightPx": 64
-    }
+    },
+    "stateRule": "base elevation; hover/press only when interactive; selected uses tint + inset pressed state"
   },
   "navigation": {
-    "desktop": [
-      "상품찾기",
-      "계약접수",
-      "정산관리",
-      "전자계약"
-    ],
-    "mobile": [
-      "상품",
-      "접수",
-      "계약",
-      "청구",
-      "지급"
-    ],
-    "mobileDepthRule": "depth0 global tabs; depth1/2 panel action bar",
-    "desktopPosition": "bottom",
-    "header": {
-      "role": "status-only",
-      "brand": false,
-      "menu": false,
-      "actions": false,
-      "statusLink": "/system/data-status",
-      "logoutLocation": "data-status ActionBar"
+    "desktop": {
+      "topbar": true,
+      "sidenav": true,
+      "statusbar": true,
+      "duplicateTopTaskTabs": false
     },
-    "visualReference": {
-      "repository": "freepass-creator/freepass-sales",
-      "revision": "e2b7fb0077a23c9e9bb2db4635e80cd4ba175492",
-      "paths": [
-        "docs/UI-STANDARD.md",
-        "웹/app.css",
-        "웹/index.html"
-      ],
-      "headerSurface": "white",
-      "bottomSurface": "white",
-      "activeTab": "icon tint + label weight, no filled background",
-      "barHeightPx": 60
-    }
+    "mobile": {
+      "topbar": false,
+      "sidenav": false,
+      "statusbar": false,
+      "depth0": "current panel + global bottom tabs",
+      "depth1Plus": "current panel + local ActionBar"
+    },
+    "shellRule": "Same component semantics, adaptive shell composition."
   },
   "components": {
     "canonical": [
-      "AdminChrome",
-      "TopMenu",
-      "MobileTabBar",
+      "Screen",
+      "Panel",
+      "PanelHead",
+      "PanelBody",
+      "PanelFoot",
+      "SearchBar",
+      "QuickFilter",
+      "AutoSelect",
+      "RowCards",
+      "RowCard",
+      "Tile",
+      "TileGroup",
+      "Badge",
+      "ProductDetail",
+      "SettlementDetail",
+      "FilterSheet",
+      "ActionBar",
+      "PanelHeader",
       "ListRow",
-      "StatusTile",
       "Tag",
       "PerkMarks",
-      "Icon",
-      "FilterSheet",
       "OfferPicker",
-      "DetailTabs",
-      "PhotoGallery",
-      "PanelHeader",
-      "SearchField",
-      "ActionBar",
-      "EmptyState",
-      "SummaryGrid",
-      "SummaryItem",
-      "Notice"
+      "DetailTabs"
     ],
-    "extractionCandidates": [
-      "SearchBox",
-      "Notice"
-    ]
+    "rule": "New screens start by composing canonical components; page-local visual systems are prohibited."
   },
   "colorSemantics": {
-    "selected": "navy",
-    "primary": "navy",
+    "selected": "primary tint / solid primary for compact selection controls",
+    "primary": "brand/navy",
     "success": "green",
-    "warning": "amber/red with text",
-    "destructive": "red with explicit text"
+    "info": "blue",
+    "warning": "amber",
+    "destructive": "red",
+    "neutral": "gray"
   },
   "rules": {
     "onePrimaryPerPanel": true,
-    "bordersMostly": [
-      "panel",
-      "search"
-    ],
+    "visibleBorders": false,
     "listSelectionBySurface": true,
+    "badgeIsSignalNotControl": true,
+    "passiveCardHasNoHover": true,
+    "interactiveOnlyHoverPress": true,
     "mobileOnePanelAtATime": true,
     "doNotCreateNewVisualScaleWithoutUpdatingSSOT": true,
-    "salesAppIsVisualBaseline": true,
-    "legacyVisualInputsForbidden": true,
-    "canonicalDesignAuthority": "docs/ui/DESIGN-AUTHORITY.md",
-    "userApprovalRequiredForVisualRuleChange": true
+    "geometryFreezeForPolish": true
   },
   "knownDebt": [
-    "row body height 64 vs rendered row about 88 needs explicit terminology",
-    "--박스 and --카드 must keep separate roles: info box vs list row"
+    "globals.css still contains historical/legacy visual values below the current final layer",
+    "some legacy public/login surfaces retain their own shells and are explicit exceptions"
   ],
   "implementedFixes": [
-    "CSS exposes shared --ui-* aliases without changing current visual values",
-    "ListRow dimensions route through shared UI tokens",
-    "support text outliers in status/internal/article labels normalized to 12px",
-    "mobile back visual remains 32px but hit area is expanded to 44px",
-    "core products/intake/settlement/esign routes use shared visual primitives",
-    "CI runs typecheck, tests, and UI SSOT regression check",
-    "shared primitives replace repeated markup across core routes",
-    "FilterSheet restores focus to trigger and uses per-instance dialog ids",
-    "DetailTabs exposes tab semantics",
-    "ListRow exposes selected state semantics",
-    "pending forms expose busy state and side-step buttons prevent duplicate submission",
-    "PhotoGallery arrow pointer event no longer opens lightbox accidentally",
-    "PhotoGallery and global CSS honor reduced motion",
-    "global focus-visible treatment is standardized",
-    "stable inline visual styles moved to shared CSS classes",
-    "badge/list/section icon names are partially compile-time constrained with IconName",
-    "AGENTS, MASTER and WORK-INBOX explicitly defer visual standards to the current UI SSOT",
-    "globals.css legacy mockup visual layer removed; only canonical foundation + compatibility/final rules remain"
+    "Line-free surface hierarchy: canvas #F2F6FC, white web panels, screen-flat mobile panels",
+    "Signal/action/selection semantics separated for Badge, Button, QuickFilter and Card",
+    "Desktop typography normalized to 24/20/18/16/14/12 and locked by the current FreePass Admin SSOT.",
+    "Common desktop rules (surface/elevation, line-free, list-card geometry, status tones, focus halo) are consolidated in the canonical actual-route CSS; shell.css keeps app-specific layout.",
+    "Desktop control tiers normalized to 32 small / 36 standard / 40 row / 56 topbar",
+    "Mobile controls remain 44px with 44px minimum touch target",
+    "Spacing uses 4/8/12/16/20/24/32 scale; shared panel padding normalized from 22 to 20",
+    "Radius scale 4/6/8; pill only for naturally round marks (dots, avatars, count bubbles)",
+    "Elevation remains 0/base/hover/float",
+    "Web shell uses topbar + sidenav + multi-panel workspace + statusbar",
+    "Mobile shell has no global topbar and uses panel-first navigation",
+    "Internal Admin pages are guarded from page-local visual systems",
+    "Panel and Card surfaces separated: canvas #F2F6FC -> panel #FFFFFF -> component/card #F7F9FC",
+    "Live product perk detail text normalized from legacy 13px to 14px body scale"
   ],
   "automation": {
     "command": "npm run ui:check",
     "workflow": ".github/workflows/ci.yml",
     "checks": [
-      "deleted mockup/history sources cannot reappear",
-      "DevCenter/AI Core manifests cannot reference legacy visual authority/evidence",
-      "Design Authority must point to current ADMIN-UI-UX-SSOT.md",
-      "machine SSOT legacy visual inputs must remain forbidden",
-      "core routes do not reintroduce raw panel-head/dz-bar/dz-empty/summary-grid markup",
-      "required --ui-* CSS tokens exist",
-      "machine SSOT baseline remains 18/14/12, control/action/touch 44, control radius 6, panel radius 4",
-      "stable core UI files do not reintroduce inline visual styles",
-      "focus-visible and reduced-motion rules exist"
+      "shared markup primitives are not reimplemented in core routes",
+      "internal Admin files do not add stable inline visual values or page-local style blocks",
+      "mobile panels declare list/detail/work semantic roles",
+      "mobile baseline remains 18/14/12 with 44px control/action/touch",
+      "desktop normalized scale remains 24/20/18/16/14/12 and 32/36/40/56",
+      "spacing/radius/elevation token scales remain constrained",
+      "focus-visible and reduced-motion behavior remain present"
     ]
   },
   "accessibility": {
-    "focusVisible": true,
-    "reducedMotion": true,
-    "filterSheetFocusReturn": true,
-    "filterSheetFocusEntry": true,
-    "filterSheetFocusTrap": true,
-    "uniqueDialogIds": true,
-    "tabSemantics": true,
-    "tabArrowNavigation": true,
-    "selectedRowSemantics": true,
-    "busyStates": true,
-    "validationLiveRegions": true,
-    "highZoomReflow": true,
-    "runtimeI18nRtlConformance": "PENDING_RUNTIME_SUPPORT"
+    "tabs": {
+      "rovingTabIndex": true,
+      "keys": [
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End"
+      ],
+      "focusFollowsSelection": true
+    },
+    "rowSelection": {
+      "focusedLinkExposesCurrent": true
+    },
+    "filterDialog": {
+      "triggerExpanded": true,
+      "triggerControlsDialog": true,
+      "focusIntoDialogOnOpen": true,
+      "restoreTriggerFocusOnClose": true,
+      "escapeCloses": true,
+      "busyState": true
+    },
+    "focusVisible": "soft-halo",
+    "iconOnlyAccessibleNameRequired": true,
+    "rule": "All core actions must be keyboard reachable and expose state on the actual focus target."
   },
   "files": {
     "baseCss": "src/app/globals.css",
@@ -274,15 +281,12 @@
     ],
     "intakePanelsBoundary": "src/app/intake/panels.tsx",
     "newIntakePanel": "src/app/intake/NewIntakePanel.tsx",
-    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx",
-    "baseCssRole": "canonical-foundation-and-compatibility"
+    "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
   },
   "aiCore": {
-    "consumerBinding": "docs/ui/ai-core-bindings.json",
-    "upstreamRepository": "freepass-creator/ai-core",
-    "upstreamRevision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
-    "featureRegistryVersion": "1.8.0",
-    "semanticAuthority": true
+    "relationship": "promotion-target",
+    "promotionPolicy": "Validate in FreePass Admin first; only stable reusable rules may be promoted outward.",
+    "semanticAuthority": false
   },
   "listPresentation": {
     "authorityFeature": "data.list-presentation",
@@ -295,22 +299,1270 @@
       "offer": "variant-card",
       "denseComparison": "data-table"
     },
-    "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
+    "note": "FreePass Admin owns the active product contract. Stable reusable list semantics may be promoted outward after actual-route validation."
   },
-  "legacyPolicy": {
-    "visualInputsForbidden": true,
-    "forbiddenPaths": [
-      "docs/ui/mockups/**",
-      "docs/ui/UI-HISTORY.md",
-      "docs/DESIGN-HUB-IMPLEMENTATION-2026-09-21.md",
-      "docs/DESIGN-HUB-MAPPING-2026-09-21.md"
+  "spacing": {
+    "scalePx": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      32
     ],
-    "forbiddenFamilies": [
-      "admin-shell*",
-      "classic.css",
-      "retro-intake*",
-      "2026-09-16 rail/topbar mockup"
+    "basePx": 4,
+    "rule": "Stable layout spacing must use the scale. Optical exceptions require an explicit documented reason."
+  },
+  "elevation": {
+    "base": "0 1px 2px rgba(16,24,40,.05)",
+    "hover": "0 2px 6px rgba(16,24,40,.08)",
+    "float": "0 8px 22px rgba(16,24,40,.12)",
+    "panelResting": "base",
+    "cardResting": "none",
+    "passiveCard": "none",
+    "interactiveCardHover": "hover",
+    "selectedCard": "primary-tint+shallow-inset",
+    "selectedOuterElevation": false,
+    "buttonResting": "none",
+    "popup": "float",
+    "rule": "Resting surfaces stay flat; elevation appears only for interaction or floating layers."
+  },
+  "interactionStates": {
+    "badge": {
+      "hover": false,
+      "pressed": false,
+      "selected": false,
+      "focusControl": false
+    },
+    "button": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "focus": "soft-halo",
+      "disabled": "flat+opacity"
+    },
+    "selectionControl": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "selected": "brand-surface+locked",
+      "focus": "preserve-state+soft-halo"
+    },
+    "interactiveCard": {
+      "hover": "elevation",
+      "pressed": "sink",
+      "selected": "primary-tint+locked",
+      "focus": "preserve-state+soft-halo"
+    },
+    "field": {
+      "focus": "surface-brighten+soft-halo"
+    },
+    "popup": {
+      "surface": "white",
+      "elevation": "float"
+    },
+    "rule": "Focus-visible remains accessible but uses soft halo rather than a persistent solid outline in internal Admin."
+  },
+  "density": {
+    "desktop": {
+      "panelHeadPx": 44,
+      "queryRowPx": 48,
+      "quickFilterRowPx": 40,
+      "panelFootPx": 56,
+      "compactRowMinPx": 64,
+      "standardRowMinPx": 72,
+      "standardControlPx": 36,
+      "smallControlPx": 32,
+      "dataRowPx": 40,
+      "compactControlPx": 32
+    },
+    "mobile": {
+      "panelHeadPx": 52,
+      "standardControlPx": 44,
+      "actionPx": 44,
+      "rowMinPx": 88,
+      "navigationPx": "56-60",
+      "queryRowPx": 48,
+      "quickFilterTouchRowPx": 44,
+      "quickFilterVisualPx": 34,
+      "actionTouchMinPx": 44
+    },
+    "rhythm": {
+      "sectionPx": 16,
+      "listGapPx": 8,
+      "controlGapPx": 8,
+      "itemPaddingPx": 12,
+      "panelPaddingPx": "16-20"
+    },
+    "exception": "32px embedded control allowed only inside a larger search/control surface",
+    "rule": "Slim shell rows first; preserve card readability and 44px mobile touch minimum."
+  },
+  "alignment": {
+    "text": "left",
+    "number": "right",
+    "money": "right",
+    "numericVariant": "tabular-nums",
+    "panelHead": {
+      "left": "kind+title",
+      "right": "count/status-summary",
+      "actions": "PanelFoot"
+    },
+    "rowCard": {
+      "row1": "identity + status",
+      "row2": "metadata / conditions",
+      "row3": "result / money",
+      "overflow": "ellipsis identity/meta before breaking layout"
+    },
+    "rule": "Same data type keeps the same alignment across all internal Admin routes."
+  },
+  "informationBudget": {
+    "listCard": {
+      "identity": 1,
+      "status": 1,
+      "metaLines": 1,
+      "primaryValue": 1,
+      "riskFlagMax": 1,
+      "desktopWideFactsMax": 2
+    },
+    "moveToDetail": [
+      "secondary dates",
+      "internal codes when not needed for identification",
+      "form/insurance/configuration details",
+      "duplicate status metrics",
+      "secondary actors already represented in meta"
     ],
-    "fallback": "FAIL_CHECK"
+    "riskRule": "Do not hide operational risk. Compress multiple risks into one flag; show up to two key items and optionally '외 N'.",
+    "rule": "List is for decision; Detail is for verification."
+  },
+  "systemStates": {
+    "empty": {
+      "surface": "component/neutral",
+      "border": false
+    },
+    "warning": {
+      "surface": "amber-soft",
+      "border": false
+    },
+    "error": {
+      "surface": "red-soft",
+      "border": false
+    },
+    "success": {
+      "surface": "green-soft",
+      "border": false
+    },
+    "readonly": {
+      "surface": "muted-neutral",
+      "elevation": "0",
+      "interactive": false
+    },
+    "busy": {
+      "geometry": "preserve",
+      "opacity": 0.72,
+      "pointerEvents": "none",
+      "cursor": "progress"
+    },
+    "stale": {
+      "surface": "neutral/info-soft",
+      "severity": "below-error"
+    },
+    "rule": "System states use semantic soft surfaces without visible borders and must preserve layout geometry."
+  },
+  "pageQa": {
+    "products": {
+      "webPanels": [
+        "wide-list",
+        "product-detail"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "ProductDetail"
+    },
+    "intake": {
+      "webPanels": [
+        "product-list",
+        "product-detail",
+        "work"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "ProductDetail"
+    },
+    "performance": {
+      "webPanels": [
+        "installment-list",
+        "performance-detail",
+        "paid-list"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ],
+      "detail": "SettlementDetail"
+    },
+    "settlement": {
+      "webPanels": [
+        "claim-list",
+        "settlement-detail",
+        "pay-list"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ]
+    },
+    "esign": {
+      "webPanels": [
+        "contract-list",
+        "contract-detail"
+      ],
+      "listOrder": [
+        "search",
+        "quick-filter",
+        "row-cards"
+      ]
+    },
+    "actionRule": "PanelFoot/ActionBar only",
+    "status": "CODE_STRUCTURE_PASS_2026-09-24",
+    "note": "Viewport visual regression still requires runtime/browser screenshot QA."
+  },
+  "responsiveWidths": {
+    "desktop": {
+      "compact": {
+        "min": 1280,
+        "max": 1439,
+        "workspaceGapPx": 12,
+        "workspacePaddingYpx": 12,
+        "workspacePaddingXpx": 16
+      },
+      "standard": {
+        "min": 1440,
+        "workspaceGapPx": 16,
+        "workspacePaddingYpx": 16,
+        "workspacePaddingXpx": 20
+      }
+    },
+    "mobile": {
+      "qaWidthsPx": [
+        360,
+        390,
+        412
+      ],
+      "pageHorizontalOverflow": false,
+      "internalHorizontalScroll": [
+        "quick-filter",
+        "tabs",
+        "offer-picker",
+        "month-selector"
+      ],
+      "preserveTouchMinimumPx": 44,
+      "narrow360Rule": "reduce horizontal padding only; do not reduce touch height"
+    },
+    "rule": "Same shell structure; viewport changes density and overflow behavior, not workflow composition."
+  },
+  "contrast": {
+    "text": {
+      "strong": "#101828",
+      "secondary": "#475467",
+      "muted": "#667085",
+      "rule": "12px support/meta must not default to very low-contrast #98A2B3-class text."
+    },
+    "navigation": {
+      "background": "#0F1B2D",
+      "inactive": "#AEB9CA",
+      "muted": "#8492A6",
+      "activeBackground": "#1D355A",
+      "activeText": "#FFFFFF"
+    },
+    "semantic": {
+      "success": {
+        "text": "#067647",
+        "surface": "#ECFDF3"
+      },
+      "info": {
+        "text": "#175CD3",
+        "surface": "#EFF8FF"
+      },
+      "warning": {
+        "text": "#B54708",
+        "surface": "#FFFAEB"
+      },
+      "error": {
+        "text": "#B42318",
+        "surface": "#FEF3F2"
+      }
+    },
+    "rule": "Use strong/secondary/muted text hierarchy; semantic color always pairs text meaning with a soft surface."
+  },
+  "icons": {
+    "desktop": {
+      "smallPx": 16,
+      "navPx": 18,
+      "iconOnlyGlyphPx": 18,
+      "iconOnlyHitPx": 36
+    },
+    "mobile": {
+      "smallPx": 16,
+      "actionGlyphPx": 20,
+      "bottomNavGlyphPx": 24,
+      "iconOnlyHitMinPx": 44
+    },
+    "accessibility": {
+      "iconOnlyAccessibleNameRequired": true,
+      "decorativeAriaHidden": true,
+      "signalPointer": false
+    },
+    "rule": "Glyph size and hit area are independent. Mobile icon-only actions require at least 44x44 hit area."
+  },
+  "forms": {
+    "required": {
+      "nativeRequired": true,
+      "visualAsterisk": "supplemental"
+    },
+    "errors": {
+      "summaryRole": "alert",
+      "ariaLive": "assertive",
+      "fieldInvalidOnlyWhenSpecific": true,
+      "surface": "red-soft"
+    },
+    "numeric": {
+      "align": "right",
+      "numericVariant": "tabular-nums",
+      "inputMode": [
+        "numeric",
+        "decimal"
+      ],
+      "forceTypeNumber": false
+    },
+    "pending": {
+      "formAriaBusy": true,
+      "preventDuplicateSubmit": true,
+      "preserveGeometry": true,
+      "statusLabelRecommended": true
+    },
+    "success": {
+      "placement": "near action/form",
+      "surface": "green-soft"
+    },
+    "retry": {
+      "preserveInputOnFailure": true
+    },
+    "rule": "Validation semantics must be accurate; do not mark every field invalid for a form-level error."
+  },
+  "actionRisk": {
+    "secondary": {
+      "dataMutation": false,
+      "confirm": false,
+      "surface": "neutral-secondary"
+    },
+    "caution": {
+      "reversible": true,
+      "confirm": "contextual",
+      "surface": "amber-soft"
+    },
+    "destructive": {
+      "reversible": false,
+      "confirm": true,
+      "surface": "red-soft",
+      "emphasis": "not larger than primary"
+    },
+    "examples": {
+      "secondary": [
+        "back",
+        "close",
+        "input-cancel"
+      ],
+      "caution": [
+        "hold",
+        "correction-request",
+        "revoke-claim-link"
+      ],
+      "destructive": [
+        "cancel-intake",
+        "revert-delivery",
+        "permanent-delete"
+      ]
+    },
+    "rule": "Classify by reversibility and business impact, not by button wording."
+  },
+  "motion": {
+    "pressMs": 80,
+    "stateMs": 120,
+    "floatMs": 160,
+    "easing": "ease-out",
+    "pressSinkPx": 1,
+    "busyOpacity": 0.72,
+    "scaleOnPress": false,
+    "reducedMotion": "remove transitions/animations",
+    "rule": "Motion only confirms interaction; no decorative bounce/spring/page transitions."
+  },
+  "terminology": {
+    "displayVsDomain": "UI labels may normalize wording without renaming domain enums or persistence values.",
+    "rules": {
+      "state": "noun phrase",
+      "action": "verb/action phrase",
+      "dates": "use ~일 suffix when representing a date",
+      "money": "use standardized amount/rent/fee labels",
+      "descriptions": "short, action-oriented"
+    },
+    "canonical": {
+      "할일": "할 일",
+      "영업 담당": "영업담당",
+      "렌탈료": "월 대여료",
+      "만든 때": "생성일",
+      "발송(date)": "발송일",
+      "서명(date)": "서명일",
+      "돈 고치기": "금액 조정"
+    },
+    "rule": "Do not create page-specific synonyms for the same business concept."
+  },
+  "businessFlow": {
+    "purpose": "Find a product, create intake, make it claimable from supplier, collect supplier money, then pay the sales channel/agent.",
+    "phases": [
+      "접수 진행",
+      "공급사 청구",
+      "공급사 수금",
+      "영업자 지급",
+      "완료",
+      "취소"
+    ],
+    "targetBranches": {
+      "공급": "supplier flow -> complete",
+      "영업": "intake/delivery -> sales payout flow -> complete",
+      "양쪽": "supplier claim/collection -> sales payout -> complete"
+    },
+    "singleSource": "adminWorkflowPhaseOf + blockOf",
+    "blockerLabels": {
+      "공급사 없음": "공급사 입력 필요",
+      "영업채널 없음": "영업채널 입력 필요",
+      "청구금액 모름": "청구금액 확인 필요",
+      "지급금액 모름": "지급금액 확인 필요"
+    },
+    "rule": "Screens must expose current phase, blocker, and next action from shared domain logic instead of page-local interpretation."
+  },
+  "panelCardSeparation": {
+    "panel": "#FFFFFF",
+    "card": "#F7F9FC",
+    "hover": "#F3F6FA",
+    "selected": "primary-tint",
+    "equalRestingSurfaceAllowed": false,
+    "visualQa": "fail when first visible panel/card computed backgrounds are identical"
+  },
+  "cardRhythm": {
+    "gapPx": 12,
+    "paddingPx": 12,
+    "desktop": {
+      "compactMinHeightPx": 64,
+      "standardMinHeightPx": 72
+    },
+    "mobile": {
+      "minHeightPx": 88
+    },
+    "amount": {
+      "align": "right",
+      "numericVariant": "tabular-nums"
+    },
+    "overflow": {
+      "identity": "ellipsis",
+      "meta": "ellipsis"
+    },
+    "visualQa": [
+      "padding",
+      "renderedHeight",
+      "amountAlignment"
+    ]
+  },
+  "cardInteraction": {
+    "interactive": {
+      "fullCardHitArea": true,
+      "cursor": "pointer",
+      "hover": true,
+      "press": true,
+      "selectedState": [
+        "aria-current",
+        "aria-pressed"
+      ]
+    },
+    "passive": {
+      "cursor": "default",
+      "hover": false,
+      "press": false,
+      "click": false
+    },
+    "visualQa": {
+      "rowHitTestPoints": [
+        "center",
+        "top-left inset",
+        "bottom-right inset"
+      ],
+      "passivePointerForbidden": true
+    }
+  },
+  "panelScroll": {
+    "verticalScrollersPerPanelMax": 1,
+    "desktop": {
+      "head": "fixed",
+      "body": "scroll-owner",
+      "foot": "fixed",
+      "panelsIndependent": true
+    },
+    "mobile": {
+      "nestedVerticalScroll": false,
+      "horizontalChoiceScrollAllowed": true
+    },
+    "visualQa": "fail when more than one vertical scroll container exists inside one visible panel"
+  },
+  "panelRhythm": {
+    "desktop": {
+      "headPx": 48,
+      "searchPx": 52,
+      "quickPx": 48,
+      "footPx": 60
+    },
+    "mobile": {
+      "headPx": 56,
+      "searchPx": 52,
+      "controlPx": 44
+    },
+    "alignmentTolerancePx": 2,
+    "visualQa": [
+      "headTop",
+      "searchTop",
+      "quickTop",
+      "footBottom"
+    ]
+  },
+  "panelWidths": {
+    "equalThree": {
+      "ratio": [
+        1,
+        1,
+        1
+      ],
+      "maxDriftRatio": 1.08,
+      "pages": [
+        "intake",
+        "performance",
+        "settlement"
+      ]
+    },
+    "wideListDetail": {
+      "ratio": [
+        2,
+        1
+      ],
+      "tolerance": [
+        1.85,
+        2.15
+      ],
+      "pages": [
+        "products"
+      ]
+    },
+    "twoPanel": {
+      "ratio": [
+        1,
+        1
+      ],
+      "pages": [
+        "esign"
+      ]
+    },
+    "responsive": {
+      "compactDesktop": "1280-1439",
+      "standardDesktop": "1440+",
+      "mobile": "single-panel"
+    },
+    "rule": "Panel width is role-driven, not page-specific visual improvisation."
+  },
+  "actionBar": {
+    "one": [
+      1
+    ],
+    "twoPrimary": [
+      3,
+      7
+    ],
+    "twoEqual": [
+      5,
+      5
+    ],
+    "three": [
+      3,
+      3,
+      4
+    ],
+    "primaryPosition": "rightmost",
+    "sharedAcross": [
+      "desktop",
+      "mobile"
+    ],
+    "componentApi": {
+      "primary": "balance=primary",
+      "equal": "balance=equal"
+    },
+    "visualQa": {
+      "primaryTwoRatioTolerance": [
+        2.15,
+        2.55
+      ],
+      "equalMaxWidthDriftRatio": 1.06,
+      "threePrimaryShare": [
+        0.37,
+        0.43
+      ],
+      "primaryMustBeRightmost": true
+    }
+  },
+  "spacingHierarchy": {
+    "cardGapPx": 12,
+    "sectionGapPx": 16,
+    "examples": {
+      "rentalOfferTiles": "12px",
+      "listCards": "12px",
+      "detailSections": "16px"
+    },
+    "rule": "Card-to-card spacing and section-to-section spacing use separate tokens."
+  },
+  "selectionStyle": {
+    "cards": {
+      "visibleBorder": false,
+      "resting": "component-surface",
+      "hover": "subtle-surface+elevation",
+      "selected": "primary-tint+shallow-inset",
+      "selectedHover": "keep-selected-tint",
+      "focus": "soft-halo"
+    },
+    "compactControls": {
+      "selected": "solid-brand+on-primary"
+    },
+    "spacing": {
+      "controlGapPx": 8,
+      "cardGapPx": 12,
+      "sectionGapPx": 16
+    }
+  },
+  "visualSlimness": {
+    "principle": "Keep touch targets comfortable while reducing visible bulk by role.",
+    "spacing": {
+      "controlGapPx": 8,
+      "cardGapPx": 12,
+      "sectionGapPx": 16,
+      "cardPaddingPx": 12
+    },
+    "mobileQuickFilter": {
+      "touchRowPx": 44,
+      "visualHeightPx": 34,
+      "paddingInlinePx": 12,
+      "gapPx": 8,
+      "radius": "pill",
+      "selected": "brand-solid+white",
+      "unselected": "soft-neutral",
+      "visibleBorder": false,
+      "horizontalScroll": true
+    },
+    "cards": {
+      "selectedVisibleBorder": false,
+      "selected": "primary-tint+shallow-inset"
+    }
+  },
+  "fullWidthLayout": {
+    "desktop": {
+      "compact": {
+        "min": 1280,
+        "max": 1439,
+        "gutterXpx": 16,
+        "gutterYpx": 12,
+        "panelGapPx": 12
+      },
+      "standard": {
+        "min": 1440,
+        "gutterXpx": 20,
+        "gutterYpx": 16,
+        "panelGapPx": 16
+      }
+    },
+    "mobile": {
+      "standardGutterPx": 16,
+      "narrowUnder380GutterPx": 12,
+      "workspaceWidth": "100%",
+      "panelWidth": "100%",
+      "contentWidth": "100%"
+    },
+    "noArbitraryMaxWidth": true,
+    "rule": "Use fixed outer gutters; workspace, panels and cards consume the remaining available width."
+  },
+  "detailPanelRhythm": {
+    "desktop": {
+      "bodyPaddingPx": 12,
+      "sectionGapPx": 16,
+      "subtitleToCardsPx": 8,
+      "cardGapPx": 12,
+      "tileTitleToContentPx": 8,
+      "infoGroupGapPx": 8
+    },
+    "lineFree": {
+      "tileTitleBottomBorder": false
+    },
+    "rule": "Use spacing and typography for detail hierarchy; do not reintroduce internal divider lines."
+  },
+  "typographyWeight": {
+    "panelHead": 700,
+    "cardTitle": 600,
+    "primaryValue": 700,
+    "subtitle": 600,
+    "action": 600,
+    "badge": 600,
+    "meta": "400-500",
+    "selectedAddsWeight": false,
+    "rule": "Use weight for hierarchy, not selection state."
+  },
+  "brandUsage": {
+    "primary": "#1B2A4A",
+    "hover": "#24395F",
+    "weak": "#EEF3FA",
+    "focusRing": "#D8E2F0",
+    "selectedCard": {
+      "surface": "soft-primary-tint",
+      "titleText": "neutral-strong",
+      "valueText": "neutral-strong",
+      "metaText": "neutral-secondary"
+    },
+    "compactSelection": "brand-solid+white",
+    "semanticColors": "status-only",
+    "rule": "Brand color is concentrated in primary actions and compact selection controls, not repeated across large selected cards."
+  },
+  "cardSignalBudget": {
+    "identity": 1,
+    "statusSignal": 1,
+    "metaLine": 1,
+    "primaryValue": 1,
+    "riskFlagMax": 1,
+    "compactStatusRule": "If a status thumbnail is visible, suppress a duplicate status badge.",
+    "iconRule": "Use icons only for action or state meaning; no decorative icons.",
+    "repeatedSemanticSignal": false
+  },
+  "dividers": {
+    "default": "none",
+    "decorative": false,
+    "removedFrom": [
+      "panelHead",
+      "searchbar",
+      "quickFilterRow",
+      "panelFoot",
+      "cardTitle",
+      "cardFooter",
+      "simpleSection"
+    ],
+    "allowedFor": [
+      "timelineConnector",
+      "floatingLayerBoundary",
+      "focus",
+      "error",
+      "navigationStructure"
+    ],
+    "rule": "Use lines only when they communicate structure that spacing/surface cannot."
+  },
+  "compactSignals": {
+    "quickFilter": {
+      "shape": "desktop radius 6 (no pill, 대표 2026-09-25); mobile pill pending confirmation",
+      "mobileVisualHeightPx": 34
+    },
+    "badge": {
+      "heightPx": 20,
+      "radiusPx": 6,
+      "mobilePadding": [
+        3,
+        8
+      ],
+      "desktopPadding": [
+        1,
+        7
+      ],
+      "maxPerCard": 1,
+      "interactive": false
+    },
+    "tag": {
+      "heightPx": 18,
+      "radiusPx": 4
+    },
+    "icons": {
+      "desktopStatusPx": "14-16",
+      "desktopActionGlyphPx": 18,
+      "desktopActionHitPx": 36,
+      "mobileActionGlyphPx": 20,
+      "mobileActionHitPx": 44,
+      "bottomNavPx": 24
+    },
+    "rule": "No pills on desktop controls (대표 2026-09-25 「모서리 6 네모로」); status signals stay compact and non-interactive."
+  },
+  "noWrapResponsive": {
+    "choiceRows": {
+      "wrap": false,
+      "overflowX": "auto",
+      "scrollbar": "hidden"
+    },
+    "cards": {
+      "identity": "single-line+ellipsis",
+      "primaryValue": "single-line",
+      "meta": "single-line+ellipsis",
+      "secondarySignals": "single-line+clip"
+    },
+    "actions": {
+      "wrap": false,
+      "overflow": "ellipsis"
+    },
+    "rule": "Prefer horizontal flow and truncation over vertical growth on narrow screens."
+  },
+  "quickFilterContent": {
+    "businessItemsConfigured": false,
+    "provisionalMaxItems": 2,
+    "defaultExamples": [
+      "전체",
+      "대표 예시 1개"
+    ],
+    "contextSelectorsMayRemain": true,
+    "rule": "QuickFilter layout is standardized, but business filter items stay provisional until explicitly configured."
+  },
+  "typographyRoles": {
+    "desktop": {
+      "panelTitlePx": 14,
+      "sectionTitlePx": 14,
+      "cardIdentityPx": 14,
+      "bodyPx": 14,
+      "inputPx": 14,
+      "buttonPx": 14,
+      "quickFilterPx": 14,
+      "primaryValuePx": 14,
+      "supportPx": 12,
+      "badgePx": 12,
+      "tagPx": 12,
+      "exceptionalLargerText": "screen-title/KPI/special-result-only"
+    },
+    "rule": "Use 14px for almost all operational text; use 12px for support. Create hierarchy with weight, color and spacing. Larger text requires explicit exception.",
+    "mobile": {
+      "panelTitlePx": 14,
+      "cardIdentityPx": 14,
+      "bodyPx": 14,
+      "inputPx": 14,
+      "actionPx": 14,
+      "quickFilterPx": 14,
+      "primaryValuePx": 14,
+      "supportPx": 12,
+      "badgePx": 12
+    },
+    "visualQa": {
+      "computedSizeByRole": true,
+      "desktop": {
+        "panelTitlePx": [
+          13,
+          15
+        ],
+        "cardTitlePx": [
+          13,
+          15
+        ],
+        "primaryValuePx": [
+          13,
+          15
+        ],
+        "controlPx": [
+          13,
+          15
+        ],
+        "supportPx": [
+          11.5,
+          12.5
+        ]
+      },
+      "mobile": {
+        "panelTitlePx": [
+          13,
+          15
+        ],
+        "cardTitlePx": [
+          13,
+          15
+        ],
+        "primaryValuePx": [
+          13,
+          15
+        ],
+        "controlPx": [
+          13,
+          15
+        ],
+        "supportPx": [
+          11.5,
+          12.5
+        ]
+      }
+    }
+  },
+  "materiality": {
+    "principle": "solid-commercial-erp",
+    "resting": {
+      "panel": "flat",
+      "card": "flat",
+      "tile": "flat",
+      "button": "flat",
+      "search": "flat",
+      "quickFilter": "flat"
+    },
+    "hierarchy": [
+      "surface",
+      "spacing",
+      "alignment",
+      "weight",
+      "color"
+    ],
+    "borderDefault": "none",
+    "shadowAllowedFor": [
+      "interactive-hover",
+      "focus",
+      "popup",
+      "sheet",
+      "modal"
+    ],
+    "selected": "tint+shallow-inset",
+    "selectedOuterElevation": false,
+    "rule": "Stability comes from consistent geometry and surface hierarchy, not decorative shadow or border."
+  },
+  "geometry": {
+    "desktop": {
+      "panelRadiusPx": 8,
+      "cardRadiusPx": 6,
+      "tileRadiusPx": 6,
+      "controlRadiusPx": 6,
+      "cardPaddingPx": 12,
+      "compactCardPaddingPx": [
+        10,
+        12
+      ],
+      "panelChromePaddingInlinePx": 16
+    },
+    "mobile": {
+      "panelRadiusPx": 0,
+      "cardRadiusPx": 6,
+      "formGroupRadiusPx": 6,
+      "controlRadiusPx": 6,
+      "cardPaddingPx": 12,
+      "narrowUnder380CardPaddingInlinePx": 8
+    },
+    "tolerancePx": 1,
+    "rule": "Same role must keep the same radius and padding; geometry differences require a semantic role difference."
+  },
+  "cardLines": {
+    "lineHeightPx": 20,
+    "lineGapPx": 2,
+    "lineCount": 3,
+    "roles": [
+      "main",
+      "key",
+      "support"
+    ],
+    "wrap": false,
+    "overflow": "ellipsis",
+    "statusPlacement": "main-inline-badge",
+    "amountDisplay": {
+      "compactAllowedFor": [
+        "monthlyRent",
+        "deposit"
+      ],
+      "exactWonRequiredFor": [
+        "fee",
+        "claim",
+        "payout",
+        "settlement"
+      ]
+    },
+    "alignment": {
+      "text": "left",
+      "numeric": "right",
+      "money": "right",
+      "numericVariant": "tabular-nums"
+    },
+    "rule": "Internal Admin list cards are exactly Main/Key/Support; additional information belongs in detail."
+  },
+  "listAmountLanguage": {
+    "compactAllowedFor": [
+      "monthlyRent",
+      "deposit"
+    ],
+    "exactWonRequiredFor": [
+      "fee",
+      "claim",
+      "payout",
+      "settlement"
+    ],
+    "patterns": {
+      "monthlyRent": "월 N만 원",
+      "deposit": "보증 N만 원",
+      "fee": "N,NNN,NNN원",
+      "claim": "N,NNN,NNN원",
+      "payout": "N,NNN,NNN원",
+      "settlement": "N,NNN,NNN원",
+      "margin": "N,NNN,NNN원"
+    },
+    "detailUsesExactWon": true,
+    "displayOnly": true,
+    "rule": "Rent and deposit may be compacted; fee-derived transactional money stays exact when shown. Profit/margin belongs in detail by default.",
+    "profitOrMargin": "not-default-list-field"
+  },
+  "cardInformationMatrix": {
+    "principle": "all internal admin list cards are strict 3-line scan cards; detail owns completeness",
+    "product": {
+      "standardLines": 3,
+      "main": "vehicle identity + status | compact monthly rent",
+      "key": "plate + product kind",
+      "support": "term + compact deposit"
+    },
+    "intake": {
+      "standardLines": 3,
+      "main": "customer + state | compact monthly rent",
+      "key": "plate + model + product + term",
+      "support": "exact claim fee + exact pay fee"
+    },
+    "performance": {
+      "standardLines": 3,
+      "main": "customer + performance state",
+      "key": "plate + model + product + term",
+      "support": "exact claim fee + exact pay fee",
+      "excludedByDefault": [
+        "profit",
+        "margin"
+      ]
+    },
+    "settlementGroup": {
+      "standardLines": 3,
+      "main": "party + state | exact settlement amount",
+      "key": "document progress",
+      "support": "completion or issue summary"
+    },
+    "settlementLine": {
+      "standardLines": 3,
+      "claim": {
+        "main": "customer + claim stage | exact claim fee",
+        "key": "plate + model + product + term",
+        "support": "exact pay fee"
+      },
+      "pay": {
+        "main": "customer + pay stage | exact pay fee",
+        "key": "plate + model + product + term",
+        "support": "exact claim fee"
+      }
+    },
+    "esign": {
+      "standardLines": 3,
+      "main": "customer + sign state | compact monthly rent",
+      "key": "plate + vehicle",
+      "support": "term + contract state"
+    },
+    "rule": "No fourth information line in ordinary internal Admin list cards."
+  },
+  "listCardGrammar": {
+    "defaultLines": 3,
+    "roles": [
+      {
+        "name": "main",
+        "fontPx": 14,
+        "weight": 600,
+        "color": "strong",
+        "content": "identity + optional primary value + compact status badge"
+      },
+      {
+        "name": "key",
+        "fontPx": 14,
+        "weight": 500,
+        "color": "secondary",
+        "content": "selection-critical context"
+      },
+      {
+        "name": "support",
+        "fontPx": 12,
+        "weight": 400,
+        "color": "muted",
+        "content": "secondary context or exact fee"
+      }
+    ],
+    "statusPlacement": "main-inline-badge",
+    "exceptions": {},
+    "rule": "Every ordinary internal Admin list card uses exactly Main/Key/Support. Extra information belongs in detail."
+  },
+  "listVisualTile": {
+    "sizePx": 64,
+    "product": {
+      "preferred": "photo",
+      "fallback": "vehicle-icon",
+      "objectFit": "cover"
+    },
+    "business": {
+      "type": "status-icon+label",
+      "iconPx": 24,
+      "labelPx": 12,
+      "labelWeight": 600
+    },
+    "textBlockHeightPx": 64,
+    "duplicateStatusBadgeWhenStatusTile": false,
+    "alignment": "center",
+    "rule": "The 64px visual tile and 3-line text block share the same height and geometry."
+  },
+  "crossShellListParity": {
+    "shells": [
+      "web-rowcard",
+      "mobile-listrow"
+    ],
+    "slots": [
+      "visual",
+      "main-left",
+      "main-right",
+      "key",
+      "support"
+    ],
+    "visualPx": 64,
+    "representativeValue": {
+      "product": "compact monthly rent",
+      "intake": "compact monthly rent",
+      "performance": null,
+      "claim": "exact claim fee",
+      "payout": "exact pay fee",
+      "settlementGroup": "exact settlement amount",
+      "esign": "compact monthly rent"
+    },
+    "oppositeAxisSupport": {
+      "claim": "exact pay fee",
+      "payout": "exact claim fee"
+    },
+    "rule": "Web and mobile must preserve the same Main/Key/Support meaning for the same business list."
+  },
+  "listCardAlignment": {
+    "visualPx": 64,
+    "textBlockPx": 64,
+    "visualTextGapPx": 12,
+    "lineGapPx": 2,
+    "statusIconPx": 24,
+    "statusIconLabelGapPx": 4,
+    "verticalTolerancePx": 2,
+    "primaryValue": "right-aligned-to-card-padding",
+    "numericVariant": "tabular-nums",
+    "rule": "Visual tile and Main/Key/Support text block share top and bottom alignment.",
+    "outerCardHeightPx": {
+      "desktopCompact": 84,
+      "mobile": 88
+    },
+    "paddingBlockPx": {
+      "desktopCompact": 10,
+      "mobile": 12
+    }
+  },
+  "statusTileTones": {
+    "info": "navy",
+    "ok": "green",
+    "warn": "amber",
+    "err": "red",
+    "neutral": "grey",
+    "duplicateBadgeWhenTilePresent": false,
+    "rule": "Same semantic state uses the same tile tone across web and mobile."
+  },
+  "detailInformationRows": {
+    "desktopRowMinHeightPx": 36,
+    "label": {
+      "fontPx": 12,
+      "weight": 400,
+      "color": "muted",
+      "align": "left"
+    },
+    "value": {
+      "fontPx": 14,
+      "weight": 500,
+      "color": "strong",
+      "align": "right"
+    },
+    "gapPx": 12,
+    "wrap": false,
+    "overflow": "ellipsis",
+    "numericVariant": "tabular-nums",
+    "money": "exact-won-with-unit",
+    "productVisual": "photo-first-icon-fallback",
+    "rule": "List scans; detail reads exact key/value data with shared alignment.",
+    "mobileRowMinHeightPx": 36,
+    "mobileComponents": [
+      "SummaryGrid",
+      "Sections"
+    ],
+    "crossShellParity": true
+  },
+  "surfaceTypes": {
+    "list": {
+      "purpose": "find-compare-select",
+      "structure": "64px visual + Main/Key/Support 3-line card"
+    },
+    "content": {
+      "purpose": "read-selected-target",
+      "structure": "hero + grouped key/value + exact values"
+    },
+    "input": {
+      "purpose": "edit-process-save",
+      "structure": "field groups + validation + fixed action bar"
+    },
+    "rule": "Share semantics/tokens, not layout geometry."
+  },
+  "embeddedSelectableList": {
+    "allowedIn": "content",
+    "productOffer": {
+      "layout": "one-line",
+      "left": "term months",
+      "middle": "exact monthly rent",
+      "right": "deposit + prepayment + annual mileage when present",
+      "selectedState": "surface tint + inset only",
+      "checkIcon": false,
+      "selectedText": false,
+      "actionBinding": "selected offer id drives intake action"
+    },
+    "rule": "Embedded selectable lists do not change the parent surface type."
+  },
+  "listCardHorizontalDistribution": {
+    "web": {
+      "visualPx": 64,
+      "body": "1fr",
+      "primaryValue": "clamp(108px,24%,136px)",
+      "gapPx": 12
+    },
+    "mobile": {
+      "visualPx": 64,
+      "body": "1fr",
+      "primaryValue": "clamp(92px,30vw,124px)",
+      "narrowPrimaryValuePx": [
+        88,
+        112
+      ],
+      "gapPx": 10
+    },
+    "overflowPriority": [
+      "identity-yields-first",
+      "primary-value-preserved"
+    ],
+    "rightEdgeAligned": true,
+    "rule": "Fill available width with stable visual/body/value columns."
+  },
+  "listCardRhythm": {
+    "gapPx": 8,
+    "webInnerPaddingPx": 12,
+    "hoverGeometryStable": true,
+    "selectedGeometryStable": true,
+    "interaction": [
+      "surface",
+      "elevation",
+      "tint",
+      "inset"
+    ],
+    "rule": "List cards never shift position on hover or selection."
   }
 }

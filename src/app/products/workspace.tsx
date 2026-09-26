@@ -218,13 +218,13 @@ export async function ProductWorkspace({ q, mode, base }: {
     <>
       <section className="workspace" data-phone={view} data-mode={mode}>
         {/* ── 상품 목록 — 찾기 ─────────────────────────────────── */}
-        <section className="panel product-panel">
+        <section className="panel product-panel" data-panel-role="list">
           {/* ★틀고정 — 머리 · 검색창 · 퀵 단추는 서 있고 목록만 구른다(대표 「각 스크롤에 틀고정 될 것」) */}
           <div className="dz-listtop">
           <PanelHeader title="상품 목록" count={`${sorted.length.toLocaleString()}대`} />
           {/**
             * ★★검색은 «창 하나» — 대표 2026-09-18 「검색창이랑 검색창 안에 세부 검색되게 해주고, 그 검색창 밑에 퀵버튼 필터」
-            *   ⚠ 앞서 고르기 칸 넷 + 찾기 + 지우기가 두 줄로 섰다(목업은 창 하나 + 퀵 단추 한 줄이었다).
+            *   검색 입력과 세부 조건은 한 검색 영역 안에서 읽히고, 퀵 필터는 그 아래 한 줄에 둔다.
             *   세부검색(공급사 · 기간 · 월 대여료)은 창 «안» 오른쪽 끝에서 펼친다. Enter 는 창에서 바로 찾는다.
             */}
           <div className="dz-find">
@@ -284,16 +284,16 @@ export async function ProductWorkspace({ q, mode, base }: {
                 thumb={사진(p) ?? null}
                 product
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
-                badges={[p.productKind, txt(p.status)]}
-                value={o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원 · 보증금 ${보증금(o.deposit)}` : '요금 없음'}
-                chips={p.perks} />
+                mainValue={o ? `월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원` : '요금 없음'}
+                meta={[txt(p.registration?.vehicleNumber), txt(p.productKind), txt(p.status)].filter((x) => x !== '—').join(' · ') || '—'}
+                value={o ? `${o.termMonths}개월 · 보증 ${o.deposit ? `${Math.round(o.deposit / 10000).toLocaleString('ko-KR')}만 원` : '없음'}` : '—'} />
             ))}
             {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>
         </section>
 
-        {/* ── 상품 상세 — 확정 목업(/design) 그대로: 공유 · 요약/상세정보 · 사진 · 이름 · 요약 네 칸 · 기간 단추 · 선택 Offer · 접수 ── */}
-        <section className="panel detail-panel">
+        {/* ── 상품 상세 — 현재 actual route 규격: 요약/상세정보 · 사진 · 이름 · 기간 선택 · 선택 Offer · 접수 ── */}
+        <section className="panel detail-panel" data-panel-role="detail">
           <PanelHeader title="상품 상세" backHref={keep({ v: 'list' })} backLabel="상품 목록으로" />
           {car ? (
             <>
@@ -342,14 +342,14 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>
 
         {/* ── 접수 목록 — 상품 목록 판과 같은 규격 (계약접수에서만) ─────────────── */}
-        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) === 'new' && <section className="panel work-panel" data-panel-role="work">
           <NewIntakePanel rows={irows} productId={sp(q.product)} offerId={sp(q.offer)} back={keep({ w: '', product: '', ic: '' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) !== 'new' && sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
           <IntakeDetailPanel code={sp(q.ic)} created={!!sp(q.created)} exists={!!sp(q.exists)} back={keep({ ic: '', created: '', exists: '' })}
             newHref={keep({ w: 'new', product: '', offer: '', ic: '', created: '', exists: '', v: 'work' })} />
         </section>}
-        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel">
+        {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
           <div className="dz-listtop">
           <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">
@@ -375,8 +375,9 @@ export async function ProductWorkspace({ q, mode, base }: {
                   title={txt(r.customer)} badge={r.progress.cancelled ? '취소' : (blockOf(r) ?? '끝')}
                   tone={칸의.get(r) === '미완료' ? 'warn' : !r.progress.cancelled && blockOf(r) ? 'act' : 'plain'}
                   flag={지연표시(r)}
-                  meta={[r.plate, r.model, r.supplier].filter(Boolean).join(' · ') || '—'}
-                  value={r.rent ? `월 ${won(r.rent)}원` : '—'} aside={txt(r.receivedAt)} />
+                  mainValue={r.rent ? `월 ${Math.round(r.rent / 10000).toLocaleString('ko-KR')}만 원` : '—'}
+                  meta={[r.plate, r.model, r.product, r.term ? `${r.term}개월` : ''].filter(Boolean).join(' · ') || '—'}
+                  value={`청구 ${r.money.claim === null ? '—' : `${won(r.money.claim)}원`} · 지급 ${r.money.pay === null ? '—' : `${won(r.money.pay)}원`}`} />
               ))}
               {ishown.length === 0 && <EmptyState>조건에 맞는 접수가 없습니다.</EmptyState>}
             </div>

@@ -1,0 +1,22 @@
+/* FreePass Admin single visual token bridge.
+ * There is one current visual system. Alternate historical themes are not supported.
+ */
+body:has(> .erp-theme-flag) {
+  --바닥: var(--erp-color-bg);
+  --판: var(--erp-color-surface);
+  --박스: var(--erp-color-sunken);
+  --박스손: var(--erp-color-row-hover);
+  --고름: var(--erp-color-row-selected);
+  --남색옅음: var(--erp-color-primary-weak);
+  --켜짐: var(--erp-color-primary);
+  --켜짐깊이: var(--erp-color-nav);
+  --ci남색: var(--erp-color-primary);
+  --글: var(--erp-color-text);
+  --선: var(--erp-color-line);
+  --ui-radius: var(--erp-r-lg);
+  --ui-control-radius: var(--erp-r-md);
+  background: var(--erp-color-bg);
+  color: var(--erp-color-text);
+}
+
+.erp-theme-flag { display: none; }

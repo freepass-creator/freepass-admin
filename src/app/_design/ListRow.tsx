@@ -9,9 +9,9 @@
  *                 (표시) 곁 정보 (보조 12 · 회색, 한 줄)             ← 표시 = 확정 전 차종 등 «살필 것»
  *                 값 (메인 14 굵게) ············· [칩] [칩] [칩]     ← 혜택조건 (없으면 곁값)
  * ```
- *   · 세 줄 · **본문 높이 64** — 바깥 padding 12+12를 포함한 실제 한 줄은 약 88px다. 무엇을 더 싣든 본문 줄 수를 늘리지 않는다.
- *     사진 없는 목록(접수·실적)은 사진 칸만 빠진다.
- *   · 뱃지는 두 가지뿐(_design/Badges, 화이트라벨 규격) — 1줄 신원 딱지(상자) · 3줄 조건 표시(✓ + 굵은 글자, 상자 없음).
+ *   · 세 줄 · **본문 높이 64** — 바깥 padding 12+12를 포함한 실제 카드 높이는 약 88px다.
+ *   · 상품은 64×64 사진, 일반 목록은 같은 크기의 상태타일을 사용한다.
+ *   · Main / Key / Support 의미는 상품과 업무 목록에서 동일하다.
  *   · 강조는 색으로만(규칙 ④) — 딱지 `tone="act"`(할 일이 있다) 는 옅은 남색 면 + 남색 글자.
  *   · 고른 줄 = 옅은 남색 면. 선은 없다(규칙 ①).
  */
@@ -41,7 +41,7 @@ const 할일 = (text: string, tone: 'plain' | 'act' | 'warn') => {
   return tone !== 'plain' && s.icon === 'tag' ? { icon: 'clock' } : s;
 };
 
-export function ListRow({ href, selected, thumb, status, title, badge, badges, tone = 'plain', flag, meta, value, aside, chips, product }: {
+export function ListRow({ href, selected, thumb, status, title, mainValue, badge, badges, tone = 'plain', flag, meta, value, aside, chips, product }: {
   href: string;
   selected?: boolean;
   /** 사진 칸 — 상품 목록만 준다. `null` 이면 「사진 없음」 칸이 서고, `undefined` 면 칸 자체가 없다. */
@@ -49,6 +49,8 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   /** 상태 칸 — 사진 없는 목록에서 사진 자리에 선다 */
   status?: RowStatus;
   title: ReactNode;
+  /** Main 우측 대표값 — 월 대여료 / 현재 축 수수료 등. */
+  mainValue?: ReactNode;
   /** 뱃지 하나(접수·실적) — `tone` 이 이 뱃지에 걸린다 */
   badge?: ReactNode;
   /** 뱃지 여럿(상품: 상품구분 · 배차상태) — 늘 옅은 바탕 */
@@ -62,9 +64,8 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
   /** 셋째 줄 오른쪽 칩(혜택조건) — 받은 차례 그대로. 있으면 곁값 대신 선다 */
   chips?: string[];
   /**
-   * ★상품 줄 — 대표 2026-09-18 「맨 첫 줄에 세부 모델만(제조사 필요 없고) + 상태 배지 · 상품구분 배지 →
-   *   그다음이 바로 기간 · 대여료 · 보증금 → 세 번째 줄이 21세 되냐 뭐 되냐 이런 조건」 · 「재원 이런 건 필요 없어 — 눌러서 보면 되고」
-   *   ⇒ 1줄 이름 + 칩 · 2줄 값(굵게, 왼쪽) · 3줄 조건 표시(왼쪽). 곁 정보(차번·연식·주행·연료) 줄이 없다.
+   * 상품/업무 목록 모두 Main / Key / Support 3줄을 사용한다.
+   * product는 data-ai-list-mode 선택에만 쓰고, 줄 구조는 동일하다.
    */
   product?: boolean;
 }) {
@@ -87,34 +88,25 @@ export function ListRow({ href, selected, thumb, status, title, badge, badges, t
         </span>
       )}
       <span className="dz-row-body">
-        <span className="dz-row-l1">
+        <span className="dz-row-l1" data-line-role="main">
           <b>{title}</b>
           <span className="dz-row-badges">
             {/* 신원 칩 — 아이콘 + 글자(갈래마다 그림 · 좋은 소식은 초록). 할 일(act)은 기다림 그림 */}
             {/* 상품 칩 — 화이트라벨 그대로: 차례 = [상품구분, 출고상태] */}
             {(badges ?? []).map((x, i) => (x ? <Tag key={i} {...(typeof x === 'string' ? 상품신원(x, i === 0 && (badges ?? []).length > 1 ? 'kind' : 'status') : {})}>{x}</Tag> : null))}
-            {badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
+            {!status && badge ? <Tag tone={tone} {...(typeof badge === 'string' ? 할일(badge, tone) : {})}>{badge}</Tag> : null}
           </span>
+          {mainValue !== undefined ? <strong className="dz-row-main-value">{mainValue}</strong> : null}
         </span>
-        {product ? (
-          <>
-            {/* 값 한 줄 — 기간/월 대여료/보증금을 독립 segment로 두고 Desktop은 좌·중·우, Mobile은 segment 단위로 넘긴다. */}
-            <span className="dz-row-l2 value"><strong>{typeof value === 'string'
-              ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{x}</span>)
-              : value}</strong></span>
-            <span className="dz-row-l3 perks">{칩.length ? <PerkMarks marks={칩} compact /> : <small>조건 없음</small>}</span>
-          </>
-        ) : (
-          <>
-            <span className="dz-row-l2">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
-            <span className="dz-row-l3">
-              <strong>{value}</strong>
-              {칩.length
-                ? <PerkMarks marks={칩} compact />
-                : aside ? <small>{aside}</small> : null}
-            </span>
-          </>
-        )}
+        <span className="dz-row-l2" data-line-role="key">{flag ? <em className="dz-flag">{flag}</em> : null}{meta}</span>
+        <span className="dz-row-l3" data-line-role="support">
+          <strong>{typeof value === 'string'
+            ? value.split(' · ').map((x, i) => <span key={i} className="dz-seg">{i > 0 ? ' · ' : ''}{x}</span>)
+            : value}</strong>
+          {칩.length
+            ? <PerkMarks marks={칩} compact />
+            : aside ? <small>{aside}</small> : null}
+        </span>
       </span>
     </Link>
   );

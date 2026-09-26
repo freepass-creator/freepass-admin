@@ -14,22 +14,44 @@ const settlementPage=read('src/app/settlement/page.tsx');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
-const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css')].join('\n');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css')].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-test('admin chrome exposes the operational lanes without a legacy left rail',()=>{
-  assert.ok(chrome.includes("['/products', '상품찾기']"));
-  assert.ok(chrome.includes("['/intake', '계약접수']"));
-  assert.ok(chrome.includes("['/settlement', '정산관리']"));
+// DEC-2026-09-23-01 — PC 는 AI Core ERP 표준 골격(왼쪽 업무 메뉴), 폰은 다섯 걸음 하단바 그대로.
+test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab bar on phone, no top actions',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
+    assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
+    assert.ok(side.includes(label),`side menu missing ${label}`);
+  }
+  // 업무 차례: 상품 · 접수 · 실적 · 정산, 전자계약은 따로(대표 2026-09-23)
+  const order=['상품찾기','계약접수','실적','정산관리','전자계약'].map((w)=>side.indexOf(`label: '${w}'`));
+  assert.ok(order.every((i)=>i>=0),'every menu label is defined');
+  assert.deepEqual([...order].sort((a,b)=>a-b),order);
+  assert.ok(side.includes('erp-nav-group--apart'));
+  assert.ok(chrome.includes('<SideMenu />'));
   assert.ok(chrome.includes('<MobileTabBar />'));
-  assert.ok(chrome.includes('dz-desktop-bottom'));
+  assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
+  // 모바일은 전역 상단바 자체를 안 둔다(2026-09-24 — 전역 상태줄 header 를 걷어내고 Panel 이 화면
+  // 맨 위에서 시작한다) — 예전 폰 상단바(fn-top dz-statusbar)가 더는 없는지 확인한다.
+  assert.equal(chrome.includes('fn-top dz-statusbar'),false,'모바일 전역 상단바를 다시 넣지 않는다');
+  // PC 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18) — 통합검색(erp-gsearch)은 조회라 예외.
+  const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
+  assert.equal(/<button/.test(top),false);
+  assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
 });
 
+test('admin exposes one visual authority and no theme-switch route',()=>{
+  assert.ok(chrome.includes('className="erp-theme-flag"'));
+  assert.equal(chrome.includes('ThemeSwitch'),false);
+  assert.equal(chrome.includes('data-theme='),false);
+  assert.equal(css.includes('data-theme="retro"'),false);
+});
 test('product workspace is bound to real repositories and whole-offer selection',()=>{
   assert.ok(workspace.includes('productList()'));
   assert.ok(workspace.includes('settlements.list()'));
@@ -57,8 +79,10 @@ test('legacy prototype and duplicate intake routes converge on canonical workspa
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(designRoute),false);
   assert.ok(intakeListRoute.includes("new URLSearchParams({ v: 'work' })"));
   assert.ok(intakeListRoute.includes("u.set('iq', text)"));
+  assert.ok(intakeListRoute.includes("u.set('wiq', text)"));
   assert.ok(intakeListRoute.includes("u.set('im', month)"));
   assert.ok(intakeListRoute.includes("u.set('iv', '취소')"));
+  assert.ok(intakeListRoute.includes("u.set('wiv', '취소')"));
   assert.ok(intakeListRoute.includes('redirect(`/intake?${u}`)'));
 });
 
@@ -111,9 +135,9 @@ test('supplier lifecycle renders invoice as an explicit step',()=>{
 });
 
 
-test('settlement UI keeps document progress and cash completion visible in the compressed summary',()=>{
-  assert.ok(settlementPage.includes('<SummaryItem label="진행">'));
-  assert.ok(settlementPage.includes('{gSel.done} / {gSel.lines.length} · 완료 {gSel.completed}'));
+test('settlement UI separates document progress from cash completion',()=>{
+  assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
+  assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
   assert.ok(settlementPage.includes('g.completed'));
 });
 

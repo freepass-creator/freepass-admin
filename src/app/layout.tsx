@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import './globals.css';
 import './_design/admin-final.css';
 import './_fn/fn.css';
-import './_design/responsive-layout.css';
+import './_design/erp-theme.css';
+import './_erp/erp-standard.css';
+import './_erp/shell.css';
 
 export const metadata = {
   title: 'freepass-admin',

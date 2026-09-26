@@ -1,22 +1,9 @@
-/* GLOBAL FOUNDATION — canonical Admin UI only.
- * Visual authority: docs/ui/DESIGN-AUTHORITY.md + docs/ui/ADMIN-UI-UX-SSOT.md.
- * Legacy mockup visual rules were removed on 2026-09-25.
- */
-* { box-sizing: border-box; }
-html, body {
-  margin: 0;
-  background: #eef1f4;
-  color: #1d2733;
-  font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-button, input, select, textarea { font: inherit; }
-button { cursor: pointer; }
-
-/* CURRENT ADMIN COMPATIBILITY LAYER
- * 아래부터는 legacy markup을 현행 Admin 토큰으로 입히는 호환층이다.
- * 33px/40px 제어값을 새로 넣지 말고 --ui-control-h / --ui-action-h / --ui-touch-min을 사용한다.
- */
-
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║ LEGACY BASE LAYER — DO NOT COPY VALUES FROM THIS TOP SECTION.   ║
+   ║ 현행 정본: docs/ui/ADMIN-UI-UX-SSOT.md + _design/admin-final.css ║
+   ║ 이 파일은 base/legacy 층이며 admin-final.css가 뒤에서 덮는다.      ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+*{box-sizing:border-box}html,body{margin:0;background:#f3f5f7;color:#15181c;font-family:Inter,Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}.admin-shell{min-height:100vh}.topbar{height:64px;background:#111418;color:#fff;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px;border-bottom:1px solid #252a30}.topbar>div:first-child{display:flex;align-items:baseline;gap:10px}.topbar strong{font-size:17px;letter-spacing:-.4px}.topbar span{font-size:11px;color:#8f98a3}.topbar nav{display:flex;gap:4px}.topbar button{border:0;background:transparent;color:#89929d;padding:9px 14px;border-radius:8px}.topbar button.active{background:#242a31;color:#fff}.admin-user{justify-self:end;font-size:13px;color:#c9ced4}.workspace{height:calc(100vh - 64px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#dce1e6}.panel{min-width:0;background:#fff;padding:var(--ui-panel-pad,22px);overflow:auto}.panel-head{min-height:48px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.eyebrow{margin:0 0 3px;font-size:10px;letter-spacing:1.4px;color:#9aa2aa;font-weight:700}.panel h1{font-size:20px;margin:0;letter-spacing:-.7px}.count{padding:6px 9px;background:#f1f3f5;border-radius:7px;color:#4d555e!important}.searchbox{height:42px;border:1px solid #dce1e5;border-radius:10px;display:flex;align-items:center;gap:8px;padding:0 13px;color:#9aa2aa;font-size:13px;background:#fafbfc}.searchbox input{border:0;outline:0;background:transparent;width:100%;font-size:13px;color:#1d2329}.quick-filters,.chips,.work-tabs,.offer-picker{display:flex;gap:6px;overflow:auto}.quick-filters{padding:10px 0 13px}.quick-filters button,.work-tabs button,.offer-picker button{white-space:nowrap;border:1px solid #e0e4e8;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px;color:#555e67}.quick-filters button:first-child,.work-tabs button.active,.offer-picker button.active{background:#171a1e;color:#fff;border-color:#171a1e}.list,.application-list{display:flex;flex-direction:column;gap:8px}.product-row{display:flex;gap:12px;padding:11px;border:1px solid #e5e8eb;border-radius:12px;cursor:pointer}.product-row:hover,.application-card:hover{background:#fafbfc}.product-row.selected{border-color:#22272d;box-shadow:0 0 0 1px #22272d}.thumb{width:82px;height:64px;border-radius:9px;background:linear-gradient(135deg,#e8ebee,#f8f9fa);display:grid;place-items:center;color:#a2a9b0;font-size:10px}.grow{min-width:0;flex:1}.row-title{display:flex;justify-content:space-between;gap:8px}.row-title strong{font-size:14px}.row-title span{font-size:9px;padding:4px 6px;background:#f0f3f5;border-radius:5px;color:#5e6770}.product-row p{margin:5px 0 8px;font-size:11px;color:#858d95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.price{display:flex;justify-content:space-between;align-items:end}.price b{font-size:13px}.price small{font-size:10px;color:#7e8790}.icon-btn,.new-app{border:1px solid #dfe3e7;background:#fff;border-radius:8px;padding:7px 10px;font-size:11px}.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e5e8eb;margin-bottom:14px}.tabs button{border:0;background:none;padding:10px;color:#969da5}.tabs button.active{color:#111;border-bottom:2px solid #111;font-weight:700}.hero-car{height:190px;border-radius:14px;background:linear-gradient(145deg,#e9ecef,#f8f9fa);display:flex;align-items:center;justify-content:center;position:relative;color:#a5acb3;font-size:12px}.hero-car small{position:absolute;right:10px;bottom:9px;background:#20252a;color:#fff;border-radius:10px;padding:4px 7px}.vehicle-title{display:flex;justify-content:space-between;align-items:start;padding:17px 0}.vehicle-title h2{font-size:20px;margin:0 0 5px}.vehicle-title p{margin:0;font-size:12px;color:#808891}.status-dot{font-size:10px!important;color:#303941!important;background:#edf1f3;padding:5px 8px;border-radius:7px}.summary-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e7eaed;border-radius:12px;overflow:hidden;margin:0}.summary-grid div{padding:11px 12px;border-bottom:1px solid #edf0f2}.summary-grid div:nth-child(odd){border-right:1px solid #edf0f2}.summary-grid div:nth-last-child(-n+2){border-bottom:0}.summary-grid dt{font-size:10px;color:#8e969e}.summary-grid dd{margin:4px 0 0;font-size:12px;font-weight:650}.offer-picker{padding-top:12px}.offer-block{margin-top:8px;background:#171a1e;color:#fff;border-radius:13px;padding:15px}.offer-block>div{display:flex;justify-content:space-between;color:#aeb5bc;font-size:11px}.offer-block strong{display:block;font-size:21px;margin-top:10px}.offer-block p{font-size:10px;color:#aeb5bc;margin:6px 0 0}.chips{padding:11px 0}.chips span{font-size:10px;background:#f0f3f5;border-radius:7px;padding:6px 8px;white-space:nowrap}.primary{width:100%;height:44px;border:0;border-radius:10px;background:#111418;color:#fff;font-weight:700}.new-app{background:#171a1e;color:#fff;border-color:#171a1e}.work-tabs{padding-bottom:13px}.application-card{border:1px solid #e5e8eb;border-radius:12px;padding:13px;cursor:pointer;user-select:none}.app-top{display:flex;justify-content:space-between;gap:10px}.app-top div{display:flex;flex-direction:column;gap:3px}.app-top b{font-size:13px}.app-top span{font-size:9px;color:#929aa2}.app-top strong{font-size:12px}.checks{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:12px 0 9px}.checks span{font-size:10px;text-align:center;padding:7px 4px;border-radius:6px;background:#f0f2f4;color:#9ba2a9}.checks span.done{background:#252a30;color:#fff}.application-card p{margin:0;font-size:10px;color:#78818a}.work-hint{margin-top:12px;border:1px dashed #d5dade;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:4px}.work-hint b{font-size:11px}.work-hint span{font-size:10px;color:#8b939b;line-height:1.5}.selected-offer-card,.snapshot-box{border:1px solid #e2e6e9;background:#f8f9fa;border-radius:14px;padding:16px;margin-bottom:16px}.selected-offer-card>span,.snapshot-box>span{display:block;font-size:10px;color:#8a929a;margin-bottom:7px}.selected-offer-card h2{margin:0 0 4px;font-size:20px}.selected-offer-card p{margin:0 0 14px;font-size:11px;color:#7d858d}.selected-offer-card b,.snapshot-box b{display:block;font-size:14px}.selected-offer-card small{display:block;margin-top:10px;color:#8a929a;line-height:1.5}.form-stack{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}.form-stack label{font-size:11px;font-weight:700;color:#535c64}.form-stack input{display:block;width:100%;height:42px;margin-top:6px;border:1px solid #dce1e5;border-radius:9px;padding:0 11px;outline:0}.form-stack input:focus{border-color:#20252a}.application-detail-head{padding:4px 0 18px}.application-detail-head span{font-size:10px;color:#90979f}.application-detail-head h2{margin:6px 0;font-size:20px}.application-detail-head p{margin:0;color:#7d858d;font-size:12px}.snapshot-box p{margin:6px 0 0;font-size:11px;color:#7d858d}.progress-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.progress-actions button{height:58px;border:1px solid #dfe3e6;background:#f5f7f8;color:#7e878f;border-radius:10px;font-size:11px}.progress-actions button.done{background:#171a1e;color:#fff;border-color:#171a1e}.application-status{margin-top:14px;padding:12px;border-radius:10px;background:#eef1f3;text-align:center;font-size:12px;font-weight:700}.application-status.cancelled{background:#f5eeee;color:#8a4747}.danger-link{width:100%;margin-top:10px;border:0;background:transparent;color:#a74f4f;font-size:11px;padding:10px}@media(max-width:900px){.topbar{grid-template-columns:1fr auto}.topbar nav{display:none}.workspace{display:block;height:auto}.panel{min-height:calc(100vh - 64px);border-bottom:8px solid #eef1f3}}
 /* ═══════════════════════════════════════════════════════════════════
    ★★★ 대표 확정 2026-09-18 — «박스에 담는다 · 선은 없다 · 라운드는 4»
    「버튼은 라인 없이 그냥 텍스트로만」 「목록은 카드형으로 박스, 근데 이거도 라인 없이」
@@ -55,8 +42,8 @@ button { cursor: pointer; }
 
 /* ⑤ 판 셋을 박스로 — 1px 틈으로 긋던 세로선을 걷고 사이를 준다 */
 .topbar { border-bottom: 0; }
-.workspace { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-panel-gap, 12px); padding: var(--ui-panel-gap, 12px); background: var(--바닥); height: calc(100vh - 64px); }
-.panel { min-width: 0; padding: var(--ui-panel-pad,22px); overflow: auto; border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
+.workspace { gap: var(--ui-panel-gap, 12px); padding: var(--ui-panel-gap, 12px); background: var(--바닥); height: calc(100vh - 64px); }
+.panel { border-radius: var(--r); background: var(--판); border: 1px solid var(--선); }
 
 /* ① 선 걷기 + ② 라운드 4 — 목록 카드 · 표 · 상자 */
 .product-row, .application-card, .selected-offer-card, .snapshot-box, .work-hint {
@@ -155,8 +142,22 @@ html, body { font-size: var(--글메인); }
   { font-size: var(--글보조); }
 
 /**
- * 현행 크기 규칙: 뱃지 22px, 업무 컨트롤/주행동/모바일 터치 44px.
- * 2026-09-18의 33px 실험값은 UI-HISTORY.md에만 남기고 구현 규격으로 사용하지 않는다.
+ * ★★**단추·뱃지도 규격이 둘뿐** — 대표 2026-09-18 「표는 크기에 맞춰서 버튼 뱃지 이렇게 했으면 좋겠고」
+ *   높이를 «정해» 두고 글자를 가운데에 세운다 — 줄 높이로 맞추면 글꼴마다 1px 씩 뜬다.
+ *     뱃지   22 높이 · 보조 12 · 좌우 8      (상태·세부트림·조건·완료 칩·SSOT·건수)
+ *     단추   33 높이 · 메인 14 · 좌우 12     (필터·탭·표 안 단추·진행 단추·위 띠 메뉴)
+ *     주 단추 44 높이 · 메인 14 굵게         (이 상품 접수하기) — 한 판에 하나
+ *
+ *   ★★**왜 33·줄높이 15 인가 — 잉크로 쟀다** (대표 「1미리 앞에서 재봐, 레이저로 쏴서 정확해야 함」)
+ *     글자 «획»의 높이가 홀수다 — 메인 14 한글은 13px, 보조 12 한글은 11px(캔버스 actualBoundingBox 로 실측).
+ *     ⚠ 처음엔 상자만 홀수(33)로 바꿨다 → 오히려 33곳이 반 픽셀 쏠렸다. 줄 높이가 14(짝수)라
+ *       줄 상자가 상자 안 «9.5px» 자리에 놓였기 때문이다. 반 픽셀은 상자가 아니라 줄에서 생겼다.
+ *     ⇒ 상자 높이 × 줄 높이 조합을 전부 셈해, 반 픽셀이 «한 번도» 안 생기고 획이 가운데 오는 것을 골랐다.
+ *       단추 33 · 줄 15 → 18곳 중 14곳이 위아래 같은 px. 남는 넷(「후불」「상세필터」「요약」「공유」)은
+ *       획이 짝수(14·12)라 1px 차이가 남는다 — 글자마다 획이 달라 더는 못 줄인다.
+ *     ⓘ 뱃지(보조 12)는 **어떤 조합으로도 1px 차이가 최소**다 — 획 11(홀수)을 반 픽셀 없는 자리에
+ *       놓으면 늘 한쪽이 1px 많다. 그래서 흔한 22 로 두었다. 모든 뱃지가 «같은 쪽으로» 같은 만큼이다.
+ *     ⓘ 주 단추는 굵은 획이 14px(짝수)라 44 가 맞다 — 그래서 그것만 짝수다.
  */
 .row-title span, .chips span, .checks span, .status-dot, .application-status, .hero-car small, .count {
   display: inline-flex; align-items: center; justify-content: center;
@@ -165,7 +166,7 @@ html, body { font-size: var(--글메인); }
 .quick-filters button, .work-tabs button, .offer-picker button, .tabs button, .icon-btn, .new-app,
 .progress-actions button, .topbar nav button {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: var(--ui-control-h,44px); padding: 0 12px; line-height: 16px; white-space: nowrap;
+  height: 33px; padding: 0 12px; line-height: 15px; white-space: nowrap;
 }
 .primary { display: flex; align-items: center; justify-content: center; height: var(--ui-action-h,44px); line-height: 1; font-weight: 700; }
 
@@ -184,7 +185,7 @@ html, body { font-size: var(--글메인); }
    ⚠ 앞서는 판 셋을 세로로 이어 붙여 문서가 2,411px 였다 — 상세를 보려면 한참 내려야 했고,
      위 메뉴도 폰에서 사라져 다른 판으로 가는 길이 스크롤뿐이었다.
    ⇒ 아래 탭 셋(상품 · 상세 · 접수)으로 한 장씩. 차를 누르면 상세로, 「이 상품 접수하기」는 접수로 넘어간다.
-   ★옷은 그대로다 — 탭은 현행 44px 컨트롤·메인 14, 켜진 것은 남색 면으로 읽는다.
+   ★옷은 그대로다 — 탭은 단추 규격(33·메인 14), 켜진 것은 남색 면, 탭 띠는 «판 박스»라 선을 가진다.
    ═══════════════════════════════════════════════════════════════════ */
 .phone-tabs { display: none; }
 @media (max-width: 900px) {
@@ -200,7 +201,7 @@ html, body { font-size: var(--글메인); }
   }
   .phone-tabs button {
     display: flex; align-items: center; justify-content: center;
-    min-height: var(--ui-control-h,44px); line-height: 16px; border: 0; border-radius: var(--r);
+    height: 33px; line-height: 15px; border: 0; border-radius: var(--r);
     background: transparent; color: #4f5862; font-size: var(--글메인);
   }
   .phone-tabs button.active { background: var(--켜짐); color: #fff; }
@@ -241,7 +242,7 @@ body > nav.fn-top .fn-state { font-size: var(--글보조); color: rgba(255, 255,
 .dz-menu { display: flex; gap: 4px; }
 body > nav.fn-top .dz-menu a {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px; border-radius: var(--ui-control-radius,6px);
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r);
   color: rgba(255, 255, 255, .72); text-decoration: none; font-size: var(--글메인);
 }
 body > nav.fn-top .dz-menu a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
@@ -323,7 +324,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .dz-find { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; }
 .fn-main .workspace label.searchbox {
   display: flex; flex-direction: row; align-items: center; gap: 8px;
-  height: var(--ui-control-h,44px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+  height: var(--ui-control-h,40px); padding: 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace label.searchbox input {
   flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; outline: 0;
@@ -331,15 +332,15 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 }
 .fn-main .workspace .dz-filters { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .fn-main .workspace .dz-filters select, .fn-main .workspace .dz-filters input {
-  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px);
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
   background: var(--박스); color: var(--글); font-size: var(--글메인);
 }
 .fn-main .workspace .dz-filters input { width: 128px; }
 .fn-main .workspace .dz-filters button {
-  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px);
-  background: var(--ci남색); color: #fff; font-size: var(--글메인); line-height: 16px;
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: var(--ci남색); color: #fff; font-size: var(--글메인); line-height: 15px;
 }
-.fn-main .workspace .dz-clear { display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); padding: 0 8px; color: #6b7580; font-size: var(--글메인); }
+.fn-main .workspace .dz-clear { display: inline-flex; align-items: center; height: 33px; padding: 0 8px; color: #6b7580; font-size: var(--글메인); }
 
 /* 목록 카드 — 썸네일은 목업 자리 그대로(대표 「상품목록 카드에 사진 썸네일 들어가야지」).
    사진 주소는 기능 쪽 `photoUrl` — 칸이 생기면 바로 뜨고, 없으면 「사진 없음」(가짜 「CAR」 글자는 안 쓴다) */
@@ -353,10 +354,10 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 .fn-main .workspace .summary-grid dt { font-size: var(--글보조); color: #6b7580; }
 .fn-main .workspace .summary-grid dd { margin: 2px 0 0; font-size: var(--글메인); }
 
-/* 머리 링크형 컨트롤도 현행 44px 토큰을 따른다 */
+/* 머리 단추 셋(전부 보기 · 신규접수 · 접수 탭)이 이제 링크다 — 단추 규격(33) 그대로 */
 .fn-main .workspace .icon-btn, .fn-main .workspace .new-app, .fn-main .workspace .work-tabs a {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px; border-radius: var(--ui-control-radius,6px); font-size: var(--글메인); white-space: nowrap;
+  height: 33px; line-height: 15px; padding: 0 12px; border-radius: var(--r); font-size: var(--글메인); white-space: nowrap;
 }
 .fn-main .workspace .new-app { background: var(--ci남색); color: #fff; }
 .fn-main .workspace .work-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
@@ -369,7 +370,7 @@ body > nav.fn-top .dz-menu a.on { background: rgba(158, 197, 243, .16); color: v
 /* 폰 탭도 링크다 */
 .phone-tabs a {
   display: flex; align-items: center; justify-content: center;
-  min-height: var(--ui-control-h,44px); line-height: 16px; border-radius: var(--ui-control-radius,6px);
+  height: 33px; line-height: 15px; border-radius: var(--r);
   color: #4f5862; font-size: var(--글메인); text-decoration: none;
 }
 .phone-tabs a.active { background: var(--ci남색); color: #fff; }
@@ -408,17 +409,17 @@ body { background: var(--바닥); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) a:hover { text-decoration: underline; }
 /** 제목 옆 「+ 새 접수」 — 그 화면의 주 행동이라 남색 카드 단추. (뼈대가 인라인 13px 를 박아 두어 같은 힘으로 덮는다) */
 .fn-main:not(:has(> .workspace, > .admin-shell)) h1 > a {
-  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px;
-  border-radius: var(--ui-control-radius,6px); background: var(--ci남색); color: #fff !important;
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); background: var(--ci남색); color: #fff !important;
   font-size: var(--글메인) !important; font-weight: 600; margin-left: 0 !important; text-decoration: none !important;
 }
 
-/* 입력 — 선 없는 박스(규칙 ①) · 현행 관리자 컨트롤 44 */
+/* 입력 — 선 없는 박스(규칙 ①) · 단추 규격 33(규칙 ⑦) */
 .fn-main:not(:has(> .workspace, > .admin-shell)) form.fn-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 12px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) label { display: inline-flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) input, .fn-main:not(:has(> .workspace, > .admin-shell)) select, .fn-main:not(:has(> .workspace, > .admin-shell)) textarea {
-  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px);
-  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 16px;
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r);
+  background: var(--박스); color: var(--글); font: inherit; font-size: var(--글메인); line-height: 15px;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) textarea { height: auto; min-height: 66px; padding: 8px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) input:focus, .fn-main:not(:has(> .workspace, > .admin-shell)) select:focus,
@@ -431,8 +432,8 @@ body { background: var(--바닥); }
 
 /* ③ 단추는 글자만 · ④ 이 폼의 주 행동(보내기)은 남색 면 */
 .fn-main:not(:has(> .workspace, > .admin-shell)) button {
-  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px);
-  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 16px; cursor: pointer;
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
+  background: transparent; color: #4f5862; font: inherit; font-size: var(--글메인); line-height: 15px; cursor: pointer;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) button:hover:not(:disabled) { background: var(--박스손); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) button[type="submit"] { background: var(--ci남색); color: #fff; font-weight: 600; }
@@ -441,8 +442,8 @@ body { background: var(--바닥); }
 /* 탭 — 글자만, 켜진 것은 남색 면(검은 알약이던 것) */
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a {
-  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px;
-  border: 0; border-radius: var(--ui-control-radius,6px); background: transparent; color: #4f5862; text-decoration: none;
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border: 0; border-radius: var(--r); background: transparent; color: #4f5862; text-decoration: none;
 }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a:hover { background: var(--박스손); }
 .fn-main:not(:has(> .workspace, > .admin-shell)) .fn-tabs a.on { background: var(--ci남색); color: #fff; }
@@ -535,7 +536,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .tabs a {
   display: flex; align-items: center; justify-content: center;
-  min-height: var(--ui-control-h,44px); line-height: 16px; border-radius: var(--ui-control-radius,6px); color: #4f5862; font-size: var(--글메인);
+  height: 33px; line-height: 15px; border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
 }
 .fn-main .workspace .tabs a:hover { background: var(--박스손); }
 .fn-main .workspace a.primary {
@@ -609,7 +610,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-searchbox {
   position: relative; display: flex; align-items: center; gap: 8px;
-  height: var(--ui-control-h,44px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
+  height: var(--ui-control-h,40px); padding: 0 4px 0 12px; font-size: var(--ui-text-main,var(--글메인)); color: #7b8590;
 }
 .fn-main .workspace .dz-searchbox > input[name="q"] {
   flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; outline: 0;
@@ -621,11 +622,11 @@ body { background: var(--바닥); }
      우리 옷: 선은 판 박스 하나 · 고른 것은 남색 면/글자로만 · 글 셋(제목 18 · 메인 14 · 보조 12)
    ═══════════════════════════════════════════════════════════════════ */
 .fn-main .workspace .dz-find { position: relative; }
-/* 검색창 안 세부검색 — 44px 검색창 안의 embedded 32px 예외 */
+/* 창 «안» 오른쪽 끝 — 창(40) 안에 단추(33)가 가운데로 선다 */
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-fs-open {
-  position: absolute; top: 6px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
-  height: 32px; line-height: 16px; padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
+  position: absolute; top: 3.5px; right: 4px; display: inline-flex; align-items: center; gap: 6px;
+  height: 33px; line-height: 15px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
   color: #4f5862; font-size: var(--글메인); cursor: pointer; white-space: nowrap;
 }
 .dz-fs-open:hover, .dz-fs-open.on { background: var(--박스손); }
@@ -647,7 +648,7 @@ body { background: var(--바닥); }
 .dz-fs-head { flex: none; display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 16px; }
 .dz-fs-head b { flex: 1; font-size: var(--글메인); font-weight: 700; color: var(--글); }
 .dz-fs-head button, .dz-fs-axis button, .dz-fs-more {
-  min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 10px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
+  height: 33px; line-height: 15px; padding: 0 10px; border: 0; border-radius: var(--r); background: transparent;
   color: #6b7580; font-size: var(--글보조); cursor: pointer;
 }
 .dz-fs-head button:hover, .dz-fs-axis button:hover, .dz-fs-more:hover { background: var(--박스손); }
@@ -665,7 +666,7 @@ body { background: var(--바닥); }
 .dz-fs-body nav button.on { background: var(--판); color: var(--ci남색); font-weight: 700; }
 .dz-fs-vals { flex: 1; min-width: 0; overflow-y: auto; padding: 8px 16px 16px; transition: opacity .12s; }
 .dz-fs-vals.wait { opacity: .55; }
-.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; min-height: var(--ui-control-h,44px); margin-bottom: 4px; }
+.dz-fs-axis { display: flex; align-items: center; justify-content: space-between; height: 33px; margin-bottom: 4px; }
 .dz-fs-axis b { font-size: var(--글메인); font-weight: 700; color: var(--글); }
 /* 값 한 줄 — 네모 · 이름 · 건수(오른쪽 끝, 흐리게). 한 열(두 열이면 숫자가 옆 라벨에 붙어 읽힌다) */
 .dz-fs-check {
@@ -715,8 +716,8 @@ body { background: var(--바닥); }
 /** 퀵 단추 — 목업의 퀵 필터 그대로(글자만 · 켜진 것 남색 면). 이제 링크라 모양을 한 번 더 세운다 */
 .fn-main .workspace .quick-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 12px; }
 .fn-main .workspace .quick-filters a {
-  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 12px;
-  border-radius: var(--ui-control-radius,6px); color: #4f5862; font-size: var(--글메인);
+  display: inline-flex; align-items: center; height: 33px; line-height: 15px; padding: 0 12px;
+  border-radius: var(--r); color: #4f5862; font-size: var(--글메인);
 }
 .fn-main .workspace .quick-filters a:hover { background: var(--박스손); }
 .fn-main .workspace .quick-filters a.active { background: var(--ci남색); color: #fff; }
@@ -829,13 +830,13 @@ body { background: var(--바닥); }
 .fn-main .workspace .work-panel label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .fn-main .workspace .work-panel input:not([type="checkbox"]):not([type="radio"]),
 .fn-main .workspace .work-panel select, .fn-main .workspace .work-panel textarea {
-  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판);
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
   color: var(--글); font: inherit; font-size: var(--글메인);
 }
 .fn-main .workspace .work-panel textarea { height: auto; min-height: 66px; padding: 8px; }
 .fn-main .workspace .work-panel input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--ci남색); }
 .fn-main .workspace .work-panel form button {
-  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px);
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r);
   background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
 }
 .fn-main .workspace .work-panel form button[type="submit"]:not([name]) { background: var(--ci남색); color: #fff; font-weight: 600; }
@@ -944,11 +945,11 @@ body { background: var(--바닥); }
 .dz-money label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .dz-money label.wide { grid-column: 1 / -1; }
 .dz-money input {
-  height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판);
+  height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판);
   color: var(--글); font-size: var(--글메인); font-family: inherit;
 }
 .dz-money button {
-  grid-column: 1 / -1; justify-self: end; min-height: var(--ui-control-h,44px); line-height: 16px; padding: 0 16px; border: 0; border-radius: var(--ui-control-radius,6px);
+  grid-column: 1 / -1; justify-self: end; height: 33px; line-height: 15px; padding: 0 16px; border: 0; border-radius: var(--r);
   background: var(--ci남색); color: #fff; font-size: var(--글메인); font-weight: 600; cursor: pointer;
 }
 .dz-money button:disabled { opacity: .5; cursor: default; }
@@ -1017,7 +1018,7 @@ body { background: var(--바닥); }
    ═══════════════════════════════════════════════════════════════════ */
 .dz-secs { display: grid; gap: 12px; margin-top: 4px; }
 .dz-sec > summary {
-  list-style: none; display: flex; align-items: center; gap: 8px; min-height: var(--ui-touch-min,44px); cursor: pointer; user-select: none;
+  list-style: none; display: flex; align-items: center; gap: 8px; min-height: 33px; cursor: pointer; user-select: none;
 }
 .dz-sec > summary::-webkit-details-marker { display: none; }
 .dz-sec-ico {
@@ -1158,7 +1159,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 /* 달 넘기기 — ‹ 달 › · 합 */
 .dz-month { display: flex; align-items: center; gap: 4px; margin: 0 0 12px; font-size: var(--글메인); }
 .dz-month > a, .dz-month > span:not(.dz-month-sum) {
-  display: inline-flex; align-items: center; justify-content: center; width: var(--ui-control-h,44px); height: var(--ui-control-h,44px); border-radius: var(--ui-control-radius,6px);
+  display: inline-flex; align-items: center; justify-content: center; width: 33px; height: 33px; border-radius: var(--r);
   color: #4f5862; font-size: 18px; text-decoration: none;
 }
 .dz-month > a:hover { background: var(--박스손); }
@@ -1245,7 +1246,7 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 /* 걸음 길 — 접수 → 청구 → 확인 → 수금. 지나온 곳 흐린 남색 글자 · 지금 남색 면 · 정정 붉은 면 */
 .dz-path { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; padding: 0; list-style: none; }
 .dz-path li {
-  display: inline-flex; align-items: center; min-height: var(--ui-control-h,44px); padding: 0 12px; border-radius: var(--ui-control-radius,6px);
+  display: inline-flex; align-items: center; height: 33px; padding: 0 12px; border-radius: var(--r);
   background: var(--박스); color: #9aa3ad; font-size: var(--글메인);
 }
 .dz-path li.done { color: var(--ci남색); }
@@ -1255,14 +1256,14 @@ a.dz-bar-sub, button.dz-bar-sub { display: inline-flex; align-items: center; jus
 .dz-life-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; padding: 12px; border-radius: var(--r); background: var(--박스); }
 .dz-life-form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--글보조); color: #6b7580; }
 .dz-life-form label.wide, .dz-life-form .dz-errs { grid-column: 1 / -1; }
-.dz-life-form input { height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--판); font-size: var(--글메인); color: var(--글); }
+.dz-life-form input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--판); font-size: var(--글메인); color: var(--글); }
 /* 곁 걸음 — 한 줄에 이름 · 칸 · 작은 단추(글자 단추 규칙 ③) */
 .dz-side-steps { display: grid; gap: 4px; margin: 0 0 12px; }
-.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: var(--ui-control-h,44px); }
+.dz-side-step { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 33px; }
 .dz-side-step b { min-width: 88px; font-size: var(--글보조); color: #6b7580; font-weight: 400; }
-.dz-side-step input { height: var(--ui-control-h,44px); padding: 0 8px; border: 0; border-radius: var(--ui-control-radius,6px); background: var(--박스); font-size: var(--글메인); }
+.dz-side-step input { height: 33px; padding: 0 8px; border: 0; border-radius: var(--r); background: var(--박스); font-size: var(--글메인); }
 .dz-side-step button {
-  min-height: var(--ui-control-h,44px); padding: 0 12px; border: 0; border-radius: var(--ui-control-radius,6px); background: transparent;
+  height: 33px; padding: 0 12px; border: 0; border-radius: var(--r); background: transparent;
   color: var(--ci남색); font-size: var(--글메인); font-weight: 600; cursor: pointer;
 }
 .dz-side-step button:hover { background: var(--박스손); }

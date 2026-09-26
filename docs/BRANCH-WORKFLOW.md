@@ -12,7 +12,7 @@
 - 작업이 끝나면 테스트 → PR → merge → branch 폐기 순서로 종료한다.
 - “고도화”, “다음”, “계속”은 현재 작업 브랜치의 후속 작업을 뜻한다. 새 브랜치를 자동 생성하라는 뜻이 아니다.
 - 새 브랜치는 **현재 동시에 분리해야 하는 변경이 실제로 있을 때만** 최신 main에서 만든다.
-- 모델명(claude/gpt/codex 등), v2/final/latest 같은 이름으로 브랜치를 파생하지 않는다.
+- v2/final/latest 같은 이름으로 브랜치를 파생하지 않는다. (AI 이름(claude/gpt/codex 등) 브랜치 금지는 사용자 결정으로 2026-09-26 해제)
 
 ## 2. 현재 허용된 ACTIVE 작업
 
@@ -60,11 +60,17 @@ main
 
 운영 준비 작업은 UI와 병행할 수 있지만, **최종 production acceptance는 UI 최종 merge 이후 상태에서 다시 수행**한다.
 
-## 5. 과거 브랜치
+## 4.5 UI 정본 확정 — 2026-09-26
 
-- `work/function`: ARCHIVE / 신규 개발 금지
-- `work/esign`: ARCHIVE / 신규 개발 금지
-- `work/uiux`: REFERENCE-ONLY / 승인 UI donor / 신규 개발 금지
+사용자가 PR #92 계보의 PC 화면을 정본으로 확정했다(「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」). main 반영은 PR #121.
+- `work/ui/finalize-baseline`의 목적(승인 UI 확정)은 PR #121로 달성된다. 이후 이 branch에서 새 UI 방향을 만들지 않는다.
+- 화면 정본과 폐기 목록은 `docs/ui/DESIGN-AUTHORITY.md` 하나가 가진다.
+
+## 5. 과거 브랜치 — 폐기(DISCARDED)
+
+- `work/function`: **DISCARDED** / 개발 근거 아님. 사용자 확정 운영 항목(전자계약 운영 제외, 작업자 기록, 로그인 되돌림 검증)만 `work/release/operational-launch`에서 최신 main 위에 다시 적용한다.
+- `work/esign`: **DISCARDED** / 개발 근거 아님
+- `work/uiux`: **DISCARDED** / 내용은 PR #121로 main에 반영 완료
 
 과거 branch의 고유 변경이 필요하면 branch 전체를 merge하지 않는다. current main에 필요한 변경만 검토하여 현재 ACTIVE branch로 선별 이식한다.
 

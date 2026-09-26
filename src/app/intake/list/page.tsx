@@ -18,10 +18,10 @@ export default async function IntakeListRedirect({
   const month = one(q.month).trim();
   const legacyView = one(q.view).trim();
 
-  if (text) u.set('iq', text);
+  if (text) { u.set('iq', text); u.set('wiq', text); }
   if (month) u.set('im', month);
-  if (legacyView === 'cancelled') u.set('iv', '취소');
-  else if (legacyView === 'all') u.set('iv', 'all');
+  if (legacyView === 'cancelled') { u.set('iv', '취소'); u.set('wiv', '취소'); }
+  else if (legacyView === 'all') { u.set('iv', 'all'); u.set('wiv', 'all'); }
 
   redirect(`/intake?${u}`);
 }

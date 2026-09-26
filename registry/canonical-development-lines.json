@@ -140,18 +140,7 @@
         "^dependabot/",
         "^renovate/"
       ],
-      "forbidden_actor_prefixes": [
-        "gpt/",
-        "claude/",
-        "codex/",
-        "cursor/",
-        "gemini/",
-        "work/gpt/",
-        "work/claude/",
-        "work/codex/",
-        "work/cursor/",
-        "work/gemini/"
-      ],
+      "forbidden_actor_prefixes": [],
       "legacy_head_exceptions": []
     },
     "active_work": {

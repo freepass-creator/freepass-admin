@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { cashRemainingOf, driftOf, invoiceMoneyOf, invoiceNeedsCashAllocation, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice, type LifeChange } from '../lifecycle.js';
+import { cashRemainingOf, cashTargetOf, driftOf, invoiceMoneyOf, lifePatch, lifeStageOf, nextInvoiceNo, planInvoice, type LifeChange } from '../lifecycle.js';
 import { claimLedger } from '../ledgers.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -66,12 +66,19 @@ describe('청구서 발행 계획', () => {
     assert.match(driftOf({ supply: 1, vat: 0, lines: 1 } as never, { supply: 2, vat: 0, lines: 1 })!, /공급가/));
 });
 
-describe('환수 포함 묶음 — 행별 현금 배분은 정책 확정 전 HOLD', () => {
-  it('발행 문서에 환수 금액/사본이 있으면 행별 cash allocation이 필요하다고 표시한다', () => {
-    assert.equal(invoiceNeedsCashAllocation(null), false);
-    assert.equal(invoiceNeedsCashAllocation({ clawback: 0, snapshot: { lines: [], clawbacks: [] } } as never), false);
-    assert.equal(invoiceNeedsCashAllocation({ clawback: 100 } as never), true);
-    assert.equal(invoiceNeedsCashAllocation({ clawback: 0, snapshot: { lines: [], clawbacks: [{}] } } as never), true);
+describe('환수 포함 문서 — 환수는 마이너스 한 줄, 정상 줄은 제 금액으로 수금/지급', () => {
+  it('문서 total은 정상 줄 − 환수이고, 각 줄의 수금 목표는 환수에 깎이지 않는다', () => {
+    const g = claimLedger([mk({ code: 'a' })], '2026-09', [], NOW).find((x) => x.party === 'A')!;
+    const claw = [{ plate: '9', month: '2026-09', supplier: 'A', channel: 'X', supplierAmt: 100_000, agentAmt: 0, reason: '해지', at: '' }];
+    const p = planInvoice('2026-09', '공급사', 'A', g.lines, claw, null, [], NOW.getTime(), 't');
+    assert.ok(p.ok);
+    if (!p.ok) return;
+    const row = mk({ code: 'a', billMonth: '2026-09', billed: true, claimStage: '확인', supplierOk: true, invoiceIssued: true });
+    const target = cashTargetOf('공급사', row)!;
+    assert.equal(p.invoice.clawback, 100_000);
+    assert.equal(p.invoice.total, target - 110_000);
+    const r = lifePatch(row, { kind: 'collected', amount: target, day: '2026-09-30' });
+    assert.ok(r.ok, r.ok ? '' : r.error);
   });
 });
 

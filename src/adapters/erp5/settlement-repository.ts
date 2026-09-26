@@ -1,4 +1,5 @@
 import { erp5 } from './firestore';
+import { demoMode } from './demo';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
@@ -11,7 +12,7 @@ import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResp
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
-import { invoiceKey, invoiceNeedsCashAllocation, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
+import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
@@ -37,7 +38,7 @@ const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.so
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
 }
-export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on';
+export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on' && !demoMode();
 const mustWrite = () => { if (!writeEnabled()) throw new WriteDisabledError(); };
 
 const audId = () => {
@@ -118,9 +119,6 @@ export class Erp5SettlementRepository {
         const seenAudit = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
           !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
         if (seenAudit || (cashDoc && cashDoc.exists)) return { ok: true as const, changed: 0 };
-        if (cashInvoiceDoc?.exists && invoiceNeedsCashAllocation(cashInvoiceDoc.data() as IssuedInvoice)) {
-          return { ok: false as const, error: '환수가 포함된 묶음 문서는 행별 수금·지급 배분 정책이 아직 확정되지 않았습니다 — 이 문서는 수동 정산 확인이 필요합니다' };
-        }
       }
       if (guard) {
         const checked = await guard(tx, cur, row);

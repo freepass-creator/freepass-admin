@@ -1,87 +1,70 @@
-# FreePass Admin Design Authority — HARD LOCK
+# FreePass Admin Design Authority
 
-상태: **RECOVERY HOLD — 기존 USER-LOCKED 판정 재검증 중**  
-복구 사유: 2026-09-26 실제 승인 UI 계보와 current main 시각 구현 불일치가 확인됨. 
-복구가 끝날 때까지 **새 시각 규칙 추가·현 main 화면의 정본 승격·과거 브랜치 삭제 금지**. 기능/데이터 작업은 계속할 수 있다.
-잠금일: **2026-09-25**  
-적용 저장소: `freepass-creator/freepass-admin`
+상태: **CANONICAL — USER APPROVED 2026-09-26 (PC) · PR #92 actual route only**  
+확정: 사용자 2026-09-26 「큰 화면으로 준 92버전이 정본이고 그게 메인으로 합쳐져야 돼」 「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」  
+main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기능)
 
-## 1. 단일 디자인 정본
+## 폐기 (DISCARDED)
 
-FreePass Admin의 시각·배치·컴포넌트 규격은 아래만 정본이다.
+아래는 **구현 근거가 아니다.** 되살리거나 참고해 현재 화면을 바꾸지 않는다.
+- #121 이전 main의 화면(하단 탭 5개 · 네 줄 목록 카드 · dz 셸)과 그 잠금 문서(2026-09-25 HARD LOCK, #108~#111)
+- 삭제된 과거 목업(rev 5 포함) · 캡처 · 리뷰 문서
+- `work/uiux`, `recovery/pr92-modernize-20260926`, `claude/erp-platform-ui-ux-hvfyfa` 브랜치 자체 — 내용은 #121로 main에 들어왔고 브랜치는 폐기
+- 사용자 확정 없이 다른 브랜치 · PR · AI가 만든 화면 · 토큰 · 레이아웃
 
-1. `docs/ui/ADMIN-UI-UX-SSOT.md` — 사람이 읽는 현행 Product Profile
-2. `docs/ui/admin-ui-ux-ssot.json` — 자동검사/AI용 machine SSOT
-3. `docs/ui/SALES-APP-BASELINE.md` — 사용자 확정 FreePass Sales 형태 참조
-4. `docs/ui/ai-core-bindings.json` — AI Core 의미/상호작용 binding
-5. `src/app/_design/*` + `src/app/_design/admin-final.css` — 위 정본을 구현한 공통 부품
-6. `src/app/globals.css` — 구조/호환을 위한 base. **시각 값을 새 디자인 근거로 사용하지 않는다.**
+폰(≤900px) 화면은 같은 계보 안에서 다듬는 중이며 사용자 최종 확정 전이다. 다듬기는 이 계보 안에서만 한다.
 
-충돌하면 사용자의 최신 명시 결정 → AI Core 의미 계약 → 이 문서 → Admin SSOT(MD/JSON) → 공통 구현 순서로 해결한다.
+## 현재 단일 디자인 정본
 
-## 2. 절대 금지
+PC actual route 구현:
+- `src/app/_erp/Workspace.tsx`
+- `src/app/_erp/ProductsScreen.tsx`
+- `src/app/_erp/SettlementScreen.tsx`
+- `src/app/_erp/EsignScreen.tsx`
+- `src/app/_erp/parts.tsx`
+- `src/app/_erp/ProductDetail.tsx`
+- `src/app/_erp/erp-standard.css`
+- `src/app/_erp/shell.css`
 
-다음은 **설계 입력으로 사용 금지**다.
+제품 UI 규칙:
+- `docs/ui/ADMIN-UI-UX-SSOT.md`
+- `docs/ui/admin-ui-ux-ssot.json`
 
-- 삭제된 `docs/ui/mockups/**`
-- 삭제된 `docs/ui/UI-HISTORY.md`
-- 2026-09-16 rail/topbar/mockup 계열
-- `admin-shell*`, `classic.css`, `retro-intake*` 계열
-- 과거 Design Hub 승인 mockup/hash
-- 과거 스크린샷, PR 캡처, 리뷰 문서의 화면을 정본으로 역승격하는 행위
-- 다른 AI가 만든 임시 화면을 현재 UI보다 우선하는 행위
-- 새 화면마다 임의의 높이/반경/색/버튼/카드 규격을 만드는 행위
+복구 진행판:
+- `docs/recovery/PR92-LATESTIZATION-STATUS.md`
 
-과거 파일이나 Git history에서 위 디자인을 발견해도 **복원·재사용·참조 구현하지 않는다.**
+## 현재 사용 규칙
 
-## 3. AI 작업 규칙
+UI/UX 작업은 이 문서에 적힌 actual route 구현과 UI SSOT만 읽는다.
+디자인 판단은 저장된 이미지가 아니라 실제 route 렌더 결과로 한다.
 
-어떤 AI(Claude/Codex/GPT/기타)가 오더라도 UI 작업 시작 전에 반드시:
+## actual route 우선
 
-1. 이 파일을 읽는다.
-2. `ADMIN-UI-UX-SSOT.md`와 `admin-ui-ux-ssot.json`을 읽는다.
-3. 필요한 공통 부품을 `src/app/_design/*`에서 먼저 찾는다.
-4. 새 모양을 만들기보다 정본 부품을 조합한다.
-5. 정본에 없는 시각 결정을 추측하지 않는다.
+스크린샷, 문서, fixture와 actual route가 다르면 **actual route 코드가 이긴다**.
 
-사용자가 새 디자인을 명시적으로 승인하지 않은 상태에서 정본과 다른 화면을 만들면 **실패**다.
+- 계약접수: `/intake`
+- 상품찾기: `/products`
+- 정산관리: `/settlement`
+- 전자계약: `/esign`
 
-## 4. 변경 절차
+UI 완료 판정은 실제 route를 1440 / 1280 / 390에서 렌더링한 Visual QA receipt가 있어야 한다.
 
-시각 규격 자체를 바꾸는 변경은 한 PR/커밋 묶음에서 동시에 갱신해야 한다.
+## UI 핵심
 
-- `DESIGN-AUTHORITY.md`
-- `ADMIN-UI-UX-SSOT.md`
-- `admin-ui-ux-ssot.json`
-- 필요한 `src/app/_design/*` / CSS
-- `scripts/check-ui-ssot.mts`의 회귀검사
+- PC는 multi-panel
+- 계약접수 기본은 3 Panel
+- Search / Panel / Control은 line-free
+- 선택은 border 추가가 아니라 surface 변화
+- 카드/컨트롤은 얇고 평평한 operational UI
+- 기능/데이터 최신화 때문에 별도 UI를 만들지 않는다.
 
-하나라도 빠지면 병합하지 않는다.
+## 변경 절차
 
-## 5. 현재 핵심 형태
+UI 변경은 한 변경에서 다음을 같이 갱신한다.
+1. actual route code
+2. UI SSOT
+3. machine-readable UI SSOT
+4. Visual QA
+5. 이 authority 문서
 
-- FreePass Sales 운영 앱의 밝고 얇은 컨트롤 문법이 기본
-- 제목/본문/보조 **18/14/12**
-- 컨트롤/Primary/모바일 touch **44px**, control radius **6px**, panel radius **4px**
-- 상단은 **상태 표시 중심**, 업무 실행/메뉴를 올리지 않는다
-- 주요 실행은 **하단 ActionBar**
-- 목록은 `ListRow`, 상태는 `Tag/StatusTile`, 조건은 `PerkMarks`
-- 선택은 두꺼운 테두리보다 **면 변화**
-- 모바일은 여러 패널을 압축하지 않고 **depth 전환**
-- 웹은 업무 목적에 맞는 다중 패널로 확장
-- 정산은 **묶음 → 실적 → 현재 업무** 역할을 섞지 않는다
-
-세부 규격과 최신 2026-09-25 결정은 `ADMIN-UI-UX-SSOT.md`가 정본이다.
-
-## 6. 자동 잠금
-
-`npm run ui:check`는 다음을 실패 처리해야 한다.
-
-- 삭제된 mockup/history가 다시 생김
-- DevCenter/AI Core manifest가 삭제된 mockup을 authority/evidence로 참조
-- 과거 승인 hash가 다시 들어옴
-- Design Authority가 현행 SSOT 이외의 파일을 approved visual로 지정
-- machine SSOT에서 legacy visual 입력 허용
-- 핵심 토큰/공통 부품 규격 회귀
-
-**목표는 “AI가 잘 판단하기를 기대”하는 것이 아니라, 잘못된 디자인을 코드상으로 선택할 수 없게 하는 것이다.**
+UI 변경은 위 actual route 계보 안에서만 수행한다.

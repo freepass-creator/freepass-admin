@@ -1,6 +1,7 @@
 import type { ProductRepository } from '../../ports/repositories';
 import type { CanonicalProduct } from '../../domain/product/types';
-import { erp5 } from './firestore';
+import { erp5, ERP5_PROJECT_ID } from './firestore';
+import { DEMO_PROJECT, demoMode } from './demo';
 import { toCanonicalProduct, type Erp5Doc, type SkipReason } from './to-canonical';
 import { loadMasterIndex } from './vehicle-master';
 
@@ -90,7 +91,7 @@ export class Erp5ProductRepository implements ProductRepository {
     }
 
     this.lastReport = {
-      project: 'freepasserp5', readAt,
+      project: demoMode() ? DEMO_PROJECT : ERP5_PROJECT_ID, readAt,
       docs: products.size, mapped: rows.length, skipped, warnings,
     };
     return rows;

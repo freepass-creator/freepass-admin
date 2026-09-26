@@ -1,0 +1,437 @@
+/* ══════════════════════════════════════════════════════════════════════
+ * 관리자 PC 틀 — AI Core «ERP 표준 UI 규격 v1» 골격을 body 에 세운다 (DEC-2026-09-23-01)
+ *   부품 모양은 전부 규격(_erp/erp-standard.css — ai-core 정본 생성물)이 그린다. 여기는 «자리»만 잡는다:
+ *   규격 main.html 의 .erp-app 격자(상단바 56 · 좌측 240 · 상태바 26)를 body 에 그대로 옮긴 것.
+ * *
+ * 2026-09-25 공통 규칙 승격: 여기 날짜별로 쌓였던 공통 결정(표면 위계 · 선 없는 카드 · 글자 척도 ·
+ *   목록 카드 골격 · 상태색 · focus halo …)은 ai-core design/erp-standard/erp.css v1.1 로 올라갔다.
+ *   이 파일에는 앱 고유층만 남는다 — dz-* · fn-*(기능 부품) · erp-embed · erp-screen(Screen 틀) ·
+ *   작업판 여백(--fp-workspace-*, 폭 구간별). 브랜드 navy #1B2A4A 는 2026-09-25 공통 기본색이 되어 여기서 덮어쓰지 않는다. 새 공통 규칙은 여기 쌓지 말고
+ *   ai-core 에 올린 뒤 node scripts/sync-erp-standard.mjs 로 가져온다.
+ * ══════════════════════════════════════════════════════════════════════ */
+.erp-theme-flag { display: none; }
+@media (min-width: 901px) {
+  body:has(> .erp-theme-flag) {
+    display: grid;
+    grid-template-columns: var(--erp-sidenav-w) minmax(0, 1fr);
+    grid-template-rows: var(--erp-topbar-h) minmax(0, 1fr) var(--erp-statusbar-h);
+    grid-template-areas: "top top" "side main" "side status";
+    height: 100dvh; min-width: var(--erp-app-min-w); margin: 0; padding: 0; overflow: hidden;
+    background: var(--erp-color-bg); color: var(--erp-color-text);
+    font-family: var(--erp-font-family);
+  }
+  body:has(> .erp-theme-flag) > .erp-topbar { grid-area: top; }
+  body:has(> .erp-theme-flag) > .erp-sidenav { grid-area: side; }
+  body:has(> .erp-theme-flag) > .erp-statusbar { grid-area: status; }
+  body:has(> .erp-theme-flag) > main.fn-main {
+    grid-area: main; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+    padding: 0; background: var(--erp-color-bg);
+  }
+  /* 넓은 화면에서는 multi-panel composition을 사용한다. 이동은 왼쪽 메뉴 하나뿐이라
+   * main.fn-main 의 유일한 자식은 .erp-screen 이다(예전엔 위에 .erp-tabs-bar 도 있었다 — 왼쪽 메뉴와
+   * 똑같은 걸 또 보여주는 중복이라 없앴다, 대표 2026-09-24 「좌측 사이드 메뉴하고 상단 헤더하고
+   * 겹치잖아」). */
+  body:has(> .erp-theme-flag) > header.fn-top,
+  body:has(> .erp-theme-flag) > .dz-tabbar,
+  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen) { display: none !important; }
+  body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
+  /* 가상 데이터 표지 — 운영 데이터로 오해하지 않게 상단바에 늘 보인다 */
+  .erp-std .erp-demo-flag { padding: 3px 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-warn-bg); color: var(--erp-color-warn); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
+  /* 규격 카드 안에 기능 쪽 판(접수 양식 · 처리)을 앉힐 때 — 판의 겉틀만 걷는다(안의 입력 · 단추는 기능 쪽 그대로) */
+  .erp-std .erp-embed .panel { border: 0; box-shadow: none; padding: 0; background: transparent; min-height: 0; overflow: visible; }
+  .erp-std .erp-embed .panel-head { display: none; }
+  /* 입력 패널 발치 — 목록·상세내용 패널처럼 PanelFoot 이 스크롤과 무관하게 늘 보여야 한다(대표 2026-09-24
+   * 「패널 규격 … 좌우로 넓냐 좁냐의 문제」 — 셋 다 같은 셸이다). 기능 쪽 dz-bar 는 원래 폰의 고정 높이
+   * work-panel 안에서 margin-top:auto 로 바닥에 붙는 판이라, 스크롤 칸(erp-panel-body)이 늘어나면 그냥
+   * 맨 아래로 밀려 스크롤해야만 보였다 — 스크롤 칸을 폼 자신(dz-intake-form)으로 옮기고 dz-bar 를 그
+   * 칸 안에서 sticky bottom 으로 고정한다. */
+  .erp-std .erp-panel-body:has(> .erp-embed) { overflow: hidden; }
+  .erp-std .erp-embed { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .erp-std .erp-embed > *:not(.dz-form) { flex-shrink: 0; }
+  .erp-std .erp-embed > .dz-form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .erp-std .erp-embed .dz-intake-form { flex: 1; min-height: 0; overflow-y: auto; padding: var(--erp-sp-4); }
+  .erp-std .erp-embed .dz-bar {
+    position: sticky; bottom: 0; z-index: 1;
+    margin: var(--erp-sp-3) calc(var(--erp-sp-4) * -1) calc(var(--erp-sp-4) * -1);
+    padding: var(--erp-sp-3) var(--erp-sp-4); background: var(--erp-color-surface);
+    border-top: 1px solid var(--erp-color-line); box-shadow: none;
+  }
+  /* 발치 단추 줄 — 다른 패널(erp-panel-foot)과 같은 비율로 통일한다(대표 2026-09-24 「하단에 버튼이랑
+   * … 다 통일 … 주 버튼 7 보조 버튼 3 그 비율로」). 기능 쪽 dz-bar-go 는 이미 같은 7:3 그리드였다 —
+   * 데스크톱에서는 폭만 바(발치) 전체로 꽉 채운다(폰은 그대로 44 높이 그리드). */
+  .erp-std .erp-embed .dz-bar-go { display: flex; gap: var(--erp-sp-2); }
+  .erp-std .erp-embed .dz-bar-go > * { flex: 3; }
+  .erp-std .erp-embed .dz-bar-go > .primary { flex: 7; }
+  /* 단추 셋일 때는 3:3:4(erp.css .erp-panel-foot 과 같은 규칙, 대표 2026-09-24 「패널에 버튼이 3개
+   * 들어갈 때는 334」) — 주 단추 몫만 4로 준다. */
+  .erp-std .erp-embed .dz-bar-go:has(> :nth-child(3)):not(:has(> :nth-child(4))) > .primary { flex: 4; }
+  /* 규격 본문은 세로로 쌓이고 넘치면 스크롤한다 — 카드가 눌려 찌그러지지 않게(목록 카드만 남은 높이를 채운다) */
+  .erp-screen .erp-content > * { flex-shrink: 0; }
+  .erp-screen .erp-content > .erp-panel { flex: 1 0 420px; }
+  /* 여러 패널 작업화면(erp-workspace, erp.css 공통 규격) 이 Screen() 의 .erp-content(패딩 · overflow:auto ·
+   * flex-shrink:0 자식 규칙)를 그대로 쓰면 판 셋이 뷰포트를 못 채운다 — 여기서만 지우고, .erp-workspace
+   * 자신이 그 자리를 채운다. 이 자리 잡기(.erp-content/.erp-screen 은 freepass-admin 자신의 Screen() 틀)만
+   * 앱 몫이고, 배치·카드 자체는 erp.css 공통 규격이다. */
+  .erp-content:has(> .erp-workspace) { padding: 0; overflow: hidden; }
+  .erp-screen .erp-content > .erp-workspace { flex: 1 1 auto; min-height: 0; }
+  /* 기능 쪽 판 안의 입력 · 단추를 규격 치수로(데스크톱에서만 — 폰 판은 그대로 44) */
+  .erp-std .erp-embed :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) {
+    height: var(--erp-input-h); padding: 0 var(--erp-sp-3); border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md);
+    background: var(--erp-color-surface); color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body);
+  }
+  .erp-std .erp-embed textarea { height: auto; padding: var(--erp-sp-2) var(--erp-sp-3); }
+  .erp-std .erp-embed :is(button, a.primary, a.dz-bar-sub) {
+    display: inline-flex; align-items: center; justify-content: center; height: var(--erp-btn-h); padding: 0 var(--erp-sp-4);
+    border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
+    color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold); text-decoration: none; cursor: pointer;
+  }
+  .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child) { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
+  .erp-std .erp-embed label { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+  /* 입력 패널(§5-4 입력·저장) — 한 줄에 한 칸씩(대표 2026-09-24 「입력도 한줄한줄 한 줄」). 기능 쪽
+   * dz-form-grid 는 원래 폰 자동열(auto-fill)이라 데스크톱 넓은 칸에서 여러 칸이 한 줄에 늘어섰다. */
+  .erp-std .erp-embed .dz-form-grid { grid-template-columns: 1fr; gap: var(--erp-sp-3); }
+  .erp-std .erp-embed .dz-form-group { padding: var(--erp-sp-4); background: var(--erp-color-sunken); border-radius: var(--erp-r-md); }
+  .erp-std .dz-fs-open {
+    position: static; display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 var(--erp-sp-4);
+    border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface);
+    color: var(--erp-color-text); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
+  }
+  .erp-std .dz-fs-open:hover, .erp-std .dz-fs-open.on { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-open i { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); }
+  .erp-std .dz-fs-sheet {
+    position: absolute; top: calc(100% + 6px); right: 0; left: auto; z-index: 20; width: 480px; max-width: calc(100vw - 2 * var(--erp-sp-5));
+    height: min(480px, 60vh); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg);
+    background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3);
+  }
+  .erp-panel--compact .dz-fs-sheet { width: 280px; }
+  .erp-std .dz-fs-head { padding: var(--erp-sp-3) var(--erp-sp-3) var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+  .erp-std .dz-fs-head b { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+  .erp-std .dz-fs-head button, .erp-std .dz-fs-axis button, .erp-std .dz-fs-more {
+    color: var(--erp-color-text-2); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md);
+  }
+  .erp-std .dz-fs-head button:hover, .erp-std .dz-fs-axis button:hover, .erp-std .dz-fs-more:hover { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-body nav { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-body nav button { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+  .erp-std .dz-fs-body nav button:hover { color: var(--erp-color-text); }
+  .erp-std .dz-fs-body nav button.on { background: var(--erp-color-surface); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std .dz-fs-body nav i { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); }
+  .erp-std .dz-fs-axis b { font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+  .erp-std .dz-fs-check { color: var(--erp-color-text); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md); }
+  .erp-std .dz-fs-check:hover { background: var(--erp-color-sunken); }
+  .erp-std .dz-fs-check .box { border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); }
+  .erp-std .dz-fs-check.on .box { background: var(--erp-color-primary); }
+  .erp-std .dz-fs-check .n { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+  /* 발치 바 — erp-panel-foot 과 같은 틀(패딩 sp-3/sp-4 · 단추 높이 erp-btn-h) · 같은 비율(주 7 : 보조 3,
+   * 대표 2026-09-24 「버튼은 그 나온 패널 크기만큼을 꽉 채워가지고 … 주 버튼 7 보조 버튼 3」). */
+  .erp-std .dz-fs-foot { padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); }
+  .erp-std .dz-fs-foot.dz-bar-go { display: flex; gap: var(--erp-sp-2); }
+  .erp-std .dz-fs-foot.dz-bar-go > * { flex: 3; height: var(--erp-btn-h); }
+  .erp-std .dz-fs-foot .primary {
+    flex: 7; border: 1px solid var(--erp-color-primary); border-radius: var(--erp-r-md); background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold);
+  }
+  .erp-std .dz-fs-foot .dz-bar-sub { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); border-radius: var(--erp-r-md); }
+  .erp-std .dz-fs-foot .dz-bar-sub:hover { background: var(--erp-color-sunken); }
+}
+@media (max-width: 900px) {
+  .erp-std, .erp-screen { display: none !important; }
+  /* Route loading/error states must remain visible on phone even though the PC screen shell is hidden. */
+  .erp-screen.dz-route-state {
+    display: flex !important;
+    min-height: 100%;
+    flex-direction: column;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Surface type / Interaction hierarchy
+ *
+ * 물성은 타입이 정하고, 상호작용은 hover가 정한다.
+ * - Card/Box/Button = 같은 기본 높이(elevation-1)에서 시작
+ * - Passive card = 떠 있지만 hover 없음
+ * - Interactive card/button = 같은 기본 높이 + hover/press
+ * - Selected = 더 뜨지 않고 눌려 고정
+ * - Card line / Control line / Input line 은 서로 다른 역할 토큰
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.dz-fs-open) {
+    box-shadow: var(--erp-elevation-base);
+    border-color: var(--erp-line-control);
+  }
+  .erp-std :is(.dz-fs-open) {
+    transition:
+      transform 90ms ease,
+      box-shadow 120ms ease,
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  @media (hover: hover) {
+    .erp-std :is(.dz-fs-open):hover {
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  .erp-std :is(.dz-fs-open):active {
+    box-shadow: var(--erp-elevation-0);
+    transform: translateY(var(--erp-press-y));
+  }
+  .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child),
+  .erp-std .dz-fs-foot .primary {
+    box-shadow: var(--erp-elevation-base);
+  }
+
+  @media (hover: hover) {
+    .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child):hover,
+    .erp-std .dz-fs-foot .primary:hover {
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  .erp-std .erp-embed :is(button.primary, a.primary, button[type="submit"]:only-child):active,
+  .erp-std .dz-fs-foot .primary:active {
+    box-shadow: var(--erp-elevation-0);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  .erp-std .dz-fs-check {
+    transition: transform 90ms ease, background-color 120ms ease;
+  }
+  .erp-std .dz-fs-check.on {
+    background: var(--erp-color-primary-weak);
+    color: var(--erp-color-primary);
+    font-weight: var(--erp-fw-semibold);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .erp-std :is(.dz-fs-open, .dz-fs-check) {
+      transition: none;
+    }
+  }
+}
+/* Borderless panel surface — box model/크기 유지, 보이는 외곽선만 제거. */
+@media (min-width: 901px) {
+  .erp-std .dz-fs-foot,
+  .erp-std .erp-embed .dz-bar {
+    border-top-color: transparent;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Line-free UI standard
+ *
+ * visible border는 쓰지 않는다.
+ * hierarchy는 surface + elevation + spacing + state로 만든다.
+ * Web Panel은 canvas 위의 surface island, Mobile Panel은 screen surface.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.erp-embed .dz-bar, .dz-fs-head, .dz-fs-foot) {
+    border-color: transparent !important;
+  }
+  .erp-std :is(.dz-fs-open) {
+    border-color: transparent !important;
+  }
+  .erp-std :is(.dz-fs-sheet) {
+    border-color: transparent !important;
+    box-shadow: var(--erp-elevation-float);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Final line-free semantic hierarchy
+ * canvas → panel → component → state.
+ * Badge(signal)와 Control(action/selection)을 절대 같은 물성으로 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  body:has(> .erp-theme-flag),
+  body:has(> .erp-theme-flag) > main.fn-main {
+    background: var(--erp-color-canvas);
+  }
+  body:has(> .erp-theme-flag) > :is(.erp-topbar,.erp-sidenav,.erp-statusbar) {
+    border-color: transparent !important;
+  }
+  .erp-std :is(.dz-fs-open) {
+    background-color: var(--erp-color-surface-soft);
+    box-shadow: var(--erp-elevation-base);
+    cursor: pointer;
+  }
+
+  @media (hover:hover) {
+    .erp-std :is(.dz-fs-open:not(.on)):hover {
+      background-color: var(--erp-color-surface-hover);
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+  .erp-std :is(.dz-fs-sheet) {
+    background: var(--erp-color-surface);
+    box-shadow: var(--erp-elevation-float);
+    border-color: transparent !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Scale normalization
+ * FreePass Admin에서 먼저 검증하는 공통 스케일.
+ * generated erp-standard.css를 직접 수정하지 않고 consumer override로 압축한다.
+ *
+ * Typography: 24 / 20 / 18 / 16 / 14 / 12
+ * Spacing:    4 / 8 / 12 / 16 / 20 / 24 / 32
+ * Desktop:    small 32 / standard 36 / row 40 / topbar 56
+ * Mobile:     control/action/touch 44 (admin-final.css)
+ * Radius:     4 / 6 / 8 / pill
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .dz-fs-open {
+    height: var(--erp-btn-h);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Surface depth refinement
+ * Canvas → Panel → Component surface의 색 차이까지 명시한다.
+ * shadow만으로 hierarchy를 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* Panel 안 embedded info groups도 같은 component layer를 사용한다. */
+  .erp-std .erp-embed :is(.dz-form-group, .summary-grid, .dz-offer-line, .fn-box) {
+    background: var(--erp-color-surface-soft);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Interaction state consistency
+ * focus-visible도 line-free 문법 안에서 soft halo로 통일한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.dz-fs-open):focus-visible {
+    outline: none;
+    box-shadow: var(--erp-focus-halo), var(--erp-elevation-base);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Form validation & submit UX
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .dz-errs {
+    margin: 0;
+    padding: var(--erp-sp-3);
+    list-style: none;
+    border: 0;
+    border-radius: var(--erp-r-md);
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+    font-size: var(--erp-fs-label);
+    line-height: 1.5;
+  }
+  .erp-std .dz-errs li + li {
+    margin-top: var(--erp-sp-1);
+  }
+
+  .erp-std form > :is(.dz-errs) {
+    margin-bottom: var(--erp-sp-2);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Action risk hierarchy
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .dz-action-caution {
+    background: var(--erp-color-warn-bg);
+    color: var(--erp-color-warn);
+    box-shadow: var(--erp-elevation-base);
+  }
+
+  .erp-std .dz-action-danger {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+    box-shadow: var(--erp-elevation-base);
+    font-weight: var(--erp-fw-bold);
+  }
+
+  @media (hover:hover) {
+    .erp-std .dz-action-caution:hover {
+      background: #FFF1D6;
+    }
+    .erp-std :is(.dz-action-danger):hover {
+      background: var(--erp-color-err-ring);
+    }
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Motion & immediate feedback contract
+ * 업무툴은 짧게 반응하고 오래 움직이지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std :is(.dz-fs-open) {
+    transition:
+      transform var(--erp-motion-press) var(--erp-motion-ease),
+      box-shadow var(--erp-motion-state) var(--erp-motion-ease),
+      background-color var(--erp-motion-state) var(--erp-motion-ease),
+      color var(--erp-motion-state) var(--erp-motion-ease);
+  }
+
+  .erp-std :is(.dz-fs-sheet) {
+    transition:
+      opacity var(--erp-motion-float) var(--erp-motion-ease),
+      box-shadow var(--erp-motion-float) var(--erp-motion-ease);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Full-width workspace + fixed gutter contract
+ * 가로는 항상 사용 가능한 폭을 채우고, 여백은 바깥 gutter 하나로 통제한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-workspace-gutter-x: 20px;
+    --fp-workspace-gutter-y: 16px;
+    --fp-workspace-gap: 16px;
+  }
+
+  .erp-std .erp-workspace {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: var(--fp-workspace-gutter-y) var(--fp-workspace-gutter-x);
+    gap: var(--fp-workspace-gap);
+  }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  :root {
+    --fp-workspace-gutter-x: 16px;
+    --fp-workspace-gutter-y: 12px;
+    --fp-workspace-gap: 12px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --fp-workspace-gutter-x: 20px;
+    --fp-workspace-gutter-y: 16px;
+    --fp-workspace-gap: 16px;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Flat resting surfaces, subtle interaction elevation
+ * 평상시는 납작하게, hover/floating에서만 elevation을 쓴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std :is(.dz-fs-sheet) {
+    box-shadow: var(--erp-elevation-float);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Geometry contract
+ * 단단함은 장식보다 geometry 반복에서 만든다.
+ * Panel 8 / Card·Tile 6 / Control 6 / card padding 12.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std :is(.dz-fs-open) {
+    border-radius: var(--erp-r-md);
+  }
+}

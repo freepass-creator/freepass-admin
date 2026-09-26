@@ -1,0 +1,2433 @@
+/* FreePass Admin canonical ERP UI CSS.
+ * PR #92 actual-route implementation is the visual authority.
+ * Alternate historical themes and generated theme projections are not part of the current product.
+ */
+/* 규격 부품이 공통 글꼴 · 글자 · 색을 사용한다. */
+.erp-std { box-sizing: border-box; font-family: var(--erp-font-family); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-regular); font-variant-numeric: tabular-nums; color: var(--erp-color-text); }
+/* 규격 템플릿은 단추를 <button> 으로 쓴다. 관리자는 이동 단추를 <a> 로 쓰므로 링크 색이 단추 색을 덮지 않게 한다 */
+.erp-std a.erp-btn { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-std a.erp-btn--primary, .erp-std a.erp-btn--danger { color: var(--erp-color-on-primary); }
+.erp-std a.erp-btn--ghost { color: var(--erp-color-text-2); }
+.erp-std a.erp-btn--danger-text { color: var(--erp-color-err); }
+.erp-std a.erp-company, .erp-std a.erp-iconbtn { color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-nav-item { color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-facet-opt { color: var(--erp-color-text); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-facet-opt[aria-pressed="true"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-std a.erp-chip { color: var(--erp-color-text-2); font-weight: var(--erp-fw-regular); }
+.erp-std a.erp-listcard-link, .erp-std a.erp-rowcard-link { color: var(--erp-color-text); text-decoration: none; }
+
+/* ── erp.css ───────────────────────────────────────────── */
+/* ERP 표준 UI 규격 v1 — 공통 스타일
+ *
+ * 값의 정본은 design-system/tokens.json 의 erp_standard 블록이다(AI Core 토큰 정본 하나). 아래 :root 는 그 투영본이고, 그 밖의 규칙은
+ * 색·글자 크기·글자 굵기·모서리를 반드시 var(--erp-*) 로만 쓴다.
+ * 검사: npm run erp:check  (scripts/check-erp-standard.mjs)
+ */
+:root {
+  --erp-color-primary: #1B2A4A;
+  --erp-color-primary-hover: #24395F;
+  --erp-color-primary-weak: #EEF3FA;
+  --erp-color-focus-ring: #D8E2F0;
+  --erp-color-on-primary: #FFFFFF;
+  --erp-color-nav: #0F1B2D;
+  --erp-color-nav-raised: #1A2940;
+  --erp-color-nav-line: #26374F;
+  --erp-color-nav-text: #AEB9CA;
+  --erp-color-nav-text-strong: #FFFFFF;
+  --erp-color-nav-muted: #8492A6;
+  --erp-color-nav-active: #1D355A;
+  --erp-color-nav-indicator: #60A5FA;
+  --erp-color-bg: #F4F6F9;
+  --erp-color-tabs-bg: #E9EDF3;
+  --erp-color-surface: #FFFFFF;
+  --erp-color-sunken: #F8FAFC;
+  --erp-color-line: #E3E8EF;
+  --erp-color-line-row: #EEF1F5;
+  --erp-color-line-strong: #CDD5DF;
+  --erp-color-text: #101828;
+  --erp-color-text-2: #475467;
+  --erp-color-text-3: #98A2B3;
+  --erp-color-row-selected: #F5F8FF;
+  --erp-color-row-hover: #FAFBFC;
+  --erp-color-ok: #067647;
+  --erp-color-ok-bg: #ECFDF3;
+  --erp-color-info: #175CD3;
+  --erp-color-info-bg: #EFF8FF;
+  --erp-color-warn: #B54708;
+  --erp-color-warn-bg: #FFFAEB;
+  --erp-color-err: #B42318;
+  --erp-color-err-bg: #FEF3F2;
+  --erp-color-err-solid: #D92D20;
+  --erp-color-err-ring: #FEE4E2;
+  --erp-color-neutral: #475467;
+  --erp-color-neutral-bg: #F2F4F7;
+  --erp-color-alert-dot: #F04438;
+  --erp-color-favorite: #F5B301;
+  --erp-color-canvas: #F2F6FC;
+  --erp-color-surface-soft: #F7F9FC;
+  --erp-color-surface-hover: #F3F6FA;
+  --erp-color-selected: #EAF1FF;
+  --erp-color-text-muted: #667085;
+  --erp-color-err-text: #7A271A;
+  --erp-font-family: "Pretendard Variable", Pretendard, -apple-system, "Malgun Gothic", sans-serif;
+  --erp-fs-kpi: 24px;
+  --erp-fs-title: 20px;
+  --erp-fs-panel: 18px;
+  --erp-fs-section: 16px;
+  --erp-fs-body: 14px;
+  --erp-fs-label: 12px;
+  --erp-fs-caption: 12px;
+  --erp-fw-regular: 400;
+  --erp-fw-medium: 500;
+  --erp-fw-semibold: 600;
+  --erp-fw-bold: 700;
+  --erp-sp-1: 4px;
+  --erp-sp-2: 8px;
+  --erp-sp-3: 12px;
+  --erp-sp-4: 16px;
+  --erp-sp-5: 20px;
+  --erp-sp-6: 24px;
+  --erp-sp-7: 32px;
+  --erp-r-sm: 4px;
+  --erp-r-md: 6px;
+  --erp-r-lg: 8px;
+  --erp-r-pill: 999px;
+  --erp-topbar-h: 56px;
+  --erp-sidenav-w: 240px;
+  --erp-sidenav-w-collapsed: 64px;
+  --erp-statusbar-h: 26px;
+  --erp-content-pad-x: 24px;
+  --erp-content-pad-y: 16px;
+  --erp-section-gap: 16px;
+  --erp-app-min-w: 1280px;
+  --erp-btn-h: 36px;
+  --erp-btn-h-sm: 32px;
+  --erp-input-h: 36px;
+  --erp-icon: 16px;
+  --erp-icon-nav: 18px;
+  --erp-grid-head-h: 36px;
+  --erp-grid-row-h: 40px;
+  --erp-grid-row-h-dense: 32px;
+  --erp-elevation-0: none;
+  --erp-elevation-base: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --erp-elevation-hover: 0 2px 6px rgba(16, 24, 40, 0.08);
+  --erp-elevation-float: 0 8px 22px rgba(16, 24, 40, 0.12);
+  --erp-press-y: 1px;
+  --erp-line-card: transparent;
+  --erp-line-control: transparent;
+  --erp-focus-halo: 0 0 0 3px rgba(29,78,216,.14);
+  --erp-panel-head-h: 44px;
+  --erp-query-row-h: 48px;
+  --erp-quick-row-h: 40px;
+  --erp-panel-foot-h: 56px;
+  --erp-row-compact-min-h: 84px;
+  --erp-row-standard-min-h: 72px;
+  --erp-section-rhythm: 16px;
+  --erp-icon-lg: 20px;
+  --erp-icon-hit: 36px;
+  --erp-motion-press: 80ms;
+  --erp-motion-state: 120ms;
+  --erp-motion-float: 160ms;
+  --erp-motion-ease: ease-out;
+  --erp-busy-opacity: .72;
+  --erp-card-gap: 12px;
+  --erp-card-line-h: 20px;
+  --erp-card-line-gap: 2px;
+  --erp-detail-row-h: 36px;
+  --erp-shadow-pressed-10: inset 0 1px 2px rgba(29,78,216,.10);
+  --erp-shadow-pressed-14: inset 0 1px 2px rgba(29,78,216,.14);
+  --erp-shadow-pressed-neutral-14: inset 0 1px 2px rgba(16,24,40,.14);
+  --erp-shadow-pressed-11: inset 0 1px 2px rgba(29,78,216,.11);
+  --erp-shadow-pressed-12: inset 0 1px 2px rgba(29,78,216,.12);
+  --erp-err-halo: 0 0 0 3px rgba(180,35,24,.12);
+}
+
+/* ── 기본 ─────────────────────────────────────────── */
+.erp-std, .erp-std * { box-sizing: border-box; }
+.erp-std svg { width: var(--erp-icon); height: var(--erp-icon); flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.erp-std a { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); text-decoration: none; }
+.erp-std :focus-visible { outline: 2px solid var(--erp-color-primary); outline-offset: 2px; }
+.erp-std button, .erp-std input { font-family: inherit; }
+
+/* ── ① 상단바 ─────────────────────────────────────── */
+.erp-topbar { grid-column: 1 / 3; display: flex; align-items: center; gap: var(--erp-sp-4); padding-right: var(--erp-sp-4); background: var(--erp-color-nav); color: var(--erp-color-nav-text-strong); }
+.erp-brand { width: var(--erp-sidenav-w); display: flex; align-items: center; gap: 10px; padding-left: var(--erp-sp-5); font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-brand-mark { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--erp-r-md); background: var(--erp-color-primary); font-size: var(--erp-fs-body); }
+.erp-company, .erp-gsearch { display: flex; align-items: center; gap: var(--erp-sp-2); height: 36px; padding: 0 var(--erp-sp-3); border: 0; border-radius: var(--erp-r-md); background: var(--erp-color-nav-raised); color: var(--erp-color-nav-text); font-size: var(--erp-fs-body); }
+.erp-gsearch { flex: 0 1 440px; }
+.erp-gsearch kbd { margin-left: auto; padding: 1px 6px; border: 1px solid var(--erp-color-nav-line); border-radius: var(--erp-r-sm); font-family: inherit; font-size: var(--erp-fs-caption); }
+.erp-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.erp-iconbtn { position: relative; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: var(--erp-r-md); background: transparent; color: var(--erp-color-nav-text); }
+.erp-iconbtn svg { width: var(--erp-icon-nav); height: var(--erp-icon-nav); }
+.erp-iconbtn[data-alert]::after { content: ""; position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; border-radius: var(--erp-r-pill); background: var(--erp-color-alert-dot); box-shadow: 0 0 0 2px var(--erp-color-nav); }
+.erp-user { display: flex; align-items: center; gap: 10px; margin-left: var(--erp-sp-2); padding-left: 14px; border-left: 1px solid var(--erp-color-nav-line); font-size: var(--erp-fs-body); }
+.erp-user small { display: block; color: var(--erp-color-nav-muted); font-size: var(--erp-fs-caption); }
+.erp-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--erp-r-pill); background: var(--erp-color-neutral); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+
+/* ── ② 좌측 메뉴 (모듈 › 메뉴 2단) ───────────────────── */
+.erp-sidenav { overflow-y: auto; padding: var(--erp-sp-2) var(--erp-sp-3); border-top: 1px solid var(--erp-color-nav-raised); background: var(--erp-color-nav); color: var(--erp-color-nav-text); }
+.erp-nav-group { margin: 14px 10px 6px; color: var(--erp-color-nav-muted); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+.erp-nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--erp-r-md); color: inherit; font-size: var(--erp-fs-body); font-weight: var(--erp-fw-regular); }
+.erp-std .erp-nav-item { color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
+.erp-nav-item svg { width: var(--erp-icon-nav); height: var(--erp-icon-nav); }
+.erp-nav-item[aria-expanded="true"] { color: var(--erp-color-nav-text-strong); }
+.erp-nav-count { margin-left: auto; padding: 1px 7px; border-radius: var(--erp-r-pill); background: var(--erp-color-nav-raised); font-size: var(--erp-fs-caption); }
+.erp-nav-sub { margin: 2px 0 6px 20px; border-left: 1px solid var(--erp-color-nav-line); }
+.erp-std .erp-nav-sub a { display: block; padding: 7px 14px; color: var(--erp-color-nav-text); font-weight: var(--erp-fw-regular); }
+/* 고른 메뉴 표시는 배경색 + 굵은 글자만(대표 2026-09-24 「메뉴 선택됐을 때 좌측에 바 있는데 이런 거
+ * 할 거야? 미니멀 심플로 하기로 한 거 아니야?」) — 목록 카드 왼쪽 상태색 띠를 뺀 것과 같은 이유다.
+ * 배경색 자체가 이미 "지금 여기"를 충분히 보여주므로 곁줄(box-shadow inset 왼쪽 테)은 군더더기였다.
+ * 그래서 배경 판을 왼쪽만 각지게(border-radius 한쪽만 0) 만들던 것도 같이 없애고 네 모서리 다 둥글게 했다. */
+.erp-std .erp-nav-item[aria-current="page"], .erp-std .erp-nav-sub a[aria-current="page"] { color: var(--erp-color-nav-text-strong); background: var(--erp-color-nav-active); border-radius: var(--erp-r-md); font-weight: var(--erp-fw-semibold); }
+
+/* ── ③ 작업 탭 (MDI) ───────────────────────────────── */
+.erp-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.erp-tabs { display: flex; align-items: flex-end; gap: 2px; padding: 6px var(--erp-sp-4) 0; border-bottom: 1px solid var(--erp-color-line); background: var(--erp-color-tabs-bg); }
+.erp-tab { display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-2) 14px; border-radius: var(--erp-r-md) var(--erp-r-md) 0 0; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-tab[aria-selected="true"] { background: var(--erp-color-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-tab-close { color: var(--erp-color-text-3); }
+
+/* ── 본문 ─────────────────────────────────────────── */
+.erp-content { flex: 1; display: flex; flex-direction: column; gap: var(--erp-section-gap); min-height: 0; overflow: auto; padding: var(--erp-content-pad-y) var(--erp-content-pad-x); }
+
+/* ④ 페이지 헤더 */
+.erp-crumb { color: var(--erp-color-text-3); font-size: var(--erp-fs-label); }
+.erp-crumb [aria-current] { color: var(--erp-color-text-2); font-weight: var(--erp-fw-medium); }
+.erp-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--erp-sp-4); margin-top: 6px; }
+.erp-page-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: var(--erp-fs-title); font-weight: var(--erp-fw-bold); }
+.erp-favorite { color: var(--erp-color-favorite); }
+.erp-page-desc { margin: var(--erp-sp-1) 0 0; color: var(--erp-color-text-2); }
+.erp-actions { display: flex; gap: var(--erp-sp-2); }
+
+/* 버튼 — Primary 는 한 화면에 하나, 액션 줄의 맨 오른쪽 */
+.erp-btn { display: inline-flex; align-items: center; gap: 6px; height: var(--erp-btn-h); padding: 0 14px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-semibold); white-space: nowrap; cursor: pointer; }
+.erp-btn:hover { background: var(--erp-color-sunken); }
+.erp-btn--primary { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
+.erp-btn--primary:hover { border-color: var(--erp-color-primary-hover); background: var(--erp-color-primary-hover); }
+.erp-btn--ghost { border-color: transparent; background: transparent; color: var(--erp-color-text-2); }
+.erp-btn--danger { border-color: var(--erp-color-err-solid); background: var(--erp-color-err-solid); color: var(--erp-color-on-primary); }
+.erp-btn--danger-text { color: var(--erp-color-err); }
+.erp-btn--sm { height: var(--erp-btn-h-sm); padding: 0 10px; font-size: var(--erp-fs-label); }
+.erp-btn:disabled, .erp-btn[aria-disabled="true"] { border-color: var(--erp-color-line); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-3); cursor: not-allowed; }
+
+/* ⑤ KPI 카드 (선택) */
+.erp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--erp-sp-3); }
+.erp-kpi { padding: 14px var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); }
+.erp-kpi-label { display: flex; justify-content: space-between; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-kpi-value { margin-top: 6px; font-size: var(--erp-fs-kpi); font-weight: var(--erp-fw-bold); }
+.erp-kpi-value small { margin-left: 3px; color: var(--erp-color-text-2); font-size: var(--erp-fs-body); font-weight: var(--erp-fw-medium); }
+.erp-kpi-value--alert { color: var(--erp-color-err); }
+.erp-kpi-delta { margin-top: var(--erp-sp-1); color: var(--erp-color-text-3); font-size: var(--erp-fs-label); }
+.erp-up { color: var(--erp-color-ok); font-weight: var(--erp-fw-semibold); }
+.erp-down { color: var(--erp-color-err); font-weight: var(--erp-fw-semibold); }
+
+/* 카드 (조회조건 + 그리드를 담는 한 장) */
+.erp-card { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); overflow: hidden; }
+.erp-card--fill { flex: 1; }
+
+/* ⑥ 조회조건 바 */
+.erp-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) ; gap: var(--erp-sp-3); align-items: end; padding: 14px var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); background: var(--erp-color-sunken); }
+.erp-filter-actions { display: flex; justify-content: flex-end; gap: var(--erp-sp-2); }
+
+/* 입력 필드 — 라벨은 위, 필수는 * */
+.erp-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.erp-label { color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-medium); }
+.erp-label .erp-req { color: var(--erp-color-err); font-style: normal; }
+.erp-input { display: flex; align-items: center; gap: 6px; height: var(--erp-input-h); min-width: 0; padding: 0 10px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text); font: inherit; white-space: nowrap; }
+.erp-input::placeholder, .erp-input .erp-placeholder { color: var(--erp-color-text-3); }
+.erp-input svg { margin-left: auto; color: var(--erp-color-text-3); }
+.erp-input:focus, .erp-input--focus { outline: none; border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-input--num { justify-content: flex-end; text-align: right; }
+.erp-input[aria-invalid="true"] { border-color: var(--erp-color-err-solid); box-shadow: 0 0 0 3px var(--erp-color-err-ring); }
+.erp-input[readonly], .erp-input--readonly { border-color: var(--erp-color-line); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); }
+/* 에러 글 — <p>·<span> 다 쓰고, 여러 줄이면 <ul>(대표 2026-09-24 「간격 … 정확하게」 — 태그 기본 여백·글머리
+ * 점을 그대로 두면 패널 리듬이 토큰 밖에서 어긋난다, 그래서 직접 0으로 접고 목록 간격만 토큰으로 준다). */
+.erp-field-error { margin: 0; color: var(--erp-color-err); font-size: var(--erp-fs-caption); }
+ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+
+/* ⑦ 데이터 그리드 */
+.erp-toolbar { display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+.erp-toolbar-spacer { flex: 1; }
+.erp-selection { padding: 5px 10px; border-radius: var(--erp-r-md); background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-chip { display: inline-flex; align-items: center; gap: 6px; padding: var(--erp-sp-1) 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-seg { display: flex; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); overflow: hidden; }
+.erp-seg button { padding: 6px var(--erp-sp-3); border: 0; background: transparent; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-seg button[aria-pressed="true"] { background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-grid-scroll { flex: 1; min-height: 0; overflow: auto; }
+.erp-grid { width: 100%; border-collapse: collapse; }
+.erp-grid th { position: sticky; top: 0; z-index: 1; height: var(--erp-grid-head-h); padding: 0 var(--erp-sp-3); border-bottom: 1px solid var(--erp-color-line); background: var(--erp-color-sunken); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); text-align: left; white-space: nowrap; }
+.erp-grid td { height: var(--erp-grid-row-h); padding: 0 var(--erp-sp-3); border-bottom: 1px solid var(--erp-color-line-row); white-space: nowrap; }
+.erp-grid--dense td { height: var(--erp-grid-row-h-dense); }
+.erp-grid tbody tr:hover td { background: var(--erp-color-row-hover); }
+.erp-grid tbody tr[aria-selected="true"] td { background: var(--erp-color-row-selected); }
+.erp-grid .erp-col-check { width: 40px; }
+.erp-num { text-align: right; }
+.erp-grid th.erp-num { text-align: right; }
+.erp-strong { font-weight: var(--erp-fw-bold); }
+.erp-overdue { color: var(--erp-color-err); font-weight: var(--erp-fw-semibold); }
+.erp-sort { margin-left: var(--erp-sp-1); color: var(--erp-color-primary); }
+.erp-grid tfoot td { background: var(--erp-color-sunken); font-weight: var(--erp-fw-bold); }
+
+/* 체크박스 — 모서리 4 (라디오는 알약) */
+.erp-check { appearance: none; position: relative; width: 16px; height: 16px; margin: 0; vertical-align: middle; border: 1.5px solid var(--erp-color-line-strong); border-radius: var(--erp-r-sm); background: var(--erp-color-surface); }
+.erp-check:checked, .erp-check:indeterminate { border-color: var(--erp-color-primary); background: var(--erp-color-primary); }
+.erp-check:checked::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid var(--erp-color-on-primary); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.erp-check:indeterminate::after { content: ""; position: absolute; left: 2.5px; top: 5.5px; width: 8px; height: 2px; background: var(--erp-color-on-primary); }
+
+/* 상태 뱃지 — 색 + 점 + 글자를 함께 (색만으로 구분 금지) */
+/* 배지는 색 배경 + 글자만 — 안에 점(도트)을 더 찍지 않는다(대표 2026-09-24 「배지도 심플하게 그냥
+   배지로만, 배지 안에 도트 같은 거 찍지 말고」). 색 배경 자체가 이미 상태를 구분해 주므로 점은 군더더기다. */
+.erp-badge { display: inline-flex; align-items: center; padding: 2px var(--erp-sp-2); border-radius: var(--erp-r-pill); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-badge--ok { background: var(--erp-color-ok-bg); color: var(--erp-color-ok); }
+.erp-badge--info { background: var(--erp-color-info-bg); color: var(--erp-color-info); }
+.erp-badge--warn { background: var(--erp-color-warn-bg); color: var(--erp-color-warn); }
+.erp-badge--err { background: var(--erp-color-err-bg); color: var(--erp-color-err); }
+.erp-badge--neutral { background: var(--erp-color-neutral-bg); color: var(--erp-color-neutral); }
+
+/* 그리드 바닥 — 합계 + 페이징 */
+.erp-grid-foot { display: flex; align-items: center; gap: var(--erp-sp-3); padding: 10px var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-grid-foot b { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-pager { margin-left: auto; display: flex; align-items: center; gap: var(--erp-sp-1); }
+.erp-pager button { min-width: 30px; height: 30px; padding: 0 6px; border: 0; border-radius: var(--erp-r-md); background: transparent; color: var(--erp-color-text-2); }
+.erp-pager button[aria-current="page"] { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-weight: var(--erp-fw-semibold); }
+.erp-pager .erp-input { height: 30px; margin-left: var(--erp-sp-2); }
+
+/* ── 등록/수정 폼 ─────────────────────────────────── */
+.erp-form { display: flex; flex-direction: column; gap: var(--erp-section-gap); }
+.erp-section { padding: var(--erp-sp-4) var(--erp-sp-5) var(--erp-sp-5); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); }
+.erp-section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 14px; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px var(--erp-sp-4); }
+.erp-span-2 { grid-column: span 2; }
+.erp-span-4 { grid-column: 1 / -1; }
+.erp-docstate { display: flex; align-items: center; gap: var(--erp-sp-2); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-form-footer { position: sticky; bottom: 0; display: flex; align-items: center; justify-content: flex-end; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-content-pad-x); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); }
+.erp-form-footer-note { margin-right: auto; color: var(--erp-color-text-3); font-size: var(--erp-fs-label); }
+
+/* ── ⑧ 상태바 ─────────────────────────────────────── */
+.erp-statusbar { display: flex; align-items: center; gap: 18px; height: var(--erp-statusbar-h); padding: 0 var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-statusbar-ok { color: var(--erp-color-ok); }
+.erp-statusbar-keys { margin-left: auto; }
+
+/* ── 플랫폼 확장 부품 (FreePass ERP 시안에서 도출) ───────── */
+/* 카드 머리 — 카드 안 제목 + 보조 링크/액션 */
+.erp-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--erp-sp-3); padding: 14px var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+.erp-card-title { margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-card-title small { margin-left: 6px; color: var(--erp-color-text-3); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-regular); }
+.erp-card-body { padding: var(--erp-sp-4); }
+
+/* 2단 배치 — 본문 + 보조 패널 */
+.erp-cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--erp-section-gap); min-height: 0; }
+.erp-cols--half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.erp-stack { display: flex; flex-direction: column; gap: var(--erp-section-gap); min-width: 0; }
+
+/* 진행 단계 — 업무 흐름(계약·정산·전자서명). 현재 단계는 aria-current="step" */
+.erp-steps { display: flex; margin: 0; padding: 0; list-style: none; }
+.erp-steps li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--erp-color-text-3); font-size: var(--erp-fs-label); text-align: center; }
+.erp-steps li::before { content: ""; position: absolute; top: 11px; right: 50%; width: 100%; height: 2px; background: var(--erp-color-line); }
+.erp-steps li:first-child::before { display: none; }
+.erp-step-dot { position: relative; z-index: 1; width: 24px; height: 24px; display: grid; place-items: center; border: 2px solid var(--erp-color-line-strong); border-radius: var(--erp-r-pill); background: var(--erp-color-surface); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-bold); }
+.erp-steps li[data-state="done"] { color: var(--erp-color-text-2); }
+.erp-steps li[data-state="done"]::before, .erp-steps li[aria-current="step"]::before { background: var(--erp-color-primary); }
+.erp-steps li[data-state="done"] .erp-step-dot { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
+.erp-steps li[aria-current="step"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-steps li[aria-current="step"] .erp-step-dot { border-color: var(--erp-color-primary); color: var(--erp-color-primary); box-shadow: 0 0 0 4px var(--erp-color-primary-weak); }
+.erp-step-count { color: var(--erp-color-text); font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+
+/* 처리 대기열 — «지금 처리할 일». 한 줄 = 질문 + 건수 + 바로가기 */
+.erp-queue { margin: 0; padding: 0; list-style: none; }
+.erp-queue li { display: flex; align-items: center; gap: var(--erp-sp-3); padding: 11px var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line-row); }
+.erp-queue li:last-child { border-bottom: 0; }
+.erp-queue-text { flex: 1; min-width: 0; }
+.erp-queue-text small { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-queue-count { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+
+/* 값 묶음 — 상세 화면의 라벨:값 읽기 전용 */
+.erp-props { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px var(--erp-sp-4); margin: 0; }
+.erp-props div { min-width: 0; }
+.erp-props dt { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-props dd { margin: 2px 0 0; font-weight: var(--erp-fw-medium); }
+
+/* 이력 — 시간순 기록 */
+.erp-timeline { margin: 0; padding: 0; list-style: none; }
+.erp-timeline li { position: relative; padding: 0 0 14px 18px; border-left: 2px solid var(--erp-color-line); margin-left: 5px; }
+.erp-timeline li:last-child { padding-bottom: 0; }
+.erp-timeline li::before { content: ""; position: absolute; left: -6px; top: 3px; width: 10px; height: 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-line-strong); }
+.erp-timeline li[data-state="current"]::before { background: var(--erp-color-primary); }
+.erp-timeline time { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+
+/* 셀 안 두 줄 — 주 텍스트 + 보조 텍스트 */
+.erp-cell-sub { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-muted { margin: 0; color: var(--erp-color-text-3); }
+.erp-tags { display: flex; flex-wrap: wrap; gap: var(--erp-sp-1); }
+/* flex-shrink:0 + nowrap — 안 그러면 좁은 판(3패널 계약접수 등)에서 알약이 줄어들며 글자가
+   가운데서 꺾인다(「무심 사」·「분납가 능」) — 알약은 통째로 다음 줄로 넘어가야 한다. */
+.erp-tag { flex: none; padding: 1px 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); white-space: nowrap; }
+.erp-tag--primary { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); }
+
+/* ── 조회 — 검색창 + 상세 필터 (대표 2026-09-23 「검색창이랑 상세 필터를 최대한 쓴다 · 드롭다운은 최소화」) ──
+ *   목록 조회의 기본은 «검색창 하나 + 상세 필터 하나». 조건은 드롭다운을 늘어놓지 않고 상세 필터 안의
+ *   선택지(건수 붙은 칩)로 고른다. 상태 분류는 세그먼트 탭. 드롭다운은 분류가 꼭 필요한 화면(계약 · 정산 · 실적)에서만 1~2개.
+ *   상세 필터는 <details> 로 연다 — 스크립트 없이도 열리고 닫힌다. */
+.erp-searchbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+.erp-search { display: flex; flex-direction: row; align-items: center; gap: var(--erp-sp-2); flex: 1 1 200px; min-width: 0; max-width: 460px; height: var(--erp-btn-h); padding: 0 var(--erp-sp-3); border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text-3); }
+/* 넓은 목록 판(erp-panel--wide, §5-4)에서는 검색창의 460px 상한을 풀어 패널과 같이 커진다(대표
+ * 2026-09-24 「검색창을 더 키우라고 패널이랑 같이 커져야지」) — 460px 는 1칸 폭 패널 기준값이다. */
+.erp-panel--wide .erp-search { max-width: none; }
+.erp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-text); font: inherit; font-size: var(--erp-fs-body); }
+.erp-search:focus-within { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-filter-more { position: relative; }
+.erp-filter-more > summary { list-style: none; }
+.erp-filter-more > summary::-webkit-details-marker { display: none; }
+.erp-filter-more > summary b { min-width: 18px; padding: 0 5px; border-radius: var(--erp-r-pill); background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-bold); text-align: center; }
+/* 왼쪽이 아니라 오른쪽 끝을 자기 자리로 잡고 왼쪽으로 편다(대표 2026-09-24 「간격 … 정확하게」) — 필터
+ * 단추는 검색창 뒤, 그 줄의 오른쪽 끝에 있다. left:0(단추 왼쪽에서 시작해 오른쪽으로 폄)이면 판 폭이
+ * 좁을 때(§5-4 compact, 특히 맨 오른쪽 목록 패널) 뷰포트 밖으로 넘친다. */
+.erp-filter-panel { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; width: 520px; max-width: calc(100vw - 2 * var(--erp-sp-5)); max-height: 60vh; overflow: auto; padding: var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 12px 32px -12px var(--erp-color-text-3); }
+/* compact 판은 폭 자체가 520px 보다 좁을 때가 많다 — 오른쪽 정렬(right:0)만으로는 못 막는다, 판 폭
+ * 안에 실제로 들어가는 값으로 줄인다. */
+.erp-panel--compact .erp-filter-panel { width: 280px; }
+.erp-facet + .erp-facet { margin-top: 14px; }
+.erp-facet-title { margin: 0 0 var(--erp-sp-2); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-facet-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.erp-facet-opt { display: inline-flex; align-items: center; gap: var(--erp-sp-1); height: var(--erp-btn-h-sm); padding: 0 10px; border: 1px solid var(--erp-color-line-strong); border-radius: var(--erp-r-md); background: var(--erp-color-surface); color: var(--erp-color-text); font-size: var(--erp-fs-label); text-decoration: none; }
+.erp-facet-opt small { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-facet-opt[aria-pressed="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-filter-panel-foot { display: flex; justify-content: flex-end; gap: var(--erp-sp-2); margin-top: var(--erp-sp-4); padding-top: var(--erp-sp-3); border-top: 1px solid var(--erp-color-line); }
+.erp-searchbar .erp-chip { text-decoration: none; }
+/* 분류 드롭다운 — 계약 · 정산 · 실적 조회에서만, 퀵 필터 줄(erp-toolbar) 안 1~2개(대표 2026-09-24
+ * 「그 드랍다운은 퀵필터라고 생각을 하고 퀵필터 라인에 있어야 돼」 — 검색창 줄이 아니다). */
+.erp-dd { flex: none; width: auto; min-width: 120px; height: var(--erp-btn-h); }
+/* 퀵 필터 줄 안에서는 옆 알약(erp-facet-opt, btn-h-sm 28px)과 같은 높이 · 글자 크기로 — 혼자
+ * 튀어나오면 안 된다(대표 2026-09-24 「그것도 버튼하고 이게 같아야지, 레벨이 … 그것만 튀나오면
+ * 안 되잖아」). */
+.erp-toolbar .erp-dd { height: var(--erp-btn-h-sm); padding: 0 10px; font-size: var(--erp-fs-label); }
+/* 한 줄 처리 폼 — 상세의 «처리» 카드: 값 한 칸 + 그 값을 바꾸는 단추(차량번호 저장 · 인도 완료 · 취소 …) */
+.erp-inline-form { display: flex; align-items: flex-end; gap: var(--erp-sp-2); padding: var(--erp-sp-3) 0; border-bottom: 1px solid var(--erp-color-line-row); }
+.erp-inline-form:first-child { padding-top: 0; }
+.erp-inline-form:last-child { border-bottom: 0; padding-bottom: 0; }
+.erp-inline-form .erp-field { flex: 1; }
+
+/* ── 목록 카드 — 표 대신 카드로 늘어놓는 목록 (대표 2026-09-23 「목록을 카드 타입으로 … 모바일로 넘어가기 쉽게」) ──
+ *   한 건 = 카드 한 장: 머리(이름 + 보조 줄 · 상태 뱃지) → 값 묶음(.erp-props) → 바닥(태그 · 금액).
+ *   카드는 넓이에 맞춰 칸 수가 저절로 줄어든다 — PC 여러 칸, 좁은 창 · 폰은 한 칸. 같은 마크업이 폰까지 간다.
+ *   카드 전체를 누르면 열린다: 이름 링크(.erp-listcard-link)가 카드를 덮고, 카드 안의 다른 링크는 그 위에 뜬다.
+ *   고른 카드는 aria-current="true". 합계는 카드 목록 아래 .erp-grid-foot 에 둔다. */
+.erp-cardlist { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); align-content: start; gap: var(--erp-sp-3); padding: var(--erp-sp-4); background: var(--erp-color-sunken); }
+.erp-listcard { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px var(--erp-sp-4); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); }
+.erp-listcard:hover { border-color: var(--erp-color-line-strong); }
+.erp-listcard[aria-current="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-row-selected); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-listcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--erp-sp-2); }
+.erp-listcard-title { min-width: 0; margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-listcard-link { color: var(--erp-color-text); text-decoration: none; }
+.erp-listcard-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--erp-r-lg); }
+.erp-listcard-link:focus-visible { outline: 0; }
+.erp-listcard-link:focus-visible::after { box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-listcard a:not(.erp-listcard-link) { position: relative; z-index: 1; }
+.erp-listcard-sub { display: block; margin-top: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-listcard .erp-props { gap: var(--erp-sp-2) var(--erp-sp-3); }
+.erp-listcard-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--erp-sp-2); margin-top: auto; padding-top: 10px; border-top: 1px solid var(--erp-color-line-row); }
+.erp-listcard-amount { margin-left: auto; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); white-space: nowrap; }
+.erp-listcard-amount small { margin-left: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+
+/* ── 긴 카드 목록 — 한 건 = 가로로 긴 카드 한 장 (대표 2026-09-23 「줄 타입은 촌스럽다 … 카드를 기다랗게 해서 거기 정보를 넣는 방식」) ──
+ *   카드 한 장을 네 칸으로 나눈다: 누구·무슨 차(id) · 어디까지 왔나(steps) · 조건(facts) · 돈(amount) + 열기(go).
+ *   상태(data-tone)는 뱃지(카드 안, 이름 옆) 하나로만 보여준다 — 왼쪽 띠 색은 대표 2026-09-24
+ *   「다른 화면도 다 그런 거(좌측에 바 대는 것) 없는지 훑어봐」로 넓은 카드에서도 지웠다. 좁은 카드
+ *   (compact)는 이미 썸네일 색으로, 넓은 카드는 뱃지로 상태를 보여주는데 왼쪽 띠까지 있으면 같은 걸
+ *   두 번 보여주는 것이었다. 좁은 창 · 폰에서는 칸이 위아래로 쌓인다 — 같은 마크업이 폰까지 간다.
+ *   카드 전체를 누르면 열린다(.erp-rowcard-link 가 카드를 덮는다). 고른 카드는 aria-current="true". */
+.erp-rowcards { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--erp-sp-2); padding: var(--erp-sp-4); background: var(--erp-color-sunken); }
+.erp-rowcards-group { margin: 6px 0 0; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-rowcards-group:first-child { margin-top: 0; }
+.erp-rowcards-group small { margin-left: 6px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-rowcard { position: relative; flex: none; display: grid; grid-template-columns: minmax(200px, 1.2fr) minmax(250px, 1.3fr) minmax(0, 2fr) 170px 20px; grid-template-areas: "id steps facts amount go"; align-items: center; gap: var(--erp-sp-6); padding: 16px var(--erp-sp-5); border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); overflow: hidden; }
+.erp-rowcard:hover { border-color: var(--erp-color-line-strong); box-shadow: 0 6px 16px -12px var(--erp-color-text-3); }
+.erp-rowcard[aria-current="true"] { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-focus-ring); }
+.erp-rowcard .erp-rowcard-link { position: static; min-width: 0; overflow: hidden; color: var(--erp-color-text); font-weight: var(--erp-fw-bold); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-link::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+.erp-rowcard a:not(.erp-rowcard-link), .erp-rowcard button { position: relative; z-index: 1; }
+/* 칸 1 — 누구 · 무슨 차 */
+.erp-rowcard-id { grid-area: id; min-width: 0; }
+.erp-rowcard-title { display: flex; align-items: center; gap: var(--erp-sp-2); margin: 0; min-width: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); }
+.erp-rowcard-sub { margin-top: 4px; color: var(--erp-color-text); font-weight: var(--erp-fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-sub b { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-rowcard-meta { margin-top: 3px; overflow: hidden; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); text-overflow: ellipsis; white-space: nowrap; }
+/* 칸 2 — 어디까지 왔나 (작은 진행 단계) */
+.erp-rowcard-steps { grid-area: steps; display: flex; margin: 0; padding: 0; list-style: none; }
+.erp-rowcard-steps li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); white-space: nowrap; }
+.erp-rowcard-steps li::before { content: ""; position: absolute; top: 4px; right: 50%; width: 100%; height: 2px; background: var(--erp-color-line); }
+.erp-rowcard-steps li:first-child::before { display: none; }
+.erp-rowcard-steps li i { position: relative; z-index: 1; width: 10px; height: 10px; border: 2px solid var(--erp-color-line-strong); border-radius: var(--erp-r-pill); background: var(--erp-color-surface); }
+.erp-rowcard-steps li[data-state="done"] { color: var(--erp-color-text-2); }
+.erp-rowcard-steps li[data-state="done"]::before, .erp-rowcard-steps li[aria-current="step"]::before { background: var(--erp-color-primary); }
+.erp-rowcard-steps li[data-state="done"] i { border-color: var(--erp-color-primary); background: var(--erp-color-primary); }
+.erp-rowcard-steps li[aria-current="step"] { color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+.erp-rowcard-steps li[aria-current="step"] i { border-color: var(--erp-color-primary); box-shadow: 0 0 0 3px var(--erp-color-primary-weak); }
+/* 칸 3 — 조건 */
+.erp-rowcard-facts { grid-area: facts; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--erp-sp-4); margin: 0; }
+.erp-rowcard-facts div { min-width: 0; }
+.erp-rowcard-facts dt { color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-rowcard-facts dd { margin: 3px 0 0; overflow: hidden; font-weight: var(--erp-fw-medium); text-overflow: ellipsis; white-space: nowrap; }
+.erp-rowcard-facts dd small { display: block; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+/* 칸 4 — 돈 */
+.erp-rowcard-amount { grid-area: amount; text-align: right; }
+.erp-rowcard-amount strong { display: block; font-size: var(--erp-fs-title); font-weight: var(--erp-fw-bold); line-height: 1.1; }
+.erp-rowcard-amount strong small { margin-left: 2px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-regular); }
+.erp-rowcard-amount span { display: block; margin-top: 4px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-rowcard-go { grid-area: go; width: 20px; height: 20px; fill: none; stroke: var(--erp-color-text-3); stroke-width: 2; }
+.erp-rowcard:hover .erp-rowcard-go { stroke: var(--erp-color-primary); }
+/* 단계가 없는 목록(상품) — 조건 칸이 단계 자리까지 넓어진다 */
+.erp-rowcard--no-steps { grid-template-columns: minmax(200px, 1.2fr) minmax(0, 3.3fr) 170px 20px; grid-template-areas: "id facts amount go"; }
+.erp-rowcard--no-steps .erp-rowcard-facts { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+@media (max-width: 1100px) {
+  .erp-rowcard, .erp-rowcard--no-steps { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id amount" "steps steps" "facts facts"; gap: 14px var(--erp-sp-4); }
+  .erp-rowcard-facts, .erp-rowcard--no-steps .erp-rowcard-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px var(--erp-sp-4); }
+  .erp-rowcard-go { display: none; }
+}
+
+/* ── 패널 — 여러 개를 한 화면에 나란히 두는 자족 카드 (대표 2026-09-24 「패널이 총 3개였으면 …
+ *    패널 규격이 있고 그 목록 카드의 규격을 또 만들어야지」 · 「패널 규격 … 목록 패널 내용 패널 입력
+ *    패널 이렇게 세 개밖에 없잖아 이게 좌우로 넓냐 좁냐의 문제인 거지」) ──
+ *   패널은 화면을 조립하는 단위다. 목록 패널(검색 · 필터 · 퀵 필터 + 긴 카드 목록) · 상세내용 패널
+ *   (고른 한 건의 자세한 내용, 쓰는 화면에서는 「접수하기」 로 같은 자리가 뒤집혀 입력 면이 된다) ·
+ *   입력·저장 패널(값을 쓰는 폼) 세 종류뿐이다. 대상(상품 · 접수 · 실적 · 정산)이 달라도, 좁게 나란히
+ *   붙이든 넓게 혼자 쓰든 패널의 틀은 같고, 안의 카드 내용만 §5-5 를 따라 바뀐다. */
+.erp-panel { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--erp-color-line); border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 8px 22px -18px var(--erp-color-text-3); overflow: hidden; }
+.erp-panel--flip { border: 2px solid var(--erp-color-primary); box-shadow: 0 0 0 4px var(--erp-color-focus-ring); }
+/* 패널 머리 — 좌우 두 자리로 딱 나뉜다(대표 2026-09-24 「좌측에 어떤 페이지인지 … 밸런스가 안
+ * 맞는 것 같은데」). 왼쪽 자리(이름표 칩 + 제목)와 오른쪽 자리(건수 칩)가 똑같이 "칩 하나 + 글자"
+ * 형태라 양 끝의 시각적 무게가 같다 — 전에는 왼쪽만 칩(`erp-panel-kind`)이고 오른쪽은 맨 텍스트라
+ * 왼쪽은 무겁고 오른쪽은 휑해서 균형이 안 맞아 보였다. */
+.erp-panel-head { display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-bottom: 1px solid var(--erp-color-line); }
+.erp-panel-kind { padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+/* 패널 머리 제목은 그 패널 안에서 가장 큰 글자다(대표 2026-09-24 「패널 헤드의 텍스트랑 그 패널
+ * 내용이랑 같을 순 없지 … 패널 헤드가 제일 크면 그거보다 좀 작고」). 패널 안 강조 글자(대여료·금액
+ * 같은 erp-tile-row strong, 좁은 목록의 rowcard 제목·금액, 히어로 카드 이름, 진행 카운트)는 전부
+ * fs-section(15px) 한 단이라 그보다는 커야 하지만, 한 화면에 패널이 셋 나란히 서면 그때마다 fs-title
+ * (22px, 화면 전체에 하나뿐인 erp-page-title 몫)을 세 번 반복하는 건 과하다(대표 2026-09-24 「전체적으로
+ * 좀 분위기 맞춰야지」) — 페이지 제목보다는 작고 섹션 제목보다는 큰 전용 단(fs-panel, 17px)을 쓴다. */
+.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-panel); font-weight: var(--erp-fw-bold); }
+.erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+.erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
+/* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */
+/* 바 자체(틀)는 하나뿐 — 안에 든 게 단추 두 개든, 단추 하나든, 「총 N건 + 페이지」든 바 높이는
+ * 늘 같다(대표 2026-09-24 「상단 패널 헤드를 똑같이 맞췄듯이 하단에도 … 내용물만 달라지는 거지」).
+ * 단추 높이(erp-btn-h)를 기준 삼아 min-height 로 고정 — 페이저(30px)처럼 더 낮은 내용은 가운데 정렬로
+ * 앉는다(align-items:center, 위에서 이미 줌). */
+.erp-panel-foot { flex: none; min-height: calc(var(--erp-btn-h) + 2 * var(--erp-sp-3)); display: flex; align-items: center; gap: var(--erp-sp-2); padding: var(--erp-sp-3) var(--erp-sp-4); border-top: 1px solid var(--erp-color-line); background: var(--erp-color-surface); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+/* 주 단추(erp-btn--primary) 7 : 보조 단추 3 — 이미 기능 쪽 dz-bar-go 가 쓰던 비율(대표 2026-09-24
+ * 「주 버튼 7 보조 버튼 3 그 비율로」). 바 폭을 항상 꽉 채운다 — 단추 하나뿐이면 그 하나가 다 찬다. */
+.erp-panel-foot .erp-btn { flex: 3; justify-content: center; }
+.erp-panel-foot .erp-btn--primary { flex: 7; }
+/* 단추가 셋일 때는 7:3이 아니라 3:3:4 — 주 단추 몫이 준다(대표 2026-09-24 「패널에 버튼이 3개 들어갈
+ * 때는 334」). :has() 로 «단추 셋뿐(넷째 자식이 없다)»인 바만 골라 주 단추만 4로 낮춘다 — 보조 둘은
+ * 이미 위 기본값(flex:3)대로다. */
+.erp-panel-foot:has(> .erp-btn:nth-child(3)):not(:has(> :nth-child(4))) .erp-btn--primary { flex: 4; }
+/* 목록 패널 발치의 합계 글(예: 「총 N건」) — erp-grid-foot 과 같은 톤(대표 2026-09-24 「간격 … 정확하게」,
+ * 버튼 없이 맨 글자만 두면 색·크기가 안 정해져 있었다). */
+.erp-panel-foot b { color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+
+/* 타일 — 테두리 선 없이 그림자로만 구분되는 공통 규격(대표 2026-09-24 「그런 위계를 임기응변으로 하지
+ * 말고 규격으로 공통 css에다가 규격으로 둬야 돼」). 상품상세 레퍼런스 페이지(sv-term · sv-ref-card ·
+ * sv-car-card)에서 같은 패딩 · 모서리 · 그림자를 세 번 따로 베껴 쓰고 있던 걸 공통 부품으로 올렸다 —
+ * 새 상세내용 패널(접수상세 · 실적상세 등)을 만들 때도 이 클래스만 붙이면 §5-4/§5-6 카드 규격을 그대로
+ * 물려받는다. `erp-card`(§4, 위 line 177 부근 — 테두리 있는 큰 구획 카드, freepass-admin 의
+ * `CardHead`/`erp-card--fill`이 이미 쓰고 있다)와 이름이 겹치면 안 돼서 다른 이름 `erp-tile`을 쓴다 —
+ * "카드 안에 든, 테두리 없이 그림자로만 뜨는 작은 낱장"이라 타일이라 불렀다. 성격이 둘이다: 그냥
+ * `erp-tile`은 B. 설명하는 카드, `erp-tile--pressable`을 더하면 A. 누르는 카드(골라서 결정하는 카드,
+ * aria-pressed로 상태 표시)가 된다.
+ * 그림자는 아래로만 지지 않는다(대표 2026-09-24 「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝
+ * 보일 듯 말 듯 카드구나라는 건 보여줘야」) — 아주 옅은 전방위 테(0 0 0 1px, line-row 색)로 네 변을 다
+ * 은은하게 보여주고, 그 위에 아래쪽으로 살짝 더 퍼지는 그림자를 얹어 뜬 느낌을 낸다. */
+.erp-tile { padding: var(--erp-sp-3); border: 0; border-radius: var(--erp-r-lg); background: var(--erp-color-surface); box-shadow: 0 0 0 1px var(--erp-color-line-row), 0 2px 5px -2px var(--erp-color-text-3); }
+.erp-tile-group { display: flex; flex-direction: column; gap: var(--erp-sp-2); }
+/* erp-section-title 처럼 flex 로 짠다 — 제목 옆에 erp-docstate(§4 「청구 − 지급 = 남는 것」류 설명)를
+ * 붙일 때 한 줄에 나란히 서게(대표 2026-09-24 「간격 … 정확하게 완료될 때까지」 — erp-docstate 가
+ * display:flex 라 안 flex 인 부모 안에서는 줄이 갈라졌었다). */
+.erp-tile-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--erp-color-line); color: var(--erp-color-text); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
+.erp-tile--pressable { cursor: pointer; }
+.erp-tile--pressable:hover { box-shadow: 0 0 0 1px var(--erp-color-line-strong), 0 4px 10px -3px var(--erp-color-text-3); }
+.erp-tile--pressable[aria-pressed="true"] { background: var(--erp-color-primary-weak); box-shadow: 0 0 0 2px var(--erp-color-primary); }
+/* 타일 안 내용 — 핵심 정보 2행(freepass-admin 실제 적용 때 일반화, 대표 2026-09-24 「기간 대여료
+ * 보증금이 가장 핵심 정보지」의 카드 안 배치를 상품상세 레퍼런스 전용 클래스(sv-term-main 등)로 남기지
+ * 않고 모든 타일이 쓸 수 있게 올렸다) — 한 줄에 굵은 이름(b) + 강조 값(strong)을 양 끝으로, 보조 줄은
+ * 옅은 라벨(span) + 강조 보조값(erp-tile-note--accent)을 양 끝으로 둔다. 골랐을 때(aria-pressed)는
+ * 메인 줄이 Primary 색으로 바뀐다. */
+.erp-tile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.erp-tile-row b { font-weight: var(--erp-fw-bold); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-tile-row strong { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+.erp-tile-row span { font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); color: var(--erp-color-text-2); }
+.erp-tile-row .erp-tile-note--accent { color: var(--erp-color-ok); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+.erp-tile--pressable[aria-pressed="true"] .erp-tile-row b, .erp-tile--pressable[aria-pressed="true"] .erp-tile-row strong { color: var(--erp-color-primary); }
+/* 목록 패널 안 — 좁은 폭에서도 서는 작은 긴 카드(§5-3 erp-rowcard 를 그대로 쓰되 칸을 좁힌다)
+ * 눌러야 상세내용 패널이 열리므로(대표 2026-09-24 「누르면 상세가 보이는데 계속 보고 있을 것도 아니고」),
+ * 여기서는 상태(뱃지)와 고르는 데 필요한 최소 식별 정보 + 금액까지만 — steps 트래커 · facts 는 상세내용 패널 몫이라 뺀다.
+ * 모든 대상(상품 · 접수 · 실적 · 정산)이 폭 · 줄 수와 무관하게 같은 두 줄 규격으로 통일된다.
+ * 두 줄의 역할은 대상과 무관하게 고정(대표 2026-09-24 「메인줄에는 해당되는 내용을 쓰고 보조줄에는
+ * 보조적인 거를 쓰면 되잖아 나중에 그 항목은 바꾸더라도」) — 메인줄(erp-rowcard-title)은 이 카드가
+ * 무엇/누구인지 + 상태(뱃지), 보조줄(erp-rowcard-sub — 처음엔 차량 맥락 이름(erp-rowcard-car)이었으나
+ * 다른 프로젝트 재사용 검토(2026-09-24)로 중립 이름으로 고쳤다)은 메인줄을 보완하는 한 줄이다. */
+.erp-panel--compact .erp-rowcards { padding: var(--erp-sp-2) var(--erp-sp-3) var(--erp-sp-3); gap: var(--erp-sp-2); background: transparent; }
+/* 좁은 카드는 테두리 선 대신 그림자로 구분한다(대표 2026-09-24 「이 카드가 라인이 없이 좀 구분이
+ * 됐으면 좋겠다」→「라인이 없다고 해서 위쪽이 그냥 안 보이면 안 돼 … 살짝 보일 듯 말 듯」) — 위 .erp-tile
+ * 와 같은 전방위 옅은 테 + 아래쪽 그림자 조합을 그대로 쓴다(값을 다시 베끼지 않고 동일 선언을 공유).
+ * sunken 배경(erp-rowcards) 위에 카드 하나하나가 네 변 다 은은하게 갈린다. 골랐을 때(aria-current)는
+ * Primary 색 그림자 테로 표시한다. */
+.erp-panel--compact .erp-rowcard { grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "thumb id amount"; align-items: center; gap: 2px var(--erp-sp-3); padding: 10px var(--erp-sp-3); border: 0; box-shadow: 0 0 0 1px var(--erp-color-line-row), 0 2px 5px -2px var(--erp-color-text-3); }
+.erp-panel--compact .erp-rowcard:hover { box-shadow: 0 0 0 1px var(--erp-color-line-strong), 0 4px 10px -3px var(--erp-color-text-3); }
+.erp-panel--compact .erp-rowcard[aria-current="true"] { box-shadow: 0 0 0 2px var(--erp-color-primary); }
+.erp-panel--compact .erp-rowcard-steps, .erp-panel--compact .erp-rowcard-facts { display: none; }
+.erp-panel--compact .erp-rowcard-amount { text-align: right; }
+.erp-panel--compact .erp-rowcard-amount strong { font-size: var(--erp-fs-section); }
+.erp-panel--compact .erp-rowcard-go { display: none; }
+/* 썸네일 — 상품은 사진(차 아이콘), 접수 · 정산처럼 사진이 없는 대상은 같은 자리에 상태색을 칠해
+ * 글자를 읽지 않아도 상태가 한눈에 들어오게 한다(대표 2026-09-24 「썸네일 쪽에 상태나 분류값 직관적으로」).
+ * data-tone 이 있으면(접수 · 정산 카드) 뱃지와 같은 색을 썸네일 배경에 칠하고 짧은 상태 글자를 넣는다 —
+ * 새 아이콘을 안 만들고 이미 있는 뱃지 톤 색만 재사용한다. 글자만 크게 채웠더니 밋밋해서(대표 2026-09-24
+ * 「아이콘이 들어가고 그 밑에 상태를 표현하는 약간 보조글씨로」), 상태 종류는 아이콘 + 그 밑에 작은
+ * 글씨(`erp-rowcard-thumb--status`)로 바꾼다 — 사진이 있는 상품 썸네일(수정자 없음)은 그대로 사진이
+ * 박스를 꽉 채운다. */
+.erp-panel--compact .erp-rowcard-thumb { grid-area: thumb; align-self: center; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--erp-r-md); background: var(--erp-color-sunken); color: var(--erp-color-line-strong); }
+.erp-panel--compact .erp-rowcard-thumb svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.4; }
+.erp-panel--compact .erp-rowcard-thumb--status { flex-direction: column; gap: 2px; }
+.erp-panel--compact .erp-rowcard-thumb--status svg { width: 18px; height: 18px; stroke-width: 1.6; }
+.erp-panel--compact .erp-rowcard-thumb--status span { font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-bold); line-height: 1; letter-spacing: -0.02em; }
+.erp-panel--compact .erp-rowcard[data-tone="ok"] .erp-rowcard-thumb { background: var(--erp-color-ok-bg); color: var(--erp-color-ok); }
+.erp-panel--compact .erp-rowcard[data-tone="info"] .erp-rowcard-thumb { background: var(--erp-color-info-bg); color: var(--erp-color-info); }
+.erp-panel--compact .erp-rowcard[data-tone="warn"] .erp-rowcard-thumb { background: var(--erp-color-warn-bg); color: var(--erp-color-warn); }
+.erp-panel--compact .erp-rowcard[data-tone="err"] .erp-rowcard-thumb { background: var(--erp-color-err-bg); color: var(--erp-color-err); }
+/* 검색창 · 퀵 필터 줄 밑의 구분선 — 좁은 패널에서 검색창 바로 밑에 퀵 필터가 붙으면서 선 두 개가 다닥다닥
+ * 붙어 지저분해졌다(대표 2026-09-24 「검색창이랑 목록카드 사이에 라인 없애자」). 좁은 패널에서는 지운다 —
+ * 카드 목록의 sunken 배경색만으로도 위 검색 영역과 구분이 된다. */
+.erp-panel--compact .erp-searchbar, .erp-panel--compact .erp-toolbar { border-bottom: 0; }
+/* 간격 규격(대표 2026-09-24 「검색창하고 빠른 필터하고 목록하고 간격이 좀 이상하고」) — 테두리 선이 있는
+ * 원안(§5-1)은 검색창 · 퀵 필터가 각자 위아래 패딩을 갖고 그 사이에 선이 있어도 자연스러운데, 좁은 패널은
+ * 위에서 선을 지웠기 때문에 두 부품이 각자의 아래 패딩 + 위 패딩을 더해서(12+12=24px, 12+8=20px) 구간마다
+ * 간격이 서로 다르게 보였다. 좁은 패널에서는 아래쪽 패딩을 0으로 접어 다음 부품의 위쪽 패딩 하나만
+ * 간격으로 남긴다 — 검색창 → 퀵 필터 → 카드 목록까지 전부 var(--erp-sp-3)(12px) 한 값으로 고르다. */
+.erp-panel--compact .erp-searchbar { padding-bottom: 0; }
+.erp-panel--compact .erp-toolbar { padding-top: var(--erp-sp-3); padding-bottom: 0; }
+.erp-panel--compact .erp-rowcards { padding-top: var(--erp-sp-3); }
+.erp-rowcard-title .erp-badge, .erp-rowcard-title small { flex: none; }
+
+/* ── 여러 패널 작업화면(workspace) — 목록 · 상세내용 · 입력 패널을 가로로 나란히 붙인다(§5-4). 뷰포트
+ * 높이를 꽉 채우고 각 패널 안에서 스크롤한다(대표 2026-09-24 「세로패널을 가로로 붙이라고」). 접수 ·
+ * 실적처럼 같은 모양의 작업화면을 도메인마다 새로 그리지 않고 이 공통 배치를 그대로 쓴다 — 페이지
+ * 전용 CSS 로 다시 베끼지 않는다(대표 2026-09-24 「공통 CSS랑 … 절대로 그 페이지 전용을 만들지 마」). */
+.erp-workspace { display: flex; min-height: 0; padding: var(--erp-sp-4) var(--erp-sp-5); gap: var(--erp-sp-4); }
+.erp-workspace .erp-panel { flex: 1 1 0; min-width: 0; }
+/* 패널 둘을 하나로 합친 폭(1×2) — 판이 셋일 필요 없는 화면(예: 상품찾기 = 목록 하나 + 상세 하나)에서
+ * 목록 판이 다른 목록 판 둘만큼 넓게 선다(대표 2026-09-24 「패널 두 개를 합쳐서 상품 목록을 두 줄로
+ * 깔면 돼. 넓게 두 줄로 … 상품 찾기는 목록 패널이 1 곱하기 2짜리가 들어가」). */
+.erp-workspace .erp-panel--wide { flex: 2 1 0; }
+/* compact(좁은 카드) + wide(패널 두 개 폭)를 같이 쓰면 좁은 카드 그대로 두 칸 그리드로 깐다 —
+ * 「두 줄로」(대표 2026-09-24, 위 인용) = 좁은 카드(erp-panel--compact) × 두 배 폭(erp-panel--wide). */
+.erp-panel--compact.erp-panel--wide .erp-rowcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+.erp-panel--compact.erp-panel--wide .erp-rowcards-group { grid-column: 1 / -1; }
+
+/* 상세내용 패널 몸 — 세로로 쌓는다. 안의 카드는 §5-4 카드 규격(erp-tile · erp-tile-group · erp-tile-row)
+ * 그대로다. */
+.erp-detail-body { display: flex; flex-direction: column; gap: var(--erp-sp-5); padding: var(--erp-sp-4); }
+
+/* 대표 사진 카드 — 사진이 메인, 그 밑에 심플한 설명(대표 2026-09-24 「차 사진이 메인으로는 있어야 되잖아
+ * 차 사진 메인에 그 차를 설명하는 간단한 정보 정도는 들어가야지」). 셸은 erp-tile 그대로, 안쪽만 세로 배치. */
+.erp-hero-tile { display: flex; flex-direction: column; gap: var(--erp-sp-3); }
+.erp-hero-tile .photo { display: grid; place-items: center; height: 132px; border-radius: var(--erp-r-md); background: var(--erp-color-sunken); color: var(--erp-color-line-strong); }
+.erp-hero-tile .photo svg { width: 180px; height: 84px; fill: none; stroke: currentColor; stroke-width: 1.2; }
+.erp-hero-info { min-width: 0; }
+.erp-hero-info .name { display: flex; align-items: center; gap: var(--erp-sp-2); margin: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); flex-wrap: wrap; }
+.erp-hero-info .sub { margin: 3px 0 0; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
+.erp-hero-info .sub b { margin-right: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+.erp-hero-line { margin: 4px 0 0; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+
+/* 카드 없는 소제목 — 상세내용 패널 안, 카드 묶음 위에만 쓴다(§5-4 «이 패널의 모든 카드 · 소제목이 이
+ * 셋만 쓴다» — 카드 안에 이미 있는 내용을 다시 풀어 쓰지 않는, 배경 없는 짧은 제목줄). */
+.erp-subtitle { margin: 0 0 8px; color: var(--erp-color-text-2); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); }
+.erp-subtitle--lead { color: var(--erp-color-text); font-weight: var(--erp-fw-bold); }
+
+/* 설명하는 카드(B) 안 dl — 담당자 참고류. 항목마다 따로 카드를 만들지 않고, 성격이 같은 항목을 한 카드
+ * 안에 dt/dd 로 묶는다(대표 2026-09-24 「밑에는 좀 큰 카드로 섹션별로 … 내용이 많으면 밑으로 쭉
+ * 길어지는 거지」). */
+.erp-info-card dl { display: flex; flex-direction: column; gap: 10px; }
+.erp-info-card dt { margin: 0 0 3px; color: var(--erp-color-text-3); font-size: var(--erp-fs-caption); }
+.erp-info-card dd { margin: 0; color: var(--erp-color-text); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-medium); }
+
+/* 입력·저장 패널 — 가운데 판이 상세내용에서 이 모습으로 뒤집힌다(erp-panel--flip). 셸(erp-panel ·
+ * erp-tile · erp-field/erp-input) 은 전부 공통 규격이고, 여기 남는 건 필드 세로 배치 · 확인
+ * 체크리스트뿐이다(대표 2026-09-24 「입력도 한줄한줄 한 줄. 입력해야 되는 줄을 잘 표현하면」). */
+.erp-form-fields { display: flex; flex-direction: column; gap: var(--erp-sp-3); }
+.erp-form-checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); }
+
+/* ══════════════════════════════════════════════════════════════════════
+ * v1.1 — PC 관리자 실적용 규격 (2026-09-24~25, freepass-admin _erp/shell.css 에서 승격)
+ *
+ * freepass-admin 에 날짜별로 쌓인 결정 중 «어느 ERP 화면에나 같은» 규칙을 여기로 올렸다.
+ * 앱 고유(dz-*·fn-*·erp-embed·erp-screen·브랜드 색·작업판 여백)만 앱 shell.css 에 남는다.
+ * 전부 PC(≥901px) 규칙이다 — 폰은 앱이 따로 세운다. 아래 날짜 머리글은 결정 이력이다.
+ * 요약은 README §9 (표면 위계 · 선 없는 카드 · 글자 척도 · 목록 카드 골격 · 상태색).
+ * ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* 규격 부품이 <a> · <form> 으로 설 때의 기본값만 맞춘다(모양은 규격 그대로) */
+  .erp-std a.erp-company, .erp-std a.erp-iconbtn { text-decoration: none; }
+  .erp-std .erp-gsearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--erp-color-nav-text-strong); font: inherit; }
+  .erp-std .erp-gsearch input::placeholder { color: var(--erp-color-nav-text); }
+  /* 전자계약 — 업무 흐름과 따로 다루는 문: 구분선으로 뗀다(대표 2026-09-23) */
+  .erp-std .erp-nav-group--apart { margin-top: var(--erp-sp-5); padding-top: 12px; border-top: 1px dashed var(--erp-color-nav-line); }
+  .erp-std .erp-statusbar-keys a { margin-left: 6px; padding: 0 6px; border-radius: var(--erp-r-sm); color: inherit; text-decoration: none; }
+  .erp-std .erp-statusbar-keys a[aria-pressed="true"] { font-weight: var(--erp-fw-bold); }
+  .erp-std .erp-seg a { display: inline-flex; align-items: center; padding: 6px var(--erp-sp-3); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); text-decoration: none; }
+  .erp-std .erp-seg a[aria-pressed="true"] { background: var(--erp-color-neutral-bg); color: var(--erp-color-text); font-weight: var(--erp-fw-semibold); }
+  .erp-std .erp-pager a { min-width: 30px; height: 30px; display: grid; place-items: center; padding: 0 6px; border-radius: var(--erp-r-md); color: var(--erp-color-text-2); text-decoration: none; }
+  .erp-std .erp-pager a[aria-current="page"] { background: var(--erp-color-primary); color: var(--erp-color-on-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std a.erp-btn { text-decoration: none; }
+  .erp-std select.erp-input { appearance: auto; }
+  .erp-std .erp-chip[aria-current="true"] { background: var(--erp-color-primary-weak); color: var(--erp-color-primary); font-weight: var(--erp-fw-semibold); }
+  .erp-std a.erp-chip { text-decoration: none; }
+
+  /* 필터 — 화이트라벨·레트로의 두 칸 조건판(FilterSheet)을 규격 검색창 줄 안에 앉힌다(대표 2026-09-24
+   * 「검색창 옆에는 필터 버튼이 있다 … 필터는 화이트 라벨 열리는 방식 … 좌측에 항목 있고 그 항목 누르면
+   * 체크박스」). 부품(FilterSheet.tsx · dz-fs-*)은 그대로 재사용하고, 여기서는 자리(검색창 줄의 한 칸
+   * — 예전엔 .dz-find 안 절대좌표였다)와 옷(규격 색·글자)만 규격에 맞춘다. */
+  .erp-std .erp-searchbar { position: relative; }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Surface type / Interaction hierarchy
+ *
+ * 물성은 타입이 정하고, 상호작용은 hover가 정한다.
+ * - Card/Box/Button = 같은 기본 높이(elevation-1)에서 시작
+ * - Passive card = 떠 있지만 hover 없음
+ * - Interactive card/button = 같은 기본 높이 + hover/press
+ * - Selected = 더 뜨지 않고 눌려 고정
+ * - Card line / Control line / Input line 은 서로 다른 역할 토큰
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* 모든 card/box surface는 같은 기준 높이에서 시작한다. */
+  .erp-std :is(
+    .erp-panel,
+    .erp-rowcard,
+    .erp-tile,
+    .erp-kpi
+  ) {
+    box-shadow: var(--erp-elevation-base);
+    border-color: var(--erp-line-card);
+  }
+
+  /* 카드의 1px box model은 유지하되 선은 보이지 않는다.
+   * 카드 경계는 surface + elevation으로만 읽힌다. */
+  .erp-std .erp-rowcard,
+  .erp-std .erp-tile,
+  .erp-std .erp-kpi {
+    border: 1px solid transparent;
+  }
+
+  /* 버튼/필터/드롭다운도 visible outline 없이 surface + elevation으로 구분한다. */
+  .erp-std :is(.erp-btn:not(.erp-btn--ghost), .erp-facet-opt, .erp-dd) {
+    box-shadow: var(--erp-elevation-base);
+    border-color: var(--erp-line-control);
+  }
+
+  /* 입력은 elevation보다 입력 경계를 우선한다. */
+  .erp-std :is(.erp-input, .erp-search) {
+    border-color: var(--erp-color-line-strong);
+  }
+
+  /* interactive만 움직인다. passive card는 같은 높이에 그대로 있다. */
+  .erp-std :is(.erp-rowcard, .erp-tile--pressable, .erp-facet-opt, .erp-dd, .erp-btn:not(.erp-btn--ghost):not([aria-disabled="true"]):not(:disabled)) {
+    transition:
+      transform 90ms ease,
+      box-shadow 120ms ease,
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  @media (hover: hover) {
+    .erp-std :is(.erp-rowcard, .erp-tile--pressable, .erp-facet-opt, .erp-dd, .erp-btn:not(.erp-btn--ghost):not([aria-disabled="true"]):not(:disabled)):hover {
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  .erp-std :is(.erp-rowcard, .erp-tile--pressable, .erp-facet-opt, .erp-dd, .erp-btn:not(.erp-btn--ghost):not([aria-disabled="true"]):not(:disabled)):active {
+    box-shadow: var(--erp-elevation-0);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  /* selected = 눌려 고정된 상태. */
+
+  .erp-std a.erp-facet-opt[aria-pressed="true"],
+  .erp-std .erp-facet-opt[aria-pressed="true"] {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+    font-weight: var(--erp-fw-semibold);
+    border-color: transparent;
+  }
+
+  .erp-std .erp-tile--pressable[aria-pressed="true"],
+  .erp-std .erp-rowcard[aria-current="true"] {
+    border-color: transparent;
+  }
+
+  @media (hover: hover) {
+    .erp-std .erp-facet-opt[aria-pressed="true"]:hover,
+    .erp-std .erp-tile--pressable[aria-pressed="true"]:hover,
+    .erp-std .erp-rowcard[aria-current="true"]:hover {
+      box-shadow: var(--erp-shadow-pressed-14);
+      transform: translateY(var(--erp-press-y));
+    }
+  }
+
+  /* Primary도 기본 높이는 다른 버튼과 같다. 색/weight가 우선순위를 말한다. */
+  .erp-std .erp-btn--primary:not([aria-disabled="true"]):not(:disabled) {
+    box-shadow: var(--erp-elevation-base);
+  }
+
+  @media (hover: hover) {
+    .erp-std .erp-btn--primary:not([aria-disabled="true"]):not(:disabled):hover {
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  .erp-std .erp-btn--primary:not([aria-disabled="true"]):not(:disabled):active {
+    box-shadow: var(--erp-elevation-0);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  .erp-std .erp-btn--ghost,
+  .erp-std :is(.erp-btn, .erp-tile--pressable, .erp-facet-opt)[aria-disabled="true"],
+  .erp-std :is(.erp-btn, .erp-tile--pressable, .erp-facet-opt):disabled {
+    box-shadow: none;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .erp-std :is(.erp-rowcard, .erp-tile--pressable, .erp-facet-opt, .erp-dd, .erp-btn) {
+      transition: none;
+    }
+  }
+}
+/* Borderless panel surface — box model/크기 유지, 보이는 외곽선만 제거. */
+@media (min-width: 901px) {
+  /* 하단 action 영역의 구조선도 제거 — spacing/surface가 경계를 맡는다. */
+  .erp-std .erp-panel-foot {
+    border-top-color: transparent;
+  }
+}
+/* 2026-09-24 — Borderless search.
+ * 크기·padding·radius·배치는 그대로. 보이는 선만 없애고 surface + focus elevation으로 입력 affordance를 만든다. */
+@media (min-width: 901px) {
+  .erp-std .erp-search {
+    border-color: transparent;
+    background: var(--erp-color-sunken);
+    box-shadow: var(--erp-elevation-base);
+  }
+  .erp-std .erp-search:hover {
+    background: color-mix(in srgb, var(--erp-color-sunken) 82%, var(--erp-color-surface));
+  }
+  .erp-std .erp-search:focus-within {
+    border-color: transparent;
+  }
+  .erp-std .erp-search input:focus-visible {
+    outline: none;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Line-free UI standard
+ *
+ * visible border는 쓰지 않는다.
+ * hierarchy는 surface + elevation + spacing + state로 만든다.
+ * Web Panel은 canvas 위의 surface island, Mobile Panel은 screen surface.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* Panel: 큰 surface island. 선 없이 배경과 elevation으로만 경계를 만든다. */
+  .erp-std .erp-panel {
+    border-color: transparent !important;
+  }
+
+  /* Panel 내부 구획선 제거. */
+  .erp-std :is(.erp-panel-head, .erp-panel-foot, .erp-searchbar, .erp-toolbar, .erp-filter-panel-foot, .erp-inline-form) {
+    border-color: transparent !important;
+  }
+
+  /* 모든 조작 컨트롤은 line-free. */
+  .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-input, .erp-search, select, textarea) {
+    border-color: transparent !important;
+  }
+
+  /* 입력/드롭다운은 surface가 affordance를 담당한다. */
+  .erp-std :is(.erp-input, .erp-dd, select, textarea) {
+    background: var(--erp-color-sunken);
+    box-shadow: var(--erp-elevation-base);
+  }
+  .erp-std :is(.erp-input, .erp-dd, select, textarea):focus, .erp-std :is(.erp-input, .erp-dd, select, textarea):focus-visible {
+    outline: none;
+    background: var(--erp-color-surface);
+    box-shadow: var(--erp-elevation-hover);
+  }
+
+  /* Dropdown / filter sheet / popover는 선 대신 높은 elevation. */
+
+  /* 표/그리드도 line-free: header surface + hover/selected가 구분을 맡는다. */
+  .erp-std .erp-grid :is(th, td), .erp-std .erp-grid tfoot td {
+    border-color: transparent !important;
+  }
+  .erp-std .erp-grid tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--erp-color-sunken) 55%, transparent);
+  }
+  .erp-std .erp-grid tbody tr:hover td {
+    background: var(--erp-color-row-hover);
+  }
+  .erp-std .erp-grid tbody tr[aria-selected="true"] td {
+    background: var(--erp-color-row-selected);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Final line-free semantic hierarchy
+ * canvas → panel → component → state.
+ * Badge(signal)와 Control(action/selection)을 절대 같은 물성으로 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* Shell도 line-free: 구조는 면/간격으로만 구분한다. */
+  .erp-std :is(.erp-user,.erp-nav-group--apart) {
+    border-color: transparent !important;
+  }
+
+  /* Panel = canvas 위 흰 surface island. */
+  .erp-std .erp-panel {
+    background: var(--erp-color-surface);
+  }
+
+  /* Passive signal — Badge/Tag는 상태를 보여주기만 한다.
+   * elevation/hover/press/cursor 금지: 버튼처럼 오인되면 안 된다. */
+  .erp-std :is(.erp-badge,.erp-tag,.erp-chip:not(a)) {
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none;
+  }
+
+  /* Action / Selection controls — 누를 수 있는 물건. Primary/danger 버튼은 따로 뺀다(:is() 안에
+   * 같이 두면 :not() 이 많이 붙은 쪽 때문에 :is() 전체의 specificity 가 올라가서, 상관없는
+   * .erp-facet-opt[aria-pressed="true"] 선택된-상태 규칙까지 덮어써 버린다 — 대표 2026-09-24
+   * 「모니터링」 중 실제 화면에서 「접수하기」·선택된 퀵필터 알약이 둘 다 흰 배경에 흰 글자로
+   * 안 보이는 걸 찾았다. 버튼과 나머지를 별도 규칙으로 쪼개 specificity 오염을 막는다). */
+  .erp-std .erp-btn:not(.erp-btn--ghost):not(.erp-btn--primary):not(.erp-btn--danger) {
+    background-color: var(--erp-color-surface-soft);
+    box-shadow: var(--erp-elevation-base);
+    cursor: pointer;
+  }
+  .erp-std :is(.erp-facet-opt, .erp-dd) {
+    background-color: var(--erp-color-surface-soft);
+    box-shadow: var(--erp-elevation-base);
+    cursor: pointer;
+  }
+
+  @media (hover:hover) {
+    .erp-std .erp-btn:not(.erp-btn--ghost):not(.erp-btn--primary):not(.erp-btn--danger):not(:disabled):not([aria-disabled="true"]):hover {
+      background-color: var(--erp-color-surface-hover);
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+    .erp-std :is(.erp-facet-opt:not([aria-pressed="true"]), .erp-dd:not(:disabled)):hover {
+      background-color: var(--erp-color-surface-hover);
+      box-shadow: var(--erp-elevation-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Selected controls — 올라오는 게 아니라 눌려 고정. */
+  .erp-std .erp-facet-opt[aria-pressed="true"],
+  .erp-std .erp-seg :is(a,button)[aria-pressed="true"],
+  .erp-std .erp-statusbar-keys a[aria-pressed="true"] {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+    box-shadow: var(--erp-shadow-pressed-neutral-14);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  /* Selectable card — 카드 물성 + hover, 선택 시 primary tint. */
+  .erp-std .erp-rowcard {
+    background: var(--erp-color-surface);
+  }
+  .erp-std .erp-rowcard[aria-current="true"],
+  .erp-std .erp-tile--pressable[aria-pressed="true"] {
+    box-shadow: var(--erp-shadow-pressed-11);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  /* Passive tile/card는 떠 있지만 hover하지 않는다. */
+  .erp-std .erp-tile:not(.erp-tile--pressable),
+  .erp-std .erp-kpi {
+    background: var(--erp-color-surface);
+    cursor: default;
+  }
+
+  /* Input/Search/Select — line-free field surface. */
+  .erp-std :is(.erp-input,.erp-search,.erp-dd,select,textarea) {
+    background: var(--erp-color-surface-soft);
+    border-color: transparent !important;
+  }
+  .erp-std :is(.erp-input,.erp-search,.erp-dd,select,textarea):focus,.erp-std :is(.erp-input,.erp-dd,select,textarea):focus-visible,.erp-std .erp-search:focus-within {
+    outline: none;
+    background: var(--erp-color-surface);
+    box-shadow: var(--erp-focus-halo), var(--erp-elevation-hover);
+  }
+
+  /* disabled는 hover/press가 없고 한 단계 가라앉는다. */
+  .erp-std :is(button,.erp-btn,.erp-facet-opt,.erp-dd)[disabled],.erp-std :is(.erp-btn,.erp-facet-opt)[aria-disabled="true"] {
+    opacity: .52;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed;
+  }
+
+  /* Popup/dropdown sheet = 가장 높은 floating surface. */
+  .erp-std :is(.erp-filter-panel) {
+    background: var(--erp-color-surface);
+    border-color: transparent !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Scale normalization
+ * FreePass Admin에서 먼저 검증하는 공통 스케일.
+ * generated erp-standard.css를 직접 수정하지 않고 consumer override로 압축한다.
+ *
+ * Typography: 24 / 20 / 18 / 16 / 14 / 12
+ * Spacing:    4 / 8 / 12 / 16 / 20 / 24 / 32
+ * Desktop:    small 32 / standard 36 / row 40 / topbar 56
+ * Mobile:     control/action/touch 44 (admin-final.css)
+ * Radius:     4 / 6 / 8 / pill
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* 같은 줄의 검색/버튼/셀렉트는 같은 standard 36 높이를 쓴다. */
+  .erp-std .erp-search,
+  .erp-std .erp-dd {
+    height: var(--erp-btn-h);
+  }
+
+  /* QuickFilter처럼 의도적으로 작은 control만 small 32. */
+  .erp-std .erp-toolbar :is(.erp-facet-opt, .erp-dd) {
+    height: var(--erp-btn-h-sm);
+  }
+
+  /* 공통 panel rhythm은 16 기반으로 맞춘다. */
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-4);
+    padding: var(--erp-sp-4) var(--erp-sp-5);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Surface depth refinement
+ * Canvas → Panel → Component surface의 색 차이까지 명시한다.
+ * shadow만으로 hierarchy를 만들지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* Panel은 white island. 그 안의 entity/info card는 한 톤 낮춘다. */
+  .erp-std :is(
+    .erp-rowcard,
+    .erp-tile,
+    .erp-kpi,
+    .erp-section
+  ) {
+    background: var(--erp-color-surface-soft);
+  }
+  @media (hover:hover) {
+    .erp-std :is(.erp-rowcard, .erp-tile--pressable):hover {
+      background: var(--erp-color-surface-hover);
+    }
+  }
+
+  /* 선택 상태는 항상 primary tint가 component tone보다 우선한다. */
+  .erp-std .erp-rowcard[aria-current="true"],
+  .erp-std .erp-tile--pressable[aria-pressed="true"] {
+    background: var(--erp-color-selected);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Interaction state consistency
+ * focus-visible도 line-free 문법 안에서 soft halo로 통일한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* 키보드 포커스는 halo 만으로는 모자란다 — halo(투명도 .14)는 배경 대비 3:1 에 못 미친다(WCAG 1.4.11 ·
+   * AI Core 헌법 「접근성은 시각 취향으로 면제하지 않는다」). 네이비 2px 링을 2px 띄워 함께 그린다(2026-09-25).
+   * :focus-visible 이라 마우스로 누를 때는 안 보이고, 키보드로 옮길 때만 보인다. */
+  .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-tile--pressable, .erp-rowcard, .erp-seg a, .erp-statusbar-keys a):focus-visible {
+    outline: 2px solid var(--erp-color-primary);
+    outline-offset: 2px;
+    box-shadow: var(--erp-focus-halo), var(--erp-elevation-base);
+  }
+
+  /* selected/pressed 상태의 focus는 선택 상태를 깨지 않고 halo만 추가한다. */
+  .erp-std :is(
+    .erp-facet-opt[aria-pressed="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-rowcard[aria-current="true"],
+    .erp-seg a[aria-pressed="true"],
+    .erp-statusbar-keys a[aria-pressed="true"]
+  ):focus-visible {
+    outline: 2px solid var(--erp-color-primary);
+    outline-offset: 2px;
+    box-shadow:
+      var(--erp-focus-halo),
+      var(--erp-shadow-pressed-12);
+    transform: translateY(var(--erp-press-y));
+  }
+
+  /* Badge/Tag는 focusable control이 아니다. */
+  .erp-std :is(.erp-badge,.erp-tag):focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* disabled는 focus/hover/press elevation을 절대 갖지 않는다. */
+  .erp-std :is(.erp-btn,.erp-facet-opt,.erp-dd)[aria-disabled="true"]:focus-visible,.erp-std :is(.erp-btn,.erp-dd):disabled:focus-visible {
+    outline: none;
+    box-shadow: none !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Density contract
+ * 실제 업무 화면의 세로 리듬을 padding 우연값이 아니라 명시적인 tier로 고정한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-panel-head {
+    min-height: var(--erp-panel-head-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-searchbar {
+    min-height: var(--erp-query-row-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-toolbar {
+    min-height: var(--erp-quick-row-h);
+    padding-block: var(--erp-sp-2);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-panel-foot {
+    min-height: var(--erp-panel-foot-h);
+    padding-block: var(--erp-sp-3);
+    padding-inline: var(--erp-sp-4);
+  }
+
+  .erp-std .erp-rowcard:not(.erp-panel--compact .erp-rowcard) {
+    min-height: var(--erp-row-standard-min-h);
+  }
+
+  /* 카드와 섹션의 리듬을 분리한다.
+   * 같은 섹션 안 카드↔카드 = 8px
+   * 섹션↔섹션 = 16px */
+
+  .erp-std :is(.erp-form,.erp-section-group,.erp-detail-body) {
+    gap: var(--erp-section-rhythm);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Alignment & information hierarchy
+ * text=left, numeric/money=right, status=compact, actions=foot.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* PanelHead는 좌측 정체성 + 우측 count. 중간 액션을 넣지 않는다. */
+  .erp-std .erp-panel-head h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .erp-std .erp-panel-count {
+    flex: none;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 숫자/금액은 우측 정렬 + tabular. */
+  .erp-std :is(
+    .erp-num,
+    .erp-rowcard-amount,
+    .erp-kpi-value,
+    .erp-props dd[data-type="number"],
+    .erp-props dd[data-type="money"]
+  ) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-rowcard-amount {
+    justify-self: end;
+    min-width: 0;
+  }
+  .erp-std .erp-rowcard-amount strong,
+  .erp-std .erp-rowcard-amount span {
+    display: block;
+    text-align: right;
+  }
+
+  /* label/value pair는 label이 왼쪽, 값은 오른쪽으로 읽히게. */
+  .erp-std .erp-rowcard-facts > div,
+  .erp-std .erp-tile-row {
+    min-width: 0;
+  }
+  .erp-std .erp-rowcard-facts dt {
+    color: var(--erp-color-text-3);
+    text-align: left;
+  }
+  .erp-std .erp-rowcard-facts dd {
+    min-width: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 카드 1행 식별 정보는 항상 좌측 기준. */
+  .erp-std :is(.erp-rowcard-id,.erp-rowcard-title,.erp-rowcard-sub,.erp-rowcard-meta) {
+    text-align: left;
+  }
+
+  /* 긴 값은 줄바꿈보다 말줄임 우선, 좁은 panel에서 레이아웃을 깨지 않는다. */
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-rowcard-facts dd
+  ) {
+    min-width: 0;
+  }
+  .erp-std .erp-panel--compact :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta
+  ) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Async / empty / error / readonly state surfaces
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.erp-muted,.erp-field-error,.erp-state-empty,.erp-state-warn,.erp-state-ok,.erp-state-error) {
+    margin: 0;
+    padding: var(--erp-sp-3);
+    border: 0;
+    border-radius: var(--erp-r-md);
+    box-shadow: none;
+    font-size: var(--erp-fs-label);
+    line-height: 1.5;
+  }
+
+  .erp-std :is(.erp-muted,.erp-state-empty) {
+    background: var(--erp-color-surface-soft);
+    color: var(--erp-color-text-2);
+  }
+  .erp-std .erp-state-warn {
+    background: var(--erp-color-warn-bg);
+    color: var(--erp-color-warn);
+  }
+  .erp-std .erp-state-ok {
+    background: var(--erp-color-ok-bg);
+    color: var(--erp-color-ok);
+  }
+  .erp-std :is(.erp-field-error,.erp-state-error) {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+  }
+
+  .erp-std :is(.erp-input[readonly],.erp-input--readonly,[aria-readonly="true"]) {
+    background: var(--erp-color-neutral-bg);
+    color: var(--erp-color-text-2);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .erp-std [aria-busy="true"] {
+    pointer-events: none;
+    cursor: progress;
+  }
+
+  .erp-std :is([data-ui-state="stale"],[data-ui-state="offline"]) {
+    background: var(--erp-color-surface-hover);
+    color: var(--erp-color-text-2);
+    box-shadow: none;
+  }
+}
+/* 1280~1439: 3-panel이 가장 빡빡한 구간. shell은 그대로, gap/padding만 compact tier. */
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Responsive width QA
+ * 구조는 유지하고 1280대 웹에서만 workspace density를 한 단계 압축한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-3);
+    padding: var(--erp-sp-3) var(--erp-sp-4);
+  }
+
+  .erp-std .erp-panel {
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(84px, auto);
+    gap: 2px var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount {
+    min-width: 0;
+    max-width: 112px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount strong,
+  .erp-std .erp-panel--compact .erp-rowcard-amount span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-panel--compact .erp-searchbar {
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel--compact .erp-search {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-facet-opts {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .erp-std .erp-panel--compact .erp-facet-opts::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* 1440+: standard density. explicit reset so future compact overrides do not leak upward. */
+@media (min-width: 1440px) {
+  .erp-std .erp-workspace {
+    gap: var(--erp-sp-4);
+    padding: var(--erp-sp-4) var(--erp-sp-5);
+  }
+}
+/* Desktop text/content overflow safety shared by all widths. */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-panel,
+    .erp-panel-body,
+    .erp-searchbar,
+    .erp-toolbar,
+    .erp-rowcards,
+    .erp-rowcard-id,
+    .erp-rowcard-facts
+  ) {
+    min-width: 0;
+  }
+
+  .erp-std :is(.erp-panel-count,.erp-badge,.erp-tag,.erp-facet-opt) {
+    flex-shrink: 0;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Color contrast refinement
+ * small/support text는 너무 옅지 않게, semantic colors는 의미를 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std {
+    color: var(--erp-color-text);
+  }
+
+  .erp-std :is(
+    .erp-muted,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-label,
+    .erp-kpi-label,
+    .erp-kpi-delta,
+    .erp-panel-count
+  ) {
+    color: var(--erp-color-text-muted);
+  }
+
+  .erp-std :is(.erp-rowcard-sub,.erp-panel-foot,.erp-chip) {
+    color: var(--erp-color-text-2);
+  }
+
+  .erp-std :is(.erp-nav-item,.erp-company,.erp-iconbtn) {
+    color: var(--erp-color-nav-text);
+  }
+
+  .erp-std .erp-nav-group {
+    color: var(--erp-color-nav-muted);
+  }
+
+  .erp-std .erp-nav-item[aria-current="page"],
+  .erp-std .erp-nav-sub a[aria-current="page"] {
+    background: var(--erp-color-nav-active);
+    color: var(--erp-color-nav-text-strong);
+  }
+
+  /* semantic signal colors stay text+surface, not decorative saturation */
+  .erp-std .erp-badge--ok { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
+  .erp-std .erp-badge--info { color: var(--erp-color-info); background: var(--erp-color-info-bg); }
+  .erp-std .erp-badge--warn { color: var(--erp-color-warn); background: var(--erp-color-warn-bg); }
+  .erp-std .erp-badge--err { color: var(--erp-color-err); background: var(--erp-color-err-bg); }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Icon & hit-area contract
+ * glyph size와 click target을 분리한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  /* 데스크톱 icon-only action은 36x36 hit area, glyph는 18px */
+  .erp-std .erp-iconbtn {
+    width: var(--erp-icon-hit);
+    height: var(--erp-icon-hit);
+    min-width: var(--erp-icon-hit);
+    min-height: var(--erp-icon-hit);
+  }
+  .erp-std .erp-iconbtn svg {
+    width: var(--erp-icon-nav);
+    height: var(--erp-icon-nav);
+  }
+
+  /* search/navigation glyphs */
+  .erp-std .erp-search > svg,
+  .erp-std .erp-gsearch > svg {
+    width: var(--erp-icon);
+    height: var(--erp-icon);
+  }
+  .erp-std .erp-nav-item svg {
+    width: var(--erp-icon-nav);
+    height: var(--erp-icon-nav);
+  }
+
+  /* status/decorative glyphs are not interactive */
+  .erp-std :is(.erp-badge svg,.erp-tag svg,.erp-rowcard-thumb svg,.erp-rowcard-go) {
+    pointer-events: none;
+  }
+
+  /* affordance: actions/selectables pointer, signals default */
+  .erp-std :is(
+    .erp-btn,
+    .erp-facet-opt,
+    .erp-dd,
+    .erp-iconbtn,
+    .erp-tile--pressable,
+    .erp-rowcard
+  ) {
+    cursor: pointer;
+  }
+  .erp-std :is(.erp-badge,.erp-tag,.erp-chip:not(a)) {
+    cursor: default;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Form validation & submit UX
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std input[inputmode="numeric"],
+  .erp-std input[inputmode="decimal"] {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std :is(input,select,textarea)[aria-invalid="true"] {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err-text);
+    box-shadow: var(--erp-err-halo);
+  }
+
+  .erp-std form[aria-busy="true"] {
+    cursor: progress;
+  }
+  .erp-std form[aria-busy="true"] :is(button[type="submit"],input[type="submit"]) {
+    pointer-events: none;
+  }
+
+  .erp-std form > :is(.erp-state-ok, .erp-state-warn, .erp-state-error) {
+    margin-bottom: var(--erp-sp-2);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Action risk hierarchy
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-btn--danger {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+    box-shadow: var(--erp-elevation-base);
+    font-weight: var(--erp-fw-bold);
+  }
+
+  @media (hover:hover) {
+    .erp-std :is(.erp-btn--danger):hover {
+      background: var(--erp-color-err-ring);
+    }
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-24 — Motion & immediate feedback contract
+ * 업무툴은 짧게 반응하고 오래 움직이지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-rowcard, .erp-tile--pressable) {
+    transition:
+      transform var(--erp-motion-press) var(--erp-motion-ease),
+      box-shadow var(--erp-motion-state) var(--erp-motion-ease),
+      background-color var(--erp-motion-state) var(--erp-motion-ease),
+      color var(--erp-motion-state) var(--erp-motion-ease);
+  }
+
+  .erp-std :is(.erp-filter-panel) {
+    transition:
+      opacity var(--erp-motion-float) var(--erp-motion-ease),
+      box-shadow var(--erp-motion-float) var(--erp-motion-ease);
+  }
+
+  .erp-std [aria-busy="true"] {
+    opacity: var(--erp-busy-opacity);
+  }
+
+  .erp-std [aria-busy="true"] :is(button,a,input,select,textarea) {
+    cursor: progress;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .erp-std *,
+    .erp-std *::before,
+    .erp-std *::after {
+      transition-duration: .01ms !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — PanelFoot ratio & primary-right contract
+ * 1=100, 2(primary)=3:7, 2(equal)=5:5, 3=3:3:4.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-foot[data-action-balance] {
+    display: flex;
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"] > .erp-btn {
+    flex: 3 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"] > .erp-btn--primary {
+    order: 2;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"]:has(> .erp-btn:nth-child(2):last-child)
+    > .erp-btn--primary {
+    flex: 7 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="primary"]:has(> .erp-btn:nth-child(3):last-child)
+    > .erp-btn--primary {
+    flex: 4 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance="equal"]:has(> .erp-btn:nth-child(2):last-child)
+    > .erp-btn {
+    flex: 1 1 0;
+  }
+
+  .erp-std .erp-panel-foot[data-action-balance]:has(> .erp-btn:first-child:last-child)
+    > .erp-btn {
+    flex: 1 1 100%;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Card breathing room & selected-state refinement
+ * 카드↔카드=12px, 섹션↔섹션=16px.
+ * selected card는 visible border 없이 tint + inset만 사용한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-rowcards,
+  .erp-std .erp-cardlist,
+  .erp-std .erp-tile-group {
+    gap: var(--erp-card-gap);
+  }
+
+  .erp-std :is(.erp-rowcard,.erp-tile--pressable)[aria-current="true"],.erp-std .erp-tile--pressable[aria-pressed="true"] {
+    border-color: transparent !important;
+    background: var(--erp-color-selected);
+    box-shadow: var(--erp-shadow-pressed-11);
+  }
+
+  .erp-std :is(.erp-rowcard,.erp-tile--pressable)[aria-current="true"]:hover,.erp-std .erp-tile--pressable[aria-pressed="true"]:hover {
+    border-color: transparent !important;
+    background: var(--erp-color-selected);
+    box-shadow: var(--erp-shadow-pressed-14);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Full-width workspace + fixed gutter contract
+ * 가로는 항상 사용 가능한 폭을 채우고, 여백은 바깥 gutter 하나로 통제한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-workspace > .erp-panel,
+  .erp-std .erp-panel-body,
+  .erp-std .erp-rowcards,
+  .erp-std .erp-cardlist {
+    max-width: none;
+    min-width: 0;
+  }
+
+  .erp-std .erp-rowcards,
+  .erp-std .erp-cardlist,
+  .erp-std .erp-tile-group {
+    width: 100%;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Detail panel inner rhythm
+ * 상세는 슬림하게, 카드/섹션 계층은 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-detail-body {
+    padding: var(--erp-sp-3);
+    gap: var(--erp-section-rhythm);
+  }
+
+  /* 소제목은 바로 아래 카드 묶음과 한 덩어리로 읽힌다. */
+  .erp-std .erp-subtitle {
+    margin: 0 0 var(--erp-sp-2);
+  }
+
+  /* 카드 안 제목은 line-free. 밑줄 대신 여백/타이포로 계층을 만든다. */
+  .erp-std .erp-tile-title {
+    margin: 0 0 var(--erp-sp-2);
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Natural ERP typography roles
+ * 숫자 토큰만 바꾸고 generated component의 옛 크기가 남는 일을 막는다.
+ * 화면마다 예쁘게 꾸미지 않고, 통상적인 업무도구의 크기 위계만 고정한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-head h2 { font-size: var(--erp-fs-body); }
+  .erp-std :is(.erp-subtitle,.erp-section-title) { font-size: var(--erp-fs-body); }
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-listcard-title,
+    .erp-tile-title,
+    .erp-tile-row b,
+    .erp-btn,
+    .erp-btn--primary,
+    .erp-dd,
+    .erp-facet-opt,
+    .erp-search input,
+    .erp-input,
+    .erp-info-card dd
+  ) { font-size: var(--erp-fs-body); }
+  .erp-std :is(.erp-rowcard-amount strong,.erp-tile-row strong) { font-size: var(--erp-fs-body); }
+  .erp-std :is(
+    .erp-panel-kind,
+    .erp-panel-count,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-facts dt,
+    .erp-rowcard-facts dd small,
+    .erp-docstate,
+    .erp-badge,
+    .erp-tag
+  ) { font-size: var(--erp-fs-label); }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Typography weight hierarchy
+ * 굵기는 위계에, 선택 상태는 surface에 맡긴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel-head h2 {
+    font-weight: var(--erp-fw-bold);
+  }
+
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-listcard-title,
+    .erp-subtitle,
+    .erp-tile-title,
+    .erp-tile-row b
+  ) {
+    font-weight: var(--erp-fw-semibold);
+  }
+
+  .erp-std :is(
+    .erp-rowcard-amount strong,
+    .erp-kpi-value,
+    .erp-tile-row strong
+  ) {
+    font-weight: var(--erp-fw-bold);
+  }
+
+  .erp-std :is(
+    .erp-btn,
+    .erp-btn--primary,
+    .erp-facet-opt,
+    .erp-badge,
+    .erp-tag
+  ) {
+    font-weight: var(--erp-fw-semibold);
+  }
+
+  .erp-std :is(
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-docstate,
+    .erp-info-card dd
+  ) {
+    font-weight: var(--erp-fw-regular);
+  }
+
+  /* selected는 굵기로 재강조하지 않는다. */
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"]
+  ) :is(.erp-rowcard-title,.erp-tile-row b) {
+    font-weight: var(--erp-fw-semibold);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Flat resting surfaces, subtle interaction elevation
+ * 평상시는 납작하게, hover/floating에서만 elevation을 쓴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-rowcard,
+    .erp-tile,
+    .erp-listcard,
+    .erp-btn,
+    .erp-search,
+    .erp-facet-opt
+  ) {
+    box-shadow: none;
+  }
+
+  @media (hover:hover) {
+    .erp-std :is(
+      .erp-rowcard,
+      .erp-tile--pressable,
+      .erp-listcard
+    ):hover {
+      box-shadow: var(--erp-elevation-hover);
+    }
+  }
+
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-listcard[aria-current="true"]
+  ) {
+    box-shadow: var(--erp-shadow-pressed-10);
+  }
+
+  .erp-std :is(
+    .erp-rowcard[aria-current="true"],
+    .erp-tile--pressable[aria-pressed="true"],
+    .erp-listcard[aria-current="true"]
+  ):hover {
+    box-shadow: var(--erp-shadow-pressed-12);
+  }
+
+  .erp-std .erp-panel {
+    box-shadow: none;
+  }
+
+  .erp-std :is(.erp-filter-panel) {
+    box-shadow: var(--erp-elevation-float);
+  }
+
+  .erp-std :is(.erp-btn--primary,.erp-btn--danger) {
+    box-shadow: none;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Brand restraint & neutral selected-card text
+ * 큰 카드 선택은 tint로, brand 색은 compact selection/action에 집중한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-tile--pressable[aria-pressed="true"] .erp-tile-row b,
+  .erp-std .erp-tile--pressable[aria-pressed="true"] .erp-tile-row strong,
+  .erp-std .erp-rowcard[aria-current="true"] .erp-rowcard-title,
+  .erp-std .erp-rowcard[aria-current="true"] .erp-rowcard-amount strong {
+    color: var(--erp-color-text);
+  }
+
+  .erp-std .erp-rowcard[aria-current="true"] :is(.erp-rowcard-sub,.erp-rowcard-meta,.erp-rowcard-amount span) {
+    color: var(--erp-color-text-2);
+  }
+
+  /* compact selection controls may carry solid brand. */
+  .erp-std :is(
+    .erp-facet-opt[aria-pressed="true"],
+    .erp-seg :is(a,button)[aria-pressed="true"]
+  ) {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact card signal de-duplication
+ * 상태 썸네일이 이미 상태를 전달하면 같은 Badge를 제목 옆에 반복하지 않는다.
+ * wide card에서는 thumb가 사라지므로 Badge를 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact
+  .erp-rowcard[data-thumb-status="true"]
+  .erp-rowcard-title > .erp-badge {
+    display: none;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Residual divider cleanup
+ * 장식성 선은 제거하고, 의미 있는 구조선만 남긴다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(
+    .erp-panel-head,
+    .erp-panel-foot,
+    .erp-searchbar,
+    .erp-toolbar,
+    .erp-card-head,
+    .erp-listcard-foot,
+    .erp-grid-foot,
+    .erp-filter-panel-foot,
+    .erp-inline-form,
+    .erp-tile-title
+  ) {
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+  /* divider가 필요 없는 grouping은 spacing/surface만 사용 */
+  .erp-std :is(.erp-card-head,.erp-listcard-foot,.erp-grid-foot,.erp-tile-title) {
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact signal hierarchy
+ * QuickFilter=pill, Badge/Status=compact rounded rect, Tag=smallest signal.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-badge {
+    min-height: 20px;
+    padding: 1px 7px;
+    border-radius: var(--erp-r-md);
+    line-height: 16px;
+  }
+
+  .erp-std .erp-tag {
+    min-height: 18px;
+    padding: 1px 6px;
+    border-radius: var(--erp-r-sm);
+    line-height: 14px;
+  }
+
+  .erp-std :is(.erp-badge svg,.erp-tag svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 퀵 필터도 버튼과 같은 모서리 6 — 알약은 쓰지 않는다(대표 2026-09-25 「원래 알약 안 하기로 했는데」 →
+   * 「모서리 6 네모로」). 배지(6) · 태그(4)도 네모. */
+  .erp-std .erp-facet-opt {
+    border-radius: var(--erp-r-md);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — No-wrap responsive density
+ * 좁은 폭에서 세로로 비대해지지 않게 choice/action rows는 가로 흐름을 유지한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* 가로 스크롤 줄은 밖으로 나간 키보드 포커스 링(2px + 띄움 2px)을 잘라 먹는다 — 퀵 필터 줄에 4px 안쪽 여백을
+   * 주고 같은 만큼 바깥 여백을 빼서 자리는 그대로 둔다. */
+  .erp-std .erp-toolbar .erp-facet-opts {
+    padding: 4px;
+    margin: -4px;
+  }
+  .erp-std .erp-toolbar .erp-facet-opts,
+  .erp-std .erp-panel--compact .erp-facet-opts {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .erp-std .erp-toolbar .erp-facet-opts::-webkit-scrollbar,
+  .erp-std .erp-panel--compact .erp-facet-opts::-webkit-scrollbar {
+    display: none;
+  }
+
+  .erp-std .erp-facet-opt {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-panel--compact .erp-searchbar {
+    flex-wrap: nowrap;
+  }
+
+  .erp-std :is(.erp-btn,.erp-panel-foot .erp-btn) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Solid commercial ERP materiality
+ * 기본 화면은 뜨지 않는다. Canvas → Panel → Component의 surface 차이와
+ * 정렬/간격으로 구조를 만들고, shadow는 hover/floating에만 제한한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard,.erp-btn,.erp-search,.erp-facet-opt) {
+    box-shadow: none;
+  }
+
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard) {
+    border-color: transparent;
+  }
+
+  .erp-std :is(.erp-panel,.erp-rowcard,.erp-tile,.erp-listcard,.erp-btn,.erp-search,.erp-facet-opt) {
+    background-clip: padding-box;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Geometry contract
+ * 단단함은 장식보다 geometry 반복에서 만든다.
+ * Panel 8 / Card·Tile 6 / Control 6 / card padding 12.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel {
+    border-radius: var(--erp-r-lg);
+  }
+
+  .erp-std :is(.erp-rowcard,.erp-tile,.erp-listcard,.erp-kpi) {
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std :is(.erp-btn, .erp-input, .erp-search, .erp-dd) {
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std .erp-rowcard {
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-tile {
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std :is(.erp-panel-head,.erp-searchbar,.erp-toolbar,.erp-panel-foot) {
+    padding-inline: var(--erp-sp-4);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Card line contract
+ * 목록 카드는 줄 수가 먼저 정해지고, 정보는 그 줄 안에 들어간다.
+ * 내용 때문에 카드 구조를 매번 새로 늘리지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta,
+    .erp-rowcard-amount strong,
+    .erp-rowcard-amount span
+  ) {
+    line-height: var(--erp-card-line-h);
+  }
+
+  .erp-std .erp-rowcard-id {
+    display: grid;
+    align-content: center;
+    gap: var(--erp-card-line-gap);
+  }
+
+  .erp-std .erp-rowcard-title,
+  .erp-std .erp-rowcard-sub,
+  .erp-std .erp-rowcard-meta {
+    min-height: var(--erp-card-line-h);
+    max-height: var(--erp-card-line-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* compact 목록은 Main / Key / Support 3줄을 고정한다.
+   * 더 많은 정보는 상세 화면이 책임진다. */
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    grid-template-rows: repeat(3, var(--erp-card-line-h));
+    grid-auto-rows: var(--erp-card-line-h);
+    height: 64px;
+    min-height: 64px;
+  }
+
+  .erp-std .erp-panel--compact :is(.erp-rowcard-title,.erp-rowcard-sub,.erp-rowcard-meta) {
+    margin-block: 0;
+  }
+
+  /* 넓은 RowCard의 facts는 label/value를 한 줄에서 끝낸다. */
+  .erp-std .erp-rowcard-facts > div {
+    min-height: var(--erp-card-line-h);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    align-items: center;
+    column-gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-rowcard-facts :is(dt,dd) {
+    line-height: var(--erp-card-line-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-rowcard-facts dd small {
+    display: block;
+    line-height: 16px;
+    margin-top: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Tile은 목록 RowCard와 별도인 상세/내용 부품이다. label/value 행을 필요한 만큼 반복할 수 있다. */
+  .erp-std .erp-tile-row {
+    min-height: var(--erp-card-line-h);
+    line-height: var(--erp-card-line-h);
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-tile-row > :is(b,strong,span) {
+    min-width: 0;
+  }
+
+  .erp-std .erp-tile-row > :first-child {
+    text-align: left;
+  }
+
+  .erp-std .erp-tile-row > :last-child {
+    margin-left: auto;
+    text-align: right;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Three-line list card semantics
+ * 1행 Main / 2행 Key / 3행 Support. 상태는 Main 옆 compact badge.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std [data-line-role="main"] {
+    color: var(--erp-color-text);
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-semibold);
+  }
+
+  .erp-std [data-line-role="key"] {
+    color: var(--erp-color-text-2);
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-medium);
+  }
+
+  .erp-std [data-line-role="support"] {
+    color: var(--erp-color-text-muted);
+    font-size: var(--erp-fs-label);
+    font-weight: var(--erp-fw-regular);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — 64px visual tile contract
+ * 차량=실사진 우선 / 일반목록=동일 크기 상태 아이콘+텍스트.
+ * 본문 3줄(20+2+20+2+20=64)과 시각 타일 높이를 정확히 맞춘다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard {
+    min-height: 88px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    align-self: center;
+    overflow: hidden;
+    border-radius: var(--erp-r-md);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb:not(.erp-rowcard-thumb--status) > svg {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status svg {
+    width: 24px;
+    height: 24px;
+    flex: none;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb--status span {
+    display: block;
+    max-width: 56px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--erp-fs-caption);
+    line-height: 14px;
+    font-weight: var(--erp-fw-semibold);
+    text-align: center;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    min-height: 64px;
+    height: 64px;
+    align-content: center;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Status tile semantic tones
+ * 진행/info=navy, 완료/ok=green, 보류/warn=amber, 오류/err=red, neutral=grey.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-rowcard[data-thumb-status="true"] .erp-rowcard-thumb--status {
+    background: var(--erp-color-neutral-bg);
+    color: var(--erp-color-text-muted);
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="info"] .erp-rowcard-thumb--status {
+    background: var(--erp-color-primary-weak);
+    color: var(--erp-color-primary);
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="ok"] .erp-rowcard-thumb--status {
+    background: var(--erp-color-ok-bg);
+    color: var(--erp-color-ok);
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="warn"] .erp-rowcard-thumb--status {
+    background: var(--erp-color-warn-bg);
+    color: var(--erp-color-warn);
+  }
+
+  .erp-std .erp-rowcard[data-thumb-status="true"][data-tone="err"] .erp-rowcard-thumb--status {
+    background: var(--erp-color-err-bg);
+    color: var(--erp-color-err);
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Detail information row contract
+ * 목록은 3줄 scan, 상세는 36px key/value rows.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+
+  .erp-std .erp-info-card dl {
+    display: grid;
+    gap: 0;
+  }
+
+  .erp-std .erp-info-card dl > div {
+    min-height: var(--erp-detail-row-h);
+    display: grid;
+    grid-template-columns: minmax(96px, .8fr) minmax(0, 1.2fr);
+    align-items: center;
+    column-gap: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-info-card dt {
+    min-width: 0;
+    color: var(--erp-color-text-muted);
+    font-size: var(--erp-fs-label);
+    font-weight: var(--erp-fw-regular);
+    line-height: 20px;
+  }
+
+  .erp-std .erp-info-card dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--erp-color-text);
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-medium);
+    line-height: 20px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-info-card dd[data-type="money"],
+  .erp-std .erp-info-card dd[data-type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-hero-tile .photo {
+    overflow: hidden;
+  }
+
+  .erp-std .erp-hero-tile .photo > img,
+  .erp-std .erp-hero-tile .photo > svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Embedded one-line offer selection list
+ * Content 내부의 기간별 대여료는 한 줄 비교/선택용 카드.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-offer-list {
+    display: grid;
+    gap: var(--erp-sp-2);
+  }
+
+  .erp-std .erp-offer-card {
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(64px, auto) minmax(120px, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--erp-sp-4);
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--erp-r-md);
+    background: var(--erp-color-surface-soft);
+    color: var(--erp-color-text);
+    text-decoration: none;
+    box-shadow: none;
+    transition:
+      background-color var(--erp-motion-state) var(--erp-motion-ease),
+      box-shadow var(--erp-motion-state) var(--erp-motion-ease),
+      transform var(--erp-motion-press) var(--erp-motion-ease);
+  }
+
+  .erp-std .erp-offer-card:hover {
+    background: var(--erp-color-surface-hover);
+    box-shadow: var(--erp-elevation-hover);
+  }
+
+  .erp-std .erp-offer-card[aria-current="true"] {
+    background: var(--erp-color-primary-weak);
+    box-shadow: var(--erp-shadow-pressed-10);
+  }
+
+  .erp-std .erp-offer-term {
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-semibold);
+    white-space: nowrap;
+  }
+
+  .erp-std .erp-offer-rent {
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-bold);
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-std .erp-offer-conditions {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--erp-color-text-2);
+    font-size: var(--erp-fs-label);
+    font-weight: var(--erp-fw-regular);
+    text-align: right;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Balanced compact list columns
+ * visual=64 fixed / body=fill / primary value=shared right column.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard--no-steps {
+    width: 100%;
+    grid-template-columns: 64px minmax(0, 1fr) clamp(108px, 24%, 136px);
+    grid-template-areas: "thumb id amount";
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb {
+    grid-area: thumb;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    grid-area: id;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount {
+    grid-area: amount;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    justify-self: stretch;
+    align-self: center;
+    text-align: right;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-amount :is(strong,span) {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* compact 목록은 3줄 본문만 보인다. 나머지는 상세가 맡는다. */
+  .erp-std .erp-panel--compact :is(.erp-rowcard-steps,.erp-rowcard-facts,.erp-rowcard-go) {
+    display: none;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Stable list card rhythm
+ * 카드 간격은 일정, hover/selected는 면만 바뀌고 geometry는 움직이지 않는다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-rowcards {
+    gap: var(--erp-card-gap);
+    padding: var(--erp-sp-3);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard {
+    transform: none !important;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard:hover {
+    transform: none !important;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard[aria-current="true"] {
+    transform: none !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Compact list text rails
+ * Main/Key/Support share the same left rail; primary value shares one right rail.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-panel--compact .erp-rowcard-id {
+    justify-self: stretch;
+  }
+
+  .erp-std .erp-panel--compact :is(
+    .erp-rowcard-title,
+    .erp-rowcard-sub,
+    .erp-rowcard-meta
+  ) {
+    width: 100%;
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-title {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-title .erp-rowcard-link {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-sub > b {
+    margin-left: 0;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-25 — Content panel horizontal rails
+ * Hero / offer list / information groups share the same content width.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .erp-std .erp-detail-body {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .erp-std .erp-detail-body > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .erp-std .erp-hero-tile {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(140px, 34%) minmax(0, 1fr);
+    align-items: stretch;
+    column-gap: 16px;
+  }
+
+  .erp-std .erp-hero-tile .photo {
+    min-width: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--erp-r-md);
+    background: var(--erp-color-surface-soft);
+  }
+
+  .erp-std .erp-hero-info {
+    min-width: 0;
+    align-self: center;
+  }
+
+  .erp-std .erp-hero-info :is(.name,.sub,.erp-hero-line) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .erp-std .erp-offer-list,
+  .erp-std .erp-tile-group,
+  .erp-std .erp-info-card {
+    width: 100%;
+    min-width: 0;
+  }
+}

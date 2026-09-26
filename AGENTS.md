@@ -28,29 +28,23 @@
 - 현재 merge 순서: UI 최종확정 → main → 운영개시 branch 최신화 → production 검증/배포 → main.
 - 상세 규칙은 `docs/BRANCH-WORKFLOW.md`, machine-readable 상태는 `registry/active-work.json`을 따른다.
 
-## -1. UI DESIGN RECOVERY HOLD — 2026-09-26
+## -1. SINGLE UI LINEAGE — PR #92 · USER APPROVED 2026-09-26
 
-**중요:** 2026-09-25 HARD LOCK의 시각 기준선은 재검증 중이다. 실제 승인 UI 계보(`claude/erp-platform-ui-ux-hvfyfa`, PR #92)를 current main과 대조해 복구하기 전까지 현 main의 시각 결과를 최종 정본이라고 가정하지 않는다. 새 디자인 발명, PR #92/관련 UI 이력 삭제, 현행 시각을 기준으로 한 추가 polish는 금지한다.
+**화면 정본 확정.** PC 화면은 PR #92 계보(현재 main의 `src/app/_erp/*`) 하나다. 그 밖의 화면·목업·브랜치·과거 잠금 문서는 **폐기(DISCARDED)** 이며, `docs/ui/DESIGN-AUTHORITY.md`의 폐기 목록을 되살리거나 참고해 화면을 바꾸지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
 
-
-UI/UX 작업은 **반드시** 아래 순서로 시작한다.
-
+UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 1. `docs/ui/DESIGN-AUTHORITY.md`
-2. `docs/ui/ADMIN-UI-UX-SSOT.md`
-3. `docs/ui/admin-ui-ux-ssot.json`
-4. `docs/ui/SALES-APP-BASELINE.md`
-5. `src/app/_design/*` + `src/app/_design/admin-final.css`
+2. `docs/recovery/PR92-LATESTIZATION-STATUS.md`
+3. `docs/ui/ADMIN-UI-UX-SSOT.md`
+4. `docs/ui/admin-ui-ux-ssot.json`
 
-이 다섯 범위 밖의 과거 시각 자료는 구현 근거가 아니다.
+**PC 디자인 정본은 PR #92 actual route의 `src/app/_erp/*` 구현 한 계보뿐이다.** (사용자 확정 2026-09-26: 「큰 화면으로 준 92버전이 정본이고 메인으로 합쳐져야 돼」)
 
-### 금지
-- 삭제된 `docs/ui/mockups/**`, `UI-HISTORY.md`, 2026-09-16 rail/topbar/mockup 계열을 Git history에서 찾아 복원하지 않는다.
-- 과거 PR/스크린샷/리뷰 문서를 “기존 디자인”이라고 해석해 현재 화면에 되살리지 않는다.
-- Claude/Codex/GPT 등 모델 고유 기억이나 임의 미감을 현재 Product Profile보다 우선하지 않는다.
-- 새 버튼 높이/반경/색/카드/내비게이션 문법을 별도로 만들지 않는다.
-- 정본과 충돌하면 임의 fallback 하지 말고 **FAIL / DECISION REQUIRED**로 남긴다.
+UI 규칙:
+- 현재 actual route와 UI SSOT만 사용한다.
+- 기능 최신화는 #92의 3패널 line-free visual grammar 안에서만 반영한다.
+- UI 구조 변경은 actual route, UI SSOT, Visual QA를 같은 변경에서 갱신한다.
 
-시각 규격 변경은 사용자의 명시 승인 후 `DESIGN-AUTHORITY.md` + MD/JSON SSOT + 공통 부품 + UI 회귀검사를 같은 변경에서 갱신해야 한다.
 
 ## 0. Mandatory Work handoff
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
@@ -125,7 +119,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline
-- UI/UX의 현재 시각 권위는 이 문서 상단 `UI DESIGN HARD LOCK`과 `docs/ui/DESIGN-AUTHORITY.md`뿐이다. AI Core/DevCenter 및 `.ai-core/ui-ux.consumer.json`은 의미·상호작용 계약으로만 사용하며, 과거 revision/승인 번호를 시각 정본으로 해석하지 않는다. 구현 후 현행 Visual QA/Quality Receipt 없이는 PILOT/CONFORMANT를 주장하지 않는다.
+- UI/UX는 `docs/ui/DESIGN-AUTHORITY.md`와 `docs/ui/ADMIN-UI-UX-SSOT.md`의 현재 actual-route 규격(PR #92 계보)을 따른다. 구현 후 현행 Visual QA 없이는 PILOT/CONFORMANT를 주장하지 않는다.
 - backend write는 가능하면 `UI → Service → Domain → Port → Adapter/Repository` 경계를 통과한다.
 - 운영 저장소 연결 전 transaction, concurrency, idempotency, unique number, retry/failure semantics를 계약과 테스트로 먼저 고정한다.
 - 상태 변경/취소/정산 같은 민감 작업은 actor와 audit evidence를 남길 수 있는 경계를 마련한다.

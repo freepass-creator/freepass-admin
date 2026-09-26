@@ -281,3 +281,37 @@ export function intakeTaskOf(r: SettlementRow): IntakeTask {
   if (block === '인도') return '인도';
   return '정산';
 }
+
+
+/**
+ * FreePass Admin compatibility projection for the PR #92 detail panel.
+ * Business truth still comes from blockOf(); this only maps the next blocker
+ * to the human-facing workflow phase used by the Admin UI.
+ */
+export type AdminWorkflowPhase =
+  | '접수 진행'
+  | '공급사 청구'
+  | '공급사 수금'
+  | '영업자 지급'
+  | '완료'
+  | '취소';
+
+export function adminWorkflowPhaseOf(r: SettlementRow): AdminWorkflowPhase {
+  if (r.progress.cancelled) return '취소';
+  const block = blockOf(r);
+  if (!block) return '완료';
+  if (block === '계약서' || block === '차량번호 없음' || block === '공급사 없음' || block === '인도') return '접수 진행';
+  if (block === '청구금액 모름' || block === '청구') return '공급사 청구';
+  if (block === '계산서' || block === '수금') return '공급사 수금';
+  if (block === '영업채널 없음' || block === '지급금액 모름' || block === '지급') return '영업자 지급';
+  return '접수 진행';
+}
+
+/** Human-facing label only; no lifecycle decision is made here. */
+export function adminBlockLabel(block: Block): string {
+  if (block === '공급사 없음') return '공급사 입력 필요';
+  if (block === '영업채널 없음') return '영업채널 입력 필요';
+  if (block === '청구금액 모름') return '청구금액 확인 필요';
+  if (block === '지급금액 모름') return '지급금액 확인 필요';
+  return block;
+}

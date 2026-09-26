@@ -17,16 +17,17 @@
   --ui-control-h: var(--컨트롤);
   --ui-control-radius: 6px;
   --ui-control-gap: 8px;
+  --ui-quick-filter-h: 34px;
   --ui-shell-h: 60px;
   --ui-action-h: 44px;
   --ui-touch-min: 44px;
   --ui-panel-gap: 12px;
-  --ui-panel-pad: 22px;
+  --ui-panel-pad: 20px;
   --ui-panel-pad-mobile: 16px;
-  --ui-list-gap: 8px;
+  --ui-list-gap: 12px;
   --ui-item-pad: 12px;
   --ui-row-body-h: 64px;
-  --ui-thumb-w: 82px;
+  --ui-thumb-w: 64px;
   --ui-thumb-h: 64px;
   --ui-status-tile: 64px;
 }
@@ -35,7 +36,6 @@
 .fn-main .workspace .dz-searchbox { height: var(--ui-control-h); padding: 0 4px 0 12px; gap: 8px; }
 .fn-main .workspace .dz-find > .dz-searchbox { padding-right: 104px; }
 .dz-search-ico { display: inline-flex; flex: none; color: #6b7580; }
-.fn-main .workspace .quick-filters a,
 .fn-main .workspace .tabs button, .fn-main .workspace .tabs a,
 .fn-main .workspace .offer-picker button,
 .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub,
@@ -50,153 +50,12 @@
 .dz-fs-axis { height: var(--ui-control-h); }
 /* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
 .dz-fs-open { top: 6px; right: 4px; height: 32px; line-height: 16px; }
-/* 모바일 판 탭 액션도 공통 44px 컨트롤을 사용한다. */
+/* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
 @media (max-width: 900px) {
   :root { --판탭: 56px; }
   .phone-tabs { height: var(--판탭); }
   .phone-tabs a { height: var(--ui-control-h); line-height: 16px; }
   .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */
-}
-
-/* grid/flex 자식의 intrinsic width가 panel을 밀어내지 않게 공통으로 끊는다. */
-.fn-main .workspace > .panel { min-width: 0; }
-.fn-main .workspace .summary-grid > div,
-.fn-main .workspace .summary-grid dd { min-width: 0; }
-.fn-main .workspace .summary-grid dd { overflow-wrap: anywhere; }
-.fn-main .workspace .dz-bar-go > * { min-width: 0; }
-/* ActionBar 3개 — 사용자 공통 규격 3:3:4. 기존 2개 3:7 규칙은 globals의 현행 계약을 유지한다. */
-.fn-main .workspace .dz-bar-go:has(> :nth-child(3)):has(> .primary) {
-  grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 4fr);
-}
-
-/* 상품찾기 넓은 목록: 1280에서도 두 카드가 설 수 있고 360에서는 400px 고정트랙이 생기지 않는다. */
-@media (min-width: 901px) {
-  .fn-main .workspace[data-mode="find"] .list {
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  }
-}
-@media (max-width: 900px) {
-  .fn-main .workspace[data-mode="find"] .list {
-    grid-template-columns: minmax(0, 1fr);
-    width: 100%;
-  }
-}
-
-/* 반응형 안정화 — 2026-09-25 전수검사
- * 360/390/412에서 sticky header가 여러 줄로 비대해지지 않게 하고,
- * 긴 identity가 badge/count/action 영역을 밀어내지 않게 한다. */
-.fn-main .workspace .vehicle-title { gap: 10px; min-width: 0; }
-.fn-main .workspace .vehicle-title > div { flex: 1 1 auto; min-width: 0; }
-.fn-main .workspace .vehicle-title h2 {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.fn-main .workspace .vehicle-title p {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.fn-main .workspace .vehicle-title > .dz-badge {
-  flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis;
-}
-.fn-main .workspace .panel-head > div { flex: 0 1 auto; min-width: 0; }
-.fn-main .workspace .panel-head > .count { flex: none; white-space: nowrap; }
-
-@media (max-width: 900px) {
-  /* 모바일 quick filter는 세로로 쌓지 않고 한 줄에서 손가락으로 넘긴다.
-     44px hit target은 그대로라 시각 밀도만 줄고 조작성은 유지된다. */
-  .fn-main .workspace .quick-filters {
-    flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
-    overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .fn-main .workspace .quick-filters::-webkit-scrollbar { display: none; }
-  .fn-main .workspace .quick-filters > * { flex: 0 0 auto; }
-
-  /* 모바일 상세 identity는 긴 차량/고객명만 최대 두 줄 허용한다. */
-  .fn-main .workspace .vehicle-title { align-items: flex-start; }
-  .fn-main .workspace .vehicle-title h2 {
-    white-space: normal; overflow: hidden; text-overflow: clip;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    line-height: 24px;
-  }
-  .fn-main .workspace .vehicle-title p { margin-top: 2px; }
-}
-
-/* 공통 route 상태 — loading / fatal error / retry */
-.fn-main .workspace.dz-route-state {
-  grid-template-columns: minmax(0, 1fr);
-}
-.fn-main .workspace.dz-route-state > .panel {
-  max-width: 720px; width: 100%;
-}
-.dz-state-block {
-  display: grid; gap: 8px; padding: 12px; border-radius: var(--ui-radius);
-  background: var(--박스);
-}
-.dz-state-block > strong { font-size: var(--글메인); }
-.dz-state-block > p,
-.dz-state-block > small {
-  margin: 0; font-size: var(--글보조); line-height: 18px; color: #6b7580;
-  overflow-wrap: anywhere;
-}
-.dz-state-block.error { background: #fff7e8; }
-.dz-state-skeleton {
-  display: block; width: 100%; height: 12px; border-radius: var(--ui-radius);
-  background: var(--선);
-}
-.dz-state-skeleton.short { width: 62%; }
-
-/* 접근성 / reflow 안정화 — 2026-09-25 */
-.dz-side-field {
-  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
-}
-.dz-side-field > span {
-  flex: none; font-size: var(--글보조); color: #6b7580; white-space: nowrap;
-}
-.dz-side-field > input { min-width: 0; }
-
-/* 긴 번역/확대에서 ActionBar가 가로 넘침을 만들지 않는다. 44px은 고정높이가 아니라 최소 터치높이로 보호한다. */
-.fn-main .workspace .dz-bar-go > :is(a, button) {
-  min-height: var(--ui-action-h); height: auto !important;
-  padding-block: 8px; line-height: 18px; white-space: normal;
-  overflow-wrap: anywhere; text-align: center;
-}
-
-/* 가상 키보드나 sticky ActionBar가 포커스된 입력을 덮지 않게 스크롤 여유를 둔다. */
-@media (max-width: 900px) {
-  .fn-main .workspace > .panel {
-    scroll-padding-block-end: calc(var(--ui-action-h) + 32px + env(safe-area-inset-bottom));
-  }
-  .fn-main .workspace .panel :is(input, select, textarea, button, a, summary):focus-visible {
-    scroll-margin-block-start: calc(var(--판탭) + 12px);
-    scroll-margin-block-end: calc(var(--ui-action-h) + 32px + env(safe-area-inset-bottom));
-  }
-}
-
-/* 400% reflow에 가까운 320px 안팎 CSS viewport에서는 2열 의미보다 읽기 순서를 우선한다. */
-@media (max-width: 340px) {
-  .fn-main .workspace .summary-grid,
-  .fn-main .workspace .dz-form-grid,
-  .fn-main .workspace .dz-life-form,
-  .fn-main .workspace .dz-money form,
-  .fn-main .workspace .dz-settle-axis {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-  .fn-main .workspace .dz-form-grid .wide,
-  .fn-main .workspace .dz-life-form .wide,
-  .fn-main .workspace .dz-life-form .dz-errs,
-  .fn-main .workspace .dz-money .wide,
-  .fn-main .workspace .dz-money .dz-errs {
-    grid-column: 1 !important;
-  }
-  .fn-main .workspace .dz-work-focus { grid-template-columns: minmax(0, 1fr); }
-  .fn-main .workspace .dz-work-focus > small { grid-column: 1; }
-  .fn-main .workspace .dz-picked-grid { grid-template-columns: minmax(0, 1fr); }
-  .fn-main .workspace .dz-picked-grid > div {
-    border-left: 0 !important; border-top: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
-    margin-top: 8px; padding-top: 8px;
-  }
-  .fn-main .workspace .dz-picked-grid > div:first-child {
-    border-top: 0; margin-top: 0;
-  }
 }
 
 /* 색 위계 — 카드 */
@@ -213,7 +72,7 @@
 /* ① 글 — 12 밑으로 내려간 것(상태 칸 11 · 조항 11 · 내부 딱지 11 · 건수 동그라미 11 · 달 합계 곁글 10) → 보조 12 */
 .dz-row-status em, .dz-article, .dz-internal, .dz-fs-open i, .dz-fs-body nav i, .dz-month-sum small { font-size: var(--글보조); }
 .dz-fs-open i, .dz-fs-body nav i { min-width: 20px; height: 20px; border-radius: 10px; }
-/* ② 컨트롤 44 — 폼 칸 · 진행 체크 · 곁 걸음 · 프로모션/가감의 옛 33px 규칙을 공통값으로 덮는다. */
+/* ② 컨트롤 40 — 폼 칸 · 진행 체크 · 곁 걸음 · 프로모션/가감 칸이 33 이었다(옛 .fn-main 규칙이 더 셌다) */
 .fn-main .workspace .panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .fn-main .workspace .panel select,
 .fn-main .workspace .panel .fn-box button,
@@ -258,50 +117,6 @@
 .dz-form-more > .dz-form-grid, .dz-form-more > .dz-money { padding: 12px; background: var(--박스); border-radius: 0 0 var(--r) var(--r); }
 .dz-form-more[open] > summary { border-radius: var(--r) var(--r) 0 0; }
 .dz-form-more > .dz-money form { background: none; padding: 0; }
-/* 신규 접수 WORK 문법 — 2026-09-25
- * 섹션 자체는 카드가 아니라 구조다. 입력값만 면으로 구분해 카드 안 카드 느낌을 줄인다. */
-.dz-form-group {
-  padding: 0; border: 0; border-radius: 0; background: transparent;
-}
-.dz-form-group + .dz-form-group {
-  padding-top: 12px; border-top: 1px solid var(--선);
-}
-.dz-form-group > legend {
-  margin-bottom: 8px; color: var(--글); font-size: var(--글메인); font-weight: 800;
-}
-.fn-main .workspace .dz-intake-form input:not([type="checkbox"]):not([type="hidden"]),
-.fn-main .workspace .dz-intake-form select,
-.fn-main .workspace .dz-intake-form textarea {
-  background: var(--박스);
-}
-.fn-main .workspace .dz-intake-form input:focus,
-.fn-main .workspace .dz-intake-form select:focus,
-.fn-main .workspace .dz-intake-form textarea:focus {
-  outline: 2px solid color-mix(in srgb, var(--ci남색) 28%, transparent);
-  outline-offset: 1px;
-}
-.dz-form-hint {
-  margin: -4px 0 12px; font-size: var(--글보조); line-height: 18px; color: #6b7580;
-}
-.fn-main .workspace .dz-picked-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
-  margin-top: 10px; border-top: 1px solid color-mix(in srgb, var(--ci남색) 14%, transparent);
-}
-.fn-main .workspace .dz-picked-grid > div {
-  padding: 8px 10px 0; border-radius: 0; background: transparent;
-}
-.fn-main .workspace .dz-picked-grid > div + div {
-  border-left: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
-}
-@media (max-width: 900px) {
-  .fn-main .workspace .dz-picked-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fn-main .workspace .dz-picked-grid > div:nth-child(odd) { border-left: 0; }
-  .fn-main .workspace .dz-picked-grid > div:nth-child(n+3) {
-    margin-top: 8px; padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--ci남색) 12%, transparent);
-  }
-}
-
 /* 수수료 한 줄 — 표대로 청구 · 지급 / 표가 못 내면 붉게 */
 .dz-fee-line { margin: 0 0 8px; font-size: var(--글메인); color: var(--글); clear: both; }
 .dz-fee-line small { margin-left: 6px; font-size: var(--글보조); color: #9aa3ad; }
@@ -312,7 +127,7 @@
 .dz-picked > b { font-size: var(--글메인); }
 .dz-picked > p { margin: 0; font-size: var(--글보조); color: #6b7580; }
 .dz-picked-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
-.dz-picked-grid > div { padding: 8px 10px; border-radius: var(--r); background: var(--판); }
+.dz-picked-grid > div { padding: 8px 12px; border-radius: var(--r); background: var(--판); }
 .dz-picked-grid dt { font-size: var(--글보조); color: #6b7580; }
 .dz-picked-grid dd { margin: 2px 0 0; font-size: var(--글메인); font-weight: 700; font-variant-numeric: tabular-nums; }
 .dz-picked-note { font-size: var(--글보조); color: #6b7580; }
@@ -320,109 +135,16 @@
 .fn-main .workspace > .work-panel > .dz-form { flex: 1 0 auto; display: flex; flex-direction: column; }
 .dz-intake-form { flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; }
 .dz-intake-form > .dz-bar { margin-top: auto; }
-/* 상품구분 고르기 — 공통 44px 선택 컨트롤. 신차렌트는 선출고 · 견적출고 · 신차발주 중 사람이 고른다 */
+/* 상품구분 고르기 — 단추 줄(40 · 켜진 것 남색 면). 신차렌트는 선출고 · 견적출고 · 신차발주 중 사람이 고른다 */
 .dz-choice { display: flex; flex-wrap: wrap; gap: 4px; clear: both; }
 .dz-choice label { position: relative; flex-direction: row !important; }
 .dz-choice input { position: absolute; opacity: 0; pointer-events: none; }
 .dz-choice span {
-  display: inline-flex; align-items: center; height: var(--컨트롤); line-height: 16px; padding: 0 14px; border-radius: var(--r);
+  display: inline-flex; align-items: center; height: var(--컨트롤); line-height: 16px; padding: 0 16px; border-radius: var(--r);
   background: var(--판); color: #4f5862; font-size: var(--글메인); cursor: pointer;
 }
 .dz-choice input:checked + span { background: var(--ci남색); color: #fff; font-weight: 700; }
 .dz-choice input:focus-visible + span { box-shadow: 0 0 0 2px var(--ci스카이); }
-
-/* 전자계약 상세 위계 — 2026-09-25 */
-.dz-esign-focus {
-  margin-top: 2px;
-}
-.workspace[data-mode="esign"] .detail-panel > .dz-support-section {
-  margin-top: 12px;
-}
-.workspace[data-mode="esign"] .detail-panel > .dz-support-section .summary-grid {
-  margin-bottom: 8px;
-}
-.workspace[data-mode="esign"] .quick-filters {
-  padding-top: 8px; padding-bottom: 4px;
-}
-/* 정산관리 3패널 위계 — 2026-09-25 */
-.dz-settle-axis {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px; margin: 8px 0;
-}
-.dz-settle-axis > a {
-  min-height: var(--ui-control-h); display: grid; align-content: center; gap: 1px;
-  padding: 7px 10px; border-radius: var(--ui-control-radius);
-  background: var(--박스); color: var(--글); text-decoration: none;
-}
-.dz-settle-axis > a span { font-size: var(--글메인); font-weight: 800; }
-.dz-settle-axis > a small { font-size: var(--글보조); color: #6b7580; }
-.dz-settle-axis > a.active { background: var(--고름); color: var(--ci남색); }
-.dz-settle-axis > a.active small { color: var(--ci남색); }
-
-.dz-settle-period {
-  margin-top: 4px; padding: 8px 10px; border-radius: var(--ui-radius);
-  background: var(--박스);
-}
-.dz-settle-status { padding-top: 8px; padding-bottom: 4px; }
-.dz-settle-status a { flex: 0 0 auto; }
-
-.dz-settle-doc {
-  padding: 10px 0; border-radius: 0; background: transparent;
-  border-top: 1px solid var(--선); border-bottom: 1px solid var(--선);
-}
-.dz-settle-doc > p:first-child {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-}
-.dz-settle-doc .dz-issue-sum { margin-top: 4px; }
-.dz-settle-doc .dz-claim-link { margin-top: 10px; }
-
-@media (max-width: 900px) {
-  .dz-settle-axis { grid-template-columns: 1fr 1fr; }
-  .dz-settle-doc > p:first-child { display: block; }
-}
-
-/* 접수 상세 WORK 위계 — 2026-09-25
- * 현재 업무는 짧고 분명하게, 진단/원자/이력은 보조 disclosure로 내린다. */
-.dz-work-focus {
-  display: grid; grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 10px; row-gap: 2px; align-items: baseline;
-  margin: 0 0 12px; padding: 10px 12px; border-radius: var(--ui-radius);
-  background: var(--고름);
-}
-.dz-work-focus > span {
-  font-size: var(--글보조); font-weight: 700; color: var(--ci남색);
-}
-.dz-work-focus > strong {
-  font-size: var(--글메인); font-weight: 800; color: var(--글);
-}
-.dz-work-focus > small {
-  grid-column: 2; font-size: var(--글보조); color: #6b7580;
-}
-.dz-attention {
-  margin: 12px 0; padding: 10px 12px; border-radius: var(--ui-radius);
-  background: #fff7e8;
-}
-.dz-attention .dz-sub { margin-top: 0; }
-.dz-support-section {
-  margin-top: 12px; padding: 0; border-top: 1px solid var(--선);
-}
-.dz-support-section > summary {
-  min-height: var(--ui-control-h); display: flex; align-items: center; gap: 8px;
-  list-style: none; cursor: pointer; font-size: var(--글메인); font-weight: 700; color: var(--글);
-}
-.dz-support-section > summary::-webkit-details-marker { display: none; }
-.dz-support-section > summary::after {
-  content: '＋'; margin-left: auto; color: #9aa3ad; font-weight: 400;
-}
-.dz-support-section[open] > summary::after { content: '－'; }
-.dz-support-section > summary small {
-  font-size: var(--글보조); font-weight: 600; color: #9aa3ad;
-}
-.dz-support-section > p {
-  margin: -4px 0 10px; font-size: var(--글보조); line-height: 18px; color: #6b7580;
-}
-.dz-support-section > .list,
-.dz-support-section > .dz-empty { margin-bottom: 8px; }
 
 /* ═══════════════════════════════════════════════════════════════════
    ★ 청구 링크 (/c/[token]) — 공급사가 여는 문. 관리자 틀 없음 · 옷은 같은 규격(§14-9)
@@ -522,7 +244,7 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .dz-badge.warn, .dz-row .dz-badge.warn { background: #fdecea; color: #a8261d !important; }
 /* 조건 표시 — 상세(기본) */
 .dz-perks { column-gap: 16px; row-gap: 8px; }
-.dz-perk { gap: 4px; font-size: 13px; font-weight: 700; color: var(--wl-ink); }
+.dz-perk { gap: 4px; font-size: var(--글메인); font-weight: 700; color: var(--wl-ink); }
 .dz-perk .dz-ico { color: var(--ci남색); }
 .dz-perk.good .dz-ico { color: var(--wl-ok); }
 .dz-perk.ask .dz-ico { color: var(--wl-faint); }
@@ -534,49 +256,11 @@ html:has(.cl-main), html:has(.cl-main) body { background: var(--바닥); min-hei
 .fn-main .workspace .dz-badge.act, .fn-main .workspace .dz-row.on .dz-badge.act { background: var(--남색옅음); color: var(--ci남색) !important; }
 .fn-main .workspace .dz-badge.warn, .fn-main .workspace .dz-row.on .dz-badge.warn { background: #fdecea; color: #a8261d !important; }
 /* ★상품 줄(§14-1-2 상품) — 1줄 세부모델 + 칩 · 2줄 기간·월·보증금(굵게) · 3줄 조건(왼쪽). 곁 정보 줄 없음 */
-.dz-row-l2.value { display: flex; min-width: 0; }
-.dz-row-l2.value strong { font-size: var(--글메인); font-weight: 700; line-height: 17px; color: var(--글); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dz-row-l3.perks { justify-content: flex-start; }
-.dz-row-l3.perks .dz-perks.compact { justify-content: flex-start; flex: 1 1 auto; }
-.dz-row-l3.perks small { font-size: var(--글보조); color: #9aa3ad; }
-
-/* 상품 상세 — 기간별 대여료는 별도 기간 버튼 + 선택값 박스로 중복하지 않고 한 줄 선택행으로 비교한다.
- * 선택은 체크 아이콘/테두리 추가 없이 --고름 면으로만 표시한다. */
-.fn-main .workspace .offer-picker.dz-offer-rows {
-  display: grid; grid-template-columns: 1fr; gap: var(--ui-list-gap);
-  overflow: visible; padding-top: 12px;
-}
-.fn-main .workspace .offer-picker.dz-offer-rows > button {
-  width: 100%; min-height: var(--ui-control-h); height: auto;
-  display: grid; grid-template-columns: max-content minmax(112px, .8fr) minmax(0, 1.4fr);
-  align-items: center; column-gap: 12px;
-  padding: 8px 12px; border: 0; border-radius: var(--ui-radius);
-  background: var(--카드); color: var(--글); text-align: left;
-}
-.fn-main .workspace .offer-picker.dz-offer-rows > button:hover { background: var(--카드손); }
-.fn-main .workspace .offer-picker.dz-offer-rows > button.active,
-.fn-main .workspace .offer-picker.dz-offer-rows > button[aria-pressed="true"] {
-  background: var(--고름); color: var(--글);
-}
-.dz-offer-term { font-size: var(--글메인); font-weight: 700; white-space: nowrap; }
-.dz-offer-rent {
-  font-size: var(--글메인); font-weight: 800; color: var(--ci남색);
-  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
-}
-.dz-offer-conditions {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: var(--글보조); color: #6b7580; text-align: right; font-variant-numeric: tabular-nums;
-}
-@media (max-width: 900px) {
-  .fn-main .workspace .offer-picker.dz-offer-rows > button {
-    grid-template-columns: max-content minmax(0, 1fr);
-    row-gap: 4px; column-gap: 10px;
-  }
-  .dz-offer-rent { text-align: right; }
-  .dz-offer-conditions {
-    grid-column: 1 / -1; text-align: left; white-space: normal;
-  }
-}
+.dz-row-l2 { display: flex; min-width: 0; }
+.dz-row-l2 strong { font-size: var(--글메인); font-weight: 700; line-height: 17px; color: var(--글); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dz-row-l3 { justify-content: flex-start; }
+.dz-row-l3 .dz-perks.compact { justify-content: flex-start; flex: 1 1 auto; }
+.dz-row-l3 small { font-size: var(--글보조); color: #9aa3ad; }
 
 /* ═══════════════════════════════════════════════════════════════════
    ★ 로그인 (/login) — erp4 LoginView 짜임 · 우리 규격(§14-9). 관리자 틀 없음
@@ -656,39 +340,6 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
     content:""; position:absolute; inset:-6px;
   }
   .fn-main .workspace .panel-head .dz-phone-back:active { background: var(--박스손); }
-}
-/* 폰 — 상품 줄은 네 줄(폭 375 에서 사진 82 + 칩 둘이면 이름이 「모…」로 잘렸다 · 실측):
-   ① 세부모델 ② 상품구분 · 출고상태 칩 ③ 기간 · 월 · 보증금(넘치면 넘긴다) ④ 조건 */
-@media (max-width: 900px) {
-  .dz-row:has(.dz-row-l2.value) { contain-intrinsic-size: auto 104px; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-body { height: auto; min-height: 64px; gap: 4px; justify-content: flex-start; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l1 { flex-wrap: wrap; row-gap: 4px; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 0 100%; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l2.value strong { white-space: normal; }
-  .dz-row:has(.dz-row-l2.value) .dz-row-l3.perks .dz-perks.compact { height: auto; flex-wrap: wrap; }
-}
-/* 상품 목록 카드 — 카드 폭을 남기지 않고 좌/중/우 축으로 쓴다.
- * 기간 = 좌측, 월 대여료 = 중앙 핵심, 보증금 = 우측.
- * 문자열 자체의 구분점 대신 CSS 구분점을 써서 폭 배분과 모바일 줄바꿈이 충돌하지 않게 한다. */
-.dz-row:has(.dz-row-l2.value) .dz-row-l1 > b { flex: 1 1 auto; min-width: 0; }
-.dz-row:has(.dz-row-l2.value) .dz-row-badges { margin-left: auto; }
-.dz-row-l2.value strong {
-  display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content;
-  align-items: center; width: 100%; column-gap: 12px;
-}
-.dz-row-l2.value .dz-seg { min-width: 0; white-space: nowrap; }
-.dz-row-l2.value .dz-seg:nth-child(2) { text-align: center; }
-.dz-row-l2.value .dz-seg:last-child { text-align: right; }
-.dz-row-l2.value .dz-seg + .dz-seg::before { content: '·'; margin-right: 8px; color: #9aa3ad; }
-
-@media (max-width: 900px) {
-  .dz-row-l2.value strong {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
-    column-gap: 8px; row-gap: 2px; width: 100%;
-  }
-  .dz-row-l2.value .dz-seg:nth-child(2),
-  .dz-row-l2.value .dz-seg:last-child { text-align: left; }
-  .dz-row-l2.value .dz-seg + .dz-seg::before { margin-right: 6px; }
 }
 /* 폰 — 가로로 흐르는 퀵 단추 줄은 굴림 막대를 안 보인다(손가락으로 민다) */
 @media (max-width: 900px) {
@@ -847,3 +498,2061 @@ body > nav.fn-top :where(a, button):focus-visible,
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Surface type / Interaction hierarchy (mobile/legacy board)
+   물성은 타입이 정하고, hover/press 여부가 상호작용을 정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-elevation-0: none;
+  --ui-elevation-base: 0 1px 2px rgba(16,24,40,.05);
+  --ui-elevation-hover: 0 2px 6px rgba(16,24,40,.08);
+  --ui-elevation-float: 0 8px 22px rgba(16,24,40,.12);
+  --ui-press-y: 1px;
+
+  /* Borderless polish: 카드/버튼 선은 숨기고 입력 경계만 유지한다. */
+  --ui-line-card: transparent;
+  --ui-line-control: transparent;
+  --ui-line-input: #cdd5df;
+}
+
+/* Card/box 타입은 전부 같은 기본 높이. 읽기 전용도 바닥에 붙이지 않는다. */
+.fn-main .workspace :is(
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .dz-row-status
+) {
+  box-shadow: var(--ui-elevation-base);
+}
+
+/* 목록 카드의 1px box model은 유지하되 선은 투명.
+ * 카드 경계는 surface + elevation으로만 표현한다. */
+.fn-main .workspace .dz-row {
+  border: 1px solid transparent;
+}
+
+/* 정보 카드/박스도 visible line 없이 같은 surface hierarchy를 쓴다. */
+.fn-main .workspace :is(.dz-form-group, .summary-grid, .dz-offer-line) {
+  border-color: var(--ui-line-card);
+}
+
+/* Button/control 타입은 같은 기본 elevation + 조금 더 또렷한 control line. */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  box-shadow: var(--ui-elevation-base);
+  border-color: var(--ui-line-control);
+}
+
+/* 입력은 별도 input line. */
+.fn-main .workspace :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea,
+  .dz-searchbox
+) {
+  border-color: var(--ui-line-input);
+}
+
+/* interactive에만 hover/press를 준다. passive card는 그대로 떠 있다. */
+.fn-main .workspace :is(
+  .dz-row,
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  transition:
+    transform 90ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+@media (hover:hover) {
+  .fn-main .workspace :is(
+    .dz-row,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ):hover {
+    box-shadow: var(--ui-elevation-hover);
+    transform: translateY(-1px);
+  }
+}
+
+.fn-main .workspace :is(
+  .dz-row,
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+):active {
+  box-shadow: var(--ui-elevation-0);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* selected = 눌려 고정. 더 높이지 않는다. */
+.fn-main .workspace .dz-row.on,
+.fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .offer-picker button.active,
+.fn-main .workspace .dz-fs-open.on {
+  box-shadow: inset 0 1px 2px rgba(27,42,74,.12);
+  transform: translateY(var(--ui-press-y));
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-row.on:hover,
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]):hover,
+  .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]):hover,
+  .fn-main .workspace .offer-picker button.active:hover,
+  .fn-main .workspace .dz-fs-open.on:hover {
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.16);
+    transform: translateY(var(--ui-press-y));
+  }
+}
+
+/* Primary도 기본 높이는 다른 버튼과 같다. 우선순위는 색/텍스트가 말한다. */
+.fn-main .workspace .dz-bar-go > .primary {
+  box-shadow: var(--ui-elevation-base);
+}
+
+.fn-main .workspace :is(button,a)[aria-disabled="true"],
+.fn-main .workspace button:disabled {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-main .workspace :is(
+    .dz-row,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    transition: none;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Responsive shell contract
+   Web  = topbar + sidenav + multi-panel + statusbar
+   Mobile = NO global topbar/sidenav/statusbar. Current panel starts at the top.
+   Same business components, different shell composition.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* 과거 모바일 상태바가 남아 있어도 보이지 않게 fail-closed. */
+  header.fn-top.dz-statusbar,
+  body > .erp-topbar,
+  body > .erp-sidenav,
+  body > .erp-statusbar {
+    display: none !important;
+  }
+
+  /* 모바일은 전역 머리 높이를 계산에 넣지 않는다. */
+  body {
+    padding-top: 0;
+  }
+  .fn-main {
+    min-height: 100dvh;
+  }
+  .fn-main .workspace {
+    min-height: 100dvh;
+  }
+
+  /* depth 0: 하단 global tab만 빼고 panel이 화면 전체를 쓴다.
+   * depth 1+: 기존 규칙이 --아래띠를 safe-area/action boundary로 줄인다. */
+  .fn-main .workspace > .panel {
+    min-height: calc(100dvh - var(--판탭) - var(--아래띠) - 8px);
+  }
+
+  /* Panel 자체가 모바일의 header 역할을 한다. 별도 app header를 다시 만들지 않는다. */
+  .fn-main .workspace > .panel > .panel-head {
+    margin-top: 0;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Panel role is the visual/semantic contract.
+   ★ role(list/detail/work)와 navigation depth(list/detail/work query)는 별개다.
+   예: 정산 가운데 «실적 줄»은 화면 depth는 detail이지만 역할은 LIST.
+   따라서 어떤 panel을 보여줄지는 기존 route/data-phone 로직이 결정하고,
+   data-panel-role은 공통 density/visual/action 규격만 결정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel[data-panel-role="list"] {
+    --panel-density: compact;
+  }
+  .fn-main .workspace > .panel[data-panel-role="detail"],
+  .fn-main .workspace > .panel[data-panel-role="work"] {
+    --panel-density: standard;
+  }
+
+  /* role이 같으면 header/body/action의 기본 리듬도 같다. */
+  .fn-main .workspace > .panel[data-panel-role] > .panel-head {
+    flex: none;
+  }
+  .fn-main .workspace > .panel[data-panel-role] > :is(.list, .dz-tabbody, .dz-intake-form) {
+    min-height: 0;
+  }
+}
+
+/* Borderless mobile panels/controls — 치수·간격·라운드는 그대로, 보이는 선만 제거. */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel,
+  .fn-main .workspace :is(
+    .dz-row,
+    .dz-form-group,
+    .summary-grid,
+    .dz-offer-line,
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 입력/Search는 예외 — 입력 가능한 곳임을 보여주는 경계는 유지한다. */
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .dz-searchbox
+  ) {
+    border-color: var(--ui-line-input);
+  }
+
+  .fn-main .workspace .dz-bar,
+  .fn-main .workspace .dz-fs-foot {
+    border-top-color: transparent;
+  }
+}
+
+
+/* 2026-09-24 — Borderless search (mobile/legacy admin).
+ * 기존 높이/폭/패딩은 유지하고, border 대신 surface + elevation으로 검색 영역을 구분한다. */
+.fn-main .workspace .dz-searchbox {
+  border-color: transparent !important;
+  background: var(--박스);
+  box-shadow: var(--ui-elevation-base);
+}
+@media (hover:hover) {
+  .fn-main .workspace .dz-searchbox:hover {
+    background: var(--카드손);
+  }
+}
+.fn-main .workspace .dz-searchbox:focus-within {
+  border-color: transparent !important;
+  background: var(--판);
+  box-shadow: var(--ui-elevation-hover);
+}
+.fn-main .workspace .dz-searchbox :is(input,button):focus-visible {
+  outline: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Line-free UI standard (mobile)
+   Mobile Panel은 떠 있는 카드가 아니라 현재 screen surface다.
+   child card/control만 elevation으로 물성을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* 화면을 차지하는 Panel 자체는 flat. */
+  .fn-main .workspace > .panel[data-panel-role] {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    background: var(--판);
+  }
+
+  /* panel 내부 구획선 제거. */
+  .fn-main .workspace :is(
+    .panel-head,
+    .dz-bar,
+    .dz-listtop,
+    .dz-fs-head,
+    .dz-fs-foot,
+    .dz-month
+  ) {
+    border-color: transparent !important;
+  }
+
+  /* 모든 버튼/필터/드롭다운/입력은 visible line 없이 surface로 구분. */
+  .fn-main .workspace :is(
+    button,
+    .quick-filters a,
+    .tabs a,
+    .tabs button,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-sub,
+    a.primary,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .dz-searchbox
+  ) {
+    border-color: transparent !important;
+  }
+
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+    background: var(--박스);
+    box-shadow: var(--ui-elevation-base);
+  }
+
+  .fn-main .workspace :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ):focus {
+    outline: none;
+    background: var(--판);
+    box-shadow: var(--ui-elevation-hover);
+  }
+
+  /* sheet/popover는 선 없이 높은 elevation. */
+  .fn-main .workspace .dz-fs-sheet {
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-float);
+  }
+
+  /* 목록/테이블성 행도 선 대신 surface/hover/selected. */
+  .fn-main .workspace :is(.dz-row, .dz-life-row, .fn-row) {
+    border-color: transparent !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Final line-free semantic hierarchy (mobile)
+   같은 의미, 다른 shell: Panel은 화면 자체이고 child component만 물성을 가진다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-canvas: #F2F6FC;
+  --ui-surface: #FFFFFF;
+  --ui-surface-soft: #F5F7FA;
+  --ui-surface-hover: #EEF2F7;
+  --ui-selected: #EAF1FF;
+  --ui-focus-halo: 0 0 0 3px rgba(27,42,74,.14);
+}
+
+@media (max-width: 900px) {
+  body:has(> .erp-theme-flag),
+  body:has(> .erp-theme-flag) > main.fn-main {
+    background: var(--ui-canvas);
+  }
+
+  /* Panel = 현재 screen. */
+  .fn-main .workspace > .panel[data-panel-role] {
+    background: var(--ui-surface);
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Badge/Tag/Perk = signal only. 눌리는 물건처럼 보이지 않는다. */
+  .fn-main .workspace :is(.dz-badge,.dz-perk,.dz-row-status) {
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: default;
+    transition: none;
+  }
+
+  /* Action / selection controls. */
+  .fn-main .workspace :is(
+    .quick-filters a,
+    .tabs button,
+    .tabs a,
+    .offer-picker button,
+    .dz-fs-open,
+    .dz-bar-go > .primary,
+    .dz-bar-go > .dz-bar-sub
+  ) {
+    background-color: var(--ui-surface-soft);
+    box-shadow: var(--ui-elevation-base);
+    cursor: pointer;
+  }
+
+  /* Primary는 색으로 우선순위 표현 — 기본 높이는 동일. */
+  .fn-main .workspace .dz-bar-go > .primary {
+    background: var(--ci남색);
+    color: #fff;
+  }
+
+  /* 선택 control은 눌려 고정. */
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+  .fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+  .fn-main .workspace .offer-picker button.active,
+  .fn-main .workspace .dz-fs-open.on {
+    background: var(--ci남색);
+    color: #fff;
+    box-shadow: inset 0 1px 2px rgba(15,23,42,.14);
+    transform: translateY(var(--ui-press-y));
+  }
+
+  /* Card: 기본적으로 떠 있음. interactive card만 hover/press. */
+  .fn-main .workspace .dz-row {
+    background: var(--ui-surface);
+    box-shadow: var(--ui-elevation-base);
+  }
+  .fn-main .workspace .dz-row.on {
+    background: var(--ui-selected);
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.11);
+    transform: translateY(var(--ui-press-y));
+  }
+
+  /* Field/search/select: line-free surface. */
+  .fn-main .workspace :is(
+    .dz-searchbox,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+    background: var(--ui-surface-soft);
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-base);
+  }
+  .fn-main .workspace :is(
+    .dz-searchbox:focus-within,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
+    select:focus,
+    textarea:focus
+  ) {
+    outline: none;
+    background: var(--ui-surface);
+    box-shadow: var(--ui-focus-halo), var(--ui-elevation-hover);
+  }
+
+  .fn-main .workspace :is(button,a)[aria-disabled="true"],
+  .fn-main .workspace button:disabled {
+    opacity: .52;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed;
+  }
+
+  .fn-main .workspace .dz-fs-sheet {
+    background: var(--ui-surface);
+    border-color: transparent !important;
+    box-shadow: var(--ui-elevation-float);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Current-route spacing normalization
+   legacy globals의 값은 보존하되 현재 내부 Admin route에서 실제 보이는 공통 부품은
+   4pt scale(4/8/12/16/20/24/32)로 고정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace {
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-7: 32px;
+}
+
+/* 검색/목록/요약의 기본 리듬 */
+.fn-main .workspace .dz-find { gap: var(--ui-space-2); }
+.fn-main .workspace .list { gap: var(--ui-list-gap); }
+.fn-main .workspace .dz-picked-grid { gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
+.fn-main .workspace .dz-picked-grid > div { padding: var(--ui-space-2) var(--ui-space-3); }
+.fn-main .workspace :is(.summary-grid, .dz-offer-line, .dz-issue) {
+  border-radius: var(--ui-radius);
+}
+
+/* control 안쪽 horizontal padding도 12/16 두 단계로 제한 */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub
+) {
+  padding-inline: var(--ui-space-3);
+}
+.fn-main .workspace .dz-bar-go > :is(.primary, .dz-bar-sub) {
+  padding-inline: var(--ui-space-4);
+}
+
+/* row/card 안쪽은 12를 기본으로, 큰 section 분리는 16 */
+.fn-main .workspace .dz-row {
+  padding-inline: var(--ui-item-pad);
+}
+.fn-main .workspace :is(.dz-form-group, .dz-issue, .dz-offer-line, .fn-box) {
+  padding: var(--ui-space-3);
+}
+
+/* 현재 Admin에서 14/22 같은 독자 vertical rhythm이 다시 보이지 않도록 final layer에서 수렴. */
+.fn-main .workspace .vehicle-title { padding-block: var(--ui-space-4); }
+.fn-main .workspace .dz-side-steps { margin-bottom: var(--ui-space-3); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Surface depth refinement (mobile/live Admin)
+   Panel=white screen surface, entity/info card=soft cool surface.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-component-surface: #F7F9FC;
+}
+
+.fn-main .workspace :is(
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .dz-picked,
+  .fn-box
+) {
+  background: var(--ui-component-surface);
+}
+
+/* row/card hover only. passive information boxes stay still. */
+@media (hover:hover) {
+  .fn-main .workspace .dz-row:hover {
+    background: var(--ui-surface-hover);
+  }
+}
+
+/* selected is semantic tint, never merely a darker grey. */
+.fn-main .workspace .dz-row.on {
+  background: var(--ui-selected);
+}
+
+/* primary / selected compact controls keep their semantic surface. */
+.fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+.fn-main .workspace .offer-picker button.active,
+.fn-main .workspace .dz-fs-open.on,
+.fn-main .workspace .dz-bar-go > .primary {
+  background: var(--ci남색);
+  color: #fff;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Interaction state consistency (live Admin)
+   접근성 focus는 유지하되 visible border/outline 대신 soft halo를 사용한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(
+  .quick-filters a,
+  .tabs button,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-bar-go > .primary,
+  .dz-bar-go > .dz-bar-sub,
+  .dz-row
+):focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-halo), var(--ui-elevation-base);
+}
+
+/* selected + focus = selected 상태를 유지하고 halo만 더한다. */
+.fn-main .workspace :is(
+  .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]),
+  .tabs :is(button,a):is(.active,[aria-selected="true"],[aria-pressed="true"],[aria-current="true"]),
+  .offer-picker button.active,
+  .dz-fs-open.on,
+  .dz-row.on
+):focus-visible {
+  outline: none;
+  box-shadow:
+    var(--ui-focus-halo),
+    inset 0 1px 2px rgba(27,42,74,.12);
+  transform: translateY(var(--ui-press-y));
+}
+
+/* disabled는 움직이지 않고 시각 강도만 낮춘다. */
+.fn-main .workspace :is(button,a)[aria-disabled="true"]:focus-visible,
+.fn-main .workspace button:disabled:focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Signal은 interaction surface가 아니다. */
+.fn-main .workspace :is(.dz-badge,.dz-perk,.dz-row-status):focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Density contract (mobile/live Admin)
+   touch target 44는 유지하고, panel/list rhythm을 명시적으로 고정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-panel-head-h: 52px;
+  --ui-query-row-h: 48px;
+  --ui-row-min-h: 88px;
+  --ui-section-rhythm: 16px;
+}
+
+.fn-main .workspace .panel-head {
+  min-height: var(--ui-panel-head-h);
+}
+
+.fn-main .workspace .dz-searchbox {
+  height: var(--ui-control-h);
+}
+
+.fn-main .workspace .dz-find {
+  gap: var(--ui-list-gap);
+  margin-bottom: var(--ui-item-pad);
+}
+
+.fn-main .workspace .quick-filters {
+  min-height: var(--ui-control-h);
+  gap: var(--ui-control-gap);
+}
+
+.fn-main .workspace .dz-row {
+  min-height: var(--ui-row-min-h);
+}
+
+/* 상세/업무 section은 16px 리듬, 카드 내부는 8/12를 유지한다. */
+.fn-main .workspace :is(
+  .dz-intake-form,
+  .dz-tabbody,
+  .dz-life-form
+) {
+  row-gap: var(--ui-section-rhythm);
+}
+
+/* 검색창 안 embedded facet은 작은 보조 control이라 32px 예외를 유지한다.
+ * standalone control은 반드시 44px tier를 사용한다. */
+.fn-main .workspace .dz-searchbox .dz-fs-open {
+  height: 32px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Alignment & information hierarchy (live Admin)
+   1행=식별, 2행=meta, 3행=결과/금액. 숫자·금액은 우측.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head {
+  align-items: center;
+}
+.fn-main .workspace .panel-head h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fn-main .workspace .panel-head > .count {
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ListRow hierarchy */
+.fn-main .workspace .dz-row-l1,
+.fn-main .workspace .dz-row-l2 {
+  text-align: left;
+}
+.fn-main .workspace .dz-row-l3 {
+  align-items: center;
+}
+.fn-main .workspace .dz-row-l3 > :is(strong,b) {
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fn-main .workspace .dz-row-l3 > small {
+  flex: none;
+  text-align: right;
+}
+
+/* 요약/상세의 숫자 값은 우측 정렬. */
+.fn-main .workspace :is(.summary-grid,.dz-picked-grid) dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 좁은 화면에서 식별/meta는 줄을 깨지 않고 말줄임. */
+.fn-main .workspace :is(.dz-row-l1,.dz-row-l2) {
+  min-width: 0;
+}
+.fn-main .workspace .dz-row-l1 > b,
+.fn-main .workspace .dz-row-l2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Async / empty / error / readonly state surfaces
+   line-free 상태 표현: semantic soft surface + text, border 없음.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(.dz-empty, .dz-warn, .dz-ok, .fn-err) {
+  margin: 0;
+  padding: var(--ui-space-3);
+  border: 0;
+  border-radius: var(--ui-radius);
+  box-shadow: none;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+
+.fn-main .workspace .dz-empty {
+  background: var(--ui-component-surface);
+  color: #6b7580;
+}
+
+.fn-main .workspace .dz-warn {
+  background: #FFF7E8;
+  color: #8A4B08;
+}
+
+.fn-main .workspace .dz-ok {
+  background: #EDF8F1;
+  color: #176B3A;
+}
+
+.fn-main .workspace .fn-err {
+  background: #FDEEEE;
+  color: #A12A2A;
+}
+
+.fn-main .workspace :is(
+  input[readonly],
+  textarea[readonly],
+  select[aria-readonly="true"],
+  [aria-readonly="true"].dz-searchbox
+) {
+  background: #EEF2F6;
+  color: #667085;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Busy는 geometry를 유지한다. */
+.fn-main .workspace [aria-busy="true"] {
+  opacity: .72;
+  pointer-events: none;
+  cursor: progress;
+}
+
+/* stale/offline은 error보다 약한 주의 상태 */
+.fn-main .workspace [data-ui-state="stale"],
+.fn-main .workspace [data-ui-state="offline"] {
+  background: #F3F6FA;
+  color: #5B6472;
+  box-shadow: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Page QA residual cleanup
+   Line-free 철학을 shell/navigation/error fallback까지 끝까지 유지한다.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 전역/모바일 하단 navigation도 visible divider를 쓰지 않는다. */
+.dz-tabbar,
+.dz-desktop-bottom {
+  border-top-color: transparent !important;
+}
+
+/* route-level fetch error도 일반 빨간 글 한 줄이 아니라 semantic surface로 보인다. */
+.fn-main > .fn-err,
+.fn-main > :is(h1,h2) + .fn-err {
+  margin: 12px 16px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: #FDEEEE;
+  color: #A12A2A;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+
+/* 연속 QuickFilter 줄은 동일 높이를 유지하되 과밀해 보이지 않게 행간만 공통 gap으로 제한한다. */
+.fn-main .workspace .quick-filters + .quick-filters {
+  margin-top: var(--ui-control-gap);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Mobile width QA (360 / 390 / 412)
+   한 패널 구조는 유지하고 가로 overflow만 fail-closed 한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main,
+  .fn-main .workspace,
+  .fn-main .workspace > .panel,
+  .fn-main .workspace .panel-head,
+  .fn-main .workspace .dz-listtop,
+  .fn-main .workspace .list,
+  .fn-main .workspace .dz-row,
+  .fn-main .workspace .dz-row-body,
+  .fn-main .workspace .dz-searchbox,
+  .fn-main .workspace .quick-filters,
+  .fn-main .workspace .tabs,
+  .fn-main .workspace .offer-picker,
+  .fn-main .workspace .summary-grid,
+  .fn-main .workspace .dz-form-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .fn-main .workspace {
+    overflow-x: hidden;
+  }
+
+  /* horizontal choice rows may scroll, the page itself may not. */
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month)::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* long identity/meta text yields before values/actions do. */
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.panel-head h1,.vehicle-title > div) {
+    min-width: 0;
+  }
+
+  .fn-main .workspace :is(.dz-row-l1 > b,.dz-row-l2,.panel-head h1) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* monetary/result values remain whole when practical. */
+  .fn-main .workspace .dz-row-l3 > :is(strong,b) {
+    flex-shrink: 0;
+    max-width: 48%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* forms never force viewport wider than 360px. */
+  .fn-main .workspace :is(input,select,textarea,button,a.primary,a.dz-bar-sub) {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 379px) {
+  /* 360-class devices: preserve touch size, reduce only horizontal inner padding. */
+  .fn-main .workspace .panel {
+    padding-inline: 12px;
+  }
+
+  .fn-main .workspace .panel-head {
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row {
+    padding-inline: 8px;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Color contrast refinement (live Admin)
+   12px support/meta는 #667085 계열 이상으로 유지한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-text-strong-color: #212529;
+  --ui-text-secondary-color: #475467;
+  --ui-text-muted-color: #667085;
+}
+
+/* 현재 내부 Admin의 support/meta를 너무 옅게 두지 않는다. */
+.fn-main .workspace :is(
+  .dz-row-l2,
+  .dz-row-l3 small,
+  .summary-grid dt,
+  .dz-picked-grid dt,
+  .dz-picked-note,
+  .dz-muted,
+  .dz-month-sum,
+  .panel-head > .count
+) {
+  color: var(--ui-text-muted-color);
+}
+
+/* body-value 계층 */
+.fn-main .workspace :is(
+  .dz-row-l1,
+  .summary-grid dd,
+  .dz-picked-grid dd
+) {
+  color: var(--ui-text-strong-color);
+}
+
+/* nav active uses brand/navy, inactive remains readable neutral */
+.dz-tabbar a,
+.dz-desktop-bottom .dz-menu a {
+  color: #667085;
+}
+.dz-tabbar a.on,
+.dz-desktop-bottom .dz-menu a.on {
+  color: var(--ci남색);
+}
+
+/* semantic badge colors stay restrained and readable */
+.fn-main .workspace .dz-badge.good { color: #15803D !important; background: #F0FDF4; }
+.fn-main .workspace .dz-badge.act { color: var(--ci남색) !important; background: #EEF3FA; }
+.fn-main .workspace .dz-badge.warn { color: #A24612 !important; background: #FFF4E5; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Icon & touch target contract
+   아이콘 크기와 누르는 영역을 분리한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-icon-sm: 16px;
+  --ui-icon-md: 20px;
+  --ui-icon-lg: 24px;
+  --ui-icon-action: 20px;
+}
+
+@media (max-width: 900px) {
+  /* icon-only action은 최소 44x44. 아이콘 자체는 20px. */
+  .fn-main .workspace .dz-phone-back {
+    width: var(--ui-touch-min);
+    height: var(--ui-touch-min);
+    min-width: var(--ui-touch-min);
+    min-height: var(--ui-touch-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    flex: none;
+  }
+
+  .fn-main .workspace .dz-phone-back {
+    font-size: var(--ui-icon-action);
+    line-height: 1;
+  }
+
+  /* 하단 navigation: 24px glyph + 44px 이상 hit area */
+  .dz-tabbar svg {
+    width: var(--ui-icon-lg);
+    height: var(--ui-icon-lg);
+  }
+
+  /* 표시용 icon은 touch target 규칙 대상이 아니다. */
+  .fn-main .workspace :is(.dz-search-ico,.dz-row-status,.dz-badge .dz-ico) {
+    pointer-events: none;
+  }
+}
+
+/* 클릭 가능한 control의 cursor만 pointer. signal/status는 pointer 금지. */
+.fn-main .workspace :is(
+  button,
+  a.primary,
+  a.dz-bar-sub,
+  .quick-filters a,
+  .tabs a,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-phone-back,
+  .dz-row
+) {
+  cursor: pointer;
+}
+
+.fn-main .workspace :is(.dz-badge,.dz-row-status,.dz-perk) {
+  cursor: default;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Form validation & submit UX
+   required/error/numeric/pending semantics를 같은 문법으로 맞춘다.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 숫자·금액 입력은 우측 정렬 + tabular. type=number를 강제하지 않는다. */
+.fn-main .workspace input[inputmode="numeric"],
+.fn-main .workspace input[inputmode="decimal"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* required 표시는 텍스트 별표를 유지하되 과장하지 않는다. */
+.fn-main .workspace label:has(> input[required]),
+.fn-main .workspace label:has(> select[required]),
+.fn-main .workspace label:has(> textarea[required]) {
+  color: var(--ui-text-secondary-color);
+}
+.fn-main .workspace label:has(> :is(input,select,textarea)[required]) > :is(input,select,textarea) {
+  background: var(--ui-surface-soft);
+}
+
+/* field-specific invalid일 때만 semantic error surface/halo. */
+.fn-main .workspace :is(input,select,textarea)[aria-invalid="true"] {
+  background: #FEF3F2;
+  color: #7A271A;
+  box-shadow: 0 0 0 3px rgba(180,35,24,.12);
+}
+
+/* 서버 validation error summary */
+.fn-main .workspace .dz-errs {
+  margin: 0;
+  padding: var(--ui-space-3);
+  list-style: none;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: #FDEEEE;
+  color: #A12A2A;
+  font-size: var(--ui-text-support);
+  line-height: 1.5;
+}
+.fn-main .workspace .dz-errs li + li {
+  margin-top: var(--ui-space-1);
+}
+
+/* pending form은 geometry를 유지하고 중복 interaction을 막는다. */
+.fn-main .workspace form[aria-busy="true"] {
+  cursor: progress;
+}
+.fn-main .workspace form[aria-busy="true"] :is(button[type="submit"],input[type="submit"]) {
+  pointer-events: none;
+}
+
+/* 성공/실패 피드백은 해당 form/action 근처에 둔다. */
+.fn-main .workspace form > :is(.dz-ok,.dz-warn,.dz-errs) {
+  margin-bottom: var(--ui-space-2);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Action risk hierarchy
+   neutral cancel / caution / destructive를 시각·행동 모두 분리한다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-action-caution {
+  background: #FFF7E8;
+  color: #8A4B08;
+  box-shadow: var(--ui-elevation-base);
+}
+
+.fn-main .workspace .dz-action-danger {
+  background: #FEF3F2;
+  color: #B42318;
+  box-shadow: var(--ui-elevation-base);
+  font-weight: 700;
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-action-caution:hover {
+    background: #FFF1D6;
+  }
+  .fn-main .workspace .dz-action-danger:hover {
+    background: #FEE4E2;
+  }
+}
+
+.fn-main .workspace :is(.dz-action-caution,.dz-action-danger):active {
+  box-shadow: none;
+  transform: translateY(var(--ui-press-y));
+}
+
+.fn-main .workspace :is(.dz-action-caution,.dz-action-danger):disabled {
+  opacity: .52;
+  box-shadow: none;
+  transform: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-24 — Motion & immediate feedback contract (live Admin)
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-motion-press: 80ms;
+  --ui-motion-state: 120ms;
+  --ui-motion-float: 160ms;
+  --ui-motion-ease: ease-out;
+  --ui-busy-opacity: .72;
+}
+
+.fn-main .workspace :is(
+  button,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-row,
+  a.primary,
+  a.dz-bar-sub
+) {
+  transition:
+    transform var(--ui-motion-press) var(--ui-motion-ease),
+    box-shadow var(--ui-motion-state) var(--ui-motion-ease),
+    background-color var(--ui-motion-state) var(--ui-motion-ease),
+    color var(--ui-motion-state) var(--ui-motion-ease);
+}
+
+/* 모바일 타격감: 눌렀을 때 1px sink. 크기 변화/scale은 사용하지 않는다. */
+.fn-main .workspace :is(
+  button,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .offer-picker button,
+  .dz-fs-open,
+  .dz-row,
+  a.primary,
+  a.dz-bar-sub
+):active {
+  transform: translateY(var(--ui-press-y));
+}
+
+/* pending: 위치/크기는 그대로, 상태만 즉시 보인다. */
+.fn-main .workspace [aria-busy="true"] {
+  opacity: var(--ui-busy-opacity);
+}
+.fn-main .workspace [aria-busy="true"] :is(button,a,input,select,textarea) {
+  cursor: progress;
+}
+
+/* 필터 값 갱신 중에는 우측 값 영역만 약하게 눌린다. */
+.fn-main .workspace .dz-fs-vals.wait {
+  opacity: .62;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-main .workspace *,
+  .fn-main .workspace *::before,
+  .fn-main .workspace *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — ActionBar ratio & primary-right contract
+   1=100, 2(primary)=3:7, 2(equal)=5:5, 3=3:3:4.
+   Primary는 항상 시각적으로 가장 오른쪽.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-bar-go[data-action-balance] {
+  display: flex;
+  gap: var(--ui-control-gap);
+}
+
+/* 기본: 자식 하나면 자동으로 전체 폭, 둘 이상이면 secondary 기본 몫 3 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"] > * {
+  flex: 3 1 0;
+  min-width: 0;
+}
+
+/* primary는 오른쪽 끝 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"] > .primary {
+  order: 2;
+}
+
+/* 2개 + primary = 3:7 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]
+  > .primary:nth-last-child(1):nth-child(2),
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]:has(> :nth-child(2):last-child)
+  > .primary {
+  flex: 7 1 0;
+}
+
+/* 3개 = 3:3:4 */
+.fn-main .workspace .dz-bar-go[data-action-balance="primary"]:has(> :nth-child(3):last-child)
+  > .primary {
+  flex: 4 1 0;
+}
+
+/* 동급 2개 = 5:5 */
+.fn-main .workspace .dz-bar-go[data-action-balance="equal"]:has(> :nth-child(2):last-child) > * {
+  flex: 1 1 0;
+}
+
+/* 1개는 종류와 무관하게 전체 폭 */
+.fn-main .workspace .dz-bar-go[data-action-balance]:has(> :first-child:last-child) > * {
+  flex: 1 1 100%;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Card breathing room & selected-state refinement
+   카드↔카드=12px, 섹션↔섹션=16px.
+   selected card는 border 없이 tint + inset.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-card-gap: 12px;
+  --ui-section-rhythm: 16px;
+}
+
+.fn-main .workspace .list {
+  gap: var(--ui-card-gap);
+}
+
+.fn-main .workspace .dz-row.on {
+  border-color: transparent !important;
+  background: var(--ui-selected);
+  box-shadow: inset 0 1px 2px rgba(27,42,74,.11);
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-row.on:hover {
+    border-color: transparent !important;
+    background: var(--ui-selected);
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.14);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Slim mobile QuickFilter
+   visual pill 34px / touch row 44px. 액션버튼처럼 뚱뚱하게 만들지 않는다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .quick-filters {
+    min-height: var(--ui-touch-min);
+    display: flex;
+    align-items: center;
+    gap: var(--ui-control-gap);
+  }
+
+  .fn-main .workspace .quick-filters a {
+    height: var(--ui-quick-filter-h);
+    min-height: var(--ui-quick-filter-h);
+    padding-inline: 12px;
+    border: 0 !important;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    line-height: 1;
+    font-size: var(--ui-text-main);
+    font-weight: 600;
+    background: var(--ui-surface-soft);
+    color: var(--ui-text-secondary-color);
+    box-shadow: none;
+  }
+
+  .fn-main .workspace .quick-filters a:is(.on,.active,[aria-pressed="true"],[aria-current="true"]) {
+    background: var(--ci남색);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .fn-main .workspace .quick-filters a:active {
+    transform: translateY(var(--ui-press-y));
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Full-width mobile workspace + fixed gutter
+   바깥 gutter / panel padding / card gap을 서로 분리한다.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ui-screen-gutter: 16px;
+  --ui-screen-gutter-narrow: 12px;
+}
+
+@media (max-width: 900px) {
+  .fn-main .workspace {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 0; /* single visible mobile panel */
+    padding-left: var(--ui-screen-gutter);
+    padding-right: var(--ui-screen-gutter);
+  }
+
+  .fn-main .workspace > .panel {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .fn-main .workspace :is(
+    .list,
+    .dz-row,
+    .summary-grid,
+    .dz-form-grid,
+    .dz-intake-form,
+    .dz-picked,
+    .dz-offer-line
+  ) {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace {
+    padding-left: var(--ui-screen-gutter-narrow);
+    padding-right: var(--ui-screen-gutter-narrow);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Natural ERP typography roles (mobile/live)
+   모바일도 18 / 14 / 12만 쓴다. 디자인 강조보다 익숙한 업무도구 위계를 우선한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .panel-head h1 { font-size: var(--글메인); }
+  .fn-main .workspace :is(
+    .dz-row-l1 > b,
+    .dz-sub,
+    .dz-form-group > legend,
+    .dz-form-more > summary,
+    .primary,
+    .dz-bar-sub,
+    .quick-filters a,
+    .tabs a,
+    .tabs button,
+    .offer-picker button,
+    input, select, textarea
+  ) { font-size: var(--글메인); }
+  .fn-main .workspace :is(
+    .dz-row-l2,
+    .dz-row-l3 small,
+    .dz-muted,
+    .panel-head > .count,
+    .dz-form-grid label,
+    .dz-picked-grid dt,
+    .dz-picked-note,
+    .dz-badge
+  ) { font-size: var(--글보조); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Typography weight hierarchy (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .panel-head h1 {
+  font-weight: 700;
+}
+
+.fn-main .workspace :is(
+  .dz-row-l1 > b,
+  .dz-row-l2,
+  .dz-sub,
+  .dz-picked-label
+) {
+  font-weight: 600;
+}
+
+.fn-main .workspace :is(
+    .dz-row-l3 > strong,
+  .summary-grid dd
+) {
+  font-weight: 700;
+}
+
+.fn-main .workspace :is(
+  .primary,
+  .dz-bar-sub,
+  .quick-filters a,
+  .tabs a,
+  .tabs button,
+  .dz-badge
+) {
+  font-weight: 600;
+}
+
+.fn-main .workspace :is(
+  .dz-row-l3 small,
+  .dz-muted,
+  .panel-head > .count
+) {
+  font-weight: 400;
+}
+
+/* selected는 색/면으로 구분하고 글자 굵기는 그대로 유지 */
+.fn-main .workspace .dz-row.on :is(.dz-row-l1 > b,.dz-row-l2) {
+  font-weight: 600;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Flat resting surfaces, subtle interaction elevation
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .primary,
+  .dz-bar-sub,
+  .dz-searchbox
+) {
+  box-shadow: none;
+}
+
+@media (hover:hover) {
+  .fn-main .workspace .dz-row:hover {
+    box-shadow: var(--ui-elevation-hover);
+  }
+}
+
+.fn-main .workspace .dz-row.on,
+.fn-main .workspace .dz-row.on:hover {
+  box-shadow: inset 0 1px 2px rgba(27,42,74,.10);
+}
+
+.fn-main .workspace :is(.dz-fs-sheet,.dz-popup,.dz-modal) {
+  box-shadow: var(--ui-elevation-float);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Residual divider cleanup (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(
+    .panel-head,
+    .dz-listtop,
+    .dz-bar,
+    .dz-fs-head,
+    .dz-fs-foot,
+    .dz-month,
+    .summary-grid
+  ) {
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Compact signal hierarchy (mobile/live)
+   QuickFilter=pill, Badge=compact rounded rect.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace .dz-badge,
+.fn-main .workspace .dz-row .dz-badge,
+.fn-main .workspace .dz-row.on .dz-badge {
+  min-height: 20px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  line-height: 14px;
+  gap: 4px;
+}
+
+.fn-main .workspace .dz-badge .dz-ico {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+/* status/signal은 action처럼 커지거나 떠오르지 않는다. */
+.fn-main .workspace :is(.dz-badge,.dz-row-status,.dz-perk) {
+  min-width: 0;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — No-wrap responsive density (mobile/live)
+   긴 내용은 세로 확장보다 ellipsis/horizontal scroll을 우선한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .fn-main .workspace :is(.quick-filters,.tabs,.offer-picker,.dz-month) > * {
+    flex: none;
+    white-space: nowrap;
+  }
+
+    .fn-main .workspace :is(
+    .primary,
+    .dz-bar-sub,
+    .quick-filters a,
+    .tabs a,
+    .tabs button,
+    .offer-picker button
+  ) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Solid commercial ERP materiality (mobile/live)
+   기본 화면은 flat. surface/spacing/alignment가 구조를 만들고,
+   shadow는 interactive hover와 floating layer에만 쓴다.
+   ═══════════════════════════════════════════════════════════════════ */
+.fn-main .workspace :is(
+  .panel,
+  .dz-row,
+  .dz-form-group,
+  .summary-grid,
+  .dz-offer-line,
+  .primary,
+  .dz-bar-sub,
+  .dz-searchbox
+) {
+  box-shadow: none;
+}
+
+.fn-main .workspace :is(.panel,.dz-row,.dz-form-group,.summary-grid,.dz-offer-line) {
+  border-color: transparent;
+  background-clip: padding-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Geometry contract (mobile/live)
+   모바일 panel은 화면 자체라 radius 0, 내부 card/control은 6px.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace > .panel {
+    border-radius: 0;
+  }
+
+  .fn-main .workspace :is(
+    .dz-row,
+    .dz-form-group,
+    .summary-grid,
+    .dz-offer-line,
+    .dz-picked,
+    .fn-box,
+    .dz-searchbox,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea,
+    .primary,
+    .dz-bar-sub
+  ) {
+    border-radius: var(--ui-control-radius);
+  }
+
+  .fn-main .workspace .dz-row {
+    padding: var(--ui-item-pad);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Card line contract (mobile/live)
+   일반 목록은 Main / Key / Support 3줄을 고정한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root {
+    --ui-card-line-h: 20px;
+    --ui-card-line-gap: 2px;
+  }
+
+  .fn-main .workspace .dz-row-body {
+    justify-content: center;
+    gap: var(--ui-card-line-gap);
+  }
+
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) {
+    min-height: var(--ui-card-line-h);
+    max-height: var(--ui-card-line-h);
+    line-height: var(--ui-card-line-h);
+    overflow: hidden;
+  }
+
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) > * {
+    min-width: 0;
+  }
+
+  .fn-main .workspace :is(
+    .dz-row-l1 > b,
+    .dz-row-l2,
+        .dz-row-l3 > strong,
+    .dz-row-l3 > small
+  ) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-row-l1,
+  .fn-main .workspace .dz-row-l2 {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .fn-main .workspace .dz-row-l3 > :is(strong,b,small) {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  /* 목록 본문은 Main / Key / Support 정확히 3줄. */
+  .fn-main .workspace .dz-row-body {
+    height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
+    max-height: calc(var(--ui-card-line-h) * 3 + var(--ui-card-line-gap) * 2);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Three-line list semantics (mobile/live)
+   Main / Key / Support. 목록은 3줄 안에서 식별과 선택만 끝낸다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace [data-line-role="main"] {
+    color: var(--ui-text-strong-color);
+    font-size: var(--글메인);
+    font-weight: 600;
+  }
+
+  .fn-main .workspace [data-line-role="key"] {
+    color: var(--ui-text-secondary-color);
+    font-size: var(--글메인);
+    font-weight: 500;
+  }
+
+  .fn-main .workspace [data-line-role="support"] {
+    color: var(--ui-text-muted-color);
+    font-size: var(--글보조);
+    font-weight: 400;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — 64px visual parity (mobile/live)
+   차량 썸네일과 상태 타일을 같은 64x64 geometry로 맞춘다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.dz-row-thumb,.dz-row-status) {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    flex: 0 0 64px;
+  }
+
+  .fn-main .workspace .dz-row-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fn-main .workspace .dz-row-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .fn-main .workspace .dz-row-status svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .fn-main .workspace .dz-row-status em {
+    line-height: 14px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    margin-left: auto;
+    flex: none;
+    max-width: 46%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    font-size: var(--글메인);
+    font-weight: 600;
+    color: var(--ui-text-strong-color);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Detail information rows (mobile/live)
+   목록은 3줄 scan, 상세는 key/value 읽기 리듬.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root {
+    --ui-detail-row-h: 36px;
+  }
+
+  .fn-main .workspace .summary-grid {
+    display: grid;
+    gap: 0;
+  }
+
+  .fn-main .workspace .summary-grid > div,
+  .fn-main .workspace .dz-sec-table > div {
+    min-height: var(--ui-detail-row-h);
+    align-items: center;
+  }
+
+  .fn-main .workspace :is(.summary-grid,.dz-sec-table) dt {
+    color: var(--ui-text-muted-color);
+    font-size: var(--글보조);
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .fn-main .workspace :is(.summary-grid,.dz-sec-table) dd {
+    color: var(--ui-text-strong-color);
+    font-size: var(--글메인);
+    font-weight: 500;
+    line-height: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fn-main .workspace .summary-grid > div {
+    display: grid;
+    grid-template-columns: minmax(96px, .8fr) minmax(0, 1.2fr);
+    column-gap: 12px;
+  }
+
+  .fn-main .workspace .summary-grid dd {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-sec-table > div {
+    column-gap: 12px;
+  }
+
+  .fn-main .workspace .dz-sec-table dd {
+    min-width: 0;
+    text-align: right;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Mobile list main-line overflow safety
+   Main 우측 대표값은 보존하고, 긴 identity가 먼저 줄어든다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row-l1 {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row-l1 > b {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-badges {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    flex: 0 0 auto;
+    max-width: 42%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — One-line offer selection rows (mobile/live)
+   Content 내부 기간별 대여료는 한 줄 카드로 비교/선택한다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-offer-select-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-offer-select-row {
+    width: 100%;
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(64px, auto) minmax(104px, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--ui-component-surface);
+    color: var(--ui-text-strong-color);
+    box-shadow: none;
+    text-align: left;
+  }
+
+  .fn-main .workspace .dz-offer-select-row.active,
+  .fn-main .workspace .dz-offer-select-row[aria-pressed="true"] {
+    background: var(--ui-selected);
+    box-shadow: inset 0 1px 2px rgba(27,42,74,.10);
+  }
+
+  .fn-main .workspace .dz-offer-select-row > strong {
+    font-size: var(--글메인);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .fn-main .workspace .dz-offer-select-row > b {
+    font-size: var(--글메인);
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fn-main .workspace .dz-offer-select-row > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ui-text-secondary-color);
+    font-size: var(--글보조);
+    font-weight: 400;
+    text-align: right;
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace .dz-offer-select-row {
+    grid-template-columns: minmax(54px, auto) minmax(92px, auto) minmax(0, 1fr);
+    column-gap: 8px;
+    padding-inline: 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Balanced mobile list columns
+   visual=64 fixed / body=fill / main value=stable right edge.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .dz-row {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .fn-main .workspace .dz-row-body {
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(92px, 30vw, 124px);
+    column-gap: 10px;
+    align-items: center;
+  }
+
+  .fn-main .workspace .dz-row-l1 > b {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-badges {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l1 .dz-row-main-value {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    text-align: right;
+  }
+
+  .fn-main .workspace :is(.dz-row-l2,.dz-row-l3) {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace .dz-row-l1 {
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 112px);
+    column-gap: 8px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Stable mobile list card rhythm
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .list {
+    gap: 8px;
+  }
+
+  .fn-main .workspace .dz-row {
+    transform: none !important;
+  }
+
+  .fn-main .workspace .dz-row:hover,
+  .fn-main .workspace .dz-row.on,
+  .fn-main .workspace .dz-row.on:hover {
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Mobile list text rails
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace :is(.dz-row-l1,.dz-row-l2,.dz-row-l3) {
+    box-sizing: border-box;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .fn-main .workspace .dz-row-l2 {
+    text-align: left;
+  }
+
+  .fn-main .workspace .dz-row-l3 {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .dz-row-l3 > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-25 — Content panel horizontal rails (mobile/live)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .detail-panel :is(
+    .vehicle-title,
+    .dz-offer-select-list,
+    .summary-grid,
+    .dz-secs,
+    .dz-form-group,
+    .fn-box
+  ) {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .fn-main .workspace .vehicle-title {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .fn-main .workspace .vehicle-title > div {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .fn-main .workspace .vehicle-title > :last-child {
+    flex: none;
+  }
+
+  .fn-main .workspace .dz-offer-select-list {
+    width: 100%;
+  }
+
+  .fn-main .workspace .dz-offer-select-row {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-26 — Mobile Visual QA cascade guard
+   실제 모바일 composition은 legacy workspace를 사용한다. 뒤늦게 남은 넓은 목록/간격 규칙이
+   360px 화면을 다시 밀어내지 않도록 최종 mobile contract를 한 곳에서 잠근다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .quick-filters {
+    min-height: var(--ui-touch-min);
+    padding-block: 0;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+  }
+
+  .fn-main .workspace .panel-head > .count {
+    font-size: var(--글보조) !important;
+  }
+
+  .fn-main .workspace .list,
+  .fn-main .workspace .work-panel .list,
+  .fn-main .workspace[data-mode="find"] .list {
+    gap: var(--ui-card-gap);
+  }
+
+  .fn-main .workspace[data-mode="find"] .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fn-main .workspace .dz-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-inline: var(--ui-item-pad);
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace .dz-row {
+    padding-inline: 8px;
+  }
+}
+

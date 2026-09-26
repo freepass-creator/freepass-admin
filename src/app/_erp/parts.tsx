@@ -46,6 +46,22 @@ export function PanelBody({ children }: { children: ReactNode }) {
   return <div className="erp-panel-body">{children}</div>;
 }
 
+export function PanelState({ kind = 'empty', title, children }: {
+  kind?: 'empty' | 'loading' | 'error' | 'readonly';
+  title: ReactNode;
+  children?: ReactNode;
+}) {
+  const role = kind === 'error' ? 'alert' : 'status';
+  return (
+    <div className={`erp-panel-state erp-state-${kind}`} role={role}
+      aria-live={kind === 'error' ? 'assertive' : 'polite'} aria-busy={kind === 'loading' ? 'true' : undefined}
+      data-ui-state={kind}>
+      <strong>{title}</strong>
+      {children ? <p>{children}</p> : null}
+    </div>
+  );
+}
+
 /** 패널 하단 고정 — 스크롤과 무관하게 바닥에 붙는 버튼 줄 */
 export function PanelFoot({ children, balance = 'primary' }: {
   children: ReactNode;

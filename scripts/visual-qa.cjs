@@ -46,6 +46,10 @@ const workflowSourceChecks = [
   ['desktop settlement detail exposes lifecycle actions', settlementDetailDesktopSource.includes('settlementPrimaryAction') && settlementDetailDesktopSource.includes('<LifeForm') && settlementDetailDesktopSource.includes('<SideStep')],
   ['filter dialog is modal and keyboard trapped', fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('aria-modal="true"') && fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('keepDialogFocus')],
   ['truncated canonical titles preserve tooltips', fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/parts.tsx'), 'utf8').includes('title={typeof title')],
+  ['canonical panel states exist', fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/parts.tsx'), 'utf8').includes('export function PanelState')],
+  ['route loading/error use responsive panel grammar', fs.readFileSync(path.join(process.cwd(), 'src/app/_design/RouteState.tsx'), 'utf8').includes('<Screen name="route-loading">') && fs.readFileSync(path.join(process.cwd(), 'src/app/_design/RouteState.tsx'), 'utf8').includes('<Screen name="route-error">')],
+  ['data status has route boundaries', fs.existsSync(path.join(process.cwd(), 'src/app/system/data-status/loading.tsx')) && fs.existsSync(path.join(process.cwd(), 'src/app/system/data-status/error.tsx'))],
+  ['electronic contract legacy inline error removed', !fs.readFileSync(path.join(process.cwd(), 'src/app/esign/page.tsx'), 'utf8').includes('ERP5 를 못 읽었습니다')],
 ];
 for (const [label, ok] of workflowSourceChecks) {
   if (!ok) {
@@ -63,6 +67,10 @@ const cases = [
   { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
   { name: 'settlement-desktop-1280', route: '/settlement', width: 1280, height: 800 },
   { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
+  { name: 'products-empty-desktop-1280', route: '/products?pq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'intake-empty-desktop-1280', route: '/intake?wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'performance-empty-desktop-1280', route: '/intake?wiv=실적&wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'esign-empty-desktop-1280', route: '/esign?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'products-mobile-390', route: '/products', width: 390, height: 844 },
   { name: 'intake-mobile-390', route: '/intake', width: 390, height: 844 },
   { name: 'settlement-mobile-390', route: '/settlement', width: 390, height: 844 },
@@ -755,6 +763,10 @@ async function runInteractiveStates(page, c) {
       const problems = [];
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
+      if (c.expectEmpty) {
+        const emptyCount = await page.locator('.erp-panel-state:visible, .dz-empty:visible').count();
+        if (!emptyCount) problems.push('forced empty result did not render an explanatory state surface');
+      }
 
       if (c.width >= 1280 && c.width <= 1439 && info.desktopShell) {
         if (info.desktopShell.sideWidth > 72) {

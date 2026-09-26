@@ -119,6 +119,11 @@ describe('validateIntake — 최초 접수 필수값', () => {
 
 describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
   const r = intakeRecord(base, 1_790_000_000_000);
+  it('최초 접수부터 분납 인도완료라면 paidRounds=1을 명시한다', () => {
+    const installment = intakeRecord({ ...base, payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18' }, 1_790_000_000_000);
+    assert.equal(installment.paidRounds, 1);
+    assert.equal(intakeRecord({ ...base, payKind: '3회분납', delivered: false, deliveredAt: '' }, 1_790_000_000_000).paidRounds, null);
+  });
   it('code == 문서 id 규칙 · 차번은 띄어쓰기 없이', () => {
     assert.equal(r.code, settlementCode('12가3456', '2026-09-18'));
     assert.equal(r.plate, '12가3456');
@@ -271,6 +276,51 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
+  it('분납 인도완료는 최초 1회차를 실제 원장 사실로 함께 세운다', () => {
+    const r = progressPatch(
+      { paper: true, plate: '12가3456', payKind: '3회분납', delivered: false, deliveredAt: '', paidRounds: null },
+      { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
+      Date.parse('2026-09-18T12:00:00+09:00'),
+    );
+    assert.ok(r.ok);
+    if (!r.ok) return;
+    assert.equal(r.patch.paidRounds, 1);
+    assert.ok(r.events.some((e) => e.field === '받은회차' && e.to === '1'));
+  });
+
+  it('분납 인도 되돌림은 자동 1회차를 함께 풀되, 2회차 이상 납입 사실이 있으면 막는다', () => {
+    const firstOnly = progressPatch(
+      { payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18', paidRounds: 1, claimStage: '접수', payStage: '접수' },
+      { kind: 'delivered', on: false },
+    );
+    assert.ok(firstOnly.ok);
+    if (firstOnly.ok) {
+      assert.equal(firstOnly.patch.delivered, false);
+      assert.equal(firstOnly.patch.paidRounds, null);
+    }
+
+    const secondPaid = progressPatch(
+      { payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18', paidRounds: 2, claimStage: '접수', payStage: '접수' },
+      { kind: 'delivered', on: false },
+    );
+    assert.equal(secondPaid.ok, false);
+    if (!secondPaid.ok) assert.match(secondPaid.error, /2회차 이상 납입/);
+  });
+  it('계약해지 뒤에는 분납 납입회차도 바꾸지 않는다', () => {
+    const cur = {
+      contractTerminatedAt: Date.now(),
+      payKind: '3회분납',
+      paidRounds: 1,
+      delivered: true,
+      deliveredAt: '2026-09-18',
+      claimStage: '접수',
+      payStage: '접수',
+    };
+    const r = progressPatch(cur, { kind: 'paidRounds', rounds: 2 });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /계약해지된 건/);
+  });
+
   it('계약해지 뒤에는 계약 핵심 사실을 바꾸지 않는다', () => {
     const cur = {
       contractTerminatedAt: Date.now(),

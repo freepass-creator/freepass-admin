@@ -90,6 +90,7 @@ export function parseAdminCutoverApproval(
   env: Record<string,string|undefined>,
   requestedStage: AdminCutoverStage,
   now=Date.now(),
+  centralStage: AdminCutoverStage = ADMIN_CATALOG_CENTRAL_STAGE,
 ): AdminCutoverDecision {
   if(!raw?.trim())return {ok:false,reason:'FREEPASS_DATA_ADMIN_CUTOVER_JSON이 없습니다'};
   let value:unknown;
@@ -102,8 +103,8 @@ export function parseAdminCutoverApproval(
   const targetStage=String(v.targetStage??'') as AdminCutoverStage;
   if(!ORDER.includes(fromStage)||!ORDER.includes(targetStage))return {ok:false,reason:'알 수 없는 cutover stage입니다'};
   if(targetStage!==requestedStage)return {ok:false,reason:`승인 targetStage(${targetStage})와 요청 모드(${requestedStage})가 다릅니다`};
-  if(ORDER.indexOf(targetStage)>ORDER.indexOf(ADMIN_CATALOG_CENTRAL_STAGE)){
-    return {ok:false,reason:`중앙 FreePass Data 레지스트리 단계(${ADMIN_CATALOG_CENTRAL_STAGE})보다 앞설 수 없습니다`};
+  if(ORDER.indexOf(targetStage)>ORDER.indexOf(centralStage)){
+    return {ok:false,reason:`중앙 FreePass Data 레지스트리 단계(${centralStage})보다 앞설 수 없습니다`};
   }
   if(ORDER.indexOf(targetStage)>ORDER.indexOf(fromStage)+1)return {ok:false,reason:`stage skip은 허용되지 않습니다: ${fromStage} -> ${targetStage}`};
 

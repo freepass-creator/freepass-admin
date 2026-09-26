@@ -64,7 +64,7 @@ export function workflowConsistencyIssues(
     || (p.collectedAmt ?? 0) > 0 || (p.paidAmt ?? 0) > 0
     || r.claimStage !== '접수' || r.payStage !== '접수';
   if (!p.delivered && financialActivity) {
-    add('FINANCIAL_ACTIVITY_BEFORE_DELIVERY', '인도 전인데 청구·지급·수금 등 정산 진행 기록이 있습니다');
+    add('FINANCIAL_ACTIVITY_BEFORE_DELIVERY', '인도완료 전인데 청구·지급·수금 등 정산 진행 기록이 있습니다');
   }
   if (p.invoiceIssued && !p.billed) {
     add('INVOICE_WITHOUT_BILL', '청구서 발행 없이 계산서 완료가 기록되어 있습니다');

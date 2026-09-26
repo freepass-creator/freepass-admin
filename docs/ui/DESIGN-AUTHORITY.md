@@ -18,6 +18,7 @@ main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기�
 정산 거래처/개별 실적의 상태 신호는 Web/Mobile 공통 presentation helper를 사용한다. 보류는 amber, 정정·끊김·금액모름은 red, 완료는 green, 진행은 navy, 대기는 grey로 표시하며 도메인 판정은 바꾸지 않는다.
 PC 정산 실적줄은 정산 route를 벗어나지 않는다. `focus`로 가운데 Panel만 공용 `SettlementDetail`로 전환하고 기존 월·거래처·청구/지급 축을 유지한다. 상세 PanelFoot에서 정산 lifecycle action을 이어서 실행한다.
 정산 focus 상세은 첫 화면에서 `현재 업무 → 정산 핵심 → 고객·차량`만 우선 노출한다. 계약·접수 정보와 이력은 기본 닫힌 보조 disclosure로 두고, 정산 중에는 접수 mutation control을 반복 노출하지 않는다.
+1280~1439 PC에서는 3패널 구조를 줄이지 않고 왼쪽 업무메뉴만 64px icon rail로 접어 각 패널 가독폭을 확보한다. 1440+에서는 full sidenav를 복원한다.
 
 ## 현재 단일 디자인 정본
 

@@ -136,3 +136,13 @@ test('정산이 시작된 건은 계약취소하지 않는다', () => {
   if (result.ok) return;
   assert.match(result.error, /정산 흔적/);
 });
+
+
+for (const clock of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.MAX_VALUE]) {
+  test(`유효하지 않은 계약취소 처리 시각은 예외 대신 실패: ${String(clock)}`, () => {
+    const result = planContractCancellation(contract(), intake(payment), input, clock);
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.match(result.error, /처리 시각/);
+  });
+}

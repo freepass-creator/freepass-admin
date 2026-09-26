@@ -19,6 +19,14 @@ const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
 const filterSheet=read('src/app/_design/FilterSheet.tsx');
+const routeState=read('src/app/_design/RouteState.tsx');
+const parts=read('src/app/_erp/parts.tsx');
+const productsDesktop=read('src/app/_erp/ProductsScreen.tsx');
+const workspaceDesktop=read('src/app/_erp/Workspace.tsx');
+const esignDesktop=read('src/app/_erp/EsignScreen.tsx');
+const esignPage=read('src/app/esign/page.tsx');
+const dataStatusLoading=read('src/app/system/data-status/loading.tsx');
+const dataStatusError=read('src/app/system/data-status/error.tsx');
 const shellCss=read('src/app/_erp/shell.css');
 const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css'),shellCss].join('\n');
 
@@ -28,6 +36,29 @@ test('admin root enters the real intake workspace and contains no demo runtime',
 });
 
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
+test('admin async/empty/error/readonly states share the canonical panel grammar',()=>{
+  assert.ok(parts.includes('export function PanelState'));
+  assert.ok(routeState.includes('<Screen name="route-loading">'));
+  assert.ok(routeState.includes('<Screen name="route-error">'));
+  assert.ok(routeState.includes('kind="loading"'));
+  assert.ok(routeState.includes('kind="error"'));
+  assert.ok(productsDesktop.includes('<PanelState title={all.length ?'));
+  assert.ok(workspaceDesktop.includes('이 조건에 맞는 접수가 없습니다.'));
+  assert.ok(workspaceDesktop.includes('실적을 선택해 주세요.'));
+  assert.ok(esignDesktop.includes('이 조건에 맞는 전자계약이 없습니다.'));
+  assert.equal(esignPage.includes('ERP5 를 못 읽었습니다'), false);
+  assert.ok(dataStatusLoading.includes('RouteLoading'));
+  assert.ok(dataStatusError.includes('RouteError'));
+});
+
+test('desktop shared detail explains readonly mode and disables write actions',()=>{
+  assert.ok(settlementDetailDesktop.includes('const canWrite = writeEnabled()'));
+  assert.ok(settlementDetailDesktop.includes('kind="readonly"'));
+  assert.ok(settlementDetailDesktop.includes('현재 조회 전용입니다.'));
+  assert.ok(settlementDetailDesktop.includes('disabled={!canWrite}'));
+  assert.ok(settlementDetailDesktop.includes('erp-write-disabled-reason'));
+});
+
 test('filter dialog keeps keyboard focus inside and returns it to the trigger',()=>{
   assert.ok(filterSheet.includes('aria-modal="true"'));
   assert.ok(filterSheet.includes('keepDialogFocus'));

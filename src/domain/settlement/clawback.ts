@@ -11,6 +11,7 @@
  *   ⚠ 한 차가 «같은 달» 에 두 번 환수되면 id 가 겹친다 — 그때는 새로 세우지 않고 «이미 있다» 고 말한다(고치기로).
  */
 import type { SettlementRow } from './types';
+import { isCalendarDay, koreaDay } from './calendar';
 
 export type TerminationClawbackDecision = 'REQUIRED' | 'NOT_REQUIRED';
 export type TerminationClawbackReview =
@@ -158,8 +159,6 @@ export function pendingTerminationClawbackRows<T extends TerminationClawbackRow>
 
 export interface ClawbackInput { at: string; supplierAmt: number | null; agentAmt: number | null; reason: string }
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
-
 export const clawbackId = (plate: unknown, month: string, code?: unknown) => {
   const p = String(plate ?? '').trim().replace(/[.$#[\]/\s]/g, '_');
   const c = String(code ?? '').trim().replace(/[.$#[\]/\s]/g, '_');
@@ -170,7 +169,16 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
   { ok: true; id: string; doc: Record<string, unknown> } | { ok: false; error: string } {
   if (!r.plate) return { ok: false, error: '차량번호가 없는 줄은 환수를 세울 수 없습니다' };
   if (!r.progress.delivered) return { ok: false, error: '인도 전 줄입니다 — 실적이 안 선 줄은 환수할 것이 없습니다(취소로)' };
-  if (!DAY.test(x.at)) return { ok: false, error: '환수일은 YYYY-MM-DD' };
+  const today = koreaDay(nowMs);
+  if (!today) return { ok: false, error: '환수 처리 시각이 올바르지 않습니다' };
+  if (!isCalendarDay(x.at)) return { ok: false, error: '환수일은 YYYY-MM-DD 형식의 유효한 날짜여야 합니다' };
+  if (x.at > today) return { ok: false, error: `환수일 ${x.at} 은 오늘(${today}) 뒤일 수 없습니다` };
+  if (isCalendarDay(r.progress.deliveredAt) && x.at < String(r.progress.deliveredAt)) {
+    return { ok: false, error: `환수일은 인도일(${r.progress.deliveredAt})보다 빠를 수 없습니다` };
+  }
+  if (r.contractTerminatedAt && isCalendarDay(r.contractTerminationDate) && x.at < String(r.contractTerminationDate)) {
+    return { ok: false, error: `계약해지 환수일은 해지일(${r.contractTerminationDate})보다 빠를 수 없습니다` };
+  }
   if (!x.reason.trim()) return { ok: false, error: '환수 사유를 적어야 합니다 — 사유 없는 돈은 다음 달에 아무도 못 읽는다' };
   const s = x.supplierAmt ?? 0, a = x.agentAmt ?? 0;
   if (![s, a].every((v) => Number.isFinite(v) && v >= 0)) return { ok: false, error: '환수 금액을 읽지 못했습니다' };

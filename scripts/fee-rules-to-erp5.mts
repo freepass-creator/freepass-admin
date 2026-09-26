@@ -22,8 +22,10 @@ import { FEE_RULES, FEE_TIMING, SUPPLIER_ALIAS, EV_MODEL } from 'file:///C:/dev/
 import { erp5 } from '../src/adapters/erp5/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement';
 import { feeOf, headOf, type FeeRule, type FeeRuleSet, type KindRule } from '../src/domain/settlement/fee';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval';
 
 const APPLY = process.argv.includes('--apply');
+assertErp5MaintenanceWrite(process.env, APPLY, 'fee-rules-to-erp5');
 const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) — 박태윤 매니저 표';
 const VERSION = 'fee-2026-09-08';
 /**

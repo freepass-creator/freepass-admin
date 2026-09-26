@@ -157,7 +157,21 @@
       "sidenav": false,
       "statusbar": false,
       "depth0": "current panel + global bottom tabs",
-      "depth1Plus": "current panel + local ActionBar"
+      "depth1Plus": "current panel + local ActionBar",
+      "globalTabs": [
+        "상품",
+        "접수",
+        "실적",
+        "정산"
+      ],
+      "optionalTabs": [
+        "계약"
+      ],
+      "settlementAxes": [
+        "청구 · 공급사",
+        "지급 · 영업채널"
+      ],
+      "rule": "Global navigation mirrors the desktop workflow axes. Claim/pay are internal settlement axes, not separate global destinations."
     },
     "shellRule": "Same component semantics, adaptive shell composition."
   },
@@ -745,7 +759,52 @@
       "청구금액 모름": "청구금액 확인 필요",
       "지급금액 모름": "지급금액 확인 필요"
     },
-    "rule": "Screens must expose current phase, blocker, and next action from shared domain logic instead of page-local interpretation."
+    "rule": "Screens must expose current phase, blocker, and next action from shared domain logic instead of page-local interpretation.",
+    "crossAxisHandoff": {
+      "from": "공급사 청구/수금",
+      "to": "영업자 지급",
+      "condition": "current claim axis has no remaining issue/todo and payment axis has actionable work",
+      "primaryAction": "지급 업무로",
+      "rule": "Use shared ledger/lifecycle results; UI only links to the next axis and does not recalculate settlement state."
+    },
+    "currentWorkLabel": "Settlement detail must show the actionable lifecycle step (confirm, invoice, cash, uncorrect, done), not only the axis name.",
+    "desktopSettlementDrillIn": {
+      "route": "/settlement",
+      "contextKeys": [
+        "month",
+        "g",
+        "tab"
+      ],
+      "detailKey": "focus",
+      "composition": "claim list | focused SettlementDetail or group summary | pay list",
+      "rule": "Selecting a settlement performance row must stay on /settlement, preserve settlement context, and expose lifecycle actions in the middle Panel.",
+      "actions": [
+        "confirm",
+        "correct",
+        "uncorrect",
+        "invoice",
+        "collect",
+        "pay",
+        "next-row",
+        "next-party",
+        "next-axis"
+      ]
+    },
+    "focusedSettlementDensity": {
+      "alwaysVisible": [
+        "current-work",
+        "settlement-core",
+        "customer-vehicle"
+      ],
+      "collapsedSupport": [
+        "contract-intake-info",
+        "history"
+      ],
+      "hiddenInFocus": [
+        "intake-mutation-controls"
+      ],
+      "rule": "Focused settlement detail prioritizes the next operational action and settlement facts; historical/intake support remains available without competing for first-screen attention."
+    }
   },
   "panelCardSeparation": {
     "panel": "#FFFFFF",
@@ -1564,5 +1623,107 @@
       "inset"
     ],
     "rule": "List cards never shift position on hover or selection."
+  },
+  "settlementListSignals": {
+    "source": "shared presentation signal over ledger/lifecycle facts",
+    "priority": [
+      "month-unassigned",
+      "amount-unknown",
+      "broken",
+      "correction",
+      "hold",
+      "done",
+      "progress",
+      "waiting"
+    ],
+    "tones": {
+      "month-unassigned": "error",
+      "amount-unknown": "error",
+      "broken": "error",
+      "correction": "error",
+      "hold": "warning",
+      "done": "success",
+      "progress": "info",
+      "waiting": "neutral"
+    },
+    "supportSignals": [
+      "amount-unknown",
+      "broken",
+      "correction",
+      "hold",
+      "clawback"
+    ],
+    "parityRule": "Web RowCard and mobile ListRow must show the same label/tone meaning for the same settlement facts."
+  },
+  "desktopLaptop1280": {
+    "range": "1280-1439",
+    "workflow": "keep three-panel composition",
+    "sidenav": {
+      "mode": "icon-rail",
+      "targetWidth": 64,
+      "maxQaWidth": 72,
+      "accessibleLabels": true
+    },
+    "workspace": {
+      "minMainWidth": 1200,
+      "minThreePanelWidth": 350,
+      "compactGutter": 16,
+      "compactGap": 12
+    },
+    "exactMoney": "must not clip or ellipsize in compact list cards",
+    "restoreAt1440": "full 240px sidenav and standard spacing"
+  },
+  "accessibilityResilience": {
+    "modalFilter": {
+      "ariaModal": true,
+      "focusTrap": "Tab and Shift+Tab remain inside the dialog",
+      "escape": "closes and restores focus to trigger"
+    },
+    "longText": {
+      "ellipsisAllowed": [
+        "identity",
+        "support",
+        "panel-title"
+      ],
+      "neverClip": [
+        "exact-money",
+        "primary-action",
+        "status"
+      ],
+      "tooltip": [
+        "panel-title",
+        "rowcard-title"
+      ],
+      "settlementRule": "long party labels may shrink; exact monetary values may not shrink or wrap"
+    },
+    "keyboardFocus": [
+      "navigation-links",
+      "detail-disclosure-summary",
+      "buttons",
+      "filters",
+      "row-links"
+    ]
+  },
+  "exceptionStates": {
+    "empty": {
+      "web": "PanelState",
+      "mobile": "EmptyState",
+      "rule": "Never leave an empty list panel blank; explain why it is empty and what to change/check next."
+    },
+    "loading": {
+      "boundary": "RouteLoading",
+      "parity": "desktop ERP Panel + mobile Panel",
+      "rule": "Preserve route geometry and announce busy state."
+    },
+    "error": {
+      "boundary": "RouteError",
+      "rule": "Route fetch failures converge on the route boundary; no inline legacy one-off error pages.",
+      "retry": "explicit retry action"
+    },
+    "readonly": {
+      "presentation": "muted neutral state surface",
+      "rule": "Explain read-only mode before write controls; disable mutations and connect them to the reason with aria-describedby.",
+      "navigation": "read/navigation links remain available"
+    }
   }
 }

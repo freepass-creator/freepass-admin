@@ -35,8 +35,8 @@ export function PanelHead({ kind, title, count }: { kind: string; title: ReactNo
   return (
     <div className="erp-panel-head">
       <span className="erp-panel-kind">{kind}</span>
-      <h2>{title}</h2>
-      <span className="erp-panel-count">{count}</span>
+      <h2 title={typeof title === 'string' || typeof title === 'number' ? String(title) : undefined}>{title}</h2>
+      <span className="erp-panel-count" title={typeof count === 'string' || typeof count === 'number' ? String(count) : undefined}>{count}</span>
     </div>
   );
 }
@@ -44,6 +44,22 @@ export function PanelHead({ kind, title, count }: { kind: string; title: ReactNo
 /** 패널 몸 — 안에서 스크롤 */
 export function PanelBody({ children }: { children: ReactNode }) {
   return <div className="erp-panel-body">{children}</div>;
+}
+
+export function PanelState({ kind = 'empty', title, children }: {
+  kind?: 'empty' | 'loading' | 'error' | 'readonly';
+  title: ReactNode;
+  children?: ReactNode;
+}) {
+  const role = kind === 'error' ? 'alert' : 'status';
+  return (
+    <div className={`erp-panel-state erp-state-${kind}`} role={role}
+      aria-live={kind === 'error' ? 'assertive' : 'polite'} aria-busy={kind === 'loading' ? 'true' : undefined}
+      data-ui-state={kind}>
+      <strong>{title}</strong>
+      {children ? <p>{children}</p> : null}
+    </div>
+  );
 }
 
 /** 패널 하단 고정 — 스크롤과 무관하게 바닥에 붙는 버튼 줄 */
@@ -142,7 +158,8 @@ export function RowCard({ href, tone, current, thumb, thumbStatus, title, badge,
       aria-current={current ? 'true' : undefined}>
       {thumb ? <div className={`erp-rowcard-thumb${thumbStatus ? ' erp-rowcard-thumb--status' : ''}`}>{thumb}</div> : null}
       <div className="erp-rowcard-id">
-        <h3 className="erp-rowcard-title" data-line-role="main"><Link className="erp-rowcard-link" href={href} aria-current={current ? 'true' : undefined}>{title}</Link>{thumbStatus ? null : badge}</h3>
+        <h3 className="erp-rowcard-title" data-line-role="main"><Link className="erp-rowcard-link" href={href} aria-current={current ? 'true' : undefined}
+          title={typeof title === 'string' || typeof title === 'number' ? String(title) : undefined}>{title}</Link>{thumbStatus ? null : badge}</h3>
         {subId || sub ? <div className="erp-rowcard-sub" data-line-role="key">{subId ? <b>{subId}</b> : null}{sub}</div> : null}
         {meta ? <div className="erp-rowcard-meta" data-line-role="support">{meta}</div> : null}
       </div>

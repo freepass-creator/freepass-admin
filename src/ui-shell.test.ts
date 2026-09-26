@@ -8,21 +8,88 @@ const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
+const mobileTabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+const settlementDesktop=read('src/app/_erp/SettlementScreen.tsx');
+const settlementDetailDesktop=read('src/app/_erp/SettlementDetail.tsx');
+const settlementSignals=read('src/app/settlement/group-signal.ts');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
-const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css')].join('\n');
+const filterSheet=read('src/app/_design/FilterSheet.tsx');
+const routeState=read('src/app/_design/RouteState.tsx');
+const parts=read('src/app/_erp/parts.tsx');
+const productsDesktop=read('src/app/_erp/ProductsScreen.tsx');
+const workspaceDesktop=read('src/app/_erp/Workspace.tsx');
+const esignDesktop=read('src/app/_erp/EsignScreen.tsx');
+const esignPage=read('src/app/esign/page.tsx');
+const dataStatusLoading=read('src/app/system/data-status/loading.tsx');
+const dataStatusError=read('src/app/system/data-status/error.tsx');
+const shellCss=read('src/app/_erp/shell.css');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css'),shellCss].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-// DEC-2026-09-23-01 — PC 는 AI Core ERP 표준 골격(왼쪽 업무 메뉴), 폰은 다섯 걸음 하단바 그대로.
-test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab bar on phone, no top actions',()=>{
+// PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
+test('admin async/empty/error/readonly states share the canonical panel grammar',()=>{
+  assert.ok(parts.includes('export function PanelState'));
+  assert.ok(routeState.includes('<Screen name="route-loading">'));
+  assert.ok(routeState.includes('<Screen name="route-error">'));
+  assert.ok(routeState.includes('kind="loading"'));
+  assert.ok(routeState.includes('kind="error"'));
+  assert.ok(productsDesktop.includes('<PanelState title={all.length ?'));
+  assert.ok(workspaceDesktop.includes('이 조건에 맞는 접수가 없습니다.'));
+  assert.ok(workspaceDesktop.includes('실적을 선택해 주세요.'));
+  assert.ok(esignDesktop.includes('이 조건에 맞는 전자계약이 없습니다.'));
+  assert.equal(esignPage.includes('ERP5 를 못 읽었습니다'), false);
+  assert.ok(dataStatusLoading.includes('RouteLoading'));
+  assert.ok(dataStatusError.includes('RouteError'));
+});
+
+test('desktop shared detail explains readonly mode and disables write actions',()=>{
+  assert.ok(settlementDetailDesktop.includes('const canWrite = writeEnabled()'));
+  assert.ok(settlementDetailDesktop.includes('kind="readonly"'));
+  assert.ok(settlementDetailDesktop.includes('현재 조회 전용입니다.'));
+  assert.ok(settlementDetailDesktop.includes('disabled={!canWrite}'));
+  assert.ok(settlementDetailDesktop.includes('erp-write-disabled-reason'));
+});
+
+test('filter dialog keeps keyboard focus inside and returns it to the trigger',()=>{
+  assert.ok(filterSheet.includes('aria-modal="true"'));
+  assert.ok(filterSheet.includes('keepDialogFocus'));
+  assert.ok(filterSheet.includes("e.key !== 'Tab'"));
+  assert.ok(filterSheet.includes("e.shiftKey && activeEl === first"));
+  assert.ok(filterSheet.includes("!e.shiftKey && activeEl === last"));
+  assert.ok(filterSheet.includes('trigger.current?.focus()'));
+});
+
+test('canonical truncated titles preserve their full text and long settlement labels cannot push money',()=>{
+  const parts=read('src/app/_erp/parts.tsx');
+  const erpCss=read('src/app/_erp/erp-standard.css');
+  assert.ok(parts.includes("title={typeof title === 'string' || typeof title === 'number' ? String(title) : undefined}"));
+  assert.ok(erpCss.includes('.erp-panel-head h2 { min-width: 0;'));
+  assert.ok(erpCss.includes('text-overflow: ellipsis; white-space: nowrap;'));
+  assert.ok(erpCss.includes('.erp-tile-row strong { flex: 0 0 auto;'));
+});
+
+test('1280 desktop collapses only the navigation rail to preserve three-panel work area',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  assert.ok(side.includes('className="erp-nav-label"'));
+  assert.ok(side.includes('aria-label={it.label}'));
+  assert.ok(side.includes('title={it.label}'));
+  assert.ok(shellCss.includes('grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr)'));
+  assert.ok(shellCss.includes('.erp-sidenav .erp-nav-label { display: none; }'));
+  assert.ok(shellCss.includes('.erp-sidenav .erp-nav-item'));
+  assert.ok(shellCss.includes('width: 44px'));
+  assert.ok(shellCss.includes('grid-template-columns: 64px minmax(0, 1fr) 128px'));
+});
+
+test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
   for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
     assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
@@ -34,6 +101,11 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
   assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
+  for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
+    assert.ok(mobileTabs.includes(`['${label}', '${href}']`), `mobile workflow missing ${label}`);
+  }
+  assert.equal(mobileTabs.includes("['청구',"), false);
+  assert.equal(mobileTabs.includes("['지급',"), false);
   /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
   assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
@@ -100,6 +172,35 @@ test('intake settlement handoff carries focus and settlement resolves it',()=>{
   assert.ok(settlementPage.includes("u.delete('focus')"));
 });
 
+test('desktop settlement drill-in keeps settlement context and resolves focus in place',()=>{
+  assert.ok(settlementDesktop.includes('locateSettlementFocus'));
+  assert.ok(settlementDesktop.includes("focus: r.id"));
+  assert.ok(settlementDesktop.includes('<SettlementDetail cur={focusedLine.row}'));
+  assert.equal(settlementDesktop.includes('/intake?ic='),false);
+  assert.ok(settlementDetailDesktop.includes('backHref'));
+  assert.ok(settlementDetailDesktop.includes('정산 묶음으로'));
+});
+
+test('desktop settlement detail exposes authoritative lifecycle actions without leaving settlement',()=>{
+  assert.ok(settlementDetailDesktop.includes('settlementPrimaryAction'));
+  assert.ok(settlementDetailDesktop.includes('<LifeForm'));
+  assert.ok(settlementDetailDesktop.includes('<SideStep'));
+  for (const label of ['확인','정정','계산서 발행','수금','지급']) {
+    assert.ok(settlementDetailDesktop.includes(label), `desktop settlement detail missing ${label}`);
+  }
+});
+
+test('desktop focused settlement detail prioritizes current work and collapses support information',()=>{
+  assert.ok(settlementDetailDesktop.includes('data-detail-context={life ? \'settlement-focus\' : \'intake\'}'));
+  assert.ok(settlementDetailDesktop.includes('data-detail-priority="core"'));
+  assert.ok(settlementDetailDesktop.includes('정산 핵심'));
+  assert.ok(settlementDetailDesktop.includes('<details className="erp-tile erp-detail-support">'));
+  assert.ok(settlementDetailDesktop.includes('계약 · 접수 정보'));
+  assert.ok(settlementDetailDesktop.includes('처리 이력'));
+  const focusBranch=settlementDetailDesktop.slice(settlementDetailDesktop.indexOf('{life ? ('),settlementDetailDesktop.indexOf(') : (',settlementDetailDesktop.indexOf('{life ? (')));
+  assert.equal(focusBranch.includes('<IntakeProgress'),false,'focused settlement must not repeat intake mutation controls');
+});
+
 
 test('settlement completed row offers next actionable work',()=>{
   assert.ok(settlementPage.includes('nextActionablePerformanceCode'));
@@ -139,7 +240,8 @@ test('supplier lifecycle renders invoice as an explicit step',()=>{
 test('settlement UI separates document progress from cash completion',()=>{
   assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
   assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
-  assert.ok(settlementPage.includes('g.completed'));
+  assert.ok(settlementPage.includes('settlementGroupSupport'));
+  assert.ok(settlementSignals.includes('g.completed'));
 });
 
 

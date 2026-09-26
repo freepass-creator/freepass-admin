@@ -71,6 +71,27 @@ export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
     });
   }, [open]);
 
+  const keepDialogFocus = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return;
+    const nodes = [...(dialog.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ) ?? [])].filter((el) => el.offsetParent !== null);
+    if (!nodes.length) {
+      e.preventDefault();
+      dialog.current?.focus();
+      return;
+    }
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    const activeEl = document.activeElement;
+    if (e.shiftKey && activeEl === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && activeEl === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
+
   /* 닫기 — 바깥을 누르거나 Esc */
   useEffect(() => {
     if (!open) return;
@@ -104,8 +125,8 @@ export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
       </button>
       {open && (
         <div className="dz-fs-back" onClick={close}>
-          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" aria-label="상세 조건"
-            tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+          <div ref={dialog} id={dialogId} className="dz-fs-sheet" role="dialog" aria-modal="true" aria-label="상세 조건"
+            tabIndex={-1} onKeyDown={keepDialogFocus} onClick={(e) => e.stopPropagation()}>
             <div className="dz-fs-head">
               <b>상세 조건</b>
               <button type="button" onClick={close} aria-label="닫기">닫기</button>

@@ -84,9 +84,10 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       </footer>
 
       {/*
-        ★폰 하단 — 다섯 걸음(상품 · 접수 · 계약 · 청구 · 지급). 위 띠에는 이동 버튼을 두지 않는다
-        (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
-        depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
+        폰 depth 0 전역탭 — PC와 같은 업무축(상품 · 접수 · 실적 · 정산).
+        전자계약이 활성화된 경우에만 계약을 마지막 별도 문으로 붙인다.
+        청구/지급은 정산 안의 축이며 전역탭으로 분리하지 않는다.
+        depth 1·2 화면에서는 이 바 대신 현재 Panel의 ActionBar가 선다.
       */}
       <MobileTabBar esign={esign} />
     </>

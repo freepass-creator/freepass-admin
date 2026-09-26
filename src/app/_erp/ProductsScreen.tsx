@@ -12,7 +12,7 @@ import { sp, txt } from '../_fn/fmt';
 import { FilterSheet } from '../_design/FilterSheet';
 import { buildProductList } from './productList';
 import { ProductDetail, ProductThumb, STATUS_TONE, carName } from './ProductDetail';
-import { Badge, hrefWith, Panel, PanelBody, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon } from './parts';
+import { Badge, hrefWith, Panel, PanelBody, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 
@@ -34,22 +34,29 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
           { key: 'ready', label: `즉시출고 ${readyCount}`, href: hrefWith(base, q, { pst: '즉시출고', id: null }), on: pst === '즉시출고' },
         ]} />
         <PanelBody>
-          <RowCards label="상품 목록">
-            {hits.map(({ p, offer }) => (
-              <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
-                title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-                subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
-                meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}
-                facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
-                amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
-            ))}
-          </RowCards>
+          {hits.length ? (
+            <RowCards label="상품 목록">
+              {hits.map(({ p, offer }) => (
+                <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
+                  tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
+                  title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
+                  subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
+                  meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}
+                  facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
+                  amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
+              ))}
+            </RowCards>
+          ) : (
+            <PanelState title={all.length ? '조건에 맞는 상품이 없습니다.' : '등록된 상품이 없습니다.'}>
+              {all.length ? '검색어 또는 필터 조건을 줄여 다시 확인해 주세요.' : '프리패스 데이터에 상품이 들어오면 이 목록에 표시됩니다.'}
+            </PanelState>
+          )}
         </PanelBody>
       </Panel>
 
       <Panel>
-        <ProductDetail sel={sel} selOffers={selOffers} selOffer={selOffer} base={base} q={q} />
+        <ProductDetail sel={hits.length ? sel : undefined} selOffers={hits.length ? selOffers : []}
+          selOffer={hits.length ? selOffer : undefined} base={base} q={q} />
       </Panel>
     </div>
     </Screen>

@@ -27,12 +27,50 @@ const base = (process.argv[2] || 'http://localhost:3000').replace(/\/$/, '');
 const outDir = process.env.VISUAL_QA_OUT || path.join(process.cwd(), 'artifacts', 'visual-qa');
 const executablePath = process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium/chrome-linux/chrome';
 
+/* UI workflow source guard — runtime fixture가 마지막 claim→pay handoff 상태를 항상 만들지는 않으므로
+ * actual-route source에도 연결 계약이 남아 있는지 함께 잠근다. */
+const settlementSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/page.tsx'), 'utf8');
+const settlementDesktopSource = fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/SettlementScreen.tsx'), 'utf8');
+const settlementDetailDesktopSource = fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/SettlementDetail.tsx'), 'utf8');
+const settlementSignalSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/group-signal.ts'), 'utf8');
+const intakeDetailSource = fs.readFileSync(path.join(process.cwd(), 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8');
+const workflowSourceChecks = [
+  ['claim-to-pay handoff', settlementSource.includes('지급 업무로') && settlementSource.includes('지급인계Href')],
+  ['cross-axis action prop', intakeDetailSource.includes('nextAxisHref') && intakeDetailSource.includes('nextAxisLabel')],
+  ['actionable settlement focus', intakeDetailSource.includes('settlementPrimaryAction') && intakeDetailSource.includes('정산업무라벨')],
+  ['shared settlement list signal helper', settlementSignalSource.includes('settlementGroupSignal') && settlementSignalSource.includes('settlementLineSignal')],
+  ['mobile settlement signals use shared helper', settlementSource.includes("from './group-signal'") && settlementSource.includes('settlementGroupSupport')],
+  ['desktop settlement signals use shared helper', settlementDesktopSource.includes("from '../settlement/group-signal'") && settlementDesktopSource.includes('settlementGroupSupport')],
+  ['desktop settlement row stays in settlement route', settlementDesktopSource.includes('focus: r.id') && !settlementDesktopSource.includes('/intake?ic=')],
+  ['desktop settlement resolves focus in middle panel', settlementDesktopSource.includes('locateSettlementFocus') && settlementDesktopSource.includes('<SettlementDetail cur={focusedLine.row}')],
+  ['desktop settlement detail exposes lifecycle actions', settlementDetailDesktopSource.includes('settlementPrimaryAction') && settlementDetailDesktopSource.includes('<LifeForm') && settlementDetailDesktopSource.includes('<SideStep')],
+  ['filter dialog is modal and keyboard trapped', fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('aria-modal="true"') && fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('keepDialogFocus')],
+  ['truncated canonical titles preserve tooltips', fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/parts.tsx'), 'utf8').includes('title={typeof title')],
+  ['canonical panel states exist', fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/parts.tsx'), 'utf8').includes('export function PanelState')],
+  ['route loading/error use responsive panel grammar', fs.readFileSync(path.join(process.cwd(), 'src/app/_design/RouteState.tsx'), 'utf8').includes('<Screen name="route-loading">') && fs.readFileSync(path.join(process.cwd(), 'src/app/_design/RouteState.tsx'), 'utf8').includes('<Screen name="route-error">')],
+  ['data status has route boundaries', fs.existsSync(path.join(process.cwd(), 'src/app/system/data-status/loading.tsx')) && fs.existsSync(path.join(process.cwd(), 'src/app/system/data-status/error.tsx'))],
+  ['electronic contract legacy inline error removed', !fs.readFileSync(path.join(process.cwd(), 'src/app/esign/page.tsx'), 'utf8').includes('ERP5 를 못 읽었습니다')],
+];
+for (const [label, ok] of workflowSourceChecks) {
+  if (!ok) {
+    console.error(`Visual QA source guard failed: ${label}`);
+    process.exit(1);
+  }
+}
+
 const cases = [
   { name: 'products-desktop-1440', route: '/products', width: 1440, height: 900 },
   { name: 'products-desktop-1280', route: '/products', width: 1280, height: 800 },
   { name: 'intake-desktop-1440', route: '/intake', width: 1440, height: 900 },
+  { name: 'intake-desktop-1280', route: '/intake', width: 1280, height: 800 },
+  { name: 'performance-desktop-1280', route: '/intake?wiv=실적&iv=완납실적', width: 1280, height: 800 },
   { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
+  { name: 'settlement-desktop-1280', route: '/settlement', width: 1280, height: 800 },
   { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
+  { name: 'products-empty-desktop-1280', route: '/products?pq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'intake-empty-desktop-1280', route: '/intake?wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'performance-empty-desktop-1280', route: '/intake?wiv=실적&wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'esign-empty-desktop-1280', route: '/esign?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'products-mobile-390', route: '/products', width: 390, height: 844 },
   { name: 'intake-mobile-390', route: '/intake', width: 390, height: 844 },
   { name: 'settlement-mobile-390', route: '/settlement', width: 390, height: 844 },
@@ -97,6 +135,26 @@ async function inspect(page) {
       url: location.href,
       bodyWidth: document.body.scrollWidth,
       viewportWidth: innerWidth,
+      desktopShell: (() => {
+        const side = document.querySelector('.erp-sidenav');
+        const main = document.querySelector('main.fn-main');
+        if (!side || !main || !visible(side) || !visible(main)) return null;
+        const sr = side.getBoundingClientRect(), mr = main.getBoundingClientRect();
+        return {
+          sideWidth: Math.round(sr.width),
+          mainWidth: Math.round(mr.width),
+          visibleNavLabels: [...side.querySelectorAll('.erp-nav-label')].filter(visible).length,
+          visibleNavGroups: [...side.querySelectorAll('.erp-nav-group')].filter(visible).length,
+        };
+      })(),
+      compactAmountOverflow: [...document.querySelectorAll('.erp-panel--compact .erp-rowcard-amount strong')]
+        .filter(visible)
+        .slice(0, 40)
+        .filter((el) => el.scrollWidth > el.clientWidth + 1)
+        .map((el) => ({ text: (el.textContent || '').trim(), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth })),
+      mobileGlobalTabs: [...document.querySelectorAll('.dz-tabbar a')].filter(visible).map((el) => (el.textContent || '').trim()),
+      workflowHandoffs: [...document.querySelectorAll('a')].filter((el) => visible(el) && (el.textContent || '').trim() === '지급 업무로')
+        .map((el) => ({ text: (el.textContent || '').trim(), href: el.getAttribute('href') || '' })),
       selected: pick('[aria-pressed="true"], [aria-current="true"], [aria-current="page"]'),
       selectedCards: (() => {
         const nodes = [...document.querySelectorAll(
@@ -521,17 +579,154 @@ async function runInteractiveStates(page, c) {
     const filter = page.locator('.dz-fs-open:visible').first();
     if (await filter.count()) {
       states.push(await captureState(page, c.name, 'filter-open', '.dz-fs-open'));
+      const a11y = { state: 'filter-keyboard-trap', status: 'PASS' };
+      try {
+        const dialog = page.locator('.dz-fs-sheet[role="dialog"]:visible').first();
+        if (!(await dialog.count())) {
+          a11y.status = 'FAIL';
+          a11y.reason = 'filter dialog not visible after keyboard-open state';
+        } else {
+          const modal = await dialog.getAttribute('aria-modal');
+          const inside = async () => dialog.evaluate((el) => el.contains(document.activeElement));
+          if (modal !== 'true' || !(await inside())) {
+            a11y.status = 'FAIL';
+            a11y.reason = `filter dialog modal/focus entry mismatch aria-modal=${modal}`;
+          } else {
+            await page.keyboard.press('Shift+Tab');
+            if (!(await inside())) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Shift+Tab escaped filter dialog';
+            }
+            await page.keyboard.press('Tab');
+            if (!(await inside())) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Tab escaped filter dialog';
+            }
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(50);
+            const returned = await filter.evaluate((el) => document.activeElement === el);
+            if (await page.locator('.dz-fs-sheet[role="dialog"]:visible').count() || !returned) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Escape did not close dialog and return focus to trigger';
+            }
+          }
+        }
+      } catch (err) {
+        a11y.status = 'FAIL';
+        a11y.reason = err instanceof Error ? err.message : String(err);
+      }
+      states.push(a11y);
     } else {
       states.push({ state: 'filter-open', status: 'SKIP', reason: 'filter trigger not found' });
+      states.push({ state: 'filter-keyboard-trap', status: 'SKIP', reason: 'filter trigger not found' });
     }
   }
 
   if (c.route === '/intake') {
-    states.push(await captureState(page, c.name, 'intake-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+    if (c.width <= 900) {
+      await page.goto(base + '/intake?v=work', { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+    }
+    states.push(await captureState(
+      page,
+      c.name,
+      'intake-selected',
+      '.erp-workspace > .erp-panel:nth-child(3) .erp-rowcard-link, .workspace[data-mode="intake"] > .work-panel .dz-row'
+    ));
+    if (c.width <= 900) {
+      try {
+        const selectedUrl = new URL(page.url());
+        if (selectedUrl.searchParams.get('ic')) {
+          selectedUrl.searchParams.delete('v');
+          await page.goto(selectedUrl.toString(), { waitUntil: 'networkidle', timeout: 30000 });
+          const visibleWork = await page.locator('.workspace[data-mode="intake"][data-phone="work"] > .work-panel:visible').count();
+          states.push({
+            state: 'intake-work-fallback-without-v',
+            status: visibleWork ? 'PASS' : 'FAIL',
+            reason: visibleWork ? undefined : 'ic route without v=work did not restore the mobile work panel',
+            url: page.url(),
+          });
+        } else {
+          states.push({ state: 'intake-work-fallback-without-v', status: 'SKIP', reason: 'selected intake URL has no ic' });
+        }
+      } catch (err) {
+        states.push({
+          state: 'intake-work-fallback-without-v',
+          status: 'FAIL',
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   }
 
   if (c.route === '/settlement') {
     states.push(await captureState(page, c.name, 'settlement-party-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+    if (c.width > 900) {
+      const centerRow = '.erp-workspace > .erp-panel:nth-child(2) .erp-rowcard-link';
+      const focused = await captureState(page, c.name, 'settlement-line-focused-in-place', centerRow);
+      if (focused.status === 'PASS') {
+        try {
+          const u = new URL(page.url());
+          const detailVisible = await page.locator('[data-settlement-focus]:visible').count();
+          const detail = page.locator('.erp-detail-body[data-detail-context="settlement-focus"]:visible').first();
+          const priority = await detail.locator(':scope > *').evaluateAll((nodes) => nodes.slice(0, 3).map((el) => (el.textContent || '').trim().replace(/\s+/g, ' ')));
+          const openedSupport = await detail.locator('details.erp-detail-support[open]').count();
+          if (u.pathname !== '/settlement' || !u.searchParams.get('focus') || !detailVisible) {
+            focused.status = 'FAIL';
+            focused.reason = `desktop settlement drill-in lost context: ${page.url()} detailVisible=${detailVisible}`;
+          } else {
+            const operational = priority.filter((x) => !x.includes('현재 조회 전용입니다.'));
+            if (!operational[0]?.includes('현재 업무') || !operational[1]?.includes('정산 핵심')) {
+              focused.status = 'FAIL';
+              focused.reason = `focused settlement hierarchy drift: ${JSON.stringify(priority)}`;
+            }
+          }
+          if (focused.status === 'PASS' && openedSupport) {
+            focused.status = 'FAIL';
+            focused.reason = `focused settlement support sections must start collapsed: ${openedSupport}`;
+          }
+        } catch (err) {
+          focused.status = 'FAIL';
+          focused.reason = err instanceof Error ? err.message : String(err);
+        }
+      }
+      states.push(focused);
+
+      if (c.width === 1280 && focused.status === 'PASS') {
+        const stress = { state: 'settlement-long-text-stress', status: 'PASS' };
+        try {
+          const metrics = await page.evaluate(() => {
+            const mid = document.querySelector('.erp-workspace > .erp-panel:nth-child(2)');
+            const h2 = mid?.querySelector('.erp-panel-head h2');
+            const count = mid?.querySelector('.erp-panel-count');
+            const row = mid?.querySelector('[data-detail-priority="core"] .erp-tile-row');
+            const label = row?.querySelector('b');
+            const value = row?.querySelector('strong');
+            if (h2) h2.textContent = '아주긴고객명주식회사서울경기충청전국광역운영센터법인고객담당자';
+            if (label) label.textContent = '청구 · 아주긴공급사법인명렌터카운영사업부서울경기충청통합센터 · 확인';
+            const rect = (el) => el ? el.getBoundingClientRect() : null;
+            const hr = rect(h2), cr = rect(count), lr = rect(label), vr = rect(value);
+            return {
+              bodyOverflow: document.body.scrollWidth > innerWidth + 1,
+              headingOverflowing: !!h2 && h2.scrollWidth > h2.clientWidth,
+              headingCollision: !!hr && !!cr && hr.right > cr.left,
+              valueClipped: !!value && value.scrollWidth > value.clientWidth + 1,
+              valueCollision: !!lr && !!vr && lr.right > vr.left,
+            };
+          });
+          if (metrics.bodyOverflow || !metrics.headingOverflowing || metrics.headingCollision || metrics.valueClipped || metrics.valueCollision) {
+            stress.status = 'FAIL';
+            stress.reason = `long settlement content broke layout: ${JSON.stringify(metrics)}`;
+          }
+          const shot = path.join(outDir, `${c.name}--settlement-long-text-stress.png`);
+          await page.screenshot({ path: shot, fullPage: true });
+          stress.screenshot = path.relative(process.cwd(), shot);
+        } catch (err) {
+          stress.status = 'FAIL';
+          stress.reason = err instanceof Error ? err.message : String(err);
+        }
+        states.push(stress);
+      }
+    }
   }
 
   if (c.route === '/esign') {
@@ -572,6 +767,51 @@ async function runInteractiveStates(page, c) {
       const problems = [];
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
+      if (c.expectEmpty) {
+        const expectedPath = new URL(base + c.route).pathname;
+        const actualPath = new URL(page.url()).pathname;
+        if (actualPath === expectedPath) {
+          const emptyCount = await page.locator('.erp-panel-state:visible, .dz-empty:visible').count();
+          if (!emptyCount) problems.push('forced empty result did not render an explanatory state surface');
+        }
+      }
+
+      if (c.width >= 1280 && c.width <= 1439 && info.desktopShell) {
+        if (info.desktopShell.sideWidth > 72) {
+          problems.push(`1280-class sidenav did not collapse: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.desktopShell.mainWidth < 1200) {
+          problems.push(`1280-class main work area too narrow: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.desktopShell.visibleNavLabels !== 0 || info.desktopShell.visibleNavGroups !== 0) {
+          problems.push(`1280-class icon rail still exposes text labels: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.compactAmountOverflow?.length) {
+          problems.push(`1280-class compact money clipped: ${JSON.stringify(info.compactAmountOverflow)}`);
+        }
+      }
+      if (c.width >= 1440 && info.desktopShell?.sideWidth && info.desktopShell.sideWidth < 220) {
+        problems.push(`1440+ sidenav must restore full menu: ${JSON.stringify(info.desktopShell)}`);
+      }
+
+      if (c.route === '/settlement' && info.workflowHandoffs?.some((x) => !x.href.includes('tab=pay'))) {
+        problems.push(`settlement cross-axis handoff does not target payment: ${JSON.stringify(info.workflowHandoffs)}`);
+      }
+
+      if (c.width <= 900 && info.mobileGlobalTabs?.length) {
+        const coreTabs = info.mobileGlobalTabs.filter((x) => x !== '계약');
+        const expected = ['상품', '접수', '실적', '정산'];
+        if (JSON.stringify(coreTabs) !== JSON.stringify(expected)) {
+          problems.push(`mobile global tabs drift from workflow: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+        const contractAt = info.mobileGlobalTabs.indexOf('계약');
+        if (contractAt >= 0 && contractAt !== info.mobileGlobalTabs.length - 1) {
+          problems.push(`optional contract tab is not last: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+        if (info.mobileGlobalTabs.includes('청구') || info.mobileGlobalTabs.includes('지급')) {
+          problems.push(`claim/pay must be internal settlement axes, not global tabs: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+      }
 
       const panelBg = info.surfaceSamples?.panel?.[0]?.backgroundColor;
       const cardBg = info.surfaceSamples?.card?.find((x) => x.backgroundColor && x.backgroundColor !== 'rgba(0, 0, 0, 0)')?.backgroundColor;
@@ -813,6 +1053,9 @@ async function runInteractiveStates(page, c) {
           if (min > 0 && max / min > 1.08) {
             problems.push(`3-panel widths drift beyond 8%: ${widths.join(', ')}`);
           }
+          if (c.width >= 1280 && c.width <= 1439 && min < 350) {
+            problems.push(`1280-class 3-panel width below readable floor: ${widths.join(', ')}`);
+          }
         }
       }
 
@@ -927,6 +1170,8 @@ async function runInteractiveStates(page, c) {
         panelRhythm: info.panelRhythm,
         panelWidths: info.panelWidths,
         workspaceFill: info.workspaceFill,
+        desktopShell: info.desktopShell,
+        compactAmountOverflow: info.compactAmountOverflow,
         radiusSamples: info.radiusSamples,
         shadowSamples: info.shadowSamples,
         dividerSamples: info.dividerSamples,

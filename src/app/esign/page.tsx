@@ -34,12 +34,7 @@ async function EsignBoards({ searchParams }: {
   const status = sp(q.status);
   const id = sp(q.id);
 
-  let all: Awaited<ReturnType<typeof contracts.list>>;
-  try {
-    all = await contracts.list();
-  } catch (e) {
-    return <><h1>전자계약</h1><p className="fn-err">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></>;
-  }
+  const all: Awaited<ReturnType<typeof contracts.list>> = await contracts.list();
 
   const searched = all.filter((c) => (!status || c.status === status))
     .filter((c) => !text

@@ -621,6 +621,20 @@ Panel role과 1:1로 같다고 가정하지 않는다.
 현재 `≤900px`에서는 PC `.erp-screen`을 숨기고 mobile board를 사용한다.
 모바일의 기존 전역 `fn-top` 상태바는 2026-09-24 결정으로 제거했다.
 
+### 모바일 전역 업무탭
+
+depth 0의 전역 하단탭은 PC SideMenu와 같은 업무축을 사용한다.
+
+```
+상품 → 접수 → 실적 → 정산
+```
+
+- 전자계약은 운영축 밖의 별도 문이며 `ESIGN_ENABLED=on`일 때만 마지막에 `계약`으로 붙는다.
+- `청구`와 `지급`은 전역 navigation을 둘로 나누지 않는다.
+- 정산 화면 안에서 `청구 · 공급사` / `지급 · 영업채널` 축으로 전환한다.
+- 모바일 실적 진입은 접수 목록과 섞지 않고 `분납실적` / `완납실적` 두 칸만 보여 준다.
+- depth 1+에서는 전역탭을 숨기고 현재 Panel의 ActionBar가 업무를 이어간다.
+
 향후 모바일 최신화 기준:
 **PC의 Panel 하나를 떼어 모바일 한 화면으로 놓아도 같은 업무를 끝낼 수 있어야 한다.**
 
@@ -1575,6 +1589,8 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - support text
 - border 없음
 - 빈 상태를 경고처럼 과장하지 않는다
+- 목록이 0건이면 빈 RowCards/하얀 Panel을 남기지 않고 "왜 비었는지 + 다음 확인"을 Panel 안에서 설명한다
+- 상품/접수/실적/정산/전자계약 Web은 공통 `PanelState`, Mobile은 공통 `EmptyState`를 사용한다
 
 ## Warning
 - amber soft surface
@@ -1587,6 +1603,9 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - error text
 - border 없음
 - 단순 빨간 글 한 줄로 끝내지 않는다
+- route fetch 실패는 개별 화면에서 임의 catch UI를 만들지 않고 `RouteError` boundary로 수렴한다
+- PC는 ERP Panel grammar, Mobile은 mobile Panel grammar로 같은 문구/재시도 의미를 사용한다
+- 데이터 연결 상태 route도 loading/error boundary 예외가 아니다
 
 ## Success
 - green soft surface
@@ -1598,6 +1617,9 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - no elevation
 - no hover / press
 - disabled와 구분: 값은 읽을 수 있고 focus/selection 의미는 유지 가능
+- 상세/업무 Panel 상단에서 "현재 조회 전용" 이유를 먼저 알리고, 저장/상태변경 액션은 실제 disabled 처리한다
+- disabled 액션은 `aria-describedby`로 readonly 이유와 연결한다
+- 이동/조회 링크는 readonly여도 계속 사용할 수 있다
 
 ## Busy / Loading
 - 기존 geometry 유지
@@ -1605,6 +1627,7 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - pointer interaction 잠금
 - cursor progress
 - 레이아웃 점프 금지
+- route loading은 정상 route와 같은 Panel shell 안에서 상태를 보여 주며 PC/Mobile 별도 디자인을 만들지 않는다
 
 ## Stale / Offline
 - error보다 약한 neutral/info surface
@@ -2058,6 +2081,13 @@ Raw blocker를 그대로 노출하지 않는다.
 - 접수 상세는 정산관리로 자연스럽게 handoff 되어야 한다.
 - 정산관리에서는 받을 돈과 줄 돈을 동시에 이해할 수 있어야 한다.
 - 공급사 수금 이후 영업자 지급이 다음 흐름으로 읽혀야 한다.
+- 공급사 청구/수금 축의 마지막 처리까지 끝났고 지급축에 할 일이 남아 있으면 하단 주 액션으로 `지급 업무로`를 노출해 다음 영업채널 묶음으로 직접 handoff 한다.
+- 정산 개별 상세의 `현재 업무`는 축 이름만 보여주지 않고 shared lifecycle 결과를 `확인 / 계산서 발행 / 수금 / 지급 / 정정 해소` 같은 실행 가능한 말로 보여 준다.
+- PC 정산의 개별 실적 RowCard는 `/intake`로 이동하지 않는다. 현재 `/settlement`의 `month / g / tab` context를 유지한 채 `focus`만 추가하고 가운데 Detail Panel을 공용 `SettlementDetail`로 전환한다.
+- PC 개별 정산 상세의 하단 PanelFoot에서 확인 / 정정 / 계산서 / 수금 / 지급 / 다음 건 / 다음 거래처 / 지급축 handoff를 이어서 처리한다.
+- PC 정산 focus 상세의 정보 우선순위는 `현재 업무 → 정산 핵심 → 고객·차량`이다.
+- 계약·접수 정보와 처리 이력은 보조 disclosure로 기본 닫힘이며, 정산 focus에서는 차량번호·계약서·인도·취소 입력판을 반복 노출하지 않는다.
+- `focus`로 정산에 진입한 경우 PC와 Mobile 모두 같은 접수의 달·상대·축을 복원한다.
 - 어디서 막혔는지 찾기 위해 다른 화면을 추측하며 돌아다니게 하지 않는다.
 
 
@@ -2267,14 +2297,23 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 
 ## Responsive
 
-- 1280~1439: 구조 유지, gap/padding만 compact
-- 1440+: standard spacing
-- viewport가 좁다고 workflow 구조 자체를 바꾸지 않는다
+- 1280~1439: 3-panel workflow 구조는 그대로 유지한다.
+- 이 구간에서는 왼쪽 업무메뉴만 `64px` icon rail로 접어 업무영역을 확보한다. 메뉴 순서/의미는 바꾸지 않고 icon의 `aria-label`/tooltip을 유지한다.
+- workspace gap/padding은 compact tier를 사용한다.
+- 1440+: `240px` full sidenav + standard spacing으로 복귀한다.
+- viewport가 좁다고 3-panel workflow 자체를 2-panel/탭 구조로 바꾸지 않는다.
 - mobile은 한 Panel씩 보이므로 width ratio 적용 대상 아님
 
 ## Visual QA
 
 - 3-panel equal layout: max/min width ratio <= 1.08
+- 1280-class 3-panel: 각 Panel computed width >= 350px
+- 1280-class main work area >= 1200px, sidenav <= 72px
+- compact card의 정확 금액은 ellipsis/clipping 금지
+- 긴 고객명/차량명/거래처명은 identity/support 영역에서만 ellipsis 허용하고, Panel title/RowCard title은 full-text tooltip을 보존한다.
+- 정산 핵심 행에서 긴 상대명은 좌측 label 영역만 줄어들 수 있고 우측 정확 금액은 shrink/wrap하지 않는다.
+- FilterSheet dialog는 `aria-modal=true`, Tab/Shift+Tab focus trap, Escape 닫기 후 trigger focus 복귀를 보장한다.
+- 1280 icon rail의 navigation link와 detail disclosure summary도 visible focus ring을 가진다.
 - wide + detail: wide/detail ratio 1.85~2.15
 - 실제 computed width 기준으로 검사
 
@@ -3087,6 +3126,21 @@ Visual QA:
 - 같은 상태를 Web과 Mobile에서 다른 색으로 표현하지 않는다.
 - 상태타일이 있으면 Main 옆 Badge는 기본적으로 중복 표시하지 않는다.
 - 상품처럼 상태타일이 아닌 사진 visual에서는 필요 시 Badge를 사용할 수 있다.
+
+### 정산 목록 상태 신호
+
+정산 거래처/개별 실적 카드는 shared presentation signal을 사용한다. 업무 판정 자체는 ledger/lifecycle domain 정본을 바꾸지 않는다.
+
+표시 우선순위:
+1. 청구월 미정 / 금액 모름 / 끊김 / 정정 → **red**
+2. 보류 → **amber**
+3. 완료 → **green**
+4. 진행 → **navy**
+5. 대기 → **grey**
+
+거래처 카드 Support에는 `금액 모름 / 끊김 / 정정 / 보류 / 환수`를 3줄 문법 안에서 요약한다.
+보류나 정정이 있는데 단순 `미처리`로만 보이게 하지 않는다.
+Web RowCard와 Mobile ListRow는 같은 label/tone 의미를 사용한다.
 
 # 73. Detail information rows
 

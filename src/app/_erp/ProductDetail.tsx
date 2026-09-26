@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { txt } from '../_fn/fmt';
-import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, won0, type Tone } from './parts';
+import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, PanelState, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
@@ -87,13 +87,20 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
               </div>
             ) : null}
           </div>
-        ) : <p className="erp-muted">왼쪽에서 상품을 고르세요.</p>}
+        ) : <PanelState title="상품을 선택해 주세요.">왼쪽 상품 목록에서 한 대를 고르면 차량·기간·대여료 상세가 표시됩니다.</PanelState>}
       </PanelBody>
-      <PanelFoot>
-        {sel && selOffer
-          ? <Link className="erp-btn erp-btn--primary" href={`/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}`}>접수하기</Link>
-          : <span className="erp-btn erp-btn--primary" aria-disabled="true">접수하기</span>}
-      </PanelFoot>
+      {sel ? (
+        <PanelFoot>
+          {selOffer
+            ? <Link className="erp-btn erp-btn--primary"
+                href={base === '/intake'
+                  ? hrefWith(base, q, { w: 'new', product: sel.p.id, offer: selOffer.id, ic: null, v: 'work' })
+                  : `/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}&v=work`}>
+                접수하기
+              </Link>
+            : <span className="erp-btn erp-btn--primary" aria-disabled="true">기간을 선택해 주세요</span>}
+        </PanelFoot>
+      ) : null}
     </>
   );
 }

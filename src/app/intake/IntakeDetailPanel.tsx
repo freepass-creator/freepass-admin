@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { writeEnabled, settlements, today } from '../../server/erp5';
 import { adminBlockLabel, adminWorkflowPhaseOf, blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
+import { marginOf } from '../../domain/settlement/money';
 import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
@@ -11,7 +12,7 @@ import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
-import { billingMonth, nextInstallmentDate, roundsOf } from '../../domain/settlement/stage';
+import { billingMonth, nextInstallmentDate, roundsOf, stageOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
@@ -27,7 +28,11 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
    * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
    * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
    */
-  life?: { axis: Axis; mode: string; link: (mode: string) => string; nextHref?: string; nextGroupHref?: string; invoiceBiz?: string };
+  life?: {
+    axis: Axis; mode: string; link: (mode: string) => string;
+    nextHref?: string; nextGroupHref?: string; nextAxisHref?: string; nextAxisLabel?: string;
+    invoiceBiz?: string;
+  };
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   let 바 = (
@@ -51,16 +56,21 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const 다음블록 = blockOf(r);
   const 업무흐름 = adminWorkflowPhaseOf(r);
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
-  const 청구 = claimAmountOf(r);
-  const 지급 = payAmountOf(r);
-  const 청구월 = billingMonth(r);
+  const now = new Date();
+  const 청구 = claimAmountOf(r, now);
+  const 지급 = payAmountOf(r, now);
+  const 마진 = marginOf(r, now);
+  const 청구월 = billingMonth(r, now);
   const 다음회차일 = nextInstallmentDate(r);
   const 분납회차 = roundsOf(r.payKind);
+  const 실적상태 = stageOf(r, now);
   const 구역 = settlementSections(raw);
 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
   let 걸음: React.ReactNode = null;
   let 막힘안내: React.ReactNode = null;
+  let 정산업무라벨 = '';
+  let 정산업무설명 = '';
   if (life) {
     const 청구축 = life.axis === '공급사';
     const stage = 청구축 ? r.claimStage : r.payStage;
@@ -75,6 +85,22 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     const 남은현금 = cashRemainingOf(life.axis, r);
     const 정정중 = life.mode === 'correct' && stage !== '접수';
     const primary = settlementPrimaryAction(r, life.axis);
+    const 업무말 = {
+      none: 청구축 ? '청구서 발행 대기' : '지급명세 발행 대기',
+      confirm: `${life.axis} 확인`,
+      uncorrect: '정정 해소',
+      invoice: '계산서 발행',
+      cash: 청구축 ? '수금 처리' : '지급 처리',
+      done: 청구축 ? '수금 완료' : '지급 완료',
+    } as const;
+    정산업무라벨 = 업무말[primary];
+    정산업무설명 = primary === 'none'
+      ? `${청구축 ? '청구서' : '지급명세'} 발행 후 이 접수의 다음 실행이 열립니다.`
+      : primary === 'done'
+        ? (life.nextHref ? '같은 거래처의 다음 건으로 이어갑니다.'
+          : life.nextGroupHref ? '다음 거래처 업무로 이어갑니다.'
+            : life.nextAxisHref ? '공급사 업무가 끝났습니다. 영업채널 지급으로 이어갑니다.' : '현재 정산축의 처리가 끝났습니다.')
+        : `다음 실행 · ${업무말[primary]}`;
     let 주: { label: string; form: React.ReactNode } | null = null;
     let 보조: React.ReactNode = <Link className="dz-bar-sub" href={back}>목록</Link>;
     if (정정중) {
@@ -126,6 +152,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
           aria-describedby={!canWrite ? 'write-disabled-reason' : undefined}>{주.label}</button>}
         {!주 && 완료 && life.nextHref && <Link className="primary" href={life.nextHref}>다음 할 일</Link>}
         {!주 && 완료 && !life.nextHref && life.nextGroupHref && <Link className="primary" href={life.nextGroupHref}>다음 거래처</Link>}
+        {!주 && 완료 && !life.nextHref && !life.nextGroupHref && life.nextAxisHref
+          && <Link className="primary" href={life.nextAxisHref}>{life.nextAxisLabel ?? '다음 업무'}</Link>}
       </ActionBar>
     );
   }
@@ -174,12 +202,22 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 
       <section className="dz-work-focus" aria-label="현재 업무">
         <span>현재 업무</span>
-        <strong>{life ? `${life.axis} 정산` : (다음 === '끝' || 다음 === '취소됨' ? 다음 : 다음)}</strong>
-        <small>{life ? '정산 단계와 다음 실행을 확인합니다.' : (다음 === '끝' ? '접수 진행이 끝났습니다.' : 다음 === '취소됨' ? '취소된 접수입니다.' : `다음 실행 · ${다음}`)}</small>
+        <strong>{life ? 정산업무라벨 : (다음 === '끝' || 다음 === '취소됨' ? 다음 : 다음)}</strong>
+        <small>{life ? 정산업무설명 : (다음 === '끝' ? '접수 진행이 끝났습니다.' : 다음 === '취소됨' ? '취소된 접수입니다.' : `다음 실행 · ${다음}`)}</small>
       </section>
 
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
       {걸음}
+
+      <h3 className="dz-sub">접수 정보</h3>
+      <SummaryGrid>
+        <SummaryItem label="고객">{txt(r.customer)}</SummaryItem>
+        <SummaryItem label="차량">{r.plate ? `${txt(r.model)} · ${txt(r.plate)}` : txt(r.model)}</SummaryItem>
+        <SummaryItem label="공급사">{txt(r.supplier)}</SummaryItem>
+        <SummaryItem label="영업채널">{txt(r.channel)}</SummaryItem>
+        <SummaryItem label="영업담당자">{txt(r.agent)}</SummaryItem>
+        <SummaryItem label="현재 업무">{업무흐름}</SummaryItem>
+      </SummaryGrid>
 
       <h3 className="dz-sub">계약 · 실적 기준</h3>
       <SummaryGrid>
@@ -187,9 +225,12 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <SummaryItem label="계약서">{r.progress.paper ? '완료' : '미완료'}</SummaryItem>
         <SummaryItem label="인도완료">{r.progress.delivered ? '완료' : '대기'}</SummaryItem>
         <SummaryItem label="인도일">{txt(r.progress.deliveredAt)}</SummaryItem>
-        <SummaryItem label="청구월">{청구월 ?? '인도 후 계산'}</SummaryItem>
+        <SummaryItem label="납입회차">{분납회차 >= 2 ? (r.paidRounds ? `${r.paidRounds}/${분납회차}` : r.progress.delivered ? `1/${분납회차} (인도 시 1회차)` : `0/${분납회차}`) : '해당 없음'}</SummaryItem>
         <SummaryItem label="다음회차일">{다음회차일 ?? (분납회차 >= 2 ? '완납/미정' : '해당 없음')}</SummaryItem>
-        {분납회차 >= 2 && <SummaryItem label="납입회차">{r.paidRounds ? `${r.paidRounds}/${분납회차}` : r.progress.delivered ? `1/${분납회차} (인도 시 1회차)` : `0/${분납회차}`}</SummaryItem>}
+        <SummaryItem label="청구월">{청구월 ?? '인도 후 계산'}</SummaryItem>
+        <SummaryItem label="실적 상태">{실적상태}</SummaryItem>
+        <SummaryItem label="청구 상태">{r.claimStage}</SummaryItem>
+        <SummaryItem label="지급 상태">{r.payStage}</SummaryItem>
       </SummaryGrid>
 
       <h3 className="dz-sub">진행</h3>
@@ -211,7 +252,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       <SummaryGrid>
         <SummaryItem label="청구금액">{won(청구)}</SummaryItem>
         <SummaryItem label="지급액">{won(지급)}</SummaryItem>
-        <SummaryItem label="남는 것">{청구 === null ? '—' : won(청구 - (지급 ?? 0))}</SummaryItem>
+        <SummaryItem label="남는 것">{won(마진)}</SummaryItem>
         <SummaryItem label="청구월">{청구월 ?? '—'}</SummaryItem>
         <SummaryItem label="셈 근거">{txt(r.settleNote)}</SummaryItem>
         <SummaryItem label="청구 · 지급 단계">{r.claimStage} · {r.payStage}</SummaryItem>

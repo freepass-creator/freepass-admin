@@ -315,6 +315,155 @@ for (const [file, rules] of businessFlowBaseline) {
   }
 }
 
+const asyncStateBaseline = [
+  ['src/app/_erp/parts.tsx', [
+    /export function PanelState/,
+    /'empty' \| 'loading' \| 'error' \| 'readonly'/,
+    /erp-panel-state erp-state-/,
+  ]],
+  ['src/app/_design/RouteState.tsx', [
+    /<Screen name="route-loading">/,
+    /<Screen name="route-error">/,
+    /<PanelState kind="loading"/,
+    /<PanelState kind="error"/,
+  ]],
+  ['src/app/_erp/ProductsScreen.tsx', [
+    /조건에 맞는 상품이 없습니다/,
+  ]],
+  ['src/app/_erp/Workspace.tsx', [
+    /이 조건에 맞는 접수가 없습니다/,
+    /실적을 선택해 주세요/,
+  ]],
+  ['src/app/_erp/SettlementScreen.tsx', [
+    /정산 데이터를 불러오지 못했습니다/,
+    /정산 거래처를 선택해 주세요/,
+  ]],
+  ['src/app/_erp/EsignScreen.tsx', [
+    /이 조건에 맞는 전자계약이 없습니다/,
+    /전자계약을 선택해 주세요/,
+  ]],
+  ['src/app/_erp/SettlementDetail.tsx', [
+    /const canWrite = writeEnabled\(\)/,
+    /kind="readonly"/,
+    /현재 조회 전용입니다/,
+    /erp-write-disabled-reason/,
+  ]],
+  ['src/app/esign/page.tsx', [
+    /const all: Awaited<ReturnType<typeof contracts\.list>> = await contracts\.list\(\)/,
+  ]],
+  ['src/app/system/data-status/loading.tsx', [/RouteLoading/]],
+  ['src/app/system/data-status/error.tsx', [/RouteError/]],
+  ['scripts/visual-qa.cjs', [
+    /products-empty-desktop-1280/,
+    /intake-empty-desktop-1280/,
+    /performance-empty-desktop-1280/,
+    /esign-empty-desktop-1280/,
+    /forced empty result did not render an explanatory state surface/,
+  ]],
+] as const;
+for (const [file, rules] of asyncStateBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: async/empty/error/readonly contract missing: ${re}`);
+  }
+}
+const esignMobileSource = await readSource('src/app/esign/page.tsx');
+if (/ERP5 를 못 읽었습니다/.test(esignMobileSource)) {
+  errors.push('src/app/esign/page.tsx: inline legacy read error must use route error boundary');
+}
+
+const accessibilityAndLongTextBaseline = [
+  ['src/app/_design/FilterSheet.tsx', [
+    /aria-modal="true"/,
+    /keepDialogFocus/,
+    /e\.shiftKey && activeEl === first/,
+    /!e\.shiftKey && activeEl === last/,
+    /trigger\.current\?\.focus\(\)/,
+  ]],
+  ['src/app/_erp/parts.tsx', [
+    /title=\{typeof title === 'string' \|\| typeof title === 'number' \? String\(title\) : undefined\}/,
+  ]],
+  ['src/app/_erp/erp-standard.css', [
+    /\.erp-panel-head h2 \{ min-width: 0;[\s\S]*text-overflow: ellipsis; white-space: nowrap;/,
+    /\.erp-tile-row b \{ min-width: 0;[\s\S]*text-overflow: ellipsis; white-space: nowrap;/,
+    /\.erp-tile-row strong \{ flex: 0 0 auto;/,
+    /\.erp-nav-item,[\s\S]*\.erp-detail-support > summary/,
+  ]],
+  ['scripts/visual-qa.cjs', [
+    /filter-keyboard-trap/,
+    /settlement-long-text-stress/,
+    /Shift\+Tab escaped filter dialog/,
+    /long settlement content broke layout/,
+  ]],
+] as const;
+for (const [file, rules] of accessibilityAndLongTextBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: accessibility/long-text contract missing: ${re}`);
+  }
+}
+
+const laptopThreePanelBaseline = [
+  ['src/app/_design/SideMenu.tsx', [
+    /className="erp-nav-label"/,
+    /aria-label=\{it\.label\}/,
+    /title=\{it\.label\}/,
+  ]],
+  ['src/app/_erp/shell.css', [
+    /@media \(min-width: 1280px\) and \(max-width: 1439px\)/,
+    /grid-template-columns: var\(--erp-sidenav-w-collapsed\) minmax\(0, 1fr\)/,
+    /\.erp-sidenav \.erp-nav-label \{ display: none; \}/,
+    /width: 44px/,
+    /grid-template-columns: 64px minmax\(0, 1fr\) 128px/,
+  ]],
+  ['scripts/visual-qa.cjs', [
+    /settlement-desktop-1280/,
+    /performance-desktop-1280/,
+    /1280-class 3-panel width below readable floor/,
+    /1280-class compact money clipped/,
+  ]],
+] as const;
+for (const [file, rules] of laptopThreePanelBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: 1280 laptop three-panel contract missing: ${re}`);
+  }
+}
+
+const desktopSettlementFocusBaseline = [
+  ['src/app/_erp/SettlementScreen.tsx', [
+    /locateSettlementFocus/,
+    /focus: r\.id/,
+    /<SettlementDetail cur=\{focusedLine\.row\}/,
+  ]],
+  ['src/app/_erp/SettlementDetail.tsx', [
+    /settlementPrimaryAction/,
+    /<LifeForm/,
+    /<SideStep/,
+    /정산 묶음으로/,
+    /data-detail-context=\{life \? 'settlement-focus' : 'intake'\}/,
+    /data-detail-priority="core"/,
+    /<details className="erp-tile erp-detail-support">/,
+    /정산 핵심/,
+  ]],
+] as const;
+for (const [file, rules] of desktopSettlementFocusBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: desktop settlement focus contract missing: ${re}`);
+  }
+}
+const settlementDesktopSourceForRoute = await readSource('src/app/_erp/SettlementScreen.tsx');
+if (/\/intake\?ic=/.test(settlementDesktopSourceForRoute)) {
+  errors.push('SettlementScreen.tsx: desktop settlement row must stay on /settlement focus context');
+}
+const settlementDetailSourceForDensity = await readSource('src/app/_erp/SettlementDetail.tsx');
+const focusStart = settlementDetailSourceForDensity.indexOf('{life ? (');
+const focusEnd = settlementDetailSourceForDensity.indexOf(') : (', focusStart);
+if (focusStart < 0 || focusEnd < 0 || /<IntakeProgress/.test(settlementDetailSourceForDensity.slice(focusStart, focusEnd))) {
+  errors.push('SettlementDetail.tsx: focused settlement detail must not repeat intake mutation controls');
+}
+
 const terminologyBaseline = [
   ['src/app/intake/new/IntakeForm.tsx', [
     /월 대여료/,
@@ -712,7 +861,8 @@ const cardInformationMatrixBaseline = [
   ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance key line'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구 /, 'intake/performance support line'],
   ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key line'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{g\.unknown \|\| g\.broken \|\| g\.clawbacks\.length/, 'settlement group support line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{settlementGroupSupport\(g, side\)\}/, 'settlement group support line'],
+  ['src/app/settlement/group-signal.ts', /g\.unknown[\s\S]*g\.broken[\s\S]*correction[\s\S]*g\.hold[\s\S]*g\.clawbacks\.length/, 'settlement support signal authority'],
   ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement opposite-axis support line'],
   ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign support line'],
 ] as const;

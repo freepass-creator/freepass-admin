@@ -406,6 +406,32 @@
     --fp-workspace-gutter-y: 12px;
     --fp-workspace-gap: 12px;
   }
+
+  /* 1280-class laptop: 3-panel 업무폭을 보존하기 위해 왼쪽 메뉴만 icon rail로 접는다.
+   * navigation 의미/순서는 그대로고 1440+에서는 full label menu로 복귀한다. */
+  body:has(> .erp-theme-flag) {
+    grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr);
+  }
+  body:has(> .erp-theme-flag) > .erp-sidenav {
+    padding-inline: 6px;
+    overflow-x: hidden;
+  }
+  .erp-sidenav .erp-nav-group { display: none; }
+  .erp-sidenav .erp-nav-item {
+    width: 44px;
+    min-height: 44px;
+    margin-inline: auto;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .erp-sidenav .erp-nav-label { display: none; }
+
+  /* 좁은 3-panel에서 identity는 ellipsis 가능하지만 정확 금액은 잘리면 안 된다. */
+  .erp-std .erp-panel--compact .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard--no-steps {
+    grid-template-columns: 64px minmax(0, 1fr) 128px;
+  }
 }
 @media (min-width: 1440px) {
   :root {

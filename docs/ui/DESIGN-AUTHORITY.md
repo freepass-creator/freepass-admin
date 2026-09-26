@@ -13,6 +13,14 @@ main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기�
 - 사용자 확정 없이 다른 브랜치 · PR · AI가 만든 화면 · 토큰 · 레이아웃
 
 폰(≤900px) 화면은 같은 계보 안에서 다듬는 중이며 사용자 최종 확정 전이다. 다듬기는 이 계보 안에서만 한다.
+현재 모바일 전역 navigation은 PC 업무축과 동일하게 `상품 → 접수 → 실적 → 정산`을 사용하고, 전자계약이 활성화된 경우에만 별도 `계약` 문을 마지막에 둔다. 청구/지급은 정산 화면 내부 축이다.
+정산 내부에서는 공급사 청구/수금 축이 완료되고 지급축에 할 일이 남으면 `지급 업무로` 하단 주 액션으로 다음 축을 직접 잇는다. 개별 상세의 현재 업무는 shared lifecycle 결과를 실행 가능한 단계명으로 표시한다.
+정산 거래처/개별 실적의 상태 신호는 Web/Mobile 공통 presentation helper를 사용한다. 보류는 amber, 정정·끊김·금액모름은 red, 완료는 green, 진행은 navy, 대기는 grey로 표시하며 도메인 판정은 바꾸지 않는다.
+PC 정산 실적줄은 정산 route를 벗어나지 않는다. `focus`로 가운데 Panel만 공용 `SettlementDetail`로 전환하고 기존 월·거래처·청구/지급 축을 유지한다. 상세 PanelFoot에서 정산 lifecycle action을 이어서 실행한다.
+정산 focus 상세은 첫 화면에서 `현재 업무 → 정산 핵심 → 고객·차량`만 우선 노출한다. 계약·접수 정보와 이력은 기본 닫힌 보조 disclosure로 두고, 정산 중에는 접수 mutation control을 반복 노출하지 않는다.
+1280~1439 PC에서는 3패널 구조를 줄이지 않고 왼쪽 업무메뉴만 64px icon rail로 접어 각 패널 가독폭을 확보한다. 1440+에서는 full sidenav를 복원한다.
+긴 식별문자열은 identity/support에서 말줄임하고 원문 tooltip을 유지하되 정확 금액·상태·주 액션은 줄이거나 숨기지 않는다. FilterSheet는 modal focus trap과 Escape focus-return을 갖는다.
+빈 결과는 하얀 Panel로 두지 않고 공통 상태 surface로 이유/다음 확인을 설명한다. route loading/error는 공통 RouteState boundary로 수렴하며, 조회전용은 이유를 노출하고 mutation action을 disabled+aria-describedby로 연결한다.
 
 ## 현재 단일 디자인 정본
 

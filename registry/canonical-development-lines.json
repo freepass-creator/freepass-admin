@@ -65,11 +65,11 @@
         "docs/BRANCH-WORKFLOW.md",
         "registry/active-work.json"
       ],
-      "status": "PRE_DEPLOY_FREEZE",
+      "status": "UNIFIED_MAIN_SINGLE_WRITER",
       "notes": [
-        "PR #120 운영개시 준비, PR #121 UI 정본, PR #122 운영 확정분은 main에 병합 완료.",
-        "현재 일반 개발 ACTIVE branch는 없다. main이 유일한 PRE_DEPLOY_CANDIDATE다.",
-        "첫 배포 시도 전 일반 고도화는 금지하고, 배포 차단 결함만 current main에서 short-lived fix branch로 처리한다."
+        "PR #120/#121/#122의 운영 준비와 승인 UI, UFEI #128/#129/#130/#127 및 후속 #133은 main에 병합됐다.",
+        "현재 개발 정본은 main 하나다. U/F/E/I는 검토 축이며 영구 branch/독립 writer가 아니다.",
+        "후속 변경은 단일 work order와 writer를 먼저 등록하고 최신 main에서 임시 branch 하나로 격리·검증·병합·종료한다. 운영 개통과 실데이터 write 승인은 별도다."
       ]
     },
     {
@@ -140,8 +140,8 @@
     },
     "active_work": {
       "registry": "registry/active-work.json",
-      "policy": "PRE_DEPLOY_FREEZE",
-      "new_branch_creation": "ONLY_DEPLOYMENT_BLOCKING_FIX_BEFORE_FIRST_DEPLOY",
+      "policy": "UNIFIED_MAIN_SINGLE_WRITER",
+      "new_branch_creation": "REQUIRES_SINGLE_WORK_ORDER_AND_WRITER",
       "archive_branches": [
         "work/function",
         "work/esign",

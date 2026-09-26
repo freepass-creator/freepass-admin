@@ -19,8 +19,11 @@ const writeApproval = JSON.stringify({
   iamRef: 'iam-check-20260926',
   backupRestoreVerified: true,
   backupRestoreRef: 'restore-drill-20260926',
+  serviceAccountEmail: 'x@freepasserp5.iam.gserviceaccount.com',
+  productionOrigin: 'https://freepass-admin.vercel.app',
   approvalRef: 'ops-20260926',
   approvedAt: '2026-09-26T06:30:00.000Z',
+  validUntil: '2026-10-03T06:30:00.000Z',
 });
 const errors = (env: Record<string, string | undefined>) => checkDeployEnv(env).filter((f) => f.level === 'error').map((f) => f.key);
 

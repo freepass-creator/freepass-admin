@@ -44,6 +44,8 @@ const workflowSourceChecks = [
   ['desktop settlement row stays in settlement route', settlementDesktopSource.includes('focus: r.id') && !settlementDesktopSource.includes('/intake?ic=')],
   ['desktop settlement resolves focus in middle panel', settlementDesktopSource.includes('locateSettlementFocus') && settlementDesktopSource.includes('<SettlementDetail cur={focusedLine.row}')],
   ['desktop settlement detail exposes lifecycle actions', settlementDetailDesktopSource.includes('settlementPrimaryAction') && settlementDetailDesktopSource.includes('<LifeForm') && settlementDetailDesktopSource.includes('<SideStep')],
+  ['filter dialog is modal and keyboard trapped', fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('aria-modal="true"') && fs.readFileSync(path.join(process.cwd(), 'src/app/_design/FilterSheet.tsx'), 'utf8').includes('keepDialogFocus')],
+  ['truncated canonical titles preserve tooltips', fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/parts.tsx'), 'utf8').includes('title={typeof title')],
 ];
 for (const [label, ok] of workflowSourceChecks) {
   if (!ok) {
@@ -569,8 +571,46 @@ async function runInteractiveStates(page, c) {
     const filter = page.locator('.dz-fs-open:visible').first();
     if (await filter.count()) {
       states.push(await captureState(page, c.name, 'filter-open', '.dz-fs-open'));
+      const a11y = { state: 'filter-keyboard-trap', status: 'PASS' };
+      try {
+        const dialog = page.locator('.dz-fs-sheet[role="dialog"]:visible').first();
+        if (!(await dialog.count())) {
+          a11y.status = 'FAIL';
+          a11y.reason = 'filter dialog not visible after keyboard-open state';
+        } else {
+          const modal = await dialog.getAttribute('aria-modal');
+          const inside = async () => dialog.evaluate((el) => el.contains(document.activeElement));
+          if (modal !== 'true' || !(await inside())) {
+            a11y.status = 'FAIL';
+            a11y.reason = `filter dialog modal/focus entry mismatch aria-modal=${modal}`;
+          } else {
+            await page.keyboard.press('Shift+Tab');
+            if (!(await inside())) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Shift+Tab escaped filter dialog';
+            }
+            await page.keyboard.press('Tab');
+            if (!(await inside())) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Tab escaped filter dialog';
+            }
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(50);
+            const returned = await filter.evaluate((el) => document.activeElement === el);
+            if (await page.locator('.dz-fs-sheet[role="dialog"]:visible').count() || !returned) {
+              a11y.status = 'FAIL';
+              a11y.reason = 'Escape did not close dialog and return focus to trigger';
+            }
+          }
+        }
+      } catch (err) {
+        a11y.status = 'FAIL';
+        a11y.reason = err instanceof Error ? err.message : String(err);
+      }
+      states.push(a11y);
     } else {
       states.push({ state: 'filter-open', status: 'SKIP', reason: 'filter trigger not found' });
+      states.push({ state: 'filter-keyboard-trap', status: 'SKIP', reason: 'filter trigger not found' });
     }
   }
 
@@ -638,6 +678,42 @@ async function runInteractiveStates(page, c) {
         }
       }
       states.push(focused);
+
+      if (c.width === 1280 && focused.status === 'PASS') {
+        const stress = { state: 'settlement-long-text-stress', status: 'PASS' };
+        try {
+          const metrics = await page.evaluate(() => {
+            const mid = document.querySelector('.erp-workspace > .erp-panel:nth-child(2)');
+            const h2 = mid?.querySelector('.erp-panel-head h2');
+            const count = mid?.querySelector('.erp-panel-count');
+            const row = mid?.querySelector('[data-detail-priority="core"] .erp-tile-row');
+            const label = row?.querySelector('b');
+            const value = row?.querySelector('strong');
+            if (h2) h2.textContent = '아주긴고객명주식회사서울경기충청전국광역운영센터법인고객담당자';
+            if (label) label.textContent = '청구 · 아주긴공급사법인명렌터카운영사업부서울경기충청통합센터 · 확인';
+            const rect = (el) => el ? el.getBoundingClientRect() : null;
+            const hr = rect(h2), cr = rect(count), lr = rect(label), vr = rect(value);
+            return {
+              bodyOverflow: document.body.scrollWidth > innerWidth + 1,
+              headingOverflowing: !!h2 && h2.scrollWidth > h2.clientWidth,
+              headingCollision: !!hr && !!cr && hr.right > cr.left,
+              valueClipped: !!value && value.scrollWidth > value.clientWidth + 1,
+              valueCollision: !!lr && !!vr && lr.right > vr.left,
+            };
+          });
+          if (metrics.bodyOverflow || !metrics.headingOverflowing || metrics.headingCollision || metrics.valueClipped || metrics.valueCollision) {
+            stress.status = 'FAIL';
+            stress.reason = `long settlement content broke layout: ${JSON.stringify(metrics)}`;
+          }
+          const shot = path.join(outDir, `${c.name}--settlement-long-text-stress.png`);
+          await page.screenshot({ path: shot, fullPage: true });
+          stress.screenshot = path.relative(process.cwd(), shot);
+        } catch (err) {
+          stress.status = 'FAIL';
+          stress.reason = err instanceof Error ? err.message : String(err);
+        }
+        states.push(stress);
+      }
     }
   }
 

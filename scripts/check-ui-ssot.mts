@@ -315,6 +315,32 @@ for (const [file, rules] of businessFlowBaseline) {
   }
 }
 
+const laptopThreePanelBaseline = [
+  ['src/app/_design/SideMenu.tsx', [
+    /className="erp-nav-label"/,
+    /aria-label=\{it\.label\}/,
+    /title=\{it\.label\}/,
+  ]],
+  ['src/app/_erp/shell.css', [
+    /@media \(min-width: 1280px\) and \(max-width: 1439px\)/,
+    /grid-template-columns: var\(--erp-sidenav-w-collapsed\) minmax\(0, 1fr\)/,
+    /\.erp-sidenav \.erp-nav-label \{ display: none; \}/,
+    /width: 44px/,
+  ]],
+  ['scripts/visual-qa.cjs', [
+    /settlement-desktop-1280/,
+    /performance-desktop-1280/,
+    /1280-class 3-panel width below readable floor/,
+    /1280-class compact money clipped/,
+  ]],
+] as const;
+for (const [file, rules] of laptopThreePanelBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: 1280 laptop three-panel contract missing: ${re}`);
+  }
+}
+
 const desktopSettlementFocusBaseline = [
   ['src/app/_erp/SettlementScreen.tsx', [
     /locateSettlementFocus/,

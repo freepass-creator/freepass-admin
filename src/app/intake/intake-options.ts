@@ -28,8 +28,8 @@ export function buildIntakeOptions(rows: SettlementRow[]): IntakeOptions {
     suppliers: vocab(rows.map((r) => r.supplier)),
     supplierCode: codeMap(rows.map((r) => [r.supplier, r.supplierCode])),
     products: vocab(rows.map((r) => r.product)),
-    rentKinds: vocab(rows.map((r) => r.rentKind)),
-    contractTypes: vocab(rows.map((r) => r.contractType)),
+    rentKinds: [...new Set(['재렌트', '구독', '신차렌트', ...vocab(rows.map((r) => r.rentKind))])],
+    contractTypes: [...new Set(['전자약정', '대면계약(출장)', ...vocab(rows.map((r) => r.contractType))])],
     // F04 실사용 정본: 신규 접수는 일시납/2회/3회를 먼저 보여 주고, 과거 값(예: 1회분납)은 조회 호환으로 뒤에 보존한다.
     payKinds: [...new Set(['일시납', '2회분납', '3회분납', ...vocab(rows.map((r) => r.payKind))])],
   };

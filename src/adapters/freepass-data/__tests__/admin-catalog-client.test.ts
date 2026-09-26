@@ -71,3 +71,27 @@ test('FreePass Data contract parser rejects ZERO deposit without explicit 0 KRW'
   delete (broken.offers[0]!.priceTerms[0] as { deposit?: unknown }).deposit;
   assert.throws(() => __test.ResponseSchema.shape.data.element.parse(broken));
 });
+
+
+test('FreePass Data snapshot identity changes when price or policy changes without a revision bump', () => {
+  const first = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(base));
+
+  const priceChanged = structuredClone(base);
+  priceChanged.offers[0]!.priceTerms[0]!.monthlyRent.amount += 10_000;
+  const second = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(priceChanged));
+  assert.notEqual(first.sourceSnapshotId, second.sourceSnapshotId);
+
+  const policyChanged = structuredClone(base);
+  policyChanged.offers[0]!.policyValues[0]!.value = 26;
+  const third = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(policyChanged));
+  assert.notEqual(first.sourceSnapshotId, third.sourceSnapshotId);
+});
+
+test('FreePass Data snapshot identity is stable across policy and offer ordering only', () => {
+  const left = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(base));
+  const reordered = structuredClone(base);
+  reordered.offers.reverse();
+  reordered.offers[1]!.policyValues.reverse();
+  const right = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(reordered));
+  assert.equal(left.sourceSnapshotId, right.sourceSnapshotId);
+});

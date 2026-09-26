@@ -59,6 +59,15 @@ export interface IntakeInput {
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const INTAKE_PAY_KINDS = new Set(['일시납', '2회분납', '3회분납']);
+
+/** 신규 업무 사실로 저장할 날짜는 모양뿐 아니라 실제 달력 날짜여야 한다. */
+export function isCalendarDay(value: unknown): boolean {
+  const day = String(value ?? '').trim();
+  if (!DAY.test(day) || Number(day.slice(0, 4)) < 1) return false;
+  const ms = Date.parse(`${day}T00:00:00.000Z`);
+  return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === day;
+}
 
 /**
  * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일 · 분납여부.
@@ -71,7 +80,7 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
     if (!directIntakeAllowsMissingPlate(x.product)) e.push('차량번호가 없습니다');
     else if (!x.intakeRequestId?.trim()) e.push('차량번호 없는 직접접수의 요청 ID가 없습니다');
   }
-  if (!DAY.test(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 로 넣습니다');
+  if (!isCalendarDay(x.receivedAt)) e.push('접수일은 YYYY-MM-DD 형식의 유효한 날짜로 넣습니다');
   else if (x.receivedAt > today) e.push(`접수일 ${x.receivedAt} 은 오늘(${today}) 뒤일 수 없습니다`);
   const expectedDirectRentKind = directIntakeRentKind(x.product);
   if (expectedDirectRentKind && x.rentKind !== expectedDirectRentKind) e.push(`렌트구분은 ${expectedDirectRentKind} 이어야 합니다`);
@@ -88,10 +97,10 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
   if (!x.payKind.trim()) e.push('분납여부를 선택해야 합니다');
-  else if (x.payKind.trim() !== '일시납' && !/^\d+회분납$/.test(x.payKind.trim())) e.push('분납여부는 일시납 또는 N회분납으로 넣습니다');
+  else if (!INTAKE_PAY_KINDS.has(x.payKind.trim())) e.push('분납여부는 일시납, 2회분납, 3회분납 중에서 선택합니다');
   /* 인도는 실제 관측 사실이라 계약서와 독립적으로 기록한다. 단, 날짜 없는 인도완료는 받지 않는다. */
   if (x.delivered && !x.plate.trim()) e.push('차량번호를 배정한 뒤 인도완료할 수 있습니다');
-  if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');
+  if (x.delivered && !isCalendarDay(x.deliveredAt)) e.push('인도완료를 켜려면 유효한 인도일을 같이 넣어야 합니다');
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {
     if (v !== null && v !== undefined && (!Number.isFinite(v) || v < 0)) e.push(`${k} 값을 읽지 못했습니다`);
@@ -247,7 +256,7 @@ export function progressPatch(
     if (c.on) {
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();
-      if (!DAY.test(day)) return { ok: false, error: '인도완료를 켜려면 인도일을 같이 넣어야 합니다' };
+      if (!isCalendarDay(day)) return { ok: false, error: '인도완료를 켜려면 유효한 인도일을 같이 넣어야 합니다' };
       if (B(cur.delivered) && S(cur.deliveredAt) !== day && settlementStarted()) {
         return { ok: false, error: '정산이 시작된 뒤에는 인도일을 바꿀 수 없습니다' };
       }

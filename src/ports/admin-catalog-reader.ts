@@ -17,6 +17,12 @@ export type AdminCatalogReceipt = {
   servedBy: 'LEGACY_ERP5_BRIDGE' | 'FREEPASS_DATA';
   cutoverAuthorized: boolean;
   holdReasons: string[];
+  cutover?: {
+    approvalRef: string;
+    fromStage: AdminCatalogReadMode;
+    targetStage: AdminCatalogReadMode;
+    validUntil: string;
+  };
   legacy?: {
     project: string;
     readAt: string;

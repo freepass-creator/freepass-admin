@@ -527,7 +527,12 @@ async function runInteractiveStates(page, c) {
   }
 
   if (c.route === '/intake') {
-    states.push(await captureState(page, c.name, 'intake-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+    states.push(await captureState(
+      page,
+      c.name,
+      'intake-selected',
+      '.erp-workspace > .erp-panel:nth-child(3) .erp-rowcard-link, .workspace[data-mode="intake"] > .work-panel .dz-row'
+    ));
     if (c.width <= 900) {
       try {
         const selectedUrl = new URL(page.url());

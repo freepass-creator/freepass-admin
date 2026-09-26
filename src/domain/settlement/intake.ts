@@ -14,6 +14,7 @@ import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
 import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-kind';
 import { contractPaymentStateOf } from '../contracts/payment';
+import { isCalendarDay, koreaDay } from './calendar';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -58,18 +59,7 @@ export interface IntakeInput {
   feeManual?: { claim: number | null; pay: number | null; reason: string };
 }
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const INTAKE_PAY_KINDS = new Set(['일시납', '2회분납', '3회분납']);
-
-/** 신규 업무 사실로 저장할 날짜는 모양뿐 아니라 실제 달력 날짜여야 한다. */
-export function isCalendarDay(value: unknown): boolean {
-  const day = String(value ?? '').trim();
-  if (!DAY.test(day) || Number(day.slice(0, 4)) < 1) return false;
-  const ms = Date.parse(`${day}T00:00:00.000Z`);
-  return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === day;
-}
-
-const koreaDay = (nowMs = Date.now()) => new Date(nowMs + 9 * 3600_000).toISOString().slice(0, 10);
 
 /**
  * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일 · 분납여부.

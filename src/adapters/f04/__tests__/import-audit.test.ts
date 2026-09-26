@@ -12,5 +12,9 @@ test('F04 importer creates settlement row and initial audit event in the same ba
   assert.match(source, /db\.collection\(ROWS\)\.doc\(x\.id\)/);
   assert.match(source, /db\.collection\(EVENTS\)\.doc\(x\.auditEventId\)/);
   assert.match(source, /by: 'f04-import'/);
+  assert.match(source, /묶음\(고칠것, 200\)/);
+  assert.match(source, /field,/);
+  assert.match(source, /from: ''/);
+  assert.match(source, /to: String\(patch\[field\]/);
   assert.match(source, /묶음\(새줄, 200\)/);
 });

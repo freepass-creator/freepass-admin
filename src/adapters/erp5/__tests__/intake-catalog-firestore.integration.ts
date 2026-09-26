@@ -315,3 +315,49 @@ emulatorTest('Firestore: concurrent supplier invoice issuance never reuses the s
   assert.match(a.ok?a.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
   assert.match(b.ok?b.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
 });
+
+
+emulatorTest('Firestore: cash idempotency key only accepts an identical retry payload',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const repo=new Erp5SettlementRepository();
+  const actor=`cash-${suffix}@teamjpk.com`;
+  const created=await repo.createIntake({...intake(p,o),paper:true,delivered:true,deliveredAt:'2026-09-25'},actor);
+
+  const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
+  assert.equal(issued.ok,true);
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'confirm',axis:'공급사'},undefined,actor),
+    {ok:true,changed:1},
+  );
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'invoice',on:true,biz:'1234567890',day:'2026-09-25'},undefined,actor),
+    {ok:true,changed:1},
+  );
+
+  const operationId=`cash_retry_${suffix}_123456`;
+  const first=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:100,day:'2026-09-25'},operationId,actor,
+  );
+  assert.equal(first.ok,true);
+  assert.equal(first.ok&&first.changed,1);
+
+  const identical=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:100,day:'2026-09-25'},operationId,actor,
+  );
+  assert.deepEqual(identical,{ok:true,changed:0});
+
+  const conflicting=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:200,day:'2026-09-25'},operationId,actor,
+  );
+  assert.equal(conflicting.ok,false);
+  assert.match(conflicting.ok?'':conflicting.error,/같은 요청 식별자/);
+
+  const cashEvents=await repo.cashEvents();
+  const mine=cashEvents.filter((event)=>event.code===created.code&&event.operationId===operationId);
+  assert.equal(mine.length,1);
+  assert.equal(mine[0].amount,100);
+  assert.equal(mine[0].kind,'collected');
+});

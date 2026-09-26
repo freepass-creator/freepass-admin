@@ -2288,14 +2288,19 @@ wide list 내부에서는 compact card를 2열로 배치할 수 있다.
 
 ## Responsive
 
-- 1280~1439: 구조 유지, gap/padding만 compact
-- 1440+: standard spacing
-- viewport가 좁다고 workflow 구조 자체를 바꾸지 않는다
+- 1280~1439: 3-panel workflow 구조는 그대로 유지한다.
+- 이 구간에서는 왼쪽 업무메뉴만 `64px` icon rail로 접어 업무영역을 확보한다. 메뉴 순서/의미는 바꾸지 않고 icon의 `aria-label`/tooltip을 유지한다.
+- workspace gap/padding은 compact tier를 사용한다.
+- 1440+: `240px` full sidenav + standard spacing으로 복귀한다.
+- viewport가 좁다고 3-panel workflow 자체를 2-panel/탭 구조로 바꾸지 않는다.
 - mobile은 한 Panel씩 보이므로 width ratio 적용 대상 아님
 
 ## Visual QA
 
 - 3-panel equal layout: max/min width ratio <= 1.08
+- 1280-class 3-panel: 각 Panel computed width >= 350px
+- 1280-class main work area >= 1200px, sidenav <= 72px
+- compact card의 정확 금액은 ellipsis/clipping 금지
 - wide + detail: wide/detail ratio 1.85~2.15
 - 실제 computed width 기준으로 검사
 

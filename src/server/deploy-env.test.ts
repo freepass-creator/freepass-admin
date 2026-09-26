@@ -16,7 +16,9 @@ const good = {
 const writeApproval = JSON.stringify({
   projectId: 'freepasserp5',
   iamVerified: true,
+  iamRef: 'iam-check-20260926',
   backupRestoreVerified: true,
+  backupRestoreRef: 'restore-drill-20260926',
   approvalRef: 'ops-20260926',
   approvedAt: '2026-09-26T06:30:00.000Z',
 });

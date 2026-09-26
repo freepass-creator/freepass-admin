@@ -131,3 +131,37 @@ Firestore
 5. Domain → Service → Port → Adapter/Repository 경계를 지킨다.
 6. 같은 업무 사실이 두 저장소/두 aggregate/두 상태머신에 생기지 않는지 검사한다.
 7. 테스트와 증거가 main에 들어간 뒤에만 해당 변경을 기능 정본으로 취급한다.
+
+## 9. 2026-09-26 branch disposition
+
+기능 감사 시점의 처리 상태:
+
+### Main에 흡수 완료 — 재개발 금지
+- work/gpt/admin-function-mainline-20260925
+- release/admin-operational-20260925
+- backend/admin-journey-bridge
+- backend/contract-termination
+- backend/intake-contract-handoff
+- backend/settlement-delivery-gate
+- backend/settlement-eligibility-gate
+
+이들은 current main 대비 ahead=0으로 확인된 계열이다. 브랜치가 남아 있더라도 기능 근거로 다시 사용하지 않는다.
+
+### Diverged archive — 통째 merge 금지
+- backend/cancellation-clawback-axis
+- backend/settlement-post-cancel-adjustments
+- backend/full-journey-integration
+
+이들은 오래 갈라진 과거 구현이다. current main과 최신 사용자 결정에 맞는 변경만 파일/테스트 단위로 재검증해 이식할 수 있다. 특히 과거 계약취소→환수 모델은 최신 계약금/인도 판정 규칙을 덮어쓸 수 없다.
+
+### Delegated staging — 전체 기능 정본 아님
+- PR #104: e-sign 전담
+- PR #107: 운영개시 전담
+- PR #92 / #112: UI 복구/검증
+
+각 staging은 담당 범위만 작업하며 전체 기능 의미를 재정의하지 않는다. 병합 전 current main과 최신 DECISIONS를 대조한다.
+
+### 종료한 열린 PR
+- PR #94: current main에 완전 흡수(ahead=0)되어 2026-09-26 종료
+- PR #70: 과거 HANDOFF 감사 문서로 current main에서 크게 뒤처져 2026-09-26 종료
+

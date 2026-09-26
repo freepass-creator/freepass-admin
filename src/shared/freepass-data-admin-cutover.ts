@@ -48,6 +48,18 @@ const ORDER: AdminCutoverStage[] = [
   'LEGACY_DIRECT','OBSERVE','SHADOW_READ','PARITY_VERIFIED','FREEPASS_DATA_READ',
 ];
 
+/**
+ * Central FreePass Data is the cutover authority. Admin must never promote itself
+ * beyond the last centrally observed registry stage merely because an env JSON exists.
+ *
+ * Observed from freepass-creator/freepass-data main on 2026-09-26:
+ * consumerId=freepass-admin-catalog, stage=OBSERVE.
+ *
+ * When central evidence advances, update this ceiling in a reviewed Admin PR after
+ * re-reading the registry. Stale Admin code therefore blocks rather than over-authorizes.
+ */
+export const ADMIN_CATALOG_CENTRAL_STAGE: AdminCutoverStage = 'OBSERVE';
+
 const requiredEvidence = (target: AdminCutoverStage): (keyof Omit<AdminCutoverEvidence,'approvedRelease'>)[] => {
   switch(target){
     case 'LEGACY_DIRECT': return [];
@@ -90,6 +102,9 @@ export function parseAdminCutoverApproval(
   const targetStage=String(v.targetStage??'') as AdminCutoverStage;
   if(!ORDER.includes(fromStage)||!ORDER.includes(targetStage))return {ok:false,reason:'알 수 없는 cutover stage입니다'};
   if(targetStage!==requestedStage)return {ok:false,reason:`승인 targetStage(${targetStage})와 요청 모드(${requestedStage})가 다릅니다`};
+  if(ORDER.indexOf(targetStage)>ORDER.indexOf(ADMIN_CATALOG_CENTRAL_STAGE)){
+    return {ok:false,reason:`중앙 FreePass Data 레지스트리 단계(${ADMIN_CATALOG_CENTRAL_STAGE})보다 앞설 수 없습니다`};
+  }
   if(ORDER.indexOf(targetStage)>ORDER.indexOf(fromStage)+1)return {ok:false,reason:`stage skip은 허용되지 않습니다: ${fromStage} -> ${targetStage}`};
 
   const baseOrigin=originOf(v.baseOrigin);

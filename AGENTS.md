@@ -13,6 +13,13 @@
 
 기능을 새 파일/새 엔진/새 상태머신으로 만들기 전에 반드시 current main의 기존 정본을 확장할 수 있는지 먼저 확인한다.
 
+### Branch lifecycle
+- `main`만 정본이다. 작업 브랜치는 임시 staging/evidence이며 독립 정본이 아니다.
+- 새 작업은 current `main`에서 시작하고, 검증 후 `main`으로 수렴한다.
+- PR이 병합되면 해당 작업 브랜치는 삭제한다. 완료된 브랜치를 보관용 정본처럼 남기지 않는다.
+- 다른 브랜치를 base로 쌓는 stacked PR은 필요한 경우에만 쓰며, 상위 브랜치에 흡수되면 자식 브랜치를 즉시 삭제한다.
+- 현재 `feat/intake-contract-condition-choices-20260923`는 **HOLD / NON-CANONICAL**이다. current main에 없는 계약조건 원자가 있어 보존했을 뿐이며 신규 작업의 기준으로 읽지 않는다.
+
 
 ## -1. UI DESIGN RECOVERY HOLD — 2026-09-26
 

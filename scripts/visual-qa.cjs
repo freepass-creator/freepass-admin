@@ -67,13 +67,25 @@ async function inspect(page) {
       const s = getComputedStyle(el);
       return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && Number(s.opacity || 1) > 0;
     };
+    const effectiveBackground = (el) => {
+      let node = el;
+      while (node && node.nodeType === 1) {
+        const bg = getComputedStyle(node).backgroundColor;
+        if (bg && bg !== 'transparent') {
+          const alpha = /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/.exec(bg);
+          if (!alpha || Number(alpha[1]) > 0.01) return bg;
+        }
+        node = node.parentElement;
+      }
+      return 'rgb(255, 255, 255)';
+    };
     const styleOf = (el) => {
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       return {
         text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120),
         color: s.color,
-        backgroundColor: s.backgroundColor,
+        backgroundColor: effectiveBackground(el),
         opacity: s.opacity,
         visible: visible(el),
         rect: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) },
@@ -467,7 +479,8 @@ async function inspect(page) {
 }
 
 async function captureState(page, caseName, stateName, selector, action = 'click') {
-  const el = page.locator(selector).first();
+  const visibleSelector = selector.split(',').map((part) => `${part.trim()}:visible`).join(', ');
+  const el = page.locator(visibleSelector).first();
   if (!(await el.count())) {
     return { state: stateName, status: 'SKIP', reason: `selector not found: ${selector}` };
   }
@@ -505,7 +518,7 @@ async function runInteractiveStates(page, c) {
   if (c.route === '/products') {
     states.push(await captureState(page, c.name, 'product-selected', '.erp-rowcard-link, .dz-row'));
     await page.goto(base + c.route, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
-    const filter = page.locator('.dz-fs-open').first();
+    const filter = page.locator('.dz-fs-open:visible').first();
     if (await filter.count()) {
       states.push(await captureState(page, c.name, 'filter-open', '.dz-fs-open'));
     } else {

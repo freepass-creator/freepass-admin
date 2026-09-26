@@ -2514,3 +2514,45 @@ body > nav.fn-top :where(a, button):focus-visible,
     box-sizing: border-box;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026-09-26 — Mobile Visual QA cascade guard
+   실제 모바일 composition은 legacy workspace를 사용한다. 뒤늦게 남은 넓은 목록/간격 규칙이
+   360px 화면을 다시 밀어내지 않도록 최종 mobile contract를 한 곳에서 잠근다.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .fn-main .workspace .quick-filters {
+    min-height: var(--ui-touch-min);
+    padding-block: 0;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+  }
+
+  .fn-main .workspace .panel-head > .count {
+    font-size: var(--글보조) !important;
+  }
+
+  .fn-main .workspace .list,
+  .fn-main .workspace .work-panel .list,
+  .fn-main .workspace[data-mode="find"] .list {
+    gap: var(--ui-card-gap);
+  }
+
+  .fn-main .workspace[data-mode="find"] .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fn-main .workspace .dz-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-inline: var(--ui-item-pad);
+  }
+}
+
+@media (max-width: 379px) {
+  .fn-main .workspace .dz-row {
+    padding-inline: 8px;
+  }
+}
+

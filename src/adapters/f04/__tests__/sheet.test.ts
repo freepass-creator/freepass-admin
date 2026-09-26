@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  billMonthOf, cellCheck, cellDate, cellNumber, feeValueOf, findHeader, methodOf, picker, serialToDate,
+  billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, feeValueOf, findHeader, methodOf, picker, serialToDate,
 } from '../sheet.js';
 
 /* 값은 F04 시트 실측(2026-09-17)에서 그대로 딴 것이다. */
@@ -139,5 +139,14 @@ describe('cellDate', () => {
   it('못 읽으면 null', () => {
     assert.equal(cellDate(''), null);
     assert.equal(cellDate('미정'), null);
+  });
+});
+
+
+describe('F04 settlement field mapping', () => {
+  it('legacy 납입회차 rounds는 current paidRounds로 저장한다', () => {
+    assert.equal(f04SettlementField('rounds'), 'paidRounds');
+    assert.equal(f04SettlementField('paidRounds'), 'paidRounds');
+    assert.equal(f04SettlementField('billMonth'), 'billMonth');
   });
 });

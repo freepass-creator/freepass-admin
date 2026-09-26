@@ -1,4 +1,5 @@
 import type { SettlementRow } from './types';
+import { isCalendarDay } from './calendar';
 
 /**
  * 정산 업무에 들어갈 수 있는 최소 관측 사실.
@@ -11,5 +12,5 @@ export function settlementEligible(r: Pick<SettlementRow, 'plate' | 'progress' |
     && !!r.plate
     && r.progress.paper
     && r.progress.delivered
-    && /^\d{4}-\d{2}-\d{2}$/.test(String(r.progress.deliveredAt ?? ''));
+    && isCalendarDay(r.progress.deliveredAt);
 }

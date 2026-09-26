@@ -52,8 +52,11 @@ must(/new AdminCatalogSwitchboard\(legacyProducts,\s*freepassDataProducts\)/.tes
 must(/new Erp5ProductRepository\(\)/.test(catalogServer),'Catalog OBSERVE mode must keep the explicit legacy ERP5 bridge');
 must(/FREEPASS_DATA_ADMIN_CATALOG_READ_MODE/.test(catalogSwitch),'Admin Catalog switchboard must use the central FreePass Data read-mode key');
 must(/'OBSERVE'/.test(catalogSwitch),'Admin Catalog default stage must remain OBSERVE until cutover evidence exists');
-must(/mode !== 'SHADOW_READ'/.test(catalogSwitch) && /compareAdminCatalogShadow/.test(catalogSwitch),'SHADOW_READ must compare Data independently while keeping legacy output');
-must(/FREEPASS_DATA_READ/.test(catalogSwitch) && /parity\/fallback\/readback/.test(catalogSwitch),'final Data-read modes must remain fail closed until cutover evidence exists');
+must(/compareAdminCatalogShadow/.test(catalogSwitch) && /LEGACY_ERP5_BRIDGE/.test(catalogSwitch),'SHADOW/PARITY stages must compare Data while retaining the legacy output');
+must(/parseAdminCutoverApproval/.test(catalogSwitch),'non-OBSERVE catalog modes must require the central cutover evidence contract');
+must(/assertApprovedRelease/.test(catalogSwitch),'PARITY/final Data reads must pin an approved ACTIVE release identity and digests');
+must(/mode === 'FREEPASS_DATA_READ'/.test(catalogSwitch) && /servedBy: 'FREEPASS_DATA'/.test(catalogSwitch),'final FREEPASS_DATA_READ must serve the Data reader rather than silently falling back to legacy');
+must(/const cacheable = mode === 'LEGACY_DIRECT' \|\| mode === 'OBSERVE'/.test(catalogServer),'SHADOW/PARITY/final catalog stages must bypass the 60-second legacy UI cache');
 must(/freepass-admin-catalog/.test(catalogClient),'FreePass Data client must use the dedicated Admin consumer identity');
 must(/cache:\s*'no-store'/.test(catalogClient) && /AbortSignal\.timeout\(5_000\)/.test(catalogClient),'FreePass Data shadow client must be no-store and timeout bounded');
 must(/FREEPASS_DATA_ADMIN_CATALOG_TOKEN/.test(catalogClient),'FreePass Data Admin Catalog token binding missing');
@@ -64,9 +67,11 @@ must(/const ROWS = 'settlement_rows'/.test(settlementRepo),'settlement repositor
 must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash movement ledger must use settlement_cash_events');
 must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
+must(/erp5WriteGate/.test(settlementRepo),'settlement writes must pass the shared production approval gate');
 must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
 must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');
 must(/adminDataStatus/.test(status),'live data status probe missing');
+must(/writeGate\(\)/.test(status),'data-status must expose the fail-closed ERP5 write gate, not only a boolean');
 must(/adminCatalogListFresh\(\)/.test(status),'data-status must bypass product cache through the FreePass Data catalog boundary');
 must(/authority:\s*'FREEPASS_DATA'/.test(status),'data-status must identify FreePass Data as the data authority');
 must(!/productList\(\)/.test(status),'data-status must not report the cached productList as a live repository probe');
@@ -81,10 +86,10 @@ if(errors.length){
   process.exitCode=1;
 }else{
   console.log('LIVE DATA WIRING CHECK PASS');
-  console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE default; SHADOW_READ compares Data but returns legacy; final cutover gated)');
+  console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE default; SHADOW/PARITY compare Data; final read requires approved release and serves Data directly)');
   console.log('- intake + settlement -> FreePass Data gateway -> Erp5SettlementRepository / settlement_rows');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
   console.log('- esign list and persistence -> FreePass Data gateway -> shared contract/session/private/Storage adapters');
   console.log('- esign runtime -> EsignService / esign_session + esign_private + Storage + Chromium PDF renderer');
-  console.log('- writes remain fail-closed unless ERP5_WRITE=on');
+  console.log('- writes remain fail-closed unless ERP5_WRITE=on plus the production IAM/backup approval gate');
 }

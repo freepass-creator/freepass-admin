@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto';
 import { erp5 } from '../firestore';
 import { Erp5SettlementRepository } from '../settlement-repository';
 import { buildIntakeCatalogSnapshot } from '../../../domain/settlement/catalog-snapshot';
+import { intakeEventDocId } from '../../../domain/settlement/code';
+import { koreaDay } from '../../../domain/settlement/calendar';
 import type { IntakeInput } from '../../../domain/settlement/intake';
 import type { CanonicalProduct, Offer } from '../../../domain/product/types';
 
@@ -141,4 +143,239 @@ emulatorTest('Firestore: product intake without a sealed snapshot is rejected be
   const docs=await erp5().collection('settlement_rows')
     .where('receivedAt','==','2026-09-25').get();
   assert.equal(docs.docs.some((d)=>d.data().sourceProductId===p.id),false);
+});
+
+
+emulatorTest('Firestore: installment progress, locked bill month, and actor audit round-trip together',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const input={...intake(p,o),payKind:'2회분납'};
+  const repo=new Erp5SettlementRepository();
+  const actor=`i01-${suffix}@teamjpk.com`;
+
+  const created=await repo.createIntake(input,actor);
+  assert.equal(created.created,true);
+
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paper',on:true},actor),{ok:true,changed:1});
+  const delivered=await repo.setProgress(created.code,{kind:'delivered',on:true,deliveredAt:'2026-09-25'},actor);
+  assert.equal(delivered.ok,true);
+  // Delivery records delivered, deliveredAt and the first installment atomically.
+  assert.equal(delivered.ok && delivered.changed,3);
+  const afterDelivery=await repo.get(created.code);
+  assert.ok(afterDelivery);
+  assert.equal(afterDelivery.row.paidRounds,1);
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paidRounds',rounds:1},actor),{ok:true,changed:0});
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'billMonth',month:'2026-09'},undefined,actor),
+    {ok:true,changed:1},
+  );
+
+  const roundTrip=await repo.get(created.code);
+  assert.ok(roundTrip);
+  assert.equal(roundTrip.row.payKind,'2회분납');
+  assert.equal(roundTrip.row.paidRounds,1);
+  assert.equal(roundTrip.row.progress.paper,true);
+  assert.equal(roundTrip.row.progress.delivered,true);
+  assert.equal(roundTrip.row.progress.deliveredAt,'2026-09-25');
+  assert.equal(roundTrip.row.progress.billMonth,'2026-09');
+
+  const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
+  assert.equal(issued.ok,true);
+  const locked=await repo.get(created.code);
+  assert.ok(locked);
+  assert.equal(locked.row.progress.billed,true);
+  assert.equal(locked.row.progress.billMonth,'2026-09');
+
+  const moveClosedMonth=await repo.setLifecycle(
+    created.code,{kind:'billMonth',month:'2026-10'},undefined,actor,
+  );
+  assert.deepEqual(moveClosedMonth,{ok:false,error:'청구서가 나간 줄은 달을 못 바꿉니다'});
+
+  const eventDocs=await erp5().collection('settlement_events').get();
+  const eventDoc=eventDocs.docs.find((d)=>
+    Object.values(d.data()).some((v)=>
+      !!v && typeof v==='object'
+      && String((v as Record<string,unknown>).field??'')==='접수'
+      && String((v as Record<string,unknown>).to??'')===created.code,
+    ),
+  );
+  assert.ok(eventDoc);
+  const audits=Object.values(eventDoc.data()).filter(
+    (v):v is Record<string,unknown>=>!!v && typeof v==='object' && !Array.isArray(v),
+  );
+  assert.ok(audits.length>=6);
+  assert.equal(audits.every((v)=>v.by===actor),true);
+  const installmentAudits=audits.filter((v)=>v.field==='받은회차');
+  assert.equal(installmentAudits.length,1);
+  assert.equal(installmentAudits[0].to,'1');
+  const fields=new Set(audits.map((v)=>String(v.field??'')));
+  for(const field of ['접수','계약서','인도완료','인도일','받은회차','청구월','청구서']){
+    assert.equal(fields.has(field),true,`audit field missing: ${field}`);
+  }
+});
+
+
+emulatorTest('Firestore: direct intake keeps one audit document when plate changes',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const base=intake(p,o);
+  const input: IntakeInput={
+    ...base,
+    plate:`OLD${suffix}`,
+    sourceProductId:undefined,
+    sourceProductVersion:null,
+    sourceOfferId:undefined,
+    sourceSnapshotId:undefined,
+    catalogSnapshotDigest:undefined,
+    catalogSnapshot:undefined,
+    intakeRequestId:undefined,
+  };
+  const repo=new Erp5SettlementRepository();
+  const actor=`audit-${suffix}@teamjpk.com`;
+
+  const created=await repo.createIntake(input,actor);
+  assert.equal(created.created,true);
+  const initial=await repo.get(created.code);
+  assert.ok(initial);
+  const stableEventId=String(initial.raw.auditEventId??'');
+  assert.ok(stableEventId);
+
+  const newPlate=`NEW${suffix}`;
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'plate',plate:newPlate},actor),{ok:true,changed:1});
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paper',on:true},actor),{ok:true,changed:1});
+
+  const after=await repo.get(created.code);
+  assert.ok(after);
+  assert.equal(after.raw.auditEventId,stableEventId);
+  assert.equal(after.row.plate,newPlate);
+
+  const events=await repo.events(newPlate,input.receivedAt,undefined,undefined,'plate');
+  const fields=new Set(events.map((event)=>event.field));
+  assert.equal(fields.has('접수'),true);
+  assert.equal(fields.has('차량번호'),true);
+  assert.equal(fields.has('계약서'),true);
+
+  const oldDoc=await erp5().collection('settlement_events').doc(stableEventId).get();
+  assert.equal(oldDoc.exists,true);
+  const derivedFromNewPlate=intakeEventDocId(newPlate,undefined,input.receivedAt,undefined,'plate');
+  assert.notEqual(derivedFromNewPlate,stableEventId);
+  const splitDoc=await erp5().collection('settlement_events').doc(derivedFromNewPlate).get();
+  assert.equal(splitDoc.exists,false);
+});
+
+
+emulatorTest('Firestore: concurrent supplier invoice issuance never reuses the same invoice number',async()=>{
+  const db=erp5();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,10);
+  const month='2026-11';
+  const rows=[
+    {code:`stl_inv_a_${suffix}`,supplier:`공급사A-${suffix}`,plate:`11가${suffix.slice(0,4)}`},
+    {code:`stl_inv_b_${suffix}`,supplier:`공급사B-${suffix}`,plate:`22나${suffix.slice(0,4)}`},
+  ];
+  for(const [i,x] of rows.entries()){
+    await db.collection('settlement_rows').doc(x.code).set({
+      code:x.code,
+      receivedAt:'2026-09-25',
+      plate:x.plate,
+      supplier:x.supplier,
+      supplierCode:`SUP-${i+1}`,
+      customer:`동시발행-${i+1}`,
+      channel:'프리패스',
+      channelCode:'FP',
+      agent:'테스터',
+      product:'장기렌트',
+      rentKind:'재렌트',
+      contractType:'전자약정',
+      term:36,
+      rent:690000,
+      deposit:0,
+      payKind:'일시납',
+      paper:true,
+      delivered:true,
+      deliveredAt:'2026-09-25',
+      billMonth:month,
+      claimWritten:1000+i,
+      payWritten:800+i,
+      claimStage:'접수',
+      payStage:'접수',
+      cancelled:false,
+      settleExclude:false,
+      billed:false,
+      invoiceIssued:false,
+      createdAt:Date.now(),
+      updatedAt:Date.now(),
+    });
+  }
+
+  const repo=new Erp5SettlementRepository();
+  const [a,b]=await Promise.all([
+    repo.issueInvoice(month,'공급사',rows[0].supplier,'concurrent-a'),
+    repo.issueInvoice(month,'공급사',rows[1].supplier,'concurrent-b'),
+  ]);
+
+  assert.equal(a.ok,true);
+  assert.equal(b.ok,true);
+  assert.notEqual(a.ok&&a.invoice.invoiceNo,b.ok&&b.invoice.invoiceNo);
+  assert.match(a.ok?a.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
+  assert.match(b.ok?b.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
+});
+
+
+emulatorTest('Firestore: cash idempotency key only accepts an identical retry payload',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const repo=new Erp5SettlementRepository();
+  const actor=`cash-${suffix}@teamjpk.com`;
+  const created=await repo.createIntake({...intake(p,o),paper:true,delivered:true,deliveredAt:'2026-09-25'},actor);
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'billMonth',month:'2026-09'},undefined,actor),
+    {ok:true,changed:1},
+  );
+
+  const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
+  assert.equal(issued.ok,true);
+  // Use the actual issued document day, not a date preceding its issuance.
+  const settlementDay=koreaDay(issued.invoice.issuedAt);
+  assert.ok(settlementDay);
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'confirm',axis:'공급사'},undefined,actor),
+    {ok:true,changed:1},
+  );
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'invoice',on:true,biz:'1234567890',day:settlementDay},undefined,actor),
+    {ok:true,changed:1},
+  );
+
+  const operationId=`cash_retry_${suffix}_123456`;
+  const first=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:100,day:settlementDay},operationId,actor,
+  );
+  assert.equal(first.ok,true);
+  assert.equal(first.ok&&first.changed,1);
+
+  const identical=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:100,day:settlementDay},operationId,actor,
+  );
+  assert.deepEqual(identical,{ok:true,changed:0});
+
+  const conflicting=await repo.setLifecycle(
+    created.code,{kind:'collected',amount:200,day:settlementDay},operationId,actor,
+  );
+  assert.equal(conflicting.ok,false);
+  assert.match(conflicting.ok?'':conflicting.error,/같은 요청 식별자/);
+
+  const cashEvents=await repo.cashEvents();
+  const mine=cashEvents.filter((event)=>event.code===created.code&&event.operationId===operationId);
+  assert.equal(mine.length,1);
+  assert.equal(mine[0].amount,100);
+  assert.equal(mine[0].kind,'collected');
+  assert.equal(mine[0].billMonth,'2026-09');
+  assert.equal(mine[0].party,'공급사A');
+  assert.equal(mine[0].invoiceNo,issued.ok?issued.invoice.invoiceNo:undefined);
 });

@@ -61,3 +61,11 @@ test('electronic-signature service obtains persistence through Data while retain
   assert.match(source, /new EsignService\(esignRepository, esignAssets, esignFinalDocumentRenderer\)/);
   assert.doesNotMatch(source, /adapters\/erp5/);
 });
+
+
+test('cutover stages never reuse the 60-second legacy UI cache', () => {
+  const data = readFileSync('src/server/freepass-data.ts', 'utf8');
+  assert.match(data, /const cacheable = mode === 'LEGACY_DIRECT' \|\| mode === 'OBSERVE'/);
+  assert.match(data, /if \(cacheable && hit && hit\.mode === mode && Date\.now\(\) - hit\.at < TTL\)/);
+  assert.match(data, /else delete g\.__fpaCatalog/);
+});

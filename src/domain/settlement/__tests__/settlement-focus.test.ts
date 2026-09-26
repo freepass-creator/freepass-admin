@@ -112,6 +112,21 @@ test('인도완료 boolean만 있고 인도일이 없으면 정산 원장에 서
 });
 
 
+test('존재하지 않는 인도일은 정산 eligibility를 통과하지 않는다', () => {
+  const impossible = row({
+    progress: {
+      ...row().progress,
+      delivered: true,
+      deliveredAt: '2026-02-30',
+      billMonth: '2026-02',
+    },
+  });
+  assert.equal(settlementEligible(impossible), false);
+  assert.deepEqual(ledgerMonths([impossible], [], new Date('2026-03-01T00:00:00+09:00')), []);
+  assert.equal(locateSettlementFocus([impossible], [], 'stl_focus', 'claim'), null);
+});
+
+
 test('signed 계약 취소가 기록된 줄은 일반 정산 원장에서 빠진다', () => {
   const cancelledContract = row({
     contractCancelledAt: Date.parse('2026-09-22T00:00:00+09:00'),

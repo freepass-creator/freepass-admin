@@ -76,9 +76,14 @@ const inLedger = settlementEligible;
 import { claimAmountOf, payAmountOf } from './money';
 export { claimAmountOf, payAmountOf };
 
-export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly Clawback[] = [], now = new Date()): string[] {
+export function ledgerMonths(
+  rows: readonly SettlementRow[],
+  clawbacks: readonly Clawback[] = [],
+  now = new Date(),
+  closedMonths: ReadonlySet<string> = new Set<string>(),
+): string[] {
   const m = new Set<string>();
-  const locked = lockedMonthsOf(rows);
+  const locked = lockedMonthsOf(rows, now, closedMonths);
   for (const r of rows) { if (!inLedger(r)) continue; const x = monthOfRow(r, locked, now); if (x) m.add(x); }
   for (const c of clawbacks) if (c.month) m.add(c.month);
   return [...m].sort((a, b) => (a === NO_MONTH ? 1 : b === NO_MONTH ? -1 : b.localeCompare(a)));
@@ -86,10 +91,10 @@ export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly
 
 function group(
   rows: readonly SettlementRow[], clawbacks: readonly Clawback[], month: string,
-  side: 'claim' | 'pay', now: Date,
+  side: 'claim' | 'pay', now: Date, closedMonths: ReadonlySet<string>,
 ): LedgerGroup[] {
   const by = new Map<string, LedgerGroup>();
-  const locked = lockedMonthsOf(rows);
+  const locked = lockedMonthsOf(rows, now, closedMonths);
   const get = (party: string) => {
     const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, completed: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
     by.set(party, g);
@@ -149,10 +154,13 @@ export function locateSettlementFocus(
   code: string,
   tab: 'claim' | 'pay',
   now = new Date(),
+  closedMonths: ReadonlySet<string> = new Set<string>(),
 ): SettlementFocus | null {
   if (!rows.some((r) => r.id === code)) return null;
-  for (const month of ledgerMonths(rows, clawbacks, now)) {
-    const groups = tab === 'claim' ? claimLedger(rows, month, clawbacks, now) : payLedger(rows, month, clawbacks, now);
+  for (const month of ledgerMonths(rows, clawbacks, now, closedMonths)) {
+    const groups = tab === 'claim'
+      ? claimLedger(rows, month, clawbacks, now, closedMonths)
+      : payLedger(rows, month, clawbacks, now, closedMonths);
     const group = groups.find((g) => g.lines.some((l) => l.row.id === code));
     if (group) return { tab, month, party: group.party, code };
   }
@@ -197,12 +205,16 @@ export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
 }
 
 /** 청구목록 — 공급사에게 받을 것. 끝남 = 청구서를 보냈다(`billed`). */
-export const claimLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
-  group(rows, clawbacks, month, 'claim', now);
+export const claimLedger = (
+  rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date(),
+  closedMonths: ReadonlySet<string> = new Set<string>(),
+) => group(rows, clawbacks, month, 'claim', now, closedMonths);
 
 /** 지급목록 — 영업채널에 줄 것. 끝남 = 지급명세가 나갔다(지급 축 통보·확인·지급). */
-export const payLedger = (rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date()) =>
-  group(rows, clawbacks, month, 'pay', now);
+export const payLedger = (
+  rows: readonly SettlementRow[], month: string, clawbacks: readonly Clawback[] = [], now = new Date(),
+  closedMonths: ReadonlySet<string> = new Set<string>(),
+) => group(rows, clawbacks, month, 'pay', now, closedMonths);
 
 export function ledgerTotals(groups: readonly LedgerGroup[]) {
   return groups.reduce(

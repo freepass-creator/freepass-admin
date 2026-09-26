@@ -98,7 +98,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     /* ★차량가액은 신차만 값이 있다. 0 을 「0원짜리 차」로 읽지 않는다 */
     price: n(d.price) || null,
     payKind: s(d.payKind),
-    paidRounds: n(d.paidRounds),
+    paidRounds: n(d.paidRounds) ?? n(d.rounds),
     catalogRef: {
       productId: s(d.sourceProductId),
       productVersion: n(d.sourceProductVersion),

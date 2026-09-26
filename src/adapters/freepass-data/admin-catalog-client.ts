@@ -51,14 +51,20 @@ const DataProduct = z.object({
   ]),
   vehicleModel: z.object({
     id: z.string().min(1), maker: z.string().min(1), model: z.string().min(1),
+    origin: z.string().nullish(),
     generation: z.string().nullish(), subModel: z.string().nullish(), trim: z.string().nullish(),
     fuel: z.string().nullish(), drive: z.string().nullish(), seats: z.number().int().positive().nullish(),
+    modelYear: z.number().int().min(1900).nullish(),
+    displacementCc: z.number().int().nonnegative().nullish(),
+    batteryKwh: z.number().nonnegative().nullish(),
   }).passthrough(),
   vehicleAsset: z.object({
     id: z.string().min(1), status: z.enum(['AVAILABLE','RESERVED','IN_USE','RETURNED','MAINTENANCE','ACCIDENT','SOLD','RETIRED']),
     plateNumber: z.string().nullish(), vin: z.string().nullish(), odometerKm: z.number().int().nonnegative().nullish(),
+    firstRegistrationDate: z.string().nullish(),
   }).nullish(),
   offers: z.array(DataOffer).min(1),
+  vehiclePrice: z.number().int().nonnegative().nullish(),
 }).passthrough();
 const ResponseSchema = z.object({
   schema: z.literal('freepass-data.admin-catalog/v1'),
@@ -94,6 +100,43 @@ const kindOf: Record<z.infer<typeof DataProduct>['commercialType'], string> = {
 const policyCopy = (values: z.infer<typeof PolicyValueSchema>[]): PolicyValue[] =>
   values.map((p) => p.type === 'MULTI_SELECT' ? { ...p, value: [...p.value] } : { ...p }) as PolicyValue[];
 
+const policySnapshotFacts = (values: z.infer<typeof PolicyValueSchema>[]) => values
+  .map((p) => ({
+    policyId: p.policyId,
+    type: p.type,
+    value: Array.isArray(p.value) ? [...p.value].sort() : p.value,
+  }))
+  .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
+  const facts = {
+    productId: source.productId,
+    productRevision: source.productRevision,
+    commercialType: source.commercialType,
+    vehiclePrice: source.vehiclePrice ?? null,
+    vehicleModel: source.vehicleModel,
+    vehicleAsset: source.vehicleAsset ?? null,
+    offers: source.offers.map((offer) => ({
+      offerId: offer.offerId,
+      offerRevision: offer.offerRevision,
+      supplierId: offer.supplierId,
+      policyId: offer.policyId ?? null,
+      policyState: offer.policyState,
+      invalidPolicyFactRefs: [...offer.invalidPolicyFactRefs].sort(),
+      policyValues: policySnapshotFacts(offer.policyValues),
+      priceTerms: offer.priceTerms.map((term) => ({
+        termKey: term.termKey,
+        termMonths: term.termMonths,
+        monthlyRent: term.monthlyRent,
+        deposit: term.deposit ?? null,
+        depositState: term.depositState,
+        mileageLimitKmPerYear: term.mileageLimitKmPerYear ?? null,
+      })).sort((a, b) => a.termKey.localeCompare(b.termKey)),
+    })).sort((a, b) => a.offerId.localeCompare(b.offerId) || a.offerRevision - b.offerRevision),
+  };
+  return createHash('sha256').update(JSON.stringify(facts)).digest('hex');
+}
+
 function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => ({
     id: `${offer.offerId}#${term.termKey}`,
@@ -106,11 +149,7 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
     policyValues: policyCopy(offer.policyValues),
   })));
   const supplierIds = [...new Set(source.offers.map((o) => o.supplierId))];
-  const offerRevisionKey = source.offers.map((o) =>
-    `${o.offerId}@${o.offerRevision}:${o.priceTerms.map((t) => t.termKey).sort().join(',')}`
-  ).sort().join('|');
-  const sourceSnapshotId = 'freepass-data:' + createHash('sha256')
-    .update(`${source.productId}|p${source.productRevision}|${offerRevisionKey}`).digest('hex');
+  const sourceSnapshotId = 'freepass-data:' + sourceSnapshotDigest(source);
   const vm = source.vehicleModel;
   const matchLevel = vm.trim ? 'TRIM' : vm.subModel ? 'SUB_MODEL' : vm.model ? 'MODEL' : 'UNMATCHED';
   const policyStates = source.offers.map((o) => o.policyState);
@@ -123,24 +162,29 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
     version: source.productRevision,
     supplierId: supplierIds.length === 1 ? supplierIds[0]! : '',
     productKind: kindOf[source.commercialType],
+    ...(source.vehiclePrice !== null && source.vehiclePrice !== undefined ? { consumerPrice: source.vehiclePrice } : {}),
     ...(policyState ? { policyState } : {}),
     supplierProductKey: source.productId,
     vehicle: {
-      nodeId: vm.id, originId: '', manufacturerId: vm.maker, modelId: vm.model,
+      nodeId: vm.id, originId: vm.origin ?? '', manufacturerId: vm.maker, modelId: vm.model,
       ...(vm.subModel ? { subModelId: vm.subModel } : {}),
       ...(vm.trim ? { trimId: vm.trim } : {}),
       matchLevel,
     },
     specs: {
+      ...(vm.modelYear !== null && vm.modelYear !== undefined ? { modelYear: vm.modelYear } : {}),
       ...(vm.fuel ? { fuel: vm.fuel } : {}),
-      ...(vm.drive ? { drivetrain: vm.drive } : {}),
+      ...(vm.displacementCc !== null && vm.displacementCc !== undefined ? { displacementCc: vm.displacementCc } : {}),
       ...(vm.seats !== null && vm.seats !== undefined ? { seats: vm.seats } : {}),
+      ...(vm.drive ? { drivetrain: vm.drive } : {}),
+      ...(vm.batteryKwh !== null && vm.batteryKwh !== undefined ? { batteryKwh: vm.batteryKwh } : {}),
       ...(source.vehicleAsset?.odometerKm !== null && source.vehicleAsset?.odometerKm !== undefined
         ? { mileageKm: source.vehicleAsset.odometerKm } : {}),
     },
     ...(source.vehicleAsset ? { registration: {
       ...(source.vehicleAsset.plateNumber ? { vehicleNumber: source.vehicleAsset.plateNumber } : {}),
       ...(source.vehicleAsset.vin ? { vin: source.vehicleAsset.vin } : {}),
+      ...(source.vehicleAsset.firstRegistrationDate ? { firstRegistrationDate: source.vehicleAsset.firstRegistrationDate } : {}),
     } } : {}),
     offers,
     productPolicies: [],
@@ -149,16 +193,19 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   };
 }
 
-function config() {
-  const raw = process.env.FREEPASS_DATA_BASE_URL?.trim().replace(/\/$/, '') ?? '';
-  const token = process.env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
+function config(env: Record<string,string|undefined> = process.env) {
+  const raw = env.FREEPASS_DATA_BASE_URL?.trim().replace(/\/$/, '') ?? '';
+  const token = env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
   if (!raw || !token) throw new Error('FREEPASS_DATA_SHADOW_CONFIG_MISSING');
   let base: URL;
   try { base = new URL(raw); } catch { throw new Error('FREEPASS_DATA_BASE_URL_INVALID'); }
   if (!['http:','https:'].includes(base.protocol)) throw new Error('FREEPASS_DATA_BASE_URL_INVALID');
-  if (process.env.NODE_ENV === 'production' && base.protocol !== 'https:') throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_HTTPS');
+  if (base.username || base.password || (base.pathname !== '/' && base.pathname !== '') || base.search || base.hash) {
+    throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_ORIGIN');
+  }
+  if (env.NODE_ENV === 'production' && base.protocol !== 'https:') throw new Error('FREEPASS_DATA_BASE_URL_MUST_BE_HTTPS');
   if (token.length < 32) throw new Error('FREEPASS_DATA_ADMIN_CATALOG_TOKEN_INVALID');
-  return { base: base.toString().replace(/\/$/, ''), token };
+  return { base: base.origin, token };
 }
 
 export class FreePassDataAdminCatalogClient {
@@ -185,4 +232,4 @@ export class FreePassDataAdminCatalogClient {
   }
 }
 
-export const __test = { ResponseSchema, mapProduct };
+export const __test = { ResponseSchema, mapProduct, config };

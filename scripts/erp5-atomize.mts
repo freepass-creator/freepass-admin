@@ -22,6 +22,7 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement.ts';
 import { blockOf, isOpenIntake, isPerformance, margin } from '../src/domain/settlement/types.ts';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
 
 const has = (k: string) => process.argv.includes(k);
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -35,6 +36,10 @@ if (DST === SRC) throw new Error('★원본을 덮으려 한다. 대상이 원�
 
 const sa = JSON.parse(readFileSync(SA, 'utf8'));
 if (sa.project_id !== 'freepasserp5') throw new Error(`★ERP5 가 아니다: ${sa.project_id}`);
+if (!String(sa.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
+  throw new Error(`★ERP5 서비스계정이 아니다: ${String(sa.client_email ?? '')}`);
+}
+assertErp5MaintenanceWrite(process.env, APPLY, 'erp5-atomize', Date.now(), String(sa.client_email ?? ''));
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'atomize'));
 
 const won = (x: number | null) => x === null ? '모름' : Math.round(x).toLocaleString('ko-KR');

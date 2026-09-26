@@ -25,7 +25,7 @@ import { AutoSelect } from './AutoSelect';
 import { ProductDetail, ProductThumb, STATUS_TONE, carName } from './ProductDetail';
 import { buildProductList } from './productList';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon, won0, type Tone,
 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -122,17 +122,21 @@ async function IntakeWorkspace({ q }: { q: Q }) {
           { key: 'ready', label: `즉시출고 ${readyCount}`, href: hrefWith(base, q, { pst: '즉시출고', id: null }), on: pst === '즉시출고' },
         ]} />
         <PanelBody>
-          <RowCards label="상품 목록">
-            {hits.map(({ p, offer }) => (
-              <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
-                tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
-                title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
-                subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
-                meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}
-                facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
-                amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
-            ))}
-          </RowCards>
+          {hits.length ? (
+            <RowCards label="상품 목록">
+              {hits.map(({ p, offer }) => (
+                <RowCard key={p.id} href={hrefWith(base, q, { id: p.id, offer: offer.id })} current={sel?.p.id === p.id}
+                  tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
+                  title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
+                  subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
+                  meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}
+                  facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
+                  amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
+              ))}
+            </RowCards>
+          ) : <PanelState title={all.length ? '조건에 맞는 상품이 없습니다.' : '등록된 상품이 없습니다.'}>
+            {all.length ? '검색어나 필터 조건을 줄여 다시 확인해 주세요.' : '프리패스 데이터에 상품이 들어오면 이 목록에 표시됩니다.'}
+          </PanelState>}
         </PanelBody>
       </Panel>
 
@@ -164,7 +168,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
           { key: 'current', label: `당월접수 ${iCount('당월접수')}`, href: hrefWith(base, q, { wiv: null, wpage: null }), on: iv === '당월접수' },
         ]} />
         <PanelBody>
-          <RowCards label={`${iTitle} 목록`}>
+          {islice.length ? <RowCards label={`${iTitle} 목록`}>
             {islice.map((r) => {
               const b = bucketOf(r, now);
               return (
@@ -178,7 +182,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
                   unit="" />
               );
             })}
-          </RowCards>
+          </RowCards> : <PanelState title="이 조건에 맞는 접수가 없습니다.">검색어나 필터, 접수 칸을 바꿔 확인해 주세요.</PanelState>}
         </PanelBody>
         <PanelFoot>
           <span>총 <b>{iShown.length}</b>건</span>
@@ -260,7 +264,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
     return { key: a, label, options: standingFixed(keys, base, live).map((o) => ({ key: o.key, label: o.key, count: o.count })) };
   });
 
-  const list = (title: string, items: SettlementRow[], b: Bucket) => (
+  const list = (title: string, items: SettlementRow[], b: Bucket) => items.length ? (
     <RowCards label={`${title} 목록`}>
       {items.map((r) => (
         <RowCard key={r.id} href={hrefWith(base, q, { ic: r.id })} current={cur?.id === r.id} tone={INTAKE_TONE[b]}
@@ -272,7 +276,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
           unit="" />
       ))}
     </RowCards>
-  );
+  ) : <PanelState title={`${title}이 없습니다.`}>선택한 실적월·검색·필터 조건을 확인해 주세요.</PanelState>;
 
   return (
     <Screen name="performance-workspace">
@@ -294,7 +298,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         ) : (
           <>
             <PanelHead kind="상세내용" title="실적상세" count="고른 실적" />
-            <PanelBody><p className="erp-muted">왼쪽 · 오른쪽에서 실적을 고르세요.</p></PanelBody>
+            <PanelBody><PanelState title="실적을 선택해 주세요.">왼쪽 분납실적 또는 오른쪽 완납실적에서 한 건을 고르면 상세가 표시됩니다.</PanelState></PanelBody>
           </>
         )}
       </Panel>

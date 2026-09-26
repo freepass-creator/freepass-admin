@@ -95,3 +95,35 @@ test('FreePass Data snapshot identity is stable across policy and offer ordering
   const right = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(reordered));
   assert.equal(left.sourceSnapshotId, right.sourceSnapshotId);
 });
+
+
+test('FreePass Data client config only accepts a clean production HTTPS origin and strong token', () => {
+  const good = __test.config({
+    NODE_ENV:'production',
+    FREEPASS_DATA_BASE_URL:'https://data.example.test/',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'t'.repeat(40),
+  });
+  assert.equal(good.base,'https://data.example.test');
+  assert.throws(() => __test.config({
+    NODE_ENV:'production',
+    FREEPASS_DATA_BASE_URL:'http://data.example.test',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'t'.repeat(40),
+  }),/MUST_BE_HTTPS/);
+  for(const url of [
+    'https://user:pass@data.example.test',
+    'https://data.example.test/api',
+    'https://data.example.test/?x=1',
+    'https://data.example.test/#x',
+  ]){
+    assert.throws(() => __test.config({
+      NODE_ENV:'production',
+      FREEPASS_DATA_BASE_URL:url,
+      FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'t'.repeat(40),
+    }),/MUST_BE_ORIGIN/);
+  }
+  assert.throws(() => __test.config({
+    NODE_ENV:'production',
+    FREEPASS_DATA_BASE_URL:'https://data.example.test',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'short',
+  }),/TOKEN_INVALID/);
+});

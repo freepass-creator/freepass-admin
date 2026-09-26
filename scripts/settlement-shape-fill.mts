@@ -14,9 +14,11 @@
  */
 import { erp5 } from '../src/adapters/erp5/firestore';
 import { intakeRecord, type IntakeInput } from '../src/domain/settlement/intake';
-import { eventDocId } from '../src/domain/settlement/code';
+import { intakeEventDocId } from '../src/domain/settlement/code';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval';
 
 const APPLY = process.argv.includes('--apply');
+assertErp5MaintenanceWrite(process.env, APPLY, 'settlement-shape-fill');
 const blank: IntakeInput = {
   receivedAt: '2000-01-01', plate: 'x', model: '', supplier: '', supplierCode: '', customer: '', channel: '', channelCode: '',
   agent: '', agentCode: '', product: '', rentKind: '', contractType: '', term: null, rent: null, deposit: null, price: null,
@@ -33,14 +35,20 @@ const db = erp5();
 const snap = await db.collection('settlement_rows').get();
 const now = Date.now();
 defaults.updatedAt = now;
-const todo: { id: string; plate: unknown; receivedAt: unknown; patch: Record<string, unknown> }[] = [];
+const todo: { id: string; auditEventId: string; patch: Record<string, unknown> }[] = [];
 for (const d of snap.docs) {
   const x = d.data();
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(defaults)) if (!(k in x)) patch[k] = v;
   if (!('stateAt' in x)) patch.stateAt = new Date(now).toISOString();
   if (!('fromSheet' in x) && (x._f04 as { created?: boolean } | undefined)?.created) patch.fromSheet = 'F04 연동';
-  if (Object.keys(patch).length) todo.push({ id: d.id, plate: x.plate, receivedAt: x.receivedAt, patch });
+  if (Object.keys(patch).length) {
+    const auditEventId = String(x.auditEventId ?? '').trim() || intakeEventDocId(
+      x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, x.intakeIdentityMode,
+    );
+    patch.auditEventId = auditEventId;
+    todo.push({ id: d.id, auditEventId, patch });
+  }
 }
 const byCount = new Map<number, number>(); for (const t of todo) byCount.set(Object.keys(t.patch).length, (byCount.get(Object.keys(t.patch).length) ?? 0) + 1);
 console.log(`${APPLY ? '★쓴다' : '헛돌기'} · 줄 ${snap.size} · 채울 줄 ${todo.length} · (채울 칸 수: 줄 수) ${[...byCount].map(([k, n]) => `${k}칸:${n}`).join(' ')}`);
@@ -52,7 +60,7 @@ if (APPLY) {
     for (const t of b) {
       w.update(db.collection('settlement_rows').doc(t.id), t.patch);
       if (Object.keys(t.patch).every((k) => NEW_TODAY.has(k))) continue;
-      w.set(db.collection('settlement_events').doc(eventDocId(t.plate, t.receivedAt)),
+      w.set(db.collection('settlement_events').doc(t.auditEventId),
         { [`aud_shape${now}`]: { at: now, by: 'freepass-admin:shape-fill', field: '꼴 맞춤', from: '', to: Object.keys(t.patch).join(',') } }, { merge: true });
     }
     await w.commit();

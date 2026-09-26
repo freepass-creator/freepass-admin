@@ -2,6 +2,12 @@ import type { AdminCatalogReadMode, AdminCatalogReader, AdminCatalogReceipt } fr
 import type { CanonicalProduct } from '../../domain/product/types';
 import type { Erp5ReadReport } from '../erp5/product-repository';
 import type { FreePassDataAdminCatalogMeta } from './admin-catalog-client';
+import {
+  assertApprovedRelease,
+  parseAdminCutoverApproval,
+  type AdminCutoverApproval,
+  type AdminCutoverDecision,
+} from '../../shared/freepass-data-admin-cutover';
 
 type LegacyCatalogSource = {
   list(): Promise<CanonicalProduct[]>;
@@ -51,13 +57,59 @@ export type ShadowComparison = {
   differentProducts: number;
 };
 
-const offerFacts = (p: CanonicalProduct) => p.offers.map((o) => [
-  o.supplierId ?? p.supplierId,
-  o.termMonths,
-  o.monthlyRent,
-  o.deposit ?? null,
-  o.annualMileageKm ?? null,
-].join('|')).sort();
+const policyFacts = (values: CanonicalProduct['productPolicies']) => values
+  .map((p) => ({
+    policyId: p.policyId,
+    type: p.type,
+    value: Array.isArray(p.value) ? [...p.value].sort() : p.value,
+  }))
+  .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+const offerFacts = (p: CanonicalProduct) => p.offers.map((o) => ({
+  id: o.id,
+  supplierId: o.supplierId ?? p.supplierId,
+  supplierName: o.supplierName ?? null,
+  termMonths: o.termMonths,
+  monthlyRent: o.monthlyRent,
+  deposit: o.deposit ?? null,
+  prepayment: o.prepayment ?? null,
+  annualMileageKm: o.annualMileageKm ?? null,
+  policyValues: policyFacts(o.policyValues),
+})).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+const productFacts = (p: CanonicalProduct) => ({
+  supplierId: p.supplierId,
+  supplierName: p.supplierName ?? null,
+  status: p.status ?? null,
+  productKind: p.productKind ?? null,
+  consumerPrice: p.consumerPrice ?? null,
+  policyState: p.policyState ?? null,
+  vehicle: {
+    nodeId: p.vehicle.nodeId,
+    originId: p.vehicle.originId,
+    manufacturerId: p.vehicle.manufacturerId,
+    modelId: p.vehicle.modelId,
+    subModelId: p.vehicle.subModelId ?? null,
+    trimId: p.vehicle.trimId ?? null,
+    matchLevel: p.vehicle.matchLevel,
+  },
+  specs: {
+    modelYear: p.specs.modelYear ?? null,
+    mileageKm: p.specs.mileageKm ?? null,
+    fuel: p.specs.fuel ?? null,
+    displacementCc: p.specs.displacementCc ?? null,
+    seats: p.specs.seats ?? null,
+    drivetrain: p.specs.drivetrain ?? null,
+    batteryKwh: p.specs.batteryKwh ?? null,
+  },
+  registration: {
+    vehicleNumber: p.registration?.vehicleNumber ?? null,
+    vin: p.registration?.vin ?? null,
+    firstRegistrationDate: p.registration?.firstRegistrationDate ?? null,
+  },
+  offers: offerFacts(p),
+  productPolicies: policyFacts(p.productPolicies),
+});
 
 export function compareAdminCatalogShadow(
   legacyRows: CanonicalProduct[],
@@ -69,11 +121,7 @@ export function compareAdminCatalogShadow(
   for (const [id, lp] of legacy) {
     const fp = freepass.get(id);
     if (!fp) { missingInFreePass++; continue; }
-    const sameVehicle = (lp.registration?.vehicleNumber ?? '') === (fp.registration?.vehicleNumber ?? '')
-      && lp.vehicle.modelId === fp.vehicle.modelId
-      && (lp.vehicle.subModelId ?? '') === (fp.vehicle.subModelId ?? '');
-    const sameOffers = JSON.stringify(offerFacts(lp)) === JSON.stringify(offerFacts(fp));
-    if (!sameVehicle || !sameOffers) differentProducts++;
+    if (JSON.stringify(productFacts(lp)) !== JSON.stringify(productFacts(fp))) differentProducts++;
   }
   for (const id of freepass.keys()) if (!legacy.has(id)) extraInFreePass++;
   return {
@@ -89,6 +137,8 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
     private readonly legacy: LegacyCatalogSource,
     private readonly freepass?: FreePassCatalogSource,
     private readonly modeOf: () => AdminCatalogReadMode = () => adminCatalogReadMode(),
+    private readonly cutoverOf: (mode: AdminCatalogReadMode) => AdminCutoverDecision = (mode) =>
+      parseAdminCutoverApproval(process.env.FREEPASS_DATA_ADMIN_CUTOVER_JSON, process.env, mode),
   ) {}
 
   mode(): AdminCatalogReadMode { return this.modeOf(); }
@@ -109,18 +159,70 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
     };
   }
 
-  private assertPreCutover(mode: AdminCatalogReadMode) {
-    if (mode === 'LEGACY_DIRECT' || mode === 'OBSERVE' || mode === 'SHADOW_READ') return;
-    throw new FreePassDataCatalogHoldError(
-      `프리패스 데이터 Admin Catalog ${mode}는 parity/fallback/readback 증거가 없다 — legacy ERP5로 조용히 fallback하지 않았다.`,
-    );
+  private cutoverApproval(mode: AdminCatalogReadMode): AdminCutoverApproval | null {
+    if (mode === 'LEGACY_DIRECT' || mode === 'OBSERVE') return null;
+    const decision = this.cutoverOf(mode);
+    if (!decision.ok) {
+      throw new FreePassDataCatalogHoldError(
+        `프리패스 데이터 Admin Catalog ${mode} HOLD — ${decision.reason}`,
+      );
+    }
+    return decision.approval;
   }
 
   async list() {
     const mode = this.mode();
-    this.assertPreCutover(mode);
+    const approval = this.cutoverApproval(mode);
+
+    if (mode === 'FREEPASS_DATA_READ') {
+      if (!this.freepass || !approval) {
+        throw new FreePassDataCatalogHoldError('프리패스 데이터 최종 읽기 HOLD — reader/approval 없음');
+      }
+      try {
+        const live = await this.freepass.list();
+        const holds = [
+          ...(live.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
+          ...(assertApprovedRelease(approval, live.meta) ? [assertApprovedRelease(approval, live.meta)!] : []),
+        ];
+        if (holds.length) {
+          throw new FreePassDataCatalogHoldError(
+            `프리패스 데이터 최종 읽기 HOLD — ${holds.join(' · ')}`,
+          );
+        }
+        const receipt: AdminCatalogReceipt = {
+          authority: 'FREEPASS_DATA',
+          mode,
+          servedBy: 'FREEPASS_DATA',
+          cutoverAuthorized: true,
+          holdReasons: [],
+          cutover: {
+            approvalRef: approval.approvalRef,
+            fromStage: approval.fromStage,
+            targetStage: approval.targetStage,
+            validUntil: approval.validUntil,
+          },
+          freepass: {
+            releaseId: live.meta.releaseId,
+            manifestId: live.meta.manifestId,
+            inputDigest: live.meta.inputDigest,
+            revision: live.meta.revision,
+            dataDigest: live.meta.dataDigest,
+            policyParity: live.meta.policyParity,
+            rows: live.rows.length,
+          },
+        };
+        this.lastReceipt = receipt;
+        return { rows: live.rows, receipt };
+      } catch (e) {
+        if (e instanceof FreePassDataCatalogHoldError) throw e;
+        throw new FreePassDataCatalogHoldError(
+          `프리패스 데이터 최종 읽기 실패 — ${e instanceof Error ? e.message : 'UNKNOWN'}`,
+        );
+      }
+    }
+
     const rows = await this.legacy.list();
-    if (mode !== 'SHADOW_READ') {
+    if (mode === 'LEGACY_DIRECT' || mode === 'OBSERVE') {
       const receipt = this.legacyReceipt(mode);
       this.lastReceipt = receipt;
       return { rows, receipt };
@@ -142,21 +244,35 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
     try {
       const shadow = await this.freepass.list();
       const comparison = compareAdminCatalogShadow(rows, shadow.rows);
+      const releaseHold = approval && mode === 'PARITY_VERIFIED'
+        ? assertApprovedRelease(approval, shadow.meta)
+        : null;
       const holds = [
         ...(shadow.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
         ...(comparison.status === 'MATCH' ? [] : ['FREEPASS_DATA_SHADOW_MISMATCH']),
+        ...(releaseHold ? [releaseHold] : []),
       ];
-      const receipt: AdminCatalogReceipt = {
+      const baseReceipt: AdminCatalogReceipt = {
         ...this.legacyReceipt(mode, holds),
+        ...(approval ? { cutover: {
+          approvalRef: approval.approvalRef,
+          fromStage: approval.fromStage,
+          targetStage: approval.targetStage,
+          validUntil: approval.validUntil,
+        } } : {}),
         freepass: {
-          releaseId: shadow.meta.releaseId, revision: shadow.meta.revision,
-          dataDigest: shadow.meta.dataDigest, policyParity: shadow.meta.policyParity,
+          releaseId: shadow.meta.releaseId,
+          manifestId: shadow.meta.manifestId,
+          inputDigest: shadow.meta.inputDigest,
+          revision: shadow.meta.revision,
+          dataDigest: shadow.meta.dataDigest,
+          policyParity: shadow.meta.policyParity,
           rows: shadow.rows.length,
         },
         shadow: { ...comparison, comparedAt: new Date().toISOString() },
       };
-      this.lastReceipt = receipt;
-      return { rows, receipt };
+      this.lastReceipt = baseReceipt;
+      return { rows, receipt: baseReceipt };
     } catch (e) {
       const reason = e instanceof Error ? e.message : 'FREEPASS_DATA_SHADOW_READ_FAILED';
       const receipt: AdminCatalogReceipt = {
@@ -173,8 +289,12 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
 
   async get(id: string) {
     const mode = this.mode();
-    this.assertPreCutover(mode);
-    return this.legacy.get(id);
+    if (mode !== 'FREEPASS_DATA_READ') {
+      this.cutoverApproval(mode);
+      return this.legacy.get(id);
+    }
+    const result = await this.list();
+    return result.rows.find((row) => row.id === id) ?? null;
   }
 
   receipt(): AdminCatalogReceipt {

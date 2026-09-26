@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { DEMO_PROJECT, demoFirestore, demoMode } from './demo';
+import { isLocalFirestoreEmulatorHost } from '../../shared/erp5-write-approval';
 
 export { demoMode } from './demo';
 
@@ -51,9 +52,12 @@ function credential(): Sa {
   if (!project_id || !client_email || !private_key) {
     throw new Error('ERP5 자격증명에 project_id · client_email · private_key 가 다 있어야 한다.');
   }
-  /** ★★안전장치 — 다른 프로젝트 키로 조용히 도는 일을 막는다. */
+  /** ★★안전장치 — 다른 프로젝트 키/주체로 조용히 도는 일을 막는다. */
   if (project_id !== ERP5_PROJECT_ID) {
     throw new Error(`★ERP5 가 아니다: ${project_id} (${ERP5_PROJECT_ID} 라야 한다)`);
+  }
+  if (!client_email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
+    throw new Error(`★ERP5 서비스계정이 아니다: ${client_email}`);
   }
   return { project_id, client_email, private_key };
 }
@@ -68,7 +72,11 @@ function ensureErp5App(): App {
     // Firebase Admin automatically routes Firestore traffic to the emulator when
     // FIRESTORE_EMULATOR_HOST is set. In that isolated mode, never require or
     // load a production service-account credential.
-    if (process.env.FIRESTORE_EMULATOR_HOST?.trim()) {
+    const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST?.trim();
+    if (emulatorHost) {
+      if (!isLocalFirestoreEmulatorHost(emulatorHost)) {
+        throw new Error('원격 FIRESTORE_EMULATOR_HOST는 허용하지 않습니다');
+      }
       app = initializeApp({ projectId: ERP5_PROJECT_ID }, APP_NAME);
     } else {
       const sa = credential();

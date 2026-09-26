@@ -1938,7 +1938,7 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
   }
 
   .erp-std .erp-panel--compact .erp-rowcard {
-    padding: 10px var(--erp-sp-3);
+    padding: var(--erp-sp-3);
   }
 
   .erp-std .erp-tile {
@@ -1985,7 +1985,14 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
   /* compact 목록은 Main / Key / Support 3줄을 고정한다.
    * 더 많은 정보는 상세 화면이 책임진다. */
   .erp-std .erp-panel--compact .erp-rowcard-id {
+    grid-template-rows: repeat(3, var(--erp-card-line-h));
     grid-auto-rows: var(--erp-card-line-h);
+    height: 64px;
+    min-height: 64px;
+  }
+
+  .erp-std .erp-panel--compact :is(.erp-rowcard-title,.erp-rowcard-sub,.erp-rowcard-meta) {
+    margin-block: 0;
   }
 
   /* 넓은 RowCard의 facts는 label/value를 한 줄에서 끝낸다. */
@@ -2063,7 +2070,7 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
   .erp-std .erp-panel--compact .erp-rowcard {
-    min-height: 84px;
+    min-height: 88px;
   }
 
   .erp-std .erp-panel--compact .erp-rowcard-thumb {
@@ -2325,8 +2332,8 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
   .erp-std .erp-rowcards {
-    gap: 8px;
-    padding: 12px;
+    gap: var(--erp-card-gap);
+    padding: var(--erp-sp-3);
   }
 
   .erp-std .erp-panel--compact .erp-rowcard {

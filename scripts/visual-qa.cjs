@@ -673,7 +673,7 @@ async function runInteractiveStates(page, c) {
       }
       if (Array.isArray(info.listCardAlignment)) {
         for (const card of info.listCardAlignment) {
-          const expectedOuter = c.width <= 900 ? 88 : 84;
+          const expectedOuter = 88;
           if (Math.abs(card.outerHeight - expectedOuter) > 2) {
             problems.push(`list card outer height mismatch: expected ${expectedOuter}px: ${JSON.stringify(card)}`);
           }

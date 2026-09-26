@@ -55,7 +55,8 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
       </Panel>
 
       <Panel>
-        <ProductDetail sel={sel} selOffers={selOffers} selOffer={selOffer} base={base} q={q} />
+        <ProductDetail sel={hits.length ? sel : undefined} selOffers={hits.length ? selOffers : []}
+          selOffer={hits.length ? selOffer : undefined} base={base} q={q} />
       </Panel>
     </div>
     </Screen>

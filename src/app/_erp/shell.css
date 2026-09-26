@@ -136,6 +136,12 @@
 }
 @media (max-width: 900px) {
   .erp-std, .erp-screen { display: none !important; }
+  /* Route loading/error states must remain visible on phone even though the PC screen shell is hidden. */
+  .erp-screen.dz-route-state {
+    display: flex !important;
+    min-height: 100%;
+    flex-direction: column;
+  }
 }
 /* ═══════════════════════════════════════════════════════════════════════
  * 2026-09-24 — Surface type / Interaction hierarchy

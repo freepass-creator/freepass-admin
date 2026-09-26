@@ -96,8 +96,28 @@ export function feeOf(
   if (!rule.auto || typeof rule.claim !== 'number' || typeof rule.pay !== 'number') {
     return { status: 'MANUAL', rule, why: `표가 「${rule.claim}」 — 사람이 정한다` };
   }
-  if (rule.basis === '정액') return { status: 'AUTO', rule, claim: rule.claim, pay: rule.pay };
-  const base = rule.basis === '차량가액' ? c.price : c.rent && term ? c.rent * term : null;
-  if (!base) return { status: 'NO_BASE', rule, why: rule.basis === '차량가액' ? '차량가액이 없다' : '대여료·계약기간이 없다' };
+
+  const supportedAuto = rule.basis === '정액' || rule.basis === '차량가액' || rule.basis === '대여료×기간';
+  if (!supportedAuto) {
+    return { status: 'MANUAL', rule, why: `자동 셈으로 지원하지 않는 「${rule.basis}」 규칙입니다 — 사람이 확인합니다` };
+  }
+
+  if (rule.basis === '정액') {
+    if (![rule.claim, rule.pay].every((v) => Number.isFinite(v) && v >= 0)) {
+      return { status: 'MANUAL', rule, why: '정액 수수료 규칙 값이 비정상입니다 — 사람이 확인합니다' };
+    }
+    return { status: 'AUTO', rule, claim: Math.round(rule.claim), pay: Math.round(rule.pay) };
+  }
+
+  if (![rule.claim, rule.pay].every((v) => Number.isFinite(v) && v >= 0 && v <= 1)) {
+    return { status: 'MANUAL', rule, why: '비율 수수료 규칙은 0~100% 범위여야 합니다 — 사람이 확인합니다' };
+  }
+
+  const base = rule.basis === '차량가액'
+    ? c.price
+    : (c.rent !== null && c.term !== null ? c.rent * c.term : null);
+  if (base === null || !Number.isFinite(base) || base <= 0) {
+    return { status: 'NO_BASE', rule, why: rule.basis === '차량가액' ? '차량가액이 없다' : '대여료·계약기간이 없다' };
+  }
   return { status: 'AUTO', rule, claim: Math.round(base * rule.claim), pay: Math.round(base * rule.pay) };
 }

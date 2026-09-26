@@ -36,9 +36,10 @@ function useCurrent(): string {
 
 function MenuLink({ it, now }: { it: Item; now: string }) {
   return (
-    <Link href={it.href} className="erp-nav-item" aria-current={now === it.key ? 'page' : undefined}>
+    <Link href={it.href} className="erp-nav-item" aria-current={now === it.key ? 'page' : undefined}
+      aria-label={it.label} title={it.label}>
       <Icon name={it.icon} size={18} />
-      {it.label}
+      <span className="erp-nav-label">{it.label}</span>
     </Link>
   );
 }

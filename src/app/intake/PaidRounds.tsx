@@ -14,11 +14,16 @@ export function PaidRounds({ code, rounds, paid, disabled }: { code: string; rou
     <div className="dz-money">
       <form aria-busy={pending} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
         <input type="hidden" name="code" value={code} /><input type="hidden" name="kind" value="paidRounds" />
-        <b>받은 회차 <small className="dz-sec-note inline">{rounds}회 분납 · 끊겼을 때만 적는다 — 비우면 기간으로 판정</small></b>
-        <label>받은 회차<input name="rounds" defaultValue={paid ?? ''} inputMode="numeric" placeholder={`0 ~ ${rounds}`} /></label>
+        <b>납입회차 <small className="dz-sec-note inline">{rounds}회 분납 · 실제 확인된 회차를 고릅니다</small></b>
+        <label>납입회차
+          <select name="rounds" defaultValue={paid ?? ''} disabled={disabled || pending}>
+            <option value="">미확정 · 자동판정</option>
+            {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}회차 납입</option>)}
+          </select>
+        </label>
         <span />
         {state.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{state.errors.map((x) => <li key={x}>{x}</li>)}</ul>}
-        <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '받은 회차 저장'}</button>
+        <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '납입회차 저장'}</button>
       </form>
     </div>
   );

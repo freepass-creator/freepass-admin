@@ -480,6 +480,35 @@ header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
 /* 공통 진행 폼 줄 — inline margin 제거. 기능/배치 값은 기존 8px 그대로. */
 .dz-progress-row { margin-bottom: 8px; }
 
+/* F04 운영입력 대응 — boolean 사실은 checkbox, 분류값은 select.
+ * 체크박스는 상태를 즉시 읽을 수 있게 하고, 날짜/텍스트 입력은 기존 컨트롤 규격을 유지한다. */
+.dz-progress-facts { display: grid; gap: 8px; }
+.dz-progress-facts .dz-progress-row {
+  display: flex; align-items: center; gap: 8px; margin: 0; min-height: var(--ui-control-h);
+  padding: 8px 10px; border-radius: var(--r); background: var(--박스);
+}
+.dz-progress-field { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; font-size: var(--글보조); color: #6b7580; }
+.dz-progress-field > span { flex: 0 0 auto; }
+.dz-progress-field > input { min-width: 0; flex: 1 1 auto; }
+.dz-status-check {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer;
+  font-size: var(--글메인); color: var(--글); user-select: none;
+}
+.dz-status-check input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--ci남색); }
+.dz-status-check strong { font-size: var(--글보조); color: #6b7580; font-weight: 650; }
+.dz-status-check input:checked ~ strong { color: var(--ci남색); }
+.dz-status-text { font-size: var(--글메인); font-weight: 700; color: var(--ci남색); }
+.dz-progress-cancel { justify-content: space-between; }
+.dz-money select {
+  height: var(--ui-control-h); padding: 0 10px; border: 1px solid var(--ui-line-input, #cdd5df);
+  border-radius: var(--ui-radius); background: var(--판); color: var(--글); font: inherit;
+}
+@media (max-width: 900px) {
+  .dz-progress-facts .dz-progress-row { flex-wrap: wrap; }
+  .dz-progress-field { flex-basis: 100%; }
+  .dz-progress-facts .dz-progress-row > button { margin-left: auto; }
+}
+
 
 /* ══ 공통 키보드/모션 UX — 시각 디자인은 평상시 그대로, 상호작용 상태만 보강 ══ */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {

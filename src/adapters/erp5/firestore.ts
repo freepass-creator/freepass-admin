@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { DEMO_PROJECT, demoFirestore, demoMode } from './demo';
+import { isLocalFirestoreEmulatorHost } from '../../shared/erp5-write-approval';
 
 export { demoMode } from './demo';
 
@@ -71,7 +72,11 @@ function ensureErp5App(): App {
     // Firebase Admin automatically routes Firestore traffic to the emulator when
     // FIRESTORE_EMULATOR_HOST is set. In that isolated mode, never require or
     // load a production service-account credential.
-    if (process.env.FIRESTORE_EMULATOR_HOST?.trim()) {
+    const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST?.trim();
+    if (emulatorHost) {
+      if (!isLocalFirestoreEmulatorHost(emulatorHost)) {
+        throw new Error('원격 FIRESTORE_EMULATOR_HOST는 허용하지 않습니다');
+      }
       app = initializeApp({ projectId: ERP5_PROJECT_ID }, APP_NAME);
     } else {
       const sa = credential();

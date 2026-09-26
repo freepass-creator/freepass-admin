@@ -97,6 +97,7 @@ async function inspect(page) {
       url: location.href,
       bodyWidth: document.body.scrollWidth,
       viewportWidth: innerWidth,
+      mobileGlobalTabs: [...document.querySelectorAll('.dz-tabbar a')].filter(visible).map((el) => (el.textContent || '').trim()),
       selected: pick('[aria-pressed="true"], [aria-current="true"], [aria-current="page"]'),
       selectedCards: (() => {
         const nodes = [...document.querySelectorAll(
@@ -604,6 +605,21 @@ async function runInteractiveStates(page, c) {
       const problems = [];
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
+
+      if (c.width <= 900 && info.mobileGlobalTabs?.length) {
+        const coreTabs = info.mobileGlobalTabs.filter((x) => x !== '계약');
+        const expected = ['상품', '접수', '실적', '정산'];
+        if (JSON.stringify(coreTabs) !== JSON.stringify(expected)) {
+          problems.push(`mobile global tabs drift from workflow: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+        const contractAt = info.mobileGlobalTabs.indexOf('계약');
+        if (contractAt >= 0 && contractAt !== info.mobileGlobalTabs.length - 1) {
+          problems.push(`optional contract tab is not last: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+        if (info.mobileGlobalTabs.includes('청구') || info.mobileGlobalTabs.includes('지급')) {
+          problems.push(`claim/pay must be internal settlement axes, not global tabs: ${JSON.stringify(info.mobileGlobalTabs)}`);
+        }
+      }
 
       const panelBg = info.surfaceSamples?.panel?.[0]?.backgroundColor;
       const cardBg = info.surfaceSamples?.card?.find((x) => x.backgroundColor && x.backgroundColor !== 'rgba(0, 0, 0, 0)')?.backgroundColor;

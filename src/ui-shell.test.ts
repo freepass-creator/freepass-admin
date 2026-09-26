@@ -36,6 +36,7 @@ test('1280 desktop collapses only the navigation rail to preserve three-panel wo
   assert.ok(shellCss.includes('.erp-sidenav .erp-nav-label { display: none; }'));
   assert.ok(shellCss.includes('.erp-sidenav .erp-nav-item'));
   assert.ok(shellCss.includes('width: 44px'));
+  assert.ok(shellCss.includes('grid-template-columns: 64px minmax(0, 1fr) 128px'));
 });
 
 test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{

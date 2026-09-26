@@ -35,7 +35,7 @@ const addMonths = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth()
 /** ★«오늘» 은 자정이다 — 시각이 붙으면 만료가 오늘인 건이 「지났다」 가 된다(erp4 2026-08-25 사고) */
 export const midnight = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-export const roundsOf = (payKind: unknown) => { const m = /(\d)\s*회/.exec(S(payKind)); const n = m ? Number(m[1]) : 1; return n >= 2 ? n : 1; };
+export const roundsOf = (payKind: unknown) => { const m = /(\d+)\s*회/.exec(S(payKind)); const n = m ? Number(m[1]) : 1; return n >= 2 ? n : 1; };
 
 type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
   progress: Pick<SettlementRow['progress'], 'delivered' | 'deliveredAt' | 'cancelled' | 'billMonth'>;
@@ -56,6 +56,23 @@ export function paidRoundsOf(r: R, now = new Date()): number {
   let paid = 1;
   for (let k = 2; k <= n; k += 1) if (addMonths(d, k - 1) <= today) paid = k;
   return paid;
+}
+
+/**
+ * F04 「다음회차일」 — 인도 시 1회차를 낸 것으로 보고 다음 예정일을 보여 준다.
+ * paidRounds를 사람이 확정한 경우 그 다음 회차를 가리키며, 완납이면 null.
+ * 날짜가 지났다고 자동으로 '받았다'고 확정하지 않는다.
+ */
+export function nextInstallmentDate(r: R): string | null {
+  const n = roundsOf(r.payKind), d = deliveredDay(r);
+  if (n < 2 || !d) return null;
+  const written = Number(r.paidRounds);
+  const paid = r.paidRounds !== null && r.paidRounds !== undefined && Number.isFinite(written) && written >= 1
+    ? Math.min(n, Math.round(written))
+    : 1;
+  if (paid >= n) return null;
+  const next = addMonths(d, paid);
+  return `${next.getFullYear()}-${p2(next.getMonth() + 1)}-${p2(next.getDate())}`;
 }
 
 /** 끊겼나 — 받아야 할 날이 지났는데 못 받았다 */
@@ -108,14 +125,14 @@ export function billingMonthIn(r: R, locked: ReadonlySet<string>, now = new Date
 
 /**
  * 계약이 앉는 자리 — 접수 · 분납실적 · 완납실적 · 취소.
- * ★당월 접수는 인도돼도 이달이 마무리될 때까지 접수에 남는다 (사장님 「완납실적으로 넘기는거는 이달 마무리 되면」)
+ * F04 현행 매뉴얼: 인도완료를 체크하면 접수에서 바로 빠져,
+ * 분납이면 분납실적 / 일시납이면 완납실적으로 간다.
  */
 export type Stage = '접수' | '분납실적' | '완납실적' | '취소';
 export function stageOf(r: R, now = new Date()): Stage {
   const today = midnight(now);
   if (r.progress.cancelled) return '취소';
   if (!billingMonth(r, now)) return '접수';
-  if (r.receivedAt && ym(dateOf(r.receivedAt) ?? today) === ym(today)) return '접수';
   const due = instalmentDueDate(r);
   if (due && due >= today) return '분납실적';
   return '완납실적';

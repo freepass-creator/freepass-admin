@@ -1,5 +1,5 @@
 import type { SettlementRow } from './types';
-import { isCalendarDay } from './intake';
+import { isCalendarDay } from './calendar';
 
 /**
  * 정산 업무에 들어갈 수 있는 최소 관측 사실.

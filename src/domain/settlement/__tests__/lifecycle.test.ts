@@ -72,6 +72,18 @@ describe('청구서 발행 계획', () => {
     assert.equal(planInvoice('2026-13', '공급사', 'A', g.lines, [], null, [], NOW.getTime(), 't').ok, false);
     assert.equal(planInvoice('2026-09', '공급사', 'A', g.lines, [], null, [], Number.NaN, 't').ok, false);
   });
+  it('업무 상태가 모순된 줄이 섞이면 묶음 문서를 발행하지 않는다', () => {
+    const dirty = mk({
+      code: 'dirty',
+      billed: false,
+      invoiceIssued: true,
+      claimStage: '접수',
+    });
+    const dirtyGroup = claimLedger([dirty], '2026-09', [], NOW)[0];
+    const result = planInvoice('2026-09', '공급사', 'A', dirtyGroup.lines, [], null, [], NOW.getTime(), 't');
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.match(result.error, /업무 상태가 서로 맞지 않는 줄/);
+  });
   it('발행 뒤 원장이 바뀌면 말한다', () =>
     assert.match(driftOf({ supply: 1, vat: 0, lines: 1 } as never, { supply: 2, vat: 0, lines: 1 })!, /공급가/));
 });

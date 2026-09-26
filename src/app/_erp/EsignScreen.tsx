@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { contracts } from '../../server/erp5';
 import { sp, txt, when } from '../_fn/fmt';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, manWon, won0, type Facet, type Tone,
+  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, Steps, manWon, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 
@@ -69,25 +69,27 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
           { key: 'progress', label: `진행중 ${n('진행중')}`, href: hrefWith(base, q, { sign: '진행중' }), on: sign === '진행중' },
         ]} />
         <PanelBody>
-          <RowCards label="전자계약 목록">
-            {shown.map((c) => {
-              const at = c.signStatus === '서명완료' ? SIGN.length : SIGN.indexOf(c.signStatus as (typeof SIGN)[number]);
-              const s = signOf(c);
-              return (
-                <RowCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
-                  tone={SIGN_TONE[c.signStatus] ?? 'neutral'} thumb={<><SignIcon s={s} /><span>{SIGN_SHORT[s]}</span></>} thumbStatus
-                  title={txt(c.customer)} badge={<Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{s}</Badge>}
-                  subId={txt(c.plate)} sub={txt(c.vehicle)}
-                  meta={`${c.term ? `${c.term}개월` : '—'} · ${txt(c.status)}`}
-                  steps={{ labels: [...SIGN], at }}
-                  facts={[
-                    ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],
-                    ['기간', c.term ? `${c.term}개월` : '—'],
-                  ]}
-                  amount={`월 ${manWon(c.rent)} 원`} unit="" />
-              );
-            })}
-          </RowCards>
+          {shown.length ? (
+            <RowCards label="전자계약 목록">
+              {shown.map((c) => {
+                const at = c.signStatus === '서명완료' ? SIGN.length : SIGN.indexOf(c.signStatus as (typeof SIGN)[number]);
+                const s = signOf(c);
+                return (
+                  <RowCard key={c.id} href={hrefWith(base, q, { id: c.id })} current={sel?.id === c.id}
+                    tone={SIGN_TONE[c.signStatus] ?? 'neutral'} thumb={<><SignIcon s={s} /><span>{SIGN_SHORT[s]}</span></>} thumbStatus
+                    title={txt(c.customer)} badge={<Badge tone={SIGN_TONE[c.signStatus] ?? 'neutral'}>{s}</Badge>}
+                    subId={txt(c.plate)} sub={txt(c.vehicle)}
+                    meta={`${c.term ? `${c.term}개월` : '—'} · ${txt(c.status)}`}
+                    steps={{ labels: [...SIGN], at }}
+                    facts={[
+                      ['계약상태', c.status ? <Badge tone={STATUS_TONE[c.status] ?? 'neutral'}>{c.status}</Badge> : '—'],
+                      ['기간', c.term ? `${c.term}개월` : '—'],
+                    ]}
+                    amount={`월 ${manWon(c.rent)} 원`} unit="" />
+                );
+              })}
+            </RowCards>
+          ) : <PanelState title="이 조건에 맞는 전자계약이 없습니다.">검색어나 계약상태·담당·진행상태 조건을 바꿔 확인해 주세요.</PanelState>}
         </PanelBody>
       </Panel>
 
@@ -128,7 +130,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
         ) : (
           <>
             <PanelHead kind="상세내용" title="전자계약상세" count="고른 계약" />
-            <PanelBody><p className="erp-muted">왼쪽에서 계약을 고르세요.</p></PanelBody>
+            <PanelBody><PanelState title="전자계약을 선택해 주세요.">왼쪽 계약 목록에서 한 건을 고르면 서명 진행과 계약 상세가 표시됩니다.</PanelState></PanelBody>
           </>
         )}
       </Panel>

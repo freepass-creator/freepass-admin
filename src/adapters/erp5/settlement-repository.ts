@@ -1,5 +1,6 @@
 import { erp5 } from './firestore';
 import { demoMode } from './demo';
+import { erp5WriteGate } from '../../shared/erp5-write-approval';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
@@ -37,10 +38,16 @@ const eventIdOf = (d: Record<string, unknown>) =>
   S(d.auditEventId) || intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt, d.intakeRequestId, d.intakeIdentityMode);
 
 export class WriteDisabledError extends Error {
-  constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
+  constructor(reason?: string) {
+    super(`ERP5 쓰기가 열리지 않았습니다 — ${reason ?? erp5WriteGate(process.env, demoMode()).reason}`);
+  }
 }
-export const writeEnabled = () => process.env.ERP5_WRITE?.trim() === 'on' && !demoMode();
-const mustWrite = () => { if (!writeEnabled()) throw new WriteDisabledError(); };
+export const writeGate = () => erp5WriteGate(process.env, demoMode());
+export const writeEnabled = () => writeGate().enabled;
+const mustWrite = () => {
+  const gate = writeGate();
+  if (!gate.enabled) throw new WriteDisabledError(gate.reason);
+};
 
 const audId = () => {
   const A = '23456789abcdefghjkmnpqrstuvwxyz';

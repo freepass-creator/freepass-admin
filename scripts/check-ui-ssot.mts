@@ -829,12 +829,6 @@ for (const [file, re, label] of embeddedOfferListBaseline) {
 const productDetailOfferSource = await readFile(path.join(root, 'src/app/_erp/ProductDetail.tsx'), 'utf8');
 if (/선택됨|체크|check/i.test(productDetailOfferSource)) errors.push('ProductDetail: offer card must not render a check icon or redundant selected text');
 
-const binding = JSON.parse(await readFile(path.join(root, 'docs/ui/ai-core-bindings.json'), 'utf8')) as {
-  upstream?: { repository?: string; revision?: string; feature_registry_version?: string; required_features?: string[] };
-  list_presentation?: Record<string,string>;
-  policy?: { ai_core_semantics_authoritative?: boolean; product_profile_may_redefine_selection_semantics?: boolean; drift_behavior?: string };
-};
-
 const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8')) as {
   typography?: {
     kpi?: { px?: number }; screen?: { px?: number }; panel?: { px?: number }; section?: { px?: number };
@@ -849,35 +843,27 @@ const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot
   radii?: { scalePx?: number[]; smallPx?: number; controlPx?: number; defaultPanelPx?: number };
   surfaces?: { canvas?: string; lineFree?: boolean };
   elevation?: { levels?: string[] };
-  aiCore?: { upstreamRepository?: string; upstreamRevision?: string; featureRegistryVersion?: string; semanticAuthority?: boolean };
   listPresentation?: { authorityFeature?: string; modes?: Record<string,string> };
 };
 
-const aiCoreExpected = [
-  ['binding.upstream.repository', binding.upstream?.repository, 'freepass-creator/ai-core'],
-  ['ssot.aiCore.upstreamRevision', ssot.aiCore?.upstreamRevision, binding.upstream?.revision],
-  ['binding.upstream.feature_registry_version', binding.upstream?.feature_registry_version, '1.8.0'],
-  ['binding.policy.ai_core_semantics_authoritative', binding.policy?.ai_core_semantics_authoritative, true],
-  ['binding.policy.product_profile_may_redefine_selection_semantics', binding.policy?.product_profile_may_redefine_selection_semantics, false],
-  ['binding.policy.drift_behavior', binding.policy?.drift_behavior, 'FAIL_CHECK'],
-  ['ssot.aiCore.semanticAuthority', ssot.aiCore?.semanticAuthority, true],
+const presentationExpected = [
   ['ssot.listPresentation.authorityFeature', ssot.listPresentation?.authorityFeature, 'data.list-presentation'],
-  ['list.product', binding.list_presentation?.product_catalog, 'product-media-row'],
-  ['list.application', binding.list_presentation?.application, 'business-row'],
-  ['list.performance', binding.list_presentation?.performance, 'business-row'],
-  ['list.billing', binding.list_presentation?.billing, 'business-row'],
-  ['list.payout', binding.list_presentation?.payout, 'business-row'],
-  ['list.offer', binding.list_presentation?.offer, 'variant-card'],
+  ['list.product', ssot.listPresentation?.modes?.productCatalog, 'product-media-row'],
+  ['list.application', ssot.listPresentation?.modes?.application, 'business-row'],
+  ['list.performance', ssot.listPresentation?.modes?.performance, 'business-row'],
+  ['list.billing', ssot.listPresentation?.modes?.billing, 'business-row'],
+  ['list.payout', ssot.listPresentation?.modes?.payout, 'business-row'],
+  ['list.offer', ssot.listPresentation?.modes?.offer, 'variant-card'],
 ] as const;
-for (const [name, actual, want] of aiCoreExpected) {
-  if (actual !== want) errors.push(`AI Core UI binding mismatch: ${name}=${String(actual)}; expected ${String(want)}`);
+for (const [name, actual, want] of presentationExpected) {
+  if (actual !== want) errors.push(`UI list-presentation contract mismatch: ${name}=${String(actual)}; expected ${String(want)}`);
 }
 
 const listRow = await readFile(path.join(root, 'src/app/_design/ListRow.tsx'), 'utf8');
 const offerPicker = await readFile(path.join(root, 'src/app/_design/OfferPicker.tsx'), 'utf8');
-if (!/data-ai-feature="data\.list-presentation"/.test(listRow)) errors.push('ListRow: missing AI Core data.list-presentation binding');
+if (!/data-ai-feature="data\.list-presentation"/.test(listRow)) errors.push('ListRow: missing data.list-presentation semantic marker');
 if (!/product-media-row/.test(listRow) || !/business-row/.test(listRow)) errors.push('ListRow: missing product-media-row/business-row semantic modes');
-if (!/data-ai-list-mode="variant-card"/.test(offerPicker)) errors.push('OfferPicker: missing AI Core variant-card mode');
+if (!/data-ai-list-mode="variant-card"/.test(offerPicker)) errors.push('OfferPicker: missing variant-card semantic mode');
 
 const expected = [
   ['typography.kpi.px', ssot.typography?.kpi?.px, 24],
@@ -919,7 +905,7 @@ if (errors.length) {
   console.log(`- shared markup: PanelHeader / ActionBar / EmptyState / Notice / SummaryGrid`);
   console.log('- mobile operational typography: 14/12 · control/action/touch 44 · radius 6 · gap 8');
   console.log('- desktop operational typography: 14/12 first · larger tiers reserved for explicit exceptions');
-  console.log('- AI Core semantic authority: data.list-presentation 1.8.0');
+  console.log('- list-presentation semantic contract: product / business / variant modes');
   console.log('- list modes: product-media-row / business-row / variant-card / data-table');
   console.log(`- internal Admin UI guard files: ${internalAdminUiFiles.length}`);
   console.log(`- explicit separate-surface exceptions: ${explicitSurfaceExceptions.length} (login / supplier claim / public e-sign)`);

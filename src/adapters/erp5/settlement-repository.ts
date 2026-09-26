@@ -120,7 +120,22 @@ export class Erp5SettlementRepository {
         ]);
         const seenAudit = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
           !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
-        if (seenAudit || (cashDoc && cashDoc.exists)) return { ok: true as const, changed: 0 };
+        if (cash && cashDoc?.exists) {
+          const prior = cashDoc.data() ?? {};
+          const samePayload = String(prior.code ?? '') === code
+            && String(prior.axis ?? '') === cash.axis
+            && String(prior.kind ?? '') === cash.kind
+            && Number(prior.amount) === Math.round(cash.amount)
+            && String(prior.day ?? '') === cash.day;
+          if (!samePayload) {
+            return { ok: false as const, error: '같은 요청 식별자가 다른 수금·지급 내용에 재사용됐습니다 — 화면을 새로 열어 다시 처리합니다' };
+          }
+          return { ok: true as const, changed: 0 };
+        }
+        if (cash && seenAudit) {
+          return { ok: false as const, error: '수금·지급 감사이력은 있는데 현금거래 원장이 없습니다 — 자동 재처리하지 않습니다' };
+        }
+        if (seenAudit) return { ok: true as const, changed: 0 };
       }
       if (guard) {
         const checked = await guard(tx, cur, row);

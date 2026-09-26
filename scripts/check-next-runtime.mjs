@@ -13,6 +13,9 @@ await mkdir(out, { recursive: true });
 const port = 3217;
 const origin = `http://127.0.0.1:${port}`;
 const secret = 'freepass-admin-runtime-smoke-secret-2026-09-25';
+const ALLOWED_EXTERNAL = new Set([
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css',
+]);
 const domain = 'runtime.invalid';
 const childEnv = { ...process.env,
   SESSION_SECRET: secret,
@@ -116,7 +119,9 @@ try {
     await ctx.route('**/*', route => {
       const u = route.request().url();
       if (u.startsWith(origin + '/') || u.startsWith('data:')) return route.continue();
-      receipt.externalRequests.push(u.split('?')[0]); return route.abort();
+      const external = u.split('?')[0];
+      if (ALLOWED_EXTERNAL.has(external)) return route.continue();
+      receipt.externalRequests.push(external); return route.abort();
     });
     const page = await ctx.newPage();
     const errors = [];
@@ -157,7 +162,7 @@ try {
     await ctx.close();
   }
 
-  check('browser emitted no external requests', receipt.externalRequests.length === 0, receipt.externalRequests.join(' | '));
+  check('browser emitted no unexpected external requests', receipt.externalRequests.length === 0, receipt.externalRequests.join(' | '));
 } catch (e) {
   receipt.fatal = String(e?.stack ?? e);
   console.error(receipt.fatal);

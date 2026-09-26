@@ -102,6 +102,7 @@ export class Erp5SettlementRepository {
       const eventRef = db.collection(EVENTS).doc(stableEventId);
       let cashRef: DocumentReference | null = null;
       let cashInvoiceRef: DocumentReference | null = null;
+      let cashInvoice: Record<string, unknown> | null = null;
       if (cash && row.progress.billMonth) {
         const party = cash.axis === '공급사' ? row.supplier : row.channel;
         if (party) {
@@ -118,6 +119,7 @@ export class Erp5SettlementRepository {
           cash ? tx.get(cashRef) : Promise.resolve(null),
           cashInvoiceRef ? tx.get(cashInvoiceRef) : Promise.resolve(null),
         ]);
+        cashInvoice = cashInvoiceDoc?.exists ? (cashInvoiceDoc.data() ?? null) : null;
         const seenAudit = eventDoc.exists && Object.values(eventDoc.data() ?? {}).some((v) =>
           !!v && typeof v === 'object' && String((v as Record<string, unknown>).operationId ?? '') === operationId);
         if (cash && cashDoc?.exists) {
@@ -155,9 +157,14 @@ export class Erp5SettlementRepository {
       for (const e of r.events) ev[audId()] = { at: now, by, ...(operationId ? { operationId } : {}), ...e };
       tx.set(eventRef, ev, { merge: true });
       if (cash && operationId && cashRef) {
+        const party = cash.axis === '공급사' ? row.supplier : row.channel;
+        const invoiceNo = S(cashInvoice?.invoiceNo);
         tx.create(cashRef, {
           operationId, code, axis: cash.axis, kind: cash.kind,
           amount: Math.round(cash.amount), day: cash.day,
+          billMonth: row.progress.billMonth ?? null,
+          party: party ?? null,
+          ...(invoiceNo ? { invoiceNo } : {}),
           by, createdAt: now,
         });
       }

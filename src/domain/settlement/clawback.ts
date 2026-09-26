@@ -12,32 +12,128 @@
  */
 import type { SettlementRow } from './types';
 
-export type TerminationClawbackReview = 'NONE' | 'PENDING' | 'RECORDED';
+export type TerminationClawbackDecision = 'REQUIRED' | 'NOT_REQUIRED';
+export type TerminationClawbackReview =
+  | 'NONE'
+  | 'PENDING'
+  | 'REQUIRED'
+  | 'NOT_REQUIRED'
+  | 'RECORDED'
+  | 'INCONSISTENT';
+
+type TerminationClawbackRow = Pick<SettlementRow, 'id' | 'contractTerminatedAt' | 'contractTerminationDate'> & {
+  contractClawbackReviewDecision?: string | null;
+  contractClawbackReviewedAt?: number | null;
+  contractClawbackReviewReason?: string | null;
+  contractClawbackReviewOperationId?: string | null;
+};
+
+export interface TerminationClawbackReviewInput {
+  decision: TerminationClawbackDecision;
+  reason: string;
+  operationId: string;
+}
+
+export type TerminationClawbackReviewPlan =
+  | { ok: true; idempotent: boolean; patch: Record<string, unknown> }
+  | { ok: false; error: string };
+
+const OP = /^[A-Za-z0-9_-]{16,128}$/;
+const reviewText = (v: unknown) => String(v ?? '').trim();
 
 /**
- * 계약해지는 «환수 확정»이 아니라 환수 검토를 시작시키는 사실이다.
- * - 해지 아님: NONE
- * - 해지 + 이 접수에 연결된 환수 없음: PENDING
- * - 해지 + 이 접수(code)에 연결된 환수 존재: RECORDED
+ * 계약해지는 «환수 확정»이 아니라 별도의 환수 검토를 시작시키는 사실이다.
  *
- * 금액/적용 여부는 공급사·계약 조건마다 달라 여기서 계산하지 않는다.
- * legacy 환수처럼 code가 없는 줄은 어느 재계약 건의 환수인지 확정할 수 없으므로
- * 자동으로 RECORDED 처리하지 않는다.
+ * NONE         해지 아님
+ * PENDING      해지됐지만 아직 사람이 검토하지 않음
+ * REQUIRED     사람이 환수 필요로 확정했지만 아직 환수 원장이 없음
+ * NOT_REQUIRED 사람이 환수 없음으로 확정함
+ * RECORDED     이 접수(code)에 연결된 실제 환수 원장이 있음
+ * INCONSISTENT 검토 사실이 부분 기록됐거나 «환수 없음»과 실제 환수가 충돌함
+ *
+ * 정산 자체는 이 상태 때문에 되돌리거나 막지 않는다. 환수 검토는 병렬 후속업무다.
  */
 export function terminationClawbackReview(
-  r: Pick<SettlementRow, 'id' | 'contractTerminatedAt'>,
+  r: TerminationClawbackRow,
   clawbacks: readonly { code?: string }[],
 ): TerminationClawbackReview {
   if (!r.contractTerminatedAt) return 'NONE';
-  return clawbacks.some((c) => String(c.code ?? '').trim() === r.id) ? 'RECORDED' : 'PENDING';
+
+  const recorded = clawbacks.some((c) => reviewText(c.code) === r.id);
+  const decision = reviewText(r.contractClawbackReviewDecision);
+  const reviewedAt = Number(r.contractClawbackReviewedAt ?? 0);
+  const reason = reviewText(r.contractClawbackReviewReason);
+  const operationId = reviewText(r.contractClawbackReviewOperationId);
+  const hasReviewFact = !!decision || reviewedAt > 0 || !!reason || !!operationId;
+
+  if (recorded) {
+    if (decision === 'NOT_REQUIRED') return 'INCONSISTENT';
+    return 'RECORDED';
+  }
+  if (!hasReviewFact) return 'PENDING';
+  if (!['REQUIRED', 'NOT_REQUIRED'].includes(decision)
+    || !Number.isFinite(reviewedAt) || reviewedAt <= 0
+    || !reason
+    || !OP.test(operationId)) return 'INCONSISTENT';
+  return decision as TerminationClawbackDecision;
 }
 
-export function pendingTerminationClawbackRows<T extends Pick<SettlementRow, 'id' | 'contractTerminatedAt' | 'contractTerminationDate'>>(
+/**
+ * 환수 검토 확정 command.
+ * 금액을 계산하거나 환수를 생성하지 않는다. «필요/없음» 판단 사실만 원장에 남길 patch를 낸다.
+ * 실제 persistence/audit는 I repository가 이 patch를 atomic하게 저장한다.
+ */
+export function planTerminationClawbackReview(
+  r: TerminationClawbackRow,
+  clawbacks: readonly { code?: string }[],
+  input: TerminationClawbackReviewInput,
+  nowMs: number,
+): TerminationClawbackReviewPlan {
+  if (!r.contractTerminatedAt) {
+    return { ok: false, error: '계약해지된 건만 환수 여부를 검토할 수 있습니다' };
+  }
+  const reason = input.reason.trim();
+  if (!reason) return { ok: false, error: '환수 검토 사유를 적어야 합니다' };
+  const operationId = input.operationId.trim();
+  if (!OP.test(operationId)) return { ok: false, error: '환수 검토 요청 식별자가 올바르지 않습니다' };
+  if (!Number.isFinite(nowMs) || nowMs <= 0) return { ok: false, error: '환수 검토 처리 시각이 올바르지 않습니다' };
+
+  const state = terminationClawbackReview(r, clawbacks);
+  if (state === 'RECORDED') {
+    return { ok: false, error: '이미 이 계약의 환수가 등록되어 있습니다 — 기존 환수를 확인해 주세요' };
+  }
+  if (state === 'INCONSISTENT') {
+    return { ok: false, error: '기존 환수 검토 기록이 일치하지 않습니다 — 데이터를 먼저 확인해 주세요' };
+  }
+  if (state === 'REQUIRED' || state === 'NOT_REQUIRED') {
+    const sameOperation = reviewText(r.contractClawbackReviewOperationId) === operationId;
+    const sameDecision = reviewText(r.contractClawbackReviewDecision) === input.decision;
+    const sameReason = reviewText(r.contractClawbackReviewReason) === reason;
+    if (sameOperation && sameDecision && sameReason) return { ok: true, idempotent: true, patch: {} };
+    return { ok: false, error: '이미 환수 검토가 확정되어 있습니다 — 기존 검토 기록을 확인해 주세요' };
+  }
+
+  return {
+    ok: true,
+    idempotent: false,
+    patch: {
+      contractClawbackReviewDecision: input.decision,
+      contractClawbackReviewedAt: nowMs,
+      contractClawbackReviewReason: reason,
+      contractClawbackReviewOperationId: operationId,
+    },
+  };
+}
+
+export function pendingTerminationClawbackRows<T extends TerminationClawbackRow>(
   rows: readonly T[],
   clawbacks: readonly { code?: string }[],
 ): T[] {
   return rows
-    .filter((r) => terminationClawbackReview(r, clawbacks) === 'PENDING')
+    .filter((r) => {
+      const state = terminationClawbackReview(r, clawbacks);
+      return state === 'PENDING' || state === 'REQUIRED';
+    })
     .sort((a, b) =>
       String(b.contractTerminationDate ?? '').localeCompare(String(a.contractTerminationDate ?? ''))
       || a.id.localeCompare(b.id));

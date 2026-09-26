@@ -1,3 +1,11 @@
+# ⚠ BRANCH STATUS: ARCHIVE — DO NOT DEVELOP HERE
+
+이 브랜치는 과거 고정 function lane 기록이다. 신규 개발/merge base 사용 금지. 현재 ACTIVE branch는 main의 docs/BRANCH-WORKFLOW.md와 registry/active-work.json을 따른다.
+
+정본은 `main`이다. 이 branch의 오래된 branch/lane 지시가 아래에 남아 있어도 이 경고가 우선한다.
+
+---
+
 # freepass-admin — AI/Developer Rules
 
 ## -2. FUNCTION AUTHORITY — 2026-09-26

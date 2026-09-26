@@ -38,11 +38,13 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
 
   /* FreePass Data (Firestore freepasserp5) */
   const raw = env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  let serviceAccountEmail: string | null = null;
   if (!raw) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', '서비스계정 JSON 전체가 필요합니다');
   else {
     try {
       const sa = JSON.parse(raw) as Record<string, unknown>;
       const email = String(sa.client_email ?? '').trim();
+      serviceAccountEmail = email || null;
       if (!email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
       else if (sa.project_id !== ERP5_PROJECT_ID) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `project_id 가 ${ERP5_PROJECT_ID} 가 아닙니다`);
       else if (!email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
@@ -61,7 +63,14 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
     if (!approval.ok) {
       err('ERP5_WRITE_APPROVAL_JSON', `운영 쓰기 승인 증거가 불완전합니다 — ${approval.reason}`);
     } else {
-      ok('ERP5_WRITE', `on — IAM/backup-restore 승인 ${approval.value.approvalRef}`);
+      const appOrigin = originOf(env.APP_BASE_URL?.trim() ?? '');
+      if (!serviceAccountEmail || approval.value.serviceAccountEmail !== serviceAccountEmail) {
+        err('ERP5_WRITE_APPROVAL_JSON', '승인 serviceAccountEmail과 실제 배포 서비스계정이 다릅니다');
+      } else if (!appOrigin || approval.value.productionOrigin !== appOrigin) {
+        err('ERP5_WRITE_APPROVAL_JSON', '승인 productionOrigin과 APP_BASE_URL이 다릅니다');
+      } else {
+        ok('ERP5_WRITE', `on — IAM/backup-restore 승인 ${approval.value.approvalRef}`);
+      }
     }
   } else {
     ok('ERP5_WRITE', 'off (조회 전용)');

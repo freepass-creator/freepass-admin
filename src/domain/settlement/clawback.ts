@@ -73,7 +73,7 @@ export function terminationClawbackReview(
   }
   if (!hasReviewFact) return 'PENDING';
   if (!['REQUIRED', 'NOT_REQUIRED'].includes(decision)
-    || !Number.isFinite(reviewedAt) || reviewedAt <= 0
+    || !Number.isFinite(reviewedAt) || reviewedAt <= 0 || reviewedAt < Number(r.contractTerminatedAt ?? 0)
     || !reason
     || !OP.test(operationId)) return 'INCONSISTENT';
   return decision as TerminationClawbackDecision;
@@ -93,11 +93,17 @@ export function planTerminationClawbackReview(
   if (!r.contractTerminatedAt) {
     return { ok: false, error: '계약해지된 건만 환수 여부를 검토할 수 있습니다' };
   }
+  if (input.decision !== 'REQUIRED' && input.decision !== 'NOT_REQUIRED') {
+    return { ok: false, error: '환수 검토 결과는 환수 필요 또는 환수 없음이어야 합니다' };
+  }
   const reason = input.reason.trim();
   if (!reason) return { ok: false, error: '환수 검토 사유를 적어야 합니다' };
   const operationId = input.operationId.trim();
   if (!OP.test(operationId)) return { ok: false, error: '환수 검토 요청 식별자가 올바르지 않습니다' };
   if (!Number.isFinite(nowMs) || nowMs <= 0) return { ok: false, error: '환수 검토 처리 시각이 올바르지 않습니다' };
+  if (nowMs < Number(r.contractTerminatedAt)) {
+    return { ok: false, error: '환수 검토 시각은 계약해지 시각보다 빠를 수 없습니다' };
+  }
 
   const state = terminationClawbackReview(r, clawbacks);
   if (state === 'RECORDED') {

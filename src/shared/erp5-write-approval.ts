@@ -14,7 +14,7 @@ export type Erp5WriteApproval = {
 
 export type Erp5WriteGate = {
   enabled: boolean;
-  mode: 'OFF' | 'DEMO' | 'EMULATOR' | 'LOCAL' | 'PRODUCTION_APPROVED' | 'HOLD';
+  mode: 'OFF' | 'DEMO' | 'EMULATOR' | 'PRODUCTION_APPROVED' | 'HOLD';
   reason: string;
   approval?: Erp5WriteApproval;
 };
@@ -135,14 +135,10 @@ export function erp5WriteGate(
     return { enabled: false, mode: 'HOLD', reason: 'Vercel preview/development 배포에는 운영 쓰기를 열지 않습니다' };
   }
 
-  const production = onVercel
-    ? env.VERCEL_ENV?.trim() === 'production'
-    : env.NODE_ENV?.trim() === 'production';
-
-  if (!production) {
-    return { enabled: true, mode: 'LOCAL', reason: '비운영 로컬 환경의 명시적 ERP5_WRITE=on' };
-  }
-
+  /*
+   * emulator가 아닌 freepasserp5는 실행 장소가 로컬이어도 운영 원장이다.
+   * NODE_ENV=development를 production-write 우회 열쇠로 쓰지 않는다.
+   */
   const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON, now);
   if (!approval.ok) {
     return { enabled: false, mode: 'HOLD', reason: approval.reason };

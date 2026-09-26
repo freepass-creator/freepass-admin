@@ -118,7 +118,7 @@ function group(
     const broken = brokenOf(r, now);
     g.lines.push({ row: r, month: m, amount, broken, ratio: paidRatioOf(r, now) });
     if (broken) g.broken += 1;
-    if (workflowConsistencyIssues(r).length > 0) g.inconsistent += 1;
+    if (workflowConsistencyIssues(r).length > 0) g.inconsistent = (g.inconsistent ?? 0) + 1;
     if (amount === null) g.unknown += 1; else g.total += amount;
     if (side === 'claim' ? r.progress.billed : ['통보', '확인', '지급'].includes(r.payStage)) g.done += 1;
     if (side === 'claim' ? r.progress.collected : r.progress.paid) g.completed += 1;

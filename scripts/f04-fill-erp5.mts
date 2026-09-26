@@ -44,7 +44,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
-import { intakeEventDocId } from '../src/domain/settlement/code';
+import { intakeEventDocId, settlementCode, settlementKey } from '../src/domain/settlement/code';
 import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
@@ -108,20 +108,9 @@ const 견줌 = (v: unknown): string => {
   return t;
 };
 const 반듯 = (s: unknown) => String(s ?? '').replace(/\s/g, '');
-const 열쇠 = (r: Record<string, unknown>) => `${반듯(r.plate)}|${String(r.receivedAt ?? '').slice(0, 10)}`;
+const 열쇠 = (r: Record<string, unknown>) => settlementKey(r.plate, r.receivedAt);
 /** 문서 id 에 못 쓰는 글자를 뺀다 — 멱등 id 가 매번 같아야 한다. */
 const 안전id = (s: string) => s.replace(/[/#.$\[\]\s|]/g, '_');
-/**
- * ★ERP5 코드 규격 `stl_` — erp4 `lib/domain/ids.ts` `stableId` 와 «같은 셈법» 이다.
- *   ⚠ 셈법을 바꾸면 같은 계약에 다른 id 가 나와 두 줄이 선다. 고치려면 두 곳을 같이 고친다.
- */
-const ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
-const 결정id = (identity: string) => {
-  const d = createHash('sha256').update(`settlement:${identity.trim()}`, 'utf8').digest();
-  let t = ''; for (let i = 0; i < 10; i += 1) t += ALPHABET[d[i] % ALPHABET.length];
-  return `stl_${t}`;
-};
-
 /**
  * ★시트 사진이 묵었으면 «쓰지 않는다». 병행 중에는 시트가 계속 바뀐다 —
  *   묵은 사진으로 쓰면 그 사이 적힌 줄을 «없다» 고 보고 넘어간다.
@@ -181,7 +170,7 @@ for (const f of F04.rows as Record<string, unknown>[]) {
     /** 청구·지급은 ERP5 이름으로 둔다 — 한 원장에 두 이름이 서면 안 된다 */
     if (!빈(f.claim)) data.claimWritten = f.claim;
     if (!빈(f.pay)) data.payWritten = f.pay;
-    const id = 결정id(k);
+    const id = settlementCode(data.plate, data.receivedAt);
     const auditEventId = intakeEventDocId(
       data.plate, data.sourceProductId, data.receivedAt, data.intakeRequestId, data.intakeIdentityMode,
     );

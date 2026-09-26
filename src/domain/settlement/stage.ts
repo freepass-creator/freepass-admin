@@ -71,6 +71,8 @@ type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
   progress: Pick<SettlementRow['progress'], 'delivered' | 'deliveredAt' | 'cancelled' | 'billMonth'>
     & Partial<Pick<SettlementRow['progress'], 'billed' | 'invoiceIssued' | 'collected' | 'paid' | 'settleExclude'>>;
   paidRounds?: Maybe<number>;
+  /** 실제 납입회차를 사람이 확인한 업무일. I/F가 persistence 원자를 공급하면 E가 완납 청구월에 사용한다. */
+  paidRoundsAt?: Maybe<string>;
   claimStage?: SettlementRow['claimStage'];
   payStage?: SettlementRow['payStage'];
 };
@@ -140,6 +142,17 @@ export function billingMonth(r: R, now = new Date()): string | null {
   const written = S(r.progress.billMonth);
   if (written) return written;
   if (!claimsOnComplete(r)) return ym(d);
+
+  const rounds = roundsOf(r.payKind);
+  const paid = Number(r.paidRounds);
+  const explicitlyComplete = r.paidRounds !== null && r.paidRounds !== undefined
+    && Number.isInteger(paid) && paid >= rounds;
+  if (explicitlyComplete) {
+    const completedAt = dateOf(r.paidRoundsAt);
+    // 완납 시점 청구인데 실제 완납일을 모르면 예정월을 사실처럼 만들지 않는다.
+    return completedAt ? ym(completedAt) : null;
+  }
+
   if (brokenOf(r, now)) return ym(addMonths(d, Math.max(0, paidRoundsOf(r, now) - 1)));
   const last = lastPaymentDate(r);
   return last ? ym(last) : ym(d);

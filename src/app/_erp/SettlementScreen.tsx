@@ -19,7 +19,7 @@ import {
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
 import {
-  Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
+  hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal, type SettlementSignalTone } from '../settlement/group-signal';
@@ -159,7 +159,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                 </div>
               </div>
               <RowCards label="실적 줄">
-                {gSel.lines.map(({ row: r, amount, broken, ratio }) => {
+                {gSel.lines.map(({ row: r, broken, ratio }) => {
                   const flow = tab === 'claim' ? CLAIM_FLOW : PAY_FLOW;
                   const st = tab === 'claim' ? r.claimStage : r.payStage;
                   const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);

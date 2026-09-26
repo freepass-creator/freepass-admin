@@ -131,7 +131,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         {!picked && (directIntakeRentKind(directProduct)
           ? <input type="hidden" name="rentKind" value={directIntakeRentKind(directProduct) ?? ''} />
           : sel('rentKind', options.rentKinds, '렌트구분'))}
-        {sel('contractType', options.contractTypes, '계약방식')}
+        {sel('contractType', options.contractTypes, '계약형태')}
         {!picked && <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>}
         {코드}
         {picked && !직접 && 수수료칸}
@@ -176,10 +176,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           {/* 상품구분 — 짝이 하나면 숨은 칸 · 아니면 사람이 고른다(수수료 갈래가 갈린다) */}
           {productChoices?.length
             ? 묶음('상품구분 — 골라 주세요', (
-              <div className="dz-choice" role="radiogroup" aria-label="상품구분">
-                {productChoices.map((c) => (
-                  <label key={c}><input type="radio" name="product" value={c} defaultChecked={c === defaults.product} required /><span>{c}</span></label>
-                ))}
+              <div className="dz-form-grid">
+                {sel('product', productChoices, '상품구분', defaults.product ?? '', true)}
               </div>
             ))
             : <input type="hidden" name="product" value={defaults.product ?? ''} />}

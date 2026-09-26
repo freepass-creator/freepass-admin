@@ -18,7 +18,8 @@ const settlementSignals=read('src/app/settlement/group-signal.ts');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
-const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css')].join('\n');
+const shellCss=read('src/app/_erp/shell.css');
+const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css'),shellCss].join('\n');
 
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
@@ -26,6 +27,17 @@ test('admin root enters the real intake workspace and contains no demo runtime',
 });
 
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
+test('1280 desktop collapses only the navigation rail to preserve three-panel work area',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  assert.ok(side.includes('className="erp-nav-label"'));
+  assert.ok(side.includes('aria-label={it.label}'));
+  assert.ok(side.includes('title={it.label}'));
+  assert.ok(shellCss.includes('grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr)'));
+  assert.ok(shellCss.includes('.erp-sidenav .erp-nav-label { display: none; }'));
+  assert.ok(shellCss.includes('.erp-sidenav .erp-nav-item'));
+  assert.ok(shellCss.includes('width: 44px'));
+});
+
 test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
   for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {

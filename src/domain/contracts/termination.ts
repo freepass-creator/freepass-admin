@@ -47,7 +47,7 @@ export function planContractTermination(
 
   const deliveredAt=S(intake.deliveredAt);
   if(!B(intake.delivered)){
-    return {ok:false,error:'인도 전 계약은 계약해지가 아니라 계약취소로 처리합니다.'};
+    return {ok:false,error:'인도 전에는 계약해지할 수 없습니다 — 계약금 수납 전이면 접수취소, 수납 후면 계약취소로 처리합니다.'};
   }
   if(!isCalendarDay(deliveredAt)){
     return {ok:false,error:'인도일이 올바르지 않습니다 — 인도 기록을 먼저 확인해 주세요.'};

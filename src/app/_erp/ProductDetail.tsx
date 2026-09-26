@@ -6,7 +6,7 @@
 import Link from 'next/link';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { txt } from '../_fn/fmt';
-import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, won0, type Tone } from './parts';
+import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, PanelState, won0, type Tone } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };

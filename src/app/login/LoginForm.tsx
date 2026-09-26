@@ -1,20 +1,17 @@
 'use client';
 /**
  * 로그인 폼 — erp4 LoginView 의 로그인 칸 그대로(이메일 · 비밀번호 · 로그인), 옷은 우리 규격(§14-9: 컨트롤 40 · 주 단추 44 · 라운드 4).
- *   워드마크는 공식 CI 그대로(ci_center) — 마크 없음 · Exo 2 · 「freepass」 600 #1B2A4A + 「admin」 300 #7F93B3.
+ *   워드마크는 공식 CI의 굵기·색 규칙을 유지한다. 운영 build 안정성을 위해 원격 Google Font 로더에는 의존하지 않는다.
  */
 import { useActionState } from 'react';
-import { Exo_2 } from 'next/font/google';
 import { loginAction, type LoginState } from './actions';
-
-const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, null);
   return (
     <main className="lg-main">
       <section className="lg-card">
-        <div className={`lg-brand ${레터링.className}`}>
+        <div className="lg-brand">
           <span><b>freepass</b><i>admin</i></span>
         </div>
         <header>

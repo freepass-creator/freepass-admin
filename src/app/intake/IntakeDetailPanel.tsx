@@ -11,7 +11,7 @@ import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
-import { roundsOf } from '../../domain/settlement/stage';
+import { billingMonth, nextInstallmentDate, roundsOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
@@ -53,6 +53,9 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
+  const 청구월 = billingMonth(r);
+  const 다음회차일 = nextInstallmentDate(r);
+  const 분납회차 = roundsOf(r.payKind);
   const 구역 = settlementSections(raw);
 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
@@ -178,6 +181,17 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
       {걸음}
 
+      <h3 className="dz-sub">계약 · 실적 기준</h3>
+      <SummaryGrid>
+        <SummaryItem label="분납여부">{txt(r.payKind)}</SummaryItem>
+        <SummaryItem label="계약서">{r.progress.paper ? '완료' : '미완료'}</SummaryItem>
+        <SummaryItem label="인도완료">{r.progress.delivered ? '완료' : '대기'}</SummaryItem>
+        <SummaryItem label="인도일">{txt(r.progress.deliveredAt)}</SummaryItem>
+        <SummaryItem label="청구월">{청구월 ?? '인도 후 계산'}</SummaryItem>
+        <SummaryItem label="다음회차일">{다음회차일 ?? (분납회차 >= 2 ? '완납/미정' : '해당 없음')}</SummaryItem>
+        {분납회차 >= 2 && <SummaryItem label="납입회차">{r.paidRounds ? `${r.paidRounds}/${분납회차}` : r.progress.delivered ? `1/${분납회차} (인도 시 1회차)` : `0/${분납회차}`}</SummaryItem>}
+      </SummaryGrid>
+
       <h3 className="dz-sub">진행</h3>
       {!canWrite && <div id="write-disabled-reason"><Notice tone="warn">현재 조회 전용이라 변경사항을 저장할 수 없습니다.</Notice></div>}
       <Progress code={r.id} plate={r.plate ?? ''} paper={r.progress.paper} delivered={r.progress.delivered}
@@ -198,7 +212,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <SummaryItem label="청구금액">{won(청구)}</SummaryItem>
         <SummaryItem label="지급액">{won(지급)}</SummaryItem>
         <SummaryItem label="남는 것">{청구 === null ? '—' : won(청구 - (지급 ?? 0))}</SummaryItem>
-        <SummaryItem label="청구월">{txt(r.progress.billMonth)}</SummaryItem>
+        <SummaryItem label="청구월">{청구월 ?? '—'}</SummaryItem>
         <SummaryItem label="셈 근거">{txt(r.settleNote)}</SummaryItem>
         <SummaryItem label="청구 · 지급 단계">{r.claimStage} · {r.payStage}</SummaryItem>
       </SummaryGrid>

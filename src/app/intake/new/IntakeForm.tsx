@@ -25,7 +25,8 @@ export type IntakeOptions = {
  *   「실제 담당자가 넣는 건 최소한으로 — 기간 선택해서 접수 눌렀을 거고, 영업채널 · 담당자명 · 고객명이면 접수는 끝나지」
  *
  *   picked(차 골라 접수) — 차 · 공급사 · 기간 · 대여료 · 보증금은 «이미 정해졌다»(판 위 카드가 보여 준다 · 숨은 칸으로 간다).
- *                         사람이 넣는 칸은 셋: 고객명 · 영업채널 · 영업담당. 나머지는 「더 넣기」 안에 접혀 있다.
+ *                         사람이 넣는 핵심 칸은 넷: 고객명 · 영업채널 · 영업담당 · 분납여부.
+ *                         분납여부는 인도 뒤 청구월/실적 갈래를 결정하므로 「더 넣기」에 숨기지 않는다.
  *   blank(신규 접수)     — 차가 없다. 차량 · 고객·영업 · 조건 · 더 넣기 차례로 다 넣는다.
  *   ★하는 일은 기능 쪽 그대로 — 영업채널·담당·공급사를 고르면 원장에 이미 있는 «코드» 를 따라 채운다(지어내지 않는다).
  *   ★필수는 도메인(validateIntake)이 정한다: 차량번호 · 공급사 · 접수일 · 고객명 · 영업채널 · 영업담당.
@@ -85,11 +86,11 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   /** 상품 신차의 차량가가 SSOT에 없을 때만 접수자가 자동 수수료 기준값을 보충할 수 있다. */
   const 차량가기준보충 = !!picked && !defaults.price && fee?.status === 'NO_BASE' && fee.basis === '차량가액';
 
-  const sel = (name: string, list: string[], label: string, value = '') => (
-    <label>{label}
+  const sel = (name: string, list: string[], label: string, value = '', required = false) => (
+    <label>{label}{required ? ' *' : ''}
       {/* ★차에서 온 값이 원장 말 목록에 없어도 버리지 않는다(예: 차 「신차렌트」 ↔ 원장 「장기렌트」) —
             버리면 빈 값으로 저장돼 카드의 수수료 미리보기와 저장된 수수료가 갈린다 */}
-      <select name={name} defaultValue={value}>
+      <select name={name} defaultValue={value} required={required}>
         <option value="">—</option>
         {value && !list.includes(value) && <option value={value}>{value}</option>}
         {list.map((v) => <option key={v}>{v}</option>)}
@@ -98,7 +99,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   );
   const 묶음 = (title: string, children: ReactNode) => <fieldset className="dz-form-group"><legend>{title}</legend>{children}</fieldset>;
 
-  /* 사람이 넣는 셋 — 두 갈래 모두 같은 칸 */
+  /* 사람이 넣는 핵심값 — F04 접수 기준: 고객 · 영업 · 분납여부.
+     상품/기간은 이미 선택했고, 분납여부가 인도 뒤 청구월·실적 갈래를 결정한다. */
   const 사람 = (
     <>
       <label>고객명 *<input name="customer" required autoComplete="off" /></label>
@@ -110,6 +112,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           setAgentCode(options.agentCode[a] ?? '');
           if (!channel && options.agentChannel[a]) { setChannel(options.agentChannel[a]); setChannelCode(options.channelCode[options.agentChannel[a]] ?? ''); }
         }} /></label>
+      {sel('payKind', options.payKinds, '분납여부', '', true)}
     </>
   );
   /* 코드 — 이름을 고르면 원장의 코드로 저절로 찬다. 고칠 일이 드물어 뒤로 */
@@ -129,7 +132,6 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           ? <input type="hidden" name="rentKind" value={directIntakeRentKind(directProduct) ?? ''} />
           : sel('rentKind', options.rentKinds, '렌트구분'))}
         {sel('contractType', options.contractTypes, '계약방식')}
-        {sel('payKind', options.payKinds, '분납여부')}
         {!picked && <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>}
         {코드}
         {picked && !직접 && 수수료칸}

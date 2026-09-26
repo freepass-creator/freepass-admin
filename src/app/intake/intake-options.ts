@@ -30,6 +30,7 @@ export function buildIntakeOptions(rows: SettlementRow[]): IntakeOptions {
     products: vocab(rows.map((r) => r.product)),
     rentKinds: vocab(rows.map((r) => r.rentKind)),
     contractTypes: vocab(rows.map((r) => r.contractType)),
-    payKinds: vocab(rows.map((r) => r.payKind)),
+    // F04 실사용 정본: 신규 접수는 일시납/2회/3회를 먼저 보여 주고, 과거 값(예: 1회분납)은 조회 호환으로 뒤에 보존한다.
+    payKinds: [...new Set(['일시납', '2회분납', '3회분납', ...vocab(rows.map((r) => r.payKind))])],
   };
 }

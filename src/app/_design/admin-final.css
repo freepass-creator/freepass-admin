@@ -314,7 +314,7 @@ body > nav.fn-top .dz-me { font-size: var(--글보조); color: rgba(255, 255, 25
 .dz-word b { color: #fff; }
 .dz-word i { margin-left: 2px; color: rgba(255, 255, 255, .55); }
 .lg-brand { gap: 0; }
-.lg-brand span { font-size: 24px; }
+.lg-brand span { font-size: 24px; font-family: "Segoe UI", Arial, sans-serif; }
 .lg-brand b { color: #1B2A4A; }
 .lg-brand i { margin-left: 2px; color: #7F93B3; }
 .cl-brand { gap: 0; font-size: 20px; line-height: 1; letter-spacing: -.2px; }

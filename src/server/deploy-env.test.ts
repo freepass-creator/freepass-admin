@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { checkDeployEnv } from './deploy-env';
+import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
 
 const sa = JSON.stringify({ project_id: 'freepasserp5', client_email: 'x@freepasserp5.iam.gserviceaccount.com', private_key: 'k' });
 const good = {
@@ -48,9 +49,43 @@ test('service account from another Firebase project or principal is rejected', (
 });
 
 test('unapproved FreePass Data catalog cutover mode is blocked', () => {
-  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'SHADOW_READ' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'));
-  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'));
-  assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'), false);
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'SHADOW_READ' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
+  assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'), false);
+});
+
+test('approved SHADOW_READ cutover receipt passes deploy preflight only for its bound origin/token', () => {
+  const token='s'.repeat(40);
+  const cutover=JSON.stringify({
+    consumerId:'freepass-admin-catalog',
+    fromStage:'OBSERVE',
+    targetStage:'SHADOW_READ',
+    baseOrigin:'https://data.example.test',
+    tokenSha256:tokenSha256(token),
+    evidence:{
+      contractReady:true,
+      authenticationVerified:true,
+      legacyReadVerified:true,
+      freepassReadVerified:true,
+      parityVerified:false,
+      fallbackVerified:false,
+      productionReadbackVerified:false,
+      approvedRelease:null,
+    },
+    holdReasons:[],
+    approvalRef:'cutover-shadow-1',
+    approvedAt:'2026-09-26T06:30:00.000Z',
+    validUntil:'2026-10-03T06:30:00.000Z',
+  });
+  const env={
+    ...good,
+    FREEPASS_DATA_ADMIN_CATALOG_READ_MODE:'SHADOW_READ',
+    FREEPASS_DATA_BASE_URL:'https://data.example.test',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN:token,
+    FREEPASS_DATA_ADMIN_CUTOVER_JSON:cutover,
+  };
+  assert.equal(errors(env).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'),false);
+  assert.ok(errors({...env,FREEPASS_DATA_BASE_URL:'https://other.example.test'}).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
 });
 
 test('public addresses must be one https origin without a path', () => {

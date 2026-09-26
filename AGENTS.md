@@ -1,3 +1,11 @@
+# ⚠ BRANCH STATUS: REFERENCE_ONLY — DO NOT DEVELOP HERE
+
+이 브랜치는 승인 UI 계보 donor 보존용이다. 신규 개발 및 전체 merge 금지. 실제 UI 최종 작업은 work/ui/finalize-baseline에서 한다.
+
+정본은 `main`이다. 이 branch의 오래된 branch/lane 지시가 아래에 남아 있어도 이 경고가 우선한다.
+
+---
+
 # freepass-admin — AI/Developer Rules
 
 ## -1. SINGLE UI LINEAGE — PR #92 RECOVERY

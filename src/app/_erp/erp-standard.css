@@ -506,8 +506,8 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * fs-section(15px) 한 단이라 그보다는 커야 하지만, 한 화면에 패널이 셋 나란히 서면 그때마다 fs-title
  * (22px, 화면 전체에 하나뿐인 erp-page-title 몫)을 세 번 반복하는 건 과하다(대표 2026-09-24 「전체적으로
  * 좀 분위기 맞춰야지」) — 페이지 제목보다는 작고 섹션 제목보다는 큰 전용 단(fs-panel, 17px)을 쓴다. */
-.erp-panel-head h2 { margin: 0; font-size: var(--erp-fs-panel); font-weight: var(--erp-fw-bold); }
-.erp-panel-count { margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
+.erp-panel-head h2 { min-width: 0; margin: 0; overflow: hidden; font-size: var(--erp-fs-panel); font-weight: var(--erp-fw-bold); text-overflow: ellipsis; white-space: nowrap; }
+.erp-panel-count { flex: 0 0 auto; margin-left: auto; padding: 2px 8px; border-radius: var(--erp-r-sm); background: var(--erp-color-neutral-bg); color: var(--erp-color-text-2); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); white-space: nowrap; }
 .erp-panel-body { flex: 1; min-height: 0; overflow: auto; }
 /* 패널 하단 고정 버튼 — 패널 안 스크롤과 별도로, 필요한 버튼(예: 접수하기)이 항상 바닥에 붙는다 */
 /* 바 자체(틀)는 하나뿐 — 안에 든 게 단추 두 개든, 단추 하나든, 「총 N건 + 페이지」든 바 높이는
@@ -553,9 +553,9 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 않고 모든 타일이 쓸 수 있게 올렸다) — 한 줄에 굵은 이름(b) + 강조 값(strong)을 양 끝으로, 보조 줄은
  * 옅은 라벨(span) + 강조 보조값(erp-tile-note--accent)을 양 끝으로 둔다. 골랐을 때(aria-pressed)는
  * 메인 줄이 Primary 색으로 바뀐다. */
-.erp-tile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.erp-tile-row b { font-weight: var(--erp-fw-bold); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); }
-.erp-tile-row strong { font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); }
+.erp-tile-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.erp-tile-row b { min-width: 0; overflow: hidden; font-weight: var(--erp-fw-bold); color: var(--erp-color-text-2); font-size: var(--erp-fs-label); text-overflow: ellipsis; white-space: nowrap; }
+.erp-tile-row strong { flex: 0 0 auto; min-width: 0; font-size: var(--erp-fs-section); font-weight: var(--erp-fw-bold); color: var(--erp-color-text); white-space: nowrap; }
 .erp-tile-row span { font-size: var(--erp-fs-label); font-weight: var(--erp-fw-semibold); color: var(--erp-color-text-2); }
 .erp-tile-row .erp-tile-note--accent { color: var(--erp-color-ok); font-size: var(--erp-fs-caption); font-weight: var(--erp-fw-semibold); }
 .erp-tile--pressable[aria-pressed="true"] .erp-tile-row b, .erp-tile--pressable[aria-pressed="true"] .erp-tile-row strong { color: var(--erp-color-primary); }
@@ -1092,7 +1092,7 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
   /* 키보드 포커스는 halo 만으로는 모자란다 — halo(투명도 .14)는 배경 대비 3:1 에 못 미친다(WCAG 1.4.11 ·
    * AI Core 헌법 「접근성은 시각 취향으로 면제하지 않는다」). 네이비 2px 링을 2px 띄워 함께 그린다(2026-09-25).
    * :focus-visible 이라 마우스로 누를 때는 안 보이고, 키보드로 옮길 때만 보인다. */
-  .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-tile--pressable, .erp-rowcard, .erp-seg a, .erp-statusbar-keys a):focus-visible {
+  .erp-std :is(.erp-btn, .erp-facet-opt, .erp-dd, .erp-tile--pressable, .erp-rowcard, .erp-nav-item, .erp-detail-support > summary, .erp-seg a, .erp-statusbar-keys a):focus-visible {
     outline: 2px solid var(--erp-color-primary);
     outline-offset: 2px;
     box-shadow: var(--erp-focus-halo), var(--erp-elevation-base);

@@ -51,14 +51,20 @@ const DataProduct = z.object({
   ]),
   vehicleModel: z.object({
     id: z.string().min(1), maker: z.string().min(1), model: z.string().min(1),
+    origin: z.string().nullish(),
     generation: z.string().nullish(), subModel: z.string().nullish(), trim: z.string().nullish(),
     fuel: z.string().nullish(), drive: z.string().nullish(), seats: z.number().int().positive().nullish(),
+    modelYear: z.number().int().min(1900).nullish(),
+    displacementCc: z.number().int().nonnegative().nullish(),
+    batteryKwh: z.number().nonnegative().nullish(),
   }).passthrough(),
   vehicleAsset: z.object({
     id: z.string().min(1), status: z.enum(['AVAILABLE','RESERVED','IN_USE','RETURNED','MAINTENANCE','ACCIDENT','SOLD','RETIRED']),
     plateNumber: z.string().nullish(), vin: z.string().nullish(), odometerKm: z.number().int().nonnegative().nullish(),
+    firstRegistrationDate: z.string().nullish(),
   }).nullish(),
   offers: z.array(DataOffer).min(1),
+  vehiclePrice: z.number().int().nonnegative().nullish(),
 }).passthrough();
 const ResponseSchema = z.object({
   schema: z.literal('freepass-data.admin-catalog/v1'),
@@ -123,24 +129,29 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
     version: source.productRevision,
     supplierId: supplierIds.length === 1 ? supplierIds[0]! : '',
     productKind: kindOf[source.commercialType],
+    ...(source.vehiclePrice !== null && source.vehiclePrice !== undefined ? { consumerPrice: source.vehiclePrice } : {}),
     ...(policyState ? { policyState } : {}),
     supplierProductKey: source.productId,
     vehicle: {
-      nodeId: vm.id, originId: '', manufacturerId: vm.maker, modelId: vm.model,
+      nodeId: vm.id, originId: vm.origin ?? '', manufacturerId: vm.maker, modelId: vm.model,
       ...(vm.subModel ? { subModelId: vm.subModel } : {}),
       ...(vm.trim ? { trimId: vm.trim } : {}),
       matchLevel,
     },
     specs: {
+      ...(vm.modelYear !== null && vm.modelYear !== undefined ? { modelYear: vm.modelYear } : {}),
       ...(vm.fuel ? { fuel: vm.fuel } : {}),
-      ...(vm.drive ? { drivetrain: vm.drive } : {}),
+      ...(vm.displacementCc !== null && vm.displacementCc !== undefined ? { displacementCc: vm.displacementCc } : {}),
       ...(vm.seats !== null && vm.seats !== undefined ? { seats: vm.seats } : {}),
+      ...(vm.drive ? { drivetrain: vm.drive } : {}),
+      ...(vm.batteryKwh !== null && vm.batteryKwh !== undefined ? { batteryKwh: vm.batteryKwh } : {}),
       ...(source.vehicleAsset?.odometerKm !== null && source.vehicleAsset?.odometerKm !== undefined
         ? { mileageKm: source.vehicleAsset.odometerKm } : {}),
     },
     ...(source.vehicleAsset ? { registration: {
       ...(source.vehicleAsset.plateNumber ? { vehicleNumber: source.vehicleAsset.plateNumber } : {}),
       ...(source.vehicleAsset.vin ? { vin: source.vehicleAsset.vin } : {}),
+      ...(source.vehicleAsset.firstRegistrationDate ? { firstRegistrationDate: source.vehicleAsset.firstRegistrationDate } : {}),
     } } : {}),
     offers,
     productPolicies: [],

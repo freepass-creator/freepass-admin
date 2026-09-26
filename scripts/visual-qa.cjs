@@ -30,11 +30,16 @@ const executablePath = process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium/chr
 /* UI workflow source guard — runtime fixture가 마지막 claim→pay handoff 상태를 항상 만들지는 않으므로
  * actual-route source에도 연결 계약이 남아 있는지 함께 잠근다. */
 const settlementSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/page.tsx'), 'utf8');
+const settlementDesktopSource = fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/SettlementScreen.tsx'), 'utf8');
+const settlementSignalSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/group-signal.ts'), 'utf8');
 const intakeDetailSource = fs.readFileSync(path.join(process.cwd(), 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8');
 const workflowSourceChecks = [
   ['claim-to-pay handoff', settlementSource.includes('지급 업무로') && settlementSource.includes('지급인계Href')],
   ['cross-axis action prop', intakeDetailSource.includes('nextAxisHref') && intakeDetailSource.includes('nextAxisLabel')],
   ['actionable settlement focus', intakeDetailSource.includes('settlementPrimaryAction') && intakeDetailSource.includes('정산업무라벨')],
+  ['shared settlement list signal helper', settlementSignalSource.includes('settlementGroupSignal') && settlementSignalSource.includes('settlementLineSignal')],
+  ['mobile settlement signals use shared helper', settlementSource.includes("from './group-signal'") && settlementSource.includes('settlementGroupSupport')],
+  ['desktop settlement signals use shared helper', settlementDesktopSource.includes("from '../settlement/group-signal'") && settlementDesktopSource.includes('settlementGroupSupport')],
 ];
 for (const [label, ok] of workflowSourceChecks) {
   if (!ok) {

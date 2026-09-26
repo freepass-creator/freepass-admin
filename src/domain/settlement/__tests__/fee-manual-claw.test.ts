@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, type IntakeInput } from '../intake.js';
 import { feeFixPatch } from '../adjust.js';
-import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, planTerminationClawbackReview, terminationClawbackReview } from '../clawback.js';
+import { clawbackId, clawbackRecord, pendingTerminationClawbackRows, planTerminationClawbackReview, terminationClawbackFollowUp, terminationClawbackReview } from '../clawback.js';
 import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
@@ -231,5 +231,31 @@ describe('계약해지 → 환수 검토대상', () => {
       dirty as never, [],
       { decision: 'REQUIRED', reason: '환수 필요', operationId: 'clawreview_dirty_12345' }, 200,
     ).ok, false);
+  });
+
+  it('환수 후속업무는 정산 blocker와 별도로 검토/등록/데이터확인을 가리킨다', () => {
+    assert.equal(terminationClawbackFollowUp(baseRow as never, []), 'REVIEW');
+
+    const required = {
+      ...baseRow,
+      contractClawbackReviewDecision: 'REQUIRED',
+      contractClawbackReviewedAt: 100,
+      contractClawbackReviewReason: '환수 필요',
+      contractClawbackReviewOperationId: 'clawreview_required_1234',
+    };
+    assert.equal(terminationClawbackFollowUp(required as never, []), 'RECORD_CLAWBACK');
+    assert.equal(terminationClawbackFollowUp(required as never, [{ code: 'stl_term_target' }]), 'NONE');
+
+    const noClawback = {
+      ...baseRow,
+      contractClawbackReviewDecision: 'NOT_REQUIRED',
+      contractClawbackReviewedAt: 100,
+      contractClawbackReviewReason: '유지기간 충족',
+      contractClawbackReviewOperationId: 'clawreview_none_123456',
+    };
+    assert.equal(terminationClawbackFollowUp(noClawback as never, []), 'NONE');
+    assert.equal(terminationClawbackFollowUp(
+      { ...baseRow, contractClawbackReviewDecision: 'REQUIRED' } as never, [],
+    ), 'DATA_CHECK');
   });
 });

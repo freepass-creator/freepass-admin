@@ -51,13 +51,59 @@ export type ShadowComparison = {
   differentProducts: number;
 };
 
-const offerFacts = (p: CanonicalProduct) => p.offers.map((o) => [
-  o.supplierId ?? p.supplierId,
-  o.termMonths,
-  o.monthlyRent,
-  o.deposit ?? null,
-  o.annualMileageKm ?? null,
-].join('|')).sort();
+const policyFacts = (values: CanonicalProduct['productPolicies']) => values
+  .map((p) => ({
+    policyId: p.policyId,
+    type: p.type,
+    value: Array.isArray(p.value) ? [...p.value].sort() : p.value,
+  }))
+  .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+const offerFacts = (p: CanonicalProduct) => p.offers.map((o) => ({
+  id: o.id,
+  supplierId: o.supplierId ?? p.supplierId,
+  supplierName: o.supplierName ?? null,
+  termMonths: o.termMonths,
+  monthlyRent: o.monthlyRent,
+  deposit: o.deposit ?? null,
+  prepayment: o.prepayment ?? null,
+  annualMileageKm: o.annualMileageKm ?? null,
+  policyValues: policyFacts(o.policyValues),
+})).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+const productFacts = (p: CanonicalProduct) => ({
+  supplierId: p.supplierId,
+  supplierName: p.supplierName ?? null,
+  status: p.status ?? null,
+  productKind: p.productKind ?? null,
+  consumerPrice: p.consumerPrice ?? null,
+  policyState: p.policyState ?? null,
+  vehicle: {
+    nodeId: p.vehicle.nodeId,
+    originId: p.vehicle.originId,
+    manufacturerId: p.vehicle.manufacturerId,
+    modelId: p.vehicle.modelId,
+    subModelId: p.vehicle.subModelId ?? null,
+    trimId: p.vehicle.trimId ?? null,
+    matchLevel: p.vehicle.matchLevel,
+  },
+  specs: {
+    modelYear: p.specs.modelYear ?? null,
+    mileageKm: p.specs.mileageKm ?? null,
+    fuel: p.specs.fuel ?? null,
+    displacementCc: p.specs.displacementCc ?? null,
+    seats: p.specs.seats ?? null,
+    drivetrain: p.specs.drivetrain ?? null,
+    batteryKwh: p.specs.batteryKwh ?? null,
+  },
+  registration: {
+    vehicleNumber: p.registration?.vehicleNumber ?? null,
+    vin: p.registration?.vin ?? null,
+    firstRegistrationDate: p.registration?.firstRegistrationDate ?? null,
+  },
+  offers: offerFacts(p),
+  productPolicies: policyFacts(p.productPolicies),
+});
 
 export function compareAdminCatalogShadow(
   legacyRows: CanonicalProduct[],
@@ -69,11 +115,7 @@ export function compareAdminCatalogShadow(
   for (const [id, lp] of legacy) {
     const fp = freepass.get(id);
     if (!fp) { missingInFreePass++; continue; }
-    const sameVehicle = (lp.registration?.vehicleNumber ?? '') === (fp.registration?.vehicleNumber ?? '')
-      && lp.vehicle.modelId === fp.vehicle.modelId
-      && (lp.vehicle.subModelId ?? '') === (fp.vehicle.subModelId ?? '');
-    const sameOffers = JSON.stringify(offerFacts(lp)) === JSON.stringify(offerFacts(fp));
-    if (!sameVehicle || !sameOffers) differentProducts++;
+    if (JSON.stringify(productFacts(lp)) !== JSON.stringify(productFacts(fp))) differentProducts++;
   }
   for (const id of freepass.keys()) if (!legacy.has(id)) extraInFreePass++;
   return {

@@ -23,7 +23,7 @@ import type { Clawback, LedgerLine } from './ledgers';
 import type { SettlementRow } from './types';
 import { settlementEligible } from './eligibility';
 import { isCalendarDay, isCalendarMonth, koreaDay } from './calendar';
-import { workflowMutationBlockedReason } from './consistency';
+import { workflowConsistencyIssues, workflowMutationBlockedReason } from './consistency';
 
 export const CLAIM_STAGES = ['접수', '청구', '정정', '확인', '수금'] as const;
 export const PAY_STAGES = ['접수', '통보', '정정', '확인', '지급'] as const;
@@ -99,6 +99,10 @@ export function planInvoice(
   if (!issueDay) return { ok: false, error: '발행 처리 시각이 올바르지 않습니다' };
   const live = lines.filter((l) => !(axis === '공급사' && l.row.progress.billHold));
   if (!live.length) return { ok: false, error: '발행할 줄이 없습니다' };
+  const inconsistent = live.filter((l) => workflowConsistencyIssues(l.row).length > 0);
+  if (inconsistent.length) {
+    return { ok: false, error: `업무 상태가 서로 맞지 않는 줄 ${inconsistent.length}건 — 데이터를 먼저 확인한 뒤 발행합니다` };
+  }
   const unknown = live.filter((l) => l.amount === null);
   if (unknown.length) return { ok: false, error: `금액 모름 ${unknown.length}줄 — 금액을 먼저 정해야 발행합니다` };
   const corr = live.filter((l) => (axis === '공급사' ? l.row.claimStage : l.row.payStage) === '정정');

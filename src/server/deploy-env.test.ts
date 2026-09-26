@@ -54,7 +54,7 @@ test('unapproved FreePass Data catalog cutover mode is blocked', () => {
   assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'), false);
 });
 
-test('approved SHADOW_READ cutover receipt passes deploy preflight only for its bound origin/token', () => {
+test('even a well-formed SHADOW_READ receipt cannot outrun the central OBSERVE registry stage', () => {
   const token='s'.repeat(40);
   const cutover=JSON.stringify({
     consumerId:'freepass-admin-catalog',
@@ -84,8 +84,8 @@ test('approved SHADOW_READ cutover receipt passes deploy preflight only for its 
     FREEPASS_DATA_ADMIN_CATALOG_TOKEN:token,
     FREEPASS_DATA_ADMIN_CUTOVER_JSON:cutover,
   };
-  assert.equal(errors(env).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'),false);
-  assert.ok(errors({...env,FREEPASS_DATA_BASE_URL:'https://other.example.test'}).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
+  const findings=checkDeployEnv(env);
+  assert.ok(findings.some((x)=>x.key==='FREEPASS_DATA_ADMIN_CUTOVER_JSON'&&x.level==='error'&&/중앙 FreePass Data 레지스트리 단계\(OBSERVE\)/.test(x.message)));
 });
 
 test('public addresses must be one https origin without a path', () => {

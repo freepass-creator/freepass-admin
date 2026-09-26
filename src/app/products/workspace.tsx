@@ -176,7 +176,11 @@ export async function ProductWorkspace({ q, mode, base }: {
    *   당월접수 · 미완료 · 분납실적 · 완납실적 · 취소. 옛 「진행중 / 인도완료」 가름은 버렸다.
    *   처음 여는 칸 = 당월접수(이달의 일). ★미완료(지난달 이전 접수인데 아직 인도 전)는 오래 있을수록 위험 — 단추·줄을 붉게.
    */
-  const iv = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : '당월접수';
+  const performanceMode = mode === 'intake' && sp(q.wiv) === '실적';
+  const requestedBucket = (BUCKETS as string[]).includes(sp(q.iv)) || sp(q.iv) === 'all' ? sp(q.iv) : '';
+  const iv = performanceMode
+    ? (['분납실적', '완납실적'].includes(requestedBucket) ? requestedBucket : '분납실적')
+    : (requestedBucket || '당월접수');
   const 칸의 = new Map(irows.map((r) => [r, bucketOf(r)] as const));
   const 칸수 = Object.fromEntries(BUCKETS.map((b) => [b, irows.filter((r) => 칸의.get(r) === b).length])) as Record<Bucket, number>;
   const 진행 = (r: SettlementRow) => iv === 'all' || 칸의.get(r) === iv;
@@ -357,7 +361,7 @@ export async function ProductWorkspace({ q, mode, base }: {
         </section>}
         {mode === 'intake' && sp(q.w) !== 'new' && !sp(q.ic) && <section className="panel work-panel" data-panel-role="work">
           <div className="dz-listtop">
-          <PanelHeader title="접수 목록" count={`${ishown.length.toLocaleString()}건`} />
+          <PanelHeader title={performanceMode ? '실적 목록' : '접수 목록'} count={`${ishown.length.toLocaleString()}건`} />
           <div className="dz-find">
             <form className="searchbox dz-searchbox" action={base}>
               {숨김(['iq'])}
@@ -366,11 +370,20 @@ export async function ProductWorkspace({ q, mode, base }: {
             <FilterSheet axes={접수판축} count={ishown.length} unit="건" />
           </div>
           <div className="quick-filters">
-            <Link className={iv === 'all' ? 'active' : ''} href={keep({ iv: 'all' })}>전체</Link>
-            {BUCKETS.map((b) => (
-              <Link key={b} className={`${iv === b ? 'active' : ''}${b === '미완료' && 칸수[b] ? ' warn' : ''}`}
-                href={keep({ iv: b === '당월접수' ? '' : b })}>{b} <small>{칸수[b]}</small></Link>
-            ))}
+            {performanceMode ? (
+              (['분납실적', '완납실적'] as const).map((b) => (
+                <Link key={b} className={iv === b ? 'active' : ''}
+                  href={keep({ wiv: '실적', iv: b, v: 'work' })}>{b} <small>{칸수[b]}</small></Link>
+              ))
+            ) : (
+              <>
+                <Link className={iv === 'all' ? 'active' : ''} href={keep({ iv: 'all' })}>전체</Link>
+                {BUCKETS.map((b) => (
+                  <Link key={b} className={`${iv === b ? 'active' : ''}${b === '미완료' && 칸수[b] ? ' warn' : ''}`}
+                    href={keep({ iv: b === '당월접수' ? '' : b })}>{b} <small>{칸수[b]}</small></Link>
+                ))}
+              </>
+            )}
           </div>
           </div>
           {intakeErr ? <Notice tone="warn">{intakeErr}</Notice> : (
@@ -390,9 +403,11 @@ export async function ProductWorkspace({ q, mode, base }: {
           )}
           {/* ★하단바 — 접수 목록에서는 [+ 신규 접수] 하나(대표 2026-09-18 「신규접수 버튼도 하단으로 옮기는 게 맞지 않나」)
                 누르면 같은 자리에 [취소] [접수 저장] 이 선다 — 판이 바뀌면 바도 따라 바뀐다 */}
-          <ActionBar>
-            <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
-          </ActionBar>
+          {!performanceMode && (
+            <ActionBar>
+              <Link className="primary" href={keep({ w: 'new', product: '', offer: '', ic: '', v: 'work' })}>+ 신규 접수</Link>
+            </ActionBar>
+          )}
         </section>}
       </section>
 

@@ -12,6 +12,7 @@
  */
 import type { SettlementRow } from './types';
 import { isCalendarDay, koreaDay } from './calendar';
+import { workflowMutationBlockedReason } from './consistency';
 
 export type TerminationClawbackDecision = 'REQUIRED' | 'NOT_REQUIRED';
 export type TerminationClawbackReview =
@@ -173,6 +174,8 @@ export const clawbackId = (plate: unknown, month: string, code?: unknown) => {
 
 export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, nowMs: number):
   { ok: true; id: string; doc: Record<string, unknown> } | { ok: false; error: string } {
+  const inconsistent = workflowMutationBlockedReason(r);
+  if (inconsistent) return { ok: false, error: inconsistent };
   if (!r.plate) return { ok: false, error: '차량번호가 없는 줄은 환수를 세울 수 없습니다' };
   if (!r.progress.delivered) return { ok: false, error: '인도 전 줄입니다 — 실적이 안 선 줄은 환수할 것이 없습니다(취소로)' };
   const today = koreaDay(nowMs);

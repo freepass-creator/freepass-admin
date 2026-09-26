@@ -19,7 +19,7 @@ import type { Maybe, SettlementRow } from './types';
 /** 정산비율 — 0은 유효한 사실, 음수/비정상 숫자는 조용히 돈으로 만들지 않는다. */
 export function settlementRatioOf(r: Pick<SettlementRow, 'settleRatio'>): Maybe<number> {
   const v = Number(r.settleRatio);
-  return Number.isFinite(v) && v >= 0 ? v : null;
+  return Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
 }
 
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {

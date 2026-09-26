@@ -21,6 +21,11 @@ export default async function DataStatusPage() {
           ? <Notice tone="ok">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 켜짐 · {s.writeGate.mode}{s.writeGate.approvalRef ? ` · 승인 ${s.writeGate.approvalRef}` : ''}{s.writeGate.validUntil ? ` · 만료 ${s.writeGate.validUntil}` : ''}</Notice>
           : <Notice tone="warn">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 꺼짐 · {s.writeGate.reason}</Notice>
         : <Notice tone="warn">Admin workflow/legacy bridge 자격증명 오류 — {s.credential.why}</Notice>}
+      {s.catalog.cutover && (
+        <p className="fn-muted">
+          Catalog 전환 승인 · {s.catalog.cutover.approvalRef} · {s.catalog.cutover.fromStage} → {s.catalog.cutover.targetStage} · 만료 {s.catalog.cutover.validUntil}
+        </p>
+      )}
       {s.catalog.holdReasons.length > 0 && (
         <p className="fn-muted">Catalog HOLD · {s.catalog.holdReasons.join(' · ')}</p>
       )}

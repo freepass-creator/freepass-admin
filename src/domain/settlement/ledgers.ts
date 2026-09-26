@@ -55,7 +55,7 @@ export interface LedgerGroup {
   /** 분납이 끊겨 받은 만큼만 선 줄 수 */
   broken: number;
   /** 서로 동시에 참일 수 없는 lifecycle 조합이 있는 줄 수 */
-  inconsistent: number;
+  inconsistent?: number;
   clawbacks: Clawback[];
   clawbackTotal: number;
   /** 합 − 환수 */
@@ -175,7 +175,7 @@ export type LedgerGroupAttention = 'issue' | 'todo' | 'done';
 export type LedgerGroupFilter = 'all' | LedgerGroupAttention;
 
 export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
-  if (g.unknown > 0 || g.broken > 0 || g.inconsistent > 0 || g.clawbacks.length > 0) return 'issue';
+  if (g.unknown > 0 || g.broken > 0 || (g.inconsistent ?? 0) > 0 || g.clawbacks.length > 0) return 'issue';
   if (!g.lines.length || g.completed < g.lines.length || g.hold > 0) return 'todo';
   return 'done';
 }
@@ -198,8 +198,8 @@ export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
     const aa = ledgerGroupAttention(a);
     const ba = ledgerGroupAttention(b);
     if (aa !== ba) return attentionRank[aa] - attentionRank[ba];
-    const aIssues = a.unknown + a.broken + a.inconsistent + a.clawbacks.length;
-    const bIssues = b.unknown + b.broken + b.inconsistent + b.clawbacks.length;
+    const aIssues = a.unknown + a.broken + (a.inconsistent ?? 0) + a.clawbacks.length;
+    const bIssues = b.unknown + b.broken + (b.inconsistent ?? 0) + b.clawbacks.length;
     if (aIssues !== bIssues) return bIssues - aIssues;
     const aTodo = Math.max(a.lines.length - a.completed, a.hold);
     const bTodo = Math.max(b.lines.length - b.completed, b.hold);
@@ -224,7 +224,7 @@ export function ledgerTotals(groups: readonly LedgerGroup[]) {
   return groups.reduce(
     (t, g) => ({
       rows: t.rows + g.lines.length, total: t.total + g.total, unknown: t.unknown + g.unknown, done: t.done + g.done, completed: t.completed + g.completed,
-      forecast: t.forecast + g.forecast, broken: t.broken + g.broken, inconsistent: t.inconsistent + g.inconsistent, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
+      forecast: t.forecast + g.forecast, broken: t.broken + g.broken, inconsistent: t.inconsistent + (g.inconsistent ?? 0), clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
     }),
     { rows: 0, total: 0, unknown: 0, done: 0, completed: 0, forecast: 0, broken: 0, inconsistent: 0, clawback: 0, net: 0 },
   );

@@ -27,6 +27,22 @@ const base = (process.argv[2] || 'http://localhost:3000').replace(/\/$/, '');
 const outDir = process.env.VISUAL_QA_OUT || path.join(process.cwd(), 'artifacts', 'visual-qa');
 const executablePath = process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium/chrome-linux/chrome';
 
+/* UI workflow source guard — runtime fixture가 마지막 claim→pay handoff 상태를 항상 만들지는 않으므로
+ * actual-route source에도 연결 계약이 남아 있는지 함께 잠근다. */
+const settlementSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/page.tsx'), 'utf8');
+const intakeDetailSource = fs.readFileSync(path.join(process.cwd(), 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8');
+const workflowSourceChecks = [
+  ['claim-to-pay handoff', settlementSource.includes('지급 업무로') && settlementSource.includes('지급인계Href')],
+  ['cross-axis action prop', intakeDetailSource.includes('nextAxisHref') && intakeDetailSource.includes('nextAxisLabel')],
+  ['actionable settlement focus', intakeDetailSource.includes('settlementPrimaryAction') && intakeDetailSource.includes('정산업무라벨')],
+];
+for (const [label, ok] of workflowSourceChecks) {
+  if (!ok) {
+    console.error(`Visual QA source guard failed: ${label}`);
+    process.exit(1);
+  }
+}
+
 const cases = [
   { name: 'products-desktop-1440', route: '/products', width: 1440, height: 900 },
   { name: 'products-desktop-1280', route: '/products', width: 1280, height: 800 },
@@ -98,6 +114,8 @@ async function inspect(page) {
       bodyWidth: document.body.scrollWidth,
       viewportWidth: innerWidth,
       mobileGlobalTabs: [...document.querySelectorAll('.dz-tabbar a')].filter(visible).map((el) => (el.textContent || '').trim()),
+      workflowHandoffs: [...document.querySelectorAll('a')].filter((el) => visible(el) && (el.textContent || '').trim() === '지급 업무로')
+        .map((el) => ({ text: (el.textContent || '').trim(), href: el.getAttribute('href') || '' })),
       selected: pick('[aria-pressed="true"], [aria-current="true"], [aria-current="page"]'),
       selectedCards: (() => {
         const nodes = [...document.querySelectorAll(
@@ -605,6 +623,10 @@ async function runInteractiveStates(page, c) {
       const problems = [];
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
+
+      if (c.route === '/settlement' && info.workflowHandoffs?.some((x) => !x.href.includes('tab=pay'))) {
+        problems.push(`settlement cross-axis handoff does not target payment: ${JSON.stringify(info.workflowHandoffs)}`);
+      }
 
       if (c.width <= 900 && info.mobileGlobalTabs?.length) {
         const coreTabs = info.mobileGlobalTabs.filter((x) => x !== '계약');

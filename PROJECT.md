@@ -67,11 +67,12 @@ DB / External System
 우선순위는 다음과 같다.
 
 1. 사용자의 최신 명시 결정
-2. `docs/WORK-INBOX.md`
-3. `docs/MASTER-v1.md`
-4. `docs/SSOT.md`
-5. 현재 Domain/Service/Port/Adapter 코드
-6. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — 장기 배경, 최신 결정보다 우선하지 않음
+2. `docs/FUNCTION-AUTHORITY.md` — 기능 의미·브랜치·정본 경계
+3. `docs/WORK-INBOX.md`
+4. `docs/MASTER-v1.md`
+5. `docs/SSOT.md`
+6. 현재 Domain/Service/Port/Adapter 코드
+7. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — 장기 배경, 최신 결정보다 우선하지 않음
 
 ## Non-goals
 - UI/UX 공통 규격을 이 저장소가 독자 확정하지 않는다.
@@ -82,9 +83,9 @@ DB / External System
 
 ## Status
 - Product/domain model: ACTIVE DEVELOPMENT
-- Search/Application domain: CODED / PARTIALLY TESTED
+- Search/Intake/Settlement domain: CODED / PARTIALLY TESTED
 - Production persistence: NOT VERIFIED
 - Production auth/permission: NOT VERIFIED
 - Audit trail: DESIGN REQUIRED
-- Settlement domain: PARTIAL / MOCKUP-HEAVY
+- Settlement domain: ACTIVE / PARTIALLY VERIFIED
 - UI/UX adoption: MAPPED to AI Core/Design Hub / NOT PILOT / NOT CONFORMANT

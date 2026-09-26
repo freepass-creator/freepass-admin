@@ -79,15 +79,22 @@ type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
 };
 const deliveredDay = (r: R) => (r.progress.delivered ? dateOf(r.progress.deliveredAt) : null);
 
+export function invalidPaidRounds(r: R): boolean {
+  if (r.paidRounds === null || r.paidRounds === undefined) return false;
+  const n = roundsOf(r.payKind);
+  const w = Number(r.paidRounds);
+  return !Number.isInteger(w) || w < 1 || w > n;
+}
+
 export const lastPaymentDate = (r: R) => { const n = roundsOf(r.payKind), d = deliveredDay(r); return n >= 2 && d ? addMonths(d, n - 1) : null; };
 export const instalmentDueDate = (r: R) => { const n = roundsOf(r.payKind), d = deliveredDay(r); return n >= 2 && d ? addMonths(d, n) : null; };
 
 /** 몇 회차까지 받았나 — 적혀 있으면 그 값, 없으면 기간 비례. 인도됐으면 1회차는 받은 것 */
 export function paidRoundsOf(r: R, now = new Date()): number {
   const n = roundsOf(r.payKind), d = deliveredDay(r);
-  if (!d) return 0;
+  if (!d || invalidPaidRounds(r)) return 0;
   const w = Number(r.paidRounds);
-  if (r.paidRounds !== null && r.paidRounds !== undefined && Number.isInteger(w) && w >= 1) return Math.min(n, w);
+  if (r.paidRounds !== null && r.paidRounds !== undefined && Number.isInteger(w) && w >= 1) return w;
   const today = midnight(now);
   let paid = 1;
   for (let k = 2; k <= n; k += 1) if (addMonths(d, k - 1) <= today) paid = k;
@@ -101,7 +108,7 @@ export function paidRoundsOf(r: R, now = new Date()): number {
  */
 export function nextInstallmentDate(r: R): string | null {
   const n = roundsOf(r.payKind), d = deliveredDay(r);
-  if (n < 2 || !d) return null;
+  if (n < 2 || !d || invalidPaidRounds(r)) return null;
   const written = Number(r.paidRounds);
   const paid = r.paidRounds !== null && r.paidRounds !== undefined && Number.isInteger(written) && written >= 1
     ? Math.min(n, written)
@@ -114,14 +121,15 @@ export function nextInstallmentDate(r: R): string | null {
 /** 끊겼나 — 받아야 할 날이 지났는데 못 받았다 */
 export function brokenOf(r: R, now = new Date()): boolean {
   const n = roundsOf(r.payKind), d = deliveredDay(r);
-  if (n < 2 || !d) return false;
+  if (n < 2 || !d || invalidPaidRounds(r)) return false;
   const paid = paidRoundsOf(r, now);
   if (paid >= n) return false;
   return addMonths(d, paid) < midnight(now);
 }
 
 /** 받은 만큼의 몫 — 끊긴 분납만 1 보다 작다 */
-export const paidRatioOf = (r: R, now = new Date()) => (roundsOf(r.payKind) < 2 || !brokenOf(r, now) ? 1 : paidRoundsOf(r, now) / roundsOf(r.payKind));
+export const paidRatioOf = (r: R, now = new Date()) =>
+  (roundsOf(r.payKind) < 2 || invalidPaidRounds(r) || !brokenOf(r, now) ? 1 : paidRoundsOf(r, now) / roundsOf(r.payKind));
 
 /** 스타·아이카는 분납이 끊기면 지급이 «아예» 없다 (사장님 2026-08-25) */
 export const NO_PAY_IF_BROKEN = [/스타/, /아이카/];
@@ -143,6 +151,7 @@ export function billingMonth(r: R, now = new Date()): string | null {
   const written = S(r.progress.billMonth);
   if (written) return MONTH.test(written) ? written : null;
   if (!claimsOnComplete(r)) return ym(d);
+  if (invalidPaidRounds(r)) return null;
 
   const rounds = roundsOf(r.payKind);
   const paid = Number(r.paidRounds);
@@ -204,6 +213,7 @@ export function stageOf(r: R, now = new Date()): Stage {
 
   const rounds = roundsOf(r.payKind);
   if (rounds < 2) return '완납실적';
+  if (invalidPaidRounds(r)) return '분납실적';
 
   // 사람이 전체 회차 납입을 명시했다면 날짜 여유기간을 기다리지 않고 완료 사실이 이긴다.
   const written = Number(r.paidRounds);

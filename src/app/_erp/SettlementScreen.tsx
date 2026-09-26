@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 import { settlements, today } from '../../server/erp5';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
-  claimLedger, ledgerGroupAttention, ledgerMonths, NO_MONTH, payLedger,
+  claimLedger, ledgerGroupAttention, ledgerMonths, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger,
   type Clawback, type LedgerGroup, type LedgerGroupFilter,
 } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
@@ -22,6 +22,8 @@ import {
   hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
+import { SettlementDetail } from './SettlementDetail';
+import { nextActionablePerformanceCode } from '../../domain/settlement/performance-filter';
 import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal, type SettlementSignalTone } from '../settlement/group-signal';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -55,9 +57,12 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   }
 
   const nowMonth = today().slice(0, 7);
+  const requestedTab: 'claim' | 'pay' = sp(q.tab) === 'pay' ? 'pay' : 'claim';
+  const focusId = sp(q.focus).trim();
+  const focus = focusId ? locateSettlementFocus(rows, cb, focusId, requestedTab) : null;
   const months = ledgerMonths(rows, cb);
   const 달들 = months.filter((m) => m !== NO_MONTH);
-  const month = sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
+  const month = focus?.month || sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
 
   /*
@@ -98,15 +103,20 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       .map((v) => ({ value: v, count: payG.filter((g) => payPass(g, 'pkind') && groupKinds(g).includes(v)).length })),
   };
 
-  /* 고른 묶음 — 청구 · 지급 어느 목록에서 눌렀는지로 축(문서 · 사람 이름)을 가른다 */
-  const gp = sp(q.g);
-  const claimSel = claimG.find((g) => g.party === gp);
-  const paySel = !claimSel ? payG.find((g) => g.party === gp) : undefined;
+  /* 고른 묶음 — focus로 들어오면 같은 달·상대·축을 복원하고, 아니면 g 선택을 따른다. */
+  const gp = focus?.party ?? sp(q.g);
+  const claimSel = (focus?.tab === 'claim' || !focus) ? claimG.find((g) => g.party === gp) : undefined;
+  const paySel = (focus?.tab === 'pay' || (!focus && !claimSel)) ? payG.find((g) => g.party === gp) : undefined;
   const gSel = claimSel ?? paySel;
-  const tab: 'claim' | 'pay' = claimSel ? 'claim' : 'pay';
+  const tab: 'claim' | 'pay' = focus?.tab ?? (claimSel ? 'claim' : paySel ? 'pay' : requestedTab);
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 문서 = tab === 'claim' ? '청구서' : '지급명세';
   const axis = tab === 'claim' ? '공급사' as const : '영업채널' as const;
+  const focusedLine = focus?.code && gSel ? gSel.lines.find((x) => x.row.id === focus.code) : undefined;
+  const nextPerformanceCode = focusedLine && gSel ? nextActionablePerformanceCode(gSel.lines, axis, focusedLine.row.id) : null;
+  const nextGroupParty = gSel ? nextActionableLedgerParty(tab === 'claim' ? claimG : payG, gSel.party) : null;
+  const claimAxisComplete = tab === 'claim' && claimG.every((g) => ledgerGroupAttention(g) === 'done');
+  const nextPayParty = claimAxisComplete ? nextActionableLedgerParty(payG, '') : null;
 
   const 장부 = gSel && month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
@@ -116,7 +126,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       {items.map((g) => {
         const signal = settlementGroupSignal(g, side, month === NO_MONTH);
         return (
-          <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
+          <RowCard key={g.party} href={hrefWith(base, q, { g: g.party, focus: null, lc: null, tab: side })} current={g.party === gSel?.party}
             tone={SIGNAL_TONE[signal.tone]} thumb={<><SignalIcon signal={signal} /><span>{signal.label}</span></>} thumbStatus
             title={g.party}
             sub={`${name} ${g.done}/${g.lines.length}`}
@@ -143,7 +153,21 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
       </Panel>
 
       <Panel>
-        {gSel ? (
+        {focusedLine && gSel ? (
+          <SettlementDetail cur={focusedLine.row} base={base} q={q} now={new Date(`${today()}T12:00:00+09:00`)}
+            life={{
+              axis,
+              mode: sp(q.lc),
+              link: (mode: string) => hrefWith(base, q, { g: gSel.party, focus: focusedLine.row.id, lc: mode || null, tab }),
+              backHref: hrefWith(base, q, { g: gSel.party, focus: null, lc: null, tab }),
+              nextHref: nextPerformanceCode ? hrefWith(base, q, { g: gSel.party, focus: nextPerformanceCode, lc: null, tab }) : undefined,
+              nextGroupHref: !nextPerformanceCode && nextGroupParty ? hrefWith(base, q, { g: nextGroupParty, focus: null, lc: null, tab }) : undefined,
+              nextAxisHref: !nextPerformanceCode && !nextGroupParty && nextPayParty
+                ? hrefWith(base, q, { g: nextPayParty, focus: null, lc: null, tab: 'pay' }) : undefined,
+              nextAxisLabel: '지급 업무로',
+              invoiceBiz: 장?.partyBizNo,
+            }} />
+        ) : gSel ? (
           <>
             <PanelHead kind="상세내용" title={gSel.party} count={`${who} · ${month}`} />
             <PanelBody>
@@ -165,7 +189,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                   const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);
                   const signal = settlementLineSignal(st, { hold: tab === 'claim' && r.progress.billHold, broken });
                   return (
-                    <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={SIGNAL_TONE[signal.tone]}
+                    <RowCard key={r.id} href={hrefWith(base, q, { g: gSel.party, focus: r.id, lc: null, tab })} tone={SIGNAL_TONE[signal.tone]}
                       thumb={<><SignalIcon signal={signal} /><span>{signal.label}</span></>} thumbStatus
                       title={txt(r.customer)}
                       subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`} steps={{ labels: flow, at }}

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { writeEnabled, settlements, today } from '../../server/erp5';
 import { adminBlockLabel, adminWorkflowPhaseOf, blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
+import { marginOf } from '../../domain/settlement/money';
 import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
@@ -55,12 +56,14 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const 다음블록 = blockOf(r);
   const 업무흐름 = adminWorkflowPhaseOf(r);
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
-  const 청구 = claimAmountOf(r);
-  const 지급 = payAmountOf(r);
-  const 청구월 = billingMonth(r);
+  const now = new Date();
+  const 청구 = claimAmountOf(r, now);
+  const 지급 = payAmountOf(r, now);
+  const 마진 = marginOf(r, now);
+  const 청구월 = billingMonth(r, now);
   const 다음회차일 = nextInstallmentDate(r);
   const 분납회차 = roundsOf(r.payKind);
-  const 실적상태 = stageOf(r);
+  const 실적상태 = stageOf(r, now);
   const 구역 = settlementSections(raw);
 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
@@ -249,7 +252,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       <SummaryGrid>
         <SummaryItem label="청구금액">{won(청구)}</SummaryItem>
         <SummaryItem label="지급액">{won(지급)}</SummaryItem>
-        <SummaryItem label="남는 것">{청구 === null ? '—' : won(청구 - (지급 ?? 0))}</SummaryItem>
+        <SummaryItem label="남는 것">{won(마진)}</SummaryItem>
         <SummaryItem label="청구월">{청구월 ?? '—'}</SummaryItem>
         <SummaryItem label="셈 근거">{txt(r.settleNote)}</SummaryItem>
         <SummaryItem label="청구 · 지급 단계">{r.claimStage} · {r.payStage}</SummaryItem>

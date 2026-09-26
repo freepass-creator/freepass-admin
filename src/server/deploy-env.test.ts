@@ -39,8 +39,9 @@ test('public addresses must be one https origin without a path', () => {
   assert.ok(errors({ ...good, APP_BASE_URL: 'https://freepass-admin.vercel.app/login' }).includes('APP_BASE_URL'));
 });
 
-test('emulator hosts and short session secrets are blocked; write on and esign on only warn', () => {
+test('emulator/demo settings and short session secrets are blocked; write on and esign on only warn', () => {
   assert.ok(errors({ ...good, FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }).includes('FIRESTORE_EMULATOR_HOST'));
+  assert.ok(errors({ ...good, FPA_DEMO: 'on' }).includes('FPA_DEMO'));
   assert.ok(errors({ ...good, SESSION_SECRET: 'short' }).includes('SESSION_SECRET'));
   const f = checkDeployEnv({ ...good, ERP5_WRITE: 'on', ESIGN_ENABLED: 'on' });
   assert.deepEqual(f.filter((x) => x.level === 'error'), []);

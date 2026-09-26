@@ -144,7 +144,8 @@ async function IntakeWorkspace({ q }: { q: Q }) {
             <PanelHead kind="입력" title="접수 내용" count={writeEnabled() ? '저장 가능' : '저장 꺼짐'} />
             <PanelBody>
               <div className="erp-embed">
-                <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)} back={hrefWith(base, q, { w: null, product: null, offer: null })} hideHeader />
+                <NewIntakePanel rows={rows} productId={sp(q.product)} offerId={sp(q.offer)}
+                  back={hrefWith(base, q, { w: null, product: null })} hideHeader />
               </div>
             </PanelBody>
           </>

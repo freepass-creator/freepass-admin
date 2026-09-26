@@ -90,3 +90,13 @@ test('일반 청구·지급 최종금액이 음수가 되면 환수로 추측하
   assert.equal(payAmountOf(negativeByAdjust), null);
   assert.equal(marginOf(negativeByAdjust), null);
 });
+
+
+test('깨진 납입회차가 있으면 청구·지급 금액을 추정하지 않는다', () => {
+  const r = row() as SettlementRow;
+  r.payKind = '2회분납';
+  r.paidRounds = 1.6;
+  assert.equal(claimAmountOf(r), null);
+  assert.equal(payAmountOf(r), null);
+  assert.equal(marginOf(r), null);
+});

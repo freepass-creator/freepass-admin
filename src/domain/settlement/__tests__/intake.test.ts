@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { intakeCode, intakeKey, settlementCode, settlementKey, eventDocId } from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
-import { billingMonth, bucketOf, paidRoundsOf, stageOf } from '../stage.js';
+import { billingMonth, bucketOf, nextInstallmentDate, paidRoundsOf, stageOf } from '../stage.js';
 import { claimAmountOf, payAmountOf } from '../money.js';
 import { blockOf, intakeTaskOf } from '../types.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
@@ -53,6 +53,11 @@ describe('validateIntake — 최초 접수 필수값', () => {
   it('차번 · 고객 · 채널 · 담당 · 공급사가 비면 이름을 댄다', () => {
     const e = validateIntake({ ...base, plate: '', customer: ' ', channel: '', agent: '', supplier: '' }, '2026-09-18');
     assert.equal(e.length, 5);
+  });
+  it('분납여부는 접수 필수값이다', () => {
+    assert.match(validateIntake({ ...base, payKind: '' }, '2026-09-18').join(), /분납여부/);
+    assert.match(validateIntake({ ...base, payKind: '나중에' }, '2026-09-18').join(), /일시납 또는 N회분납/);
+    assert.deepEqual(validateIntake({ ...base, payKind: '2회분납' }, '2026-09-18'), []);
   });
   it('차량번호 없는 상품접수는 Product ID가 있으면 받는다', () => {
     const e = validateIntake({ ...base, plate: '', sourceProductId: 'P-NEW' }, '2026-09-18');
@@ -363,15 +368,24 @@ describe('★완납·인도 기준 — 대표 「접수 -> 분납실적/완납�
     const r = row({ payKind: '3회분납', receivedAt: '2026-09-01', deliveredAt: '2026-09-05' });
     assert.equal(billingMonth(r, NOW), '2026-11');           // 인도 9/5 + 2개월
     assert.equal(paidRoundsOf(r, NOW), 1);
-    assert.equal(bucketOf(r, NOW), '당월접수');                // 당월 접수는 이달이 끝날 때까지 접수
+    assert.equal(bucketOf(r, NOW), '분납실적');                // F04: 인도완료 즉시 접수에서 실적으로 이동
     assert.equal(stageOf(r, new Date(2026, 9, 2)), '분납실적');
   });
   it('9월 전 인도분은 옛 규칙(인도월) 그대로 — 지난 달을 흔들지 않는다', () =>
     assert.equal(billingMonth(row({ payKind: '2회분납', deliveredAt: '2026-08-20' }), NOW), '2026-08'));
   it('박힌 청구월이 이긴다', () => assert.equal(billingMonth(row({ billMonth: '2026-07' }), NOW), '2026-07'));
-  it('당월 접수 · 지난달 이전인데 인도 전이면 미완료', () => {
+  it('인도 전만 접수/미완료에 남고, 인도되면 즉시 실적으로 이동한다', () => {
     assert.equal(bucketOf(row({ receivedAt: '2026-09-02', delivered: false, deliveredAt: '' }), NOW), '당월접수');
     assert.equal(bucketOf(row({ receivedAt: '2026-07-02', delivered: false, deliveredAt: '' }), NOW), '미완료');
+    assert.equal(bucketOf(row({ receivedAt: '2026-09-02', delivered: true, deliveredAt: '2026-09-05', payKind: '일시납' }), NOW), '완납실적');
+    assert.equal(bucketOf(row({ receivedAt: '2026-09-02', delivered: true, deliveredAt: '2026-09-05', payKind: '2회분납' }), NOW), '분납실적');
+  });
+  it('F04 다음회차일은 인도일 + 이미 납입한 회차 수로 계산한다', () => {
+    const r = row({ payKind: '3회분납', deliveredAt: '2026-09-05', paidRounds: null });
+    assert.equal(nextInstallmentDate(r), '2026-10-05');
+    assert.equal(nextInstallmentDate(row({ payKind: '3회분납', deliveredAt: '2026-09-05', paidRounds: 2 })), '2026-11-05');
+    assert.equal(nextInstallmentDate(row({ payKind: '3회분납', deliveredAt: '2026-09-05', paidRounds: 3 })), null);
+    assert.equal(nextInstallmentDate(row({ payKind: '일시납', deliveredAt: '2026-09-05' })), null);
   });
 });
 

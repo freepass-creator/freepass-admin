@@ -1672,5 +1672,36 @@
     },
     "exactMoney": "must not clip or ellipsize in compact list cards",
     "restoreAt1440": "full 240px sidenav and standard spacing"
+  },
+  "accessibilityResilience": {
+    "modalFilter": {
+      "ariaModal": true,
+      "focusTrap": "Tab and Shift+Tab remain inside the dialog",
+      "escape": "closes and restores focus to trigger"
+    },
+    "longText": {
+      "ellipsisAllowed": [
+        "identity",
+        "support",
+        "panel-title"
+      ],
+      "neverClip": [
+        "exact-money",
+        "primary-action",
+        "status"
+      ],
+      "tooltip": [
+        "panel-title",
+        "rowcard-title"
+      ],
+      "settlementRule": "long party labels may shrink; exact monetary values may not shrink or wrap"
+    },
+    "keyboardFocus": [
+      "navigation-links",
+      "detail-disclosure-summary",
+      "buttons",
+      "filters",
+      "row-links"
+    ]
   }
 }

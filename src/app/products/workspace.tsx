@@ -140,7 +140,12 @@ export async function ProductWorkspace({ q, mode, base }: {
   /* ★신규 접수(w=new)는 product= 로 차를 넘긴다 — 가운데 상세도 그 차를 보여야 오른쪽 접수와 같은 차가 된다 */
   const selId = sp(q.id) || (sp(q.w) === 'new' ? sp(q.product) : '');
   const sel = sorted.find((h) => h.product.id === selId) ?? sorted[0];
-  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v) && (v !== 'work' || mode === 'intake')) ?? (selId ? 'detail' : 'list');
+  const explicitView = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v) && (v !== 'work' || mode === 'intake'));
+  /* 저장/중복접수 redirect가 ic만 남겨도 모바일은 방금 만든 접수 상세(work)를 보여야 한다.
+   * URL의 v는 표현 상태일 뿐 업무 사실이 아니므로, work route facts(w=new/ic)가 있으면 fail-safe로 work를 복원한다. */
+  const view = explicitView ?? (mode === 'intake' && (sp(q.w) === 'new' || !!sp(q.ic))
+    ? 'work'
+    : selId ? 'detail' : 'list');
   const keep = (extra: Record<string, string>) => {
     const u = new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, sp(v)])));
     for (const [k, v] of Object.entries(extra)) { if (v) u.set(k, v); else u.delete(k); }

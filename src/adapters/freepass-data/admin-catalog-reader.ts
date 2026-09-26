@@ -244,7 +244,7 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
     try {
       const shadow = await this.freepass.list();
       const comparison = compareAdminCatalogShadow(rows, shadow.rows);
-      const releaseHold = approval && (mode === 'PARITY_VERIFIED' || mode === 'FREEPASS_DATA_READ')
+      const releaseHold = approval && mode === 'PARITY_VERIFIED'
         ? assertApprovedRelease(approval, shadow.meta)
         : null;
       const holds = [

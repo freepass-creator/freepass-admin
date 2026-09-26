@@ -325,6 +325,10 @@ emulatorTest('Firestore: cash idempotency key only accepts an identical retry pa
   const repo=new Erp5SettlementRepository();
   const actor=`cash-${suffix}@teamjpk.com`;
   const created=await repo.createIntake({...intake(p,o),paper:true,delivered:true,deliveredAt:'2026-09-25'},actor);
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'billMonth',month:'2026-09'},undefined,actor),
+    {ok:true,changed:1},
+  );
 
   const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
   assert.equal(issued.ok,true);

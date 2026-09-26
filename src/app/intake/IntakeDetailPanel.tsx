@@ -11,7 +11,7 @@ import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
-import { billingMonth, nextInstallmentDate, roundsOf } from '../../domain/settlement/stage';
+import { billingMonth, nextInstallmentDate, roundsOf, stageOf } from '../../domain/settlement/stage';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
@@ -56,6 +56,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const 청구월 = billingMonth(r);
   const 다음회차일 = nextInstallmentDate(r);
   const 분납회차 = roundsOf(r.payKind);
+  const 실적상태 = stageOf(r);
   const 구역 = settlementSections(raw);
 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
@@ -181,15 +182,28 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}
       {걸음}
 
+      <h3 className="dz-sub">접수 정보</h3>
+      <SummaryGrid>
+        <SummaryItem label="고객">{txt(r.customer)}</SummaryItem>
+        <SummaryItem label="차량">{r.plate ? `${txt(r.model)} · ${txt(r.plate)}` : txt(r.model)}</SummaryItem>
+        <SummaryItem label="공급사">{txt(r.supplier)}</SummaryItem>
+        <SummaryItem label="영업채널">{txt(r.channel)}</SummaryItem>
+        <SummaryItem label="영업담당자">{txt(r.agent)}</SummaryItem>
+        <SummaryItem label="현재 업무">{업무흐름}</SummaryItem>
+      </SummaryGrid>
+
       <h3 className="dz-sub">계약 · 실적 기준</h3>
       <SummaryGrid>
         <SummaryItem label="분납여부">{txt(r.payKind)}</SummaryItem>
         <SummaryItem label="계약서">{r.progress.paper ? '완료' : '미완료'}</SummaryItem>
         <SummaryItem label="인도완료">{r.progress.delivered ? '완료' : '대기'}</SummaryItem>
         <SummaryItem label="인도일">{txt(r.progress.deliveredAt)}</SummaryItem>
-        <SummaryItem label="청구월">{청구월 ?? '인도 후 계산'}</SummaryItem>
+        <SummaryItem label="납입회차">{분납회차 >= 2 ? (r.paidRounds ? `${r.paidRounds}/${분납회차}` : r.progress.delivered ? `1/${분납회차} (인도 시 1회차)` : `0/${분납회차}`) : '해당 없음'}</SummaryItem>
         <SummaryItem label="다음회차일">{다음회차일 ?? (분납회차 >= 2 ? '완납/미정' : '해당 없음')}</SummaryItem>
-        {분납회차 >= 2 && <SummaryItem label="납입회차">{r.paidRounds ? `${r.paidRounds}/${분납회차}` : r.progress.delivered ? `1/${분납회차} (인도 시 1회차)` : `0/${분납회차}`}</SummaryItem>}
+        <SummaryItem label="청구월">{청구월 ?? '인도 후 계산'}</SummaryItem>
+        <SummaryItem label="실적 상태">{실적상태}</SummaryItem>
+        <SummaryItem label="청구 상태">{r.claimStage}</SummaryItem>
+        <SummaryItem label="지급 상태">{r.payStage}</SummaryItem>
       </SummaryGrid>
 
       <h3 className="dz-sub">진행</h3>

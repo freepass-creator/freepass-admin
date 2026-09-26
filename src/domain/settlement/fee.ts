@@ -89,7 +89,13 @@ export function feeOf(
   set: FeeRuleSet,
   c: { supplier: Maybe<string>; product: Maybe<string>; model: Maybe<string>; term: Maybe<number>; rent: Maybe<number>; price: Maybe<number> },
 ): FeeResult {
-  const { kind, form, fallback } = feeKindOf(set, c.product ?? '', c.model ?? '');
+  let kindInfo: ReturnType<typeof feeKindOf>;
+  try {
+    kindInfo = feeKindOf(set, c.product ?? '', c.model ?? '');
+  } catch {
+    return { status: 'NO_RULE', why: '수수료 갈래 규칙을 읽지 못했습니다 — SSOT 정규식을 확인합니다' };
+  }
+  const { kind, form, fallback } = kindInfo;
   const term = c.term ?? 0;
   const rule = feeRuleFor(set, c.supplier ?? '', kind, term, form, fallback);
   if (!rule) return { status: 'NO_RULE', why: `표에 「${c.supplier ?? '(공급사 없음)'} · ${kind}${form ? ` ${form}` : ''}${term ? ` ${term}개월` : ''}」 가 없다` };

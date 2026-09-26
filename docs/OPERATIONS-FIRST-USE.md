@@ -27,7 +27,7 @@ Use `.env.example` as the implemented key inventory. Bind the correct existing d
 
 Deploy the verified revision to a preview with ERP5_WRITE=off. Verify the authorized administrator can sign in, an unauthorized account cannot, `/system/data-status` shows fresh probes, and catalog list/detail/selected Offer agree. Configure the approved HTTPS origin for OAuth, electronic-contract and claim links.
 
-Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Then explicitly enable the write gate for the approved environment. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
+Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Record that verification as the non-secret `ERP5_WRITE_APPROVAL_JSON` receipt described in `.env.example`; production runtime stays fail-closed without it. Then explicitly enable `ERP5_WRITE=on` only for the approved production environment. Vercel preview/development deployments remain read-only even if the approval receipt is present. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
 
 Verify save, reload, re-login and retrieval preserve the same record. Check duplicate clicks/concurrent submissions produce one intake and one audited outcome. Complete a normal intake/contract/delivery/settlement-record journey. Pre-delivery cancellation must create no new billing/payment/clawback; post-delivery termination must retain prior facts and track any clawback separately.
 

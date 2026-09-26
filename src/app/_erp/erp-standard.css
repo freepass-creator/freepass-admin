@@ -1252,7 +1252,7 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 2026-09-24 — Async / empty / error / readonly state surfaces
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
-  .erp-std :is(.erp-muted,.erp-field-error,.erp-state-empty,.erp-state-warn,.erp-state-ok,.erp-state-error) {
+  .erp-std :is(.erp-muted,.erp-field-error,.erp-state-empty,.erp-state-loading,.erp-state-readonly,.erp-state-warn,.erp-state-ok,.erp-state-error) {
     margin: 0;
     padding: var(--erp-sp-3);
     border: 0;
@@ -1262,9 +1262,22 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
     line-height: 1.5;
   }
 
-  .erp-std :is(.erp-muted,.erp-state-empty) {
+  .erp-std :is(.erp-muted,.erp-state-empty,.erp-state-loading,.erp-state-readonly) {
     background: var(--erp-color-surface-soft);
     color: var(--erp-color-text-2);
+  }
+  .erp-std .erp-panel-state {
+    margin: var(--erp-sp-3);
+  }
+  .erp-std .erp-panel-state strong {
+    display: block;
+    color: inherit;
+    font-size: var(--erp-fs-body);
+    font-weight: var(--erp-fw-semibold);
+  }
+  .erp-std .erp-panel-state p {
+    margin: var(--erp-sp-1) 0 0;
+    color: inherit;
   }
   .erp-std .erp-state-warn {
     background: var(--erp-color-warn-bg);

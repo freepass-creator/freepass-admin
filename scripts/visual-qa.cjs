@@ -527,6 +527,9 @@ async function runInteractiveStates(page, c) {
   }
 
   if (c.route === '/intake') {
+    if (c.width <= 900) {
+      await page.goto(base + '/intake?v=work', { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+    }
     states.push(await captureState(
       page,
       c.name,

@@ -629,6 +629,42 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
  * 그대로다. */
 .erp-detail-body { display: flex; flex-direction: column; gap: var(--erp-sp-5); padding: var(--erp-sp-4); }
 
+/* 정산 focus 상세 — 지금 할 일/핵심은 상시 노출하고 과거 계약·이력은 펼침 보조정보로 내린다.
+ * 같은 erp-tile 표면을 쓰되 summary는 action이 아니라 disclosure control이다. */
+.erp-detail-support > summary {
+  min-height: var(--erp-btn-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--erp-sp-3);
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--erp-fs-body);
+  font-weight: var(--erp-fw-semibold);
+}
+.erp-detail-support > summary::-webkit-details-marker { display: none; }
+.erp-detail-support > summary > span {
+  min-width: 0;
+  color: var(--erp-color-text-3);
+  font-size: var(--erp-fs-caption);
+  font-weight: var(--erp-fw-regular);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.erp-detail-support > summary::after {
+  content: "펼치기";
+  flex: 0 0 auto;
+  color: var(--erp-color-text-3);
+  font-size: var(--erp-fs-caption);
+  font-weight: var(--erp-fw-medium);
+}
+.erp-detail-support[open] > summary::after { content: "접기"; }
+.erp-detail-support[open] > summary { margin-bottom: var(--erp-sp-3); }
+.erp-detail-body[data-detail-context="settlement-focus"] > [data-detail-priority="core"] {
+  background: var(--erp-color-surface-soft);
+}
+
 /* 대표 사진 카드 — 사진이 메인, 그 밑에 심플한 설명(대표 2026-09-24 「차 사진이 메인으로는 있어야 되잖아
  * 차 사진 메인에 그 차를 설명하는 간단한 정보 정도는 들어가야지」). 셸은 erp-tile 그대로, 안쪽만 세로 배치. */
 .erp-hero-tile { display: flex; flex-direction: column; gap: var(--erp-sp-3); }

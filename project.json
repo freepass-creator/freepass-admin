@@ -3,8 +3,8 @@
   "project_id": "freepass-admin",
   "repository": "freepass-creator/freepass-admin",
   "default_branch": "main",
-  "subject_revision": "3f1812c6968f57494c1e8204e7a67d54e1c1f3ea",
-  "observed_at": "2026-09-19T10:34:50Z",
+  "subject_revision": "16368c4ef4414183f7d7a33e94282bc2889ac3be",
+  "observed_at": "2026-09-26T14:23:00+09:00",
   "classification": {
     "kind": "NODE_APP",
     "framework": "Next.js 16",
@@ -18,8 +18,21 @@
     "absent_reason": {}
   },
   "delivery": {
-    "targets": [],
-    "workflows": []
+    "targets": [
+      {
+        "kind": "VERCEL",
+        "status": "NOT_BOUND",
+        "team": "freepass-projects",
+        "project": "freepass-admin",
+        "note": "Connected team observed with project count 0; create/connect project before first deployment."
+      }
+    ],
+    "workflows": [
+      ".github/workflows/operational-release.yml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/backend-check.yml",
+      ".github/workflows/canon-guard.yml"
+    ]
   },
   "instructions": [
     "AGENTS.md",
@@ -40,20 +53,26 @@
     "src/adapters"
   ],
   "readiness": {
-    "status": "HOLD",
+    "status": "PRE_DEPLOY",
     "blockers": [
-      "Production persistence adapter is not implemented/verified; the current file repository only proves single-process atomic semantics.",
-      "Production auth/permission binding is not implemented/verified.",
-      "Production deployment target and runtime smoke are not verified."
+      "Vercel project freepass-admin is not yet created/connected in team freepass-projects.",
+      "Production OAuth, service-account, IAM and environment bindings are not yet verified.",
+      "Live production login/read/write/rollback acceptance has not yet been executed."
+    ],
+    "non_blocking_after_first_deploy": [
+      "General enhancement work remains frozen until first deployment attempt and smoke verification.",
+      "Electronic signature remains outside launch scope with ESIGN_ENABLED=off."
     ],
     "review_required": true
   },
   "evidence_refs": [
-    "docs/reviews/ADMIN-DESIGN-FUNCTION-AUDIT-2026-09-18.md",
-    "docs/SSOT.md",
-    "docs/HANDOFF.md",
-    "contracts/BACKEND-BOUNDARIES.md",
-    ".github/workflows/backend-check.yml",
-    "GitHub Actions run 35437766677: npm ci + typecheck + test + build PASS at 3f1812c6968f57494c1e8204e7a67d54e1c1f3ea"
+    "docs/LAUNCH-READINESS-2026-09-25.md",
+    "docs/OPERATIONS-FIRST-USE.md",
+    "docs/FUNCTION-AUTHORITY.md",
+    "docs/ui/DESIGN-AUTHORITY.md",
+    "GitHub Actions run 36219723132: operational code + persistence + browser actual-route verification PASS",
+    "PR #120: operational launch preparation merged",
+    "PR #121: user-approved PR #92 UI lineage merged",
+    "PR #122: launch security/actor/decision changes merged"
   ]
 }

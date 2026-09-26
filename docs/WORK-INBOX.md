@@ -1,3 +1,18 @@
+## 0-PREDEPLOY. 2026-09-26 — 배포 직전 동결
+
+- PR #121 UI 정본 main 반영 완료
+- PR #122 운영 확정분 main 반영 완료
+- PR #120 운영개시 준비 main 반영 완료
+- 코드/테스트/build/Firestore·Storage emulator/Next runtime/actual-route Visual QA PASS
+- 현재 개발 ACTIVE branch 없음; main만 배포 후보
+- 전자계약은 launch scope 밖: `ESIGN_ENABLED=off`
+- 첫 배포는 `ERP5_WRITE=off`, Catalog `OBSERVE`
+- 연결된 Vercel team `freepass-projects`의 project count는 0으로 관측됨
+- 다음 단계는 Vercel 프로젝트 생성·GitHub 연결·production env/OAuth/service account/IAM 바인딩 후 live smoke
+- 첫 배포 시도 전 일반 고도화 금지. 배포 차단 결함만 current main에서 short-lived fix branch로 처리
+
+---
+
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
 최종 갱신: 2026-09-26

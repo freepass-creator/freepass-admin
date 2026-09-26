@@ -14,23 +14,26 @@
 - 새 브랜치는 **현재 동시에 분리해야 하는 변경이 실제로 있을 때만** 최신 main에서 만든다.
 - v2/final/latest 같은 이름으로 브랜치를 파생하지 않는다. (AI 이름(claude/gpt/codex 등) 브랜치 금지는 사용자 결정으로 2026-09-26 해제)
 
-## 2. 현재 허용된 ACTIVE 작업
+## 2. 현재 상태 — PRE-DEPLOY FREEZE
 
-### A. UI/UX 최종 확정
-- branch: `work/ui/finalize-baseline`
-- base: 생성 시점 최신 main
-- work order: `docs/work/UI-FINALIZATION.md` (해당 branch)
-- 목적: 승인 UI 계보를 current main 위에 최종 정렬하고 실제 화면 QA 후 사용자 승인
-- 과거 `work/uiux` / PR #117: **REFERENCE-ONLY donor**, 개발 금지
+운영개시 준비 PR #120은 main에 병합됐다. UI 정본은 PR #121, 운영 확정사항은 PR #122로 main에 반영됐다.
 
-### B. 운영 개시
-- branch: `work/release/operational-launch`
-- base: 생성 시점 최신 main
-- work order: `docs/work/OPERATIONAL-LAUNCH.md` (해당 branch)
-- 목적: production wiring/auth/FreePass Data read-write/runtime/deployment/rollback 검증
-- 최종 운영 검증 직전 UI 최종본이 merge된 최신 main을 반드시 반영
+현재 **개발 ACTIVE branch는 없다.** `main`이 유일한 배포 후보 코드다.
 
-현재 위 두 branch 외 신규 작업 branch 생성은 금지한다. 새 병렬 작업이 정말 필요하면 먼저 이 문서와 machine registry를 갱신한다.
+배포 전에는 아래만 허용한다.
+- 읽기 전용 검증
+- 배포 환경 바인딩
+- 실제 배포 시도
+- 배포를 막는 결함이 확인된 경우에만 current main에서 짧은 fix branch 생성
+
+일반 고도화는 첫 배포 시도와 운영 smoke가 끝난 뒤 시작한다.
+
+현재 외부 P0:
+1. Vercel `freepass-projects` 팀에 `freepass-admin` 프로젝트 생성/연결
+2. production env/OAuth/service account/IAM 바인딩
+3. 첫 배포는 `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, Catalog `OBSERVE`
+4. live login/read/rollback 확인 후 통제된 테스트 write
+
 
 ## 3. AI 인계 규칙
 
@@ -40,25 +43,13 @@
 - writer가 바뀌어도 branch 이름은 바꾸지 않는다.
 - 다른 branch의 코드를 직접 수정하지 않는다. 의존 변경은 먼저 소유 branch를 main에 merge한 뒤 최신 main을 반영한다.
 
-## 4. merge 순서
+## 4. 현재 merge 상태
 
-현재 작업의 최종 합류 순서는:
+- PR #121 — 승인 UI 계보 → main **MERGED**
+- PR #122 — 로그인 보안·작업자 기록·운영 확정분 → main **MERGED**
+- PR #120 — 운영 개시 준비/검증 → main **MERGED**
 
-```text
-main
- ├─ work/ui/finalize-baseline
- │    → Visual QA
- │    → 사용자 UI 승인
- │    → main merge
- │
- └─ work/release/operational-launch
-      → 최신 main(UI 포함) 반영
-      → production smoke/read-write/auth 검증
-      → 운영 개시
-      → main merge
-```
-
-운영 준비 작업은 UI와 병행할 수 있지만, **최종 production acceptance는 UI 최종 merge 이후 상태에서 다시 수행**한다.
+이 시점부터 main을 변경하지 않고 첫 배포 시도를 준비한다. 배포 차단 결함이 발견될 때만 별도 short-lived fix branch를 만든다.
 
 ## 4.5 UI 정본 확정 — 2026-09-26
 

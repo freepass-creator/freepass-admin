@@ -26,6 +26,8 @@ export type AdminCatalogReceipt = {
   };
   freepass?: {
     releaseId: string;
+    manifestId: string;
+    inputDigest: string;
     revision: number;
     dataDigest: string;
     policyParity: 'COMPLETE' | 'INCOMPLETE';

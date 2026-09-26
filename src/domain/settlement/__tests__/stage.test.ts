@@ -154,10 +154,13 @@ test('지난 달의 확정 billMonth는 정산 흔적이 부족한 legacy 행도
 });
 
 
-test('깨진 소수 납입회차를 반올림해 완납 사실로 만들지 않는다', () => {
-  const r = row('2026-09-10', '2회분납', 1.6);
-  assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '분납실적');
-  assert.equal(nextInstallmentDate(r), '2026-10-10');
+test('깨진 명시 납입회차는 없는 값처럼 추정하지 않고 fail-closed 한다', () => {
+  for (const paidRounds of [1.6, -1, 99]) {
+    const r = row('2026-09-10', '2회분납', paidRounds);
+    assert.equal(stageOf(r, new Date('2026-11-20T12:00:00+09:00')), '분납실적');
+    assert.equal(nextInstallmentDate(r), null);
+    assert.equal(billingMonth(r, new Date('2026-11-20T12:00:00+09:00')), null);
+  }
 });
 
 

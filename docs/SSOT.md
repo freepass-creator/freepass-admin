@@ -1,7 +1,7 @@
 # FreePass Admin SSOT Map
 
 상태: ACTIVE  
-기준일: 2026-09-19
+기준일: 2026-09-26
 
 ## 1. 정본 원칙
 FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터·배포가 서로 같은 의미의 정본이라고 가정하지 않는다.
@@ -9,6 +9,7 @@ FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터
 | 대상 | 정본 | 상태 |
 |---|---|---|
 | 제품 범위·장기 규칙 | `docs/MASTER-v1.md` | ACTIVE |
+| 기능 개발 진입점 | `docs/FUNCTION-AUTHORITY.md` | ACTIVE / CANONICAL |
 | 최신 개발 반영 | `docs/WORK-INBOX.md` | ACTIVE |
 | 코드 | 이 저장소 `main` | ACTIVE |
 | Domain 모델 | `src/domain/**` | ACTIVE |
@@ -20,7 +21,7 @@ FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터
 | UI/UX 규격 | AI Core/DevCenter 공통 규격 확정 전 | HOLD |
 | Product / Offer / Policy 데이터 정본 | **FreePass Data** | AUTHORITY · Admin read cutover HOLD |
 | Admin Catalog 현재 읽기 | `AdminCatalogReader` → OBSERVE → freepasserp5 legacy bridge | TRANSITIONAL |
-| Admin workflow persistence | freepasserp5 (intake/settlement/e-sign adapters) | CODED · FreePass Data workflow-domain cutover와 별도 |
+| Admin workflow persistence | `src/server/freepass-data.ts` → Repository/Adapter → Firestore (`freepasserp5` project id) | ACTIVE GATEWAY · Admin workflow meaning remains Admin-owned |
 | 운영 Auth/Permission | 없음 | NOT VERIFIED |
 | 운영 Release target | 없음 | NOT VERIFIED |
 
@@ -70,7 +71,7 @@ freepasserp5 상품 reader는 **legacy bridge**로만 유지한다. collection p
 접수·정산·전자계약 workflow는 Admin 소유 의미를 유지하며 현재 freepasserp5 adapter에 저장된다.
 이 workflow persistence와 Catalog read cutover는 한 번에 바꾸지 않는다.
 
-현재 JSON file store는 개발 검증용 Adapter다. 운영 persistence 정본으로 선언하지 않는다.
+과거 JSON file Application store와 `src/domain/application/**` 계층은 LEGACY_QUARANTINED다. 현재 접수 런타임 정본은 Intake/`settlement_rows`이며 신규 기능은 과거 Application 계층에 의존하지 않는다.
 
 운영 저장소 도입 전 최소 검증:
 - transaction
@@ -84,6 +85,18 @@ freepasserp5 상품 reader는 **legacy bridge**로만 유지한다. collection p
 
 ## 5. 충돌 해결
 충돌 시 우선순위:
+1. 사용자의 최신 명시 결정
+2. 기능 의미/브랜치 충돌은 `docs/FUNCTION-AUTHORITY.md`
+3. 최신 WORK-INBOX
+4. MASTER
+5. 실제 Domain 계약과 테스트
+6. 과거 메일/Mockup/Reference
+
+기존 번호 체계와 무관하게 위 순서가 최신이다.
+
+<!-- superseded-order-below -->
+
+과거 표기의 우선순위(아래)는 위 최신 순서가 덮어쓴다.
 1. 사용자의 최신 명시 결정
 2. 최신 WORK-INBOX
 3. MASTER

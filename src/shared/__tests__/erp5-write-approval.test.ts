@@ -91,3 +91,21 @@ test('direct maintenance --apply requires the same approval receipt', () => {
     ERP5_WRITE:'on', FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',
   }, true, 'maint', NOW));
 });
+
+
+test('only localhost Firestore emulator endpoints bypass production approval', () => {
+  assert.equal(erp5WriteGate({
+    ERP5_WRITE:'on', NODE_ENV:'production', FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',
+  }, false, NOW).mode, 'EMULATOR');
+  const remote = erp5WriteGate({
+    ERP5_WRITE:'on', NODE_ENV:'production', FIRESTORE_EMULATOR_HOST:'10.0.0.20:8080',
+  }, false, NOW);
+  assert.equal(remote.enabled, false);
+  assert.equal(remote.mode, 'HOLD');
+  assert.throws(
+    () => assertErp5MaintenanceWrite({
+      ERP5_WRITE:'on', FIRESTORE_EMULATOR_HOST:'10.0.0.20:8080',
+    }, true, 'maint', NOW),
+    /remote FIRESTORE_EMULATOR_HOST/,
+  );
+});

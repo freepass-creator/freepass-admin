@@ -22,13 +22,16 @@ export function settlementRatioOf(r: Pick<SettlementRow, 'settleRatio'>): Maybe<
   return Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
 }
 
+const nonNegativeMoney = (v: number): Maybe<number> => Number.isFinite(v) && v >= 0 ? v : null;
+
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
   const settleRatio = settlementRatioOf(r);
   if (settleRatio === null) return null;
   const k = paidRatioOf(r, now) * settleRatio;
-  return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
+  const amount = Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
+  return nonNegativeMoney(amount);
 }
 
 export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
@@ -36,8 +39,9 @@ export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   const settleRatio = settlementRatioOf(r);
   if (settleRatio === null) return null;
   const ratio = paidRatioOf(r, now);
-  if (ratio < 1 && noPayIfBroken(r)) return r.money.payAdjust ?? 0;
-  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
+  if (ratio < 1 && noPayIfBroken(r)) return nonNegativeMoney(r.money.payAdjust ?? 0);
+  const amount = Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
+  return nonNegativeMoney(amount);
 }
 
 /** 남는 것. ★받을 돈을 «모르면» 남는 것도 모른다 */

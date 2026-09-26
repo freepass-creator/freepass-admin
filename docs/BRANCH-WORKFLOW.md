@@ -31,7 +31,7 @@
 - `work/function`, `work/esign`, `work/uiux`, `work/ui/finalize-baseline`, 과거 release/launch branch는 현재 개발 기준이 아니다.
 - 과거 branch가 GitHub에 남아 있다는 사실은 ACTIVE 승인이 아니다. 코드 정본과 보관 ref를 구분한다.
 - 오래 갈라진 branch는 통째로 merge하지 않는다. 필요한 의미와 회귀테스트만 current main에 없는지 확인한 뒤 별도 승인된 작업에서 선별 이식한다.
-- 이번 정리에서는 과거 remote ref를 물리적으로 삭제하지 않았다. 미병합 고유 변경의 보존을 확인하지 않은 삭제는 하지 않는다.
+- 최초 통합 기록에서는 remote ref를 삭제하지 않았다. 후속 work order #134는 정확한 HEAD 감사와 고유 이력 보존을 전제로 참조 정리를 수행한다. 실행 완료는 Branch Hygiene 로그와 실제 원격 refs로 확인한다.
 - 브랜치 삭제 시에는 삭제 직전 HEAD를 다시 읽고 main 포함 여부/보존 기록/열린 PR/활성 writer를 확인한다. 완료된 PR의 head가 이동했다면 새 변경을 버리지 않는다.
 
 ## 4. 변경하지 않은 경계
@@ -46,3 +46,11 @@
 ## 5. 완료 판정
 
 정상적인 코드 기준은 `main` 하나다. 각 기능의 구현·검증·메인 병합 완료와 운영 개통 완료를 구분한다. 다음 작업은 이 통합 main에서 시작하며, 과거 branch를 또 다른 최신본으로 안내하지 않는다.
+
+## 6. 후속 참조 정리 — work order #134
+
+- 단일 writer의 maintenance 작업이다. 런타임/UI/데이터/배포 변경은 없다.
+- 대상과 정확한 SHA는 `registry/branch-retirement-20260926.json`, 감사와 보존 근거는 `docs/work/MAIN-CONSOLIDATION-20260926.md`를 따른다.
+- main에 포함된 가지는 참조만 삭제한다. 이미 폐기·대체된 diverged 이력은 `archive/admin-main-20260926/*` 태그의 원격 SHA를 검증한 다음 가지 참조만 삭제한다. 태그는 복구 증거일 뿐 개발·배포·디자인 정본이 아니다.
+- 자동 정리는 이동한 HEAD, 열린 PR, 등록된 ACTIVE writer를 건너뛴다. 삭제의 exact-SHA lease가 달라지면 실패하며 새 커밋은 보존한다.
+- 고정 lane reset, main 삭제, archive tag 덮어쓰기, wildcard 삭제는 금지한다. 문서에 예정됐다는 이유만으로 삭제 완료라고 표시하지 않는다.

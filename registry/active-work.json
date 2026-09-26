@@ -33,9 +33,17 @@
     "check_conclusion": "ALL_SUCCESS",
     "open_prs_observed_after_merge": 0,
     "observation_scope": "Snapshot after PR #133 merge; read live remote state before subsequent work",
-    "remote_ref_deletion": "NOT_PERFORMED",
+    "remote_ref_deletion": "SEE_BRANCH_HYGIENE_RUN_AND_LIVE_REFS",
     "non_main_refs": "NOT_ACTIVE_WITHOUT_A_NEW_EXPLICIT_WORK_ORDER",
     "production_launch_approved_by_this_merge": false
+  },
+  "branch_retirement": {
+    "work_order_issue": 134,
+    "writer": "ChatGPT consolidation session",
+    "manifest": "registry/branch-retirement-20260926.json",
+    "receipt": "docs/work/MAIN-CONSOLIDATION-20260926.md",
+    "execution": "EXACT_SHA_ALLOWLIST_ON_MERGED_PR",
+    "completion_evidence": "Branch Hygiene success log and live remote refs; not this intent record"
   },
   "active": [],
   "archived": [

@@ -1,0 +1,85 @@
+{
+  "schema": "freepass-admin-branch-retirement/v1",
+  "observed_at": "2026-09-26",
+  "observed_main_sha": "e72fee1d17ac07d99f6d7d587ae89d153058a270",
+  "authority": "docs/work/MAIN-CONSOLIDATION-20260926.md",
+  "rule": "Exact-SHA allowlist only. Skip advanced refs and open PRs. Archive divergent retired history before deletion. Never delete main.",
+  "candidates": [
+    {
+      "branch": "claude/freepass-admin-launch-irkl4q",
+      "expected_sha": "9d83e42267c2c1b2e8eed87f9a3404b5551cee9b",
+      "mode": "merged",
+      "ahead_by_at_audit": 0,
+      "behind_by_at_audit": 291,
+      "reason": "Exact HEAD is already an ancestor of integrated main."
+    },
+    {
+      "branch": "work/uiux",
+      "expected_sha": "291efab6627c2a05e1ae146f9fb504164d3c2eda",
+      "mode": "merged",
+      "ahead_by_at_audit": 0,
+      "behind_by_at_audit": 861,
+      "reason": "Approved PR92 lineage is in main; old donor is not a development basis."
+    },
+    {
+      "branch": "work/freepass-admin/i01-f04-paid-rounds-map",
+      "expected_sha": "8a4cd1ae5cb31f0cb2c6aa055f81b058592634ab",
+      "mode": "merged",
+      "ahead_by_at_audit": 0,
+      "behind_by_at_audit": 287,
+      "reason": "Exact HEAD is already an ancestor of integrated main; I work is integrated."
+    },
+    {
+      "branch": "work/freepass-admin/i01-node-runtime-parity",
+      "expected_sha": "8a4cd1ae5cb31f0cb2c6aa055f81b058592634ab",
+      "mode": "merged",
+      "ahead_by_at_audit": 0,
+      "behind_by_at_audit": 287,
+      "reason": "Exact HEAD is already an ancestor of integrated main."
+    },
+    {
+      "branch": "work/freepass-admin/i01-production-demo-guard",
+      "expected_sha": "8a4cd1ae5cb31f0cb2c6aa055f81b058592634ab",
+      "mode": "merged",
+      "ahead_by_at_audit": 0,
+      "behind_by_at_audit": 287,
+      "reason": "Exact HEAD is already an ancestor of integrated main."
+    },
+    {
+      "branch": "work/function",
+      "expected_sha": "82c51c3cc0f4ddda069532c2fc0f35599c3dad6c",
+      "mode": "archive",
+      "ahead_by_at_audit": 17,
+      "behind_by_at_audit": 915,
+      "reason": "Already DISCARDED by existing branch authority; do not overwrite current Intake/settlement rules. Preserve divergent history only.",
+      "archive_tag": "archive/admin-main-20260926/work/function"
+    },
+    {
+      "branch": "work/esign",
+      "expected_sha": "055ebc954aed451f10105c97946c39b059aa92e4",
+      "mode": "archive",
+      "ahead_by_at_audit": 3,
+      "behind_by_at_audit": 1362,
+      "reason": "Already DISCARDED by existing branch authority. Preserve e-sign history without merging or enabling it.",
+      "archive_tag": "archive/admin-main-20260926/work/esign"
+    },
+    {
+      "branch": "work/ui/finalize-baseline",
+      "expected_sha": "1e2119c63ae03be766c57eb2f1f01fc072b45b96",
+      "mode": "archive",
+      "ahead_by_at_audit": 4,
+      "behind_by_at_audit": 895,
+      "reason": "Existing registry marks SUPERSEDED_BY_PR_121. Preserve old Visual QA history without replacing current UI.",
+      "archive_tag": "archive/admin-main-20260926/work/ui/finalize-baseline"
+    },
+    {
+      "branch": "work/release/predeploy-freeze",
+      "expected_sha": "c1bfec595801e25bdad586b9d4b22ee1dffeb293",
+      "mode": "archive",
+      "ahead_by_at_audit": 3,
+      "behind_by_at_audit": 290,
+      "reason": "Only old governance/freeze documents differ; superseded by this single-main decision. No runtime feature to import.",
+      "archive_tag": "archive/admin-main-20260926/work/release/predeploy-freeze"
+    }
+  ]
+}

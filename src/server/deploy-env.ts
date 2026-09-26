@@ -42,9 +42,12 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   else {
     try {
       const sa = JSON.parse(raw) as Record<string, unknown>;
-      if (!sa.client_email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
+      const email = String(sa.client_email ?? '').trim();
+      if (!email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
       else if (sa.project_id !== ERP5_PROJECT_ID) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `project_id 가 ${ERP5_PROJECT_ID} 가 아닙니다`);
-      else ok('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `${ERP5_PROJECT_ID} 서비스계정`);
+      else if (!email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
+        err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `client_email 이 ${ERP5_PROJECT_ID} 서비스계정이 아닙니다`);
+      } else ok('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `${ERP5_PROJECT_ID} 서비스계정`);
     } catch { err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'JSON 으로 읽히지 않습니다(따옴표·줄바꿈 확인)'); }
   }
   if (set(env, 'ERP5_SERVICE_ACCOUNT_PATH')) warn('ERP5_SERVICE_ACCOUNT_PATH', '배포에서는 파일 경로가 아니라 JSON 값을 씁니다');

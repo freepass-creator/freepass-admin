@@ -58,3 +58,11 @@ test('음수나 비정상 정산비율은 금액을 만들지 않고 fail-closed
   assert.equal(settlementRatioOf(corrupt), null);
   assert.equal(claimAmountOf(corrupt), null);
 });
+
+
+test('50% 정산비율은 청구·지급에 동일하게 적용한다', () => {
+  const r = row({ settleRatio: 0.5 });
+  assert.equal(claimAmountOf(r), 500_000);
+  assert.equal(payAmountOf(r), 400_000);
+  assert.equal(marginOf(r), 100_000);
+});

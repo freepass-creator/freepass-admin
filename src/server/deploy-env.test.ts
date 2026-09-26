@@ -13,6 +13,13 @@ const good = {
   PUBLIC_BASE_URL: 'https://freepass-admin.vercel.app',
   CLAIM_LINK_BASE: 'https://freepass-admin.vercel.app/',
 };
+const writeApproval = JSON.stringify({
+  projectId: 'freepasserp5',
+  iamVerified: true,
+  backupRestoreVerified: true,
+  approvalRef: 'ops-20260926',
+  approvedAt: '2026-09-26T06:30:00.000Z',
+});
 const errors = (env: Record<string, string | undefined>) => checkDeployEnv(env).filter((f) => f.level === 'error').map((f) => f.key);
 
 test('complete first-deploy env has no errors and never echoes secret values', () => {
@@ -45,12 +52,21 @@ test('public addresses must be one https origin without a path', () => {
   assert.ok(errors({ ...good, APP_BASE_URL: 'https://freepass-admin.vercel.app/login' }).includes('APP_BASE_URL'));
 });
 
-test('emulator/demo settings and short session secrets are blocked; write on and esign on only warn', () => {
+test('emulator/demo settings and short session secrets are blocked', () => {
   assert.ok(errors({ ...good, FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }).includes('FIRESTORE_EMULATOR_HOST'));
   assert.ok(errors({ ...good, FPA_DEMO: 'on' }).includes('FPA_DEMO'));
   assert.ok(errors({ ...good, SESSION_SECRET: 'short' }).includes('SESSION_SECRET'));
-  const f = checkDeployEnv({ ...good, ERP5_WRITE: 'on', ESIGN_ENABLED: 'on' });
+});
+
+test('ERP5_WRITE=on requires explicit IAM and backup/restore approval evidence', () => {
+  assert.ok(errors({ ...good, ERP5_WRITE: 'on' }).includes('ERP5_WRITE_APPROVAL_JSON'));
+  const approved = checkDeployEnv({ ...good, ERP5_WRITE: 'on', ERP5_WRITE_APPROVAL_JSON: writeApproval });
+  assert.deepEqual(approved.filter((x) => x.level === 'error'), []);
+  assert.ok(approved.some((x) => x.key === 'ERP5_WRITE' && x.level === 'ok'));
+});
+
+test('e-sign remains a launch-scope warning rather than bypassing data guards', () => {
+  const f = checkDeployEnv({ ...good, ESIGN_ENABLED: 'on' });
   assert.deepEqual(f.filter((x) => x.level === 'error'), []);
-  assert.ok(f.some((x) => x.key === 'ERP5_WRITE' && x.level === 'warn'));
   assert.ok(f.some((x) => x.key === 'ESIGN_ENABLED' && x.level === 'warn'));
 });

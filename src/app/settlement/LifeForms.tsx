@@ -117,7 +117,7 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, failC
         </form>
         {live && (
           <form aria-busy={revoking} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => revoke(fd)); }}>
-            {칸}<button type="submit" disabled={disabled || revoking} aria-busy={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
+            {칸}<button type="submit" className="dz-action-caution" disabled={disabled || revoking} aria-busy={revoking}>{revoking ? '거두는 중…' : '거두기'}</button>
           </form>
         )}
       </div>

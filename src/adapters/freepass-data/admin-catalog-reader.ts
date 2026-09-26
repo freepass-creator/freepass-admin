@@ -195,6 +195,12 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
           servedBy: 'FREEPASS_DATA',
           cutoverAuthorized: true,
           holdReasons: [],
+          cutover: {
+            approvalRef: approval.approvalRef,
+            fromStage: approval.fromStage,
+            targetStage: approval.targetStage,
+            validUntil: approval.validUntil,
+          },
           freepass: {
             releaseId: live.meta.releaseId,
             manifestId: live.meta.manifestId,
@@ -248,6 +254,12 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
       ];
       const baseReceipt: AdminCatalogReceipt = {
         ...this.legacyReceipt(mode, holds),
+        ...(approval ? { cutover: {
+          approvalRef: approval.approvalRef,
+          fromStage: approval.fromStage,
+          targetStage: approval.targetStage,
+          validUntil: approval.validUntil,
+        } } : {}),
         freepass: {
           releaseId: shadow.meta.releaseId,
           manifestId: shadow.meta.manifestId,

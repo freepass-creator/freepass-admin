@@ -9,6 +9,7 @@ import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatch
 import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { SettlementScreen } from '../_erp/SettlementScreen';
+import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal } from './group-signal';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,28 +105,28 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const 지급인계Href = 다음지급거래처
     ? keep({ tab: 'pay', g: 다음지급거래처, ic: '', lc: '', gs: 'todo', ls: 'todo', v: 'detail' })
     : undefined;
-  /** 실적 줄의 상태 칸 — 그 축의 걸음(접수 → 청구/통보 → 확인 → 수금/지급) · 곁길(보류 · 정정 · 끊김) */
-  const 줄상태 = (stage: string, hold: boolean, broken: boolean): RowStatus =>
-    hold ? { icon: 'pause', label: '보류', tone: 'amber' }
-      : stage === '정정' ? { icon: 'alert', label: '정정', tone: 'red' }
-        : broken ? { icon: 'alert', label: '끊김', tone: 'red' }
-          : stage === '수금' || stage === '지급' ? { icon: 'circle-check', label: stage, tone: 'green' }
-            : stage === '확인' ? { icon: 'shield-check', label: '확인', tone: 'navy' }
-              : stage === '청구' || stage === '통보' ? { icon: 'send', label: stage, tone: 'navy' }
-                : { icon: 'clipboard', label: '접수', tone: 'grey' };
-  const 금액 = (n: number | null | undefined) => (n === null || n === undefined ? '금액 모름' : `${won(n)}원`);
-  const 묶음상태 = (g: (typeof groups)[number]): RowStatus => {
-    if (month === NO_MONTH) return { icon: 'alert', label: '미정', tone: 'red' };
-    const attention = ledgerGroupAttention(g);
-    if (attention === 'issue') return { icon: 'alert', label: '이슈', tone: 'red' };
-    if (attention === 'done') return { icon: 'circle-check', label: '완료', tone: 'green' };
-    return g.done > 0
-      ? { icon: 'clock', label: `${g.done}/${g.lines.length}`, tone: 'navy' }
-      : { icon: 'clock', label: '대기', tone: 'navy' };
+  const signalToRowStatus = (signal: SettlementSignal): RowStatus => {
+    const tone: RowStatus['tone'] = signal.tone === 'success' ? 'green'
+      : signal.tone === 'warning' ? 'amber'
+        : signal.tone === 'error' ? 'red'
+          : signal.tone === 'info' ? 'navy' : 'grey';
+    const icon: RowStatus['icon'] = signal.key === 'done' ? 'circle-check'
+      : signal.key === 'hold' ? 'pause'
+        : signal.key === 'correction' || signal.key === 'broken' || signal.key === 'amount-unknown' || signal.key === 'month-unassigned' ? 'alert'
+          : signal.key === 'clawback' ? 'repeat'
+            : signal.key === 'progress' ? 'clock' : 'clipboard';
+    return { icon, label: signal.label, tone };
   };
+  /** 실적 줄의 상태 칸 — shared presentation signal로 Web/Mobile 의미를 맞춘다. */
+  const 줄상태 = (stage: string, hold: boolean, broken: boolean): RowStatus =>
+    signalToRowStatus(settlementLineSignal(stage, { hold, broken }));
+  const 금액 = (n: number | null | undefined) => (n === null || n === undefined ? '금액 모름' : `${won(n)}원`);
+  const 묶음상태 = (g: (typeof groups)[number]): RowStatus =>
+    signalToRowStatus(settlementGroupSignal(g, tab, month === NO_MONTH));
   const 묶음톤 = (g: (typeof groups)[number]) => {
-    const attention = ledgerGroupAttention(g);
-    return attention === 'issue' ? 'warn' as const : attention === 'todo' ? 'act' as const : 'plain' as const;
+    const signal = settlementGroupSignal(g, tab, month === NO_MONTH);
+    return signal.tone === 'error' || signal.tone === 'warning' ? 'warn' as const
+      : signal.tone === 'info' ? 'act' as const : 'plain' as const;
   };
 
   return (
@@ -172,24 +173,14 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
             {month === NO_MONTH && <Notice tone="warn">인도됐는데 셈한 달이 이미 닫힌(청구서 나간) 달이라 못 들어간 줄입니다 — 사람이 달을 정해야 합니다.</Notice>}
           </div>
           <div className="list">
-            {shownGroups.map((g) => {
-              const 위험 = [
-                g.unknown ? `금액 모름 ${g.unknown}` : '',
-                g.hold ? `보류 ${g.hold}` : '',
-                g.broken ? `끊김 ${g.broken}` : '',
-                g.clawbacks.length ? `환수 ${g.clawbacks.length}` : '',
-              ].filter(Boolean);
-              const 위험표시 = 위험.length > 2 ? `${위험.slice(0, 2).join(' · ')} · 외 ${위험.length - 2}` : 위험.join(' · ');
-              return (
-                <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
-                  status={묶음상태(g)}
-                  title={g.party} mainValue={`정산 ${won(g.net)}원`}
-                  badge={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
-                  tone={묶음톤(g)}
-                  meta={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
-                  value={위험표시 || `완료 ${g.completed}/${g.lines.length}`} />
-              );
-            })}
+            {shownGroups.map((g) => (
+              <ListRow key={g.party} href={keep({ g: g.party, ic: '', v: 'detail' })} selected={g.party === gSel?.party}
+                status={묶음상태(g)}
+                title={g.party} mainValue={`정산 ${won(g.net)}원`}
+                tone={묶음톤(g)}
+                meta={`${tab === 'claim' ? '청구서' : '지급 통보'} ${g.done}/${g.lines.length}`}
+                value={settlementGroupSupport(g, tab)} />
+            ))}
             {shownGroups.length === 0 && <EmptyState>이 달에 선 {who}가 없습니다.</EmptyState>}
           </div>
           {tab === 'claim' && 공급사축완료 && 지급인계Href && (

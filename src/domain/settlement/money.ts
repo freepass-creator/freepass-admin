@@ -13,26 +13,43 @@
  * ★가감은 비율·몫을 안 곱한다 — 사람이 «이 건에서 이만큼» 이라고 적은 최종 금액이다.
  * ⚠ 정산대상(양쪽·공급·영업) 가름은 «목록» 의 일이다(ledgers.ts).
  */
-import { noPayIfBroken, paidRatioOf } from './stage';
+import { invalidPaidRounds, noPayIfBroken, paidRatioOf, roundsOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
+
+/** 정산비율 — 0은 유효한 사실, 음수/비정상 숫자는 조용히 돈으로 만들지 않는다. */
+export function settlementRatioOf(r: Pick<SettlementRow, 'settleRatio'>): Maybe<number> {
+  const v = Number(r.settleRatio);
+  return Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
+}
+
+const nonNegativeMoney = (v: number): Maybe<number> => Number.isFinite(v) && v >= 0 ? v : null;
 
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
-  const k = paidRatioOf(r, now) * (r.settleRatio || 1);
-  return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
+  if (roundsOf(r.payKind) >= 2 && invalidPaidRounds(r)) return null;
+  const settleRatio = settlementRatioOf(r);
+  if (settleRatio === null) return null;
+  const k = paidRatioOf(r, now) * settleRatio;
+  const amount = Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
+  return nonNegativeMoney(amount);
 }
 
 export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.money.pay === null) return null;
+  if (roundsOf(r.payKind) >= 2 && invalidPaidRounds(r)) return null;
+  const settleRatio = settlementRatioOf(r);
+  if (settleRatio === null) return null;
   const ratio = paidRatioOf(r, now);
-  if (ratio < 1 && noPayIfBroken(r)) return r.money.payAdjust ?? 0;
-  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * (r.settleRatio || 1)) + (r.money.payAdjust ?? 0);
+  if (ratio < 1 && noPayIfBroken(r)) return nonNegativeMoney(r.money.payAdjust ?? 0);
+  const amount = Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
+  return nonNegativeMoney(amount);
 }
 
 /** 남는 것. ★받을 돈을 «모르면» 남는 것도 모른다 */
 export function marginOf(r: SettlementRow, now = new Date()): Maybe<number> {
   const c = claimAmountOf(r, now);
-  if (c === null) return null;
-  return c - (payAmountOf(r, now) ?? 0);
+  const p = payAmountOf(r, now);
+  if (c === null || p === null) return null;
+  return c - p;
 }

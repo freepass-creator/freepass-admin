@@ -70,3 +70,50 @@ describe('접수에 수수료가 선다', () => {
     assert.match(String(r.settleNote), /사람이 정한다/);
   });
 });
+
+
+describe('feeOf — 깨진 자동 규칙은 조용히 금액을 만들지 않는다', () => {
+  const contract = c({ supplier: '손오공', product: '장기렌트', term: 48, rent: 700_000 });
+
+  it('비율형 자동 규칙의 음수/100% 초과를 수동확인으로 내린다', () => {
+    const badNeg: FeeRuleSet = { ...set, rules: [{ ...set.rules[3], claim: -0.1 }] };
+    assert.equal(feeOf(badNeg, contract).status, 'MANUAL');
+
+    const badOver: FeeRuleSet = { ...set, rules: [{ ...set.rules[3], pay: 1.2 }] };
+    assert.equal(feeOf(badOver, contract).status, 'MANUAL');
+  });
+
+  it('정액 자동 규칙의 음수 금액을 수동확인으로 내린다', () => {
+    const bad: FeeRuleSet = { ...set, rules: [{ ...set.rules[2], claim: -1 }] };
+    assert.equal(feeOf(bad, c({ supplier: '손오공', product: '장기렌트', term: 12, rent: 500_000 })).status, 'MANUAL');
+  });
+
+  it('지원하지 않는 basis가 실수로 auto=true여도 임의 계산하지 않는다', () => {
+    const bad: FeeRuleSet = { ...set, rules: [{
+      ...set.rules[3], basis: '한달렌탈료', claim: 0.5, pay: 0.4, auto: true,
+    }] };
+    assert.equal(feeOf(bad, contract).status, 'MANUAL');
+  });
+
+  it('음수/0 기준값은 자동 계산하지 않는다', () => {
+    assert.equal(feeOf(set, c({ supplier: '손오공', product: '장기렌트', term: 48, rent: -1 })).status, 'NO_BASE');
+    assert.equal(feeOf(set, c({ supplier: '손오공', product: '장기렌트', term: 48, rent: 0 })).status, 'NO_BASE');
+  });
+});
+
+
+describe('feeOf — 깨진 SSOT 정규식은 접수 전체를 죽이지 않는다', () => {
+  it('전기차 정규식이 깨지면 NO_RULE로 내려 사람 확인을 요구한다', () => {
+    const bad: FeeRuleSet = { ...set, evModel: '[' };
+    const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'EV6', term: 48, rent: 700_000 }));
+    assert.equal(result.status, 'NO_RULE');
+    assert.match(result.why, /SSOT 정규식/);
+  });
+
+  it('갈래 match 정규식이 깨져도 NO_RULE로 내려간다', () => {
+    const bad: FeeRuleSet = { ...set, kindRules: [{ match: '[', kind: '재렌트' }] };
+    const result = feeOf(bad, c({ supplier: '손오공', product: '장기렌트', model: 'K8', term: 48, rent: 700_000 }));
+    assert.equal(result.status, 'NO_RULE');
+    assert.match(result.why, /SSOT 정규식/);
+  });
+});

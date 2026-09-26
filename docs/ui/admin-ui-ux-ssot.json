@@ -767,7 +767,29 @@
       "primaryAction": "지급 업무로",
       "rule": "Use shared ledger/lifecycle results; UI only links to the next axis and does not recalculate settlement state."
     },
-    "currentWorkLabel": "Settlement detail must show the actionable lifecycle step (confirm, invoice, cash, uncorrect, done), not only the axis name."
+    "currentWorkLabel": "Settlement detail must show the actionable lifecycle step (confirm, invoice, cash, uncorrect, done), not only the axis name.",
+    "desktopSettlementDrillIn": {
+      "route": "/settlement",
+      "contextKeys": [
+        "month",
+        "g",
+        "tab"
+      ],
+      "detailKey": "focus",
+      "composition": "claim list | focused SettlementDetail or group summary | pay list",
+      "rule": "Selecting a settlement performance row must stay on /settlement, preserve settlement context, and expose lifecycle actions in the middle Panel.",
+      "actions": [
+        "confirm",
+        "correct",
+        "uncorrect",
+        "invoice",
+        "collect",
+        "pay",
+        "next-row",
+        "next-party",
+        "next-axis"
+      ]
+    }
   },
   "panelCardSeparation": {
     "panel": "#FFFFFF",

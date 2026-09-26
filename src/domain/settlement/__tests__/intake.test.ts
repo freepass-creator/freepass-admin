@@ -105,6 +105,10 @@ describe('validateIntake — 최초 접수 필수값', () => {
     assert.match(validateIntake({ ...base, receivedAt: '2026-02-30' }, '2026-09-18').join(), /유효한 날짜/);
     assert.deepEqual(validateIntake({ ...base, receivedAt: '2024-02-29' }, '2026-09-18'), []);
   });
+  it('신규 접수에서 미래 인도일과 접수 전 인도일을 막는다', () => {
+    assert.match(validateIntake({ ...base, delivered: true, deliveredAt: '2026-09-19' }, '2026-09-18').join(), /오늘.*뒤/);
+    assert.match(validateIntake({ ...base, receivedAt: '2026-09-18', delivered: true, deliveredAt: '2026-09-17' }, '2026-09-18').join(), /접수일.*보다 빠를/);
+  });
   it('★인도는 계약서와 독립 사실이고, 인도일만 함께 요구한다', () => {
     const e = validateIntake({ ...base, paper: false, delivered: true }, '2026-09-18').join();
     assert.doesNotMatch(e, /계약서/);
@@ -234,6 +238,33 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('존재하지 않는 인도일은 진행 사실로 기록하지 않는다', () => {
     assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-02-30' }).ok, false);
     assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2024-02-29' }).ok, true);
+  });
+  it('미래 인도일이나 접수일보다 빠른 인도일로 실적을 열지 않는다', () => {
+    const now = Date.parse('2026-09-18T00:00:00+09:00');
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-19' },
+        now,
+      ).ok,
+      false,
+    );
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-17' },
+        now,
+      ).ok,
+      false,
+    );
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
+        now,
+      ).ok,
+      true,
+    );
   });
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
     const r = progressPatch({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });

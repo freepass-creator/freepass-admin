@@ -64,9 +64,11 @@ must(/const ROWS = 'settlement_rows'/.test(settlementRepo),'settlement repositor
 must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash movement ledger must use settlement_cash_events');
 must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
+must(/erp5WriteGate/.test(settlementRepo),'settlement writes must pass the shared production approval gate');
 must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
 must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');
 must(/adminDataStatus/.test(status),'live data status probe missing');
+must(/writeGate\(\)/.test(status),'data-status must expose the fail-closed ERP5 write gate, not only a boolean');
 must(/adminCatalogListFresh\(\)/.test(status),'data-status must bypass product cache through the FreePass Data catalog boundary');
 must(/authority:\s*'FREEPASS_DATA'/.test(status),'data-status must identify FreePass Data as the data authority');
 must(!/productList\(\)/.test(status),'data-status must not report the cached productList as a live repository probe');

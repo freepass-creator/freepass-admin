@@ -74,6 +74,15 @@ export function cellText(v: unknown): string | null {
   return s || null;
 }
 
+/**
+ * F04 snapshot 필드명 → 현재 settlement_rows 정본 필드명.
+ * 과거 snapshot은 「납입회차」를 rounds로 저장했지만 Admin 정본은 paidRounds다.
+ * migration에서 이 경계를 반드시 한 번 통과시켜 legacy 이름이 Firestore에 다시 생기지 않게 한다.
+ */
+export function f04SettlementField(name: string): string {
+  return name === 'rounds' ? 'paidRounds' : name;
+}
+
 /** 시트 체크 — 「TRUE·true·참·Y·예·1」 이 섞여 있다 */
 export function cellCheck(v: unknown): boolean {
   if (typeof v === 'boolean') return v;

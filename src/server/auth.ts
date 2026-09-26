@@ -64,7 +64,7 @@ function erp4App(): App {
 }
 const adminAuth = () => getAuth(erp4App());
 
-export interface AdminUser { uid: string; name: string; role: 'admin' }
+export interface AdminUser { uid: string; name: string; role: 'admin'; email?: string }
 
 const cache = new Map<string, { at: number; user: AdminUser | null }>();
 
@@ -81,7 +81,7 @@ export async function adminOf(uid: string, email?: string): Promise<AdminUser | 
     const pinned = adminUids().has(uid);
     const verified = pinned ? true : await adminAuth().getUser(uid).then((u) => u.emailVerified).catch(() => false);
     if (pinned || verified) {
-      const user = { uid, name: email.split('@')[0], role: 'admin' as const };
+      const user = { uid, name: email.split('@')[0], role: 'admin' as const, email: email.trim().toLowerCase() };
       cache.set(uid, { at: Date.now(), user });
       return user;
     }
@@ -91,7 +91,7 @@ export async function adminOf(uid: string, email?: string): Promise<AdminUser | 
   if (!doc) { const d = await db.collection('user').doc(uid).get(); doc = d.exists ? d.data() : undefined; }
   const active = doc && doc.is_active !== false && doc._deleted !== true && !/비활성|정지|탈퇴|거절/.test(String(doc.status ?? ''));
   const user = doc && active && String(doc.role) === 'admin'
-    ? { uid, name: String(doc.name ?? doc.user_name ?? doc.display_name ?? '관리자'), role: 'admin' as const }
+    ? { uid, name: String(doc.name ?? doc.user_name ?? doc.display_name ?? '관리자'), role: 'admin' as const, ...(email ? { email: email.trim().toLowerCase() } : {}) }
     : null;
   cache.set(uid, { at: Date.now(), user });
   return user;
@@ -131,7 +131,7 @@ export async function verifySession(cookie: string | undefined): Promise<AdminUs
   if (!cookie) return null;
   /* 구글 워크스페이스로 들어온 세션 — 우리가 서명한 것(g1.…) */
   if (cookie.startsWith('g1.')) {
-    try { const g = verifyGoogleSession(cookie); return g ? { uid: g.uid, name: g.name, role: 'admin' } : null; } catch { return null; }
+    try { const g = verifyGoogleSession(cookie); return g ? { uid: g.uid, name: g.name, role: 'admin', email: g.email } : null; } catch { return null; }
   }
   try {
     const d = await adminAuth().verifySessionCookie(cookie, true);

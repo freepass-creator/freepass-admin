@@ -222,7 +222,7 @@ export class Erp5SettlementRepository {
    *   상품접수는 Product ID+접수일로 중복을 막는다.
    * ERP/F04에서 먼저 만든 기존 줄은 문서 id를 믿지 않고 같은 날짜의 실제 identity도 대조한다.
    */
-  async createIntake(input: IntakeInput): Promise<{ code: string; created: boolean }> {
+  async createIntake(input: IntakeInput, by: string = BY): Promise<{ code: string; created: boolean }> {
     mustWrite();
     if (input.sourceProductId?.trim()) {
       if (!input.sourceOfferId?.trim() || input.sourceProductVersion === null || input.sourceProductVersion === undefined
@@ -272,21 +272,21 @@ export class Erp5SettlementRepository {
       tx.set(db.collection(EVENTS).doc(intakeEventDocId(
         plate, input.sourceProductId, input.receivedAt, input.intakeRequestId, rec.intakeIdentityMode,
       )),
-        { [audId()]: { at: rec.createdAt, by: BY, field: '접수', from: '', to: code } }, { merge: true });
+        { [audId()]: { at: rec.createdAt, by, field: '접수', from: '', to: code } }, { merge: true });
       return { code, created: true };
     });
   }
 
   /** 계약서 · 인도 · 취소. ★바뀌는 칸만 쓰고 이력을 남긴다. 바뀔 게 없으면 안 쓴다. */
-  async setProgress(code: string, change: ProgressChange): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    if (change.kind !== 'plate') return this.mutateRow(code, (cur) => progressPatch(cur, change));
+  async setProgress(code: string, change: ProgressChange, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    if (change.kind !== 'plate') return this.mutateRow(code, (cur) => progressPatch(cur, change), by);
 
     const target = change.plate.replace(/\s/g, '').trim();
     const db = erp5();
     return this.mutateRow(
       code,
       (cur) => progressPatch(cur, change),
-      BY,
+      by,
       undefined,
       undefined,
       async (tx, _cur, row) => {
@@ -310,8 +310,8 @@ export class Erp5SettlementRepository {
    * ★청구서가 나간 줄의 청구 쪽, 지급이 끝난 줄의 지급 쪽은 못 바꾼다 — 나간 종이와 원장이 갈린다.
    *   그때는 다음 달 이월(carry)로 넘기는 것이 맞다(erp4 「가감사유 → 다음 달에 할 말」).
    */
-  async setMoney(code: string, patch: Record<string, unknown>): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    return this.mutateRow(code, (cur) => moneyEditPatch(cur, patch));
+  async setMoney(code: string, patch: Record<string, unknown>, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    return this.mutateRow(code, (cur) => moneyEditPatch(cur, patch), by);
   }
 
   /**
@@ -320,7 +320,7 @@ export class Erp5SettlementRepository {
    * ★발행하면 그 줄들의 청구월을 그 달로 박는다 — 이제 그 달은 닫힌다.
    * ★계획과 쓰기 사이에 원장이 바뀌면(누가 고쳤으면) 쓰지 않고 「다시」 라고 말한다.
    */
-  async issueInvoice(month: string, axis: Axis, party: string): Promise<{ ok: true; invoice: IssuedInvoice } | { ok: false; error: string }> {
+  async issueInvoice(month: string, axis: Axis, party: string, by: string = BY): Promise<{ ok: true; invoice: IssuedInvoice } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
     const [all, claws] = await Promise.all([this.list(), this.clawbacks()]);
@@ -369,7 +369,7 @@ export class Erp5SettlementRepository {
       const party0 = await this.partyOf(axis, freshG.lines.map((l) => (axis === '공급사' ? l.row.supplierCode : l.row.channelCode)));
       const taken = sameMonth.docs.map((d) => String(d.data().invoiceNo ?? ''));
       const now = Date.now();
-      const plan = planInvoice(month, axis, party, freshG.lines, freshClaws, existing, taken, now, BY);
+      const plan = planInvoice(month, axis, party, freshG.lines, freshClaws, existing, taken, now, by);
       if (!plan.ok) return plan;
       for (const x of plan.patches) {
         if (!Object.keys(x.patch).length) continue;
@@ -377,7 +377,7 @@ export class Erp5SettlementRepository {
         if (!cur) return { ok: false as const, error: '그 사이 원장 줄을 다시 읽지 못했습니다 — 다시 불러와 발행합니다' };
         tx.update(db.collection(ROWS).doc(x.code), { ...x.patch, updatedAt: now, stateAt: new Date(now).toISOString(), [`invoiceNo${axis === '공급사' ? 'S' : 'P'}`]: plan.invoice.invoiceNo });
         const ev: Record<string, unknown> = {};
-        for (const e of x.events) ev[audId()] = { at: now, by: BY, ...e };
+        for (const e of x.events) ev[audId()] = { at: now, by, ...e };
         if (x.events.length) tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), ev, { merge: true });
       }
       /* ★상대에게 보일 사본 — 발행한 줄(보류 뺀)만 · 그 축 금액만 */
@@ -418,7 +418,7 @@ export class Erp5SettlementRepository {
    * **청구 링크 만들기** — 토큰은 이때 «한 번만» 돌려준다(ERP5 에는 해시만).
    * ★발행한 뒤에만 · 사업자등록번호가 등록돼 있어야 · 새로 만들면 옛 링크는 못 쓴다.
    */
-  async createClaimLink(month: string, axis: Axis, party: string): Promise<{ ok: true; token: string; warn?: string } | { ok: false; error: string }> {
+  async createClaimLink(month: string, axis: Axis, party: string, by: string = BY): Promise<{ ok: true; token: string; warn?: string } | { ok: false; error: string }> {
     mustWrite();
     const ref = this.invoiceRef(month, axis, party);
     const d = await ref.get();
@@ -427,15 +427,15 @@ export class Erp5SettlementRepository {
     const biz = bizDigits(inv.partyBizNo);
     if (biz.length !== 10) return { ok: false, error: `「${party}」 의 사업자등록번호가 거래처(partner ${inv.partyCode ?? '코드 없음'})에 없습니다 — 먼저 채워야 합니다` };
     const token = newToken();
-    await ref.update({ linkHash: tokenHash(token), linkCreatedAt: Date.now(), linkRevokedAt: null, failCount: 0, lockedUntil: null });
+    await ref.update({ linkHash: tokenHash(token), linkCreatedAt: Date.now(), linkCreatedBy: by, linkRevokedAt: null, failCount: 0, lockedUntil: null });
     return { ok: true, token, ...(bizChecksumOk(biz) ? {} : { warn: `등록된 사업자등록번호(${biz.slice(0, 3)}-…)가 검증번호에 안 맞습니다 — 상대가 바른 번호를 넣으면 안 열립니다. 거래처 번호를 확인하세요` }) };
   }
 
-  async revokeClaimLink(month: string, axis: Axis, party: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  async revokeClaimLink(month: string, axis: Axis, party: string, by: string = BY): Promise<{ ok: true } | { ok: false; error: string }> {
     mustWrite();
     const ref = this.invoiceRef(month, axis, party);
     if (!(await ref.get()).exists) return { ok: false, error: '없는 청구서입니다' };
-    await ref.update({ linkRevokedAt: Date.now() });
+    await ref.update({ linkRevokedAt: Date.now(), linkRevokedBy: by });
     return { ok: true };
   }
 
@@ -451,6 +451,8 @@ export class Erp5SettlementRepository {
    * ★돌려주는 것에 우리 몫·반대 축 금액·원장 코드 밖의 것은 없다.
    */
   async openClaim(token: string, bizNo: string): Promise<{ ok: true; view: ClaimView } | { ok: false; error: string }> {
+    /* ★열어 보는 것도 쓴다(틀린 횟수 · 연 횟수). 쓰기가 꺼진 동안 셈 없이 열어 주면 10번 잠금이 사라진다 — 그래서 아예 닫는다 */
+    mustWrite();
     const ref = await this.byToken(token);
     if (!ref) return { ok: false, error: '링크를 찾을 수 없습니다' };
     const db = erp5();
@@ -523,20 +525,20 @@ export class Erp5SettlementRepository {
   }
 
   /** 한 줄의 다음 걸음 — 확인 · 정정 · 계산서 · 수금 · 지급 · 보류 · 청구월 (domain/settlement/lifecycle.ts) */
-  async setLifecycle(code: string, change: LifeChange, operationId?: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+  async setLifecycle(code: string, change: LifeChange, operationId?: string, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
     const cash = change.kind === 'collected'
       ? { axis: '공급사' as const, amount: change.amount, day: change.day, kind: change.kind }
       : change.kind === 'paid'
         ? { axis: '영업채널' as const, amount: change.amount, day: change.day, kind: change.kind }
         : undefined;
-    return this.mutateRow(code, (_cur, row) => lifePatch(row, change), BY, operationId, cash);
+    return this.mutateRow(code, (_cur, row) => lifePatch(row, change), by, operationId, cash);
   }
 
   /**
    * 환수 세우기 (domain/settlement/clawback.ts) — settlement_clawbacks 에 한 줄 · 원장 줄에는 이력만.
    * ★같은 차·같은 달 환수가 이미 있으면 새로 안 세운다.
    */
-  async createClawback(code: string, input: ClawbackInput): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  async createClawback(code: string, input: ClawbackInput, by: string = BY): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
     mustWrite();
     const db = erp5();
     const ref = db.collection(ROWS).doc(code);
@@ -546,7 +548,7 @@ export class Erp5SettlementRepository {
       const cur = d.data()!;
       const { row } = toSettlementRow(cur, d.id);
       const now = Date.now();
-      const r = clawbackRecord(row, input, BY, now);
+      const r = clawbackRecord(row, input, by, now);
       if (!r.ok) return r;
       const cref = db.collection('settlement_clawbacks').doc(r.id);
       const legacyRef = db.collection('settlement_clawbacks').doc(clawbackId(row.plate, String(r.doc.month)));
@@ -557,14 +559,14 @@ export class Erp5SettlementRepository {
       }
       tx.create(cref, r.doc);
       tx.set(db.collection(EVENTS).doc(eventIdOf(cur)),
-        { [audId()]: { at: now, by: BY, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
+        { [audId()]: { at: now, by, field: '환수', from: '', to: `${r.doc.at} 공급 ${r.doc.supplierAmt} · 영업 ${r.doc.agentAmt} · ${r.doc.reason}` } }, { merge: true });
       return { ok: true as const, id: r.id };
     });
   }
 
   /** 접수 뒤 수수료 고치기 (domain/settlement/adjust.ts feeFixPatch) */
-  async setFee(code: string, claim: number | null, pay: number | null, reason: string): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
-    return this.mutateRow(code, (cur) => feeFixPatch(cur, claim, pay, reason));
+  async setFee(code: string, claim: number | null, pay: number | null, reason: string, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    return this.mutateRow(code, (cur) => feeFixPatch(cur, claim, pay, reason), by);
   }
 
   /** 한 줄의 이력 — 최신이 앞. */

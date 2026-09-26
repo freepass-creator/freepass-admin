@@ -43,7 +43,8 @@ function MenuLink({ it, now }: { it: Item; now: string }) {
   );
 }
 
-export function SideMenu() {
+/** esign=false 이면 전자계약 문을 숨긴다 — 운영 개시 범위에서 제외(ESIGN_ENABLED, 대표 2026-09-25). */
+export function SideMenu({ esign = true }: { esign?: boolean }) {
   const now = useCurrent();
   return (
     <>
@@ -52,8 +53,10 @@ export function SideMenu() {
       {/* 전자계약 · 시스템 — 둘 다 «업무 흐름 밖의 따로 된 문»이라 같은 구분선 처리를 받는다(대표 2026-09-24
           UI/UX 재검토 — 전에는 계약서 그룹만 --apart 라 시스템 그룹 앞엔 구분선이 없어서 둘의 성격이
           같은데 처리가 달랐다). */}
-      <div className="erp-nav-group erp-nav-group--apart">계약서</div>
-      <MenuLink it={ESIGN} now={now} />
+      {esign && <>
+        <div className="erp-nav-group erp-nav-group--apart">계약서</div>
+        <MenuLink it={ESIGN} now={now} />
+      </>}
       <div className="erp-nav-group erp-nav-group--apart">시스템</div>
       <MenuLink it={SYSTEM} now={now} />
     </>

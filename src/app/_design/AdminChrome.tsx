@@ -5,6 +5,7 @@ import { MobileTabBar } from './MobileTabBar';
 import { SideMenu } from './SideMenu';
 import { Icon } from './Icon';
 import { currentAdmin } from '../../server/require-admin';
+import { esignEnabled } from '../../server/esign-scope';
 
 /** 규격 기본 글꼴 — Pretendard Variable (OFL). 규격 erp.css 의 --erp-font-family 첫 글꼴. */
 const PRETENDARD = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css';
@@ -27,6 +28,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
   /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
   const 나 = await currentAdmin();
   const data = erp5Ready();
+  const esign = esignEnabled();
   return (
     <>
       <link rel="stylesheet" href={PRETENDARD} precedence="default" />
@@ -61,7 +63,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
 
       {/* ── PC ② 좌측 메뉴 ── */}
       <nav className="erp-sidenav erp-std" data-region="sidenav" aria-label="업무 이동">
-        <SideMenu />
+        <SideMenu esign={esign} />
       </nav>
 
       {/* ── 본문: viewport에 따라 같은 actual route의 responsive composition을 배치한다. (대표 2026-09-24 「좌측 사이드
@@ -86,7 +88,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
         (대표 2026-09-18 「상단에는 버튼을 안 하는 게 나을 것 같아 그냥 하단에서 탁탁탁 눌러야지」).
         depth 1·2 화면에서는 이 바 대신 그 판의 하단바(§14-3)가 선다 — CSS 가 갈라 보인다(globals.css).
       */}
-      <MobileTabBar />
+      <MobileTabBar esign={esign} />
     </>
   );
 }

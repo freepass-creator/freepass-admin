@@ -33,8 +33,9 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
-  assert.ok(chrome.includes('<SideMenu />'));
-  assert.ok(chrome.includes('<MobileTabBar />'));
+  assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
+  /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
+  assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
   // 모바일은 전역 상단바 자체를 안 둔다(2026-09-24 — 전역 상태줄 header 를 걷어내고 Panel 이 화면

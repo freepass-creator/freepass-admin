@@ -127,7 +127,15 @@ try {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
 
-    for (const [route, title] of [['/products','상품찾기'],['/intake','계약접수'],['/settlement','정산관리'],['/esign','전자계약']]) {
+    // 전자계약은 운영 개시 범위 밖(DEC-2026-09-25-05) — ESIGN_ENABLED 미설정이면 목록은 접수로, 고객 링크·API 는 404.
+    await page.goto(origin + '/esign', { waitUntil:'networkidle' });
+    check(`${width}px /esign is closed and redirects to intake`, new URL(page.url()).pathname === '/intake', page.url());
+    const signLink = await ctx.request.get(origin + '/sign/not-real', { maxRedirects:0 });
+    check(`${width}px authenticated customer sign link is closed 404`, signLink.status() === 404, String(signLink.status()));
+    const esignApi = await ctx.request.get(origin + '/api/esign/asset/not-real/not-real', { maxRedirects:0 });
+    check(`${width}px authenticated esign API is closed 404`, esignApi.status() === 404, String(esignApi.status()));
+
+    for (const [route, title] of [['/products','상품찾기'],['/intake','계약접수'],['/settlement','정산관리']]) {
       await page.goto(origin + route, { waitUntil:'networkidle' });
       const body = await page.locator('body').innerText();
       const ok = page.url().startsWith(origin + route)

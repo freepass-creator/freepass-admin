@@ -15,6 +15,7 @@ import type { IntakeCatalogSnapshot } from './types';
 import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-kind';
 import { contractPaymentStateOf } from '../contracts/payment';
 import { isCalendarDay, koreaDay } from './calendar';
+import { roundsOf } from './stage';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -138,6 +139,8 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     // ★미확인(null)을 0으로 바꾸지 않는다. 0원/무보증과 미확인은 전혀 다른 사실이다.
     term: x.term, rent: x.rent, deposit: x.deposit, price: x.price,
     payKind: x.payKind.trim(),
+    // 분납의 1회차는 인도 시 실제 발생하는 업무 사실이다. 날짜 경과로 추정하지 않고 원장에 명시한다.
+    paidRounds: x.delivered && roundsOf(x.payKind) >= 2 ? 1 : null,
     intakeRequestId: x.intakeRequestId?.trim() || null,
     intakeIdentityMode: identityMode,
     sourceProductId: x.sourceProductId?.trim() || null,
@@ -212,8 +215,8 @@ export function progressPatch(
     return { ok: false, error: '계약취소된 건은 접수취소 풀기로 되돌릴 수 없습니다 — 계약취소 기록을 확인해 주세요' };
   }
   if (B(cur.cancelled) && !(c.kind === 'cancelled' && !c.on)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
-  if (Number(cur.contractTerminatedAt ?? 0) > 0 && ['plate','paper','delivered','cancelled'].includes(c.kind)) {
-    return { ok: false, error: '계약해지된 건은 차량·계약서·인도·취소 사실을 변경할 수 없습니다' };
+  if (Number(cur.contractTerminatedAt ?? 0) > 0 && ['plate','paidRounds','paper','delivered','cancelled'].includes(c.kind)) {
+    return { ok: false, error: '계약해지된 건은 차량·납입회차·계약서·인도·취소 사실을 변경할 수 없습니다' };
   }
 
   if (c.kind === 'plate') {
@@ -231,7 +234,7 @@ export function progressPatch(
    */
   if (c.kind === 'paidRounds') {
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 받은 회차를 바꿀 수 없습니다 — 정정/환수로 처리합니다' };
-    const n = (() => { const m = /(\d+)\s*회/.exec(S(cur.payKind)); const k = m ? Number(m[1]) : 1; return k >= 2 ? k : 1; })();
+    const n = roundsOf(cur.payKind);
     if (n < 2) return { ok: false, error: '분납 줄이 아닙니다 — 받은 회차는 분납에만 적습니다' };
     if (!B(cur.delivered)) return { ok: false, error: '인도 전입니다 — 1회차는 인도 때 냅니다' };
     if (c.rounds !== null && (!Number.isInteger(c.rounds) || c.rounds < 1 || c.rounds > n)) return { ok: false, error: `받은 회차는 1~${n} 사이입니다` };
@@ -264,14 +267,46 @@ export function progressPatch(
         return { ok: false, error: '정산이 시작된 뒤에는 인도일을 바꿀 수 없습니다' };
       }
       const ev: ProgressEvent[] = [];
-      if (!B(cur.delivered)) ev.push({ field: '인도완료', from: 'false', to: 'true' });
-      if (S(cur.deliveredAt) !== day) ev.push({ field: '인도일', from: S(cur.deliveredAt), to: day });
-      return { ok: true, patch: ev.length ? { delivered: true, deliveredAt: day } : {}, events: ev };
+      const patch: Record<string, unknown> = {};
+      const wasDelivered = B(cur.delivered);
+      if (!wasDelivered) {
+        patch.delivered = true;
+        ev.push({ field: '인도완료', from: 'false', to: 'true' });
+      }
+      if (S(cur.deliveredAt) !== day) {
+        patch.deliveredAt = day;
+        ev.push({ field: '인도일', from: S(cur.deliveredAt), to: day });
+      }
+      const installments = roundsOf(cur.payKind);
+      if (!wasDelivered && installments >= 2) {
+        const written = cur.paidRounds === undefined || cur.paidRounds === null || S(cur.paidRounds) === ''
+          ? null : Number(cur.paidRounds);
+        if (written !== null && (!Number.isInteger(written) || written < 1 || written > installments)) {
+          return { ok: false, error: `기존 납입회차가 올바르지 않습니다 — 1~${installments}회 사이인지 확인해 주세요` };
+        }
+        if (written === null) {
+          patch.paidRounds = 1;
+          ev.push({ field: '받은회차', from: '', to: '1' });
+        }
+      }
+      return { ok: true, patch, events: ev };
     }
     /* ★인도를 끌 때 인도일은 «지우지 않는다» — 잘못 누른 것을 되돌릴 때 날짜를 잃는다 */
     if (!B(cur.delivered)) return { ok: true, patch: {}, events: [] };
     if (settlementStarted()) return { ok: false, error: '정산이 시작된 뒤에는 인도를 되돌릴 수 없습니다 — 정정/환수 절차를 사용합니다' };
-    return { ok: true, patch: { delivered: false }, events: [{ field: '인도완료', from: 'true', to: 'false' }] };
+    const installments = roundsOf(cur.payKind);
+    const written = cur.paidRounds === undefined || cur.paidRounds === null || S(cur.paidRounds) === ''
+      ? null : Number(cur.paidRounds);
+    if (installments >= 2 && written !== null && written > 1) {
+      return { ok: false, error: '2회차 이상 납입이 기록된 분납 건은 인도를 되돌릴 수 없습니다 — 납입 사실을 먼저 확인해 주세요' };
+    }
+    const patch: Record<string, unknown> = { delivered: false };
+    const events: ProgressEvent[] = [{ field: '인도완료', from: 'true', to: 'false' }];
+    if (installments >= 2 && written === 1) {
+      patch.paidRounds = null;
+      events.push({ field: '받은회차', from: '1', to: '' });
+    }
+    return { ok: true, patch, events };
   }
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {

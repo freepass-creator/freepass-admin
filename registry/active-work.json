@@ -1,0 +1,70 @@
+{
+  "schema": "freepass-admin-active-work/v1",
+  "updated_at": "2026-09-26",
+  "authority": "docs/BRANCH-WORKFLOW.md",
+  "main": {
+    "branch": "main",
+    "role": "CODE_AUTHORITY"
+  },
+  "active": [
+    {
+      "id": "ui-finalization",
+      "branch": "work/ui/finalize-baseline",
+      "role": "TEMPORARY_WORK_BRANCH",
+      "scope": [
+        "ui",
+        "ux",
+        "responsive",
+        "visual-qa",
+        "accessibility",
+        "ui-ssot"
+      ],
+      "merge_order": 1,
+      "writer_policy": "SINGLE_WRITER_HANDOFF_SAME_BRANCH",
+      "work_order": "docs/work/UI-FINALIZATION.md"
+    },
+    {
+      "id": "operational-launch",
+      "branch": "work/release/operational-launch",
+      "role": "TEMPORARY_WORK_BRANCH",
+      "scope": [
+        "production-wiring",
+        "auth",
+        "freepass-data-runtime",
+        "deployment",
+        "smoke",
+        "rollback"
+      ],
+      "merge_order": 2,
+      "final_gate": "REBASE_OR_SYNC_AFTER_UI_FINALIZATION_MERGES_TO_MAIN",
+      "writer_policy": "SINGLE_WRITER_HANDOFF_SAME_BRANCH",
+      "work_order": "docs/work/OPERATIONAL-LAUNCH.md"
+    }
+  ],
+  "archived": [
+    {
+      "branch": "work/function",
+      "status": "ARCHIVE_NO_NEW_DEVELOPMENT"
+    },
+    {
+      "branch": "work/esign",
+      "status": "ARCHIVE_NO_NEW_DEVELOPMENT"
+    },
+    {
+      "branch": "work/uiux",
+      "status": "REFERENCE_ONLY_UI_DONOR"
+    }
+  ],
+  "branch_creation": {
+    "default": "FORBIDDEN",
+    "rule": "New branches require an actual new isolated change and must start from then-current main. Update this registry first.",
+    "forbidden_name_patterns": [
+      "claude/*",
+      "gpt/*",
+      "codex/*",
+      "*/v2",
+      "*/final",
+      "*/latest"
+    ]
+  }
+}

@@ -27,6 +27,7 @@ import type { Maybe, SettlementRow } from './types';
 const S = (v: unknown) => String(v ?? '').trim();
 const p2 = (n: number) => String(n).padStart(2, '0');
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /** 업무 달력은 Asia/Seoul 고정. 서버(UTC)·브라우저(KST)가 같은 사실을 다르게 판정하지 않는다. */
 const businessParts = (d: Date) => {
@@ -140,7 +141,7 @@ export function billingMonth(r: R, now = new Date()): string | null {
   const d = deliveredDay(r);
   if (!d) return null;
   const written = S(r.progress.billMonth);
-  if (written) return written;
+  if (written) return MONTH.test(written) ? written : null;
   if (!claimsOnComplete(r)) return ym(d);
 
   const rounds = roundsOf(r.payKind);
@@ -171,11 +172,11 @@ export function lockedMonthsOf(
 ): Set<string> {
   const current = ym(now);
   const out = new Set<string>(
-    [...explicitlyClosed].filter((m) => /^\d{4}-\d{2}$/.test(m)),
+    [...explicitlyClosed].filter((m) => MONTH.test(m)),
   );
   for (const r of rows) {
     const written = S(r.progress.billMonth);
-    if (!/^\d{4}-\d{2}$/.test(written) || written >= current) continue;
+    if (!MONTH.test(written) || written >= current) continue;
     if (!deliveredDay(r) || r.progress.cancelled || r.progress.settleExclude) continue;
     out.add(written);
   }

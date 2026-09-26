@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
 import { writeEnabled, settlements, today } from '../../server/erp5';
-import { blockOf } from '../../domain/settlement/types';
+import { adminBlockLabel, adminWorkflowPhaseOf, blockOf } from '../../domain/settlement/types';
 import { claimAmountOf, payAmountOf } from '../../domain/settlement/ledgers';
 import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
@@ -49,6 +49,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const { row: r, raw, warnings } = hit;
   const canWrite = writeEnabled();
   const 다음블록 = blockOf(r);
+  const 업무흐름 = adminWorkflowPhaseOf(r);
   /* ★청구·지급 «금액»은 한 곳에서 센다 — (수수료 + 프로모션) × 비율 + 가감 (기능 ledgers) */
   const 청구 = claimAmountOf(r);
   const 지급 = payAmountOf(r);
@@ -156,7 +157,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   const events = await settlements.events(
     r.plate, r.receivedAt, r.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode,
   );
-  const 다음 = 다음블록 ?? (r.progress.cancelled ? '취소됨' : '끝');
+  const 다음 = 다음블록 ? adminBlockLabel(다음블록) : (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
@@ -164,7 +165,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
       {created && <Notice tone="ok">ERP5 에 새 접수를 세웠습니다.</Notice>}
       {exists && <Notice tone="warn">같은 차량번호 + 접수일이 원장에 이미 있어 새로 만들지 않았습니다. 있던 줄입니다.</Notice>}
       <div className="vehicle-title">
-        <div><h2>{txt(r.customer)}</h2><p>{txt(r.plate)} · {txt(r.model)} · 접수 {txt(r.receivedAt)}</p></div>
+        <div><h2>{txt(r.customer)}</h2><p>{txt(r.plate)} · {txt(r.model)} · 접수 {txt(r.receivedAt)}</p><p className="dz-note">업무 흐름 · {업무흐름}</p></div>
         <Tag {...신원(다음 === '끝' || 다음 === '취소됨' ? 다음 : '다음')} tone={다음 === '끝' || 다음 === '취소됨' ? 'plain' : 'act'}>{다음 === '끝' || 다음 === '취소됨' ? 다음 : `다음 · ${다음}`}</Tag>
       </div>
 
@@ -208,7 +209,7 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         items: 구역.flatMap((x) => x.items.filter((it) => it.pinned)) }]} />
 
       {/* 돈 고치기 — 수수료 · 프로모션 · 가감(하는 일은 기능 쪽 feeAction · moneyAction) */}
-      <h3 className="dz-sub">금액 조정</h3>
+      <h3 className="dz-sub">금액 조정 — 수수료 · 프로모션 · 가감</h3>
       <FeeForm code={r.id} claim={r.money.claim} pay={r.money.pay} disabled={r.progress.cancelled || !canWrite} />
       <MoneyForm code={r.id}
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}

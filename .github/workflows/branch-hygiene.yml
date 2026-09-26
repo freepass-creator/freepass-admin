@@ -4,57 +4,13 @@ on:
   pull_request:
     types:
       - closed
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/branch-hygiene.yml
 
 permissions:
   contents: write
 
 jobs:
-  one-time-lane-migration-cleanup:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Delete superseded pre-lane branches
-        shell: bash
-        env:
-          OLD_BRANCHES: |
-            backend/esign-finalize|074cf9fd676097c6473dede2e36164cd21d452cf
-            claude/erp-platform-ui-ux-hvfyfa|ac3ca6944012e43d8722a26024c5152a7e961ddb
-            claude/esign-pdf-renderer-m6lasu|bb51b3861e469f750645326f5b87274dc9baffcc
-            claude/freepass-admin-launch-irkl4q|d347e0ab894ce0847db1d32cfeb5952ef682bf03
-            feat/intake-contract-condition-choices-20260923|823f105a1c6b37a5d8e01bdf0d106d4f3ec9fa08
-        run: |
-          set -euo pipefail
-          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
-          while IFS='|' read -r branch expected_sha; do
-            [[ -n "${branch:-}" ]] || continue
-            remote_ref="refs/remotes/origin/$branch"
-            if ! git show-ref --verify --quiet "$remote_ref"; then
-              echo "already absent: $branch"
-              continue
-            fi
-            current_sha="$(git rev-parse "$remote_ref")"
-            if [[ "$current_sha" != "$expected_sha" ]]; then
-              echo "::warning::skip changed branch $branch: expected $expected_sha, found $current_sha"
-              continue
-            fi
-            echo "deleting superseded branch: $branch"
-            git push origin --delete "$branch"
-          done <<< "$OLD_BRANCHES"
-
   maintain-fixed-lanes:
     if: >-
-      github.event_name == 'pull_request' &&
       github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref != 'main'

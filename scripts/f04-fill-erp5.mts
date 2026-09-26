@@ -52,7 +52,6 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const APPLY = process.argv.includes('--apply');
-assertErp5MaintenanceWrite(process.env, APPLY, 'f04-fill-erp5');
 /**
  * ★★대표 2026-09-18 「있으면 안 올리면 되잖아 같은거는」
  *   ⇒ 기본은 «새 줄만» 올린다. ERP5 에 이미 있는 줄은 «한 칸도» 안 건드린다(빈 칸도 안 채운다).
@@ -71,6 +70,7 @@ if (sa.project_id !== 'freepasserp5') throw new Error(`★ERP5 가 아니다: ${
 if (!String(sa.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
   throw new Error(`★ERP5 서비스계정이 아니다: ${String(sa.client_email ?? '')}`);
 }
+assertErp5MaintenanceWrite(process.env, APPLY, 'f04-fill-erp5', Date.now(), String(sa.client_email ?? ''));
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'fill'));
 
 // eslint-disable-next-line no-eval

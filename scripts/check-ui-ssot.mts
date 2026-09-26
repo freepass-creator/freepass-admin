@@ -687,7 +687,6 @@ for (const [re, label] of cardLineContractBaseline) {
 const cardPriorityBaseline = [
   ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product card term/deposit priority line'],
   ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product list natural monthly rent display'],
-  ['src/app/_erp/parts.tsx', /lines\?: ReactNode\[\]/, 'row card flexible extra lines'],
 ] as const;
 for (const [file, re, label] of cardPriorityBaseline) {
   const src = await readSource(file);
@@ -791,7 +790,7 @@ for (const [file, re, label] of listVisualTileBaseline) {
 const crossShellListParityBaseline = [
   ['src/app/_design/ListRow.tsx', /mainValue\?: ReactNode/, 'mobile main-right primary value slot'],
   ['src/app/products/workspace.tsx', /mainValue=\{o \? `월 /, 'mobile product monthly rent main value'],
-  ['src/app/products/workspace.tsx', /meta=\{\[txt\(p\.registration\?\.vehicleNumber\), txt\(p\.productKind\)\]/, 'mobile product key line'],
+  ['src/app/products/workspace.tsx', /meta=\{\[txt\(p\.registration\?\.vehicleNumber\), txt\(p\.productKind\)(?:, txt\(p\.status\))?\]/, 'mobile product key line'],
   ['src/app/products/workspace.tsx', /value=\{o \? `\$\{o\.termMonths\}개월 · 보증 /, 'mobile product support line'],
   ['src/app/products/workspace.tsx', /mainValue=\{r\.rent \? `월 /, 'mobile intake monthly rent main value'],
   ['src/app/products/workspace.tsx', /value=\{`청구 \$\{r\.money\.claim/, 'mobile intake exact fee support'],

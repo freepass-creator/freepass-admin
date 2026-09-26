@@ -17,6 +17,15 @@ export type Erp5WriteGate = {
 
 const PROJECT_ID = 'freepasserp5';
 
+export function isLocalFirestoreEmulatorHost(raw: string | undefined): boolean {
+  const value = raw?.trim();
+  if (!value) return false;
+  const host = value.startsWith('[')
+    ? value.slice(1, value.indexOf(']'))
+    : value.split(':')[0];
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
+
 export function parseErp5WriteApproval(
   raw: string | undefined,
   now = Date.now(),
@@ -68,8 +77,12 @@ export function erp5WriteGate(
   if (demo) {
     return { enabled: false, mode: 'DEMO', reason: '데모 모드는 읽기 전용입니다' };
   }
-  if (env.FIRESTORE_EMULATOR_HOST?.trim()) {
-    return { enabled: true, mode: 'EMULATOR', reason: 'Firestore emulator 격리 쓰기' };
+  const emulatorHost = env.FIRESTORE_EMULATOR_HOST?.trim();
+  if (emulatorHost) {
+    if (!isLocalFirestoreEmulatorHost(emulatorHost)) {
+      return { enabled: false, mode: 'HOLD', reason: '원격 FIRESTORE_EMULATOR_HOST는 허용하지 않습니다' };
+    }
+    return { enabled: true, mode: 'EMULATOR', reason: '로컬 Firestore emulator 격리 쓰기' };
   }
 
   const onVercel = env.VERCEL?.trim() === '1' || !!env.VERCEL_ENV?.trim();
@@ -109,7 +122,13 @@ export function assertErp5MaintenanceWrite(
   now = Date.now(),
 ): void {
   if (!apply) return;
-  if (env.FIRESTORE_EMULATOR_HOST?.trim()) return;
+  const emulatorHost = env.FIRESTORE_EMULATOR_HOST?.trim();
+  if (emulatorHost) {
+    if (!isLocalFirestoreEmulatorHost(emulatorHost)) {
+      throw new Error(`${label}: remote FIRESTORE_EMULATOR_HOST is not allowed`);
+    }
+    return;
+  }
   if (env.ERP5_WRITE?.trim() !== 'on') {
     throw new Error(`${label}: --apply requires ERP5_WRITE=on`);
   }

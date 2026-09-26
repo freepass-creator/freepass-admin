@@ -13,19 +13,20 @@
 
 기능을 새 파일/새 엔진/새 상태머신으로 만들기 전에 반드시 current main의 기존 정본을 확장할 수 있는지 먼저 확인한다.
 
-### Branch lifecycle — fixed lanes
-- `main`만 정본이다. 개발은 아래 3개 고정 lane에서만 한다: `work/function`, `work/uiux`, `work/esign`.
-- AI/개발 세션은 시작 시 반드시 lane 하나를 명시적으로 배정받는다. 배정받은 branch 외 새 branch를 만들지 않는다.
-- `고도화`, `다음`, `계속`이라는 지시는 **현재 배정 lane을 계속 고도화하라는 뜻**이며 새 branch 생성 지시가 아니다.
-- `work/function`: 상품검색→접수→계약상태→인도→실적→청구/수금/지급→정산, 인증/actor/audit, Admin의 FreePass Data 연결까지 기능 전체.
-- `work/uiux`: UI와 UX를 한 lane에서 다룬다. 레이아웃·반응형·컴포넌트·시각·접근성·인터랙션 표현만 담당하고 업무규칙은 바꾸지 않는다.
-- `work/esign`: 전자계약·서명·최종확정·PDF·봉인·private 문서 저장을 담당한다.
-- 고정 lane에서 자식 `feature/*`, `fix/*`, 모델명 branch, `v2`, `final` branch를 파생하지 않는다.
-- lane 작업이 검증되면 `main`으로 병합한다. 병합 후 lane branch는 최신 `main`으로 동기화해서 같은 이름으로 재사용한다.
-- lane 간 의존이 생기면 다른 branch를 직접 수정하지 말고, 먼저 소유 lane을 main에 병합한 뒤 필요한 lane을 최신 main으로 동기화한다.
-- 이전 HOLD였던 접수 계약조건 원자는 `work/function/docs/FUNCTION-LANE-BACKLOG.md`로 이관했다. 과거 HOLD branch는 정본이 아니다.
-- 상세 범위와 세션 오더 문구는 `docs/BRANCH-LANES.md`를 따른다.
-
+### Branch lifecycle — temporary work branches
+- 브랜치는 영구 lane이 아니라 **현재 변경을 격리하는 임시 작업 공간**이다.
+- `main`만 코드 정본이다. 작업은 항상 그 시점 최신 `main`에서 시작한다.
+- 현재 ACTIVE 작업 branch는 정확히 두 개다:
+  - `work/ui/finalize-baseline` — UI/UX 최종 확정
+  - `work/release/operational-launch` — 운영 개시
+- `work/function`, `work/esign`은 ARCHIVE, `work/uiux`는 REFERENCE-ONLY donor다. 신규 개발 금지.
+- 새 AI가 이어받아도 새 branch를 만들지 않는다. 해당 ACTIVE branch HEAD에서 그대로 이어간다.
+- 한 branch에는 한 시점에 writer 1명만 둔다. 다른 AI는 review/audit만 한다.
+- `고도화`, `다음`, `계속`은 현재 배정 branch를 이어서 작업하라는 뜻이며 새 branch 생성 지시가 아니다.
+- 현재 두 작업 외 새 branch 생성은 금지한다. 실제 신규 병렬 변경이 생기면 먼저 `docs/BRANCH-WORKFLOW.md`와 `registry/active-work.json`을 갱신한다.
+- 작업 완료 순서: 테스트 → PR → main merge → branch 폐기.
+- 현재 merge 순서: UI 최종확정 → main → 운영개시 branch 최신화 → production 검증/배포 → main.
+- 상세 규칙은 `docs/BRANCH-WORKFLOW.md`, machine-readable 상태는 `registry/active-work.json`을 따른다.
 
 ## -1. UI DESIGN RECOVERY HOLD — 2026-09-26
 
@@ -54,11 +55,13 @@ UI/UX 작업은 **반드시** 아래 순서로 시작한다.
 ## 0. Mandatory Work handoff
 모든 Work/개발 AI는 작업 시작 전에 아래 순서로 현재 기준을 읽는다.
 1. `AGENTS.md`
-2. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
-3. `docs/FUNCTION-AUTHORITY.md` — 기능 작업 단일 정본 진입점
-4. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
-5. `docs/MASTER-v1.md` — 장기 제품 기준
-6. 해당 작업의 PR / Issue / AI Core Gate
+2. `docs/BRANCH-WORKFLOW.md` — 현재 ACTIVE branch와 branch lifecycle 정본
+3. `registry/active-work.json` — machine-readable 현재 작업 상태
+4. `docs/WORK-INBOX.md` — Chat R&D의 최신 개발 반영 요약
+5. `docs/FUNCTION-AUTHORITY.md` — 기능 작업 단일 정본 진입점
+6. `docs/memory/EMAIL-RND-CONSOLIDATED.md` — Gmail에서 누적된 FreePass R&D·사업배경·폐기 이력의 장기 기억
+7. `docs/MASTER-v1.md` — 장기 제품 기준
+8. 해당 작업의 PR / Issue / AI Core Gate
 
 메일 원문 출처 추적이 필요하면 `docs/memory/EMAIL-RND-INDEX.md`에서 Gmail message id와 제목을 확인한다.
 

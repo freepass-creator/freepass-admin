@@ -8,6 +8,36 @@
 
 
 
+## 0-AAAAA. 2026-09-26 현재 ACTIVE 브랜치 — 임시 작업 브랜치 2개
+
+브랜치는 더 이상 Function/UIUX/E-sign 고정 lane으로 재사용하지 않는다. 브랜치는 현재 변경을 격리하는 임시 작업 공간이며, 완료 후 main merge + 폐기한다.
+
+현재 ACTIVE branch:
+- `work/ui/finalize-baseline` — UI/UX 최종 확정
+- `work/release/operational-launch` — 운영 개시
+
+과거 branch:
+- `work/function` — ARCHIVE / 신규 개발 금지
+- `work/esign` — ARCHIVE / 신규 개발 금지
+- `work/uiux` — REFERENCE-ONLY UI donor / 신규 개발 금지
+
+AI 인계:
+- 새 AI가 와도 새 branch를 만들지 않는다.
+- 해당 ACTIVE branch HEAD와 branch-local work order를 읽고 같은 branch에서 이어간다.
+- 한 시점에 writer는 branch당 1명.
+- 새 병렬 작업이 실제로 필요할 때만 최신 main에서 새 임시 branch를 만들며, 먼저 `docs/BRANCH-WORKFLOW.md`와 `registry/active-work.json`을 갱신한다.
+
+현재 merge 순서:
+1. UI/UX 최종화 → Visual QA → 사용자 승인 → main
+2. 운영개시 branch에 최신 main(UI 최종본 포함) 반영
+3. production auth / FreePass Data read-write / smoke / rollback 검증
+4. 운영 개시 → main
+
+정본: `docs/BRANCH-WORKFLOW.md`
+machine registry: `registry/active-work.json`
+
+---
+
 ## 0-AAAA. 2026-09-26 기능 단일축 + 취소/해지 최신 확정
 
 기능 작업은 이제 docs/FUNCTION-AUTHORITY.md와 current main 한 축만 사용한다.

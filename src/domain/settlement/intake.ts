@@ -61,8 +61,9 @@ export interface IntakeInput {
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일.
- * ⚠ 전화번호는 받지 않는다 — ERP5 정산 원장에 그 칸이 없다.
+ * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일 · 분납여부.
+ * 분납여부는 F04의 청구월/분납실적 판정 원자다. 빈 값으로 두면 인도 뒤 청구월을 확정적으로 계산할 수 없다.
+ * ⚠ 전화번호는 현재 Admin 원장 정본에 별도 원자가 없어 이번 범위에서는 추가하지 않는다.
  */
 export function validateIntake(x: IntakeInput, today: string): string[] {
   const e: string[] = [];
@@ -86,6 +87,8 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   if (!x.channel.trim()) e.push('영업채널이 없습니다');
   if (!x.agent.trim()) e.push('영업담당이 없습니다');
   if (!x.supplier.trim()) e.push('공급사가 없습니다 — 청구할 곳이 없으면 정산이 안 섭니다');
+  if (!x.payKind.trim()) e.push('분납여부를 선택해야 합니다');
+  else if (x.payKind.trim() !== '일시납' && !/^\d+회분납$/.test(x.payKind.trim())) e.push('분납여부는 일시납 또는 N회분납으로 넣습니다');
   /* 인도는 실제 관측 사실이라 계약서와 독립적으로 기록한다. 단, 날짜 없는 인도완료는 받지 않는다. */
   if (x.delivered && !x.plate.trim()) e.push('차량번호를 배정한 뒤 인도완료할 수 있습니다');
   if (x.delivered && !DAY.test(x.deliveredAt)) e.push('인도완료를 켜려면 인도일을 같이 넣어야 합니다');

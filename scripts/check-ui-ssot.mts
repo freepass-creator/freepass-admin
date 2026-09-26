@@ -326,6 +326,10 @@ const desktopSettlementFocusBaseline = [
     /<LifeForm/,
     /<SideStep/,
     /정산 묶음으로/,
+    /data-detail-context=\{life \? 'settlement-focus' : 'intake'\}/,
+    /data-detail-priority="core"/,
+    /<details className="erp-tile erp-detail-support">/,
+    /정산 핵심/,
   ]],
 ] as const;
 for (const [file, rules] of desktopSettlementFocusBaseline) {
@@ -337,6 +341,12 @@ for (const [file, rules] of desktopSettlementFocusBaseline) {
 const settlementDesktopSourceForRoute = await readSource('src/app/_erp/SettlementScreen.tsx');
 if (/\/intake\?ic=/.test(settlementDesktopSourceForRoute)) {
   errors.push('SettlementScreen.tsx: desktop settlement row must stay on /settlement focus context');
+}
+const settlementDetailSourceForDensity = await readSource('src/app/_erp/SettlementDetail.tsx');
+const focusStart = settlementDetailSourceForDensity.indexOf('{life ? (');
+const focusEnd = settlementDetailSourceForDensity.indexOf(') : (', focusStart);
+if (focusStart < 0 || focusEnd < 0 || /<IntakeProgress/.test(settlementDetailSourceForDensity.slice(focusStart, focusEnd))) {
+  errors.push('SettlementDetail.tsx: focused settlement detail must not repeat intake mutation controls');
 }
 
 const terminologyBaseline = [

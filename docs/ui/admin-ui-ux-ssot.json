@@ -1703,5 +1703,27 @@
       "filters",
       "row-links"
     ]
+  },
+  "exceptionStates": {
+    "empty": {
+      "web": "PanelState",
+      "mobile": "EmptyState",
+      "rule": "Never leave an empty list panel blank; explain why it is empty and what to change/check next."
+    },
+    "loading": {
+      "boundary": "RouteLoading",
+      "parity": "desktop ERP Panel + mobile Panel",
+      "rule": "Preserve route geometry and announce busy state."
+    },
+    "error": {
+      "boundary": "RouteError",
+      "rule": "Route fetch failures converge on the route boundary; no inline legacy one-off error pages.",
+      "retry": "explicit retry action"
+    },
+    "readonly": {
+      "presentation": "muted neutral state surface",
+      "rule": "Explain read-only mode before write controls; disable mutations and connect them to the reason with aria-describedby.",
+      "navigation": "read/navigation links remain available"
+    }
   }
 }

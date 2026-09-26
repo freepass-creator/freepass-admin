@@ -18,6 +18,7 @@ const settlementSignals=read('src/app/settlement/group-signal.ts');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
+const filterSheet=read('src/app/_design/FilterSheet.tsx');
 const shellCss=read('src/app/_erp/shell.css');
 const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),read('src/app/_design/erp-theme.css'),shellCss].join('\n');
 
@@ -27,6 +28,24 @@ test('admin root enters the real intake workspace and contains no demo runtime',
 });
 
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
+test('filter dialog keeps keyboard focus inside and returns it to the trigger',()=>{
+  assert.ok(filterSheet.includes('aria-modal="true"'));
+  assert.ok(filterSheet.includes('keepDialogFocus'));
+  assert.ok(filterSheet.includes("e.key !== 'Tab'"));
+  assert.ok(filterSheet.includes("e.shiftKey && activeEl === first"));
+  assert.ok(filterSheet.includes("!e.shiftKey && activeEl === last"));
+  assert.ok(filterSheet.includes('trigger.current?.focus()'));
+});
+
+test('canonical truncated titles preserve their full text and long settlement labels cannot push money',()=>{
+  const parts=read('src/app/_erp/parts.tsx');
+  const erpCss=read('src/app/_erp/erp-standard.css');
+  assert.ok(parts.includes("title={typeof title === 'string' || typeof title === 'number' ? String(title) : undefined}"));
+  assert.ok(erpCss.includes('.erp-panel-head h2 { min-width: 0;'));
+  assert.ok(erpCss.includes('text-overflow: ellipsis; white-space: nowrap;'));
+  assert.ok(erpCss.includes('.erp-tile-row strong { flex: 0 0 auto;'));
+});
+
 test('1280 desktop collapses only the navigation rail to preserve three-panel work area',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
   assert.ok(side.includes('className="erp-nav-label"'));

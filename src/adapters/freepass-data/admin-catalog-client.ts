@@ -100,6 +100,43 @@ const kindOf: Record<z.infer<typeof DataProduct>['commercialType'], string> = {
 const policyCopy = (values: z.infer<typeof PolicyValueSchema>[]): PolicyValue[] =>
   values.map((p) => p.type === 'MULTI_SELECT' ? { ...p, value: [...p.value] } : { ...p }) as PolicyValue[];
 
+const policySnapshotFacts = (values: z.infer<typeof PolicyValueSchema>[]) => values
+  .map((p) => ({
+    policyId: p.policyId,
+    type: p.type,
+    value: Array.isArray(p.value) ? [...p.value].sort() : p.value,
+  }))
+  .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
+  const facts = {
+    productId: source.productId,
+    productRevision: source.productRevision,
+    commercialType: source.commercialType,
+    vehiclePrice: source.vehiclePrice ?? null,
+    vehicleModel: source.vehicleModel,
+    vehicleAsset: source.vehicleAsset ?? null,
+    offers: source.offers.map((offer) => ({
+      offerId: offer.offerId,
+      offerRevision: offer.offerRevision,
+      supplierId: offer.supplierId,
+      policyId: offer.policyId ?? null,
+      policyState: offer.policyState,
+      invalidPolicyFactRefs: [...offer.invalidPolicyFactRefs].sort(),
+      policyValues: policySnapshotFacts(offer.policyValues),
+      priceTerms: offer.priceTerms.map((term) => ({
+        termKey: term.termKey,
+        termMonths: term.termMonths,
+        monthlyRent: term.monthlyRent,
+        deposit: term.deposit ?? null,
+        depositState: term.depositState,
+        mileageLimitKmPerYear: term.mileageLimitKmPerYear ?? null,
+      })).sort((a, b) => a.termKey.localeCompare(b.termKey)),
+    })).sort((a, b) => a.offerId.localeCompare(b.offerId) || a.offerRevision - b.offerRevision),
+  };
+  return createHash('sha256').update(JSON.stringify(facts)).digest('hex');
+}
+
 function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => ({
     id: `${offer.offerId}#${term.termKey}`,
@@ -112,11 +149,7 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
     policyValues: policyCopy(offer.policyValues),
   })));
   const supplierIds = [...new Set(source.offers.map((o) => o.supplierId))];
-  const offerRevisionKey = source.offers.map((o) =>
-    `${o.offerId}@${o.offerRevision}:${o.priceTerms.map((t) => t.termKey).sort().join(',')}`
-  ).sort().join('|');
-  const sourceSnapshotId = 'freepass-data:' + createHash('sha256')
-    .update(`${source.productId}|p${source.productRevision}|${offerRevisionKey}`).digest('hex');
+  const sourceSnapshotId = 'freepass-data:' + sourceSnapshotDigest(source);
   const vm = source.vehicleModel;
   const matchLevel = vm.trim ? 'TRIM' : vm.subModel ? 'SUB_MODEL' : vm.model ? 'MODEL' : 'UNMATCHED';
   const policyStates = source.offers.map((o) => o.policyState);

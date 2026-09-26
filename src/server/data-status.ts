@@ -1,4 +1,4 @@
-import { ERP5_PROJECT_ID, erp5Ready, writeEnabled } from './erp5';
+import { ERP5_PROJECT_ID, erp5Ready, writeGate } from './erp5';
 import { esign } from './esign';
 import { adminCatalogListFresh, adminCatalogStatus } from './freepass-data';
 import { contracts, settlements } from './erp5';
@@ -27,6 +27,7 @@ async function probe(key: DataProbe['key'], label: string, read: () => Promise<u
  */
 export async function adminDataStatus() {
   const credential = erp5Ready();
+  const gate = writeGate();
   const esignFinalization = esign.finalizationReadiness();
   const probes = await Promise.all([
     probe('products', '상품', async () => (await adminCatalogListFresh()).rows),
@@ -43,7 +44,13 @@ export async function adminDataStatus() {
     /** Transitional Admin workflow store and Catalog legacy bridge physical project. */
     project: ERP5_PROJECT_ID,
     credential,
-    writeEnabled: writeEnabled(),
+    writeEnabled: gate.enabled,
+    writeGate: {
+      mode: gate.mode,
+      reason: gate.reason,
+      approvalRef: gate.approval?.approvalRef ?? null,
+      approvedAt: gate.approval?.approvedAt ?? null,
+    },
     live: probes.every((x) => x.ok),
     esignFinalization,
     probes,

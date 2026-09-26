@@ -24,10 +24,11 @@ export default function Progress({ code, plate, paper, delivered, deliveredAt, c
     startTransition(() => action(fd));
   };
 
-  const toggle = (e: React.ChangeEvent<HTMLInputElement>, confirmOff?: string) => {
+  const toggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const form = e.currentTarget.form;
     if (!form) return;
     const on = e.currentTarget.checked;
+    const confirmOff = e.currentTarget.dataset.confirm;
     if (!on && confirmOff && !window.confirm(confirmOff)) return;
     const fd = new FormData(form);
     fd.set('on', on ? '1' : '0');
@@ -63,7 +64,8 @@ export default function Progress({ code, plate, paper, delivered, deliveredAt, c
         <input type="hidden" name="kind" value="delivered" />
         <label className="dz-status-check">
           <input type="checkbox" checked={delivered}
-            onChange={(e) => toggle(e, '인도 완료 상태를 되돌릴까요? 정산·실적 상태에 영향을 줄 수 있습니다.')}
+            data-confirm="인도 완료 상태를 되돌릴까요? 정산·실적 상태에 영향을 줄 수 있습니다."
+            onChange={(e) => toggle(e)}
             disabled={locked} />
           <span>인도완료</span>
           <strong>{delivered ? '완료' : '대기'}</strong>

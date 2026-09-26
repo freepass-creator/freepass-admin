@@ -17,7 +17,9 @@ export default async function DataStatusPage() {
           </Notice>
         : <Notice tone="ok">상품 Catalog가 프리패스 데이터 ACTIVE consumer contract를 사용합니다.</Notice>}
       {s.credential.ok
-        ? <Notice tone="ok">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 {s.writeEnabled ? '켜짐' : '꺼짐'}</Notice>
+        ? s.writeEnabled
+          ? <Notice tone="ok">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 켜짐 · {s.writeGate.mode}{s.writeGate.approvalRef ? ` · 승인 ${s.writeGate.approvalRef}` : ''}</Notice>
+          : <Notice tone="warn">Admin workflow/legacy bridge 저장소 연결됨 · 쓰기 꺼짐 · {s.writeGate.reason}</Notice>
         : <Notice tone="warn">Admin workflow/legacy bridge 자격증명 오류 — {s.credential.why}</Notice>}
       {s.catalog.holdReasons.length > 0 && (
         <p className="fn-muted">Catalog HOLD · {s.catalog.holdReasons.join(' · ')}</p>

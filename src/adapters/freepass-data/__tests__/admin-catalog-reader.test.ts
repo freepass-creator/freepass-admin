@@ -168,6 +168,8 @@ test('FREEPASS_DATA_READ serves Data only when approval, release identity and li
   const result = await reader.list();
   assert.equal(result.receipt.servedBy,'FREEPASS_DATA');
   assert.equal(result.receipt.cutoverAuthorized,true);
+  assert.equal(result.receipt.cutover?.approvalRef,'cutover-test');
+  assert.equal(result.receipt.cutover?.targetStage,'FREEPASS_DATA_READ');
   assert.equal(result.rows[0]?.updatedAt,'2026-09-25T00:05:00.000Z');
   assert.equal((await reader.get('P-1'))?.updatedAt,'2026-09-25T00:05:00.000Z');
 });
@@ -215,4 +217,23 @@ test('shadow parity ignores policy list ordering but not policy values', () => {
   right.productPolicies.reverse();
   (right.productPolicies[1] as { policyId:string; type:'MULTI_SELECT'; value:string[] }).value.reverse();
   assert.equal(compareAdminCatalogShadow([left], [right]).status, 'MATCH');
+});
+
+
+test('FREEPASS_DATA_READ no longer depends on legacy reader availability after cutover', async () => {
+  const brokenLegacy = {
+    ...legacy,
+    async list(): Promise<CanonicalProduct[]> { throw new Error('legacy unavailable'); },
+    async get(): Promise<CanonicalProduct|null> { throw new Error('legacy unavailable'); },
+  };
+  const freepass = {
+    async list() { return { rows: [structuredClone(shadowProduct)], meta }; },
+    async get() { return structuredClone(shadowProduct); },
+  };
+  const reader = new AdminCatalogSwitchboard(
+    brokenLegacy, freepass, () => 'FREEPASS_DATA_READ', () => cutover('FREEPASS_DATA_READ'),
+  );
+  const result = await reader.list();
+  assert.equal(result.rows[0]?.id,'P-1');
+  assert.equal(result.receipt.servedBy,'FREEPASS_DATA');
 });

@@ -5,7 +5,6 @@ on:
     branches:
       - recovery/pr92-modernize-20260926
       - claude/erp-platform-ui-ux-hvfyfa
-  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -23,12 +22,9 @@ jobs:
           cache: npm
       - name: Install app
         run: npm ci
-      - name: Install isolated browser
+      - name: Install QA browser
         run: |
-          mkdir -p "$RUNNER_TEMP/freepass-visual-tools"
-          cd "$RUNNER_TEMP/freepass-visual-tools"
-          npm init -y >/dev/null 2>&1
-          npm install playwright@1.55.0
+          npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Start actual routes
         run: |
@@ -42,7 +38,6 @@ jobs:
           exit 1
       - name: Run actual-route Visual QA
         env:
-          UI_BROWSER_TOOLS: ${{ runner.temp }}/freepass-visual-tools
           VISUAL_QA_OUT: artifacts/visual-qa
         run: npm run visual:qa -- http://127.0.0.1:3100
       - name: Save server log

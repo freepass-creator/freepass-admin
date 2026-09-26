@@ -3,20 +3,37 @@
  *   가리킬 때 똑같은 판을 연다(대표 2026-09-24 「모든 페이지는 다 패널화 돼 있다」 — 화면마다 새로
  *   그리지 않는다). 원래 Workspace.tsx 안에 있던 것을 그대로 뽑았다 — 모양 · 계산 전부 그대로.
  */
+import { randomUUID } from 'node:crypto';
 import Link from 'next/link';
 import { settlements, today, writeEnabled } from '../../server/freepass-data';
 import { bucketOf } from '../../domain/settlement/stage';
 import { claimAmountOf, marginOf, payAmountOf } from '../../domain/settlement/money';
 import { adminBlockLabel, adminWorkflowPhaseOf, blockOf, type SettlementRow } from '../../domain/settlement/types';
+import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { intakeNextAction } from '../intake/next-action';
 import { progressFormId } from '../intake/progress-form-id';
 import { txt, when } from '../_fn/fmt';
+import { LifeForm, SideStep } from '../settlement/LifeForms';
+import { settlementPrimaryAction } from '../settlement/primary-action';
 import { IntakeProgress } from './IntakeProgress';
 import { hrefWith, PanelBody, PanelFoot, PanelHead, Steps, won0 } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
 
-export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementRow; base: string; q: Q; now: Date }) {
+export async function SettlementDetail({ cur, base, q, now, life }: {
+  cur: SettlementRow; base: string; q: Q; now: Date;
+  life?: {
+    axis: Axis;
+    mode: string;
+    link: (mode: string) => string;
+    backHref: string;
+    nextHref?: string;
+    nextGroupHref?: string;
+    nextAxisHref?: string;
+    nextAxisLabel?: string;
+    invoiceBiz?: string;
+  };
+}) {
   const b = bucketOf(cur, now);
   const p = cur.progress;
   const step = p.cancelled ? -1 : !p.paper ? 1 : !p.delivered ? 2 : !p.billed ? 3 : !p.collected ? 4 : 5;
@@ -27,12 +44,79 @@ export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementR
   const block = blockOf(cur);
   const phase = adminWorkflowPhaseOf(cur);
   const next = intakeNextAction(block, p.cancelled, p.delivered);
-  const primary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
+  const intakePrimary = next.kind === 'paper' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'paper')} name="on" value="1">계약서 받음</button>
     : next.kind === 'plate' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'plate')}>차량번호 저장</button>
     : next.kind === 'delivered' ? <button className="erp-btn erp-btn--primary" type="submit" form={progressFormId(cur.id, 'delivered')} name="on" value="1">인도 완료</button>
     : next.kind === 'settlement' ? <Link className="erp-btn erp-btn--primary" href={`/settlement?tab=${next.tab}&focus=${encodeURIComponent(cur.id)}`}>정산관리</Link>
     : next.kind === 'new' ? <Link className="erp-btn erp-btn--primary" href="/intake?w=new">신규 접수</Link>
     : <span className="erp-btn erp-btn--primary" aria-disabled="true">{adminBlockLabel(next.label)}</span>;
+
+  let settlementWork: React.ReactNode = null;
+  let settlementSecondary: React.ReactNode = null;
+  let settlementPrimary: React.ReactNode = null;
+  if (life) {
+    const supplierAxis = life.axis === '공급사';
+    const stage = supplierAxis ? cur.claimStage : cur.payStage;
+    const action = settlementPrimaryAction(cur, life.axis);
+    const formId = `erp-life-${cur.id}`;
+    const cashLabel = supplierAxis ? '수금' : '지급';
+    const remaining = cashRemainingOf(life.axis, cur);
+    const cumulative = supplierAxis ? (p.collectedAmt ?? 0) : (p.paidAmt ?? 0);
+    const correcting = life.mode === 'correct' && stage !== '접수';
+    const actionLabel = correcting ? '정정 저장'
+      : action === 'confirm' ? `${life.axis} 확인`
+        : action === 'uncorrect' ? '정정 해소'
+          : action === 'invoice' ? '계산서 발행'
+            : action === 'cash' ? (cumulative > 0 ? `${cashLabel} 추가` : `${cashLabel} 처리`)
+              : action === 'done' ? `${cashLabel} 완료`
+                : supplierAxis ? '청구서 발행 대기' : '지급명세 발행 대기';
+
+    if (correcting) {
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="correct" axis={life.axis} need="correct" disabled={!writeEnabled()} />;
+      settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('')}>정정 취소</Link>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>정정 저장</button>;
+    } else if (action === 'confirm') {
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="confirm" axis={life.axis} need="none" disabled={!writeEnabled()} />;
+      settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+    } else if (action === 'uncorrect') {
+      settlementWork = <LifeForm id={formId} code={cur.id} kind="uncorrect" axis={life.axis} need="none" disabled={!writeEnabled()} />;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+    } else if (action === 'invoice') {
+      settlementWork = <SideStep id={formId} code={cur.id} kind="invoice" label="계산서" on={false} day={today()} biz={life.invoiceBiz} externalSubmit disabled={!writeEnabled()} />;
+      settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+    } else if (action === 'cash') {
+      settlementWork = <LifeForm id={formId} code={cur.id} kind={supplierAxis ? 'collected' : 'paid'} axis={life.axis} need="money"
+        amount={remaining ?? 0} day={today()} operationId={randomUUID()} disabled={!writeEnabled()} />;
+      settlementSecondary = <Link className="erp-btn erp-btn--ghost" href={life.link('correct')}>정정 요청</Link>;
+      settlementPrimary = <button className="erp-btn erp-btn--primary" type="submit" form={formId} disabled={!writeEnabled()}>{actionLabel}</button>;
+    } else if (action === 'done') {
+      settlementPrimary = life.nextHref
+        ? <Link className="erp-btn erp-btn--primary" href={life.nextHref}>다음 할 일</Link>
+        : life.nextGroupHref
+          ? <Link className="erp-btn erp-btn--primary" href={life.nextGroupHref}>다음 거래처</Link>
+          : life.nextAxisHref
+            ? <Link className="erp-btn erp-btn--primary" href={life.nextAxisHref}>{life.nextAxisLabel ?? '다음 업무'}</Link>
+            : <span className="erp-btn erp-btn--primary" aria-disabled="true">{actionLabel}</span>;
+    } else {
+      settlementPrimary = <span className="erp-btn erp-btn--primary" aria-disabled="true">{actionLabel}</span>;
+    }
+
+    settlementWork = (
+      <div className="erp-tile" data-settlement-focus>
+        <h3 className="erp-tile-title">현재 업무 <span className="erp-docstate">{life.axis} · {actionLabel}</span></h3>
+        <div className="erp-embed">
+          {settlementWork}
+          <div className="dz-side-steps">
+            {supplierAxis && !p.billed && <SideStep code={cur.id} kind="hold" label={p.billHold ? '청구 보류 중' : '청구 보류'} on={p.billHold} disabled={!writeEnabled()} />}
+            {!p.billed && p.delivered && <SideStep code={cur.id} kind="billMonth" label="청구월" month={p.billMonth ?? today().slice(0, 7)} disabled={!writeEnabled()} />}
+            {supplierAxis && p.billed && action !== 'invoice' && <SideStep code={cur.id} kind="invoice" label={p.invoiceIssued ? '계산서 끊음' : '계산서'} on={p.invoiceIssued} day={today()} biz={life.invoiceBiz} disabled={!writeEnabled()} />}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -81,6 +165,7 @@ export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementR
               <div className="erp-tile-row"><b>남는 것</b><strong>{won0(margin)}원</strong></div>
             </div>
           </div>
+          {settlementWork}
           <div className="erp-tile">
             <h3 className="erp-tile-title">처리 — 차량번호 · 계약서 · 인도 · 취소</h3>
             <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
@@ -99,8 +184,9 @@ export async function SettlementDetail({ cur, base, q, now }: { cur: SettlementR
         </div>
       </PanelBody>
       <PanelFoot>
-        <Link className="erp-btn erp-btn--ghost" href={hrefWith(base, q, { ic: null })}>목록으로</Link>
-        {primary}
+        <Link className="erp-btn erp-btn--ghost" href={life?.backHref ?? hrefWith(base, q, { ic: null })}>{life ? '정산 묶음으로' : '목록으로'}</Link>
+        {settlementSecondary}
+        {life ? settlementPrimary : intakePrimary}
       </PanelFoot>
     </>
   );

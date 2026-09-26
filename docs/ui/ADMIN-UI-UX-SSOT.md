@@ -1589,6 +1589,8 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - support text
 - border 없음
 - 빈 상태를 경고처럼 과장하지 않는다
+- 목록이 0건이면 빈 RowCards/하얀 Panel을 남기지 않고 "왜 비었는지 + 다음 확인"을 Panel 안에서 설명한다
+- 상품/접수/실적/정산/전자계약 Web은 공통 `PanelState`, Mobile은 공통 `EmptyState`를 사용한다
 
 ## Warning
 - amber soft surface
@@ -1601,6 +1603,9 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - error text
 - border 없음
 - 단순 빨간 글 한 줄로 끝내지 않는다
+- route fetch 실패는 개별 화면에서 임의 catch UI를 만들지 않고 `RouteError` boundary로 수렴한다
+- PC는 ERP Panel grammar, Mobile은 mobile Panel grammar로 같은 문구/재시도 의미를 사용한다
+- 데이터 연결 상태 route도 loading/error boundary 예외가 아니다
 
 ## Success
 - green soft surface
@@ -1612,6 +1617,9 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - no elevation
 - no hover / press
 - disabled와 구분: 값은 읽을 수 있고 focus/selection 의미는 유지 가능
+- 상세/업무 Panel 상단에서 "현재 조회 전용" 이유를 먼저 알리고, 저장/상태변경 액션은 실제 disabled 처리한다
+- disabled 액션은 `aria-describedby`로 readonly 이유와 연결한다
+- 이동/조회 링크는 readonly여도 계속 사용할 수 있다
 
 ## Busy / Loading
 - 기존 geometry 유지
@@ -1619,6 +1627,7 @@ PC의 넓은 RowCard는 추가 facts를 **최대 2개**까지 허용한다.
 - pointer interaction 잠금
 - cursor progress
 - 레이아웃 점프 금지
+- route loading은 정상 route와 같은 Panel shell 안에서 상태를 보여 주며 PC/Mobile 별도 디자인을 만들지 않는다
 
 ## Stale / Offline
 - error보다 약한 neutral/info surface

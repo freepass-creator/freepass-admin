@@ -23,6 +23,7 @@ import type { Clawback, LedgerLine } from './ledgers';
 import type { SettlementRow } from './types';
 import { settlementEligible } from './eligibility';
 import { isCalendarDay, isCalendarMonth, koreaDay } from './calendar';
+import { workflowMutationBlockedReason } from './consistency';
 
 export const CLAIM_STAGES = ['접수', '청구', '정정', '확인', '수금'] as const;
 export const PAY_STAGES = ['접수', '통보', '정정', '확인', '지급'] as const;
@@ -182,6 +183,8 @@ export type LifeChange =
 
 export function lifePatch(r: SettlementRow, c: LifeChange, nowMs = Date.now()):
   { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
+  const inconsistent = workflowMutationBlockedReason(r);
+  if (inconsistent) return { ok: false, error: inconsistent };
   if (r.progress.cancelled) return { ok: false, error: '취소된 줄입니다' };
   if (!settlementEligible(r)) {
     return { ok: false, error: '계약서·차량번호·인도완료·인도일이 확인된 건만 정산 처리할 수 있습니다' };

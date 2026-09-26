@@ -79,7 +79,6 @@ export function planContractCancellation(
     }
     const mirrored=contractCancelledAt>0
       && contractCancelledAt===intakeCancelledAt
-      && contractCancelledAt>=payment.fact.receivedAt
       && S(contract.contract_status)==='계약취소'
       && B(intake.cancelled)
       && B(intake.settleExclude)

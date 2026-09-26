@@ -157,7 +157,21 @@
       "sidenav": false,
       "statusbar": false,
       "depth0": "current panel + global bottom tabs",
-      "depth1Plus": "current panel + local ActionBar"
+      "depth1Plus": "current panel + local ActionBar",
+      "globalTabs": [
+        "상품",
+        "접수",
+        "실적",
+        "정산"
+      ],
+      "optionalTabs": [
+        "계약"
+      ],
+      "settlementAxes": [
+        "청구 · 공급사",
+        "지급 · 영업채널"
+      ],
+      "rule": "Global navigation mirrors the desktop workflow axes. Claim/pay are internal settlement axes, not separate global destinations."
     },
     "shellRule": "Same component semantics, adaptive shell composition."
   },

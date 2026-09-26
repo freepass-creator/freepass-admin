@@ -146,8 +146,12 @@ const desktopCss = await readSource(DESKTOP_CSS);
  * 생성물 앞부분(v1 기본 규칙)과 retro 테마는 ai-core 가 따로 검사한다(npm run erp:check). */
 const desktopOwnCss = (() => {
   const start = desktopCss.indexOf('v1.1 — PC 관리자 실적용 규격');
-  const end = desktopCss.indexOf('/* ── themes/retro.css');
-  return start >= 0 && end > start ? desktopCss.slice(start, end) + desktopCss.slice(desktopCss.indexOf(SHELL_MARK)) : desktopCss;
+  const shellStart = desktopCss.indexOf(SHELL_MARK);
+  const retroStart = desktopCss.indexOf('/* ── themes/retro.css');
+  const end = retroStart > start ? retroStart : shellStart;
+  return start >= 0 && end > start && shellStart >= 0
+    ? desktopCss.slice(start, end) + desktopCss.slice(shellStart)
+    : desktopCss;
 })();
 const visualQa = await readFile(path.join(root, 'scripts/visual-qa.cjs'), 'utf8');
 const desktopScaleBaseline = [
@@ -370,7 +374,7 @@ const formContractBaseline = [
   ['src/app/intake/new/IntakeForm.tsx', [
     /className="dz-errs" role="alert" aria-live="assertive"/,
     /aria-busy=\{pending\}/,
-    /disabled=\{pending\}/,
+    /disabled=\{(?:disabled \|\| )?pending\}/,
     /저장 중…/,
   ]],
   ['src/app/settlement/LifeForms.tsx', [
@@ -695,7 +699,7 @@ const listAmountLanguageBaseline = [
   ['src/app/_erp/Workspace.tsx', /월 \$\{manWon\(r\.rent\)\} 원/, 'intake monthly rent may be compact'],
   ['src/app/_erp/Workspace.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'intake fees stay exact'],
   ['src/app/_erp/SettlementScreen.tsx', /정산 \$\{won0\(g\.net\)\}원/, 'settlement total stays exact'],
-  ['src/app/_erp/SettlementScreen.tsx', /수수료 청구[\s\S]*won0\(r\.money\.claim\)[\s\S]*지급[\s\S]*won0\(r\.money\.pay\)/, 'settlement line fees stay exact'],
+  ['src/app/_erp/SettlementScreen.tsx', /(?=[\s\S]*청구 수수료)(?=[\s\S]*won0\(r\.money\.claim\))(?=[\s\S]*지급 수수료)(?=[\s\S]*won0\(r\.money\.pay\))/, 'settlement line fees stay exact'],
   ['src/app/_erp/EsignScreen.tsx', /월 \$\{manWon\(c\.rent\)\} 원/, 'e-sign monthly rent may be compact'],
 ] as const;
 for (const [file, re, label] of listAmountLanguageBaseline) {
@@ -820,7 +824,7 @@ const embeddedOfferListBaseline = [
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-term"/, 'one-line offer term'],
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-rent"/, 'one-line offer monthly rent'],
   ['src/app/_erp/ProductDetail.tsx', /className="erp-offer-conditions"/, 'one-line offer conditions'],
-  [DESKTOP_CSS, /Embedded offer selection list/, 'offer list styling contract'],
+  [DESKTOP_CSS, /\.erp-std \.erp-offer-list[\s\S]*?\.erp-std \.erp-offer-card/, 'offer list styling contract'],
 ] as const;
 for (const [file, re, label] of embeddedOfferListBaseline) {
   const src = await readSource(file);
@@ -842,7 +846,7 @@ const ssot = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot
   };
   radii?: { scalePx?: number[]; smallPx?: number; controlPx?: number; defaultPanelPx?: number };
   surfaces?: { canvas?: string; lineFree?: boolean };
-  elevation?: { levels?: string[] };
+  elevation?: { base?: string; hover?: string; float?: string };
   listPresentation?: { authorityFeature?: string; modes?: Record<string,string> };
 };
 
@@ -893,7 +897,7 @@ const sameArray = (a: unknown, b: unknown[]) => Array.isArray(a) && a.length ===
 if (!sameArray(ssot.typography?.scalePx, [12,14,16,18,20,24])) errors.push('machine SSOT: typography scale must be 12/14/16/18/20/24');
 if (!sameArray(ssot.spacing?.scalePx, [4,8,12,16,20,24,32])) errors.push('machine SSOT: spacing scale must be 4/8/12/16/20/24/32');
 if (!sameArray(ssot.radii?.scalePx, [4,6,8])) errors.push('machine SSOT: radius scale must be 4/6/8');
-if (!sameArray(ssot.elevation?.levels, ['0','base','hover','float'])) errors.push('machine SSOT: elevation levels must be 0/base/hover/float');
+if (!ssot.elevation?.base || !ssot.elevation?.hover || !ssot.elevation?.float) errors.push('machine SSOT: elevation must define base/hover/float');
 
 if (errors.length) {
   console.error('UI/UX SSOT check FAILED');

@@ -19,7 +19,7 @@ import {
 import { sp, txt } from '../_fn/fmt';
 import { IssueForm } from '../settlement/LifeForms';
 import {
-  hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
+  hrefWith, Panel, PanelBody, PanelFoot, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
 import { SettlementDetail } from './SettlementDetail';
@@ -47,11 +47,19 @@ function SignalIcon({ signal }: { signal: SettlementSignal }) {
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
   let rows: SettlementRow[]; let cb: Clawback[];
   try { const [all, c] = await Promise.all([settlements.list(), settlements.clawbacks()]); rows = all.map((x) => x.row); cb = c; }
-  catch (e) {
+  catch {
     return (
       <Screen name="settlement-workspace">
-        <Panel compact><PanelHead kind="목록" title="정산관리" count="오류" />
-          <PanelBody><p className="erp-field-error">ERP5 를 못 읽었습니다 — {(e as Error).message}</p></PanelBody></Panel>
+        <div className="erp-workspace">
+          <Panel>
+            <PanelHead kind="상태" title="정산관리" count="읽기 실패" />
+            <PanelBody>
+              <PanelState kind="error" title="정산 데이터를 불러오지 못했습니다.">
+                잠시 후 다시 시도해 주세요. 계속 실패하면 데이터 연결 상태를 확인해 주세요.
+              </PanelState>
+            </PanelBody>
+          </Panel>
+        </div>
       </Screen>
     );
   }
@@ -121,7 +129,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const 장부 = gSel && month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
 
-  const list = (title: string, items: LedgerGroup[], name: string, side: 'claim' | 'pay') => (
+  const list = (title: string, items: LedgerGroup[], name: string, side: 'claim' | 'pay') => items.length ? (
     <RowCards label={`${title} 목록`}>
       {items.map((g) => {
         const signal = settlementGroupSignal(g, side, month === NO_MONTH);
@@ -136,7 +144,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         );
       })}
     </RowCards>
-  );
+  ) : <PanelState title={`${title}할 거래처가 없습니다.`}>선택한 정산월·검색·필터 조건을 확인해 주세요.</PanelState>;
 
   return (
     <Screen name="settlement-workspace">
@@ -218,7 +226,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         ) : (
           <>
             <PanelHead kind="상세내용" title="정산상세" count="묶음 선택" />
-            <PanelBody><p className="erp-muted">왼쪽 청구목록이나 오른쪽 지급목록에서 고르세요.</p></PanelBody>
+            <PanelBody><PanelState title="정산 거래처를 선택해 주세요.">왼쪽 청구목록 또는 오른쪽 지급목록에서 거래처를 고르면 가운데에 정산 요약이 표시됩니다.</PanelState></PanelBody>
           </>
         )}
       </Panel>

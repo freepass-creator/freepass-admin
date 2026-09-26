@@ -27,7 +27,6 @@ import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts
 const has = (k: string) => process.argv.includes(k);
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const APPLY = has('--apply');
-assertErp5MaintenanceWrite(process.env, APPLY, 'erp5-atomize');
 const SA = arg('--sa', 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json');
 const SRC = arg('--src', 'settlement_rows');
 const DST = arg('--dst', 'settlement_atoms');
@@ -40,6 +39,7 @@ if (sa.project_id !== 'freepasserp5') throw new Error(`★ERP5 가 아니다: ${
 if (!String(sa.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
   throw new Error(`★ERP5 서비스계정이 아니다: ${String(sa.client_email ?? '')}`);
 }
+assertErp5MaintenanceWrite(process.env, APPLY, 'erp5-atomize', Date.now(), String(sa.client_email ?? ''));
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'atomize'));
 
 const won = (x: number | null) => x === null ? '모름' : Math.round(x).toLocaleString('ko-KR');

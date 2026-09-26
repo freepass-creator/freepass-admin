@@ -49,9 +49,11 @@ test('Firestore emulator stays writable without production approval', () => {
   assert.equal(gate.mode, 'EMULATOR');
 });
 
-test('demo remains read-only and local explicit writes remain available', () => {
+test('demo stays read-only and local real-Firestore writes cannot bypass approval', () => {
   assert.equal(erp5WriteGate({ ERP5_WRITE: 'on' }, true, NOW).enabled, false);
-  assert.equal(erp5WriteGate({ ERP5_WRITE: 'on', NODE_ENV: 'development' }, false, NOW).enabled, true);
+  const local = erp5WriteGate({ ERP5_WRITE: 'on', NODE_ENV: 'development' }, false, NOW);
+  assert.equal(local.enabled, false);
+  assert.equal(local.mode, 'HOLD');
 });
 
 test('write approval receipt validates project, IAM, backup/restore and time', () => {
@@ -163,4 +165,21 @@ test('expired production approval fails closed', () => {
   const expired = JSON.parse(approval) as Record<string,unknown>;
   expired.validUntil='2026-09-26T06:45:00.000Z';
   assert.equal(parseErp5WriteApproval(JSON.stringify(expired),NOW).ok,false);
+});
+
+
+test('local development must use emulator or the same real-store approval', () => {
+  const localApproved = erp5WriteGate({
+    ERP5_WRITE:'on',
+    NODE_ENV:'development',
+    APP_BASE_URL:'https://freepass-admin.vercel.app',
+    ERP5_FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({
+      project_id:'freepasserp5',
+      client_email:'admin@freepasserp5.iam.gserviceaccount.com',
+      private_key:'k',
+    }),
+    ERP5_WRITE_APPROVAL_JSON:approval,
+  },false,NOW);
+  assert.equal(localApproved.enabled,true);
+  assert.equal(localApproved.mode,'PRODUCTION_APPROVED');
 });

@@ -40,6 +40,11 @@ export function planContractCancellation(
     return {ok:false,error:'계약취소 요청 식별자가 올바르지 않습니다.'};
   }
 
+  const now=new Date(nowMs);
+  if(!Number.isFinite(nowMs)||!Number.isFinite(now.getTime())){
+    return {ok:false,error:'계약취소 처리 시각이 올바르지 않습니다.'};
+  }
+
   if(Number(intake.contractTerminatedAt??0)>0||S(contract.contract_status)==='계약해지'){
     return {ok:false,error:'계약해지된 건은 계약취소로 바꿀 수 없습니다.'};
   }
@@ -111,7 +116,7 @@ export function planContractCancellation(
       contractCancellationReason:reason,
       contractCancellationOperationId:input.operationId,
       updatedAt:nowMs,
-      stateAt:new Date(nowMs).toISOString(),
+      stateAt:now.toISOString(),
     },
   };
 }

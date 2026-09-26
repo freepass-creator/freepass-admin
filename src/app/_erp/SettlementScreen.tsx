@@ -22,23 +22,24 @@ import {
   Badge, hrefWith, Panel, PanelBody, PanelFoot, PanelHead, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
 import { AutoSelect } from './AutoSelect';
+import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal, type SettlementSignalTone } from '../settlement/group-signal';
 
 type Q = Record<string, string | string[] | undefined>;
-const STAGE_TONE: Record<string, Tone> = { 접수: 'neutral', 청구: 'info', 통보: 'info', 정정: 'err', 확인: 'warn', 수금: 'ok', 지급: 'ok' };
 const CLAIM_FLOW = ['접수', '청구', '정정', '확인', '수금'];
 const PAY_FLOW = ['접수', '통보', '정정', '확인', '지급'];
-const ATTN_TONE: Record<string, Tone> = { issue: 'err', todo: 'info', done: 'ok' };
-const ATTN_LABEL: Record<string, string> = { issue: '이슈', todo: '미처리', done: '완료' };
-/** 목록 카드 썸네일 — §5-4 규격대로 상태 아이콘 + 짧은 두 글자(대표 2026-09-24 「목록 줄 카드 규격도
- *  … 상태 아이콘 또는 분류 아이콘이 있고 두줄」, 접수목록의 StatusIcon·INTAKE_SHORT 와 같은 결). */
-const ATTN_SHORT: Record<string, string> = { issue: '이슈', todo: '대기', done: '완료' };
-const ATTN_ICON_PATH: Record<string, ReactNode> = {
-  issue: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4M12 17h.01" /></>,
-  todo: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
-  done: <><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></>,
+const SIGNAL_TONE: Record<SettlementSignalTone, Tone> = {
+  neutral: 'neutral', info: 'info', warning: 'warn', error: 'err', success: 'ok',
 };
-function AttnIcon({ attn }: { attn: string }) {
-  return <svg viewBox="0 0 24 24" aria-hidden="true">{ATTN_ICON_PATH[attn]}</svg>;
+/** 상태 visual은 shared signal의 label/tone을 그대로 쓰고, glyph만 ERP shell에 맞춘다. */
+const SIGNAL_ICON_PATH: Record<SettlementSignalTone, ReactNode> = {
+  error: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4M12 17h.01" /></>,
+  warning: <><circle cx="12" cy="12" r="10" /><path d="M9.5 9v6M14.5 9v6" /></>,
+  success: <><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></>,
+  info: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+  neutral: <><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /></>,
+};
+function SignalIcon({ signal }: { signal: SettlementSignal }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{SIGNAL_ICON_PATH[signal.tone]}</svg>;
 }
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
@@ -110,18 +111,16 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const 장부 = gSel && month !== NO_MONTH ? await settlements.invoices(month).catch(() => []) : [];
   const 장 = gSel ? 장부.find((x) => x.axis === axis && x.party === gSel.party) ?? null : null;
 
-  const list = (title: string, items: LedgerGroup[], name: string) => (
+  const list = (title: string, items: LedgerGroup[], name: string, side: 'claim' | 'pay') => (
     <RowCards label={`${title} 목록`}>
       {items.map((g) => {
-        const attn = ledgerGroupAttention(g);
+        const signal = settlementGroupSignal(g, side, month === NO_MONTH);
         return (
           <RowCard key={g.party} href={hrefWith(base, q, { g: g.party })} current={g.party === gSel?.party}
-            tone={ATTN_TONE[attn]} thumb={<><AttnIcon attn={attn} /><span>{ATTN_SHORT[attn]}</span></>} thumbStatus
-            title={g.party} badge={<Badge tone={ATTN_TONE[attn]}>{ATTN_LABEL[attn]}</Badge>}
+            tone={SIGNAL_TONE[signal.tone]} thumb={<><SignalIcon signal={signal} /><span>{signal.label}</span></>} thumbStatus
+            title={g.party}
             sub={`${name} ${g.done}/${g.lines.length}`}
-            meta={g.unknown || g.broken || g.clawbacks.length
-              ? `이슈 · 미확정 ${g.unknown} · 끊김 ${g.broken} · 환수 ${g.clawbacks.length}`
-              : `완료 ${g.completed}/${g.lines.length}`}
+            meta={settlementGroupSupport(g, side)}
             facts={[[name, `${g.done}/${g.lines.length}`], ['완료', `${g.completed}/${g.lines.length}`]]}
             amount={`정산 ${won0(g.net)}원`} unit="" />
         );
@@ -140,7 +139,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
         ]} />
-        <PanelBody>{list('청구', shownClaim, '청구서')}</PanelBody>
+        <PanelBody>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 
       <Panel>
@@ -164,9 +163,11 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
                   const flow = tab === 'claim' ? CLAIM_FLOW : PAY_FLOW;
                   const st = tab === 'claim' ? r.claimStage : r.payStage;
                   const at = st === flow[flow.length - 1] ? flow.length : flow.indexOf(st);
+                  const signal = settlementLineSignal(st, { hold: tab === 'claim' && r.progress.billHold, broken });
                   return (
-                    <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={STAGE_TONE[st] ?? 'neutral'}
-                      title={txt(r.customer)} badge={<Badge tone={STAGE_TONE[st] ?? 'neutral'}>{st}</Badge>}
+                    <RowCard key={r.id} href={`/intake?ic=${encodeURIComponent(r.id)}`} tone={SIGNAL_TONE[signal.tone]}
+                      thumb={<><SignalIcon signal={signal} /><span>{signal.label}</span></>} thumbStatus
+                      title={txt(r.customer)}
                       subId={txt(r.plate)} sub={`${txt(r.model)} · ${txt(r.product)} · ${r.term ?? '—'}개월`} steps={{ labels: flow, at }}
                       meta={tab === 'claim'
                         ? `지급 수수료 ${r.money.pay === null ? '—' : `${won0(r.money.pay)}원`}`
@@ -206,7 +207,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           { key: 'all', label: `전체 ${payCount('all')}`, href: hrefWith(base, q, { pgs: null }), on: pgs === 'all' },
           { key: 'todo', label: `미처리 ${payCount('todo')}`, href: hrefWith(base, q, { pgs: 'todo' }), on: pgs === 'todo' },
         ]} />
-        <PanelBody>{list('지급', shownPay, '지급명세')}</PanelBody>
+        <PanelBody>{list('지급', shownPay, '지급명세', 'pay')}</PanelBody>
       </Panel>
     </div>
     </Screen>

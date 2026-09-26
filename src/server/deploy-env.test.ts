@@ -33,6 +33,12 @@ test('service account from another Firebase project is rejected', () => {
   assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: '{broken' }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
 });
 
+test('unapproved FreePass Data catalog cutover mode is blocked', () => {
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'SHADOW_READ' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'));
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'));
+  assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' }).includes('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE'), false);
+});
+
 test('public addresses must be one https origin without a path', () => {
   assert.ok(errors({ ...good, CLAIM_LINK_BASE: 'http://freepass-admin.vercel.app' }).includes('CLAIM_LINK_BASE'));
   assert.ok(errors({ ...good, PUBLIC_BASE_URL: 'https://other.vercel.app' }).includes('APP_BASE_URL'));

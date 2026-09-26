@@ -46,11 +46,13 @@ import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
 import { intakeEventDocId, settlementCode, settlementKey } from '../src/domain/settlement/code';
 import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const APPLY = process.argv.includes('--apply');
+assertErp5MaintenanceWrite(process.env, APPLY, 'f04-fill-erp5');
 /**
  * ★★대표 2026-09-18 「있으면 안 올리면 되잖아 같은거는」
  *   ⇒ 기본은 «새 줄만» 올린다. ERP5 에 이미 있는 줄은 «한 칸도» 안 건드린다(빈 칸도 안 채운다).

@@ -51,9 +51,12 @@ function credential(): Sa {
   if (!project_id || !client_email || !private_key) {
     throw new Error('ERP5 자격증명에 project_id · client_email · private_key 가 다 있어야 한다.');
   }
-  /** ★★안전장치 — 다른 프로젝트 키로 조용히 도는 일을 막는다. */
+  /** ★★안전장치 — 다른 프로젝트 키/주체로 조용히 도는 일을 막는다. */
   if (project_id !== ERP5_PROJECT_ID) {
     throw new Error(`★ERP5 가 아니다: ${project_id} (${ERP5_PROJECT_ID} 라야 한다)`);
+  }
+  if (!client_email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
+    throw new Error(`★ERP5 서비스계정이 아니다: ${client_email}`);
   }
   return { project_id, client_email, private_key };
 }

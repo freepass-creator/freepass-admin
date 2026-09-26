@@ -52,7 +52,7 @@ Canonical Product
  ↓
 Search
  ↓
-Application Snapshot
+Intake Snapshot
 ```
 
 규칙:
@@ -91,17 +91,6 @@ freepasserp5 상품 reader는 **legacy bridge**로만 유지한다. collection p
 4. MASTER
 5. 실제 Domain 계약과 테스트
 6. 과거 메일/Mockup/Reference
-
-기존 번호 체계와 무관하게 위 순서가 최신이다.
-
-<!-- superseded-order-below -->
-
-과거 표기의 우선순위(아래)는 위 최신 순서가 덮어쓴다.
-1. 사용자의 최신 명시 결정
-2. 최신 WORK-INBOX
-3. MASTER
-4. 실제 Domain 계약과 테스트
-5. 과거 메일/Mockup/Reference
 
 Mockup과 실제 Domain이 다르면 Mockup을 운영 기능으로 간주하지 않는다.
 

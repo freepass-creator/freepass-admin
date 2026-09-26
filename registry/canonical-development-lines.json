@@ -120,7 +120,9 @@
       "single_open_pr_per_canonical_path": true,
       "why": "묵은 가지·같은 정본을 동시에 고치는 PR 이 갈림의 원인이다(2026-09-25 점검: ADMIN-UI-UX-SSOT.md 가 가지마다 다섯 판).",
       "allowed_head_patterns": [
-        "^work/[a-z0-9._-]+/[a-z0-9._-]+$",
+        "^work/function$",
+        "^work/uiux$",
+        "^work/esign$",
         "^dependabot/",
         "^renovate/"
       ],
@@ -136,24 +138,30 @@
         "work/cursor/",
         "work/gemini/"
       ],
-      "legacy_head_exceptions": [
-        {
-          "branch": "claude/freepass-admin-launch-irkl4q",
-          "expires": "2026-10-07"
+      "legacy_head_exceptions": []
+    },
+    "fixed_work_lanes": {
+      "policy": "MANUAL_AI_BRANCH_CREATION_FORBIDDEN",
+      "main": "main",
+      "lanes": {
+        "function": {
+          "branch": "work/function",
+          "scope": "상품검색·접수·계약상태·인도·실적·청구·수금·지급·정산·인증/actor/audit·Admin의 FreePass Data 연결",
+          "forbidden": "UI 시각규격 발명, 전자계약 전용 구현 분기, 자식 feature/fix branch 생성"
         },
-        {
-          "branch": "claude/esign-pdf-renderer-m6lasu",
-          "expires": "2026-10-07"
+        "uiux": {
+          "branch": "work/uiux",
+          "scope": "레이아웃·반응형·컴포넌트·타이포·간격·상태표현·접근성·인터랙션 표현",
+          "forbidden": "업무규칙·도메인 상태·정산 산식·데이터 계약 변경, 자식 UI branch 생성"
         },
-        {
-          "branch": "backend/esign-finalize",
-          "expires": "2026-10-07"
-        },
-        {
-          "branch": "claude/erp-platform-ui-ux-hvfyfa",
-          "expires": "2026-10-07"
+        "esign": {
+          "branch": "work/esign",
+          "scope": "전자계약 도메인·서명·승인/봉인·PDF 렌더링·private 문서 저장·전자계약 검증",
+          "forbidden": "일반 Admin 기능/정산/UI 축으로 범위 확장, 자식 esign branch 생성"
         }
-      ]
+      },
+      "session_rule": "새 AI/개발 세션은 시작 시 정확히 하나의 lane을 배정받고 그 branch만 사용한다. 배정되지 않은 세션은 코드 변경을 시작하지 않는다.",
+      "merge_rule": "lane PR이 main에 병합되면 같은 lane branch를 최신 main으로 동기화해 다음 작업에 재사용한다."
     }
   },
   "baseline": []

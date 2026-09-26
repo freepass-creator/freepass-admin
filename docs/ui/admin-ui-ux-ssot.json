@@ -1586,5 +1586,36 @@
       "inset"
     ],
     "rule": "List cards never shift position on hover or selection."
+  },
+  "settlementListSignals": {
+    "source": "shared presentation signal over ledger/lifecycle facts",
+    "priority": [
+      "month-unassigned",
+      "amount-unknown",
+      "broken",
+      "correction",
+      "hold",
+      "done",
+      "progress",
+      "waiting"
+    ],
+    "tones": {
+      "month-unassigned": "error",
+      "amount-unknown": "error",
+      "broken": "error",
+      "correction": "error",
+      "hold": "warning",
+      "done": "success",
+      "progress": "info",
+      "waiting": "neutral"
+    },
+    "supportSignals": [
+      "amount-unknown",
+      "broken",
+      "correction",
+      "hold",
+      "clawback"
+    ],
+    "parityRule": "Web RowCard and mobile ListRow must show the same label/tone meaning for the same settlement facts."
   }
 }

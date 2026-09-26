@@ -75,3 +75,18 @@ test('100%를 넘는 정산비율은 손상값으로 fail-closed 한다', () => 
   assert.equal(payAmountOf(over), null);
   assert.equal(marginOf(over), null);
 });
+
+
+test('일반 청구·지급 최종금액이 음수가 되면 환수로 추측하지 않고 fail-closed 한다', () => {
+  const negativeBase = row({ claim: -1, pay: -1 });
+  assert.equal(claimAmountOf(negativeBase), null);
+  assert.equal(payAmountOf(negativeBase), null);
+  assert.equal(marginOf(negativeBase), null);
+
+  const negativeByAdjust = row();
+  negativeByAdjust.money.claimAdjust = -1_100_000;
+  negativeByAdjust.money.payAdjust = -900_000;
+  assert.equal(claimAmountOf(negativeByAdjust), null);
+  assert.equal(payAmountOf(negativeByAdjust), null);
+  assert.equal(marginOf(negativeByAdjust), null);
+});

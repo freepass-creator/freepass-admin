@@ -125,6 +125,23 @@ export function planTerminationClawbackReview(
   };
 }
 
+export type TerminationClawbackFollowUp = 'NONE' | 'REVIEW' | 'RECORD_CLAWBACK' | 'DATA_CHECK';
+
+/**
+ * 정산의 다음 단계와 섞지 않는 병렬 후속업무.
+ * UI는 blockOf/정산 다음행동을 그대로 유지하면서 이 값을 별도 attention/action으로 표시한다.
+ */
+export function terminationClawbackFollowUp(
+  r: TerminationClawbackRow,
+  clawbacks: readonly { code?: string }[],
+): TerminationClawbackFollowUp {
+  const state = terminationClawbackReview(r, clawbacks);
+  if (state === 'PENDING') return 'REVIEW';
+  if (state === 'REQUIRED') return 'RECORD_CLAWBACK';
+  if (state === 'INCONSISTENT') return 'DATA_CHECK';
+  return 'NONE';
+}
+
 export function pendingTerminationClawbackRows<T extends TerminationClawbackRow>(
   rows: readonly T[],
   clawbacks: readonly { code?: string }[],

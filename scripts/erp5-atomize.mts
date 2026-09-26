@@ -22,10 +22,12 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement.ts';
 import { blockOf, isOpenIntake, isPerformance, margin } from '../src/domain/settlement/types.ts';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
 
 const has = (k: string) => process.argv.includes(k);
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const APPLY = has('--apply');
+assertErp5MaintenanceWrite(process.env, APPLY, 'erp5-atomize');
 const SA = arg('--sa', 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json');
 const SRC = arg('--src', 'settlement_rows');
 const DST = arg('--dst', 'settlement_atoms');

@@ -144,7 +144,12 @@ type 칸셈 = { 새칸: number; 빈칸메움: number };
 const 칸별 = new Map<string, 칸셈>();
 const 셈 = (c: string) => { if (!칸별.has(c)) 칸별.set(c, { 새칸: 0, 빈칸메움: 0 }); return 칸별.get(c)!; };
 
-const 고칠것: { id: string; patch: Record<string, unknown> }[] = [];
+const 고칠것: {
+  id: string;
+  patch: Record<string, unknown>;
+  auditEventId: string;
+  events: Record<string, unknown>;
+}[] = [];
 const 새줄: { id: string; data: Record<string, unknown>; auditEventId: string; auditKey: string }[] = [];
 let 안바뀜 = 0, 달라도둠 = 0;
 const 다른칸 = new Map<string, number>();
@@ -194,8 +199,26 @@ for (const f of F04.rows as Record<string, unknown>[]) {
     if (견줌(있던) !== 견줌(v)) { 달라도둠++; 다른칸.set(field, (다른칸.get(field) ?? 0) + 1); }
   }
   if (Object.keys(patch).length && FILL) {
-    patch._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, filled: Object.keys(patch) };
-    고칠것.push({ id: e.id, patch });
+    const filled = Object.keys(patch);
+    const auditEventId = String(e.data.auditEventId ?? '').trim() || intakeEventDocId(
+      e.data.plate, e.data.sourceProductId, e.data.receivedAt, e.data.intakeRequestId, e.data.intakeIdentityMode,
+    );
+    const events: Record<string, unknown> = {};
+    for (const field of filled) {
+      const key = 'aud_f04_' + createHash('sha256').update(`${e.id}|${RUN}|${field}`).digest('hex').slice(0, 16);
+      events[key] = {
+        at: Date.parse(STAMP),
+        by: 'f04-import',
+        field,
+        from: '',
+        to: String(patch[field] ?? ''),
+        source: 'F04',
+        run: RUN,
+      };
+    }
+    patch.auditEventId = auditEventId;
+    patch._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, filled };
+    고칠것.push({ id: e.id, patch, auditEventId, events });
   } else if (!Object.keys(patch).length) 안바뀜++;
 }
 
@@ -259,9 +282,13 @@ if (APPLY) {
   /** 한 번에 500 이 Firestore 한도다. 넉넉히 400씩 */
   const 묶음 = <T,>(xs: T[], n = 400) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
   let n = 0;
-  for (const b of 묶음(고칠것)) {
+  /* 기존 줄의 빈칸 메움도 원장 + field별 audit event를 같은 batch에 쓴다. */
+  for (const b of 묶음(고칠것, 200)) {
     const w = db.batch();
-    for (const x of b) w.set(db.collection(ROWS).doc(x.id), { ...x.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    for (const x of b) {
+      w.set(db.collection(ROWS).doc(x.id), { ...x.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      w.set(db.collection(EVENTS).doc(x.auditEventId), x.events, { merge: true });
+    }
     await w.commit(); n += b.length;
   }
   /* 새 접수는 원장 + 최초 audit event를 같은 batch에 쓴다. 1줄당 2 write라 200개씩 묶어 500 한도를 넘지 않는다. */

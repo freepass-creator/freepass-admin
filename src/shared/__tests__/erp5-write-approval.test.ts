@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { erp5WriteGate, parseErp5WriteApproval } from '../erp5-write-approval';
+import { assertErp5MaintenanceWrite, erp5WriteGate, parseErp5WriteApproval } from '../erp5-write-approval';
 
 const NOW = Date.parse('2026-09-26T07:00:00.000Z');
 const approval = JSON.stringify({
@@ -75,4 +75,19 @@ test('write approval requires separate trace references for IAM and backup/resto
   });
   assert.equal(parseErp5WriteApproval(missingIamRef, NOW).ok, false);
   assert.equal(parseErp5WriteApproval(missingBackupRef, NOW).ok, false);
+});
+
+
+test('direct maintenance --apply requires the same approval receipt', () => {
+  assert.doesNotThrow(() => assertErp5MaintenanceWrite({}, false, 'dry-run', NOW));
+  assert.throws(
+    () => assertErp5MaintenanceWrite({ ERP5_WRITE:'on' }, true, 'maint', NOW),
+    /write approval missing/,
+  );
+  assert.doesNotThrow(() => assertErp5MaintenanceWrite({
+    ERP5_WRITE:'on', ERP5_WRITE_APPROVAL_JSON:approval,
+  }, true, 'maint', NOW));
+  assert.doesNotThrow(() => assertErp5MaintenanceWrite({
+    ERP5_WRITE:'on', FIRESTORE_EMULATOR_HOST:'127.0.0.1:8080',
+  }, true, 'maint', NOW));
 });

@@ -29,6 +29,12 @@ Deploy the verified revision to a preview with ERP5_WRITE=off. Verify the author
 
 Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Record that verification as the non-secret `ERP5_WRITE_APPROVAL_JSON` receipt described in `.env.example`; production runtime stays fail-closed without it. Then explicitly enable `ERP5_WRITE=on` only for the approved production environment. Vercel preview/development deployments remain read-only even if the approval receipt is present. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
 
+### Production write approval receipt
+
+`ERP5_WRITE_APPROVAL_JSON` is an operational receipt, not a substitute for the checks it records. It must identify `freepasserp5`, confirm least-privilege IAM and a real backup/restore verification, carry a traceable `approvalRef`, and record `approvedAt`. Do not set either verification flag from emulator tests, a green CI badge, or the mere existence of a service-account key.
+
+This repository and the current FreePass Data repository do not implement a production Firestore backup/restore job. Until an external Firebase/GCP backup and restore drill is actually verified, production writes must remain off. The application intentionally cannot prove cloud IAM roles from a service-account JSON key; that verification also remains an operator/cloud-control-plane receipt.
+
 Verify save, reload, re-login and retrieval preserve the same record. Check duplicate clicks/concurrent submissions produce one intake and one audited outcome. Complete a normal intake/contract/delivery/settlement-record journey. Pre-delivery cancellation must create no new billing/payment/clawback; post-delivery termination must retain prior facts and track any clawback separately.
 
 ## Honest scope limits

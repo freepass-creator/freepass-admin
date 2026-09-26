@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { erp5 } from '../firestore';
 import { Erp5SettlementRepository } from '../settlement-repository';
 import { buildIntakeCatalogSnapshot } from '../../../domain/settlement/catalog-snapshot';
+import { intakeEventDocId } from '../../../domain/settlement/code';
 import type { IntakeInput } from '../../../domain/settlement/intake';
 import type { CanonicalProduct, Offer } from '../../../domain/product/types';
 
@@ -205,4 +206,55 @@ emulatorTest('Firestore: installment progress, locked bill month, and actor audi
   for(const field of ['접수','계약서','인도완료','인도일','받은회차','청구월','청구서']){
     assert.equal(fields.has(field),true,`audit field missing: ${field}`);
   }
+});
+
+
+emulatorTest('Firestore: direct intake keeps one audit document when plate changes',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const base=intake(p,o);
+  const input: IntakeInput={
+    ...base,
+    plate:`OLD${suffix}`,
+    sourceProductId:undefined,
+    sourceProductVersion:null,
+    sourceOfferId:undefined,
+    sourceSnapshotId:undefined,
+    catalogSnapshotDigest:undefined,
+    catalogSnapshot:undefined,
+    intakeRequestId:undefined,
+  };
+  const repo=new Erp5SettlementRepository();
+  const actor=`audit-${suffix}@teamjpk.com`;
+
+  const created=await repo.createIntake(input,actor);
+  assert.equal(created.created,true);
+  const initial=await repo.get(created.code);
+  assert.ok(initial);
+  const stableEventId=String(initial.raw.auditEventId??'');
+  assert.ok(stableEventId);
+
+  const newPlate=`NEW${suffix}`;
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'plate',plate:newPlate},actor),{ok:true,changed:1});
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paper',on:true},actor),{ok:true,changed:1});
+
+  const after=await repo.get(created.code);
+  assert.ok(after);
+  assert.equal(after.raw.auditEventId,stableEventId);
+  assert.equal(after.row.plate,newPlate);
+
+  const events=await repo.events(newPlate,input.receivedAt,undefined,undefined,'plate');
+  const fields=new Set(events.map((event)=>event.field));
+  assert.equal(fields.has('접수'),true);
+  assert.equal(fields.has('차량번호'),true);
+  assert.equal(fields.has('계약서'),true);
+
+  const oldDoc=await erp5().collection('settlement_events').doc(stableEventId).get();
+  assert.equal(oldDoc.exists,true);
+  const derivedFromNewPlate=intakeEventDocId(newPlate,undefined,input.receivedAt,undefined,'plate');
+  assert.notEqual(derivedFromNewPlate,stableEventId);
+  const splitDoc=await erp5().collection('settlement_events').doc(derivedFromNewPlate).get();
+  assert.equal(splitDoc.exists,false);
 });

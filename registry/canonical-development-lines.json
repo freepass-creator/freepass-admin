@@ -74,7 +74,9 @@
         "기능 런타임 정본은 main 한 곳이다. PR/작업 브랜치는 merge 전 staging/evidence일 뿐 정본이 아니다.",
         "접수 런타임 정본은 Intake/settlement_rows다. src/domain/application/** 및 src/services/applications.ts는 LEGACY_QUARANTINED이며 신규 기능이 의존하지 않는다.",
         "취소 판정은 계약금 수납 전=접수취소, 계약금 수납 후·인도 전=계약취소, 인도 후=계약해지+환수검토다. 차량 보증금(deposit)과 계약금은 별도 사실이다.",
-        "오래 diverged된 브랜치는 통째로 merge하지 않고 current main에 필요한 의미와 회귀테스트만 선별 이식한다."
+        "오래 diverged된 브랜치는 통째로 merge하지 않고 current main에 필요한 의미와 회귀테스트만 선별 이식한다.",
+        "브랜치는 임시 작업 공간이다. main 병합 후 작업 브랜치는 삭제하며, 남아 있는 브랜치를 런타임 정본으로 읽지 않는다.",
+        "feat/intake-contract-condition-choices-20260923 는 current main에 없는 계약조건 원자(연간주행거리·연령·업셀링·지역)를 보유한 HOLD 가지다. 정본이 아니며 통째로 merge하지 않고 검토 후 필요한 의미·테스트만 current main에 선별 이식한다."
       ]
     },
     {
@@ -136,10 +138,6 @@
       ],
       "legacy_head_exceptions": [
         {
-          "branch": "recovery/pr92-modernize-20260926",
-          "expires": "2026-10-07"
-        },
-        {
           "branch": "claude/freepass-admin-launch-irkl4q",
           "expires": "2026-10-07"
         },
@@ -154,19 +152,6 @@
         {
           "branch": "claude/erp-platform-ui-ux-hvfyfa",
           "expires": "2026-10-07"
-        },
-        {
-          "branch": "codex/admin-mobile-five-functions-ai-core",
-          "expires": "2026-10-07"
-        },
-        {
-          "branch": "codex/review-gpt-handoff-audit",
-          "expires": "2026-10-07"
-        },
-        {
-          "branch": "claude/ai-core-integration-standardization-ntmoli",
-          "expires": "2026-10-07",
-          "reason": "이 Claude 세션에 배정된 가지 이름이라 세션이 바꿀 수 없다."
         }
       ]
     }

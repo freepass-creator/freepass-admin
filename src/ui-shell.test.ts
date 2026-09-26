@@ -8,9 +8,11 @@ const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
+const mobileTabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
 const settlementPage=read('src/app/settlement/page.tsx');
+const settlementSignals=read('src/app/settlement/group-signal.ts');
 const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
@@ -21,8 +23,8 @@ test('admin root enters the real intake workspace and contains no demo runtime',
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-// DEC-2026-09-23-01 — PC 는 AI Core ERP 표준 골격(왼쪽 업무 메뉴), 폰은 다섯 걸음 하단바 그대로.
-test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab bar on phone, no top actions',()=>{
+// PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
+test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
   for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
     assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
@@ -34,6 +36,11 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
   assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
+  for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
+    assert.ok(mobileTabs.includes(`['${label}', '${href}']`), `mobile workflow missing ${label}`);
+  }
+  assert.equal(mobileTabs.includes("['청구',"), false);
+  assert.equal(mobileTabs.includes("['지급',"), false);
   /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
   assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
@@ -139,7 +146,8 @@ test('supplier lifecycle renders invoice as an explicit step',()=>{
 test('settlement UI separates document progress from cash completion',()=>{
   assert.ok(settlementPage.includes("tab === 'claim' ? '청구서 보냄' : '지급 통보'"));
   assert.ok(settlementPage.includes("tab === 'claim' ? '수금 완료' : '지급 완료'"));
-  assert.ok(settlementPage.includes('g.completed'));
+  assert.ok(settlementPage.includes('settlementGroupSupport'));
+  assert.ok(settlementSignals.includes('g.completed'));
 });
 
 

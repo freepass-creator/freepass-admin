@@ -96,3 +96,25 @@ export function erp5WriteGate(
     approval: approval.value,
   };
 }
+
+
+/**
+ * One-off maintenance/import scripts bypass repository methods, so --apply must
+ * still honor the same production evidence. Emulator writes remain isolated.
+ */
+export function assertErp5MaintenanceWrite(
+  env: Record<string, string | undefined>,
+  apply: boolean,
+  label: string,
+  now = Date.now(),
+): void {
+  if (!apply) return;
+  if (env.FIRESTORE_EMULATOR_HOST?.trim()) return;
+  if (env.ERP5_WRITE?.trim() !== 'on') {
+    throw new Error(`${label}: --apply requires ERP5_WRITE=on`);
+  }
+  const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON, now);
+  if (!approval.ok) {
+    throw new Error(`${label}: write approval missing — ${approval.reason}`);
+  }
+}

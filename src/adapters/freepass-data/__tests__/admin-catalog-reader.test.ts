@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CanonicalProduct } from '../../../domain/product/types';
-import { AdminCatalogSwitchboard, FreePassDataCatalogHoldError, adminCatalogReadMode } from '../admin-catalog-reader';
+import { AdminCatalogSwitchboard, FreePassDataCatalogHoldError, adminCatalogReadMode, compareAdminCatalogShadow } from '../admin-catalog-reader';
 
 const product = { id: 'P-1' } as CanonicalProduct;
 const legacy = {
@@ -106,4 +106,32 @@ for (const mode of ['PARITY_VERIFIED','FREEPASS_DATA_READ'] as const) {
 
 test('unknown Admin Catalog read mode is rejected', () => {
   assert.throws(() => adminCatalogReadMode('DIRECT_FIRESTORE'), /모르는 프리패스 데이터/);
+});
+
+
+test('shadow parity detects intake-critical price, vehicle, and policy drift', () => {
+  const cases: Array<[string,(p: CanonicalProduct)=>void]> = [
+    ['consumer price', (p) => { p.consumerPrice = 48_000_000; }],
+    ['prepayment', (p) => { p.offers[0]!.prepayment = 500_000; }],
+    ['trim', (p) => { p.vehicle.trimId = 'CALLIGRAPHY'; }],
+    ['offer policy', (p) => { p.offers[0]!.policyValues = [{ policyId:'min-age',type:'NUMBER',value:26 }]; }],
+    ['product policy', (p) => { p.productPolicies = [{ policyId:'license',type:'TEXT',value:'1년 이상' }]; }],
+  ];
+  for (const [name, mutate] of cases) {
+    const changed = structuredClone(shadowProduct);
+    mutate(changed);
+    assert.equal(compareAdminCatalogShadow([shadowProduct], [changed]).status, 'MISMATCH', name);
+  }
+});
+
+test('shadow parity ignores policy list ordering but not policy values', () => {
+  const left = structuredClone(shadowProduct);
+  left.productPolicies = [
+    { policyId:'a',type:'MULTI_SELECT',value:['B','A'] },
+    { policyId:'b',type:'NUMBER',value:21 },
+  ];
+  const right = structuredClone(left);
+  right.productPolicies.reverse();
+  (right.productPolicies[1] as { policyId:string; type:'MULTI_SELECT'; value:string[] }).value.reverse();
+  assert.equal(compareAdminCatalogShadow([left], [right]).status, 'MATCH');
 });

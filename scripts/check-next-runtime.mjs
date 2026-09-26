@@ -111,6 +111,9 @@ try {
   check('unauthenticated browser has no page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await anon.close();
 
+  const visibleRouteError = async (page) =>
+    page.locator('strong:visible').filter({ hasText:'데이터를 불러오지 못했습니다.' }).first().isVisible();
+
   // 2. Auth boundary crossed with a synthetic cookie that follows the real g1 session format.
   // No ERP5 credentials are supplied, so protected routes must reach their real route error boundary safely.
   for (const width of [390, 1440]) {
@@ -155,7 +158,7 @@ try {
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForTimeout(250);
         page.removeListener('request', observe);
-        check(`${width}px retry keeps fail-closed error state`, await page.getByText('데이터를 불러오지 못했습니다.').isVisible());
+        check(`${width}px retry keeps fail-closed error state`, await visibleRouteError(page));
         check(`${width}px retry performs a real Next request`, localRequests > 0, `requests=${localRequests}`);
         await page.screenshot({path:path.join(out,`${width}-products-error-retry.png`),fullPage:true});
       }
@@ -164,7 +167,7 @@ try {
     await page.goto(origin + '/', { waitUntil:'networkidle' });
     check(`${width}px authenticated root redirects to canonical intake route`, new URL(page.url()).pathname === '/intake', page.url());
     check(`${width}px redirected intake still fails closed without ERP5 credentials`,
-      await page.getByText('데이터를 불러오지 못했습니다.').isVisible());
+      await visibleRouteError(page));
     await page.screenshot({path:path.join(out,`${width}-root-intake-error.png`),fullPage:true});
     check(`${width}px authenticated runtime has no client page errors`, errors.length === 0, errors.join(' | '));
     await ctx.close();

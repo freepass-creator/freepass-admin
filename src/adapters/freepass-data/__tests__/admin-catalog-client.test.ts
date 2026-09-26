@@ -8,8 +8,15 @@ const base = {
   updatedAt: '2026-09-25T00:00:00.000Z',
   displayName: '그랜저',
   commercialType: 'USED_RENT' as const,
-  vehicleModel: { id: 'VM-1', maker: '현대', model: '그랜저', subModel: 'GN7' },
-  vehicleAsset: { id: 'VA-1', status: 'AVAILABLE' as const, plateNumber: '12가3456', vin: 'VIN-1', odometerKm: 21000 },
+  vehicleModel: {
+    id: 'VM-1', origin: 'KR', maker: '현대', model: '그랜저', subModel: 'GN7', trim: '캘리그래피',
+    modelYear: 2025, fuel: '가솔린', displacementCc: 2497, drive: 'FWD', seats: 5, batteryKwh: null,
+  },
+  vehicleAsset: {
+    id: 'VA-1', status: 'AVAILABLE' as const, plateNumber: '12가3456', vin: 'VIN-1',
+    odometerKm: 21000, firstRegistrationDate: '2025-01-15',
+  },
+  vehiclePrice: 48_000_000,
   offers: [
     {
       offerId: 'O-A', offerRevision: 3, supplierId: 'SUP-A',
@@ -39,7 +46,14 @@ test('FreePass Data mapper preserves multi-supplier Offers and unknown deposit s
   assert.equal(product.offers[0]?.deposit, 0);
   assert.equal(product.offers[1]?.deposit, undefined);
   assert.equal(product.offers[2]?.deposit, undefined);
+  assert.equal(product.consumerPrice, 48_000_000);
+  assert.equal(product.vehicle.originId, 'KR');
+  assert.equal(product.vehicle.trimId, '캘리그래피');
+  assert.equal(product.specs.modelYear, 2025);
+  assert.equal(product.specs.displacementCc, 2497);
+  assert.equal(product.specs.drivetrain, 'FWD');
   assert.equal(product.registration?.vin, 'VIN-1');
+  assert.equal(product.registration?.firstRegistrationDate, '2025-01-15');
   assert.equal(product.policyState, 'MISSING');
 });
 

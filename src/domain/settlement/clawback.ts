@@ -190,7 +190,7 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
   }
   if (!x.reason.trim()) return { ok: false, error: '환수 사유를 적어야 합니다 — 사유 없는 돈은 다음 달에 아무도 못 읽는다' };
   const s = x.supplierAmt ?? 0, a = x.agentAmt ?? 0;
-  if (![s, a].every((v) => Number.isFinite(v) && v >= 0)) return { ok: false, error: '환수 금액을 읽지 못했습니다' };
+  if (![s, a].every((v) => Number.isInteger(v) && v >= 0)) return { ok: false, error: '환수 금액은 1원 단위 정수로 넣어야 합니다' };
   if (!s && !a) return { ok: false, error: '공급사 환수·영업채널 환수 중 하나는 있어야 합니다' };
   const supplierSettled = r.progress.collected || r.claimStage === '수금';
   const channelSettled = r.progress.paid || r.payStage === '지급';
@@ -202,7 +202,7 @@ export function clawbackRecord(r: SettlementRow, x: ClawbackInput, by: string, n
     id: clawbackId(r.plate, month, r.id),
     doc: {
       plate: r.plate, model: r.model ?? '', at: x.at, month,
-      supplierAmt: Math.round(s), agentAmt: Math.round(a), reason: x.reason.trim(),
+      supplierAmt: s, agentAmt: a, reason: x.reason.trim(),
       supplier: r.supplier ?? '', channel: r.channel ?? '',
       /* ★어느 줄의 환수인지 — 기존 23건에는 없던 칸이다(차번만 있었다). 재계약이면 차번만으로는 못 가른다 */
       code: r.id, receivedAt: r.receivedAt ?? '',

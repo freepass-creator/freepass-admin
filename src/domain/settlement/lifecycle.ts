@@ -260,8 +260,8 @@ export function lifePatch(r: SettlementRow, c: LifeChange, nowMs = Date.now()):
       const target = cashTargetOf('공급사', r);
       if (target === null) return { ok: false, error: '청구금액을 모르는 줄은 수금을 찍을 수 없습니다' };
       const before = Math.max(0, r.progress.collectedAmt ?? 0);
-      if (!Number.isFinite(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 받은 금액을 넣어야 합니다' };
-      const amount = Math.round(c.amount);
+      if (!Number.isInteger(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 받은 금액은 1원 단위 정수로 넣어야 합니다' };
+      const amount = c.amount;
       const total = before + amount;
       const done = total >= target;
       return {
@@ -277,8 +277,8 @@ export function lifePatch(r: SettlementRow, c: LifeChange, nowMs = Date.now()):
       const target = cashTargetOf('영업채널', r);
       if (target === null) return { ok: false, error: '지급금액을 모르는 줄은 지급을 찍을 수 없습니다' };
       const before = Math.max(0, r.progress.paidAmt ?? 0);
-      if (!Number.isFinite(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 준 금액을 넣어야 합니다' };
-      const amount = Math.round(c.amount);
+      if (!Number.isInteger(c.amount) || c.amount < 0 || (before < target && c.amount <= 0)) return { ok: false, error: '이번에 준 금액은 1원 단위 정수로 넣어야 합니다' };
+      const amount = c.amount;
       const total = before + amount;
       const done = total >= target;
       return {
@@ -295,6 +295,8 @@ export function lifePatch(r: SettlementRow, c: LifeChange, nowMs = Date.now()):
     case 'billMonth': {
       if (!isCalendarMonth(c.month)) return { ok: false, error: '청구월은 YYYY-MM 형식의 실제 월이어야 합니다' };
       if (r.progress.billed) return { ok: false, error: '청구서가 나간 줄은 달을 못 바꿉니다' };
+      const payDocumentIssued = ['통보', '확인', '지급'].includes(r.payStage);
+      if (payDocumentIssued) return { ok: false, error: '지급명세가 나간 줄은 달을 못 바꿉니다' };
       if (!r.progress.delivered) return { ok: false, error: '인도 전 줄은 청구월이 없습니다 — 인도를 먼저 찍습니다' };
       if (r.progress.billMonth === c.month) return { ok: true, patch: {}, events: [] };
       return { ok: true, patch: { billMonth: c.month }, events: [ev('청구월', r.progress.billMonth ?? '', c.month)] };

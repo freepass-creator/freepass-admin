@@ -103,18 +103,18 @@ export function feeFixPatch(
 ): { ok: true; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[] } | { ok: false; error: string } {
   if (legacyBool(cur.cancelled)) return { ok: false, error: '취소된 줄입니다' };
   if (!reason.trim()) return { ok: false, error: '수수료를 고치는 사유를 적어야 합니다' };
-  for (const [k, v] of [['청구', claim], ['지급', pay]] as const) if (v !== null && (!Number.isFinite(v) || v < 0)) return { ok: false, error: `${k} 수수료 값을 읽지 못했습니다` };
+  for (const [k, v] of [['청구', claim], ['지급', pay]] as const) if (v !== null && (!Number.isInteger(v) || v < 0)) return { ok: false, error: `${k} 수수료는 1원 단위 정수로 넣어야 합니다` };
   const patch: Record<string, unknown> = {};
   const events: { field: string; from: string; to: string }[] = [];
   if (claim !== null && Number(cur.claimWritten ?? 0) !== claim) {
     if (legacyBool(cur.billed)) return { ok: false, error: '청구서가 나간 줄입니다 — 청구 쪽은 가감이나 다음 달 이월로' };
-    patch.claimWritten = Math.round(claim); patch.supplierRate = 0;
-    events.push({ field: '청구금액', from: String(cur.claimWritten ?? ''), to: String(Math.round(claim)) });
+    patch.claimWritten = claim; patch.supplierRate = 0;
+    events.push({ field: '청구금액', from: String(cur.claimWritten ?? ''), to: String(claim) });
   }
   if (pay !== null && Number(cur.payWritten ?? 0) !== pay) {
     if (['통보', '확인', '지급'].includes(String(cur.payStage ?? '')) || legacyBool(cur.paid)) return { ok: false, error: '지급명세가 나간 줄입니다 — 지급 쪽은 가감이나 다음 달 이월로' };
-    patch.payWritten = Math.round(pay); patch.agentRate = 0;
-    events.push({ field: '지급액', from: String(cur.payWritten ?? ''), to: String(Math.round(pay)) });
+    patch.payWritten = pay; patch.agentRate = 0;
+    events.push({ field: '지급액', from: String(cur.payWritten ?? ''), to: String(pay) });
   }
   if (!events.length) return { ok: true, patch: {}, events: [] };
   const note = [String(cur.settleNote ?? '').trim(), `[수수료 고침] ${reason.trim()}`].filter(Boolean).join(' / ');

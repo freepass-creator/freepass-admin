@@ -298,3 +298,18 @@ describe('계약해지 → 환수 검토대상', () => {
     ), 'DATA_CHECK');
   });
 });
+
+it('수수료 직접수정과 환수는 소수 원 금액을 받지 않는다', () => {
+  assert.equal(feeFixPatch({ claimWritten: 100 }, 100.4, null, '소수 입력').ok, false);
+  const settled = toSettlementRow({
+    code: 'stl_fraction', plate: '12가3456', receivedAt: '2026-06-01',
+    delivered: true, deliveredAt: '2026-06-05', supplier: 'A', channel: 'B',
+    collected: true, paid: true, claimStage: '수금', payStage: '지급',
+  }, 'stl_fraction').row;
+  assert.equal(clawbackRecord(
+    settled,
+    { at: '2026-09-10', supplierAmt: 0.4, agentAmt: 0, reason: '소수 입력' },
+    'tester',
+    CLAW_NOW,
+  ).ok, false);
+});

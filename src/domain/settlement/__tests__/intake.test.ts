@@ -382,7 +382,10 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('정산 흔적이 있는 취소 건은 취소를 풀어 원장에 재등장시키지 않는다', () => {
     assert.equal(progressPatch({ cancelled: true, billed: true }, { kind: 'cancelled', on: false }).ok, false);
     assert.equal(progressPatch({ cancelled: true, collected: 1 }, { kind: 'cancelled', on: false }).ok, false);
-    const clean = progressPatch({ cancelled: true, claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: false });
+    const clean = progressPatch(
+      { cancelled: true, claimStage: '접수', payStage: '접수' },
+      { kind: 'cancelled', on: false, reason: '재진행 확정' },
+    );
     assert.ok(clean.ok);
   });
   it('취소된 줄은 취소를 풀기 전에 못 고친다', () =>
@@ -649,3 +652,31 @@ describe('취소 경계 — 계약금 수납 사실이 기준', () => {
   });
 });
 
+
+
+it('인도 오입력 정정으로 deliveredAt만 남아도 접수취소는 현재 delivered 사실만 본다', () => {
+  const r = progressPatch(
+    { delivered: false, deliveredAt: '2026-09-18', claimStage: '접수', payStage: '접수', note: '' },
+    { kind: 'cancelled', on: true, reason: '출고 전 취소' },
+  );
+  assert.equal(r.ok, true);
+  if (r.ok) assert.equal(r.patch.cancelled, true);
+});
+
+it('접수취소 해제는 사유를 남기고 감사 이력을 만든다', () => {
+  const missing = progressPatch(
+    { cancelled: true, claimStage: '접수', payStage: '접수', note: '[취소] 고객 변심' },
+    { kind: 'cancelled', on: false },
+  );
+  assert.equal(missing.ok, false);
+
+  const restored = progressPatch(
+    { cancelled: true, claimStage: '접수', payStage: '접수', note: '[취소] 고객 변심' },
+    { kind: 'cancelled', on: false, reason: '고객 재진행 요청' },
+  );
+  assert.equal(restored.ok, true);
+  if (!restored.ok) return;
+  assert.equal(restored.patch.cancelled, false);
+  assert.match(String(restored.patch.note), /\[취소해제\] 고객 재진행 요청/);
+  assert.ok(restored.events.some((e) => e.field === '취소해제사유'));
+});

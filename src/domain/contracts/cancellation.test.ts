@@ -56,23 +56,24 @@ test('인도 후에는 계약취소가 아니라 계약해지다', () => {
   assert.match(result.error, /계약해지/);
 });
 
-test('동일 계약취소 operation 재시도는 양쪽 mirror가 일치하면 기존 계약금 기록이 없어도 idempotent다', () => {
+test('동일 계약취소 operation 재시도도 유효한 계약금 수납 경계를 만족해야 idempotent다', () => {
   const result = planContractCancellation(
     contract({
       contract_status: '계약취소',
-      contract_cancelled_at: 100,
+      contract_cancelled_at: 2000,
       contract_cancel_operation_id: input.operationId,
       contract_cancel_reason: input.reason,
     }),
     intake({
+      ...payment,
       cancelled: true,
       settleExclude: true,
-      contractCancelledAt: 100,
+      contractCancelledAt: 2000,
       contractCancellationOperationId: input.operationId,
       contractCancellationReason: input.reason,
     }),
     input,
-    2000,
+    3000,
   );
   assert.deepEqual(result, { ok: true, idempotent: true, patch: {}, intakePatch: {} });
 });
@@ -146,3 +147,42 @@ for (const clock of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFIN
     assert.match(result.error, /처리 시각/);
   });
 }
+
+
+test('인도 오입력 정정으로 deliveredAt만 남은 미인도 건은 계약취소 경계를 막지 않는다', () => {
+  const result = planContractCancellation(
+    contract(),
+    intake({ ...payment, delivered: false, deliveredAt: '2026-09-10' }),
+    input,
+    2000,
+  );
+  assert.equal(result.ok, true);
+});
+
+test('기존 계약취소 mirror도 계약금 수납 사실과 시간순서를 반드시 만족한다', () => {
+  const mirrored = {
+    cancelled: true,
+    settleExclude: true,
+    contractCancelledAt: 2000,
+    contractCancellationReason: input.reason,
+    contractCancellationOperationId: input.operationId,
+  };
+  const contractMirror = {
+    contract_status: '계약취소',
+    contract_cancelled_at: 2000,
+    contract_cancel_reason: input.reason,
+    contract_cancel_operation_id: input.operationId,
+  };
+
+  const noPayment = planContractCancellation(contract(contractMirror), intake(mirrored), input, 3000);
+  assert.equal(noPayment.ok, false);
+  if (!noPayment.ok) assert.match(noPayment.error, /계약금 수납 전/);
+
+  const beforePayment = planContractCancellation(
+    contract(contractMirror),
+    intake({ ...mirrored, ...payment, contractPaymentReceivedAt: 2500 }),
+    input,
+    3000,
+  );
+  assert.equal(beforePayment.ok, false);
+});

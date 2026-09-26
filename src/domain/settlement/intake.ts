@@ -311,7 +311,9 @@ export function progressPatch(
   /* 취소 — ★지우지 않는다. 사유를 메모에 덧붙여 남긴다 */
   if (c.on) {
     if (B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
-    if (B(cur.delivered) || S(cur.deliveredAt)) {
+    // deliveredAt은 잘못 찍은 인도를 되돌릴 때 감사 이력으로 남을 수 있다.
+    // 현재 인도 여부의 정본은 delivered=true다.
+    if (B(cur.delivered)) {
       return { ok: false, error: '인도된 건은 접수취소가 아니라 계약해지 후 환수 검토 대상으로 처리합니다' };
     }
     /*
@@ -333,7 +335,17 @@ export function progressPatch(
   }
   if (!B(cur.cancelled)) return { ok: true, patch: {}, events: [] };
   if (settlementStarted()) return { ok: false, error: '정산 흔적이 있는 취소 건은 다시 열 수 없습니다 — 정정/환수 절차로 처리합니다' };
-  return { ok: true, patch: { cancelled: false }, events: [{ field: '취소', from: 'true', to: 'false' }] };
+  const restoreReason = S(c.reason).trim();
+  if (!restoreReason) return { ok: false, error: '취소를 다시 열려면 해제 사유를 넣어야 합니다' };
+  const note = [S(cur.note).trim(), `[취소해제] ${restoreReason}`].filter(Boolean).join(' / ');
+  return {
+    ok: true,
+    patch: { cancelled: false, note },
+    events: [
+      { field: '취소', from: 'true', to: 'false' },
+      { field: '취소해제사유', from: '', to: restoreReason },
+    ],
+  };
 }
 
 /**

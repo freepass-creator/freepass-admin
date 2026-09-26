@@ -260,3 +260,26 @@ test('검증은 원본 계약과 접수의 청구·지급·계산서·현금 기
     assert.equal(field in result.intakePatch,false,field);
   }
 });
+
+
+test('기존 해지 mirror 재시도도 분납 실제 납입회차 검증을 우회하지 않는다', () => {
+  const termAt = Date.parse('2026-09-25T06:00:00Z');
+  const mirroredContract = contract({
+    contract_status: '계약해지',
+    contract_terminated_at: termAt,
+    contract_termination_date: input.effectiveDate,
+    contract_termination_reason: input.reason,
+    contract_termination_operation_id: input.operationId,
+  });
+  const mirroredIntake = intake({
+    payKind: '3회분납',
+    paidRounds: null,
+    contractTerminatedAt: termAt,
+    contractTerminationDate: input.effectiveDate,
+    contractTerminationReason: input.reason,
+    contractTerminationOperationId: input.operationId,
+  });
+  const result = planContractTermination(mirroredContract, mirroredIntake, input, termAt + 1000);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.match(result.error, /실제 납입회차/);
+});

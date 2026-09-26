@@ -13,7 +13,7 @@
  * ★가감은 비율·몫을 안 곱한다 — 사람이 «이 건에서 이만큼» 이라고 적은 최종 금액이다.
  * ⚠ 정산대상(양쪽·공급·영업) 가름은 «목록» 의 일이다(ledgers.ts).
  */
-import { noPayIfBroken, paidRatioOf } from './stage';
+import { invalidPaidRounds, noPayIfBroken, paidRatioOf, roundsOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
 
 /** 정산비율 — 0은 유효한 사실, 음수/비정상 숫자는 조용히 돈으로 만들지 않는다. */
@@ -27,6 +27,7 @@ const nonNegativeMoney = (v: number): Maybe<number> => Number.isFinite(v) && v >
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
+  if (roundsOf(r.payKind) >= 2 && invalidPaidRounds(r)) return null;
   const settleRatio = settlementRatioOf(r);
   if (settleRatio === null) return null;
   const k = paidRatioOf(r, now) * settleRatio;
@@ -36,6 +37,7 @@ export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number>
 
 export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.money.pay === null) return null;
+  if (roundsOf(r.payKind) >= 2 && invalidPaidRounds(r)) return null;
   const settleRatio = settlementRatioOf(r);
   if (settleRatio === null) return null;
   const ratio = paidRatioOf(r, now);

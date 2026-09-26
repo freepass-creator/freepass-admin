@@ -23,6 +23,23 @@ As observed on 2026-09-25, the connected Vercel team listed zero projects. The d
 
 Use `.env.example` as the implemented key inventory. Bind the correct existing deployment project or create an explicitly designated project for this repository. Do not copy another app's secrets, weaken authentication, or enable writes merely to make the screen open. An authorized operator must supply the approved bindings; no secret belongs in a PR, issue, document or chat message.
 
+## FreePass Data Admin Catalog cutover
+
+The application implements the same ordered stages as the central FreePass Data consumer switchboard:
+
+`LEGACY_DIRECT → OBSERVE → SHADOW_READ → PARITY_VERIFIED → FREEPASS_DATA_READ`
+
+The Admin runtime does **not** grant itself a stage. `FREEPASS_DATA_ADMIN_CUTOVER_JSON` is only an execution receipt carrying evidence already approved through the FreePass Data consumer process. It is bound to the exact Data HTTPS origin and the SHA-256 of the dedicated Admin consumer token, expires, and cannot skip a stage.
+
+- `OBSERVE`: legacy bridge remains the returned catalog; no cutover receipt is needed.
+- `SHADOW_READ`: requires contract/auth/legacy/Data-read evidence; reads both sides and returns legacy while recording MATCH/MISMATCH/HOLD.
+- `PARITY_VERIFIED`: additionally requires parity evidence and an approved `admin-catalog` ACTIVE release identity/digests; still returns legacy and continuously rechecks the release and shadow comparison.
+- `FREEPASS_DATA_READ`: additionally requires fallback and production-readback evidence with no HOLD reasons. It validates the currently served ACTIVE release against the approved release and then returns FreePass Data directly. It does not silently fall back to ERP5 if Data fails; rollback is an explicit stage/environment change.
+
+SHADOW/PARITY/final stages bypass the 60-second legacy UI cache so expiry, approval changes and release changes are checked immediately.
+
+As of 2026-09-26 the central FreePass Data main registry still records `freepass-admin-catalog` at `OBSERVE` with unresolved HOLD reasons. Therefore this code is cutover capability, **not current cutover authorization**. Do not populate a higher-stage receipt merely because the code supports it.
+
 ## First-use sequence
 
 Deploy the verified revision to a preview with ERP5_WRITE=off. Verify the authorized administrator can sign in, an unauthorized account cannot, `/system/data-status` shows fresh probes, and catalog list/detail/selected Offer agree. Configure the approved HTTPS origin for OAuth, electronic-contract and claim links.

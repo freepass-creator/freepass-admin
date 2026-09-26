@@ -80,6 +80,12 @@
       "behind_by_at_audit": 290,
       "reason": "Only old governance/freeze documents differ; superseded by this single-main decision. No runtime feature to import.",
       "archive_tag": "archive/admin-main-20260926/work/release/predeploy-freeze"
+    },
+    {
+      "branch": "work/admin-main-consolidation",
+      "expected_sha": "dfa702040a567822d77e23b88ce0a80028194a92",
+      "mode": "merged",
+      "reason": "PR #135 is superseded only to comply with work/<project-id>/<work-id> naming. Its entire commit is preserved as an ancestor of the replacement workline; do not delete unless merged."
     }
   ]
 }

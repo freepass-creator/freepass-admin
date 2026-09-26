@@ -61,8 +61,8 @@ class SafetyTests(unittest.TestCase):
     def test_manifest_is_explicit_and_complete(self):
         manifest = json.loads((ROOT / 'registry/branch-retirement-20260926.json').read_text())
         items = manifest['candidates']
-        self.assertEqual(len(items), 9)
-        self.assertEqual(len({item['branch'] for item in items}), 9)
+        self.assertEqual(len(items), 10)
+        self.assertEqual(len({item['branch'] for item in items}), 10)
         for item in items:
             h.decision(item, item['expected_sha'], set(), item['mode'] == 'merged')
             self.assertTrue(item['reason'])
@@ -75,6 +75,9 @@ class SafetyTests(unittest.TestCase):
         self.assertIsInstance(active['active'], list)
         self.assertEqual(active['branch_creation']['default'], 'REQUIRES_SINGLE_WORK_ORDER_AND_WRITER')
         self.assertEqual(active['branch_retirement']['work_order_issue'], 134)
+        canon = json.loads((ROOT / 'registry/canonical-development-lines.json').read_text())
+        self.assertEqual(canon['repository_guards']['active_work']['policy'], active['coordination']['mode'])
+        self.assertEqual(canon['repository_guards']['active_work']['new_branch_creation'], active['branch_creation']['default'])
 
 
 class LocalRemoteTests(unittest.TestCase):

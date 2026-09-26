@@ -46,3 +46,9 @@
 - main에 없는 과거 코드를 최신 정본으로 통째 덮어쓰지 않는다. UI/업무/정산/FreePass Data 런타임 코드는 이번 정리에서 바꾸지 않는다.
 - 개발 완료, CI 통과, 운영 배포, 사용자 실사용 승인을 분리한다.
 - 다음 개발은 최신 main에서 필요한 변경 한 건으로 시작하고, 테스트/PR/병합 후 다시 main으로 수렴한다.
+
+## 임시 branch 명명 보정
+
+PR #135의 `work/admin-main-consolidation`은 공통 `work/<project-id>/<work-id>` 규격을 충족하지 않아 Canon Guard가 차단했다. 검사를 예외 처리하지 않고 같은 work order #134의 변경과 전체 이력을 `work/freepass-admin/main-consolidation`으로 이어받는다. #135는 미병합 종료하고, 기존 임시 ref `dfa702040a567822d77e23b88ce0a80028194a92`는 대체 PR의 이력에 포함된 뒤에만 정리한다. 원래 감사한 구형 branch 9개와 이 명명 보정용 ref 1개를 명시적으로 구분한다.
+
+`registry/canonical-development-lines.json`에도 남아 있던 시점성 PRE_DEPLOY_FREEZE 안내를 기존 단일-main/단일-writer 권위와 맞춘다. Canon Guard의 branch 이름 정규식, behind 한도, 정본 경합 검사는 변경하지 않는다.

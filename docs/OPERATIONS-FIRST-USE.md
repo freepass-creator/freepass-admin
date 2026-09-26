@@ -31,7 +31,7 @@ Before operational writes, verify least-privilege Firestore/Storage IAM, approve
 
 ### Production write approval receipt
 
-`ERP5_WRITE_APPROVAL_JSON` is an operational receipt, not a substitute for the checks it records. It must identify `freepasserp5`, confirm least-privilege IAM and a real backup/restore verification, carry a traceable `approvalRef`, and record `approvedAt`. Do not set either verification flag from emulator tests, a green CI badge, or the mere existence of a service-account key.
+`ERP5_WRITE_APPROVAL_JSON` is an operational receipt, not a substitute for the checks it records. It must identify `freepasserp5`, confirm least-privilege IAM and a real backup/restore verification, bind the exact approved service-account email and production HTTPS origin, carry traceable IAM/restore/approval references, record `approvedAt`, and include a future `validUntil`. The runtime rejects an expired receipt or one copied to a different service account/origin. Do not set either verification flag from emulator tests, a green CI badge, or the mere existence of a service-account key.
 
 This repository and the current FreePass Data repository do not implement a production Firestore backup/restore job. Until an external Firebase/GCP backup and restore drill is actually verified, production writes must remain off. The application intentionally cannot prove cloud IAM roles from a service-account JSON key; that verification also remains an operator/cloud-control-plane receipt.
 

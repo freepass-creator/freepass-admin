@@ -27,7 +27,11 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
    * 정산관리에서 열 때 — 그 목록의 축(청구 = 공급사 · 지급 = 영업채널)으로 «정산 걸음»을 세우고,
    * 하단바를 그 줄의 다음 걸음으로 바꾼다(§14-3). mode 'correct' = 정정 요청 쓰는 중. link(mode) = 같은 판 주소.
    */
-  life?: { axis: Axis; mode: string; link: (mode: string) => string; nextHref?: string; nextGroupHref?: string; invoiceBiz?: string };
+  life?: {
+    axis: Axis; mode: string; link: (mode: string) => string;
+    nextHref?: string; nextGroupHref?: string; nextAxisHref?: string; nextAxisLabel?: string;
+    invoiceBiz?: string;
+  };
 }) {
   /* ★하단바 — 접수 상세에서는 [목록] [+ 신규 접수] (대표 2026-09-18 「버튼들이 상황에 맞게 움직여야지」) */
   let 바 = (
@@ -62,6 +66,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   /* ── 정산 걸음(정산관리에서만) — 두 축 중 이 목록의 축. 주 걸음은 하단바, 곁 걸음은 본문 ── */
   let 걸음: React.ReactNode = null;
   let 막힘안내: React.ReactNode = null;
+  let 정산업무라벨 = '';
+  let 정산업무설명 = '';
   if (life) {
     const 청구축 = life.axis === '공급사';
     const stage = 청구축 ? r.claimStage : r.payStage;
@@ -76,6 +82,22 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     const 남은현금 = cashRemainingOf(life.axis, r);
     const 정정중 = life.mode === 'correct' && stage !== '접수';
     const primary = settlementPrimaryAction(r, life.axis);
+    const 업무말 = {
+      none: 청구축 ? '청구서 발행 대기' : '지급명세 발행 대기',
+      confirm: `${life.axis} 확인`,
+      uncorrect: '정정 해소',
+      invoice: '계산서 발행',
+      cash: 청구축 ? '수금 처리' : '지급 처리',
+      done: 청구축 ? '수금 완료' : '지급 완료',
+    } as const;
+    정산업무라벨 = 업무말[primary];
+    정산업무설명 = primary === 'none'
+      ? `${청구축 ? '청구서' : '지급명세'} 발행 후 이 접수의 다음 실행이 열립니다.`
+      : primary === 'done'
+        ? (life.nextHref ? '같은 거래처의 다음 건으로 이어갑니다.'
+          : life.nextGroupHref ? '다음 거래처 업무로 이어갑니다.'
+            : life.nextAxisHref ? '공급사 업무가 끝났습니다. 영업채널 지급으로 이어갑니다.' : '현재 정산축의 처리가 끝났습니다.')
+        : `다음 실행 · ${업무말[primary]}`;
     let 주: { label: string; form: React.ReactNode } | null = null;
     let 보조: React.ReactNode = <Link className="dz-bar-sub" href={back}>목록</Link>;
     if (정정중) {
@@ -127,6 +149,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
           aria-describedby={!canWrite ? 'write-disabled-reason' : undefined}>{주.label}</button>}
         {!주 && 완료 && life.nextHref && <Link className="primary" href={life.nextHref}>다음 할 일</Link>}
         {!주 && 완료 && !life.nextHref && life.nextGroupHref && <Link className="primary" href={life.nextGroupHref}>다음 거래처</Link>}
+        {!주 && 완료 && !life.nextHref && !life.nextGroupHref && life.nextAxisHref
+          && <Link className="primary" href={life.nextAxisHref}>{life.nextAxisLabel ?? '다음 업무'}</Link>}
       </ActionBar>
     );
   }
@@ -175,8 +199,8 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
 
       <section className="dz-work-focus" aria-label="현재 업무">
         <span>현재 업무</span>
-        <strong>{life ? `${life.axis} 정산` : (다음 === '끝' || 다음 === '취소됨' ? 다음 : 다음)}</strong>
-        <small>{life ? '정산 단계와 다음 실행을 확인합니다.' : (다음 === '끝' ? '접수 진행이 끝났습니다.' : 다음 === '취소됨' ? '취소된 접수입니다.' : `다음 실행 · ${다음}`)}</small>
+        <strong>{life ? 정산업무라벨 : (다음 === '끝' || 다음 === '취소됨' ? 다음 : 다음)}</strong>
+        <small>{life ? 정산업무설명 : (다음 === '끝' ? '접수 진행이 끝났습니다.' : 다음 === '취소됨' ? '취소된 접수입니다.' : `다음 실행 · ${다음}`)}</small>
       </section>
 
       {/* 정산관리에서 열면 «정산 걸음»이 맨 위 — 이 판에서 하는 일이 그것이다 */}

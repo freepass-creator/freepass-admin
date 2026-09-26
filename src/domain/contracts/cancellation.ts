@@ -1,3 +1,5 @@
+import { contractPaymentStateOf } from './payment';
+
 export type ContractCancellationInput = {
   reason: string;
   operationId: string;
@@ -54,6 +56,14 @@ export function planContractCancellation(
     const sameReason=S(intake.contractCancellationReason)===reason;
     if(sameOperation&&sameReason)return {ok:true,idempotent:true,patch:{},intakePatch:{}};
     return {ok:false,error:'이미 계약취소 처리된 계약입니다 — 기존 취소 기록을 확인해 주세요.'};
+  }
+
+  const payment=contractPaymentStateOf(intake);
+  if(payment.state==='INCONSISTENT'){
+    return {ok:false,error:`계약금 수납 기록이 불완전합니다 — ${payment.reason}`};
+  }
+  if(payment.state==='NONE'){
+    return {ok:false,error:'계약금 수납 전은 계약취소가 아니라 접수취소로 처리합니다.'};
   }
 
   return {

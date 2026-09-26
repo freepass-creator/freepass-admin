@@ -91,7 +91,12 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
       </PanelBody>
       <PanelFoot>
         {sel && selOffer
-          ? <Link className="erp-btn erp-btn--primary" href={`/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}`}>접수하기</Link>
+          ? <Link className="erp-btn erp-btn--primary"
+              href={base === '/intake'
+                ? hrefWith(base, q, { w: 'new', product: sel.p.id, offer: selOffer.id, ic: null, v: 'work' })
+                : `/intake?w=new&product=${encodeURIComponent(sel.p.id)}&offer=${encodeURIComponent(selOffer.id)}&v=work`}>
+              접수하기
+            </Link>
           : <span className="erp-btn erp-btn--primary" aria-disabled="true">접수하기</span>}
       </PanelFoot>
     </>

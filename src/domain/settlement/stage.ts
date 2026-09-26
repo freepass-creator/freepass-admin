@@ -159,25 +159,25 @@ export function billingMonth(r: R, now = new Date()): string | null {
 }
 
 /**
- * 닫힌 달 — 단순히 billMonth 글자가 있다는 이유만으로 현재 달을 닫지 않는다.
- * - 지난 달의 확정 billMonth는 다시 흔들지 않는다.
- * - 현재 달은 청구/지급 문서가 실제로 나간 흔적이 있을 때만 닫는다.
- * - 인도 전·취소·정산제외 행의 stale billMonth는 다른 정상 행을 막지 못한다.
+ * 닫힌 달.
+ * - 현재 운영의 월마감은 반드시 별도 CLOSED 사실로 들어온다. 청구서/지급명세 발행을 월마감으로 추정하지 않는다.
+ * - 과거 legacy 월은 이미 박힌 billMonth를 보호하기 위해 현재월 이전의 확정월만 잠근다.
+ * - 인도 전·취소·정산제외 행의 stale billMonth는 legacy 잠금 근거가 될 수 없다.
  */
-export function lockedMonthsOf(rows: readonly R[], now = new Date()): Set<string> {
+export function lockedMonthsOf(
+  rows: readonly R[],
+  now = new Date(),
+  explicitlyClosed: ReadonlySet<string> = new Set<string>(),
+): Set<string> {
   const current = ym(now);
-  const out = new Set<string>();
+  const out = new Set<string>(
+    [...explicitlyClosed].filter((m) => /^\d{4}-\d{2}$/.test(m)),
+  );
   for (const r of rows) {
     const written = S(r.progress.billMonth);
-    if (!/^\d{4}-\d{2}$/.test(written)) continue;
+    if (!/^\d{4}-\d{2}$/.test(written) || written >= current) continue;
     if (!deliveredDay(r) || r.progress.cancelled || r.progress.settleExclude) continue;
-    const settlementStarted = !!r.progress.billed
-      || !!r.progress.invoiceIssued
-      || !!r.progress.collected
-      || !!r.progress.paid
-      || (!!r.claimStage && r.claimStage !== '접수')
-      || (!!r.payStage && r.payStage !== '접수');
-    if (written < current || settlementStarted) out.add(written);
+    out.add(written);
   }
   return out;
 }

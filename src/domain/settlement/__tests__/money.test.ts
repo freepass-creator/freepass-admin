@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { claimAmountOf, marginOf, payAmountOf } from '../money';
+import { claimAmountOf, marginOf, payAmountOf, settlementRatioOf } from '../money';
 import type { SettlementRow } from '../types';
 
 const row = (o: {
@@ -43,4 +43,18 @@ test('청구 또는 지급 금액을 모르면 남는 것도 모른다', () => {
 
 test('양쪽 금액을 알 때만 남는 금액을 계산한다', () => {
   assert.equal(marginOf(row()), 200_000);
+});
+
+
+test('음수나 비정상 정산비율은 금액을 만들지 않고 fail-closed 한다', () => {
+  const negative = row({ settleRatio: -0.5 });
+  assert.equal(settlementRatioOf(negative), null);
+  assert.equal(claimAmountOf(negative), null);
+  assert.equal(payAmountOf(negative), null);
+  assert.equal(marginOf(negative), null);
+
+  const corrupt = row() as SettlementRow;
+  corrupt.settleRatio = Number.NaN;
+  assert.equal(settlementRatioOf(corrupt), null);
+  assert.equal(claimAmountOf(corrupt), null);
 });

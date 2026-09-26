@@ -13,12 +13,18 @@
 
 기능을 새 파일/새 엔진/새 상태머신으로 만들기 전에 반드시 current main의 기존 정본을 확장할 수 있는지 먼저 확인한다.
 
-### Branch lifecycle
-- `main`만 정본이다. 작업 브랜치는 임시 staging/evidence이며 독립 정본이 아니다.
-- 새 작업은 current `main`에서 시작하고, 검증 후 `main`으로 수렴한다.
-- PR이 병합되면 해당 작업 브랜치는 삭제한다. 완료된 브랜치를 보관용 정본처럼 남기지 않는다.
-- 다른 브랜치를 base로 쌓는 stacked PR은 필요한 경우에만 쓰며, 상위 브랜치에 흡수되면 자식 브랜치를 즉시 삭제한다.
-- 현재 `feat/intake-contract-condition-choices-20260923`는 **HOLD / NON-CANONICAL**이다. current main에 없는 계약조건 원자가 있어 보존했을 뿐이며 신규 작업의 기준으로 읽지 않는다.
+### Branch lifecycle — fixed lanes
+- `main`만 정본이다. 개발은 아래 3개 고정 lane에서만 한다: `work/function`, `work/uiux`, `work/esign`.
+- AI/개발 세션은 시작 시 반드시 lane 하나를 명시적으로 배정받는다. 배정받은 branch 외 새 branch를 만들지 않는다.
+- `고도화`, `다음`, `계속`이라는 지시는 **현재 배정 lane을 계속 고도화하라는 뜻**이며 새 branch 생성 지시가 아니다.
+- `work/function`: 상품검색→접수→계약상태→인도→실적→청구/수금/지급→정산, 인증/actor/audit, Admin의 FreePass Data 연결까지 기능 전체.
+- `work/uiux`: UI와 UX를 한 lane에서 다룬다. 레이아웃·반응형·컴포넌트·시각·접근성·인터랙션 표현만 담당하고 업무규칙은 바꾸지 않는다.
+- `work/esign`: 전자계약·서명·최종확정·PDF·봉인·private 문서 저장을 담당한다.
+- 고정 lane에서 자식 `feature/*`, `fix/*`, 모델명 branch, `v2`, `final` branch를 파생하지 않는다.
+- lane 작업이 검증되면 `main`으로 병합한다. 병합 후 lane branch는 최신 `main`으로 동기화해서 같은 이름으로 재사용한다.
+- lane 간 의존이 생기면 다른 branch를 직접 수정하지 말고, 먼저 소유 lane을 main에 병합한 뒤 필요한 lane을 최신 main으로 동기화한다.
+- 이전 HOLD였던 접수 계약조건 원자는 `work/function/docs/FUNCTION-LANE-BACKLOG.md`로 이관했다. 과거 HOLD branch는 정본이 아니다.
+- 상세 범위와 세션 오더 문구는 `docs/BRANCH-LANES.md`를 따른다.
 
 
 ## -1. UI DESIGN RECOVERY HOLD — 2026-09-26

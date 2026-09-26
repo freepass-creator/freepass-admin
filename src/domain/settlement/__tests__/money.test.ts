@@ -66,3 +66,12 @@ test('50% 정산비율은 청구·지급에 동일하게 적용한다', () => {
   assert.equal(payAmountOf(r), 400_000);
   assert.equal(marginOf(r), 100_000);
 });
+
+
+test('100%를 넘는 정산비율은 손상값으로 fail-closed 한다', () => {
+  const over = row({ settleRatio: 1.5 });
+  assert.equal(settlementRatioOf(over), null);
+  assert.equal(claimAmountOf(over), null);
+  assert.equal(payAmountOf(over), null);
+  assert.equal(marginOf(over), null);
+});

@@ -84,7 +84,7 @@ export function paidRoundsOf(r: R, now = new Date()): number {
   const n = roundsOf(r.payKind), d = deliveredDay(r);
   if (!d) return 0;
   const w = Number(r.paidRounds);
-  if (r.paidRounds !== null && r.paidRounds !== undefined && Number.isFinite(w) && w >= 1) return Math.min(n, Math.round(w));
+  if (r.paidRounds !== null && r.paidRounds !== undefined && Number.isInteger(w) && w >= 1) return Math.min(n, w);
   const today = midnight(now);
   let paid = 1;
   for (let k = 2; k <= n; k += 1) if (addMonths(d, k - 1) <= today) paid = k;
@@ -100,8 +100,8 @@ export function nextInstallmentDate(r: R): string | null {
   const n = roundsOf(r.payKind), d = deliveredDay(r);
   if (n < 2 || !d) return null;
   const written = Number(r.paidRounds);
-  const paid = r.paidRounds !== null && r.paidRounds !== undefined && Number.isFinite(written) && written >= 1
-    ? Math.min(n, Math.round(written))
+  const paid = r.paidRounds !== null && r.paidRounds !== undefined && Number.isInteger(written) && written >= 1
+    ? Math.min(n, written)
     : 1;
   if (paid >= n) return null;
   const next = addMonths(d, paid);
@@ -194,7 +194,7 @@ export function stageOf(r: R, now = new Date()): Stage {
   // 사람이 전체 회차 납입을 명시했다면 날짜 여유기간을 기다리지 않고 완료 사실이 이긴다.
   const written = Number(r.paidRounds);
   const explicitlyComplete = r.paidRounds !== null && r.paidRounds !== undefined
-    && Number.isFinite(written) && Math.round(written) >= rounds;
+    && Number.isInteger(written) && written >= rounds;
   if (explicitlyComplete) return '완납실적';
 
   const due = instalmentDueDate(r);

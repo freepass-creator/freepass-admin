@@ -51,7 +51,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     return (
       <Screen name="settlement-workspace">
         <div className="erp-workspace">
-          <Panel>
+          <Panel compact>
             <PanelHead kind="상태" title="정산관리" count="읽기 실패" />
             <PanelBody>
               <PanelState kind="error" title="정산 데이터를 불러오지 못했습니다.">

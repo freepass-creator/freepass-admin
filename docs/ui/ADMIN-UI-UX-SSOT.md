@@ -3104,6 +3104,21 @@ Visual QA:
 - 상태타일이 있으면 Main 옆 Badge는 기본적으로 중복 표시하지 않는다.
 - 상품처럼 상태타일이 아닌 사진 visual에서는 필요 시 Badge를 사용할 수 있다.
 
+### 정산 목록 상태 신호
+
+정산 거래처/개별 실적 카드는 shared presentation signal을 사용한다. 업무 판정 자체는 ledger/lifecycle domain 정본을 바꾸지 않는다.
+
+표시 우선순위:
+1. 청구월 미정 / 금액 모름 / 끊김 / 정정 → **red**
+2. 보류 → **amber**
+3. 완료 → **green**
+4. 진행 → **navy**
+5. 대기 → **grey**
+
+거래처 카드 Support에는 `금액 모름 / 끊김 / 정정 / 보류 / 환수`를 3줄 문법 안에서 요약한다.
+보류나 정정이 있는데 단순 `미처리`로만 보이게 하지 않는다.
+Web RowCard와 Mobile ListRow는 같은 label/tone 의미를 사용한다.
+
 # 73. Detail information rows
 
 목록은 3줄 scan card, 상세는 key/value 정보행으로 역할을 분리한다.

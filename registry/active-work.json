@@ -64,13 +64,11 @@
     "default": "FORBIDDEN",
     "rule": "New branches require an actual new isolated change and must start from then-current main. Update this registry first.",
     "forbidden_name_patterns": [
-      "claude/*",
-      "gpt/*",
-      "codex/*",
       "*/v2",
       "*/final",
       "*/latest"
-    ]
+    ],
+    "ai_named_branches": "ALLOWED (user 2026-09-26: AI 이름 브랜치 금지 해제)"
   },
   "ui_authority": {
     "status": "CANONICAL_USER_APPROVED",

@@ -33,7 +33,6 @@ test('admin chrome uses the ERP standard shell: side menu on PC, five-step tab b
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
-  assert.ok(chrome.includes('<SideMenu />'));
   assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
   /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
   assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));

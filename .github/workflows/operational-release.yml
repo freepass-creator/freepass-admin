@@ -1,7 +1,7 @@
 name: Admin operational verification
 on:
   push:
-    branches: [main, release/admin-operational-20260925]
+    branches: [main, work/release/operational-launch]
   workflow_dispatch:
 permissions:
   contents: read
@@ -119,20 +119,37 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/admin-browser-tools" --no-save --package-lock=false playwright@1.55.0 esbuild@0.25.0
           node "$RUNNER_TEMP/admin-browser-tools/node_modules/playwright/cli.js" install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Verify production routes and real UI components
+      - name: Verify production routes
         env:
           UI_BROWSER_TOOLS: ${{ runner.temp }}/admin-browser-tools
         run: |
           set -euo pipefail
           node scripts/check-next-runtime.mjs
-          node scripts/check-ui-browser.mjs
-          node scripts/check-ui-filter-browser.mjs
+
+      - name: Verify current actual-route UI
+        env:
+          UI_BROWSER_TOOLS: ${{ runner.temp }}/admin-browser-tools
+          NODE_PATH: ${{ runner.temp }}/admin-browser-tools/node_modules
+          FPA_DEMO: "on"
+          ERP5_WRITE: "off"
+          VISUAL_QA_OUT: artifacts/visual-qa
+        run: |
+          set -euo pipefail
+          npm run dev -- -H 127.0.0.1 -p 3100 > /tmp/freepass-admin-visual.log 2>&1 &
+          echo $! > /tmp/freepass-admin-visual.pid
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3100/products >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3100/products >/dev/null
+          npm run visual:qa -- http://127.0.0.1:3100
+          kill "$(cat /tmp/freepass-admin-visual.pid)" || true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: operational-browser-${{ github.sha }}
           path: |
             artifacts/next-runtime/
-            artifacts/ui-browser/
-            artifacts/ui-filter-browser/
+            artifacts/visual-qa/
           retention-days: 7

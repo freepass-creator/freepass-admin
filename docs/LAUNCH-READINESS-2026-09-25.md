@@ -1,3 +1,35 @@
+# 2026-09-26 운영개시 최신 상태
+
+기준 branch: `work/release/operational-launch`  
+기준 CI run: `36219570958`
+
+## 현재 판정
+- 코드/타입/전체 테스트: **PASS**
+- production build: **PASS**
+- UI/Data boundary: **PASS**
+- Firestore/Storage emulator persistence: **PASS**
+- actual Next production-route verification: **PASS**
+- PR #121 UI lineage actual-route Visual QA: **PASS**
+- 브랜치 상태: latest main 기준 **behind 0**
+- 전자계약: **운영개시 범위 밖 / off 유지**
+- 실제 Vercel project: **NOT CREATED / connected team project count 0**
+- production OAuth / 서비스계정 / IAM / live read-write: **NOT VERIFIED**
+
+## 남은 P0 — 외부 운영 바인딩
+1. Vercel team `freepass-projects`에 `freepass-admin` 프로젝트 생성
+2. GitHub `freepass-creator/freepass-admin` 연결
+3. Node 24.x / production env 설정
+4. 첫 배포는 `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, catalog `OBSERVE`
+5. production URL 확정 후 `APP_BASE_URL` / `PUBLIC_BASE_URL` / `CLAIM_LINK_BASE` 동일 origin 설정
+6. Google OAuth callback에 `/login/google/callback` 등록
+7. Workspace 계정 로그인 / 외부계정 거부 / `/system/data-status` / 상품·접수·정산 조회 확인
+8. rollback/backup/IAM 확인 뒤 `ERP5_WRITE=on`
+9. 비고객 테스트 접수 1건으로 write→reload→idempotency 확인
+
+> 위 실제 운영 증거 전에는 DEPLOYMENT VERIFIED / PRODUCTION PERSISTENCE VERIFIED로 표기하지 않는다.
+
+---
+
 # FreePass Admin 운영 개시 점검 — 2026-09-25
 
 기준: main `4c37c73`(#106 통합본) + 브랜치 `claude/freepass-admin-launch-irkl4q`.

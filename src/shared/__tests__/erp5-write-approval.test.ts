@@ -6,7 +6,9 @@ const NOW = Date.parse('2026-09-26T07:00:00.000Z');
 const approval = JSON.stringify({
   projectId: 'freepasserp5',
   iamVerified: true,
+  iamRef: 'iam-check-20260926',
   backupRestoreVerified: true,
+  backupRestoreRef: 'restore-drill-20260926',
   approvalRef: 'ops-20260926',
   approvedAt: '2026-09-26T06:30:00.000Z',
 });
@@ -42,19 +44,35 @@ test('demo remains read-only and local explicit writes remain available', () => 
 test('write approval receipt validates project, IAM, backup/restore and time', () => {
   assert.equal(parseErp5WriteApproval(approval, NOW).ok, true);
   assert.equal(parseErp5WriteApproval(JSON.stringify({
-    projectId: 'freepasserp3', iamVerified: true, backupRestoreVerified: true,
+    projectId: 'freepasserp3', iamVerified: true, iamRef: 'iam1', backupRestoreVerified: true, backupRestoreRef: 'bak1',
     approvalRef: 'x123', approvedAt: '2026-09-26T06:30:00.000Z',
   }), NOW).ok, false);
   assert.equal(parseErp5WriteApproval(JSON.stringify({
-    projectId: 'freepasserp5', iamVerified: false, backupRestoreVerified: true,
+    projectId: 'freepasserp5', iamVerified: false, iamRef: 'iam1', backupRestoreVerified: true, backupRestoreRef: 'bak1',
     approvalRef: 'x123', approvedAt: '2026-09-26T06:30:00.000Z',
   }), NOW).ok, false);
   assert.equal(parseErp5WriteApproval(JSON.stringify({
-    projectId: 'freepasserp5', iamVerified: true, backupRestoreVerified: false,
+    projectId: 'freepasserp5', iamVerified: true, iamRef: 'iam1', backupRestoreVerified: false, backupRestoreRef: 'bak1',
     approvalRef: 'x123', approvedAt: '2026-09-26T06:30:00.000Z',
   }), NOW).ok, false);
   assert.equal(parseErp5WriteApproval(JSON.stringify({
-    projectId: 'freepasserp5', iamVerified: true, backupRestoreVerified: true,
+    projectId: 'freepasserp5', iamVerified: true, iamRef: 'iam1', backupRestoreVerified: true, backupRestoreRef: 'bak1',
     approvalRef: 'x123', approvedAt: '2026-09-26T08:00:00.000Z',
   }), NOW).ok, false);
+});
+
+
+test('write approval requires separate trace references for IAM and backup/restore', () => {
+  const missingIamRef = JSON.stringify({
+    projectId:'freepasserp5', iamVerified:true,
+    backupRestoreVerified:true, backupRestoreRef:'restore-1',
+    approvalRef:'ops-1', approvedAt:'2026-09-26T06:30:00.000Z',
+  });
+  const missingBackupRef = JSON.stringify({
+    projectId:'freepasserp5', iamVerified:true, iamRef:'iam-1',
+    backupRestoreVerified:true,
+    approvalRef:'ops-1', approvedAt:'2026-09-26T06:30:00.000Z',
+  });
+  assert.equal(parseErp5WriteApproval(missingIamRef, NOW).ok, false);
+  assert.equal(parseErp5WriteApproval(missingBackupRef, NOW).ok, false);
 });

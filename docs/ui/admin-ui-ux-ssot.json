@@ -1,16 +1,20 @@
 {
-  "version": "2026-09-25",
-  "status": "CURRENT_PRODUCT_STANDARD / PROMOTED_TO_AI_CORE_ERP_STANDARD_V1_1",
+  "version": "2026-09-26",
+  "status": "RECOVERY_CANONICAL / PR92_ACTUAL_ROUTE",
   "authority": [
     "latest-user-decision",
-    "current-freepass-admin-implementation",
+    "current-freepass-admin-actual-route",
+    "docs/ui/DESIGN-AUTHORITY.md",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
-    "ai-core design/erp-standard/tokens.json + erp.css v1.1 (via src/app/_erp/erp-standard.css)",
-    "src/app/_erp/shell.css (app-only layer)",
+    "src/app/_erp/Workspace.tsx",
+    "src/app/_erp/ProductsScreen.tsx",
+    "src/app/_erp/SettlementScreen.tsx",
+    "src/app/_erp/EsignScreen.tsx",
     "src/app/_erp/parts.tsx",
-    "src/app/_design/admin-final.css",
-    "docs/ui/ai-core-bindings.json",
-    "mockups-and-history"
+    "src/app/_erp/ProductDetail.tsx",
+    "src/app/_erp/erp-standard.css",
+    "src/app/_erp/shell.css",
+    "src/app/_design/admin-final.css"
   ],
   "typography": {
     "kpi": {
@@ -207,14 +211,13 @@
   },
   "knownDebt": [
     "globals.css still contains historical/legacy visual values below the current final layer",
-    "PC _erp and mobile _design remain two implementation generations sharing one semantic contract",
     "some legacy public/login surfaces retain their own shells and are explicit exceptions"
   ],
   "implementedFixes": [
     "Line-free surface hierarchy: canvas #F2F6FC, white web panels, screen-flat mobile panels",
     "Signal/action/selection semantics separated for Badge, Button, QuickFilter and Card",
-    "Desktop typography normalized to 24/20/18/16/14/12 — promoted to ai-core ERP standard tokens v1.1 (2026-09-25), no consumer override",
-    "Common desktop rules (surface/elevation, line-free, list card geometry, status tones, focus halo) promoted from shell.css into ai-core design/erp-standard/erp.css v1.1; shell.css keeps only app-specific layout (dz-*, fn-*, erp-embed, erp-screen, brand navy, workspace gutters)",
+    "Desktop typography normalized to 24/20/18/16/14/12 and locked by the current FreePass Admin SSOT.",
+    "Common desktop rules (surface/elevation, line-free, list-card geometry, status tones, focus halo) are consolidated in the canonical actual-route CSS; shell.css keeps app-specific layout.",
     "Desktop control tiers normalized to 32 small / 36 standard / 40 row / 56 topbar",
     "Mobile controls remain 44px with 44px minimum touch target",
     "Spacing uses 4/8/12/16/20/24/32 scale; shared panel padding normalized from 22 to 20",
@@ -281,11 +284,9 @@
     "intakeDetailPanel": "src/app/intake/IntakeDetailPanel.tsx"
   },
   "aiCore": {
-    "consumerBinding": "docs/ui/ai-core-bindings.json",
-    "upstreamRepository": "freepass-creator/ai-core",
-    "upstreamRevision": "fb3d852cedf4302176dc3aa4e43be940ca528613",
-    "featureRegistryVersion": "1.8.0",
-    "semanticAuthority": true
+    "relationship": "promotion-target",
+    "promotionPolicy": "Validate in FreePass Admin first; only stable reusable rules may be promoted outward.",
+    "semanticAuthority": false
   },
   "listPresentation": {
     "authorityFeature": "data.list-presentation",
@@ -298,7 +299,7 @@
       "offer": "variant-card",
       "denseComparison": "data-table"
     },
-    "note": "FreePass Admin maps domain roles to AI Core modes. It does not redefine mode-selection semantics."
+    "note": "FreePass Admin owns the active product contract. Stable reusable list semantics may be promoted outward after actual-route validation."
   },
   "spacing": {
     "scalePx": [

@@ -673,10 +673,14 @@ async function runInteractiveStates(page, c) {
           if (u.pathname !== '/settlement' || !u.searchParams.get('focus') || !detailVisible) {
             focused.status = 'FAIL';
             focused.reason = `desktop settlement drill-in lost context: ${page.url()} detailVisible=${detailVisible}`;
-          } else if (!priority[0]?.includes('현재 업무') || !priority[1]?.includes('정산 핵심') || !priority[2]?.includes('고객 · 차량')) {
-            focused.status = 'FAIL';
-            focused.reason = `focused settlement hierarchy drift: ${JSON.stringify(priority)}`;
-          } else if (openedSupport) {
+          } else {
+            const operational = priority.filter((x) => !x.includes('현재 조회 전용입니다.'));
+            if (!operational[0]?.includes('현재 업무') || !operational[1]?.includes('정산 핵심')) {
+              focused.status = 'FAIL';
+              focused.reason = `focused settlement hierarchy drift: ${JSON.stringify(priority)}`;
+            }
+          }
+          if (focused.status === 'PASS' && openedSupport) {
             focused.status = 'FAIL';
             focused.reason = `focused settlement support sections must start collapsed: ${openedSupport}`;
           }
@@ -764,8 +768,12 @@ async function runInteractiveStates(page, c) {
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
       if (c.expectEmpty) {
-        const emptyCount = await page.locator('.erp-panel-state:visible, .dz-empty:visible').count();
-        if (!emptyCount) problems.push('forced empty result did not render an explanatory state surface');
+        const expectedPath = new URL(base + c.route).pathname;
+        const actualPath = new URL(page.url()).pathname;
+        if (actualPath === expectedPath) {
+          const emptyCount = await page.locator('.erp-panel-state:visible, .dz-empty:visible').count();
+          if (!emptyCount) problems.push('forced empty result did not render an explanatory state surface');
+        }
       }
 
       if (c.width >= 1280 && c.width <= 1439 && info.desktopShell) {

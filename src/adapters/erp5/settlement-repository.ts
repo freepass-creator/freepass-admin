@@ -33,7 +33,8 @@ const INVOICES = 'settlement_invoices';
 /** 실제 수금/지급 한 번 = 한 불변 거래. collectedAmt/paidAmt는 이 거래들의 빠른 projection이다. */
 const CASH_EVENTS = 'settlement_cash_events';
 const BY = 'freepass-admin';
-const eventIdOf = (d: Record<string, unknown>) => intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt, d.intakeRequestId, d.intakeIdentityMode);
+const eventIdOf = (d: Record<string, unknown>) =>
+  S(d.auditEventId) || intakeEventDocId(d.plate, d.sourceProductId, d.receivedAt, d.intakeRequestId, d.intakeIdentityMode);
 
 export class WriteDisabledError extends Error {
   constructor() { super('ERP5 쓰기가 꺼져 있습니다 — .env.local 에 ERP5_WRITE=on 을 넣어야 저장됩니다.'); }
@@ -97,7 +98,8 @@ export class Erp5SettlementRepository {
       if (!d.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
       const cur = d.data()!;
       const { row } = toSettlementRow(cur, d.id);
-      const eventRef = db.collection(EVENTS).doc(eventIdOf(cur));
+      const stableEventId = eventIdOf(cur);
+      const eventRef = db.collection(EVENTS).doc(stableEventId);
       let cashRef: DocumentReference | null = null;
       let cashInvoiceRef: DocumentReference | null = null;
       if (cash && row.progress.billMonth) {
@@ -128,7 +130,12 @@ export class Erp5SettlementRepository {
       if (!r.ok) return r;
       if (!r.events.length) return { ok: true as const, changed: 0 };
       const now = Date.now();
-      tx.update(ref, { ...r.patch, updatedAt: now, stateAt: new Date(now).toISOString() });
+      tx.update(ref, {
+        ...r.patch,
+        ...(S(cur.auditEventId) ? {} : { auditEventId: stableEventId }),
+        updatedAt: now,
+        stateAt: new Date(now).toISOString(),
+      });
       const ev: Record<string, unknown> = {};
       for (const e of r.events) ev[audId()] = { at: now, by, ...(operationId ? { operationId } : {}), ...e };
       tx.set(eventRef, ev, { merge: true });
@@ -241,6 +248,10 @@ export class Erp5SettlementRepository {
     const code = String(rec.code);
     const plate = String(rec.plate ?? '');
     const key = intakeKey(plate, input.sourceProductId, input.receivedAt, input.intakeRequestId);
+    const auditEventId = intakeEventDocId(
+      plate, input.sourceProductId, input.receivedAt, input.intakeRequestId, rec.intakeIdentityMode,
+    );
+    rec.auditEventId = auditEventId;
 
     return db.runTransaction(async (tx) => {
       /*
@@ -269,9 +280,7 @@ export class Erp5SettlementRepository {
         return { code, created: false };
       }
       tx.create(db.collection(ROWS).doc(code), rec);
-      tx.set(db.collection(EVENTS).doc(intakeEventDocId(
-        plate, input.sourceProductId, input.receivedAt, input.intakeRequestId, rec.intakeIdentityMode,
-      )),
+      tx.set(db.collection(EVENTS).doc(auditEventId),
         { [audId()]: { at: rec.createdAt, by, field: '접수', from: '', to: code } }, { merge: true });
       return { code, created: true };
     });
@@ -577,9 +586,20 @@ export class Erp5SettlementRepository {
     intakeRequestId?: unknown,
     intakeIdentityMode?: unknown,
   ): Promise<{ at: number; by: string; field: string; from: string; to: string }[]> {
-    const d = await erp5().collection(EVENTS).doc(intakeEventDocId(
+    const db = erp5();
+    const fallbackEventId = intakeEventDocId(
       plate, sourceProductId, receivedAt, intakeRequestId, intakeIdentityMode,
-    )).get();
+    );
+    const currentKey = intakeKey(plate, sourceProductId, receivedAt, intakeRequestId, intakeIdentityMode);
+    const sameDay = await db.collection(ROWS).where('receivedAt', '==', String(receivedAt ?? '').trim()).get();
+    const current = sameDay.docs.find((doc) => {
+      const raw = doc.data();
+      return intakeKey(
+        raw.plate, raw.sourceProductId, raw.receivedAt, raw.intakeRequestId, raw.intakeIdentityMode,
+      ) === currentKey;
+    });
+    const stableEventId = current ? (S(current.data().auditEventId) || fallbackEventId) : fallbackEventId;
+    const d = await db.collection(EVENTS).doc(stableEventId).get();
     if (!d.exists) return [];
     return Object.values(d.data()!)
       .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')

@@ -1,3 +1,11 @@
+# ⚠ BRANCH STATUS: ARCHIVE — DO NOT DEVELOP HERE
+
+이 브랜치는 과거 고정 e-sign lane 기록이다. 신규 개발 금지. 전자계약 재개 시 그 시점 최신 main에서 목적별 임시 branch를 새로 만든다.
+
+정본은 `main`이다. 이 branch의 오래된 branch/lane 지시가 아래에 남아 있어도 이 경고가 우선한다.
+
+---
+
 # freepass-admin — AI/Developer Rules
 
 ## 0. Mandatory Work handoff

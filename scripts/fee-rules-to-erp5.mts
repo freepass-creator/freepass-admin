@@ -22,6 +22,7 @@ import { FEE_RULES, FEE_TIMING, SUPPLIER_ALIAS, EV_MODEL } from 'file:///C:/dev/
 import { erp5 } from '../src/adapters/erp5/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement';
 import { feeOf, headOf, type FeeRule, type FeeRuleSet, type KindRule } from '../src/domain/settlement/fee';
+import { settlementRatioOf } from '../src/domain/settlement/money';
 
 const APPLY = process.argv.includes('--apply');
 const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) — 박태윤 매니저 표';
@@ -73,7 +74,12 @@ for (const d of snap.docs) {
   byMonth.set(m, t);
   /* ★정산조건이 먼저 — 「영업」만·제외·보류는 공급사 청구가 0 (erp4 2026-09-02 박지원 사고) */
   const zero = r.settleTarget === '영업' || r.progress.settleExclude || r.progress.billHold;
-  const ratio = r.settleRatio || 1;
+  const ratio = settlementRatioOf(r);
+  if (ratio === null) {
+    t.diff += 1;
+    if (diffs.length < 40) diffs.push(`   ${String(r.plate ?? '').replace(/^(\d+\D)\d+/, '$1**').padEnd(9)} ${m} ${String(r.supplier).padEnd(8)}  ★정산비율이 잘못되어 검산 중단: ${String(r.settleRatio)}`);
+    continue;
+  }
   const written = zero ? 0 : Math.round(N(raw.claimWritten) * ratio);
   const f = feeOf(set, r);
   if (f.status === 'NO_RULE') { t.none += 1; nones.set(`${r.supplier ?? '(없음)'} · ${r.product ?? ''}`, (nones.get(`${r.supplier ?? '(없음)'} · ${r.product ?? ''}`) ?? 0) + 1); continue; }

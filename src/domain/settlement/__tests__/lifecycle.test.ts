@@ -227,3 +227,20 @@ it('정산 lifecycle mutation은 delivery eligibility를 우회하지 못한다'
     assert.match(String((r as { error?: string }).error), /인도완료/);
   }
 });
+
+
+it('지급명세가 나간 뒤에는 billed=false여도 청구월을 바꾸지 않는다', () => {
+  const issuedPay = mk({ billed: false, payStage: '통보', billMonth: '2026-09' });
+  const r = lifePatchAt(issuedPay, { kind: 'billMonth', month: '2026-10' });
+  assert.equal(r.ok, false);
+});
+
+it('실제 수금·지급 입력은 1원 단위 정수만 받는다', () => {
+  const supplier = mk({ billed: true, invoiceIssued: true, claimStage: '확인' });
+  const collected = lifePatchAt(supplier, { kind: 'collected', amount: 0.4, day: '2026-09-30' });
+  assert.equal(collected.ok, false);
+
+  const channel = mk({ payStage: '확인' });
+  const paid = lifePatchAt(channel, { kind: 'paid', amount: 100.5, day: '2026-09-30' });
+  assert.equal(paid.ok, false);
+});

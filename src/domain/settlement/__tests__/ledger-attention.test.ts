@@ -9,6 +9,7 @@ const group = ({
   completed = 0,
   unknown = 0,
   broken = 0,
+  inconsistent = 0,
   hold = 0,
   clawbacks = 0,
   net = 0,
@@ -19,6 +20,7 @@ const group = ({
   completed?: number;
   unknown?: number;
   broken?: number;
+  inconsistent?: number;
   hold?: number;
   clawbacks?: number;
   net?: number;
@@ -33,6 +35,7 @@ const group = ({
   hold,
   forecast: 0,
   broken,
+  inconsistent,
   clawbacks: Array.from({ length: clawbacks }, () => ({} as LedgerGroup['clawbacks'][number])),
   clawbackTotal: 0,
   net,
@@ -42,6 +45,7 @@ test('정산 묶음은 환수·금액모름·끊김을 이슈로 본다', () => 
   assert.equal(ledgerGroupAttention(group({ party: '환수', lines: 0, done: 0, clawbacks: 1 })), 'issue');
   assert.equal(ledgerGroupAttention(group({ party: '금액', unknown: 1 })), 'issue');
   assert.equal(ledgerGroupAttention(group({ party: '끊김', broken: 1 })), 'issue');
+  assert.equal(ledgerGroupAttention(group({ party: '업무모순', inconsistent: 1, done: 1, completed: 1 })), 'issue');
 });
 
 test('정산 묶음은 미처리와 완료를 구분한다', () => {

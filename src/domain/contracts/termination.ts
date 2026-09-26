@@ -72,6 +72,18 @@ export function planContractTermination(
     || Boolean(S(intake.contractTerminationReason))
     || Boolean(S(intake.contractTerminationOperationId));
 
+  const installments=roundsOf(intake.payKind);
+  if(installments>=2){
+    const raw=intake.paidRounds;
+    const paid=raw===undefined||raw===null||S(raw)===''?null:Number(raw);
+    if(paid===null){
+      return {ok:false,error:'분납 계약해지 전 실제 납입회차를 먼저 확정해 주세요 — 날짜 경과만으로 납입을 추정하지 않습니다.'};
+    }
+    if(!Number.isInteger(paid)||paid<1||paid>installments){
+      return {ok:false,error:`분납 납입회차가 올바르지 않습니다 — 1~${installments}회 사이인지 확인해 주세요.`};
+    }
+  }
+
   if(contractHasTermination||intakeHasTermination){
     if(!contractHasTermination||!intakeHasTermination){
       return {ok:false,error:'계약과 접수의 기존 해지 기록이 일치하지 않습니다 — 데이터를 먼저 확인해 주세요.'};
@@ -90,18 +102,6 @@ export function planContractTermination(
       && S(intake.contractTerminationReason)===reason;
     if(sameOperation&&samePayload)return {ok:true,idempotent:true,patch:{},intakePatch:{}};
     return {ok:false,error:'이미 계약해지 처리된 계약입니다 — 기존 해지 기록을 확인해 주세요.'};
-  }
-
-  const installments=roundsOf(intake.payKind);
-  if(installments>=2){
-    const raw=intake.paidRounds;
-    const paid=raw===undefined||raw===null||S(raw)===''?null:Number(raw);
-    if(paid===null){
-      return {ok:false,error:'분납 계약해지 전 실제 납입회차를 먼저 확정해 주세요 — 날짜 경과만으로 납입을 추정하지 않습니다.'};
-    }
-    if(!Number.isInteger(paid)||paid<1||paid>installments){
-      return {ok:false,error:`분납 납입회차가 올바르지 않습니다 — 1~${installments}회 사이인지 확인해 주세요.`};
-    }
   }
 
   return {

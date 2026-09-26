@@ -1,14 +1,11 @@
 import type { Axis } from '../../domain/settlement/lifecycle';
 import type { SettlementRow } from '../../domain/settlement/types';
+import { workflowConsistencyIssues } from '../../domain/settlement/consistency';
 
-export type SettlementPrimaryAction = 'none' | 'confirm' | 'uncorrect' | 'invoice' | 'cash' | 'done';
+export type SettlementPrimaryAction = 'none' | 'confirm' | 'uncorrect' | 'invoice' | 'cash' | 'done' | 'data-check';
 
-export function settlementPrimaryAction(
-  row: Pick<SettlementRow, 'claimStage' | 'payStage'> & {
-    progress: Pick<SettlementRow['progress'], 'invoiceIssued'>;
-  },
-  axis: Axis,
-): SettlementPrimaryAction {
+export function settlementPrimaryAction(row: SettlementRow, axis: Axis): SettlementPrimaryAction {
+  if (workflowConsistencyIssues(row).length > 0) return 'data-check';
   const stage = axis === '공급사' ? row.claimStage : row.payStage;
   if (stage === '접수') return 'none';
   if (stage === '청구' || stage === '통보') return 'confirm';

@@ -48,7 +48,9 @@ export function planContractCancellation(
   if(Number(intake.contractTerminatedAt??0)>0||S(contract.contract_status)==='계약해지'){
     return {ok:false,error:'계약해지된 건은 계약취소로 바꿀 수 없습니다.'};
   }
-  if(B(intake.delivered)||S(intake.deliveredAt)){
+  // deliveredAt은 인도 오입력 정정 뒤 감사 이력으로 남을 수 있다.
+  // 현재 인도 여부는 delivered=true만 본다.
+  if(B(intake.delivered)){
     return {ok:false,error:'이미 인도된 계약은 계약취소가 아니라 계약해지 절차로 처리합니다.'};
   }
   if(settlementStarted(intake)){
@@ -77,6 +79,7 @@ export function planContractCancellation(
     }
     const mirrored=contractCancelledAt>0
       && contractCancelledAt===intakeCancelledAt
+      && contractCancelledAt>=payment.fact.receivedAt
       && S(contract.contract_status)==='계약취소'
       && B(intake.cancelled)
       && B(intake.settleExclude)
@@ -84,6 +87,16 @@ export function planContractCancellation(
       && S(contract.contract_cancel_reason)===S(intake.contractCancellationReason);
     if(!mirrored){
       return {ok:false,error:'계약과 접수의 기존 취소 기록이 일치하지 않습니다 — 데이터를 먼저 확인해 주세요.'};
+    }
+    const payment=contractPaymentStateOf(intake);
+    if(payment.state==='INCONSISTENT'){
+      return {ok:false,error:`계약금 수납 기록이 불완전합니다 — ${payment.reason}`};
+    }
+    if(payment.state==='NONE'){
+      return {ok:false,error:'계약금 수납 전은 계약취소가 아니라 접수취소로 처리합니다.'};
+    }
+    if(contractCancelledAt<payment.fact.receivedAt){
+      return {ok:false,error:'기존 계약취소 시각이 계약금 수납 시각보다 빠릅니다 — 데이터를 먼저 확인해 주세요.'};
     }
     const sameOperation=S(intake.contractCancellationOperationId)===input.operationId;
     const sameReason=S(intake.contractCancellationReason)===reason;
@@ -97,6 +110,9 @@ export function planContractCancellation(
   }
   if(payment.state==='NONE'){
     return {ok:false,error:'계약금 수납 전은 계약취소가 아니라 접수취소로 처리합니다.'};
+  }
+  if(nowMs < payment.fact.receivedAt){
+    return {ok:false,error:'계약취소 처리 시각은 계약금 수납 시각보다 빠를 수 없습니다.'};
   }
 
   return {

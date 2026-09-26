@@ -15,6 +15,7 @@
 import { billingMonthIn, brokenOf, lockedMonthsOf, paidRatioOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
 import { settlementEligible } from './eligibility';
+import { workflowConsistencyIssues } from './consistency';
 
 /** 인도는 됐는데 달이 닫혀(박힌 달) 계산으로 못 들어간 줄 — 사람이 달을 정한다 */
 export const NO_MONTH = '청구월 미정';
@@ -53,6 +54,8 @@ export interface LedgerGroup {
   forecast: number;
   /** 분납이 끊겨 받은 만큼만 선 줄 수 */
   broken: number;
+  /** 서로 동시에 참일 수 없는 lifecycle 조합이 있는 줄 수 */
+  inconsistent: number;
   clawbacks: Clawback[];
   clawbackTotal: number;
   /** 합 − 환수 */
@@ -96,7 +99,7 @@ function group(
   const by = new Map<string, LedgerGroup>();
   const locked = lockedMonthsOf(rows, now, closedMonths);
   const get = (party: string) => {
-    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, completed: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
+    const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, completed: 0, hold: 0, forecast: 0, broken: 0, inconsistent: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
     by.set(party, g);
     return g;
   };
@@ -115,6 +118,7 @@ function group(
     const broken = brokenOf(r, now);
     g.lines.push({ row: r, month: m, amount, broken, ratio: paidRatioOf(r, now) });
     if (broken) g.broken += 1;
+    if (workflowConsistencyIssues(r).length > 0) g.inconsistent += 1;
     if (amount === null) g.unknown += 1; else g.total += amount;
     if (side === 'claim' ? r.progress.billed : ['통보', '확인', '지급'].includes(r.payStage)) g.done += 1;
     if (side === 'claim' ? r.progress.collected : r.progress.paid) g.completed += 1;
@@ -171,7 +175,7 @@ export type LedgerGroupAttention = 'issue' | 'todo' | 'done';
 export type LedgerGroupFilter = 'all' | LedgerGroupAttention;
 
 export function ledgerGroupAttention(g: LedgerGroup): LedgerGroupAttention {
-  if (g.unknown > 0 || g.broken > 0 || g.clawbacks.length > 0) return 'issue';
+  if (g.unknown > 0 || g.broken > 0 || g.inconsistent > 0 || g.clawbacks.length > 0) return 'issue';
   if (!g.lines.length || g.completed < g.lines.length || g.hold > 0) return 'todo';
   return 'done';
 }
@@ -194,8 +198,8 @@ export function sortLedgerGroups(groups: LedgerGroup[]): LedgerGroup[] {
     const aa = ledgerGroupAttention(a);
     const ba = ledgerGroupAttention(b);
     if (aa !== ba) return attentionRank[aa] - attentionRank[ba];
-    const aIssues = a.unknown + a.broken + a.clawbacks.length;
-    const bIssues = b.unknown + b.broken + b.clawbacks.length;
+    const aIssues = a.unknown + a.broken + a.inconsistent + a.clawbacks.length;
+    const bIssues = b.unknown + b.broken + b.inconsistent + b.clawbacks.length;
     if (aIssues !== bIssues) return bIssues - aIssues;
     const aTodo = Math.max(a.lines.length - a.completed, a.hold);
     const bTodo = Math.max(b.lines.length - b.completed, b.hold);
@@ -220,8 +224,8 @@ export function ledgerTotals(groups: readonly LedgerGroup[]) {
   return groups.reduce(
     (t, g) => ({
       rows: t.rows + g.lines.length, total: t.total + g.total, unknown: t.unknown + g.unknown, done: t.done + g.done, completed: t.completed + g.completed,
-      forecast: t.forecast + g.forecast, broken: t.broken + g.broken, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
+      forecast: t.forecast + g.forecast, broken: t.broken + g.broken, inconsistent: t.inconsistent + g.inconsistent, clawback: t.clawback + g.clawbackTotal, net: t.net + g.net,
     }),
-    { rows: 0, total: 0, unknown: 0, done: 0, completed: 0, forecast: 0, broken: 0, clawback: 0, net: 0 },
+    { rows: 0, total: 0, unknown: 0, done: 0, completed: 0, forecast: 0, broken: 0, inconsistent: 0, clawback: 0, net: 0 },
   );
 }

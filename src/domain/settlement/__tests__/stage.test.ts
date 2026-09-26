@@ -157,3 +157,13 @@ test('깨진 소수 납입회차를 반올림해 완납 사실로 만들지 않�
   assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '분납실적');
   assert.equal(nextInstallmentDate(r), '2026-10-10');
 });
+
+
+test('명시 완납은 실적으로는 완료지만 실제 완납일 없이는 청구월을 추정하지 않는다', () => {
+  const r = row('2026-09-10', '2회분납', 2);
+  assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '완납실적');
+  assert.equal(billingMonth(r, new Date('2026-09-20T12:00:00+09:00')), null);
+
+  const dated = { ...r, paidRoundsAt: '2026-09-20' };
+  assert.equal(billingMonth(dated, new Date('2026-09-20T12:00:00+09:00')), '2026-09');
+});

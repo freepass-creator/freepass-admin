@@ -65,6 +65,8 @@ export function buildIntakeCatalogSnapshot(
     },
     offer:{
       id:offer.id,
+      supplierId:offer.supplierId??product.supplierId??null,
+      supplierName:offer.supplierName??product.supplierName??null,
       termMonths:offer.termMonths,
       monthlyRent:offer.monthlyRent,
       deposit:offer.deposit??null,

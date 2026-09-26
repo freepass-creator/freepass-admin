@@ -1,3 +1,5 @@
+import { parseErp5WriteApproval } from '../shared/erp5-write-approval';
+
 /**
  * **배포 전 환경변수 점검** — 값은 절대 출력하지 않는다. 있는지 · 꼴이 맞는지만 본다.
  * 운영 개시 결정(DEC-2026-09-25-05): Vercel · 별도 도메인 없음 · 전자계약 off · Workspace 로그인.
@@ -49,9 +51,18 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
 
   /* 쓰기 · 전자계약 · 카탈로그 */
   const write = env.ERP5_WRITE?.trim() || 'off';
-  if (write !== 'on' && write !== 'off') err('ERP5_WRITE', 'on 또는 off');
-  else if (write === 'on') warn('ERP5_WRITE', 'on — 첫 배포는 off 로 조회 확인 후 켭니다(OPERATIONS-FIRST-USE.md)');
-  else ok('ERP5_WRITE', 'off (조회 전용)');
+  if (write !== 'on' && write !== 'off') {
+    err('ERP5_WRITE', 'on 또는 off');
+  } else if (write === 'on') {
+    const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON);
+    if (!approval.ok) {
+      err('ERP5_WRITE_APPROVAL_JSON', `운영 쓰기 승인 증거가 불완전합니다 — ${approval.reason}`);
+    } else {
+      ok('ERP5_WRITE', `on — IAM/backup-restore 승인 ${approval.value.approvalRef}`);
+    }
+  } else {
+    ok('ERP5_WRITE', 'off (조회 전용)');
+  }
   if (env.ESIGN_ENABLED?.trim() === 'on') warn('ESIGN_ENABLED', 'on — 전자계약은 운영 개시 범위 밖입니다(DEC-2026-09-25-05)');
   else ok('ESIGN_ENABLED', 'off (전자계약 닫힘)');
   const mode = env.FREEPASS_DATA_ADMIN_CATALOG_READ_MODE?.trim();

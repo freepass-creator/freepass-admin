@@ -78,7 +78,7 @@ export { claimAmountOf, payAmountOf };
 
 export function ledgerMonths(rows: readonly SettlementRow[], clawbacks: readonly Clawback[] = [], now = new Date()): string[] {
   const m = new Set<string>();
-  const locked = lockedMonthsOf(rows);
+  const locked = lockedMonthsOf(rows, now);
   for (const r of rows) { if (!inLedger(r)) continue; const x = monthOfRow(r, locked, now); if (x) m.add(x); }
   for (const c of clawbacks) if (c.month) m.add(c.month);
   return [...m].sort((a, b) => (a === NO_MONTH ? 1 : b === NO_MONTH ? -1 : b.localeCompare(a)));
@@ -89,7 +89,7 @@ function group(
   side: 'claim' | 'pay', now: Date,
 ): LedgerGroup[] {
   const by = new Map<string, LedgerGroup>();
-  const locked = lockedMonthsOf(rows);
+  const locked = lockedMonthsOf(rows, now);
   const get = (party: string) => {
     const g = by.get(party) ?? { party, lines: [], rows: [], total: 0, unknown: 0, done: 0, completed: 0, hold: 0, forecast: 0, broken: 0, clawbacks: [], clawbackTotal: 0, net: 0 };
     by.set(party, g);

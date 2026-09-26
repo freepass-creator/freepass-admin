@@ -789,6 +789,21 @@
         "next-party",
         "next-axis"
       ]
+    },
+    "focusedSettlementDensity": {
+      "alwaysVisible": [
+        "current-work",
+        "settlement-core",
+        "customer-vehicle"
+      ],
+      "collapsedSupport": [
+        "contract-intake-info",
+        "history"
+      ],
+      "hiddenInFocus": [
+        "intake-mutation-controls"
+      ],
+      "rule": "Focused settlement detail prioritizes the next operational action and settlement facts; historical/intake support remains available without competing for first-screen attention."
     }
   },
   "panelCardSeparation": {

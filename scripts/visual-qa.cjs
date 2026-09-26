@@ -31,6 +31,7 @@ const executablePath = process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium/chr
  * actual-route source에도 연결 계약이 남아 있는지 함께 잠근다. */
 const settlementSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/page.tsx'), 'utf8');
 const settlementDesktopSource = fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/SettlementScreen.tsx'), 'utf8');
+const settlementDetailDesktopSource = fs.readFileSync(path.join(process.cwd(), 'src/app/_erp/SettlementDetail.tsx'), 'utf8');
 const settlementSignalSource = fs.readFileSync(path.join(process.cwd(), 'src/app/settlement/group-signal.ts'), 'utf8');
 const intakeDetailSource = fs.readFileSync(path.join(process.cwd(), 'src/app/intake/IntakeDetailPanel.tsx'), 'utf8');
 const workflowSourceChecks = [
@@ -40,6 +41,9 @@ const workflowSourceChecks = [
   ['shared settlement list signal helper', settlementSignalSource.includes('settlementGroupSignal') && settlementSignalSource.includes('settlementLineSignal')],
   ['mobile settlement signals use shared helper', settlementSource.includes("from './group-signal'") && settlementSource.includes('settlementGroupSupport')],
   ['desktop settlement signals use shared helper', settlementDesktopSource.includes("from '../settlement/group-signal'") && settlementDesktopSource.includes('settlementGroupSupport')],
+  ['desktop settlement row stays in settlement route', settlementDesktopSource.includes('focus: r.id') && !settlementDesktopSource.includes('/intake?ic=')],
+  ['desktop settlement resolves focus in middle panel', settlementDesktopSource.includes('locateSettlementFocus') && settlementDesktopSource.includes('<SettlementDetail cur={focusedLine.row}')],
+  ['desktop settlement detail exposes lifecycle actions', settlementDetailDesktopSource.includes('settlementPrimaryAction') && settlementDetailDesktopSource.includes('<LifeForm') && settlementDetailDesktopSource.includes('<SideStep')],
 ];
 for (const [label, ok] of workflowSourceChecks) {
   if (!ok) {
@@ -588,6 +592,24 @@ async function runInteractiveStates(page, c) {
 
   if (c.route === '/settlement') {
     states.push(await captureState(page, c.name, 'settlement-party-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+    if (c.width > 900) {
+      const centerRow = '.erp-workspace > .erp-panel:nth-child(2) .erp-rowcard-link';
+      const focused = await captureState(page, c.name, 'settlement-line-focused-in-place', centerRow);
+      if (focused.status === 'PASS') {
+        try {
+          const u = new URL(page.url());
+          const detailVisible = await page.locator('[data-settlement-focus]:visible').count();
+          if (u.pathname !== '/settlement' || !u.searchParams.get('focus') || !detailVisible) {
+            focused.status = 'FAIL';
+            focused.reason = `desktop settlement drill-in lost context: ${page.url()} detailVisible=${detailVisible}`;
+          }
+        } catch (err) {
+          focused.status = 'FAIL';
+          focused.reason = err instanceof Error ? err.message : String(err);
+        }
+      }
+      states.push(focused);
+    }
   }
 
   if (c.route === '/esign') {

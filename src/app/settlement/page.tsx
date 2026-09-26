@@ -51,6 +51,9 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const 달들 = months.filter((m) => m !== NO_MONTH);
   const month = focus?.month || sp(q.month) || 달들.find((m) => m <= now) || 달들[0] || NO_MONTH;
   const groups = tab === 'claim' ? claimLedger(rows, month, cb) : payLedger(rows, month, cb);
+  const 지급묶음 = tab === 'claim' ? payLedger(rows, month, cb) : [];
+  const 공급사축완료 = tab === 'claim' && groups.every((g) => ledgerGroupAttention(g) === 'done');
+  const 다음지급거래처 = 공급사축완료 ? nextActionableLedgerParty(지급묶음, '') : null;
   const t = ledgerTotals(groups);
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 미정 = months.includes(NO_MONTH) ? (tab === 'claim' ? claimLedger(rows, NO_MONTH, cb) : payLedger(rows, NO_MONTH, cb)) : [];
@@ -98,6 +101,9 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const 앞달 = i >= 0 ? 달들[i + 1] : 달들[0];
   const 뒤달 = i > 0 ? 달들[i - 1] : undefined;
   const 달로 = (m: string) => keep({ month: m, g: '', ic: '', v: 'list' });
+  const 지급인계Href = 다음지급거래처
+    ? keep({ tab: 'pay', g: 다음지급거래처, ic: '', lc: '', gs: 'todo', ls: 'todo', v: 'detail' })
+    : undefined;
   /** 실적 줄의 상태 칸 — 그 축의 걸음(접수 → 청구/통보 → 확인 → 수금/지급) · 곁길(보류 · 정정 · 끊김) */
   const 줄상태 = (stage: string, hold: boolean, broken: boolean): RowStatus =>
     hold ? { icon: 'pause', label: '보류', tone: 'amber' }
@@ -186,6 +192,11 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
             })}
             {shownGroups.length === 0 && <EmptyState>이 달에 선 {who}가 없습니다.</EmptyState>}
           </div>
+          {tab === 'claim' && 공급사축완료 && 지급인계Href && (
+            <ActionBar>
+              <Link className="primary" href={지급인계Href}>지급 업무로</Link>
+            </ActionBar>
+          )}
         </section>
 
         {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
@@ -283,7 +294,16 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
         <section className="panel work-panel" data-panel-role="work">
           {ic
             ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{ axis, mode: sp(q.lc), link: (lc: string) => keep({ lc, v: 'work' }), nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined, nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined, invoiceBiz: 장?.partyBizNo }} />
+                life={{
+                  axis,
+                  mode: sp(q.lc),
+                  link: (lc: string) => keep({ lc, v: 'work' }),
+                  nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined,
+                  nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined,
+                  nextAxisHref: !nextPerformanceCode && !nextGroupParty ? 지급인계Href : undefined,
+                  nextAxisLabel: '지급 업무로',
+                  invoiceBiz: 장?.partyBizNo,
+                }} />
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

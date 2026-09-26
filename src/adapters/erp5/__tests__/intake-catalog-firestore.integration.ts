@@ -258,3 +258,60 @@ emulatorTest('Firestore: direct intake keeps one audit document when plate chang
   const splitDoc=await erp5().collection('settlement_events').doc(derivedFromNewPlate).get();
   assert.equal(splitDoc.exists,false);
 });
+
+
+emulatorTest('Firestore: concurrent supplier invoice issuance never reuses the same invoice number',async()=>{
+  const db=erp5();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,10);
+  const month='2026-11';
+  const rows=[
+    {code:`stl_inv_a_${suffix}`,supplier:`공급사A-${suffix}`,plate:`11가${suffix.slice(0,4)}`},
+    {code:`stl_inv_b_${suffix}`,supplier:`공급사B-${suffix}`,plate:`22나${suffix.slice(0,4)}`},
+  ];
+  for(const [i,x] of rows.entries()){
+    await db.collection('settlement_rows').doc(x.code).set({
+      code:x.code,
+      receivedAt:'2026-09-25',
+      plate:x.plate,
+      supplier:x.supplier,
+      supplierCode:`SUP-${i+1}`,
+      customer:`동시발행-${i+1}`,
+      channel:'프리패스',
+      channelCode:'FP',
+      agent:'테스터',
+      product:'장기렌트',
+      rentKind:'재렌트',
+      contractType:'전자약정',
+      term:36,
+      rent:690000,
+      deposit:0,
+      payKind:'일시납',
+      paper:true,
+      delivered:true,
+      deliveredAt:'2026-09-25',
+      billMonth:month,
+      claimWritten:1000+i,
+      payWritten:800+i,
+      claimStage:'접수',
+      payStage:'접수',
+      cancelled:false,
+      settleExclude:false,
+      billed:false,
+      invoiceIssued:false,
+      createdAt:Date.now(),
+      updatedAt:Date.now(),
+    });
+  }
+
+  const repo=new Erp5SettlementRepository();
+  const [a,b]=await Promise.all([
+    repo.issueInvoice(month,'공급사',rows[0].supplier,'concurrent-a'),
+    repo.issueInvoice(month,'공급사',rows[1].supplier,'concurrent-b'),
+  ]);
+
+  assert.equal(a.ok,true);
+  assert.equal(b.ok,true);
+  assert.notEqual(a.ok&&a.invoice.invoiceNo,b.ok&&b.invoice.invoiceNo);
+  assert.match(a.ok?a.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
+  assert.match(b.ok?b.invoice.invoiceNo:'',/^FP-S-202611-\d{3}$/);
+});

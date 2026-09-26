@@ -68,7 +68,7 @@ export function adminCatalogStatus() {
 export const settlements = new Erp5SettlementRepository();
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
-export { writeEnabled, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
+export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
 export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
 export { ERP5_PROJECT_ID, erp5Ready, demoMode } from '../adapters/erp5/firestore';
 

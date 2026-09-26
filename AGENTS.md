@@ -13,20 +13,18 @@
 
 기능을 새 파일/새 엔진/새 상태머신으로 만들기 전에 반드시 current main의 기존 정본을 확장할 수 있는지 먼저 확인한다.
 
-### Branch lifecycle — temporary work branches
-- 브랜치는 영구 lane이 아니라 **현재 변경을 격리하는 임시 작업 공간**이다.
-- `main`만 코드 정본이다. 작업은 항상 그 시점 최신 `main`에서 시작한다.
-- 현재 ACTIVE 작업 branch는 정확히 두 개다:
-  - `work/ui/finalize-baseline` — UI/UX 최종 확정
-  - `work/release/operational-launch` — 운영 개시
-- `work/function`, `work/esign`은 ARCHIVE, `work/uiux`는 REFERENCE-ONLY donor다. 신규 개발 금지.
-- 새 AI가 이어받아도 새 branch를 만들지 않는다. 해당 ACTIVE branch HEAD에서 그대로 이어간다.
-- 한 branch에는 한 시점에 writer 1명만 둔다. 다른 AI는 review/audit만 한다.
-- `고도화`, `다음`, `계속`은 현재 배정 branch를 이어서 작업하라는 뜻이며 새 branch 생성 지시가 아니다.
-- 현재 두 작업 외 새 branch 생성은 금지한다. 실제 신규 병렬 변경이 생기면 먼저 `docs/BRANCH-WORKFLOW.md`와 `registry/active-work.json`을 갱신한다.
-- 작업 완료 순서: 테스트 → PR → main merge → branch 폐기.
-- 현재 merge 순서: UI 최종확정 → main → 운영개시 branch 최신화 → production 검증/배포 → main.
-- 상세 규칙은 `docs/BRANCH-WORKFLOW.md`, machine-readable 상태는 `registry/active-work.json`을 따른다.
+### Branch lifecycle — unified main / single writer
+- 사용자 최신 지시(2026-09-26): **「자 메인으로 병합하고 이제 하나로 합치자」**.
+- `main`만 코드 정본이다. I #128 → F #129 → E #130 → U #127 → F 후속 #133은 모두 main에 병합됐다.
+- 완료된 작업을 기다리는 ACTIVE 기능 branch는 없다. U/F/E/I는 통합 작업의 검토 축이며, 별도 영구 branch나 독립 writer가 아니다.
+- 하나의 통합 작업에 writer는 한 시점에 1명만 둔다. 다른 AI는 review/audit와 인계만 한다. 채팅을 열었다는 이유만으로 writer가 되지 않는다.
+- 새 AI는 원격 main과 `docs/BRANCH-WORKFLOW.md`, `registry/active-work.json`을 먼저 확인한다. 과거 branch HEAD에서 개발을 재개하지 않는다.
+- `고도화`, `다음`, `계속`은 통합 작업을 잇는 뜻이며 신규 병렬 branch 생성 지시가 아니다.
+- 후속 코드 변경이 필요하면 먼저 단일 작업 오더와 writer를 등록한다. 격리가 필요한 경우에만 최신 main에서 임시 branch 하나를 사용한다.
+- 후속 코드 변경 완료 순서: 테스트 → PR → main merge → 작업 branch 종료. 미병합 변경을 무작정 삭제하거나 main을 강제 덮어쓰지 않는다.
+- `work/function`, `work/esign`, `work/uiux`, `work/ui/finalize-baseline` 및 과거 release/launch branch는 현재 개발 기준이 아니다. 보관 ref의 존재는 ACTIVE 승인이 아니다.
+- `docs/WORK-INBOX.md` 등 과거 기록의 「ACTIVE branch 2개」와 UI→운영개시 대기 순서는 종료된 이력이다. 현재 작업 상태는 이 절과 `docs/BRANCH-WORKFLOW.md`, `registry/active-work.json`을 따른다.
+- 코드 병합은 운영 배포/실데이터 쓰기/cutover/전자계약 활성화 승인이 아니다. 운영 개통 담당의 별도 승인·검증을 유지한다.
 
 ## -1. SINGLE UI LINEAGE — PR #92 · USER APPROVED 2026-09-26
 

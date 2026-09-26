@@ -1,78 +1,48 @@
 # FreePass Admin Branch Workflow
 
-상태: **ACTIVE / CANONICAL**
+상태: **ACTIVE / CANONICAL — UNIFIED MAIN / SINGLE WRITER**
 기준일: **2026-09-26**
+사용자 최신 지시: **「자 메인으로 병합하고 이제 하나로 합치자」**
 
-이 문서는 FreePass Admin의 브랜치 운영 정본이다.
+이 문서와 `registry/active-work.json`은 현재 브랜치 운영 정본이다. 과거 `docs/WORK-INBOX.md` 등의 ACTIVE branch 목록은 당시 이력이며 현재 작업 배정이 아니다.
 
-## 1. 기본 원칙
+## 1. 현재 통합 결과
 
-- `main`은 항상 통합된 코드 정본이다.
-- 브랜치는 팀/AI/영역의 영구 소유물이 아니라 **현재 변경을 안전하게 격리하기 위한 임시 작업 공간**이다.
-- 작업이 끝나면 테스트 → PR → merge → branch 폐기 순서로 종료한다.
-- “고도화”, “다음”, “계속”은 현재 작업 브랜치의 후속 작업을 뜻한다. 새 브랜치를 자동 생성하라는 뜻이 아니다.
-- 새 브랜치는 **현재 동시에 분리해야 하는 변경이 실제로 있을 때만** 최신 main에서 만든다.
-- v2/final/latest 같은 이름으로 브랜치를 파생하지 않는다. (AI 이름(claude/gpt/codex 등) 브랜치 금지는 사용자 결정으로 2026-09-26 해제)
+- `main`만 통합 코드 정본이다.
+- I #128 → F #129 → E #130 → U #127 → F 후속 #133이 모두 main에 병합됐다.
+- 마지막 기능 병합: PR #133, `e72fee1d17ac07d99f6d7d587ae89d153058a270`.
+- PR #133 검증 head: `c36f5cf599750d17c5d39555cde908dbf49d2d37`; main `da0834d7f85d4bedbab04d2be3a4d3073be6fc6a`를 포함하고 behind=0이었다.
+- 최종 head 검사 7개 PASS: Canon Guard #261, admin-core-domain #402, CI #1385, backend-check #1382, freepass-data-persistence #335, Next runtime check #265, Visual QA #103.
+- 이 통합 직후 열린 PR은 0개로 확인했다. 이는 관측 기록이며 후속 작업 전에는 원격 상태를 다시 읽는다.
+- 과거 PR #120/#121/#122의 운영 준비·승인 UI·운영 확정사항도 유지한다.
 
-## 2. 현재 상태 — PRE-DEPLOY FREEZE
+## 2. 하나의 작업선
 
-운영개시 준비 PR #120은 main에 병합됐다. UI 정본은 PR #121, 운영 확정사항은 PR #122로 main에 반영됐다.
+- U/F/E/I는 화면·업무규칙·계산·연결을 빠뜨리지 않기 위한 **검토 축**이다. 각각의 영구 branch/독립 writer가 아니다.
+- 통합 작업에 writer는 한 시점에 1명만 둔다. 다른 AI는 review/audit 또는 변경 인계를 맡는다.
+- 새 세션은 먼저 원격 main, 이 문서, registry, 현재 work order를 읽는다. 새 채팅을 열었다는 사실만으로 쓰기 권한이나 새 작업선이 생기지 않는다.
+- `다음`, `계속`, `고도화`를 새 병렬 branch 생성으로 해석하지 않는다.
+- 후속 코드 변경은 단일 work order와 writer를 먼저 등록한다. 격리가 필요할 때만 최신 main에서 임시 branch 하나를 사용하고 검증 → PR → merge → 작업선 종료로 회수한다.
+- 기존 로컬 미커밋 변경은 보존하고 인계한다. remote main을 fetch한 뒤 차이를 검토하며 강제 push/reset으로 덮어쓰지 않는다.
 
-현재 **개발 ACTIVE branch는 없다.** `main`이 유일한 배포 후보 코드다.
+## 3. 끝난 작업선과 보관 ref
 
-배포 전에는 아래만 허용한다.
-- 읽기 전용 검증
-- 배포 환경 바인딩
-- 실제 배포 시도
-- 배포를 막는 결함이 확인된 경우에만 current main에서 짧은 fix branch 생성
+- #127~#130 및 #133을 다시 열거나, 옛 PASS를 새로운 변경의 검증으로 재사용하지 않는다.
+- `work/function`, `work/esign`, `work/uiux`, `work/ui/finalize-baseline`, 과거 release/launch branch는 현재 개발 기준이 아니다.
+- 과거 branch가 GitHub에 남아 있다는 사실은 ACTIVE 승인이 아니다. 코드 정본과 보관 ref를 구분한다.
+- 오래 갈라진 branch는 통째로 merge하지 않는다. 필요한 의미와 회귀테스트만 current main에 없는지 확인한 뒤 별도 승인된 작업에서 선별 이식한다.
+- 이번 정리에서는 과거 remote ref를 물리적으로 삭제하지 않았다. 미병합 고유 변경의 보존을 확인하지 않은 삭제는 하지 않는다.
+- 브랜치 삭제 시에는 삭제 직전 HEAD를 다시 읽고 main 포함 여부/보존 기록/열린 PR/활성 writer를 확인한다. 완료된 PR의 head가 이동했다면 새 변경을 버리지 않는다.
 
-일반 고도화는 첫 배포 시도와 운영 smoke가 끝난 뒤 시작한다.
+## 4. 변경하지 않은 경계
 
-현재 외부 P0:
-1. Vercel `freepass-projects` 팀에 `freepass-admin` 프로젝트 생성/연결
-2. production env/OAuth/service account/IAM 바인딩
-3. 첫 배포는 `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, Catalog `OBSERVE`
-4. live login/read/rollback 확인 후 통제된 테스트 write
+- UI: PR #92 actual-route 계보와 `docs/ui/DESIGN-AUTHORITY.md` 유지.
+- 데이터: FreePass Data 정본 및 `src/server/freepass-data.ts` 단일 진입점 유지. RTDB 재활성화 금지.
+- 접수·정산 정본: `Intake / settlement_rows / src/domain/settlement/**` 유지.
+- 코드 통합은 운영 배포·실데이터 write·cutover·전자계약 활성화 승인이 아니다.
+- 운영 개통은 별도 담당자의 환경/권한/live smoke/rollback 검증을 따른다. 이 통합에서 환경값이나 승인 gate는 변경하지 않았다.
+- 기존 launch scope의 `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, Catalog `OBSERVE`를 임의로 열지 않는다.
 
+## 5. 완료 판정
 
-## 3. AI 인계 규칙
-
-- 한 branch에는 한 시점에 **writer 1명**만 둔다.
-- 다른 AI가 이어받으면 새 branch를 만들지 않는다. 해당 branch의 HEAD와 work order를 읽고 그대로 이어간다.
-- review/audit AI는 별도 branch 없이 읽기 전용으로 검토할 수 있다.
-- writer가 바뀌어도 branch 이름은 바꾸지 않는다.
-- 다른 branch의 코드를 직접 수정하지 않는다. 의존 변경은 먼저 소유 branch를 main에 merge한 뒤 최신 main을 반영한다.
-
-## 4. 현재 merge 상태
-
-- PR #121 — 승인 UI 계보 → main **MERGED**
-- PR #122 — 로그인 보안·작업자 기록·운영 확정분 → main **MERGED**
-- PR #120 — 운영 개시 준비/검증 → main **MERGED**
-
-이 시점부터 main을 변경하지 않고 첫 배포 시도를 준비한다. 배포 차단 결함이 발견될 때만 별도 short-lived fix branch를 만든다.
-
-## 4.5 UI 정본 확정 — 2026-09-26
-
-사용자가 PR #92 계보의 PC 화면을 정본으로 확정했다(「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」). main 반영은 PR #121.
-- `work/ui/finalize-baseline`의 목적(승인 UI 확정)은 PR #121로 달성된다. 이후 이 branch에서 새 UI 방향을 만들지 않는다.
-- 화면 정본과 폐기 목록은 `docs/ui/DESIGN-AUTHORITY.md` 하나가 가진다.
-
-## 5. 과거 브랜치 — 폐기(DISCARDED)
-
-- `work/function`: **DISCARDED** / 개발 근거 아님. 사용자 확정 운영 항목(전자계약 운영 제외, 작업자 기록, 로그인 되돌림 검증)만 `work/release/operational-launch`에서 최신 main 위에 다시 적용한다.
-- `work/esign`: **DISCARDED** / 개발 근거 아님
-- `work/uiux`: **DISCARDED** / 내용은 PR #121로 main에 반영 완료
-
-과거 branch의 고유 변경이 필요하면 branch 전체를 merge하지 않는다. current main에 필요한 변경만 검토하여 현재 ACTIVE branch로 선별 이식한다.
-
-전자계약을 다시 개발할 시점이 오면 `work/esign`을 되살리지 않고 **그 시점 최신 main에서 목적이 명확한 새 임시 branch**를 만든다.
-
-## 6. 완료 후
-
-두 작업이 끝나면 정상 상태는 다시:
-
-```text
-main
-```
-
-하나다. 다음 업무가 생기는 시점에 필요한 branch만 새로 만든다.
+정상적인 코드 기준은 `main` 하나다. 각 기능의 구현·검증·메인 병합 완료와 운영 개통 완료를 구분한다. 다음 작업은 이 통합 main에서 시작하며, 과거 branch를 또 다른 최신본으로 안내하지 않는다.

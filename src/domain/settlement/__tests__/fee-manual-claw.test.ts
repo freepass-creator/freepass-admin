@@ -15,6 +15,7 @@ const manualRule: FeeResult = { status: 'MANUAL', rule: { id: 'm', supplier: '�
 const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '손오공', kind: '재렌트', form: '', term: 48, basis: '대여료×기간', claim: 0.0325, pay: 0.025, when: '', auto: true }, claim: 1_092_000, pay: 840_000 };
 const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '손오공', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
 const noRule: FeeResult = { status: 'NO_RULE', why: '표에 「새공급사 · 재렌트 48개월」 가 없다' };
+const CLAW_NOW = Date.parse('2026-09-30T12:00:00+09:00');
 
 describe('수수료 직접 입력 — 대표 「직접접수하는 방식」', () => {
   it('★신차발주(주는 대로)는 사유 없이 넣어도 된다 · 넣은 값이 선다', () => {
@@ -76,7 +77,7 @@ describe('수수료 고침 — 레거시 완료표시도 잠근다', () => {
 describe('환수 — 열어 둔다', () => {
   const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   it('신규 환수 id는 계약줄까지 포함해 같은 차·같은 달 재계약 충돌을 막는다', () => {
-    const r = clawbackRecord(row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' }), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', 0);
+    const r = clawbackRecord(row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' }), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', CLAW_NOW);
     assert.ok(r.ok);
     assert.equal(r.ok && r.id, clawbackId('12가 3456', '2026-09', 'stl_x'));
     assert.notEqual(clawbackId('12가 3456', '2026-09', 'stl_x'), clawbackId('12가 3456', '2026-09', 'stl_y'));
@@ -84,11 +85,25 @@ describe('환수 — 열어 둔다', () => {
     assert.equal(r.ok && r.doc.code, 'stl_x');
   });
   it('사유 · 금액 · 인도 · 실제 수금/지급 완료가 필수', () => {
-    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: '' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({ delivered: false, deliveredAt: '', collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', 0).ok, false);
-    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 1, reason: 'x' }, 't', 0).ok, false);
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: '' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(row({ delivered: false, deliveredAt: '', collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(row({}), { at: '2026-09-10', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(row({ collected: true, claimStage: '수금' }), { at: '2026-09-10', supplierAmt: 0, agentAmt: 1, reason: 'x' }, 't', CLAW_NOW).ok, false);
+  });
+  it('환수일은 실제 날짜이며 미래·인도 전·해지 전일 수 없다', () => {
+    const settled = row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' });
+    assert.equal(clawbackRecord(settled, { at: '2026-02-30', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(settled, { at: '2026-10-01', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(settled, { at: '2026-06-04', supplierAmt: 1, agentAmt: 0, reason: 'x' }, 't', CLAW_NOW).ok, false);
+
+    const terminated = {
+      ...settled,
+      contractTerminatedAt: Date.parse('2026-09-25T00:00:00+09:00'),
+      contractTerminationDate: '2026-09-25',
+    };
+    assert.equal(clawbackRecord(terminated, { at: '2026-09-24', supplierAmt: 1, agentAmt: 0, reason: '해지 환수' }, 't', CLAW_NOW).ok, false);
+    assert.equal(clawbackRecord(terminated, { at: '2026-09-25', supplierAmt: 1, agentAmt: 0, reason: '해지 환수' }, 't', CLAW_NOW).ok, true);
   });
 });
 

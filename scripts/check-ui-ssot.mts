@@ -315,6 +315,63 @@ for (const [file, rules] of businessFlowBaseline) {
   }
 }
 
+const asyncStateBaseline = [
+  ['src/app/_erp/parts.tsx', [
+    /export function PanelState/,
+    /'empty' \| 'loading' \| 'error' \| 'readonly'/,
+    /erp-panel-state erp-state-/,
+  ]],
+  ['src/app/_design/RouteState.tsx', [
+    /<Screen name="route-loading">/,
+    /<Screen name="route-error">/,
+    /<PanelState kind="loading"/,
+    /<PanelState kind="error"/,
+  ]],
+  ['src/app/_erp/ProductsScreen.tsx', [
+    /조건에 맞는 상품이 없습니다/,
+  ]],
+  ['src/app/_erp/Workspace.tsx', [
+    /이 조건에 맞는 접수가 없습니다/,
+    /실적을 선택해 주세요/,
+  ]],
+  ['src/app/_erp/SettlementScreen.tsx', [
+    /정산 데이터를 불러오지 못했습니다/,
+    /정산 거래처를 선택해 주세요/,
+  ]],
+  ['src/app/_erp/EsignScreen.tsx', [
+    /이 조건에 맞는 전자계약이 없습니다/,
+    /전자계약을 선택해 주세요/,
+  ]],
+  ['src/app/_erp/SettlementDetail.tsx', [
+    /const canWrite = writeEnabled\(\)/,
+    /kind="readonly"/,
+    /현재 조회 전용입니다/,
+    /erp-write-disabled-reason/,
+  ]],
+  ['src/app/esign/page.tsx', [
+    /const all: Awaited<ReturnType<typeof contracts\.list>> = await contracts\.list\(\)/,
+  ]],
+  ['src/app/system/data-status/loading.tsx', [/RouteLoading/]],
+  ['src/app/system/data-status/error.tsx', [/RouteError/]],
+  ['scripts/visual-qa.cjs', [
+    /products-empty-desktop-1280/,
+    /intake-empty-desktop-1280/,
+    /performance-empty-desktop-1280/,
+    /esign-empty-desktop-1280/,
+    /forced empty result did not render an explanatory state surface/,
+  ]],
+] as const;
+for (const [file, rules] of asyncStateBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: async/empty/error/readonly contract missing: ${re}`);
+  }
+}
+const esignMobileSource = await readSource('src/app/esign/page.tsx');
+if (/ERP5 를 못 읽었습니다/.test(esignMobileSource)) {
+  errors.push('src/app/esign/page.tsx: inline legacy read error must use route error boundary');
+}
+
 const accessibilityAndLongTextBaseline = [
   ['src/app/_design/FilterSheet.tsx', [
     /aria-modal="true"/,

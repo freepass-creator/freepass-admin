@@ -34,11 +34,14 @@ const TTL = 60_000;
 
 export async function productList() {
   const mode = adminCatalog.mode();
+  const cacheable = mode === 'LEGACY_DIRECT' || mode === 'OBSERVE';
   const hit = g.__fpaCatalog;
-  if (hit && hit.mode === mode && Date.now() - hit.at < TTL) return hit;
+  if (cacheable && hit && hit.mode === mode && Date.now() - hit.at < TTL) return hit;
   const result = await adminCatalog.list();
-  g.__fpaCatalog = { at: Date.now(), mode, rows: result.rows, receipt: result.receipt };
-  return g.__fpaCatalog;
+  const fresh = { at: Date.now(), mode, rows: result.rows, receipt: result.receipt };
+  if (cacheable) g.__fpaCatalog = fresh;
+  else delete g.__fpaCatalog;
+  return fresh;
 }
 
 export async function productById(id: string) {
@@ -68,7 +71,7 @@ export function adminCatalogStatus() {
 export const settlements = new Erp5SettlementRepository();
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
-export { writeEnabled, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
+export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
 export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
 export { ERP5_PROJECT_ID, erp5Ready, demoMode } from '../adapters/erp5/firestore';
 

@@ -35,6 +35,35 @@ describe('프로모션/가감 수정 잠금 — 발행된 문서와 원장이 �
     assert.equal(moneyEditPatch({ paid: 1, payAdjust: 0 }, { payAdjust: 1 }).ok, false);
     assert.equal(moneyEditPatch({ cancelled: '참', claimAdjust: 0 }, { claimAdjust: 1 }).ok, false);
   });
+  it('발행 뒤에는 같은 금액의 사유만 바꿔 과거 설명을 다시 쓰지 못한다', () => {
+    assert.equal(
+      moneyEditPatch(
+        { billed: true, claimAdjust: 100, payAdjust: 0, adjustReason: '기존 사유' },
+        { claimAdjust: 100, payAdjust: 0, adjustReason: '바꾼 사유' },
+      ).ok,
+      false,
+    );
+    assert.equal(
+      moneyEditPatch(
+        { payStage: '통보', claimIncentive: 100, payIncentive: 100, promoShare: 1, promoReason: '기존 프로모션' },
+        { claimIncentive: 100, payIncentive: 100, promoShare: 1, promoReason: '바꾼 프로모션' },
+      ).ok,
+      false,
+    );
+  });
+  it('한 축만 발행됐으면 아직 안 나간 반대 축 금액은 같은 사유를 유지하는 범위에서만 고칠 수 있다', () => {
+    const payOnly = moneyEditPatch(
+      { billed: true, claimAdjust: 0, payAdjust: 0, adjustReason: '협의' },
+      { claimAdjust: 0, payAdjust: 50, adjustReason: '협의' },
+    );
+    assert.equal(payOnly.ok, true);
+
+    const claimOnly = moneyEditPatch(
+      { payStage: '통보', claimAdjust: 0, payAdjust: 0, adjustReason: '협의' },
+      { claimAdjust: 50, payAdjust: 0, adjustReason: '협의' },
+    );
+    assert.equal(claimOnly.ok, true);
+  });
   it('발행 전에는 바뀐 칸만 패치하고 같은 값은 쓰지 않는다', () => {
     const r = moneyEditPatch({ claimAdjust: 0, payAdjust: 5, payStage: '접수' }, { claimAdjust: -10, payAdjust: 5, unknown: 1 });
     assert.ok(r.ok);

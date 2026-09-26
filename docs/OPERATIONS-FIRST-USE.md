@@ -23,11 +23,34 @@ As observed on 2026-09-25, the connected Vercel team listed zero projects. The d
 
 Use `.env.example` as the implemented key inventory. Bind the correct existing deployment project or create an explicitly designated project for this repository. Do not copy another app's secrets, weaken authentication, or enable writes merely to make the screen open. An authorized operator must supply the approved bindings; no secret belongs in a PR, issue, document or chat message.
 
+## FreePass Data Admin Catalog cutover
+
+The application implements the same ordered stages as the central FreePass Data consumer switchboard:
+
+`LEGACY_DIRECT → OBSERVE → SHADOW_READ → PARITY_VERIFIED → FREEPASS_DATA_READ`
+
+The Admin runtime does **not** grant itself a stage. `FREEPASS_DATA_ADMIN_CUTOVER_JSON` is only an execution receipt carrying evidence already approved through the FreePass Data consumer process. It is bound to the exact Data HTTPS origin and the SHA-256 of the dedicated Admin consumer token, expires, and cannot skip a stage.
+
+- `OBSERVE`: legacy bridge remains the returned catalog; no cutover receipt is needed.
+- `SHADOW_READ`: requires contract/auth/legacy/Data-read evidence; reads both sides and returns legacy while recording MATCH/MISMATCH/HOLD.
+- `PARITY_VERIFIED`: additionally requires parity evidence and an approved `admin-catalog` ACTIVE release identity/digests; still returns legacy and continuously rechecks the release and shadow comparison.
+- `FREEPASS_DATA_READ`: additionally requires fallback and production-readback evidence with no HOLD reasons. It validates the currently served ACTIVE release against the approved release and then returns FreePass Data directly. It does not silently fall back to ERP5 if Data fails; rollback is an explicit stage/environment change.
+
+SHADOW/PARITY/final stages bypass the 60-second legacy UI cache so expiry, approval changes and release changes are checked immediately.
+
+As of 2026-09-26 the central FreePass Data main registry still records `freepass-admin-catalog` at `OBSERVE` with unresolved HOLD reasons. Therefore this code is cutover capability, **not current cutover authorization**. Do not populate a higher-stage receipt merely because the code supports it.
+
 ## First-use sequence
 
 Deploy the verified revision to a preview with ERP5_WRITE=off. Verify the authorized administrator can sign in, an unauthorized account cannot, `/system/data-status` shows fresh probes, and catalog list/detail/selected Offer agree. Configure the approved HTTPS origin for OAuth, electronic-contract and claim links.
 
-Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Then explicitly enable the write gate for the approved environment. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
+Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Record that verification as the non-secret `ERP5_WRITE_APPROVAL_JSON` receipt described in `.env.example`; production runtime stays fail-closed without it. Then explicitly enable `ERP5_WRITE=on` only for the approved production store. A local developer process does not bypass this gate: unapproved development writes must use the local Firestore emulator. Vercel preview/development deployments remain read-only even if the approval receipt is present. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
+
+### Production write approval receipt
+
+`ERP5_WRITE_APPROVAL_JSON` is an operational receipt, not a substitute for the checks it records. It must identify `freepasserp5`, confirm least-privilege IAM and a real backup/restore verification, bind the exact approved service-account email and production HTTPS origin, carry traceable IAM/restore/approval references, record `approvedAt`, and include a future `validUntil`. The runtime rejects an expired receipt or one copied to a different service account/origin. Do not set either verification flag from emulator tests, a green CI badge, or the mere existence of a service-account key.
+
+This repository and the current FreePass Data repository do not implement a production Firestore backup/restore job. Until an external Firebase/GCP backup and restore drill is actually verified, production writes must remain off. The application intentionally cannot prove cloud IAM roles from a service-account JSON key; that verification also remains an operator/cloud-control-plane receipt.
 
 Verify save, reload, re-login and retrieval preserve the same record. Check duplicate clicks/concurrent submissions produce one intake and one audited outcome. Complete a normal intake/contract/delivery/settlement-record journey. Pre-delivery cancellation must create no new billing/payment/clawback; post-delivery termination must retain prior facts and track any clawback separately.
 

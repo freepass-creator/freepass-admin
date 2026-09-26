@@ -26,9 +26,11 @@ import { erp5 } from '../src/adapters/erp5/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement';
 import { loadFeeRuleSet } from '../src/adapters/erp5/fee-rules';
 import { feeOf } from '../src/domain/settlement/fee';
-import { eventDocId } from '../src/domain/settlement/code';
+import { intakeEventDocId } from '../src/domain/settlement/code';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval';
 
 const APPLY = process.argv.includes('--apply');
+assertErp5MaintenanceWrite(process.env, APPLY, 'fee-fill-erp5');
 const N = (v: unknown) => { const n = Number(String(v ?? '').replace(/[,\s원]/g, '')); return Number.isFinite(n) ? n : 0; };
 const mask = (p: unknown) => String(p ?? '').replace(/^(\d+\D)\d+/, '$1**');
 const audId = () => { const A = '23456789abcdefghjkmnpqrstuvwxyz'; let t = ''; for (let i = 0; i < 10; i += 1) t += A[Math.floor(Math.random() * A.length)]; return `aud_${t}`; };
@@ -37,7 +39,7 @@ const db = erp5();
 const set = await loadFeeRuleSet(0);
 const snap = await db.collection('settlement_rows').get();
 
-type Fill = { id: string; plate: unknown; receivedAt: unknown; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[]; line: string };
+type Fill = { id: string; auditEventId: string; patch: Record<string, unknown>; events: { field: string; from: string; to: string }[]; line: string };
 const fills: Fill[] = [];
 const keep: string[] = [];
 let open = 0;
@@ -53,7 +55,10 @@ for (const d of snap.docs) {
   const tag = `${set.version} · ${f.rule.id}`;
   if (!wc && !wp) {
     fills.push({
-      id: d.id, plate: raw.plate, receivedAt: raw.receivedAt,
+      id: d.id,
+      auditEventId: String(raw.auditEventId ?? '').trim() || intakeEventDocId(
+        raw.plate, raw.sourceProductId, raw.receivedAt, raw.intakeRequestId, raw.intakeIdentityMode,
+      ),
       patch: { claimWritten: f.claim, payWritten: f.pay, supplierRate: f.rule.claim, agentRate: f.rule.pay },
       events: [{ field: '청구금액', from: '0', to: String(f.claim) }, { field: '지급액', from: '0', to: String(f.pay) }],
       line: `   A ${mask(raw.plate).padEnd(9)} ${String(raw.receivedAt)} ${String(r.supplier).padEnd(7)} ${r.product}  청구 ${f.claim.toLocaleString()} · 지급 ${f.pay.toLocaleString()}  [${f.rule.id}]`,
@@ -75,14 +80,20 @@ L.push('', '── ★안 채우는 줄 — 계약시점 요율이 적혀 있거
 
 if (APPLY && fills.length) {
   const now = Date.now();
-  const w = db.batch();
-  for (const x of fills) {
-    w.update(db.collection('settlement_rows').doc(x.id), { ...x.patch, updatedAt: now, _fee: { version: set.version, at: new Date(now).toISOString(), by: 'freepass-admin:fee-fill' } });
-    const ev: Record<string, unknown> = {};
-    for (const e of x.events) ev[audId()] = { at: now, by: 'freepass-admin:fee-fill', ...e };
-    w.set(db.collection('settlement_events').doc(eventDocId(x.plate, x.receivedAt)), ev, { merge: true });
+  const chunks = <T,>(xs:T[], size=200) => Array.from({ length: Math.ceil(xs.length / size) }, (_, i) => xs.slice(i * size, (i + 1) * size));
+  for (const batchRows of chunks(fills)) {
+    const w = db.batch();
+    for (const x of batchRows) {
+      w.update(db.collection('settlement_rows').doc(x.id), {
+        ...x.patch, auditEventId: x.auditEventId, updatedAt: now,
+        _fee: { version: set.version, at: new Date(now).toISOString(), by: 'freepass-admin:fee-fill' },
+      });
+      const ev: Record<string, unknown> = {};
+      for (const e of x.events) ev[audId()] = { at: now, by: 'freepass-admin:fee-fill', ...e };
+      w.set(db.collection('settlement_events').doc(x.auditEventId), ev, { merge: true });
+    }
+    await w.commit();
   }
-  await w.commit();
   L.push('', `★썼다 — ${fills.length}줄 · 이력 남김`);
 } else L.push('', APPLY ? '채울 것이 없다' : '★헛돌기 — 쓰려면 --apply');
 

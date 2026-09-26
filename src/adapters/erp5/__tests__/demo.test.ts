@@ -116,5 +116,8 @@ test('실제 repository 가 가상 데이터를 그대로 읽는다 — 상품 �
 
 test('가상 데이터 모드에서 정산 쓰기는 ERP5_WRITE=on 이어도 막힌다', async (t) => {
   withEnv(t, { FPA_DEMO: 'on', ERP5_WRITE: 'on' });
-  await assert.rejects(settlements.setProgress('stl_demo_001', { kind: 'paper', value: true } as never), /ERP5 쓰기가 꺼져/);
+  await assert.rejects(
+    settlements.setProgress('stl_demo_001', { kind: 'paper', value: true } as never),
+    /ERP5 쓰기가 열리지 않았습니다.*데모 모드는 읽기 전용입니다/,
+  );
 });

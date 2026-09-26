@@ -54,10 +54,12 @@ describe('validateIntake — 최초 접수 필수값', () => {
     const e = validateIntake({ ...base, plate: '', customer: ' ', channel: '', agent: '', supplier: '' }, '2026-09-18');
     assert.equal(e.length, 5);
   });
-  it('분납여부는 접수 필수값이다', () => {
+  it('분납여부는 신규 접수 정본값(일시납/2회/3회)만 받는다', () => {
     assert.match(validateIntake({ ...base, payKind: '' }, '2026-09-18').join(), /분납여부/);
-    assert.match(validateIntake({ ...base, payKind: '나중에' }, '2026-09-18').join(), /일시납 또는 N회분납/);
+    assert.match(validateIntake({ ...base, payKind: '나중에' }, '2026-09-18').join(), /일시납, 2회분납, 3회분납/);
+    assert.match(validateIntake({ ...base, payKind: '4회분납' }, '2026-09-18').join(), /일시납, 2회분납, 3회분납/);
     assert.deepEqual(validateIntake({ ...base, payKind: '2회분납' }, '2026-09-18'), []);
+    assert.deepEqual(validateIntake({ ...base, payKind: '3회분납' }, '2026-09-18'), []);
   });
   it('차량번호 없는 상품접수는 Product ID가 있으면 받는다', () => {
     const e = validateIntake({ ...base, plate: '', sourceProductId: 'P-NEW' }, '2026-09-18');
@@ -99,6 +101,14 @@ describe('validateIntake — 최초 접수 필수값', () => {
   });
   it('★접수일이 오늘 뒤면 안 받는다 (원장에 2026-12-12 가 한 줄 들어가 있다)', () =>
     assert.match(validateIntake({ ...base, receivedAt: '2026-12-12' }, '2026-09-18').join(), /오늘/));
+  it('존재하지 않는 접수일은 저장하지 않는다', () => {
+    assert.match(validateIntake({ ...base, receivedAt: '2026-02-30' }, '2026-09-18').join(), /유효한 날짜/);
+    assert.deepEqual(validateIntake({ ...base, receivedAt: '2024-02-29' }, '2026-09-18'), []);
+  });
+  it('신규 접수에서 미래 인도일과 접수 전 인도일을 막는다', () => {
+    assert.match(validateIntake({ ...base, delivered: true, deliveredAt: '2026-09-19' }, '2026-09-18').join(), /오늘.*뒤/);
+    assert.match(validateIntake({ ...base, receivedAt: '2026-09-18', delivered: true, deliveredAt: '2026-09-17' }, '2026-09-18').join(), /접수일.*보다 빠를/);
+  });
   it('★인도는 계약서와 독립 사실이고, 인도일만 함께 요구한다', () => {
     const e = validateIntake({ ...base, paper: false, delivered: true }, '2026-09-18').join();
     assert.doesNotMatch(e, /계약서/);
@@ -109,6 +119,11 @@ describe('validateIntake — 최초 접수 필수값', () => {
 
 describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
   const r = intakeRecord(base, 1_790_000_000_000);
+  it('최초 접수부터 분납 인도완료라면 paidRounds=1을 명시한다', () => {
+    const installment = intakeRecord({ ...base, payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18' }, 1_790_000_000_000);
+    assert.equal(installment.paidRounds, 1);
+    assert.equal(intakeRecord({ ...base, payKind: '3회분납', delivered: false, deliveredAt: '' }, 1_790_000_000_000).paidRounds, null);
+  });
   it('code == 문서 id 규칙 · 차번은 띄어쓰기 없이', () => {
     assert.equal(r.code, settlementCode('12가3456', '2026-09-18'));
     assert.equal(r.plate, '12가3456');
@@ -225,11 +240,87 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
   it('차량번호 없으면 인도 완료를 막는다', () =>
     assert.match(String((progressPatch({ paper: true, plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
   it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
+  it('존재하지 않는 인도일은 진행 사실로 기록하지 않는다', () => {
+    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-02-30' }).ok, false);
+    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2024-02-29' }).ok, true);
+  });
+  it('미래 인도일이나 접수일보다 빠른 인도일로 실적을 열지 않는다', () => {
+    const now = Date.parse('2026-09-18T00:00:00+09:00');
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-19' },
+        now,
+      ).ok,
+      false,
+    );
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-17' },
+        now,
+      ).ok,
+      false,
+    );
+    assert.equal(
+      progressPatch(
+        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
+        now,
+      ).ok,
+      true,
+    );
+  });
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
     const r = progressPatch({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
+  it('분납 인도완료는 최초 1회차를 실제 원장 사실로 함께 세운다', () => {
+    const r = progressPatch(
+      { paper: true, plate: '12가3456', payKind: '3회분납', delivered: false, deliveredAt: '', paidRounds: null },
+      { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
+      Date.parse('2026-09-18T12:00:00+09:00'),
+    );
+    assert.ok(r.ok);
+    if (!r.ok) return;
+    assert.equal(r.patch.paidRounds, 1);
+    assert.ok(r.events.some((e) => e.field === '받은회차' && e.to === '1'));
+  });
+
+  it('분납 인도 되돌림은 자동 1회차를 함께 풀되, 2회차 이상 납입 사실이 있으면 막는다', () => {
+    const firstOnly = progressPatch(
+      { payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18', paidRounds: 1, claimStage: '접수', payStage: '접수' },
+      { kind: 'delivered', on: false },
+    );
+    assert.ok(firstOnly.ok);
+    if (firstOnly.ok) {
+      assert.equal(firstOnly.patch.delivered, false);
+      assert.equal(firstOnly.patch.paidRounds, null);
+    }
+
+    const secondPaid = progressPatch(
+      { payKind: '3회분납', delivered: true, deliveredAt: '2026-09-18', paidRounds: 2, claimStage: '접수', payStage: '접수' },
+      { kind: 'delivered', on: false },
+    );
+    assert.equal(secondPaid.ok, false);
+    if (!secondPaid.ok) assert.match(secondPaid.error, /2회차 이상 납입/);
+  });
+  it('계약해지 뒤에는 분납 납입회차도 바꾸지 않는다', () => {
+    const cur = {
+      contractTerminatedAt: Date.now(),
+      payKind: '3회분납',
+      paidRounds: 1,
+      delivered: true,
+      deliveredAt: '2026-09-18',
+      claimStage: '접수',
+      payStage: '접수',
+    };
+    const r = progressPatch(cur, { kind: 'paidRounds', rounds: 2 });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /계약해지된 건/);
+  });
+
   it('계약해지 뒤에는 계약 핵심 사실을 바꾸지 않는다', () => {
     const cur = {
       contractTerminatedAt: Date.now(),
@@ -412,6 +503,20 @@ describe('받은 회차 찍기', () => {
     const r = progressPatch({ payKind: '2회분납', delivered: true, claimStage: '접수', payStage: '접수' }, { kind: 'paidRounds', rounds: 1 });
     assert.deepEqual(r.ok && r.patch, { paidRounds: 1 });
     assert.equal(progressPatch({ payKind: '2회분납', delivered: true, claimStage: '청구', payStage: '통보', billed: true }, { kind: 'paidRounds', rounds: 1 }).ok, false);
+  });
+  it('legacy 다회차 분납도 한 자리로 잘라 읽지 않는다', () => {
+    const r = progressPatch(
+      { payKind: '10회분납', delivered: true, claimStage: '접수', payStage: '접수' },
+      { kind: 'paidRounds', rounds: 7 },
+    );
+    assert.deepEqual(r.ok && r.patch, { paidRounds: 7 });
+    assert.equal(
+      progressPatch(
+        { payKind: '10회분납', delivered: true, claimStage: '접수', payStage: '접수' },
+        { kind: 'paidRounds', rounds: 11 },
+      ).ok,
+      false,
+    );
   });
 });
 

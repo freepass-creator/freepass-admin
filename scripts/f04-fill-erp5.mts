@@ -44,6 +44,9 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
+import { intakeEventDocId, settlementCode, settlementKey } from '../src/domain/settlement/code';
+import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -57,12 +60,17 @@ const APPLY = process.argv.includes('--apply');
 const FILL = process.argv.includes('--fill');
 const SA = 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json';
 const ROWS = 'settlement_rows';
+const EVENTS = 'settlement_events';
 const HELD = 'settlement_held';
 const STAMP = new Date().toISOString();
 const RUN = `f04fill-${STAMP.replace(/[-:T]/g, '').slice(0, 14)}`;
 
 const sa = JSON.parse(readFileSync(SA, 'utf8'));
 if (sa.project_id !== 'freepasserp5') throw new Error(`★ERP5 가 아니다: ${sa.project_id}`);
+if (!String(sa.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
+  throw new Error(`★ERP5 서비스계정이 아니다: ${String(sa.client_email ?? '')}`);
+}
+assertErp5MaintenanceWrite(process.env, APPLY, 'f04-fill-erp5', Date.now(), String(sa.client_email ?? ''));
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'fill'));
 
 // eslint-disable-next-line no-eval
@@ -105,20 +113,9 @@ const 견줌 = (v: unknown): string => {
   return t;
 };
 const 반듯 = (s: unknown) => String(s ?? '').replace(/\s/g, '');
-const 열쇠 = (r: Record<string, unknown>) => `${반듯(r.plate)}|${String(r.receivedAt ?? '').slice(0, 10)}`;
+const 열쇠 = (r: Record<string, unknown>) => settlementKey(r.plate, r.receivedAt);
 /** 문서 id 에 못 쓰는 글자를 뺀다 — 멱등 id 가 매번 같아야 한다. */
 const 안전id = (s: string) => s.replace(/[/#.$\[\]\s|]/g, '_');
-/**
- * ★ERP5 코드 규격 `stl_` — erp4 `lib/domain/ids.ts` `stableId` 와 «같은 셈법» 이다.
- *   ⚠ 셈법을 바꾸면 같은 계약에 다른 id 가 나와 두 줄이 선다. 고치려면 두 곳을 같이 고친다.
- */
-const ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
-const 결정id = (identity: string) => {
-  const d = createHash('sha256').update(`settlement:${identity.trim()}`, 'utf8').digest();
-  let t = ''; for (let i = 0; i < 10; i += 1) t += ALPHABET[d[i] % ALPHABET.length];
-  return `stl_${t}`;
-};
-
 /**
  * ★시트 사진이 묵었으면 «쓰지 않는다». 병행 중에는 시트가 계속 바뀐다 —
  *   묵은 사진으로 쓰면 그 사이 적힌 줄을 «없다» 고 보고 넘어간다.
@@ -152,8 +149,13 @@ type 칸셈 = { 새칸: number; 빈칸메움: number };
 const 칸별 = new Map<string, 칸셈>();
 const 셈 = (c: string) => { if (!칸별.has(c)) 칸별.set(c, { 새칸: 0, 빈칸메움: 0 }); return 칸별.get(c)!; };
 
-const 고칠것: { id: string; patch: Record<string, unknown> }[] = [];
-const 새줄: { id: string; data: Record<string, unknown> }[] = [];
+const 고칠것: {
+  id: string;
+  patch: Record<string, unknown>;
+  auditEventId: string;
+  events: Record<string, unknown>;
+}[] = [];
+const 새줄: { id: string; data: Record<string, unknown>; auditEventId: string; auditKey: string }[] = [];
 let 안바뀜 = 0, 달라도둠 = 0;
 const 다른칸 = new Map<string, number>();
 
@@ -171,14 +173,22 @@ for (const f of F04.rows as Record<string, unknown>[]) {
       deposit: null, price: null, payKind: '', paper: false, delivered: false, deliveredAt: '', note: '',
     }, Date.now());
     const data: Record<string, unknown> = { ...base, settleNote: '', fromSheet: 'F04 연동' };
-    for (const [c, v] of Object.entries(f)) if (!빈(v) && !안옮김.has(c)) data[c] = v;
+    for (const [c, v] of Object.entries(f)) {
+      if (빈(v) || 안옮김.has(c)) continue;
+      data[f04SettlementField(c)] = v;
+    }
     /** 청구·지급은 ERP5 이름으로 둔다 — 한 원장에 두 이름이 서면 안 된다 */
     if (!빈(f.claim)) data.claimWritten = f.claim;
     if (!빈(f.pay)) data.payWritten = f.pay;
-    const id = 결정id(k);
+    const id = settlementCode(data.plate, data.receivedAt);
+    const auditEventId = intakeEventDocId(
+      data.plate, data.sourceProductId, data.receivedAt, data.intakeRequestId, data.intakeIdentityMode,
+    );
+    const auditKey = 'aud_f04_' + createHash('sha256').update(`${id}|${RUN}`).digest('hex').slice(0, 16);
     data.code = id;
+    data.auditEventId = auditEventId;
     data._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, created: true };
-    새줄.push({ id, data });
+    새줄.push({ id, data, auditEventId, auditKey });
     continue;
   }
 
@@ -186,15 +196,34 @@ for (const f of F04.rows as Record<string, unknown>[]) {
   const patch: Record<string, unknown> = {};
   for (const [c, v] of Object.entries(f)) {
     if (빈(v) || 안옮김.has(c)) continue;
-    const 있던 = e.data[c];
-    if (!(c in e.data)) { patch[c] = v; 셈(c).새칸++; continue; }
-    if (빈(있던)) { patch[c] = v; 셈(c).빈칸메움++; continue; }
+    const field = f04SettlementField(c);
+    const 있던 = e.data[field];
+    if (!(field in e.data)) { patch[field] = v; 셈(field).새칸++; continue; }
+    if (빈(있던)) { patch[field] = v; 셈(field).빈칸메움++; continue; }
     /* ★이미 값이 있다 — 달라도 «안 건드린다». 세어만 둔다 */
-    if (견줌(있던) !== 견줌(v)) { 달라도둠++; 다른칸.set(c, (다른칸.get(c) ?? 0) + 1); }
+    if (견줌(있던) !== 견줌(v)) { 달라도둠++; 다른칸.set(field, (다른칸.get(field) ?? 0) + 1); }
   }
   if (Object.keys(patch).length && FILL) {
-    patch._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, filled: Object.keys(patch) };
-    고칠것.push({ id: e.id, patch });
+    const filled = Object.keys(patch);
+    const auditEventId = String(e.data.auditEventId ?? '').trim() || intakeEventDocId(
+      e.data.plate, e.data.sourceProductId, e.data.receivedAt, e.data.intakeRequestId, e.data.intakeIdentityMode,
+    );
+    const events: Record<string, unknown> = {};
+    for (const field of filled) {
+      const key = 'aud_f04_' + createHash('sha256').update(`${e.id}|${RUN}|${field}`).digest('hex').slice(0, 16);
+      events[key] = {
+        at: Date.parse(STAMP),
+        by: 'f04-import',
+        field,
+        from: '',
+        to: String(patch[field] ?? ''),
+        source: 'F04',
+        run: RUN,
+      };
+    }
+    patch.auditEventId = auditEventId;
+    patch._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, filled };
+    고칠것.push({ id: e.id, patch, auditEventId, events });
   } else if (!Object.keys(patch).length) 안바뀜++;
 }
 
@@ -258,14 +287,32 @@ if (APPLY) {
   /** 한 번에 500 이 Firestore 한도다. 넉넉히 400씩 */
   const 묶음 = <T,>(xs: T[], n = 400) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
   let n = 0;
-  for (const b of 묶음(고칠것)) {
+  /* 기존 줄의 빈칸 메움도 원장 + field별 audit event를 같은 batch에 쓴다. */
+  for (const b of 묶음(고칠것, 200)) {
     const w = db.batch();
-    for (const x of b) w.set(db.collection(ROWS).doc(x.id), { ...x.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    for (const x of b) {
+      w.set(db.collection(ROWS).doc(x.id), { ...x.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      w.set(db.collection(EVENTS).doc(x.auditEventId), x.events, { merge: true });
+    }
     await w.commit(); n += b.length;
   }
-  for (const b of 묶음(새줄)) {
+  /* 새 접수는 원장 + 최초 audit event를 같은 batch에 쓴다. 1줄당 2 write라 200개씩 묶어 500 한도를 넘지 않는다. */
+  for (const b of 묶음(새줄, 200)) {
     const w = db.batch();
-    for (const x of b) w.set(db.collection(ROWS).doc(x.id), { ...x.data, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+    for (const x of b) {
+      w.set(db.collection(ROWS).doc(x.id), { ...x.data, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+      w.set(db.collection(EVENTS).doc(x.auditEventId), {
+        [x.auditKey]: {
+          at: Date.parse(STAMP),
+          by: 'f04-import',
+          field: '접수',
+          from: '',
+          to: x.id,
+          source: 'F04',
+          run: RUN,
+        },
+      }, { merge: true });
+    }
     await w.commit(); n += b.length;
   }
   for (const b of 묶음(보류)) {

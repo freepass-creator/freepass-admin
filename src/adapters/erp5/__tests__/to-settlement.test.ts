@@ -183,3 +183,29 @@ describe('계약금 수납 projection', () => {
   });
 });
 
+
+
+describe('F04 legacy installment round compatibility', () => {
+  it('legacy rounds field is restored as paidRounds', () => {
+    const { row } = toSettlementRow({
+      code: 'stl_legacy_rounds',
+      plate: '11가1111',
+      supplier: '공급사',
+      payKind: '3회분납',
+      rounds: 2,
+    }, 'stl_legacy_rounds');
+    assert.equal(row.paidRounds, 2);
+  });
+
+  it('current paidRounds wins over legacy rounds when both exist', () => {
+    const { row } = toSettlementRow({
+      code: 'stl_current_rounds',
+      plate: '11가1111',
+      supplier: '공급사',
+      payKind: '3회분납',
+      paidRounds: 3,
+      rounds: 2,
+    }, 'stl_current_rounds');
+    assert.equal(row.paidRounds, 3);
+  });
+});

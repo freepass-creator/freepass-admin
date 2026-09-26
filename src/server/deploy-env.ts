@@ -1,3 +1,6 @@
+import { parseErp5WriteApproval } from '../shared/erp5-write-approval';
+import { parseAdminCutoverApproval, type AdminCutoverStage } from '../shared/freepass-data-admin-cutover';
+
 /**
  * **배포 전 환경변수 점검** — 값은 절대 출력하지 않는다. 있는지 · 꼴이 맞는지만 본다.
  * 운영 개시 결정(DEC-2026-09-25-05): Vercel · 별도 도메인 없음 · 전자계약 off · Workspace 로그인.
@@ -36,27 +39,58 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
 
   /* FreePass Data (Firestore freepasserp5) */
   const raw = env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  let serviceAccountEmail: string | null = null;
   if (!raw) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', '서비스계정 JSON 전체가 필요합니다');
   else {
     try {
       const sa = JSON.parse(raw) as Record<string, unknown>;
-      if (!sa.client_email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
+      const email = String(sa.client_email ?? '').trim();
+      serviceAccountEmail = email || null;
+      if (!email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
       else if (sa.project_id !== ERP5_PROJECT_ID) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `project_id 가 ${ERP5_PROJECT_ID} 가 아닙니다`);
-      else ok('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `${ERP5_PROJECT_ID} 서비스계정`);
+      else if (!email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
+        err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `client_email 이 ${ERP5_PROJECT_ID} 서비스계정이 아닙니다`);
+      } else ok('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `${ERP5_PROJECT_ID} 서비스계정`);
     } catch { err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'JSON 으로 읽히지 않습니다(따옴표·줄바꿈 확인)'); }
   }
   if (set(env, 'ERP5_SERVICE_ACCOUNT_PATH')) warn('ERP5_SERVICE_ACCOUNT_PATH', '배포에서는 파일 경로가 아니라 JSON 값을 씁니다');
 
   /* 쓰기 · 전자계약 · 카탈로그 */
   const write = env.ERP5_WRITE?.trim() || 'off';
-  if (write !== 'on' && write !== 'off') err('ERP5_WRITE', 'on 또는 off');
-  else if (write === 'on') warn('ERP5_WRITE', 'on — 첫 배포는 off 로 조회 확인 후 켭니다(OPERATIONS-FIRST-USE.md)');
-  else ok('ERP5_WRITE', 'off (조회 전용)');
+  if (write !== 'on' && write !== 'off') {
+    err('ERP5_WRITE', 'on 또는 off');
+  } else if (write === 'on') {
+    const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON);
+    if (!approval.ok) {
+      err('ERP5_WRITE_APPROVAL_JSON', `운영 쓰기 승인 증거가 불완전합니다 — ${approval.reason}`);
+    } else {
+      const appOrigin = originOf(env.APP_BASE_URL?.trim() ?? '');
+      if (!serviceAccountEmail || approval.value.serviceAccountEmail !== serviceAccountEmail) {
+        err('ERP5_WRITE_APPROVAL_JSON', '승인 serviceAccountEmail과 실제 배포 서비스계정이 다릅니다');
+      } else if (!appOrigin || approval.value.productionOrigin !== appOrigin) {
+        err('ERP5_WRITE_APPROVAL_JSON', '승인 productionOrigin과 APP_BASE_URL이 다릅니다');
+      } else {
+        ok('ERP5_WRITE', `on — IAM/backup-restore 승인 ${approval.value.approvalRef}`);
+      }
+    }
+  } else {
+    ok('ERP5_WRITE', 'off (조회 전용)');
+  }
   if (env.ESIGN_ENABLED?.trim() === 'on') warn('ESIGN_ENABLED', 'on — 전자계약은 운영 개시 범위 밖입니다(DEC-2026-09-25-05)');
   else ok('ESIGN_ENABLED', 'off (전자계약 닫힘)');
-  const mode = env.FREEPASS_DATA_ADMIN_CATALOG_READ_MODE?.trim();
-  if (mode && mode !== 'OBSERVE') warn('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', `${mode} — 승인된 모드는 OBSERVE 입니다`);
-  else ok('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', 'OBSERVE');
+  const mode = (env.FREEPASS_DATA_ADMIN_CATALOG_READ_MODE?.trim() || 'OBSERVE') as AdminCutoverStage;
+  if (mode === 'OBSERVE') {
+    ok('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', 'OBSERVE');
+  } else if (mode === 'SHADOW_READ' || mode === 'PARITY_VERIFIED' || mode === 'FREEPASS_DATA_READ') {
+    const cutover = parseAdminCutoverApproval(env.FREEPASS_DATA_ADMIN_CUTOVER_JSON, env, mode);
+    if (!cutover.ok) {
+      err('FREEPASS_DATA_ADMIN_CUTOVER_JSON', `${mode} 승인 증거가 불완전합니다 — ${cutover.reason}`);
+    } else {
+      ok('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', `${mode} · 승인 ${cutover.approval.approvalRef}`);
+    }
+  } else {
+    err('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', `${mode} — 운영에서는 OBSERVE 또는 증거가 승인된 전진 단계만 허용합니다`);
+  }
 
   /* 주소 — 도메인 없이 Vercel production *.vercel.app */
   const urls = ['APP_BASE_URL', 'PUBLIC_BASE_URL', 'CLAIM_LINK_BASE'] as const;
@@ -75,6 +109,9 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   /* 운영에 있으면 안 되는 것 */
   for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FPA_DATA_DIR']) {
     if (set(env, k)) err(k, '운영 환경에 두면 안 됩니다');
+  }
+  if (env.FPA_DEMO?.trim() === 'on') {
+    err('FPA_DEMO', '가상 데이터는 개발/미리보기 전용입니다 — 운영 환경에서는 제거해야 합니다');
   }
   if (env.ADMIN_AUTH?.trim() === 'off') warn('ADMIN_AUTH', '운영에서는 무시되지만 혼동을 막기 위해 지웁니다');
   return out;

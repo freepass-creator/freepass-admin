@@ -119,3 +119,29 @@ test('legacy stored snapshot can derive its digest for safe retry comparison',()
   };
   assert.equal(catalogRetryConflict(existing,incoming),null);
 });
+
+
+test('catalog snapshot seals the selected Offer supplier identity', () => {
+  const p = product();
+  p.supplierId = 'PRODUCT-SUP';
+  p.supplierName = '상품 공급사';
+  const o = offer();
+  o.supplierId = 'OFFER-SUP';
+  o.supplierName = '실제 선택 공급사';
+
+  const snapshot = buildIntakeCatalogSnapshot(p, o, '2026-09-26T00:00:00.000Z');
+  assert.equal(snapshot.offer.supplierId, 'OFFER-SUP');
+  assert.equal(snapshot.offer.supplierName, '실제 선택 공급사');
+});
+
+test('catalog snapshot digest changes when selected Offer supplier changes', () => {
+  const p = product();
+  const left = offer();
+  left.supplierId = 'SUP-A';
+  const right = structuredClone(left);
+  right.supplierId = 'SUP-B';
+
+  const a = buildIntakeCatalogSnapshot(p, left, '2026-09-26T00:00:00.000Z');
+  const b = buildIntakeCatalogSnapshot(p, right, '2026-09-26T00:00:00.000Z');
+  assert.notEqual(a.digest, b.digest);
+});

@@ -12,8 +12,8 @@ const firestoreWrite = (source: string) => {
     /firebase-admin\/firestore/.test(source)
     || /adapters\/erp5\/firestore/.test(source);
   const writes =
-    /\.batch\(\)/.test(source)
-    || /\.(?:set|update|create|delete)\(/.test(source);
+    /\b(?:w|batch)\.(?:set|update|create|delete)\(/.test(source)
+    || /db\.collection\([^\n]+\)\.doc\([^\n]+\)\.(?:set|update|create|delete)\(/.test(source);
   return reachesFirestore && writes;
 };
 

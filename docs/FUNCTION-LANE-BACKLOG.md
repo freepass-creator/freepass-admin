@@ -19,3 +19,18 @@ This historical branch is not canonical and must not be merged wholesale. Preser
 - Keep these contract-condition atoms separate from fee-basis fields such as rent/price.
 
 Before implementation, reconcile these atoms with current `main`/`work/function`, current FreePass Data schema, and current intake snapshot contract. Add regression tests in the same change. Do not resurrect the historical branch.
+
+
+## Cross-lane e-sign cancellation coordination
+
+Historical integration PR #103 contained useful cancellation/e-sign race handling that is not fully represented after the function/e-sign lanes were separated.
+
+Preserve the requirement, not the old implementation:
+
+- Contract cancellation must not race through a fresh e-sign submitting/approving claim.
+- A stale claim must be recoverable under an explicit TTL rule.
+- An idempotent cancellation retry must not leave an active signing session attached to an already-cancelled contract.
+- E-sign writes after contract cancellation/termination must fail closed instead of reviving sign state.
+- Cancellation reason/operation id drift remains rejected by the current contract cancellation domain.
+
+Ownership: contract facts remain in `work/function`; e-sign session state remains in `work/esign`. Define the integration contract through `main` rather than creating a bridge branch.

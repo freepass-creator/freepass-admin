@@ -315,6 +315,30 @@ for (const [file, rules] of businessFlowBaseline) {
   }
 }
 
+const desktopSettlementFocusBaseline = [
+  ['src/app/_erp/SettlementScreen.tsx', [
+    /locateSettlementFocus/,
+    /focus: r\.id/,
+    /<SettlementDetail cur=\{focusedLine\.row\}/,
+  ]],
+  ['src/app/_erp/SettlementDetail.tsx', [
+    /settlementPrimaryAction/,
+    /<LifeForm/,
+    /<SideStep/,
+    /정산 묶음으로/,
+  ]],
+] as const;
+for (const [file, rules] of desktopSettlementFocusBaseline) {
+  const src = await readSource(file);
+  for (const re of rules) {
+    if (!re.test(src)) errors.push(`${file}: desktop settlement focus contract missing: ${re}`);
+  }
+}
+const settlementDesktopSourceForRoute = await readSource('src/app/_erp/SettlementScreen.tsx');
+if (/\/intake\?ic=/.test(settlementDesktopSourceForRoute)) {
+  errors.push('SettlementScreen.tsx: desktop settlement row must stay on /settlement focus context');
+}
+
 const terminologyBaseline = [
   ['src/app/intake/new/IntakeForm.tsx', [
     /월 대여료/,

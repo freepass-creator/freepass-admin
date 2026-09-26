@@ -44,6 +44,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
+import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -171,7 +172,10 @@ for (const f of F04.rows as Record<string, unknown>[]) {
       deposit: null, price: null, payKind: '', paper: false, delivered: false, deliveredAt: '', note: '',
     }, Date.now());
     const data: Record<string, unknown> = { ...base, settleNote: '', fromSheet: 'F04 연동' };
-    for (const [c, v] of Object.entries(f)) if (!빈(v) && !안옮김.has(c)) data[c] = v;
+    for (const [c, v] of Object.entries(f)) {
+      if (빈(v) || 안옮김.has(c)) continue;
+      data[f04SettlementField(c)] = v;
+    }
     /** 청구·지급은 ERP5 이름으로 둔다 — 한 원장에 두 이름이 서면 안 된다 */
     if (!빈(f.claim)) data.claimWritten = f.claim;
     if (!빈(f.pay)) data.payWritten = f.pay;
@@ -186,11 +190,12 @@ for (const f of F04.rows as Record<string, unknown>[]) {
   const patch: Record<string, unknown> = {};
   for (const [c, v] of Object.entries(f)) {
     if (빈(v) || 안옮김.has(c)) continue;
-    const 있던 = e.data[c];
-    if (!(c in e.data)) { patch[c] = v; 셈(c).새칸++; continue; }
-    if (빈(있던)) { patch[c] = v; 셈(c).빈칸메움++; continue; }
+    const field = f04SettlementField(c);
+    const 있던 = e.data[field];
+    if (!(field in e.data)) { patch[field] = v; 셈(field).새칸++; continue; }
+    if (빈(있던)) { patch[field] = v; 셈(field).빈칸메움++; continue; }
     /* ★이미 값이 있다 — 달라도 «안 건드린다». 세어만 둔다 */
-    if (견줌(있던) !== 견줌(v)) { 달라도둠++; 다른칸.set(c, (다른칸.get(c) ?? 0) + 1); }
+    if (견줌(있던) !== 견줌(v)) { 달라도둠++; 다른칸.set(field, (다른칸.get(field) ?? 0) + 1); }
   }
   if (Object.keys(patch).length && FILL) {
     patch._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, filled: Object.keys(patch) };

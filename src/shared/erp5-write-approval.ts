@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 export type Erp5WriteApproval = {
   projectId: string;
   iamVerified: boolean;
@@ -34,10 +35,14 @@ function httpsOrigin(raw: unknown): string | null {
 
 function runtimeServiceAccountEmail(env: Record<string, string | undefined>): string | null {
   const raw = env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (!raw) return null;
+  const path = env.ERP5_SERVICE_ACCOUNT_PATH?.trim();
   try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return String(parsed.client_email ?? '').trim() || null;
+    const parsed = raw
+      ? JSON.parse(raw) as Record<string, unknown>
+      : path
+        ? JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+        : null;
+    return parsed ? (String(parsed.client_email ?? '').trim() || null) : null;
   } catch {
     return null;
   }
@@ -168,6 +173,7 @@ export function assertErp5MaintenanceWrite(
   apply: boolean,
   label: string,
   now = Date.now(),
+  actualServiceAccountEmail?: string,
 ): void {
   if (!apply) return;
   const emulatorHost = env.FIRESTORE_EMULATOR_HOST?.trim();
@@ -183,5 +189,13 @@ export function assertErp5MaintenanceWrite(
   const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON, now);
   if (!approval.ok) {
     throw new Error(`${label}: write approval missing — ${approval.reason}`);
+  }
+  const actualEmail = actualServiceAccountEmail?.trim() || runtimeServiceAccountEmail(env);
+  if (!actualEmail || actualEmail !== approval.value.serviceAccountEmail) {
+    throw new Error(`${label}: approved service account does not match the actual maintenance credential`);
+  }
+  const actualOrigin = env.APP_BASE_URL?.trim() ? httpsOrigin(env.APP_BASE_URL) : null;
+  if (env.APP_BASE_URL?.trim() && actualOrigin !== approval.value.productionOrigin) {
+    throw new Error(`${label}: approved production origin does not match APP_BASE_URL`);
   }
 }

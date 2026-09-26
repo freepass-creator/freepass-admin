@@ -69,6 +69,8 @@ export function isCalendarDay(value: unknown): boolean {
   return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === day;
 }
 
+const koreaDay = (nowMs = Date.now()) => new Date(nowMs + 9 * 3600_000).toISOString().slice(0, 10);
+
 /**
  * ★최초 접수 필수값 — 차량 identity(차번 또는 Product ID) · 영업채널 · 담당자 · 고객명 · 접수일 · 분납여부.
  * 분납여부는 F04의 청구월/분납실적 판정 원자다. 빈 값으로 두면 인도 뒤 청구월을 확정적으로 계산할 수 없다.
@@ -101,6 +103,10 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   /* 인도는 실제 관측 사실이라 계약서와 독립적으로 기록한다. 단, 날짜 없는 인도완료는 받지 않는다. */
   if (x.delivered && !x.plate.trim()) e.push('차량번호를 배정한 뒤 인도완료할 수 있습니다');
   if (x.delivered && !isCalendarDay(x.deliveredAt)) e.push('인도완료를 켜려면 유효한 인도일을 같이 넣어야 합니다');
+  else if (x.delivered) {
+    if (x.deliveredAt > today) e.push(`인도일 ${x.deliveredAt} 은 오늘(${today}) 뒤일 수 없습니다`);
+    if (isCalendarDay(x.receivedAt) && x.deliveredAt < x.receivedAt) e.push(`인도일은 접수일(${x.receivedAt})보다 빠를 수 없습니다`);
+  }
   if (x.promotion?.amount && x.promotion.agentShare === null) e.push('프로모션 영업자 몫은 0~100% 로 넣습니다');
   for (const [k, v] of [['청구 수수료', x.feeManual?.claim], ['지급 수수료', x.feeManual?.pay]] as const) {
     if (v !== null && v !== undefined && (!Number.isFinite(v) || v < 0)) e.push(`${k} 값을 읽지 못했습니다`);
@@ -194,7 +200,7 @@ export type ProgressEvent = { field: string; from: string; to: string };
  * (`settlement_events` 실측 — 「인도일」 · 「인도완료」). 같은 말을 써야 한 이력으로 읽힌다.
  */
 export function progressPatch(
-  cur: Record<string, unknown>, c: ProgressChange,
+  cur: Record<string, unknown>, c: ProgressChange, nowMs = Date.now(),
 ): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
   const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
   const S = (v: unknown) => String(v ?? '').trim();
@@ -257,6 +263,12 @@ export function progressPatch(
       if (!S(cur.plate).replace(/\s/g, '')) return { ok: false, error: '차량번호를 먼저 배정해야 인도 완료할 수 있습니다' };
       const day = S(c.deliveredAt).trim();
       if (!isCalendarDay(day)) return { ok: false, error: '인도완료를 켜려면 유효한 인도일을 같이 넣어야 합니다' };
+      const today = koreaDay(nowMs);
+      if (day > today) return { ok: false, error: `인도일 ${day} 은 오늘(${today}) 뒤일 수 없습니다` };
+      const receivedAt = S(cur.receivedAt);
+      if (isCalendarDay(receivedAt) && day < receivedAt) {
+        return { ok: false, error: `인도일은 접수일(${receivedAt})보다 빠를 수 없습니다` };
+      }
       if (B(cur.delivered) && S(cur.deliveredAt) !== day && settlementStarted()) {
         return { ok: false, error: '정산이 시작된 뒤에는 인도일을 바꿀 수 없습니다' };
       }

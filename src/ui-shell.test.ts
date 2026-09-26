@@ -127,6 +127,17 @@ test('desktop settlement detail exposes authoritative lifecycle actions without 
   }
 });
 
+test('desktop focused settlement detail prioritizes current work and collapses support information',()=>{
+  assert.ok(settlementDetailDesktop.includes('data-detail-context={life ? \'settlement-focus\' : \'intake\'}'));
+  assert.ok(settlementDetailDesktop.includes('data-detail-priority="core"'));
+  assert.ok(settlementDetailDesktop.includes('정산 핵심'));
+  assert.ok(settlementDetailDesktop.includes('<details className="erp-tile erp-detail-support">'));
+  assert.ok(settlementDetailDesktop.includes('계약 · 접수 정보'));
+  assert.ok(settlementDetailDesktop.includes('처리 이력'));
+  const focusBranch=settlementDetailDesktop.slice(settlementDetailDesktop.indexOf('{life ? ('),settlementDetailDesktop.indexOf(') : (',settlementDetailDesktop.indexOf('{life ? (')));
+  assert.equal(focusBranch.includes('<IntakeProgress'),false,'focused settlement must not repeat intake mutation controls');
+});
+
 
 test('settlement completed row offers next actionable work',()=>{
   assert.ok(settlementPage.includes('nextActionablePerformanceCode'));

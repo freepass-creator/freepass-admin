@@ -1,11 +1,79 @@
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-25
+최종 갱신: 2026-09-26
 프로젝트: freepass-admin (구 freepasserp.com 저장소)
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 
 > Work 작업 시작 전 반드시 이 문서와 `AGENTS.md`, `docs/MASTER-v1.md`를 읽는다. 이 문서는 대화 전체를 복사하는 곳이 아니라 **현재 개발에 영향을 주는 최신 결정·시뮬레이션·HOLD·다음 작업**만 요약한다.
 
+
+
+## 0-AAAAA. 2026-09-26 현재 ACTIVE 브랜치 — 임시 작업 브랜치 2개
+
+브랜치는 더 이상 Function/UIUX/E-sign 고정 lane으로 재사용하지 않는다. 브랜치는 현재 변경을 격리하는 임시 작업 공간이며, 완료 후 main merge + 폐기한다.
+
+현재 ACTIVE branch:
+- `work/ui/finalize-baseline` — UI/UX 최종 확정
+- `work/release/operational-launch` — 운영 개시
+
+과거 branch:
+- `work/function` — ARCHIVE / 신규 개발 금지
+- `work/esign` — ARCHIVE / 신규 개발 금지
+- `work/uiux` — REFERENCE-ONLY UI donor / 신규 개발 금지
+
+AI 인계:
+- 새 AI가 와도 새 branch를 만들지 않는다.
+- 해당 ACTIVE branch HEAD와 branch-local work order를 읽고 같은 branch에서 이어간다.
+- 한 시점에 writer는 branch당 1명.
+- 새 병렬 작업이 실제로 필요할 때만 최신 main에서 새 임시 branch를 만들며, 먼저 `docs/BRANCH-WORKFLOW.md`와 `registry/active-work.json`을 갱신한다.
+
+현재 merge 순서:
+1. UI/UX 최종화 → Visual QA → 사용자 승인 → main
+2. 운영개시 branch에 최신 main(UI 최종본 포함) 반영
+3. production auth / FreePass Data read-write / smoke / rollback 검증
+4. 운영 개시 → main
+
+정본: `docs/BRANCH-WORKFLOW.md`
+machine registry: `registry/active-work.json`
+
+---
+
+## 0-AAAA. 2026-09-26 기능 단일축 + 취소/해지 최신 확정
+
+기능 작업은 이제 docs/FUNCTION-AUTHORITY.md와 current main 한 축만 사용한다.
+
+### 기능 정본
+- 코드 정본: main
+- 접수 정본: Intake / settlement_rows / src/domain/settlement/**
+- 데이터 진입점: src/server/freepass-data.ts
+- 과거 src/domain/application/** + src/services/applications.ts + file/json Application Repository는 **LEGACY_QUARANTINED**
+- 과거 기능 브랜치는 통째로 merge하지 않는다. current main에 없는 의미/테스트만 선별 이식한다.
+- PR/작업 브랜치는 merge 전 staging/evidence이며 정본이 아니다.
+
+### 취소 / 해지 — 이 기준이 아래 0-A의 인도 전 취소 설명을 덮어쓴다
+
+```text
+계약금 수납 전
+  → 접수취소
+
+계약금 수납 후 + 인도 전
+  → 계약취소
+
+인도 후
+  → 계약해지
+  → 환수 검토
+```
+
+- 판정 기준은 전자계약 서명 여부가 아니라 **계약금 실제 수납 사실**이다.
+- 계약금과 상품의 차량 보증금(deposit)은 완전히 다른 사실이다.
+- 보증금 값으로 계약금 수납 여부를 추론하지 않는다.
+- 계약금 수납은 금액/일시/operation 또는 receipt 식별자를 가진 별도 업무 사실로 보존한다.
+- 계약해지는 기존 실적·청구·수금·지급을 되돌리지 않고 환수 검토만 연다.
+
+상세 기능 권위: docs/FUNCTION-AUTHORITY.md
+결정 기록: docs/DECISIONS.md의 DEC-2026-09-26-01
+
+---
 
 ## 0-AAA. 2026-09-25 Product/Offer → Intake sealed snapshot — 최신 확정
 

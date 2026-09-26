@@ -488,3 +488,45 @@ describe('접수취소 경계 — 계약 연결 여부가 별도 업무를 만�
   });
 });
 
+describe('취소 경계 — 계약금 수납 사실이 기준', () => {
+  const payment = {
+    contractPaymentAmount: 500_000,
+    contractPaymentReceivedAt: 1000,
+    contractPaymentOperationId: 'contractpay_1234567890abcdef',
+    contractPaymentReceiptId: 'bank-1',
+  };
+
+  it('계약금 수납 전에는 접수취소가 된다', () => {
+    const r = progressPatch({ claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: true, reason: '고객 변심' });
+    assert.equal(r.ok, true);
+    if (!r.ok) return;
+    assert.equal(r.patch.cancelled, true);
+  });
+
+  it('계약금 수납 후에는 접수취소를 막고 계약취소로 보낸다', () => {
+    const r = progressPatch({ ...payment, claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: true, reason: '고객 변심' });
+    assert.equal(r.ok, false);
+    if (r.ok) return;
+    assert.match(r.error, /계약금 수납 후.*계약취소/);
+  });
+
+  it('불완전한 계약금 기록을 미수납으로 추정하지 않는다', () => {
+    const r = progressPatch({ contractPaymentAmount: 500_000, claimStage: '접수', payStage: '접수' }, { kind: 'cancelled', on: true, reason: '고객 변심' });
+    assert.equal(r.ok, false);
+    if (r.ok) return;
+    assert.match(r.error, /계약금 수납 기록이 불완전/);
+  });
+
+  it('계약취소된 건은 접수취소 풀기로 되살리지 않는다', () => {
+    const r = progressPatch({
+      cancelled: true,
+      contractCancelledAt: 1000,
+      claimStage: '접수',
+      payStage: '접수',
+    }, { kind: 'cancelled', on: false });
+    assert.equal(r.ok, false);
+    if (r.ok) return;
+    assert.match(r.error, /계약취소된 건/);
+  });
+});
+

@@ -1,0 +1,47 @@
+name: Branch Hygiene
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: write
+
+jobs:
+  maintain-fixed-lanes:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync fixed lane or delete temporary branch
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          case "$HEAD_REF" in
+            work/function|work/uiux|work/esign)
+              git fetch origin "$HEAD_REF"
+              CURRENT="$(git rev-parse "origin/$HEAD_REF")"
+              if [[ "$CURRENT" != "$HEAD_SHA" ]]; then
+                echo "::warning::$HEAD_REF advanced after the merged PR; skip automatic reset"
+                exit 0
+              fi
+              echo "syncing fixed lane $HEAD_REF to latest main"
+              git push --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA" origin HEAD:"refs/heads/$HEAD_REF"
+              ;;
+            *)
+              echo "deleting merged temporary branch: $HEAD_REF"
+              git push origin --delete "$HEAD_REF"
+              ;;
+          esac

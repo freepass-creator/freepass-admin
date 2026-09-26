@@ -183,3 +183,45 @@ CI `freepass-data-boundary.test.ts`가 App/Server/Service의 직접 ERP5/Firebas
 ### 쓰기
 접수·실적·청구·지급·환수 mutation은 FreePass Data repository transaction을 통해 Firestore에 기록한다.
 상품 기반 접수는 저장 직전 FreePass Data에서 Product/Offer를 fresh read하여 version/snapshot drift를 fail-closed 한다.
+
+---
+
+## DEC-2026-09-26-01 — 기능 개발 단일축과 취소/해지 판정 기준
+상태: USER CONFIRMED / ADOPTED
+대체 관계: **DEC-2026-09-25-03의 인도 전 취소 정의를 이 결정이 덮어쓴다.**
+
+### 기능 개발 단일축
+- 기능 런타임의 코드 정본은 main 한 곳이다.
+- 기능 작업의 단일 진입점은 docs/FUNCTION-AUTHORITY.md다.
+- 현재 접수 정본은 Intake / settlement_rows / src/domain/settlement/**다.
+- 과거 src/domain/application/**, src/services/applications.ts, file/json Application Repository는 **LEGACY_QUARANTINED**다.
+- 과거 diverged 브랜치는 통째로 merge하지 않고 current main에 없는 유효한 의미와 회귀테스트만 선별 이식한다.
+- PR/작업 브랜치는 merge 전에는 staging/evidence일 뿐 기능 정본이 아니다.
+
+### 접수취소 / 계약취소 / 계약해지
+업무 판정축은 전자서명 여부가 아니라 **계약금 실제 수납 사실**과 **인도 사실**이다.
+
+```text
+계약금 수납 전
+  → 접수취소
+
+계약금 수납 후 + 인도 전
+  → 계약취소
+
+인도 후
+  → 계약해지
+  → 환수 검토
+```
+
+### 계약금과 보증금 구분
+- 여기서 계약금은 고객에게 실제로 받은 **계약금 수납 사실**이다.
+- 상품/Offer의 차량 **보증금(deposit)** 과 계약금은 다른 업무 사실이다.
+- 보증금이 0원/유/무인지로 계약금 수납 여부를 추론하지 않는다.
+- 계약금 수납은 최소한 금액, 수납시각, operation/receipt 식별자를 추적할 수 있는 사실로 모델링한다.
+
+### 후속 처리
+- 접수취소는 계약금 수납 전 접수 종료다.
+- 계약취소는 계약금 수납 후 인도 전 계약 종료다. 계약금 환불/공제 등 금전 후속은 별도 규칙과 증거로 처리한다.
+- 계약해지는 인도 후 종료이며 기존 실적·청구·수금·지급 이력을 되돌리지 않는다.
+- 계약해지는 환수 검토대상을 만들지만 환수 여부/금액을 자동 확정하지 않는다.
+

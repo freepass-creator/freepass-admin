@@ -26,29 +26,53 @@ import type { Maybe, SettlementRow } from './types';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const p2 = (n: number) => String(n).padStart(2, '0');
-export const ym = (d: Date) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}`;
-const dateOf = (v: unknown): Date | null => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(S(v));
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** 업무 달력은 Asia/Seoul 고정. 서버(UTC)·브라우저(KST)가 같은 사실을 다르게 판정하지 않는다. */
+const businessParts = (d: Date) => {
+  const kst = new Date(d.getTime() + KST_OFFSET_MS);
+  return { y: kst.getUTCFullYear(), m: kst.getUTCMonth(), d: kst.getUTCDate() };
 };
+export const ym = (d: Date) => {
+  const x = businessParts(d);
+  return `${x.y}-${p2(x.m + 1)}`;
+};
+
+/** 저장된 날짜는 실제 달력 날짜만 받는다. JS Date overflow(2026-02-30 → 03-02)를 사실로 만들지 않는다. */
+const dateOf = (v: unknown): Date | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(S(v));
+  if (!m) return null;
+  const y = Number(m[1]), mo = Number(m[2]) - 1, day = Number(m[3]);
+  const d = new Date(Date.UTC(y, mo, day));
+  return d.getUTCFullYear() === y && d.getUTCMonth() === mo && d.getUTCDate() === day ? d : null;
+};
+
 /**
  * 달을 더할 때 원래 일자가 대상 월에 없으면 그 달의 마지막 날로 붙인다.
  * 예: 2026-01-31 + 1개월 = 2026-02-28, 2026-10-31 + 1개월 = 2026-11-30.
- * JS Date 생성자의 overflow(2월 31일 → 3월 3일)가 회차일·청구월을 밀지 못하게 한다.
+ * 날짜-only 값은 UTC 자정으로 들고 계산해 실행 환경 timezone에 영향받지 않는다.
  */
 const addMonths = (d: Date, n: number) => {
-  const targetFirst = new Date(d.getFullYear(), d.getMonth() + n, 1);
-  const lastDay = new Date(targetFirst.getFullYear(), targetFirst.getMonth() + 1, 0).getDate();
-  return new Date(targetFirst.getFullYear(), targetFirst.getMonth(), Math.min(d.getDate(), lastDay));
+  const targetFirst = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
+  const lastDay = new Date(Date.UTC(targetFirst.getUTCFullYear(), targetFirst.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetFirst.getUTCFullYear(), targetFirst.getUTCMonth(), Math.min(d.getUTCDate(), lastDay)));
 };
-/** ★«오늘» 은 자정이다 — 시각이 붙으면 만료가 오늘인 건이 「지났다」 가 된다(erp4 2026-08-25 사고) */
-export const midnight = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const dayText = (d: Date) => `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`;
+
+/** ★«오늘»은 한국 업무일의 자정이다. */
+export const midnight = (d = new Date()) => {
+  const x = businessParts(d);
+  return new Date(Date.UTC(x.y, x.m, x.d));
+};
 
 export const roundsOf = (payKind: unknown) => { const m = /(\d+)\s*회/.exec(S(payKind)); const n = m ? Number(m[1]) : 1; return n >= 2 ? n : 1; };
 
 type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
-  progress: Pick<SettlementRow['progress'], 'delivered' | 'deliveredAt' | 'cancelled' | 'billMonth'>;
+  progress: Pick<SettlementRow['progress'], 'delivered' | 'deliveredAt' | 'cancelled' | 'billMonth'>
+    & Partial<Pick<SettlementRow['progress'], 'billed' | 'invoiceIssued' | 'collected' | 'paid' | 'settleExclude'>>;
   paidRounds?: Maybe<number>;
+  claimStage?: SettlementRow['claimStage'];
+  payStage?: SettlementRow['payStage'];
 };
 const deliveredDay = (r: R) => (r.progress.delivered ? dateOf(r.progress.deliveredAt) : null);
 
@@ -81,7 +105,7 @@ export function nextInstallmentDate(r: R): string | null {
     : 1;
   if (paid >= n) return null;
   const next = addMonths(d, paid);
-  return `${next.getFullYear()}-${p2(next.getMonth() + 1)}-${p2(next.getDate())}`;
+  return dayText(next);
 }
 
 /** 끊겼나 — 받아야 할 날이 지났는데 못 받았다 */
@@ -111,25 +135,46 @@ export function claimsOnComplete(r: R): boolean {
 
 /** 청구월 — 인도가 관문. null 은 「아직」 이다 */
 export function billingMonth(r: R, now = new Date()): string | null {
-  const written = S(r.progress.billMonth);
-  if (written) return written;
   const d = deliveredDay(r);
   if (!d) return null;
+  const written = S(r.progress.billMonth);
+  if (written) return written;
   if (!claimsOnComplete(r)) return ym(d);
   if (brokenOf(r, now)) return ym(addMonths(d, Math.max(0, paidRoundsOf(r, now) - 1)));
   const last = lastPaymentDate(r);
   return last ? ym(last) : ym(d);
 }
 
-/** 박힌 달들 — 사람이 맞춰 놓은 달은 닫혔다 */
-export const lockedMonthsOf = (rows: readonly R[]) => new Set(rows.map((r) => S(r.progress.billMonth)).filter(Boolean));
+/**
+ * 닫힌 달 — 단순히 billMonth 글자가 있다는 이유만으로 현재 달을 닫지 않는다.
+ * - 지난 달의 확정 billMonth는 다시 흔들지 않는다.
+ * - 현재 달은 청구/지급 문서가 실제로 나간 흔적이 있을 때만 닫는다.
+ * - 인도 전·취소·정산제외 행의 stale billMonth는 다른 정상 행을 막지 못한다.
+ */
+export function lockedMonthsOf(rows: readonly R[], now = new Date()): Set<string> {
+  const current = ym(now);
+  const out = new Set<string>();
+  for (const r of rows) {
+    const written = S(r.progress.billMonth);
+    if (!/^\d{4}-\d{2}$/.test(written)) continue;
+    if (!deliveredDay(r) || r.progress.cancelled || r.progress.settleExclude) continue;
+    const settlementStarted = !!r.progress.billed
+      || !!r.progress.invoiceIssued
+      || !!r.progress.collected
+      || !!r.progress.paid
+      || (!!r.claimStage && r.claimStage !== '접수')
+      || (!!r.payStage && r.payStage !== '접수');
+    if (written < current || settlementStarted) out.add(written);
+  }
+  return out;
+}
 
 /** 닫힌 달을 흔들지 않는 청구월 — null 이면 「청구월 미정」 (사람이 정한다) */
 export function billingMonthIn(r: R, locked: ReadonlySet<string>, now = new Date()): string | null {
-  const written = S(r.progress.billMonth);
-  if (written) return written;
   const m = billingMonth(r, now);
-  return m && locked.has(m) ? null : m;
+  if (!m) return null;
+  if (S(r.progress.billMonth)) return m;
+  return locked.has(m) ? null : m;
 }
 
 /**
@@ -139,12 +184,21 @@ export function billingMonthIn(r: R, locked: ReadonlySet<string>, now = new Date
  */
 export type Stage = '접수' | '분납실적' | '완납실적' | '취소';
 export function stageOf(r: R, now = new Date()): Stage {
-  const today = midnight(now);
   if (r.progress.cancelled) return '취소';
-  if (!billingMonth(r, now)) return '접수';
+  const d = deliveredDay(r);
+  if (!d) return '접수';
+
+  const rounds = roundsOf(r.payKind);
+  if (rounds < 2) return '완납실적';
+
+  // 사람이 전체 회차 납입을 명시했다면 날짜 여유기간을 기다리지 않고 완료 사실이 이긴다.
+  const written = Number(r.paidRounds);
+  const explicitlyComplete = r.paidRounds !== null && r.paidRounds !== undefined
+    && Number.isFinite(written) && Math.round(written) >= rounds;
+  if (explicitlyComplete) return '완납실적';
+
   const due = instalmentDueDate(r);
-  if (due && due >= today) return '분납실적';
-  return '완납실적';
+  return due && due >= midnight(now) ? '분납실적' : '완납실적';
 }
 
 /**

@@ -712,7 +712,8 @@ const cardInformationMatrixBaseline = [
   ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance key line'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구 /, 'intake/performance support line'],
   ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key line'],
-  ['src/app/_erp/SettlementScreen.tsx', /meta=\{g\.unknown \|\| g\.broken \|\| g\.clawbacks\.length/, 'settlement group support line'],
+  ['src/app/_erp/SettlementScreen.tsx', /meta=\{settlementGroupSupport\(g, side\)\}/, 'settlement group support line'],
+  ['src/app/settlement/group-signal.ts', /g\.unknown[\s\S]*g\.broken[\s\S]*correction[\s\S]*g\.hold[\s\S]*g\.clawbacks\.length/, 'settlement support signal authority'],
   ['src/app/_erp/SettlementScreen.tsx', /meta=\{tab === 'claim'/, 'settlement opposite-axis support line'],
   ['src/app/_erp/EsignScreen.tsx', /meta=\{`\$\{c\.term \? `\$\{c\.term\}개월` : '—'\} · \$\{txt\(c\.status\)\}`\}/, 'e-sign support line'],
 ] as const;

@@ -528,6 +528,30 @@ async function runInteractiveStates(page, c) {
 
   if (c.route === '/intake') {
     states.push(await captureState(page, c.name, 'intake-selected', '.erp-rowcards .erp-rowcard-link, .dz-row'));
+    if (c.width <= 900) {
+      try {
+        const selectedUrl = new URL(page.url());
+        if (selectedUrl.searchParams.get('ic')) {
+          selectedUrl.searchParams.delete('v');
+          await page.goto(selectedUrl.toString(), { waitUntil: 'networkidle', timeout: 30000 });
+          const visibleWork = await page.locator('.workspace[data-mode="intake"][data-phone="work"] > .work-panel:visible').count();
+          states.push({
+            state: 'intake-work-fallback-without-v',
+            status: visibleWork ? 'PASS' : 'FAIL',
+            reason: visibleWork ? undefined : 'ic route without v=work did not restore the mobile work panel',
+            url: page.url(),
+          });
+        } else {
+          states.push({ state: 'intake-work-fallback-without-v', status: 'SKIP', reason: 'selected intake URL has no ic' });
+        }
+      } catch (err) {
+        states.push({
+          state: 'intake-work-fallback-without-v',
+          status: 'FAIL',
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   }
 
   if (c.route === '/settlement') {

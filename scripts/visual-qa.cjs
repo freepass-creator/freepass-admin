@@ -599,9 +599,18 @@ async function runInteractiveStates(page, c) {
         try {
           const u = new URL(page.url());
           const detailVisible = await page.locator('[data-settlement-focus]:visible').count();
+          const detail = page.locator('.erp-detail-body[data-detail-context="settlement-focus"]:visible').first();
+          const priority = await detail.locator(':scope > *').evaluateAll((nodes) => nodes.slice(0, 3).map((el) => (el.textContent || '').trim().replace(/\s+/g, ' ')));
+          const openedSupport = await detail.locator('details.erp-detail-support[open]').count();
           if (u.pathname !== '/settlement' || !u.searchParams.get('focus') || !detailVisible) {
             focused.status = 'FAIL';
             focused.reason = `desktop settlement drill-in lost context: ${page.url()} detailVisible=${detailVisible}`;
+          } else if (!priority[0]?.includes('현재 업무') || !priority[1]?.includes('정산 핵심') || !priority[2]?.includes('고객 · 차량')) {
+            focused.status = 'FAIL';
+            focused.reason = `focused settlement hierarchy drift: ${JSON.stringify(priority)}`;
+          } else if (openedSupport) {
+            focused.status = 'FAIL';
+            focused.reason = `focused settlement support sections must start collapsed: ${openedSupport}`;
           }
         } catch (err) {
           focused.status = 'FAIL';

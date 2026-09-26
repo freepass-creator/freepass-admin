@@ -76,6 +76,9 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FPA_DATA_DIR']) {
     if (set(env, k)) err(k, '운영 환경에 두면 안 됩니다');
   }
+  if (env.FPA_DEMO?.trim() === 'on') {
+    err('FPA_DEMO', '가상 데이터는 개발/미리보기 전용입니다 — 운영 환경에서는 제거해야 합니다');
+  }
   if (env.ADMIN_AUTH?.trim() === 'off') warn('ADMIN_AUTH', '운영에서는 무시되지만 혼동을 막기 위해 지웁니다');
   return out;
 }

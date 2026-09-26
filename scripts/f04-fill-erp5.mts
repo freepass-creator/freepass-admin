@@ -44,6 +44,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
+import { intakeEventDocId } from '../src/domain/settlement/code';
 import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
 import path from 'node:path';
 import { cert, initializeApp } from 'firebase-admin/app';
@@ -58,6 +59,7 @@ const APPLY = process.argv.includes('--apply');
 const FILL = process.argv.includes('--fill');
 const SA = 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json';
 const ROWS = 'settlement_rows';
+const EVENTS = 'settlement_events';
 const HELD = 'settlement_held';
 const STAMP = new Date().toISOString();
 const RUN = `f04fill-${STAMP.replace(/[-:T]/g, '').slice(0, 14)}`;
@@ -154,7 +156,7 @@ const 칸별 = new Map<string, 칸셈>();
 const 셈 = (c: string) => { if (!칸별.has(c)) 칸별.set(c, { 새칸: 0, 빈칸메움: 0 }); return 칸별.get(c)!; };
 
 const 고칠것: { id: string; patch: Record<string, unknown> }[] = [];
-const 새줄: { id: string; data: Record<string, unknown> }[] = [];
+const 새줄: { id: string; data: Record<string, unknown>; auditEventId: string; auditKey: string }[] = [];
 let 안바뀜 = 0, 달라도둠 = 0;
 const 다른칸 = new Map<string, number>();
 
@@ -180,9 +182,14 @@ for (const f of F04.rows as Record<string, unknown>[]) {
     if (!빈(f.claim)) data.claimWritten = f.claim;
     if (!빈(f.pay)) data.payWritten = f.pay;
     const id = 결정id(k);
+    const auditEventId = intakeEventDocId(
+      data.plate, data.sourceProductId, data.receivedAt, data.intakeRequestId, data.intakeIdentityMode,
+    );
+    const auditKey = 'aud_f04_' + createHash('sha256').update(`${id}|${RUN}`).digest('hex').slice(0, 16);
     data.code = id;
+    data.auditEventId = auditEventId;
     data._f04 = { run: RUN, at: STAMP, tab: f.sourceTab ?? f.fromTab ?? null, row: f.sourceRow ?? null, created: true };
-    새줄.push({ id, data });
+    새줄.push({ id, data, auditEventId, auditKey });
     continue;
   }
 
@@ -268,9 +275,23 @@ if (APPLY) {
     for (const x of b) w.set(db.collection(ROWS).doc(x.id), { ...x.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await w.commit(); n += b.length;
   }
-  for (const b of 묶음(새줄)) {
+  /* 새 접수는 원장 + 최초 audit event를 같은 batch에 쓴다. 1줄당 2 write라 200개씩 묶어 500 한도를 넘지 않는다. */
+  for (const b of 묶음(새줄, 200)) {
     const w = db.batch();
-    for (const x of b) w.set(db.collection(ROWS).doc(x.id), { ...x.data, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+    for (const x of b) {
+      w.set(db.collection(ROWS).doc(x.id), { ...x.data, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+      w.set(db.collection(EVENTS).doc(x.auditEventId), {
+        [x.auditKey]: {
+          at: Date.parse(STAMP),
+          by: 'f04-import',
+          field: '접수',
+          from: '',
+          to: x.id,
+          source: 'F04',
+          run: RUN,
+        },
+      }, { merge: true });
+    }
     await w.commit(); n += b.length;
   }
   for (const b of 묶음(보류)) {

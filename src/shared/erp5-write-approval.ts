@@ -1,7 +1,9 @@
 export type Erp5WriteApproval = {
   projectId: string;
   iamVerified: boolean;
+  iamRef: string;
   backupRestoreVerified: boolean;
+  backupRestoreRef: string;
   approvalRef: string;
   approvedAt: string;
 };
@@ -28,18 +30,30 @@ export function parseErp5WriteApproval(
   }
   const v = value as Record<string, unknown>;
   const projectId = String(v.projectId ?? '').trim();
+  const iamRef = String(v.iamRef ?? '').trim();
+  const backupRestoreRef = String(v.backupRestoreRef ?? '').trim();
   const approvalRef = String(v.approvalRef ?? '').trim();
   const approvedAt = String(v.approvedAt ?? '').trim();
   if (projectId !== PROJECT_ID) return { ok: false, reason: `승인 projectId는 ${PROJECT_ID}여야 합니다` };
   if (v.iamVerified !== true) return { ok: false, reason: 'IAM 최소권한 검증이 확인되지 않았습니다' };
+  if (iamRef.length < 4) return { ok: false, reason: 'IAM 검증 참조(iamRef)가 없습니다' };
   if (v.backupRestoreVerified !== true) return { ok: false, reason: 'backup/restore 검증이 확인되지 않았습니다' };
+  if (backupRestoreRef.length < 4) return { ok: false, reason: 'backup/restore 검증 참조(backupRestoreRef)가 없습니다' };
   if (approvalRef.length < 4) return { ok: false, reason: 'approvalRef가 없습니다' };
   const approvedMs = Date.parse(approvedAt);
   if (!Number.isFinite(approvedMs)) return { ok: false, reason: 'approvedAt이 ISO 날짜가 아닙니다' };
   if (approvedMs > now + 5 * 60_000) return { ok: false, reason: 'approvedAt이 미래 시각입니다' };
   return {
     ok: true,
-    value: { projectId, iamVerified: true, backupRestoreVerified: true, approvalRef, approvedAt },
+    value: {
+      projectId,
+      iamVerified: true,
+      iamRef,
+      backupRestoreVerified: true,
+      backupRestoreRef,
+      approvalRef,
+      approvedAt,
+    },
   };
 }
 

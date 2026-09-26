@@ -237,3 +237,24 @@ test('FREEPASS_DATA_READ no longer depends on legacy reader availability after c
   assert.equal(result.rows[0]?.id,'P-1');
   assert.equal(result.receipt.servedBy,'FREEPASS_DATA');
 });
+
+
+test('FREEPASS_DATA_READ never silently falls back to legacy when Data fails', async () => {
+  let legacyReads=0;
+  const availableLegacy={
+    ...shadowLegacy,
+    async list(){ legacyReads++; return [shadowProduct]; },
+  };
+  const failedFreepass={
+    async list():Promise<never>{ throw new Error('data runtime unavailable'); },
+    async get():Promise<CanonicalProduct|null>{ throw new Error('data runtime unavailable'); },
+  };
+  const reader=new AdminCatalogSwitchboard(
+    availableLegacy,failedFreepass,()=> 'FREEPASS_DATA_READ',()=>cutover('FREEPASS_DATA_READ'),
+  );
+  await assert.rejects(
+    ()=>reader.list(),
+    (e:unknown)=>e instanceof FreePassDataCatalogHoldError && /최종 읽기 실패/.test(e.message),
+  );
+  assert.equal(legacyReads,0);
+});

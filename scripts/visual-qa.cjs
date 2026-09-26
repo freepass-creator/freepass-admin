@@ -56,7 +56,10 @@ const cases = [
   { name: 'products-desktop-1440', route: '/products', width: 1440, height: 900 },
   { name: 'products-desktop-1280', route: '/products', width: 1280, height: 800 },
   { name: 'intake-desktop-1440', route: '/intake', width: 1440, height: 900 },
+  { name: 'intake-desktop-1280', route: '/intake', width: 1280, height: 800 },
+  { name: 'performance-desktop-1280', route: '/intake?wiv=실적&iv=완납실적', width: 1280, height: 800 },
   { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
+  { name: 'settlement-desktop-1280', route: '/settlement', width: 1280, height: 800 },
   { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
   { name: 'products-mobile-390', route: '/products', width: 390, height: 844 },
   { name: 'intake-mobile-390', route: '/intake', width: 390, height: 844 },
@@ -122,6 +125,23 @@ async function inspect(page) {
       url: location.href,
       bodyWidth: document.body.scrollWidth,
       viewportWidth: innerWidth,
+      desktopShell: (() => {
+        const side = document.querySelector('.erp-sidenav');
+        const main = document.querySelector('main.fn-main');
+        if (!side || !main || !visible(side) || !visible(main)) return null;
+        const sr = side.getBoundingClientRect(), mr = main.getBoundingClientRect();
+        return {
+          sideWidth: Math.round(sr.width),
+          mainWidth: Math.round(mr.width),
+          visibleNavLabels: [...side.querySelectorAll('.erp-nav-label')].filter(visible).length,
+          visibleNavGroups: [...side.querySelectorAll('.erp-nav-group')].filter(visible).length,
+        };
+      })(),
+      compactAmountOverflow: [...document.querySelectorAll('.erp-panel--compact .erp-rowcard-amount strong')]
+        .filter(visible)
+        .slice(0, 40)
+        .filter((el) => el.scrollWidth > el.clientWidth + 1)
+        .map((el) => ({ text: (el.textContent || '').trim(), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth })),
       mobileGlobalTabs: [...document.querySelectorAll('.dz-tabbar a')].filter(visible).map((el) => (el.textContent || '').trim()),
       workflowHandoffs: [...document.querySelectorAll('a')].filter((el) => visible(el) && (el.textContent || '').trim() === '지급 업무로')
         .map((el) => ({ text: (el.textContent || '').trim(), href: el.getAttribute('href') || '' })),
@@ -660,6 +680,24 @@ async function runInteractiveStates(page, c) {
       if (!response || !response.ok()) problems.push('HTTP response not OK');
       if (info.bodyWidth > info.viewportWidth + 1) problems.push(`horizontal overflow ${info.bodyWidth} > ${info.viewportWidth}`);
 
+      if (c.width >= 1280 && c.width <= 1439 && info.desktopShell) {
+        if (info.desktopShell.sideWidth > 72) {
+          problems.push(`1280-class sidenav did not collapse: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.desktopShell.mainWidth < 1200) {
+          problems.push(`1280-class main work area too narrow: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.desktopShell.visibleNavLabels !== 0 || info.desktopShell.visibleNavGroups !== 0) {
+          problems.push(`1280-class icon rail still exposes text labels: ${JSON.stringify(info.desktopShell)}`);
+        }
+        if (info.compactAmountOverflow?.length) {
+          problems.push(`1280-class compact money clipped: ${JSON.stringify(info.compactAmountOverflow)}`);
+        }
+      }
+      if (c.width >= 1440 && info.desktopShell?.sideWidth && info.desktopShell.sideWidth < 220) {
+        problems.push(`1440+ sidenav must restore full menu: ${JSON.stringify(info.desktopShell)}`);
+      }
+
       if (c.route === '/settlement' && info.workflowHandoffs?.some((x) => !x.href.includes('tab=pay'))) {
         problems.push(`settlement cross-axis handoff does not target payment: ${JSON.stringify(info.workflowHandoffs)}`);
       }
@@ -919,6 +957,9 @@ async function runInteractiveStates(page, c) {
           if (min > 0 && max / min > 1.08) {
             problems.push(`3-panel widths drift beyond 8%: ${widths.join(', ')}`);
           }
+          if (c.width >= 1280 && c.width <= 1439 && min < 350) {
+            problems.push(`1280-class 3-panel width below readable floor: ${widths.join(', ')}`);
+          }
         }
       }
 
@@ -1033,6 +1074,8 @@ async function runInteractiveStates(page, c) {
         panelRhythm: info.panelRhythm,
         panelWidths: info.panelWidths,
         workspaceFill: info.workspaceFill,
+        desktopShell: info.desktopShell,
+        compactAmountOverflow: info.compactAmountOverflow,
         radiusSamples: info.radiusSamples,
         shadowSamples: info.shadowSamples,
         dividerSamples: info.dividerSamples,

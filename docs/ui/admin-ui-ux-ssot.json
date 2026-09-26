@@ -1654,5 +1654,23 @@
       "clawback"
     ],
     "parityRule": "Web RowCard and mobile ListRow must show the same label/tone meaning for the same settlement facts."
+  },
+  "desktopLaptop1280": {
+    "range": "1280-1439",
+    "workflow": "keep three-panel composition",
+    "sidenav": {
+      "mode": "icon-rail",
+      "targetWidth": 64,
+      "maxQaWidth": 72,
+      "accessibleLabels": true
+    },
+    "workspace": {
+      "minMainWidth": 1200,
+      "minThreePanelWidth": 350,
+      "compactGutter": 16,
+      "compactGap": 12
+    },
+    "exactMoney": "must not clip or ellipsize in compact list cards",
+    "restoreAt1440": "full 240px sidenav and standard spacing"
   }
 }

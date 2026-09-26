@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CanonicalProduct } from '../../../domain/product/types';
 import { AdminCatalogSwitchboard, FreePassDataCatalogHoldError, adminCatalogReadMode, compareAdminCatalogShadow } from '../admin-catalog-reader';
+import type { AdminCutoverDecision, AdminCutoverStage } from '../../../shared/freepass-data-admin-cutover';
 
 const product = { id: 'P-1' } as CanonicalProduct;
 const legacy = {
@@ -33,7 +34,7 @@ test('LEGACY_DIRECT remains explicit and never becomes the authority label', asy
 });
 
 test('SHADOW_READ returns legacy rows but records HOLD when Data reader is not configured', async () => {
-  const reader = new AdminCatalogSwitchboard(legacy, undefined, () => 'SHADOW_READ');
+  const reader = new AdminCatalogSwitchboard(legacy, undefined, () => 'SHADOW_READ', () => cutover('SHADOW_READ'));
   const result = await reader.list();
   assert.deepEqual(result.rows, [product]);
   assert.equal(result.receipt.servedBy, 'LEGACY_ERP5_BRIDGE');
@@ -68,12 +69,46 @@ const meta = {
   policyParity: 'COMPLETE' as const, missingPolicyOfferIds: [], invalidPolicyFactRefs: [],
 };
 
+const cutover = (targetStage: AdminCutoverStage, override?: Partial<{
+  releaseId:string; manifestId:string; inputDigest:string; dataDigest:string;
+}>): AdminCutoverDecision => ({
+  ok:true,
+  approval:{
+    consumerId:'freepass-admin-catalog',
+    fromStage:targetStage==='SHADOW_READ'?'OBSERVE':targetStage==='PARITY_VERIFIED'?'SHADOW_READ':'PARITY_VERIFIED',
+    targetStage,
+    baseOrigin:'https://data.example.test',
+    tokenSha256:'a'.repeat(64),
+    evidence:{
+      contractReady:true,
+      authenticationVerified:true,
+      legacyReadVerified:true,
+      freepassReadVerified:true,
+      parityVerified:targetStage!=='SHADOW_READ',
+      fallbackVerified:targetStage==='FREEPASS_DATA_READ',
+      productionReadbackVerified:targetStage==='FREEPASS_DATA_READ',
+      approvedRelease:targetStage==='SHADOW_READ'?null:{
+        projectionId:'admin-catalog',
+        releaseId:override?.releaseId??meta.releaseId,
+        manifestId:override?.manifestId??meta.manifestId,
+        inputDigest:override?.inputDigest??meta.inputDigest,
+        dataDigest:override?.dataDigest??meta.dataDigest,
+        observedAt:'2026-09-25T00:02:00.000Z',
+      },
+    },
+    holdReasons:[],
+    approvalRef:'cutover-test',
+    approvedAt:'2026-09-25T00:03:00.000Z',
+    validUntil:'2026-10-25T00:03:00.000Z',
+  },
+});
+
 test('SHADOW_READ compares FreePass Data but keeps legacy rows as user output', async () => {
   const freepass = {
     async list() { return { rows: [structuredClone(shadowProduct)], meta }; },
     async get() { return structuredClone(shadowProduct); },
   };
-  const reader = new AdminCatalogSwitchboard(shadowLegacy, freepass, () => 'SHADOW_READ');
+  const reader = new AdminCatalogSwitchboard(shadowLegacy, freepass, () => 'SHADOW_READ', () => cutover('SHADOW_READ'));
   const result = await reader.list();
   assert.equal(result.receipt.shadow?.status, 'MATCH');
   assert.deepEqual(result.receipt.holdReasons, []);
@@ -88,7 +123,7 @@ test('SHADOW_READ records mismatch and still returns the legacy result', async (
     async list() { return { rows: [changed], meta }; },
     async get() { return changed; },
   };
-  const reader = new AdminCatalogSwitchboard(shadowLegacy, freepass, () => 'SHADOW_READ');
+  const reader = new AdminCatalogSwitchboard(shadowLegacy, freepass, () => 'SHADOW_READ', () => cutover('SHADOW_READ'));
   const result = await reader.list();
   assert.equal(result.receipt.shadow?.status, 'MISMATCH');
   assert.deepEqual(result.receipt.holdReasons, ['FREEPASS_DATA_SHADOW_MISMATCH']);
@@ -96,13 +131,59 @@ test('SHADOW_READ records mismatch and still returns the legacy result', async (
 });
 
 for (const mode of ['PARITY_VERIFIED','FREEPASS_DATA_READ'] as const) {
-  test(`${mode} fails closed until parity/fallback/readback evidence exists`, async () => {
-    const reader = new AdminCatalogSwitchboard(legacy, undefined, () => mode);
-    await assert.rejects(() => reader.list(), (e: unknown) =>
-      e instanceof FreePassDataCatalogHoldError && /fallback하지 않았다/.test(e.message));
+  test(`${mode} fails closed without a cutover approval receipt`, async () => {
+    const reader = new AdminCatalogSwitchboard(legacy, undefined, () => mode, () => ({ok:false,reason:'missing evidence'}));
+    await assert.rejects(() => reader.list(), FreePassDataCatalogHoldError);
     await assert.rejects(() => reader.get('P-1'), FreePassDataCatalogHoldError);
   });
 }
+
+test('PARITY_VERIFIED rechecks approved release and shadow parity but keeps legacy output', async () => {
+  const changed = structuredClone(shadowProduct);
+  changed.updatedAt = '2026-09-25T00:05:00.000Z';
+  const freepass = {
+    async list() { return { rows: [changed], meta }; },
+    async get() { return changed; },
+  };
+  const reader = new AdminCatalogSwitchboard(
+    shadowLegacy, freepass, () => 'PARITY_VERIFIED', () => cutover('PARITY_VERIFIED'),
+  );
+  const result = await reader.list();
+  assert.equal(result.receipt.shadow?.status,'MATCH');
+  assert.equal(result.receipt.servedBy,'LEGACY_ERP5_BRIDGE');
+  assert.equal(result.receipt.cutoverAuthorized,false);
+  assert.equal(result.rows[0]?.updatedAt,shadowProduct.updatedAt);
+});
+
+test('FREEPASS_DATA_READ serves Data only when approval, release identity and live parity all match', async () => {
+  const changed = structuredClone(shadowProduct);
+  changed.updatedAt = '2026-09-25T00:05:00.000Z';
+  const freepass = {
+    async list() { return { rows: [changed], meta }; },
+    async get() { return changed; },
+  };
+  const reader = new AdminCatalogSwitchboard(
+    shadowLegacy, freepass, () => 'FREEPASS_DATA_READ', () => cutover('FREEPASS_DATA_READ'),
+  );
+  const result = await reader.list();
+  assert.equal(result.receipt.servedBy,'FREEPASS_DATA');
+  assert.equal(result.receipt.cutoverAuthorized,true);
+  assert.equal(result.rows[0]?.updatedAt,'2026-09-25T00:05:00.000Z');
+  assert.equal((await reader.get('P-1'))?.updatedAt,'2026-09-25T00:05:00.000Z');
+});
+
+test('FREEPASS_DATA_READ fails closed when current ACTIVE release differs from the approved release', async () => {
+  const freepass = {
+    async list() { return { rows: [structuredClone(shadowProduct)], meta }; },
+    async get() { return structuredClone(shadowProduct); },
+  };
+  const reader = new AdminCatalogSwitchboard(
+    shadowLegacy, freepass, () => 'FREEPASS_DATA_READ',
+    () => cutover('FREEPASS_DATA_READ',{dataDigest:'approved-old-digest'}),
+  );
+  await assert.rejects(() => reader.list(), (e:unknown) =>
+    e instanceof FreePassDataCatalogHoldError && /APPROVED_RELEASE_MISMATCH/.test(e.message));
+});
 
 test('unknown Admin Catalog read mode is rejected', () => {
   assert.throws(() => adminCatalogReadMode('DIRECT_FIRESTORE'), /모르는 프리패스 데이터/);

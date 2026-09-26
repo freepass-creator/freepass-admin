@@ -84,6 +84,13 @@ jobs:
             tmp/export-pr92-ui-images-20260926|f9af0ba7e23228081fafe78113d7d18c0605e080
             tmp/render-pr92-head-20260926|bb35208e5d10227f061aa52f3781e4f942a21380
             tmp/render-pr92-linefree-20260926|0336de13db06d602ae6896b5c8e5ea7fef8db6be
+            backend/admin-journey-bridge|8d9e95c11a6b0438f08bef7dfda40bedac268119
+            backend/contract-termination|27e3c4385132f45715f388c82c115151e05bd634
+            backend/esign-pdf-renderer-v2|82b3348e35f46086685836d9fdcec4d6e6dcb78a
+            backend/settlement-delivery-gate|f164090ba2d4eafb91a29b21d094fffe79364973
+            backend/settlement-eligibility-gate|8d9e95c11a6b0438f08bef7dfda40bedac268119
+            feat/intake-contract-conditions-20260923|185f5049333463026234feb8e9c5318620917776
+            work/gpt/admin-function-mainline-20260925|4c37c736416ac897db6435cff171608efd94485f
         run: |
           set -euo pipefail
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'

@@ -14,7 +14,8 @@
     "test:intake-firestore": "tsx --test src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
     "test:freepass-data-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
     "postinstall": "node scripts/install-pdf-fonts.mjs",
-    "visual:qa": "node scripts/visual-qa.cjs"
+    "visual:qa": "node scripts/visual-qa.cjs",
+    "deploy:check": "tsx scripts/check-deploy-env.mts"
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",

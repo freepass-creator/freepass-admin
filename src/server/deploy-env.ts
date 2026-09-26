@@ -55,8 +55,11 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   if (env.ESIGN_ENABLED?.trim() === 'on') warn('ESIGN_ENABLED', 'on — 전자계약은 운영 개시 범위 밖입니다(DEC-2026-09-25-05)');
   else ok('ESIGN_ENABLED', 'off (전자계약 닫힘)');
   const mode = env.FREEPASS_DATA_ADMIN_CATALOG_READ_MODE?.trim();
-  if (mode && mode !== 'OBSERVE') warn('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', `${mode} — 승인된 모드는 OBSERVE 입니다`);
-  else ok('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', 'OBSERVE');
+  if (mode && mode !== 'OBSERVE') {
+    err('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', `${mode} — 운영 승인 전에는 OBSERVE만 허용합니다`);
+  } else {
+    ok('FREEPASS_DATA_ADMIN_CATALOG_READ_MODE', 'OBSERVE');
+  }
 
   /* 주소 — 도메인 없이 Vercel production *.vercel.app */
   const urls = ['APP_BASE_URL', 'PUBLIC_BASE_URL', 'CLAIM_LINK_BASE'] as const;
@@ -75,6 +78,9 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   /* 운영에 있으면 안 되는 것 */
   for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FPA_DATA_DIR']) {
     if (set(env, k)) err(k, '운영 환경에 두면 안 됩니다');
+  }
+  if (env.FPA_DEMO?.trim() === 'on') {
+    err('FPA_DEMO', '가상 데이터는 개발/미리보기 전용입니다 — 운영 환경에서는 제거해야 합니다');
   }
   if (env.ADMIN_AUTH?.trim() === 'off') warn('ADMIN_AUTH', '운영에서는 무시되지만 혼동을 막기 위해 지웁니다');
   return out;

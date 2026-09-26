@@ -78,6 +78,12 @@ jobs:
             work/gpt/ai-core-governance-p0-shadow-20260920|212ed5c19e98b631e46310a509720feb990d3e4b
             work/gpt/d6-workflow-shadow-adoption-20260920|63e88a35516efccb4618a85071b585f001d2852c
             c-adoption/core-contract-shadow|b76a70fb58a0317678c713ff031be34eb633f844
+            recovery/pr92-modernize-20260926|267a68ec8373219bfc6cba608d8b837919cb431f
+            work/gpt/admin-p23-settlement-state-machine-20260921|0b31212cb8e25edcd9ddc0b416ff0bcf886ccfd3
+            work/gpt/esign-port-implementation-r1|a0c8ced9e2e681e92669ebbd11db068f98ca5883
+            tmp/export-pr92-ui-images-20260926|f9af0ba7e23228081fafe78113d7d18c0605e080
+            tmp/render-pr92-head-20260926|bb35208e5d10227f061aa52f3781e4f942a21380
+            tmp/render-pr92-linefree-20260926|0336de13db06d602ae6896b5c8e5ea7fef8db6be
         run: |
           set -euo pipefail
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'

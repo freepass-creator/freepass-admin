@@ -454,6 +454,20 @@ describe('받은 회차 찍기', () => {
     assert.deepEqual(r.ok && r.patch, { paidRounds: 1 });
     assert.equal(progressPatch({ payKind: '2회분납', delivered: true, claimStage: '청구', payStage: '통보', billed: true }, { kind: 'paidRounds', rounds: 1 }).ok, false);
   });
+  it('legacy 다회차 분납도 한 자리로 잘라 읽지 않는다', () => {
+    const r = progressPatch(
+      { payKind: '10회분납', delivered: true, claimStage: '접수', payStage: '접수' },
+      { kind: 'paidRounds', rounds: 7 },
+    );
+    assert.deepEqual(r.ok && r.patch, { paidRounds: 7 });
+    assert.equal(
+      progressPatch(
+        { payKind: '10회분납', delivered: true, claimStage: '접수', payStage: '접수' },
+        { kind: 'paidRounds', rounds: 11 },
+      ).ok,
+      false,
+    );
+  });
 });
 
 describe('청구목록 · 지급목록 — 완납·인도 기준 · 환수', () => {

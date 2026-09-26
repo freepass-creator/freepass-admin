@@ -326,6 +326,7 @@ const laptopThreePanelBaseline = [
     /grid-template-columns: var\(--erp-sidenav-w-collapsed\) minmax\(0, 1fr\)/,
     /\.erp-sidenav \.erp-nav-label \{ display: none; \}/,
     /width: 44px/,
+    /grid-template-columns: 64px minmax\(0, 1fr\) 128px/,
   ]],
   ['scripts/visual-qa.cjs', [
     /settlement-desktop-1280/,

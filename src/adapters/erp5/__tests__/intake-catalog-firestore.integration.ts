@@ -142,3 +142,67 @@ emulatorTest('Firestore: product intake without a sealed snapshot is rejected be
     .where('receivedAt','==','2026-09-25').get();
   assert.equal(docs.docs.some((d)=>d.data().sourceProductId===p.id),false);
 });
+
+
+emulatorTest('Firestore: installment progress, locked bill month, and actor audit round-trip together',async()=>{
+  await seedFeeRules();
+  const suffix=randomUUID().replace(/-/g,'').slice(0,12);
+  const p=product(`product_${suffix}`);
+  const o=offer('offer-36',690_000);
+  const input={...intake(p,o),payKind:'2회분납'};
+  const repo=new Erp5SettlementRepository();
+  const actor=`i01-${suffix}@teamjpk.com`;
+
+  const created=await repo.createIntake(input,actor);
+  assert.equal(created.created,true);
+
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paper',on:true},actor),{ok:true,changed:1});
+  const delivered=await repo.setProgress(created.code,{kind:'delivered',on:true,deliveredAt:'2026-09-25'},actor);
+  assert.equal(delivered.ok,true);
+  assert.equal(delivered.ok && delivered.changed,2);
+  assert.deepEqual(await repo.setProgress(created.code,{kind:'paidRounds',rounds:1},actor),{ok:true,changed:1});
+  assert.deepEqual(
+    await repo.setLifecycle(created.code,{kind:'billMonth',month:'2026-09'},undefined,actor),
+    {ok:true,changed:1},
+  );
+
+  const roundTrip=await repo.get(created.code);
+  assert.ok(roundTrip);
+  assert.equal(roundTrip.row.payKind,'2회분납');
+  assert.equal(roundTrip.row.paidRounds,1);
+  assert.equal(roundTrip.row.progress.paper,true);
+  assert.equal(roundTrip.row.progress.delivered,true);
+  assert.equal(roundTrip.row.progress.deliveredAt,'2026-09-25');
+  assert.equal(roundTrip.row.progress.billMonth,'2026-09');
+
+  const issued=await repo.issueInvoice('2026-09','공급사','공급사A',actor);
+  assert.equal(issued.ok,true);
+  const locked=await repo.get(created.code);
+  assert.ok(locked);
+  assert.equal(locked.row.progress.billed,true);
+  assert.equal(locked.row.progress.billMonth,'2026-09');
+
+  const moveClosedMonth=await repo.setLifecycle(
+    created.code,{kind:'billMonth',month:'2026-10'},undefined,actor,
+  );
+  assert.deepEqual(moveClosedMonth,{ok:false,error:'청구서가 나간 줄은 달을 못 바꿉니다'});
+
+  const eventDocs=await erp5().collection('settlement_events').get();
+  const eventDoc=eventDocs.docs.find((d)=>
+    Object.values(d.data()).some((v)=>
+      !!v && typeof v==='object'
+      && String((v as Record<string,unknown>).field??'')==='접수'
+      && String((v as Record<string,unknown>).to??'')===created.code,
+    ),
+  );
+  assert.ok(eventDoc);
+  const audits=Object.values(eventDoc.data()).filter(
+    (v):v is Record<string,unknown>=>!!v && typeof v==='object' && !Array.isArray(v),
+  );
+  assert.ok(audits.length>=6);
+  assert.equal(audits.every((v)=>v.by===actor),true);
+  const fields=new Set(audits.map((v)=>String(v.field??'')));
+  for(const field of ['접수','계약서','인도완료','인도일','받은회차','청구월','청구서']){
+    assert.equal(fields.has(field),true,`audit field missing: ${field}`);
+  }
+});

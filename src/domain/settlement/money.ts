@@ -19,7 +19,7 @@ import type { Maybe, SettlementRow } from './types';
 export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.progress.billHold) return 0;
   if (r.money.claim === null) return null;
-  const k = paidRatioOf(r, now) * (r.settleRatio || 1);
+  const k = paidRatioOf(r, now) * (r.settleRatio ?? 1);
   return Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
 }
 
@@ -27,12 +27,13 @@ export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (r.money.pay === null) return null;
   const ratio = paidRatioOf(r, now);
   if (ratio < 1 && noPayIfBroken(r)) return r.money.payAdjust ?? 0;
-  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * (r.settleRatio || 1)) + (r.money.payAdjust ?? 0);
+  return Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * (r.settleRatio ?? 1)) + (r.money.payAdjust ?? 0);
 }
 
 /** 남는 것. ★받을 돈을 «모르면» 남는 것도 모른다 */
 export function marginOf(r: SettlementRow, now = new Date()): Maybe<number> {
   const c = claimAmountOf(r, now);
-  if (c === null) return null;
-  return c - (payAmountOf(r, now) ?? 0);
+  const p = payAmountOf(r, now);
+  if (c === null || p === null) return null;
+  return c - p;
 }

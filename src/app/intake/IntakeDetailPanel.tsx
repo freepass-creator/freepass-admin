@@ -8,7 +8,7 @@ import { txt, when, won } from '../_fn/fmt';
 import Progress from './[code]/Progress';
 import { Tag, 신원 } from '../_design/Badges';
 import { ActionBar, EmptyState, Notice, PanelHeader, SummaryGrid, SummaryItem } from '../_design/Primitives';
-import { ClawbackForm, FeeForm, MoneyForm } from './MoneyForm';
+import { ClawbackForm, FeeForm, MoneyForm, TerminationClawbackReviewForm } from './MoneyForm';
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
@@ -18,6 +18,7 @@ import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
 import { intakeNextAction } from './next-action';
 import { settlementPrimaryAction } from '../settlement/primary-action';
+import { terminationClawbackReview } from '../../domain/settlement/clawback';
 
 /** 오른쪽 판 — 접수 상세(진행 체크 · 접수 · 정산 읽기 · 고친 이력). */
 export async function IntakeDetailPanel({ code, created, exists, back, newHref, life }: {
@@ -185,9 +186,13 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
     );
   }
 
-  const events = await settlements.events(
-    r.plate, r.receivedAt, r.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode,
-  );
+  const [events, clawbacks] = await Promise.all([
+    settlements.events(
+      r.plate, r.receivedAt, r.catalogRef?.productId, raw.intakeRequestId, raw.intakeIdentityMode,
+    ),
+    settlements.clawbacks(),
+  ]);
+  const 환수검토 = terminationClawbackReview(r, clawbacks);
   const 다음 = 다음블록 ? adminBlockLabel(다음블록) : (r.progress.cancelled ? '취소됨' : '끝');
   return (
     <>
@@ -270,8 +275,38 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         promoAmount={r.money.claimIncentive} promoSharePct={r.money.promoShare === null ? null : Math.round(r.money.promoShare * 100)}
         promoReason={r.money.promoReason} claimAdjust={r.money.claimAdjust} payAdjust={r.money.payAdjust}
         adjustReason={r.money.adjustReason} disabled={r.progress.cancelled || !canWrite} />
-      {/* 환수 — 인도된 줄(완납 · 분납실적)에서만 연다 */}
-      {!r.progress.cancelled && r.progress.delivered && <ClawbackForm code={r.id} today={today()} disabled={!canWrite} />}
+      {/* 계약해지 환수는 검토 → 필요 확정 → 금액 등록 순서다. 정산 완료 사실을 되돌리지 않는다. */}
+      {r.contractTerminatedAt ? (
+        <section className="dz-attention" aria-label="계약해지 환수 검토">
+          <h3 className="dz-sub">계약해지 · 환수 후속업무</h3>
+          <SummaryGrid>
+            <SummaryItem label="해지일">{txt(r.contractTerminationDate)}</SummaryItem>
+            <SummaryItem label="해지 사유">{txt(r.contractTerminationReason)}</SummaryItem>
+            <SummaryItem label="환수 검토">
+              {환수검토 === 'PENDING' ? '검토 대기'
+                : 환수검토 === 'REQUIRED' ? '환수 필요 · 금액 등록 대기'
+                  : 환수검토 === 'NOT_REQUIRED' ? '환수 없음'
+                    : 환수검토 === 'RECORDED' ? '환수 등록 완료'
+                      : 환수검토 === 'INCONSISTENT' ? '데이터 확인 필요' : '—'}
+            </SummaryItem>
+          </SummaryGrid>
+          {환수검토 === 'PENDING' && (
+            <TerminationClawbackReviewForm code={r.id} operationId={randomUUID()} disabled={!canWrite} />
+          )}
+          {환수검토 === 'REQUIRED' && (
+            <>
+              <Notice tone="warn">환수 필요로 확정됐습니다. 공급사·영업채널 실제 환수 금액과 사유를 확인해 등록합니다.</Notice>
+              <ClawbackForm code={r.id} today={today()} disabled={!canWrite} />
+            </>
+          )}
+          {환수검토 === 'NOT_REQUIRED' && <Notice tone="ok">환수 없음으로 검토가 확정됐습니다.</Notice>}
+          {환수검토 === 'RECORDED' && <Notice tone="ok">환수 원장까지 등록됐습니다.</Notice>}
+          {환수검토 === 'INCONSISTENT' && <Notice tone="warn">환수 검토 기록과 실제 환수 원장이 일치하지 않습니다. 자동 수정하지 말고 데이터를 확인합니다.</Notice>}
+        </section>
+      ) : (
+        /* 일반 환수 가능성은 기존대로 열어 둔다. */
+        !r.progress.cancelled && r.progress.delivered && <ClawbackForm code={r.id} today={today()} disabled={!canWrite} />
+      )}
 
       <details className="dz-support-section">
         <summary>세부 원자 · 진단</summary>

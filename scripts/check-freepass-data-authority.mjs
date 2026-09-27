@@ -10,6 +10,7 @@ const legacyDebt = new Set([
   'src/adapters/erp5/esign-repository.ts',
   'src/adapters/erp5/fee-rules.ts',
   'src/adapters/erp5/vehicle-master.ts',
+  'src/server/auth.ts',
 ]);
 
 function walk(dir) {

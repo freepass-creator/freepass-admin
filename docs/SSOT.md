@@ -20,8 +20,8 @@ FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터
 | 장기 R&D 배경 | `docs/memory/EMAIL-RND-CONSOLIDATED.md` | REFERENCE |
 | UI/UX 규격 | AI Core/DevCenter 공통 규격 확정 전 | HOLD |
 | Product / Offer / Policy 데이터 정본 | **FreePass Data** | AUTHORITY · Admin read cutover HOLD |
-| Admin Catalog 현재 읽기 | `AdminCatalogReader` → OBSERVE → freepasserp5 legacy bridge | TRANSITIONAL |
-| Admin workflow persistence | `src/server/freepass-data.ts` → Repository/Adapter → Firestore (`freepasserp5` project id) | ACTIVE GATEWAY · Admin workflow meaning remains Admin-owned |
+| Admin Catalog 현재 읽기 | `AdminCatalogReader` → OBSERVE → FreePass Data compatibility transport | TRANSITIONAL SEMANTICS / DATA TRANSPORT |
+| Admin workflow persistence | `src/server/freepass-data.ts` → Admin Repository → FreePass Data workflow API → Firestore | DATA-ONLY TRANSPORT · Admin workflow meaning remains Admin-owned |
 | 운영 Auth/Permission | 없음 | NOT VERIFIED |
 | 운영 Release target | 없음 | NOT VERIFIED |
 
@@ -66,10 +66,10 @@ Intake Snapshot
 
 상품 Catalog의 authority는 FreePass Data다. 현재 Admin read mode는 OBSERVE이며,
 FreePass Data의 Admin 전용 consumer contract/ACTIVE release/policy parity/auth evidence가 열리기 전까지
-freepasserp5 상품 reader는 **legacy bridge**로만 유지한다. collection path를 public contract로 사용하지 않는다.
+legacy 상품 의미는 **compatibility shape**로만 유지하며 실제 운영 transport는 FreePass Data를 통과한다. Admin은 collection path를 public contract로 사용하지 않는다.
 
-접수·정산·전자계약 workflow는 Admin 소유 의미를 유지하며 현재 freepasserp5 adapter에 저장된다.
-이 workflow persistence와 Catalog read cutover는 한 번에 바꾸지 않는다.
+접수·정산·계약 workflow 의미는 Admin이 소유하지만, 운영 persistence transport는 FreePass Data workflow API만 사용한다. FreePass Data가 Firestore 물리 collection·credential·transaction을 소유한다. 로컬 통합테스트용 emulator만 예외다.
+Catalog의 의미 cutover와 workflow transport 전환은 서로 다른 단계로 관리한다.
 
 과거 JSON file Application store와 `src/domain/application/**` 계층은 LEGACY_QUARANTINED다. 현재 접수 런타임 정본은 Intake/`settlement_rows`이며 신규 기능은 과거 Application 계층에 의존하지 않는다.
 
@@ -95,7 +95,7 @@ freepasserp5 상품 reader는 **legacy bridge**로만 유지한다. collection p
 Mockup과 실제 Domain이 다르면 Mockup을 운영 기능으로 간주하지 않는다.
 
 ## 6. 금지
-- 과거 ERP/Firebase를 편의상 숨은 fallback **정본**으로 사용
+- Admin 운영 런타임에서 Firebase/Firestore 업무데이터 credential·SDK를 직접 사용
 - FreePass Data 전환 모드가 SHADOW_READ 이상인데 legacy ERP5로 조용히 fallback
 - generic ERP-public projection을 Admin 전용 Catalog contract로 가장
 - UI mock data를 운영 data truth로 간주

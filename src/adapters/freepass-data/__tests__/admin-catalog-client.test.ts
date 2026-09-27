@@ -62,6 +62,21 @@ const base = {
             },
           },
         ],
+        listing: {
+          strategy: 'LOWEST_BASIS_MONTHLY_RENT' as const,
+          termKey: '48_2만',
+          monthlyRent: { amount: 650000, currency: 'KRW' as const },
+          deposit: { state: 'UNKNOWN' as const },
+          attribution: {
+            status: 'PARTIAL' as const,
+            conditions: [
+              { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 48, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+            ],
+            unknownConditionKeys: ['additional_driver_count'],
+            monthlyRentOrigin: { origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+            depositOrigin: { origin: 'UNRESOLVED' as const },
+          },
+        },
         conditionSummary: {
           known: [
             { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 36, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
@@ -97,9 +112,12 @@ test('FreePass Data mapper preserves multi-supplier Offers and unknown deposit s
   assert.equal(product.supplierId, '');
   assert.deepEqual(product.offers.map((o) => o.supplierId), ['SUP-A','SUP-A','SUP-B']);
   assert.equal(product.offers[0]?.deposit, 0);
-  assert.equal(product.offers[0]?.monthlyRent, 700000);
+  assert.equal(product.offers[0]?.monthlyRent, 690000);
   assert.equal(product.offers[0]?.basisMonthlyRent, 690000);
+  assert.equal(product.offers[0]?.previewMonthlyRent, 700000);
   assert.equal(product.offers[0]?.isDefaultPreview, true);
+  assert.equal(product.offers[0]?.isListingPrice, false);
+  assert.equal(product.offers[1]?.isListingPrice, true);
   assert.equal(product.offers[0]?.conditionStatus, 'PARTIAL');
   assert.deepEqual(product.offers[0]?.unknownConditionKeys, ['additional_driver_count']);
   assert.equal(product.offers[0]?.conditionEvidence?.find((x) => x.dimensionKey === 'driver_age')?.origin, 'LINKED_POLICY_FACT');

@@ -64,6 +64,17 @@ function nodeFromCompat(id: string, data: Rec): VehicleMasterNode {
   };
 }
 
+export function adminCompatibilityTransportConfigured(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  try {
+    config(env);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function config(env: Record<string, string | undefined> = process.env) {
   const raw = env.FREEPASS_DATA_BASE_URL?.trim().replace(/\/$/, '') ?? '';
   const token = env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';

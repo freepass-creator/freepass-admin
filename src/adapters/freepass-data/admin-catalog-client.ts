@@ -94,6 +94,13 @@ const CommercialOffer = z.object({
     deposit: CommercialDeposit,
     attribution: CommercialAttribution,
   })),
+  listing: z.object({
+    strategy: z.literal('LOWEST_BASIS_MONTHLY_RENT'),
+    termKey: z.string().min(1),
+    monthlyRent: Money,
+    deposit: CommercialDeposit,
+    attribution: CommercialAttribution,
+  }),
   conditionSummary: z.object({
     known: z.array(CommercialConditionEvidence),
     unknown: z.array(z.string()),
@@ -220,6 +227,7 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => {
     const commercial = offer.commercial;
     const basisRow = commercial?.basisRows.find((row) => row.termKey === term.termKey);
+    const isListingPrice = commercial?.listing.termKey === term.termKey;
     const isDefaultPreview = commercial?.preview.basisTermKey === term.termKey;
     const previewReady = isDefaultPreview && commercial?.preview.status === 'READY';
     const previewRent = previewReady ? commercial?.preview.monthlyRent?.amount : undefined;
@@ -234,19 +242,20 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
       termKey: term.termKey,
       supplierId: offer.supplierId,
       termMonths: term.termMonths,
-      monthlyRent: previewRent ?? term.monthlyRent.amount,
+      monthlyRent: term.monthlyRent.amount,
       basisMonthlyRent: term.monthlyRent.amount,
-      ...(previewDeposit !== undefined
-        ? { deposit: previewDeposit }
-        : term.depositState === 'KNOWN' || term.depositState === 'ZERO'
-          ? { deposit: term.deposit?.amount }
-          : {}),
+      ...(term.depositState === 'KNOWN' || term.depositState === 'ZERO'
+        ? { deposit: term.deposit?.amount }
+        : {}),
       ...((term.depositState === 'KNOWN' || term.depositState === 'ZERO') && term.deposit
         ? { basisDeposit: term.deposit.amount }
         : {}),
+      ...(previewRent !== undefined ? { previewMonthlyRent: previewRent } : {}),
+      ...(previewDeposit !== undefined ? { previewDeposit } : {}),
       ...(term.mileageLimitKmPerYear !== null && term.mileageLimitKmPerYear !== undefined
         ? { annualMileageKm: term.mileageLimitKmPerYear } : {}),
       ...(commercial ? {
+        isListingPrice,
         isDefaultPreview,
         commercialStatus: commercial.preview.status,
       } : {}),

@@ -53,6 +53,61 @@ const conditionValue = (condition: CommercialConditionEvidence) => {
   return String(value);
 };
 
+const knownCondition = (offer: Offer, key: string) =>
+  offer.conditionEvidence?.find((item) => item.dimensionKey === key && item.status === 'KNOWN');
+
+const compactMoney = (value: number) => {
+  if (value >= 100_000_000 && value % 100_000_000 === 0) return `${value / 100_000_000}억`;
+  if (value >= 10_000 && value % 10_000 === 0) return `${value / 10_000}만원`;
+  return `${value.toLocaleString('ko-KR')}원`;
+};
+
+const insuranceSummary = (offer: Offer) => {
+  const evidence = knownCondition(offer, 'insurance_included');
+  if (!evidence) return offer.unknownConditionKeys?.includes('insurance_included') ? '보험 미확인' : null;
+  const value = evidence.value;
+  if (value === true) return '보험 포함';
+  if (value === false) return '보험 별도';
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  if (/미포함|별도|불포함/.test(text)) return '보험 별도';
+  if (/포함/.test(text)) return '보험 포함';
+  return `보험 ${text}`;
+};
+
+export const salesPriceReason = (offer: Offer): string => {
+  const parts: string[] = [];
+
+  const mileage = knownCondition(offer, 'annual_mileage_km');
+  if (typeof mileage?.value === 'number') {
+    const km = mileage.value;
+    parts.push(km % 10_000 === 0 ? `연 ${km / 10_000}만km` : `연 ${km.toLocaleString('ko-KR')}km`);
+  } else if (offer.annualMileageKm) {
+    const km = offer.annualMileageKm;
+    parts.push(km % 10_000 === 0 ? `연 ${km / 10_000}만km` : `연 ${km.toLocaleString('ko-KR')}km`);
+  }
+
+  const age = knownCondition(offer, 'driver_age');
+  if (typeof age?.value === 'number') parts.push(`만${age.value}세 이상`);
+  else if (typeof age?.value === 'string' && age.value.trim()) parts.push(age.value.trim());
+
+  const insurance = insuranceSummary(offer);
+  if (insurance) parts.push(insurance);
+
+  const property = knownCondition(offer, 'property_compensation_limit');
+  if (typeof property?.value === 'number') parts.push(`대물 ${compactMoney(property.value)}`);
+  else if (typeof property?.value === 'string' && property.value.trim()) parts.push(`대물 ${property.value.trim()}`);
+
+  const maintenance = knownCondition(offer, 'maintenance_service');
+  if (typeof maintenance?.value === 'string' && maintenance.value.trim()) {
+    parts.push(`정비 ${maintenance.value.trim()}`);
+  }
+
+  if (!insurance && offer.unknownConditionKeys?.includes('insurance_included')) parts.push('보험 미확인');
+
+  return parts.slice(0, 5).join(' · ');
+};
+
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
 export const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
 

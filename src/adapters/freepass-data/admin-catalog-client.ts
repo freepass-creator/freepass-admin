@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { freepassDataCloudRunHeaders } from './cloud-run-auth';
 import { z } from 'zod';
 import type { CanonicalProduct, Offer, PolicyValue } from '../../domain/product/types';
 
@@ -216,7 +217,7 @@ export class FreePassDataAdminCatalogClient {
     const { base, token } = config();
     const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/catalog`, {
       method: 'GET',
-      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      headers: { ...(await freepassDataCloudRunHeaders(base)), authorization: `Bearer ${token}`, accept: 'application/json' },
       cache: 'no-store',
       signal: AbortSignal.timeout(5_000),
     });

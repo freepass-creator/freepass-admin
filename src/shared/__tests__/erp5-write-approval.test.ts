@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertErp5MaintenanceWrite, erp5WriteGate, parseErp5WriteApproval } from '../erp5-write-approval';
+import { assertErp5MaintenanceWrite, erp5WriteGate, freepassDataWriteGate, parseErp5WriteApproval } from '../erp5-write-approval';
 
 const NOW = Date.parse('2026-09-26T07:00:00.000Z');
 const approval = JSON.stringify({
@@ -182,4 +182,43 @@ test('local development must use emulator or the same real-store approval', () =
   },false,NOW);
   assert.equal(localApproved.enabled,true);
   assert.equal(localApproved.mode,'PRODUCTION_APPROVED');
+});
+
+
+test('Admin runtime write gate uses FreePass Data instead of a Firebase business credential', () => {
+  const base = {
+    ERP5_WRITE: 'on',
+    FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'on',
+    FREEPASS_DATA_BASE_URL: 'https://data.example.test',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN: 't'.repeat(40),
+    VERCEL: '1',
+    VERCEL_ENV: 'production',
+    NODE_ENV: 'production',
+  };
+  const gate = freepassDataWriteGate(base, false);
+  assert.equal(gate.enabled, true);
+  assert.equal(gate.mode, 'FREEPASS_DATA');
+
+  assert.equal(freepassDataWriteGate({ ...base, FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'off' }, false).enabled, false);
+  assert.equal(freepassDataWriteGate({ ...base, FREEPASS_DATA_ADMIN_CATALOG_TOKEN: 'short' }, false).enabled, false);
+  assert.equal(freepassDataWriteGate({ ...base, FREEPASS_DATA_BASE_URL: 'http://data.example.test' }, false).enabled, false);
+});
+
+test('Admin FreePass Data write gate keeps preview read-only and emulator isolated', () => {
+  const base = {
+    ERP5_WRITE: 'on',
+    FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'on',
+    FREEPASS_DATA_BASE_URL: 'https://data.example.test',
+    FREEPASS_DATA_ADMIN_CATALOG_TOKEN: 't'.repeat(40),
+  };
+  const preview = freepassDataWriteGate({ ...base, VERCEL: '1', VERCEL_ENV: 'preview' }, false);
+  assert.equal(preview.enabled, false);
+  assert.equal(preview.mode, 'HOLD');
+
+  const emulator = freepassDataWriteGate({
+    ERP5_WRITE: 'on',
+    FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+  }, false);
+  assert.equal(emulator.enabled, true);
+  assert.equal(emulator.mode, 'EMULATOR');
 });

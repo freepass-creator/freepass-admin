@@ -3,55 +3,65 @@ import test from 'node:test';
 import { checkDeployEnv } from './deploy-env';
 import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
 
-const sa = JSON.stringify({ project_id: 'freepasserp5', client_email: 'x@freepasserp5.iam.gserviceaccount.com', private_key: 'k' });
+const dataToken = 'd'.repeat(40);
 const good = {
   SESSION_SECRET: 'a'.repeat(48),
   GOOGLE_OAUTH_CLIENT_ID: '123.apps.googleusercontent.com',
   GOOGLE_OAUTH_CLIENT_SECRET: 's',
-  ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: sa,
+  FREEPASS_DATA_BASE_URL: 'https://data.example.test',
+  FREEPASS_DATA_ADMIN_CATALOG_TOKEN: dataToken,
+  FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'off',
   ERP5_WRITE: 'off',
   APP_BASE_URL: 'https://freepass-admin.vercel.app',
   PUBLIC_BASE_URL: 'https://freepass-admin.vercel.app',
   CLAIM_LINK_BASE: 'https://freepass-admin.vercel.app/',
 };
-const writeApproval = JSON.stringify({
-  projectId: 'freepasserp5',
-  iamVerified: true,
-  iamRef: 'iam-check-20260926',
-  backupRestoreVerified: true,
-  backupRestoreRef: 'restore-drill-20260926',
-  serviceAccountEmail: 'x@freepasserp5.iam.gserviceaccount.com',
-  productionOrigin: 'https://freepass-admin.vercel.app',
-  approvalRef: 'ops-20260926',
-  approvedAt: '2026-09-26T06:30:00.000Z',
-  validUntil: '2026-10-03T06:30:00.000Z',
-});
-const errors = (env: Record<string, string | undefined>) => checkDeployEnv(env).filter((f) => f.level === 'error').map((f) => f.key);
+const errors = (env: Record<string, string | undefined>) =>
+  checkDeployEnv(env).filter((f) => f.level === 'error').map((f) => f.key);
 
 test('complete first-deploy env has no errors and never echoes secret values', () => {
   const findings = checkDeployEnv(good);
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
   const text = JSON.stringify(findings);
   assert.equal(text.includes('a'.repeat(48)), false);
-  assert.equal(text.includes('"k"'), false);
+  assert.equal(text.includes(dataToken), false);
 });
 
-test('missing login and data credentials are errors', () => {
-  assert.deepEqual(errors({}).sort(), ['ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET', 'SESSION_SECRET'].sort());
+test('missing login and FreePass Data credentials are errors', () => {
+  assert.deepEqual(
+    errors({}).sort(),
+    [
+      'FREEPASS_DATA_BASE_URL',
+      'FREEPASS_DATA_ADMIN_CATALOG_TOKEN',
+      'GOOGLE_OAUTH_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_SECRET',
+      'SESSION_SECRET',
+    ].sort(),
+  );
 });
 
-test('service account from another Firebase project or principal is rejected', () => {
-  const other = JSON.stringify({ project_id: 'freepasserp3', client_email: 'x@freepasserp3.iam.gserviceaccount.com', private_key: 'k' });
-  const wrongPrincipal = JSON.stringify({ project_id: 'freepasserp5', client_email: 'x@freepasserp3.iam.gserviceaccount.com', private_key: 'k' });
-  assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: other }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
-  assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: wrongPrincipal }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
-  assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: '{broken' }).includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
+test('Admin production rejects Firebase business-data credentials', () => {
+  const serviceAccount = JSON.stringify({
+    project_id: 'freepasserp5',
+    client_email: 'x@freepasserp5.iam.gserviceaccount.com',
+    private_key: 'k',
+  });
+  assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: serviceAccount })
+    .includes('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON'));
+  assert.ok(errors({ ...good, ERP5_SERVICE_ACCOUNT_PATH: '/tmp/erp5.json' })
+    .includes('ERP5_SERVICE_ACCOUNT_PATH'));
 });
 
 test('unapproved FreePass Data catalog cutover mode is blocked', () => {
-  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'SHADOW_READ' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
-  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
-  assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' }).includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'), false);
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'SHADOW_READ' })
+    .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
+  assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' })
+    .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
+  assert.equal(
+    errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' })
+      .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'),
+    false,
+  );
 });
 
 test('even a well-formed SHADOW_READ receipt cannot outrun the central OBSERVE registry stage', () => {
@@ -85,7 +95,11 @@ test('even a well-formed SHADOW_READ receipt cannot outrun the central OBSERVE r
     FREEPASS_DATA_ADMIN_CUTOVER_JSON:cutover,
   };
   const findings=checkDeployEnv(env);
-  assert.ok(findings.some((x)=>x.key==='FREEPASS_DATA_ADMIN_CUTOVER_JSON'&&x.level==='error'&&/중앙 FreePass Data 레지스트리 단계\(OBSERVE\)/.test(x.message)));
+  assert.ok(findings.some((x)=>
+    x.key==='FREEPASS_DATA_ADMIN_CUTOVER_JSON'
+    && x.level==='error'
+    && /중앙 FreePass Data 레지스트리 단계\(OBSERVE\)/.test(x.message)
+  ));
 });
 
 test('public addresses must be one https origin without a path', () => {
@@ -100,9 +114,13 @@ test('emulator/demo settings and short session secrets are blocked', () => {
   assert.ok(errors({ ...good, SESSION_SECRET: 'short' }).includes('SESSION_SECRET'));
 });
 
-test('ERP5_WRITE=on requires explicit IAM and backup/restore approval evidence', () => {
-  assert.ok(errors({ ...good, ERP5_WRITE: 'on' }).includes('ERP5_WRITE_APPROVAL_JSON'));
-  const approved = checkDeployEnv({ ...good, ERP5_WRITE: 'on', ERP5_WRITE_APPROVAL_JSON: writeApproval });
+test('ERP5_WRITE=on requires the explicit FreePass Data workflow write gate', () => {
+  assert.ok(errors({ ...good, ERP5_WRITE: 'on' }).includes('FREEPASS_DATA_ADMIN_WORKFLOW_WRITE'));
+  const approved = checkDeployEnv({
+    ...good,
+    ERP5_WRITE: 'on',
+    FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'on',
+  });
   assert.deepEqual(approved.filter((x) => x.level === 'error'), []);
   assert.ok(approved.some((x) => x.key === 'ERP5_WRITE' && x.level === 'ok'));
 });

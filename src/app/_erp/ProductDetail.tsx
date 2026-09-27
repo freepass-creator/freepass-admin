@@ -156,7 +156,10 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                   const support = [
                     `보증금 ${보증금(o.deposit)}`,
                     o.prepayment ? `선납금 ${won0(o.prepayment)}원` : null,
-                    o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : null,
+                    salesPriceReason(o) || null,
+                    o.isDefaultPreview && o.previewMonthlyRent !== undefined && o.previewMonthlyRent !== o.monthlyRent
+                      ? `기본조건 산출 월 ${won0(o.previewMonthlyRent)}원`
+                      : null,
                     o.conditionStatus === 'PARTIAL'
                       ? `조건 ${o.unknownConditionKeys?.length ?? 0}개 미확인`
                       : null,
@@ -165,7 +168,11 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                     <Link key={o.id} className="erp-offer-card" role="listitem"
                       aria-current={selected ? 'true' : undefined}
                       href={hrefWith(base, q, { offer: o.id })}>
-                      <strong className="erp-offer-term">{o.termMonths}개월</strong>
+                      <strong className="erp-offer-term">
+                        {o.termMonths}개월
+                        {o.isListingPrice ? <> <Badge tone="ok">최저가</Badge></> : null}
+                        {o.isDefaultPreview ? <> <Badge tone="info">기본조건</Badge></> : null}
+                      </strong>
                       <b className="erp-offer-rent">{won0(o.monthlyRent)}원/월</b>
                       <span className="erp-offer-conditions">{support}</span>
                     </Link>

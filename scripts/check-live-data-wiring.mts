@@ -72,7 +72,7 @@ must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gat
 must(/freepassDataWriteGate/.test(settlementRepo),'settlement writes must pass the FreePass Data production write gate');
 must(/freepassDataWorkflowFirestore/.test(firestoreTransport),'operational Firestore facade must route through FreePass Data');
 must(!/ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH|cert\(/.test(firestoreTransport),'Admin operational Firestore transport must not own Firebase business-data credentials');
-must(/admin-workflow\/read/.test(workflowTransport) && /admin-workflow\/commit/.test(workflowTransport),'Admin workflow transport must use FreePass Data read/commit contracts');
+must(/admin-workflow\/\$\{path\}/.test(workflowTransport) && /this\.call<ReadResult>\('read'/.test(workflowTransport) && /this\.call<Record<string, unknown>>\('commit'/.test(workflowTransport),'Admin workflow transport must use FreePass Data read/commit contracts');
 must(/FREEPASS_DATA_ADMIN_WORKFLOW_WRITE/.test(settlementRepo + await read('src/shared/erp5-write-approval.ts')),'Admin workflow writes must remain explicitly gated');
 must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
 must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');

@@ -13,6 +13,7 @@ import { AdminCatalogSwitchboard, adminCatalogReadMode } from '../adapters/freep
 import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
 import { FreePassDataAdminCompatProductRepository } from '../adapters/freepass-data/admin-compat-product-repository';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
+import { demoMode } from '../adapters/erp5/firestore';
 import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository';
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
@@ -37,14 +38,17 @@ export const freepassDataProducts = new FreePassDataAdminCatalogClient();
  * same compatibility values through FreePass Data first, so Admin can shed Firebase credentials
  * before semantic cutover to the approved admin-catalog projection.
  */
+const useDirectCatalogTransport = () =>
+  demoMode() || adminCatalogReadMode() === 'LEGACY_DIRECT';
+
 export const legacyProducts = {
-  list: () => adminCatalogReadMode() === 'LEGACY_DIRECT'
+  list: () => useDirectCatalogTransport()
     ? directLegacyProducts.list()
     : compatibilityProducts.list(),
-  get: (id: string) => adminCatalogReadMode() === 'LEGACY_DIRECT'
+  get: (id: string) => useDirectCatalogTransport()
     ? directLegacyProducts.get(id)
     : compatibilityProducts.get(id),
-  report: () => adminCatalogReadMode() === 'LEGACY_DIRECT'
+  report: () => useDirectCatalogTransport()
     ? directLegacyProducts.report()
     : compatibilityProducts.report(),
 };
@@ -94,7 +98,8 @@ export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
 export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
-export { ERP5_PROJECT_ID, erp5Ready, demoMode } from '../adapters/erp5/firestore';
+export { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
+export { demoMode };
 
 export const today = () => {
   const d = new Date(Date.now() + 9 * 3600_000);

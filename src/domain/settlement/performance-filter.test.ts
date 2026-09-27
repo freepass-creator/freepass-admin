@@ -26,7 +26,7 @@ const line = (r: SettlementRow, o: Partial<LedgerLine> = {}): LedgerLine => ({ r
 test('performance modes separate todo issue and done from authoritative ledger state',()=>{
   const todo=line(row());
   const issue=line(row({progress:{...row().progress,billHold:true}}));
-  const done=line(row({progress:{...row().progress,collected:true,paid:true}}));
+  const done=line(row({progress:{...row().progress,collected:true,paid:true},claimStage:'수금',payStage:'지급'}));
   assert.equal(performanceMatchesMode(todo,'공급사','todo'),true);
   assert.equal(performanceMatchesMode(todo,'공급사','issue'),false);
   assert.equal(performanceMatchesMode(issue,'공급사','issue'),true);

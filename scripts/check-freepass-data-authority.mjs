@@ -40,8 +40,10 @@ for (const file of walk(path.join(root, 'src'))) {
   const directSdk =
     /from\s+['"]firebase-admin\/(?:app|auth|firestore|storage|database)['"]/.test(runtimeText)
     || /from\s+['"]firebase\/(?:auth|firestore|database|storage)['"]/.test(runtimeText);
+  // Ownership means runtime code actually reads the credential from process.env.
+  // Deployment validators and regression tests are allowed to mention the forbidden key names.
   const businessCredential =
-    /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH/.test(runtimeText);
+    /process\.env\.(?:ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH)/.test(runtimeText);
 
   if (!directSdk && !businessCredential) continue;
 

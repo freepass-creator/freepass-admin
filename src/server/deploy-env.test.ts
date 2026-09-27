@@ -130,3 +130,29 @@ test('e-sign remains a launch-scope warning rather than bypassing data guards', 
   assert.deepEqual(f.filter((x) => x.level === 'error'), []);
   assert.ok(f.some((x) => x.key === 'ESIGN_ENABLED' && x.level === 'warn'));
 });
+
+
+test('Vercel production requires private FreePass Data Cloud Run WIF caller settings', () => {
+  const missing = errors({ ...good, VERCEL_ENV: 'production' });
+  assert.ok(missing.includes('FREEPASS_DATA_GCP_WIF_AUDIENCE'));
+  assert.ok(missing.includes('FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL'));
+
+  const configured = checkDeployEnv({
+    ...good,
+    VERCEL_ENV: 'production',
+    FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/vercel',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'freepass-admin-caller@freepasserp5.iam.gserviceaccount.com',
+  });
+  assert.deepEqual(configured.filter((x) => x.level === 'error'), []);
+});
+
+test('static Cloud Run ID token is diagnostic-only in Vercel production', () => {
+  const findings = checkDeployEnv({
+    ...good,
+    VERCEL_ENV: 'production',
+    FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/vercel',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'freepass-admin-caller@freepasserp5.iam.gserviceaccount.com',
+    FREEPASS_DATA_CLOUD_RUN_ID_TOKEN: 'diagnostic',
+  });
+  assert.ok(findings.some((x) => x.key === 'FREEPASS_DATA_CLOUD_RUN_ID_TOKEN' && x.level === 'warn'));
+});

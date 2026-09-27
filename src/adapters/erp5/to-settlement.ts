@@ -9,7 +9,7 @@ import type {
   Block, ClaimStage, FeeBasis, IntakeCatalogSnapshot, Maybe, PayStage, SettlementRow, SettleTarget,
 } from '../../domain/settlement/types';
 import { boolOf as b, numOrNull as n, strOrNull as s } from './atom';
-import { contractPaymentStateOf } from '../../domain/contracts/payment';
+import { contractPaymentDispositionStateOf, contractPaymentStateOf } from '../../domain/contracts/payment';
 
 export type Erp5Row = Record<string, unknown>;
 
@@ -81,8 +81,12 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
 
   const ratio = n(d.settleRatio) ?? 1;
   const contractPaymentState = contractPaymentStateOf(d);
+  const contractPaymentDisposition = contractPaymentDispositionStateOf(d);
   if (contractPaymentState.state === 'INCONSISTENT') {
     warnings.push(`★계약금 수납 기록 불완전 — ${contractPaymentState.reason}`);
+  }
+  if (contractPaymentDisposition.state === 'INCONSISTENT') {
+    warnings.push(`★계약금 처리 기록 불완전 — ${contractPaymentDisposition.reason}`);
   }
   if (ratio !== 1 && !s(d.settleNote)) warnings.push(`정산비율이 ${ratio} 인데 까닭이 안 적혀 있다`);
 
@@ -109,6 +113,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     catalogSnapshot: catalogSnapshotOf(d.catalogSnapshot),
     esignContractId: s(d.esignContractId),
     contractPayment: contractPaymentState.state === 'RECEIVED' ? contractPaymentState.fact : null,
+    contractPaymentDisposition,
     contractCancelledAt: n(d.contractCancelledAt),
     contractCancellationReason: s(d.contractCancellationReason),
     contractTerminatedAt: n(d.contractTerminatedAt),

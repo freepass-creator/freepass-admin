@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contractPaymentStateOf, planContractPayment } from './payment';
+import { contractPaymentDispositionStateOf, contractPaymentStateOf, planContractPayment, planContractPaymentDisposition } from './payment';
 
 const input = {
   amount: 500_000,
@@ -62,4 +62,46 @@ test('취소/해지 뒤에는 새 계약금 수납을 기록하지 않는다', (
   assert.equal(planContractPayment({ cancelled: true }, input, 1000).ok, false);
   assert.equal(planContractPayment({ contractCancelledAt: 1 }, input, 1000).ok, false);
   assert.equal(planContractPayment({ contractTerminatedAt: 1 }, input, 1000).ok, false);
+});
+
+test('계약취소 후 계약금은 반환·공급사 귀속·상계 합계로 명시적으로 종결한다', () => {
+  const raw = {
+    cancelled: true,
+    contractCancelledAt: 2000,
+    contractPaymentAmount: 500_000,
+    contractPaymentReceivedAt: 1000,
+    contractPaymentOperationId: 'contractpay_1234567890abcdef',
+  };
+  assert.equal(contractPaymentDispositionStateOf(raw).state, 'PENDING');
+  const result = planContractPaymentDisposition(raw, {
+    refundedAmount: 100_000,
+    supplierRevenueAmount: 300_000,
+    offsetAmount: 100_000,
+    reason: '취소 약정에 따른 일부 반환 및 비용 상계',
+    operationId: 'depositdisposition_1234567890',
+  }, 3000);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const state = contractPaymentDispositionStateOf({ ...raw, ...result.patch });
+  assert.equal(state.state, 'RESOLVED');
+  if (state.state === 'RESOLVED') assert.equal(state.fact.supplierRevenueAmount, 300_000);
+});
+
+test('계약금 처리 합계 불일치와 인도 후 취소처리를 막는다', () => {
+  const raw = {
+    cancelled: true,
+    contractCancelledAt: 2000,
+    contractPaymentAmount: 500_000,
+    contractPaymentReceivedAt: 1000,
+    contractPaymentOperationId: 'contractpay_1234567890abcdef',
+  };
+  const input = {
+    refundedAmount: 100_000,
+    supplierRevenueAmount: 100_000,
+    offsetAmount: 0,
+    reason: '처리',
+    operationId: 'depositdisposition_1234567890',
+  };
+  assert.equal(planContractPaymentDisposition(raw, input, 3000).ok, false);
+  assert.equal(planContractPaymentDisposition({ ...raw, delivered: true }, { ...input, supplierRevenueAmount: 400_000 }, 3000).ok, false);
 });

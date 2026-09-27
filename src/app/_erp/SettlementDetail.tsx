@@ -223,7 +223,8 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
               <div className="erp-tile">
                 <h3 className="erp-tile-title">처리 — 차량번호 · 계약서 · 인도 · 취소</h3>
                 <IntakeProgress code={cur.id} plate={cur.plate ?? ''} paper={p.paper} delivered={p.delivered} deliveredAt={p.deliveredAt ?? ''}
-                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} />
+                  cancelled={p.cancelled} today={today()} writable={writeEnabled()} contractPaymentAmount={cur.contractPayment?.amount}
+                  contractPaymentDisposition={cur.contractPaymentDisposition} />
               </div>
               <div className="erp-tile">
                 <h3 className="erp-tile-title">처리 이력 {events.length}건</h3>

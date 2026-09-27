@@ -17,7 +17,7 @@ import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
-import { planContractPayment, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
+import { planContractPayment, planContractPaymentDisposition, type ContractPaymentDispositionFact, type ContractPaymentDispositionInput, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -247,6 +247,35 @@ export class Erp5SettlementRepository {
         from: '',
         to: String(input.amount),
         ...(input.receiptId?.trim() ? { receiptId: input.receiptId.trim() } : {}),
+      } }, { merge: true });
+      return { ok: true as const, recorded: true, fact };
+    });
+  }
+
+  async recordContractPaymentDisposition(
+    code: string,
+    input: ContractPaymentDispositionInput,
+    by: string = BY,
+  ): Promise<{ ok: true; recorded: boolean; fact: ContractPaymentDispositionFact } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const doc = await tx.get(ref);
+      if (!doc.exists) return { ok: false as const, error: `없는 접수입니다: ${code}` };
+      const cur = doc.data() as Record<string, unknown>;
+      const now = Date.now();
+      const plan = planContractPaymentDisposition(cur, input, now);
+      if (!plan.ok) return plan;
+      if (plan.idempotent) return { ok: true as const, recorded: false, fact: plan.fact };
+      const fact = { ...plan.fact, by };
+      tx.update(ref, { ...plan.patch, contractPaymentDispositionBy: by, updatedAt: now, stateAt: new Date(now).toISOString() });
+      const eventKey = 'aud_contract_payment_disposition_' + createHash('sha256')
+        .update(code + '|' + input.operationId.trim()).digest('hex').slice(0, 16);
+      tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), { [eventKey]: {
+        at: now, by, operationId: input.operationId.trim(), field: '계약금처리', from: '처리대기',
+        to: `반환 ${input.refundedAmount} / 공급사귀속 ${input.supplierRevenueAmount} / 상계 ${input.offsetAmount}`,
+        reason: input.reason.trim(),
       } }, { merge: true });
       return { ok: true as const, recorded: true, fact };
     });

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { AUTH_COOKIE, authEnforced, isPublicPath, verifySession } from './server/auth';
+import { AUTH_COOKIE, authEnforced, isPublicPath, looksLikeSession } from './server/auth';
 import { esignEnabled, isEsignPath } from './server/esign-scope';
 
 /**
@@ -14,8 +14,9 @@ export async function proxy(req: NextRequest) {
    *   로그인 문이 먼저다: 관리자 전용 전자계약 API 는 로그인 없으면 지금처럼 401, 로그인했으면 404. */
   const esignClosed = !esignEnabled() && isEsignPath(path);
   if (!authEnforced() || isPublicPath(path)) return esignClosed ? closedEsign(req, path) : NextResponse.next();
-  const user = await verifySession(req.cookies.get(AUTH_COOKIE)?.value);
-  if (user) return esignClosed ? closedEsign(req, path) : NextResponse.next();
+  /* ★쿠키가 «있는지»만 본다 — 모든 요청 앞이라 firebase-admin 을 싣지 않는다.
+     진짜 검증(서명 · 취소 · 승인 · grant)은 require-admin.ts 가 쪽과 서버 액션 앞에서 한다. */
+  if (looksLikeSession(req.cookies.get(AUTH_COOKIE)?.value)) return esignClosed ? closedEsign(req, path) : NextResponse.next();
   if (req.method !== 'GET' || path.startsWith('/api/')) {
     return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
   }

@@ -4,6 +4,8 @@ import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { SideMenu } from './SideMenu';
 import { Icon } from './Icon';
+import { redirect } from 'next/navigation';
+import { authEnforced } from '../../server/auth';
 import { currentAdmin } from '../../server/require-admin';
 import { esignEnabled } from '../../server/esign-scope';
 
@@ -25,6 +27,10 @@ import { esignEnabled } from '../../server/esign-scope';
 export async function AdminChrome({ children }: { children: ReactNode }) {
   /* 로그인한 사람 — 기능 쪽 currentAdmin(로그인이 꺼진 로컬 개발에서는 null · 이름 칸을 비운다) */
   const 나 = await currentAdmin();
+  /* ★★여기가 쪽의 문이다. proxy 는 쿠키 «꼴»만 보므로(firebase-admin 을 모든 요청 앞에 실지 않으려고)
+     꼴만 맞는 가짜 쿠키는 proxy 를 지나간다. 그걸 여기서 막는다 — 안 막으면 운영에서
+     꼴만 맞춘 쿠키가 실데이터를 읽는다. 관리자 쪽은 전부 이 틀을 거친다. */
+  if (authEnforced() && !나) redirect('/login');
   const data = erp5Ready();
   const esign = esignEnabled();
   return (

@@ -22,7 +22,7 @@ FreePass Admin은 정본을 종류별로 분리한다. 문서·코드·데이터
 | Product / Offer / Policy 데이터 정본 | **FreePass Data** | AUTHORITY · Admin read cutover HOLD |
 | Admin Catalog 현재 읽기 | `AdminCatalogReader` → OBSERVE → FreePass Data compatibility transport | TRANSITIONAL SEMANTICS / DATA TRANSPORT |
 | Admin workflow persistence | `src/server/freepass-data.ts` → Admin Repository → FreePass Data workflow API → Firestore | DATA-ONLY TRANSPORT · Admin workflow meaning remains Admin-owned |
-| 운영 Auth/Permission | 없음 | NOT VERIFIED |
+| 운영 Auth/Permission | FreePass Data 공용 신원: Firebase Authentication + `identity_accounts` 승인 | CODED / production identity env pending |
 | 운영 Release target | 없음 | NOT VERIFIED |
 
 ## 2. Domain SSOT

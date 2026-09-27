@@ -3,11 +3,17 @@ import test from 'node:test';
 import { checkDeployEnv } from './deploy-env';
 import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
 
+const identitySa = JSON.stringify({
+  project_id: 'freepasserp5',
+  client_email: 'identity@freepasserp5.iam.gserviceaccount.com',
+  private_key: 'k',
+});
 const dataToken = 'd'.repeat(40);
 const good = {
-  SESSION_SECRET: 'a'.repeat(48),
-  GOOGLE_OAUTH_CLIENT_ID: '123.apps.googleusercontent.com',
-  GOOGLE_OAUTH_CLIENT_SECRET: 's',
+  IDENTITY_FIREBASE_WEB_API_KEY: 'AIzaSyTestTestTestTestTestTestTest',
+  IDENTITY_FIREBASE_AUTH_DOMAIN: 'freepasserp5.firebaseapp.com',
+  IDENTITY_FIREBASE_PROJECT_ID: 'freepasserp5',
+  IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: identitySa,
   FREEPASS_DATA_BASE_URL: 'https://data.example.test',
   FREEPASS_DATA_ADMIN_CATALOG_TOKEN: dataToken,
   FREEPASS_DATA_ADMIN_WORKFLOW_WRITE: 'off',
@@ -23,21 +29,47 @@ test('complete first-deploy env has no errors and never echoes secret values', (
   const findings = checkDeployEnv(good);
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
   const text = JSON.stringify(findings);
-  assert.equal(text.includes('a'.repeat(48)), false);
   assert.equal(text.includes(dataToken), false);
+  assert.equal(text.includes(identitySa), false);
 });
 
-test('missing login and FreePass Data credentials are errors', () => {
-  assert.deepEqual(
-    errors({}).sort(),
-    [
-      'FREEPASS_DATA_BASE_URL',
-      'FREEPASS_DATA_ADMIN_CATALOG_TOKEN',
-      'GOOGLE_OAUTH_CLIENT_ID',
-      'GOOGLE_OAUTH_CLIENT_SECRET',
-      'SESSION_SECRET',
-    ].sort(),
-  );
+test('missing shared identity and FreePass Data credentials are errors', () => {
+  assert.deepEqual(errors({}).sort(), [
+    'FREEPASS_DATA_BASE_URL',
+    'FREEPASS_DATA_ADMIN_CATALOG_TOKEN',
+    'IDENTITY_FIREBASE_WEB_API_KEY',
+    'IDENTITY_FIREBASE_AUTH_DOMAIN',
+    'IDENTITY_FIREBASE_PROJECT_ID',
+    'IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON',
+  ].sort());
+});
+
+test('retired Google OAuth settings are leftovers, not login configuration', () => {
+  const findings = checkDeployEnv({
+    ...good,
+    SESSION_SECRET: 'a'.repeat(48),
+    GOOGLE_OAUTH_CLIENT_ID: '123.apps.googleusercontent.com',
+    GOOGLE_OAUTH_CLIENT_SECRET: 'secret',
+    GOOGLE_WORKSPACE_DOMAIN: 'teamjpk.com',
+  });
+  assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
+  const stale = findings.filter((f) => f.level === 'warn').map((f) => f.key);
+  assert.ok(stale.includes('SESSION_SECRET'));
+  assert.ok(stale.includes('GOOGLE_OAUTH_CLIENT_ID'));
+  assert.ok(stale.includes('GOOGLE_OAUTH_CLIENT_SECRET'));
+  assert.ok(stale.includes('GOOGLE_WORKSPACE_DOMAIN'));
+});
+
+test('identity credential must match the configured identity Firebase project', () => {
+  const other = JSON.stringify({
+    project_id: 'freepasserp3',
+    client_email: 'identity@freepasserp3.iam.gserviceaccount.com',
+    private_key: 'k',
+  });
+  assert.ok(errors({ ...good, IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: other })
+    .includes('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON'));
+  assert.ok(errors({ ...good, IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: '{broken' })
+    .includes('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON'));
 });
 
 test('Admin production rejects Firebase business-data credentials', () => {
@@ -57,11 +89,8 @@ test('unapproved FreePass Data catalog cutover mode is blocked', () => {
     .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
   assert.ok(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'FREEPASS_DATA_READ' })
     .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'));
-  assert.equal(
-    errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' })
-      .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'),
-    false,
-  );
+  assert.equal(errors({ ...good, FREEPASS_DATA_ADMIN_CATALOG_READ_MODE: 'OBSERVE' })
+    .includes('FREEPASS_DATA_ADMIN_CUTOVER_JSON'), false);
 });
 
 test('even a well-formed SHADOW_READ receipt cannot outrun the central OBSERVE registry stage', () => {
@@ -90,7 +119,6 @@ test('even a well-formed SHADOW_READ receipt cannot outrun the central OBSERVE r
   const env={
     ...good,
     FREEPASS_DATA_ADMIN_CATALOG_READ_MODE:'SHADOW_READ',
-    FREEPASS_DATA_BASE_URL:'https://data.example.test',
     FREEPASS_DATA_ADMIN_CATALOG_TOKEN:token,
     FREEPASS_DATA_ADMIN_CUTOVER_JSON:cutover,
   };
@@ -108,10 +136,12 @@ test('public addresses must be one https origin without a path', () => {
   assert.ok(errors({ ...good, APP_BASE_URL: 'https://freepass-admin.vercel.app/login' }).includes('APP_BASE_URL'));
 });
 
-test('emulator/demo settings and short session secrets are blocked', () => {
+test('emulator and demo settings are blocked in production validation', () => {
   assert.ok(errors({ ...good, FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }).includes('FIRESTORE_EMULATOR_HOST'));
+  assert.ok(errors({ ...good, FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199' }).includes('FIREBASE_STORAGE_EMULATOR_HOST'));
+  assert.ok(errors({ ...good, FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099' }).includes('FIREBASE_AUTH_EMULATOR_HOST'));
+  assert.ok(errors({ ...good, IDENTITY_FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099' }).includes('IDENTITY_FIREBASE_AUTH_EMULATOR_HOST'));
   assert.ok(errors({ ...good, FPA_DEMO: 'on' }).includes('FPA_DEMO'));
-  assert.ok(errors({ ...good, SESSION_SECRET: 'short' }).includes('SESSION_SECRET'));
 });
 
 test('ERP5_WRITE=on requires the explicit FreePass Data workflow write gate', () => {
@@ -130,7 +160,6 @@ test('e-sign remains a launch-scope warning rather than bypassing data guards', 
   assert.deepEqual(f.filter((x) => x.level === 'error'), []);
   assert.ok(f.some((x) => x.key === 'ESIGN_ENABLED' && x.level === 'warn'));
 });
-
 
 test('Vercel production requires private FreePass Data Cloud Run WIF caller settings', () => {
   const missing = errors({ ...good, VERCEL_ENV: 'production' });

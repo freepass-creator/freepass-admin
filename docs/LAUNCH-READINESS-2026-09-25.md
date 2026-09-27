@@ -181,6 +181,139 @@ backup/restore drill 증거)이 먼저다. 이 저장소에는 여전히 product
 이는 의도된 대기 상태다. 프리패스 데이터 로그인이 서면 그 방식에 맞춘다.
 **그 전에 어드민에 임시 로그인을 만들지 않는다** — 임시로 낸 문은 안 닫힌다.
 
+## 4-C. 공용 로그인 화면을 입혔다 (2026-09-27)
+
+대표: 「로그인화면 갖고오자」
+
+이 절은 위 4-A(구글 워크스페이스 단일 문)를 **대체한다.**
+
+### 따른 정본
+
+- 화면: freepass-data `dashboard/public/login/` → `src/app/login/shared/` 로 **고치지 않고** 옷긴 것.
+  `SHARED-LOGIN-DESIGN.md` §3 — 「앱은 브랜드와 정책만 넘긴다. 화면을 고치지 않는다」
+- 계약: freepass-data `docs/IDENTITY-AND-ACCESS.md`
+- 순서: 두 문서 모두 §5 에서 **2번이 freepass-admin** 이며,
+  「구글 OAuth 와 허용목록을 걷어내고 붙인다 · APPROVAL」 이다. 그대로 했다.
+
+### 구조
+
+```
+비밀번호·재설정·세션취소  → Firebase Authentication
+승인·역할·앱별 grant     → 프리패스 데이터 Firestore `identity_accounts`
+```
+
+- 이 앱은 비밀번호를 저장하지도, 자기 토큰을 만들지도, 자기 허용목록을 두지도 않는다(계약 §2).
+- `APPROVED` 이어도 grant 에 `freepass-admin` 이 없으면 거부한다.
+- 권한을 못 읽으면 «거부»다(fail-closed). 최대 5분만 들고 있는다(계약 §4).
+- 세션은 **Firebase 가 발급하는 세션 쿠키**다 — 어드민은 서버가 쪽을 그리므로
+  감사 대시보드처럼 요청마다 ID 토큰을 붙일 수 없다. 발급도 취소도 Firebase 쪽이라 §2 를 깨지 않는다.
+  ★계약 §6 의 「앱 부류별 세션 길이」는 열려 있다. 5일은 어드민의 제안이며,
+  감사 대시보드 이전이 운영에서 돌면 공용 계약에 맞춘다.
+
+### 걷어낸 것
+
+`src/server/google-login.ts` · `src/app/login/google/**` · 그 테스트 ·
+`SESSION_SECRET` · `GOOGLE_OAUTH_CLIENT_ID/SECRET` · `GOOGLE_WORKSPACE_DOMAIN` 읽기.
+`deploy:check` 는 이제 공용 신원 값을 요구하고, 위 폐기물이 환경에 남아 있으면 «지우라»고 경고한다.
+
+### 쉽게 놓칠 것 하나 — 쪽의 문을 같이 세웠다
+
+proxy 는 모든 요청 앞에서 돌기 때문에 firebase-admin 을 실지 않는다 — 쿠키 «꼴»만 본다.
+그랬면 꼴만 맞춘 가짜 쿠키가 proxy 를 지나 **쪽까지 닿는다.** 서버 액션은 `requireAdmin` 이 막지만
+쪽 자체는 막히지 않아, 운영에서라면 실데이터가 그려졌을 것이다.
+그래서 `AdminChrome` 이 `authEnforced() && !나` 일 때 `/login` 으로 돌려보낸다 — 관리자 쪽은 전부 이 틀을 거친다.
+
+### 런타임 검사에서 바뀜 것과, 빈 자리
+
+- 예전에는 g1 꼴 쿠키를 직접 만들어 «로그인한» 길을 걸었다. 이제 세션은 Firebase 가 발급하므로
+  우리가 만들 수 없다 — 만들 수 있으면 그게 사고다. 검사를 **«위조가 거부되는지»** 로 바꿨다.
+- ⚠ **남은 구멍**: 로그인 뒤의 route error boundary·재시도 검사는 이제 돌지 않는다.
+  되살리려면 Firebase Auth 에뮬레이터가 필요하며 별도 작업이다. 검사 영수증에도 `coverageGaps` 로 남긴다.
+- 외부 요청 허용목록을 **비웠다** — 글꼴도 Firebase SDK 도 우리가 서비스한다(CDN 없음).
+
+### 아직 안 된 것
+
+로그인은 **아직 못 한다.** `IDENTITY_FIREBASE_*` 값이 없기 때문이고, 그 값은
+계정이 어느 Firebase 프로젝트에 서느냐가 정해져야 나온다. 그것은 프리패스 데이터가 정한다
+(계약 §5 — 감사 대시보드가 1번, 어드민이 2번).
+설정이 없으면 로그인 화면은 **까닭만 적고 닫힌다** — 다른 문을 내주지 않는다.
+
+## 4-D. grant 검사를 잠시 내려둔다 (2026-09-27) — 되돌릴 자리
+
+대표: 「승인만 받으면 들어오게」
+
+### 왜 내렸나
+
+계약 §4 는 「`APPROVED` 여도 그 앱 grant 가 없으면 거절」이다. 그러나 프리패스 데이터의
+`decisionRecord` 가 승인할 때 `grants` 를 `['audit-dashboard']` 로 **통째로 덮어쓴다**
+(`store.mjs` 도 `.update()` 라 병합이 아니라 교체다).
+
+그쪽 함수를 그대로 돌린 시뮬레이션(2026-09-27):
+
+```
+① 마스터 가입        grants=["audit-dashboard"]                    어드민=X
+② 동료 승인        grants=["audit-dashboard"]                    어드민=X
+③ 손으로 grant 추가  grants=["audit-dashboard","freepass-admin"]   어드민=O
+④ 마스터 재승인      grants=["audit-dashboard"]                    어드민=X  ← 지워진다
+```
+
+`freepass-admin` 을 grants 에 넣는 코드가 어디에도 없고, 손으로 넣어도 다음 승인에 지워진다.
+그 상태로 계약을 지키면 **대표를 포함해 아무도** 들어오지 못한다.
+
+### 무엇을 받아들였나
+
+이 문은 지금 「진짜 동료인가」까지만 묻는다.
+**감사 대시보드만 쓰라고 승인한 사람도 미수·계약·정산을 다 본다.** 그 차이를 알고 받아들인 결정이다.
+
+### 되돌릴 자리
+
+`src/server/identity.ts` 의 `authorityOf` 한 줄 — `&& grants.includes(APP_GRANT)` 를 되살리면 끝난다.
+조건은 프리패스 데이터가 grants 를 **앱별로 병합**하도록 고치는 것이다.
+
+말없이 바뀌지 않게 두 곳이 고정한다.
+- `freepass-data-boundary.test.ts` — 지금 상태(`status === 'APPROVED'` 만 본다)를 둥 다 검사한다.
+  되돌리는 것도 여기를 같이 고쳐야 하므로 양방향 모두 의도적인 수정이 된다.
+- `npm run identity:journey` — ④ 번이 바로 그 결정을 걷는다.
+
+## 4-E. 로컬에서 돌리는 법 (2026-09-27 — 실제로 걸어본 순서)
+
+로컬에서는 **두 가지를 동시에 가질 수 없다.** 신원과 업무자료가 같은 Firestore 를 쓰는데
+`FIRESTORE_EMULATOR_HOST` 는 그 둘을 «같이» 에뮬레이터로 보낸다. 그래서 모드가 둘이다.
+
+### ① 로그인까지 걸어보기
+
+```bash
+npm run local:setup          # .env.local 을 만든다
+npm run local:emulators      # 창 하나
+npm run dev                  # 창 둘
+# http://localhost:3000/login → 「계정 만들기」로 가입
+npm run local:approve -- <가입한 이메일>
+# 같은 화면에서 로그인 → 들어간다
+```
+
+`local:approve` 가 대신하는 둘:
+① 로컬에는 메일이 오지 않으므로 «메일 인증됨» 으로 바꿔 주고,
+② 승인 화면은 프리패스 데이터 것이므로 `identity_accounts` 에 `APPROVED` 를 써 준다.
+★에뮬레이터가 안 떠 있으면 아무것도 하지 않고 멈춘다 — 운영을 건드리지 않는다.
+
+목록은 **0건이 맞다.** Firestore 도 에뮬레이터라 상품·접수가 없다.
+
+### ② 실제 자료 보기
+
+```bash
+npm run local:setup -- --data --force
+npm run dev
+# http://localhost:3000/intake  — 로그인 없이 실제 freepasserp5 를 «읽기만» 한다
+```
+
+개발에서는 `ADMIN_AUTH` 가 꺼져 있어 로그인을 건너뛴다(배포에서는 늘 켜져 있고 끔 수 없다).
+실측(2026-09-27): 상품 686 · 접수·정산원장 471 · 환수 23 · 전자계약 74.
+
+### 이 순서는 말로 적은 것이 아니다
+
+2026-09-27 에 브라우저로 끝까지 걸었다 — 공용 화면이 뜨고, `basic` 구성으로 가입되고,
+「인증 메일을 보냈습니다」 가 나오고, 승인 뒤 로그인하면 `/intake` 3열 화면으로 들어간다.
+
 ## 5. 남은 것
 
 1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.

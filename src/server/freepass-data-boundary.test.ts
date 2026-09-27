@@ -21,6 +21,8 @@ test('UI and services cannot bypass the FreePass Data persistence gateway', () =
 test('one FreePass Data gateway composes catalog and workflow persistence without owning business commands', () => {
   const data = readFileSync('src/server/freepass-data.ts', 'utf8');
   assert.match(data, /new AdminCatalogSwitchboard\(legacyProducts, freepassDataProducts\)/);
+  assert.match(data, /new FreePassDataAdminCompatProductRepository\(\)/);
+  assert.match(data, /adminCatalogReadMode\(\) === 'LEGACY_DIRECT'/);
   assert.match(data, /new Erp5SettlementRepository\(\)/);
   assert.match(data, /new Erp5ContractRepository\(\)/);
   assert.match(data, /export \{ esignAssets, esignRepository \} from/);

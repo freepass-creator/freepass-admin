@@ -17,7 +17,10 @@
     "visual:qa": "node scripts/visual-qa.cjs",
     "deploy:check": "tsx scripts/check-deploy-env.mts",
     "test:identity-journey": "tsx --test scripts/check-identity-journey.mts",
-    "identity:journey": "firebase emulators:exec --only auth,firestore --project freepasserp5 \"npm run test:identity-journey\""
+    "identity:journey": "firebase emulators:exec --only auth,firestore --project freepasserp5 \"npm run test:identity-journey\"",
+    "local:emulators": "firebase emulators:start --only auth,firestore --project freepasserp5",
+    "local:approve": "tsx scripts/local-approve.mts",
+    "local:setup": "tsx scripts/local-setup.mts"
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",

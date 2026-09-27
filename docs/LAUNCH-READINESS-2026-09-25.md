@@ -275,6 +275,45 @@ proxy 는 모든 요청 앞에서 돌기 때문에 firebase-admin 을 실지 않
   되돌리는 것도 여기를 같이 고쳐야 하므로 양방향 모두 의도적인 수정이 된다.
 - `npm run identity:journey` — ④ 번이 바로 그 결정을 걷는다.
 
+## 4-E. 로컬에서 돌리는 법 (2026-09-27 — 실제로 걸어본 순서)
+
+로컬에서는 **두 가지를 동시에 가질 수 없다.** 신원과 업무자료가 같은 Firestore 를 쓰는데
+`FIRESTORE_EMULATOR_HOST` 는 그 둘을 «같이» 에뮬레이터로 보낸다. 그래서 모드가 둘이다.
+
+### ① 로그인까지 걸어보기
+
+```bash
+npm run local:setup          # .env.local 을 만든다
+npm run local:emulators      # 창 하나
+npm run dev                  # 창 둘
+# http://localhost:3000/login → 「계정 만들기」로 가입
+npm run local:approve -- <가입한 이메일>
+# 같은 화면에서 로그인 → 들어간다
+```
+
+`local:approve` 가 대신하는 둘:
+① 로컬에는 메일이 오지 않으므로 «메일 인증됨» 으로 바꿔 주고,
+② 승인 화면은 프리패스 데이터 것이므로 `identity_accounts` 에 `APPROVED` 를 써 준다.
+★에뮬레이터가 안 떠 있으면 아무것도 하지 않고 멈춘다 — 운영을 건드리지 않는다.
+
+목록은 **0건이 맞다.** Firestore 도 에뮬레이터라 상품·접수가 없다.
+
+### ② 실제 자료 보기
+
+```bash
+npm run local:setup -- --data --force
+npm run dev
+# http://localhost:3000/intake  — 로그인 없이 실제 freepasserp5 를 «읽기만» 한다
+```
+
+개발에서는 `ADMIN_AUTH` 가 꺼져 있어 로그인을 건너뛴다(배포에서는 늘 켜져 있고 끔 수 없다).
+실측(2026-09-27): 상품 686 · 접수·정산원장 471 · 환수 23 · 전자계약 74.
+
+### 이 순서는 말로 적은 것이 아니다
+
+2026-09-27 에 브라우저로 끝까지 걸었다 — 공용 화면이 뜨고, `basic` 구성으로 가입되고,
+「인증 메일을 보냈습니다」 가 나오고, 승인 뒤 로그인하면 `/intake` 3열 화면으로 들어간다.
+
 ## 5. 남은 것
 
 1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.

@@ -13,9 +13,8 @@ await mkdir(out, { recursive: true });
 const port = 3217;
 const origin = `http://127.0.0.1:${port}`;
 const secret = 'freepass-admin-runtime-smoke-secret-2026-09-25';
-const ALLOWED_EXTERNAL_PREFIXES = [
-  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/',
-];
+/* 외부 요청은 하나도 허용하지 않는다 — 글꼴도 Firebase SDK 도 우리가 서비스한다(2026-09-27) */
+const ALLOWED_EXTERNAL_PREFIXES = [];
 const domain = 'runtime.invalid';
 const childEnv = { ...process.env,
   SESSION_SECRET: secret,
@@ -26,6 +25,8 @@ for (const key of [
   'ERP5_FIREBASE_SERVICE_ACCOUNT_JSON','ERP5_SERVICE_ACCOUNT_PATH',
   'AUTH_FIREBASE_SERVICE_ACCOUNT_JSON','AUTH_SERVICE_ACCOUNT_PATH',
   'FIREBASE_WEB_API_KEY','GOOGLE_OAUTH_CLIENT_ID','GOOGLE_OAUTH_CLIENT_SECRET',
+  'IDENTITY_FIREBASE_WEB_API_KEY','IDENTITY_FIREBASE_AUTH_DOMAIN','IDENTITY_FIREBASE_PROJECT_ID',
+  'IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON',
   'ADMIN_EMAILS','ADMIN_UIDS','PUBLIC_BASE_URL','NEXT_PUBLIC_APP_URL','ERP5_STORAGE_BUCKET',
 ]) delete childEnv[key];
 
@@ -94,21 +95,20 @@ try {
   const redirected = new URL(login.url());
   check('unauthenticated GET redirects to login', redirected.pathname === '/login');
   check('login redirect preserves exact protected destination', redirected.searchParams.get('next') === '/products?q=sample', redirected.search);
-  check('real login UI rendered', await login.getByRole('heading',{name:'로그인'}).count() === 1);
-  /* 돌아갈 곳을 문이 들고 있나 — 문 «모양»이 아니라 그것만 본다.
-     폼이면 숨은 칸에, 구글 문이면 링크 주소의 next 에 실린다(2026-09-27 erp3 폼 → 구글 문).
-     ★문이 아예 없을 수도 있다: 로그인 자격증명은 배포 때 들어오는 값이라 CI 에는 없다.
-       그때는 «없는 것을 통과시키지 않고», 까닭을 적고 닫혔는지를 대신 검사한다 —
-       설정이 없다고 다른 문이 열리거나 빈 화면이 서면 그게 사고다. */
-  const formNext = await login.locator('input[name="next"]').first().getAttribute('value').catch(() => null);
-  const linkHref = await login.locator('a[href*="/login/google"]').first().getAttribute('href').catch(() => null);
-  const carried = formNext ?? (linkHref ? new URL(linkHref, origin).searchParams.get('next') : null);
-  if (carried === null) {
-    const closed = await login.getByText('구글 로그인 설정이 아직 없습니다').count();
-    const fields = await login.locator('input[type="password"], input[name="id"], input[name="email"]').count();
-    check('login door absent: says why and offers no other way in', closed === 1 && fields === 0, `notice=${closed} fields=${fields}`);
+  /* 문이 «서 있는지»를 본다. 로그인 화면은 프리패스 공용 화면(src/app/login/shared/)이고,
+     Firebase 웹 설정은 배포 때 들어오는 값이라 CI 에는 없다.
+     ★없을 때 «없는 것을 통과시키지 않는다» — 까닭을 적고 «다른 문을 내주지 않았는지»를 대신 검사한다.
+       설정이 없다고 빈 화면이 서거나 딴 입구가 열리면 그게 사고다. */
+  const configured = await login.locator('.fpl-card').count();
+  if (configured) {
+    check('shared login screen is mounted', configured === 1);
+    check('shared login screen offers the approval-mode join', await login.getByText('가입').count() > 0);
   } else {
-    check('login door carries redirect destination', carried === '/products?q=sample', String(carried));
+    const closed = await login.getByText('로그인 설정이 아직 없습니다').count();
+    const fields = await login.locator('input[type="password"], input[type="email"]').count();
+    const otherDoor = await login.locator('a[href*="/login/"]').count();
+    check('login door absent: says why and offers no other way in',
+      closed === 1 && fields === 0 && otherDoor === 0, `notice=${closed} fields=${fields} doors=${otherDoor}`);
   }
   await login.screenshot({path:path.join(out,'390-login-redirect.png'),fullPage:true});
 
@@ -124,11 +124,13 @@ try {
   check('unauthenticated browser has no page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await anon.close();
 
-  const visibleRouteError = async (page) =>
-    page.locator('strong:visible').filter({ hasText:'데이터를 불러오지 못했습니다.' }).first().isVisible();
-
-  // 2. Auth boundary crossed with a synthetic cookie that follows the real g1 session format.
-  // No ERP5 credentials are supplied, so protected routes must reach their real route error boundary safely.
+  /* 2. 위조된 세션은 어디서도 거부된다.
+     ★예전에는 여기서 g1 꼴의 쿠키를 직접 만들어 «로그인한 » 길을 걸어보았다.
+       이제 세션은 Firebase 가 발급하므로 우리가 만들 수 없다 — 만들 수 있으면 그게 사고다.
+       그래서 «지나가는지» 대신 «막히는지» 를 검사한다.
+     ⚠ 남은 구멍: 로그인한 다음의 route error boundary·재시도 검사는 이제 여기서 못 돌린다.
+       되살리려면 Firebase Auth 에뮬레이터가 필요하며, 그것은 별도 작업이다. */
+  receipt.coverageGaps = ['authenticated route error boundary and retry need a Firebase Auth emulator'];
   for (const width of [390, 1440]) {
     const ctx = await browser.newContext({ viewport:{width,height:900}, locale:'ko-KR', reducedMotion:'reduce' });
     await ctx.addCookies([{ name:'fpa_session', value:token(), url:origin, httpOnly:true, sameSite:'Lax' }]);
@@ -143,59 +145,37 @@ try {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
 
-    // 전자계약은 운영 개시 범위 밖(DEC-2026-09-25-05) — ESIGN_ENABLED 미설정이면 목록은 접수로, 고객 링크·API 는 404.
-    await page.goto(origin + '/esign', { waitUntil:'networkidle' });
-    check(`${width}px /esign is closed and redirects to intake`, new URL(page.url()).pathname === '/intake', page.url());
-    const signLink = await ctx.request.get(origin + '/sign/not-real', { maxRedirects:0 });
-    check(`${width}px authenticated customer sign link is closed 404`, signLink.status() === 404, String(signLink.status()));
-    const esignApi = await ctx.request.get(origin + '/api/esign/asset/not-real/not-real', { maxRedirects:0 });
-    check(`${width}px authenticated esign API is closed 404`, esignApi.status() === 404, String(esignApi.status()));
-
-    for (const [route, title] of [['/products','상품찾기'],['/intake','계약접수'],['/settlement','정산관리']]) {
+    for (const route of ['/products', '/intake', '/settlement']) {
       await page.goto(origin + route, { waitUntil:'networkidle' });
+      const landed = new URL(page.url()).pathname;
       const body = await page.locator('body').innerText();
-      const ok = page.url().startsWith(origin + route)
-        && body.includes(title)
-        && body.includes('데이터를 불러오지 못했습니다.')
-        && body.includes('다시 시도');
-      const leaked = /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH|private_key|자격증명이 없다/.test(body);
-      receipt.routeChecks.push({width,route,ok,rawCredentialLeak:leaked});
-      check(`${width}px ${route} reaches user-safe route error boundary`, ok);
+      const leaked = /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON|private_key|자격증명이 없다/.test(body);
+      /* ★`ok` 를 빼면 영수증의 failed 계산(`routeChecks.some(x => !x.ok)`)이 undefined 를 보고
+         «전부 통과했는데 실패» 가 된다. 인쇄된 결과와 종료 코드가 어긋나면 둘 다 못 믿는다. */
+      receipt.routeChecks.push({width,route,landed,ok:landed === '/login',rawCredentialLeak:leaked});
+      check(`${width}px forged session cannot open ${route}`, landed === '/login', landed);
       check(`${width}px ${route} does not expose credential diagnostics`, !leaked);
-
-      if (route === '/products') {
-        let localRequests = 0;
-        const observe = req => { if (req.url().startsWith(origin + route)) localRequests++; };
-        page.on('request', observe);
-        await page.getByRole('button',{name:'다시 시도'}).click();
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForTimeout(250);
-        page.removeListener('request', observe);
-        check(`${width}px retry keeps fail-closed error state`, await visibleRouteError(page));
-        check(`${width}px retry performs a real Next request`, localRequests > 0, `requests=${localRequests}`);
-        await page.screenshot({path:path.join(out,`${width}-products-error-retry.png`),fullPage:true});
-      }
     }
 
-    /* ★데이터 연결 상태 — 운영 연결을 증명하라고 만든 화면이다. DOM 에 글이 «있는» 것으로는 부족하다:
-       PC 셸이 .erp-screen 아닌 자식을 전부 걷어서 이 화면이 통째로 빈 칸이었다(실측 2026-09-27 —
-       서버는 200 으로 내용을 내는데 화면에는 아무것도 없었다). 그래서 «보이는지»를 본다. */
-    await page.goto(origin + '/system/data-status', { waitUntil:'networkidle' });
-    const status = page.locator('main .fn-data-status').first();
-    const statusBox = await status.boundingBox().catch(() => null);
-    check(`${width}px /system/data-status is actually visible, not just present`,
-      (await status.isVisible().catch(() => false)) && (statusBox?.height ?? 0) > 0,
-      JSON.stringify(statusBox));
-    check(`${width}px /system/data-status shows its probes`,
-      (await page.locator('main .fn-data-status').innerText().catch(() => '')).includes('상품'));
-    await page.screenshot({path:path.join(out,`${width}-data-status.png`),fullPage:true});
+    /* 위조된 세션의 쓰기는 «거부»되어야 한다. 꼴만 보는 proxy 를 지나가므로
+       거부하는 자리가 바뀜다 — 서버 액션은 requireAdmin 이, 그상 POST 는 쪽의 문이 막는다.
+       그래서 답이 401 일 수도, 로그인으로 돌려보내는 307 일 수도 있다.
+       ★가를 것은 «열렸는가»이다 — 2xx 가 나오면 사고고, 돌려보낸다면 로그인이어야 한다. */
+    const post = await ctx.request.post(origin + '/settlement', {
+      headers:{'content-type':'application/json'}, data:{test:true}, maxRedirects:0,
+    });
+    const status = post.status();
+    const sentTo = status >= 300 && status < 400 ? new URL(post.headers()['location'] ?? '/', origin).pathname : null;
+    const refused = status >= 400 || (status >= 300 && status < 400 && sentTo === '/login');
+    check(`${width}px forged session cannot write`, refused, `${status}${sentTo ? ' -> ' + sentTo : ''}`);
+    const esignApi = await ctx.request.get(origin + '/api/esign/asset/not-real/not-real', { maxRedirects:0 });
+    check(`${width}px forged session cannot reach the private esign API`,
+      esignApi.status() === 401 || esignApi.status() === 404, String(esignApi.status()));
+    const signLink = await ctx.request.get(origin + '/sign/not-real', { maxRedirects:0 });
+    check(`${width}px customer sign link stays closed 404`, signLink.status() === 404, String(signLink.status()));
 
-    await page.goto(origin + '/', { waitUntil:'networkidle' });
-    check(`${width}px authenticated root redirects to canonical intake route`, new URL(page.url()).pathname === '/intake', page.url());
-    check(`${width}px redirected intake still fails closed without ERP5 credentials`,
-      await visibleRouteError(page));
-    await page.screenshot({path:path.join(out,`${width}-root-intake-error.png`),fullPage:true});
-    check(`${width}px authenticated runtime has no client page errors`, errors.length === 0, errors.join(' | '));
+    await page.screenshot({path:path.join(out,`${width}-forged-session-refused.png`),fullPage:true});
+    check(`${width}px runtime has no client page errors`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }
 

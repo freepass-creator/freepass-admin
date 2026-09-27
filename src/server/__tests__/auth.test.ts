@@ -1,9 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isPublicPath } from '../auth.js';
+import { isPublicPath, looksLikeSession } from '../auth.js';
 
 describe('로그인 없이 열리는 길', () => {
-  it('청구 링크 · 고객 전자계약 · 사진 · 로그인은 공개한다', () => {
+  it('청구 링크 · 고객 전자계약 · 사진 · 글꼴 · 로그인은 공개한다', () => {
     for (const p of [
       '/c/abc',
       '/sign/token-123',
@@ -11,6 +11,8 @@ describe('로그인 없이 열리는 길', () => {
       '/api/esign/public/token-123/asset',
       '/api/img',
       '/login',
+      /* 공용 로그인 화면이 Firebase 로 사람을 확인한 뒤 토큰을 맡기는 곳 — 그때는 아직 쿠키가 없다 */
+      '/api/session',
       '/fonts/pretendard/pretendard.css',
       '/fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.0.woff2',
       '/fonts/OFL-Pretendard.txt',
@@ -34,31 +36,18 @@ describe('로그인 없이 열리는 길', () => {
   });
 });
 
-import { verifySession } from '../auth.js';
-import { googleSessionOf } from '../google-login.js';
-/* 모듈은 설정을 «부를 때» 읽는다 */
-process.env.SESSION_SECRET = 'test-secret-test-secret-test-secret-000';
-process.env.GOOGLE_WORKSPACE_DOMAIN = 'teamjpk.com';
-
-describe('문은 구글 워크스페이스 하나 — 대표 2026-09-27 「ERP3는 이제 안 쓰는 건데」', () => {
-  it('구글 세션(g1.…)만 연다', async () => {
-    const u = { uid: 'google:1', email: 'kjs@teamjpk.com', name: 'kjs' };
-    assert.deepEqual(await verifySession(googleSessionOf(u)), { uid: u.uid, name: u.name, role: 'admin', email: u.email });
+describe('proxy 의 쿠키 눈대중 — 이것만으로는 아무도 못 들어온다', () => {
+  /**
+   * ★proxy 는 모든 요청 앞에서 도는 자리라 firebase-admin 을 싣지 않는다. 쿠키 «꼴»만 본다.
+   *   진짜 검증(서명 · 취소 · 승인 · grant)은 require-admin.ts → identity.ts 가 쪽과 서버 액션 앞에서 한다.
+   */
+  it('Firebase 세션 쿠키 꼴이 아니면 문 앞에서 걷는다', () => {
+    for (const bad of [undefined, '', 'abc', 'a.b', 'a.b.c', `g1.${'x'.repeat(40)}`, 'x'.repeat(200)]) {
+      assert.equal(looksLikeSession(bad), false, String(bad));
+    }
   });
 
-  it('★erp4(freepasserp3) 세션 쿠키 꼴은 열리지 않는다 — 폐기한 창고로 되돌아가지 않게', async () => {
-    /* Firebase 세션 쿠키는 점 셋으로 나뉜 JWT 다. 그 꼴로 와도 g1. 이 아니면 문을 열지 않는다 */
-    const firebaseLike = ['eyJhbGciOiJSUzI1NiJ9', 'eyJ1aWQiOiJ1aWQtdGVzdCJ9', 'c2ln'].join('.');
-    assert.equal(await verifySession(firebaseLike), null);
-  });
-
-  it('쿠키가 없거나 위조면 열리지 않는다', async () => {
-    assert.equal(await verifySession(undefined), null);
-    const [p, body] = googleSessionOf({ uid: 'google:2', email: 'x@teamjpk.com', name: 'x' }).split('.');
-    assert.equal(await verifySession(`${p}.${body}.wrong-signature`), null);
-  });
-
-  it('워크스페이스 밖 주소는 세션이 있어도 열리지 않는다', async () => {
-    assert.equal(await verifySession(googleSessionOf({ uid: 'google:3', email: 'someone@gmail.com', name: 'someone' })), null);
+  it('꼴이 맞으면 지나가되, 지나간 것이 권한은 아니다', () => {
+    assert.ok(looksLikeSession(['eyJhbGciOiJSUzI1NiJ9', 'x'.repeat(40), 'c2ln'].join('.')));
   });
 });

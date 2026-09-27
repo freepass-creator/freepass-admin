@@ -10,8 +10,20 @@ const legacyDebt = new Set([
   'src/adapters/erp5/esign-repository.ts',
   'src/adapters/erp5/fee-rules.ts',
   'src/adapters/erp5/vehicle-master.ts',
-  'src/server/auth.ts',
 ]);
+
+/**
+ * Identity is not business data. The shared contract (freepass-data
+ * docs/IDENTITY-AND-ACCESS.md §1) keeps credentials in Firebase Authentication and the approval
+ * record in `identity_accounts`, and explicitly allows a consumer application to hold Firebase Auth
+ * for user identity while forbidding it a business-data credential.
+ *
+ * So this file may reach Firebase, but it is checked rather than waved through: it must touch the
+ * account collection and nothing else, and must not reach an ERP5 adapter. An allowlist entry that
+ * is never verified is how "temporary" debt becomes permanent.
+ */
+const IDENTITY = 'src/server/identity.ts';
+const ACCOUNT_COLLECTION = 'identity_accounts';
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -39,6 +51,19 @@ for (const file of walk(path.join(root, 'src'))) {
     ) && !/import\s+type\s+[^;]+from\s+['"]firebase-admin\/(?:firestore|storage)['"]/.test(text);
 
   if (!direct) continue;
+
+  if (rel === IDENTITY) {
+    const collections = [...text.matchAll(/\.collection\((?:'([^']+)'|([A-Z_]+))\)/g)]
+      .map((m) => m[1] ?? m[2]);
+    const named = [...new Set(collections)];
+    /* 공백을 한 칸으로 고른 뒤 그대로 찾는다 — 문자열 안의 \s 는 JS 가 s 로 뭉갠다 */
+    const bound = text.replace(/\s+/g, ' ').includes(`= '${ACCOUNT_COLLECTION}'`);
+    if (/adapters\/erp5/.test(text)) violations.push(`${rel} must not reach an ERP5 adapter`);
+    else if (named.length !== 1) violations.push(`${rel} must read exactly one collection, saw ${named.join(', ') || 'none'}`);
+    else if (!bound) violations.push(`${rel} must bind its collection to '${ACCOUNT_COLLECTION}'`);
+    continue;
+  }
+
   if (legacyDebt.has(rel)) debtSeen.push(rel);
   else violations.push(rel);
 }

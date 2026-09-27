@@ -25,17 +25,22 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   const warn = (key: string, message: string) => out.push({ level: 'warn', key, message });
   const ok = (key: string, message: string) => out.push({ level: 'ok', key, message });
 
-  /* 로그인 — Google Workspace */
-  const secret = env.SESSION_SECRET?.trim() ?? '';
-  if (secret.length < 32) err('SESSION_SECRET', '32자 이상 무작위 값이 필요합니다');
-  else ok('SESSION_SECRET', `설정됨 (${secret.length}자)`);
-  for (const k of ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET']) {
-    if (!set(env, k)) err(k, 'Google Workspace 로그인에 필요합니다'); else ok(k, '설정됨');
+  /* 로그인 — 프리패스 공용 신원(IDENTITY-AND-ACCESS 계약).
+     비밀번호는 Firebase Auth 가, 승인·grant 는 프리패스 데이터가 든다. 이 앱은 둘 다 저장하지 않는다.
+     ★웹 설정 셋은 비밀이 아니다 — 공개 배포물에 실린다. 없으면 로그인 화면이 서지 않는다. */
+  for (const k of ['IDENTITY_FIREBASE_WEB_API_KEY', 'IDENTITY_FIREBASE_AUTH_DOMAIN', 'IDENTITY_FIREBASE_PROJECT_ID'] as const) {
+    if (!set(env, k)) err(k, '공용 로그인 화면에 필요합니다'); else ok(k, '설정됨');
   }
-  const cid = env.GOOGLE_OAUTH_CLIENT_ID?.trim() ?? '';
-  if (cid && !cid.endsWith('.apps.googleusercontent.com')) warn('GOOGLE_OAUTH_CLIENT_ID', 'Google 웹 OAuth 클라이언트 ID 꼴(…apps.googleusercontent.com)이 아닙니다');
-  const domain = env.GOOGLE_WORKSPACE_DOMAIN?.trim();
-  ok('GOOGLE_WORKSPACE_DOMAIN', domain ? `${domain} 구성원만 로그인` : '미설정 → 기본값 teamjpk.com');
+  /* 서버 검증용 — 따로 안 넣었으면 업무 자격증명을 쓴다(같은 프로젝트일 때만 맞는다) */
+  if (set(env, 'IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON')) ok('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON', '설정됨');
+  else if (set(env, 'ERP5_FIREBASE_SERVICE_ACCOUNT_JSON')) {
+    warn('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON', '미설정 — ERP5 서비스계정으로 ID 토큰을 검증합니다. 계정이 다른 프로젝트에 있으면 로그인이 전부 실패합니다');
+  } else err('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON', 'ID 토큰 서버 검증에 필요합니다');
+  const apiKey = env.IDENTITY_FIREBASE_WEB_API_KEY?.trim() ?? '';
+  if (apiKey && !apiKey.startsWith('AIza')) warn('IDENTITY_FIREBASE_WEB_API_KEY', 'Firebase 웹 API 키 꼴(AIza…)이 아닙니다');
+  for (const k of ['SESSION_SECRET', 'GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET', 'GOOGLE_WORKSPACE_DOMAIN'] as const) {
+    if (set(env, k)) warn(k, '더 이상 읽지 않습니다 — 구글 OAuth 문은 공용 신원으로 바뀌었습니다. 지우세요');
+  }
 
   /* FreePass Data (Firestore freepasserp5) */
   const raw = env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -107,7 +112,7 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   if (origins.size > 1) err('APP_BASE_URL', 'APP_BASE_URL · PUBLIC_BASE_URL · CLAIM_LINK_BASE 가 같은 주소여야 합니다');
 
   /* 운영에 있으면 안 되는 것 */
-  for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FPA_DATA_DIR']) {
+  for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST', 'IDENTITY_FIREBASE_AUTH_EMULATOR_HOST', 'FPA_DATA_DIR']) {
     if (set(env, k)) err(k, '운영 환경에 두면 안 됩니다');
   }
   if (env.FPA_DEMO?.trim() === 'on') {

@@ -36,6 +36,35 @@ test('performance modes separate todo issue and done from authoritative ledger s
   assert.equal(performanceMatchesMode(done,'공급사','issue'),false);
 });
 
+test('completed rows with damage stay in issue instead of disappearing into done',()=>{
+  const corrected=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'정정',
+  }));
+  const broken=line(row({
+    progress:{...row().progress,collected:true},
+  }),{broken:true});
+  const inconsistent=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'확인',
+  }));
+
+  for(const candidate of [corrected,broken,inconsistent]){
+    assert.equal(performanceMatchesMode(candidate,'공급사','issue'),true);
+    assert.equal(performanceMatchesMode(candidate,'공급사','done'),false);
+    assert.equal(performanceMatchesMode(candidate,'공급사','todo'),false);
+  }
+});
+
+test('clean completed rows remain done and do not become issues',()=>{
+  const done=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'수금',
+  }));
+  assert.equal(performanceMatchesMode(done,'공급사','done'),true);
+  assert.equal(performanceMatchesMode(done,'공급사','issue'),false);
+});
+
 test('pay axis does not treat supplier bill hold as a pay issue',()=>{
   const held=line(row({progress:{...row().progress,billHold:true}}));
   assert.equal(performanceMatchesMode(held,'영업채널','issue'),false);

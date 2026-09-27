@@ -11,7 +11,7 @@
  */
 import { AdminCatalogSwitchboard, adminCatalogReadMode } from '../adapters/freepass-data/admin-catalog-reader';
 import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
-import { FreePassDataAdminCompatProductRepository } from '../adapters/freepass-data/admin-compat-product-repository';
+import { FreePassDataAdminCompatProductRepository, adminCompatibilityTransportConfigured } from '../adapters/freepass-data/admin-compat-product-repository';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
 import { demoMode } from '../adapters/erp5/firestore';
 import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository';
@@ -39,7 +39,9 @@ export const freepassDataProducts = new FreePassDataAdminCatalogClient();
  * before semantic cutover to the approved admin-catalog projection.
  */
 const useDirectCatalogTransport = () =>
-  demoMode() || adminCatalogReadMode() === 'LEGACY_DIRECT';
+  demoMode()
+  || adminCatalogReadMode() === 'LEGACY_DIRECT'
+  || !adminCompatibilityTransportConfigured();
 
 export const legacyProducts = {
   list: () => useDirectCatalogTransport()

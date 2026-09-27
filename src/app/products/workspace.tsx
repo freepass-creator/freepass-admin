@@ -26,10 +26,9 @@ import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField } from '../_design/Primitives';
-import { salesPriceReason } from '../_erp/ProductDetail';
 import {
   STATUS_ORDER, lead, 대여료구간, 보증금구간, 현재주행구간, 상품축이름,
-  많은순, mergeProductSelections, parseProductSearch, 보증금, 정책말,
+  많은순, mergeProductSelections, parseProductSearch, 정책말,
   type 상품축,
 } from './workspace-config';
 
@@ -297,7 +296,7 @@ export async function ProductWorkspace({ q, mode, base }: {
                 title={p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id}
                 mainValue={o ? `월 ${Math.round(o.monthlyRent / 10000).toLocaleString('ko-KR')}만 원` : '요금 없음'}
                 meta={[txt(p.registration?.vehicleNumber), txt(p.productKind), txt(p.status)].filter((x) => x !== '—').join(' · ') || '—'}
-                value={o ? `${o.termMonths}개월 · 보증 ${보증금(o.deposit)}${salesPriceReason(o) ? ` · ${salesPriceReason(o)}` : ''}` : '—'} />
+                value={o ? txt(o.supplierName ?? o.supplierId ?? p.supplierName ?? p.supplierId) : '—'} />
             ))}
             {shown.length === 0 && <EmptyState>조건에 맞는 차가 없습니다.</EmptyState>}
           </div>

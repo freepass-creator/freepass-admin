@@ -85,7 +85,21 @@ export async function revokeSessions(cookie: string): Promise<void> {
 interface Authority { status?: string; role?: string; grants?: unknown; name?: string }
 const cache = new Map<string, { at: number; who: Identity | null }>();
 
-/** 계약 ③ — 권한을 풀고 fail-closed. 못 읽었다고 열어 주지 않는다 */
+/**
+ * 계약 ③ — 권한을 풀고 fail-closed. 못 읽었다고 열어 주지 않는다.
+ *
+ * ★★**지금은 `APPROVED` 만 본다. grant 는 보지 않는다.** — 대표 2026-09-27 「승인만 받으면 들어오게」
+ *   계약 §4 는 「`APPROVED` 여도 그 앱 grant 가 없으면 거절」이지만, 프리패스 데이터의 `decisionRecord` 가
+ *   승인할 때 `grants` 를 `['audit-dashboard']` 로 «통째로 덮어쓴다». 그래서 `freepass-admin` 을
+ *   넣어 주는 길이 없고, 손으로 넣어도 다음 승인에 지워진다(실측 2026-09-27 — 시뮬레이션으로 확인).
+ *   그 상태로 계약을 지키면 «대표를 포함해 아무도» 못 들어온다.
+ *
+ *   ⚠ 그래서 이 문은 지금 「진짜 동료인가」까지만 묻는다. 감사 대시보드만 쓰라고 승인한 사람도
+ *     미수·계약·정산을 다 본다. 그 차이를 받아들인 결정이다.
+ *   ⚠ **되돌릴 자리는 아래 한 줄이다.** 프리패스 데이터가 grants 를 앱별로 «병합»하도록 고치면
+ *     `&& grants.includes(APP_GRANT)` 를 되살린다. boundary 테스트가 이 상태를 고정하고 있어서
+ *     말없이 바뀌지 않는다.
+ */
 async function authorityOf(uid: string, email: string): Promise<Identity | null> {
   const id = email.trim().toLowerCase();
   const hit = cache.get(uid);
@@ -94,8 +108,7 @@ async function authorityOf(uid: string, email: string): Promise<Identity | null>
   try {
     const snap = await getFirestore(identityApp()).collection(ACCOUNTS).doc(id).get();
     const a = (snap.exists ? snap.data() : null) as Authority | null;
-    const grants = Array.isArray(a?.grants) ? (a!.grants as unknown[]).map(String) : [];
-    if (a?.status === 'APPROVED' && grants.includes(APP_GRANT)) {
+    if (a?.status === 'APPROVED') {
       who = { uid, id, name: String(a.name ?? id.split('@')[0]), role: a.role === 'MASTER' ? 'MASTER' : 'MEMBER' };
     }
   } catch { who = null; }

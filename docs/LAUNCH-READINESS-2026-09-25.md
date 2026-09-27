@@ -238,6 +238,43 @@ proxy 는 모든 요청 앞에서 돌기 때문에 firebase-admin 을 실지 않
 (계약 §5 — 감사 대시보드가 1번, 어드민이 2번).
 설정이 없으면 로그인 화면은 **까닭만 적고 닫힌다** — 다른 문을 내주지 않는다.
 
+## 4-D. grant 검사를 잠시 내려둔다 (2026-09-27) — 되돌릴 자리
+
+대표: 「승인만 받으면 들어오게」
+
+### 왜 내렸나
+
+계약 §4 는 「`APPROVED` 여도 그 앱 grant 가 없으면 거절」이다. 그러나 프리패스 데이터의
+`decisionRecord` 가 승인할 때 `grants` 를 `['audit-dashboard']` 로 **통째로 덮어쓴다**
+(`store.mjs` 도 `.update()` 라 병합이 아니라 교체다).
+
+그쪽 함수를 그대로 돌린 시뮬레이션(2026-09-27):
+
+```
+① 마스터 가입        grants=["audit-dashboard"]                    어드민=X
+② 동료 승인        grants=["audit-dashboard"]                    어드민=X
+③ 손으로 grant 추가  grants=["audit-dashboard","freepass-admin"]   어드민=O
+④ 마스터 재승인      grants=["audit-dashboard"]                    어드민=X  ← 지워진다
+```
+
+`freepass-admin` 을 grants 에 넣는 코드가 어디에도 없고, 손으로 넣어도 다음 승인에 지워진다.
+그 상태로 계약을 지키면 **대표를 포함해 아무도** 들어오지 못한다.
+
+### 무엇을 받아들였나
+
+이 문은 지금 「진짜 동료인가」까지만 묻는다.
+**감사 대시보드만 쓰라고 승인한 사람도 미수·계약·정산을 다 본다.** 그 차이를 알고 받아들인 결정이다.
+
+### 되돌릴 자리
+
+`src/server/identity.ts` 의 `authorityOf` 한 줄 — `&& grants.includes(APP_GRANT)` 를 되살리면 끝난다.
+조건은 프리패스 데이터가 grants 를 **앱별로 병합**하도록 고치는 것이다.
+
+말없이 바뀌지 않게 두 곳이 고정한다.
+- `freepass-data-boundary.test.ts` — 지금 상태(`status === 'APPROVED'` 만 본다)를 둥 다 검사한다.
+  되돌리는 것도 여기를 같이 고쳐야 하므로 양방향 모두 의도적인 수정이 된다.
+- `npm run identity:journey` — ④ 번이 바로 그 결정을 걷는다.
+
 ## 5. 남은 것
 
 1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.

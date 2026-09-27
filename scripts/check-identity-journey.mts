@@ -81,13 +81,16 @@ test('신원 여정 — 가입부터 취소까지', async (t) => {
     assert.equal(await denialOf(await cookieFor(EMAIL)), 'NOT_APPROVED');
   });
 
-  await t.test('④ ★APPROVED 라도 이 앱 grant 가 없으면 거절한다 — 승인은 「진짜 동료」일 뿐이다', async () => {
+  await t.test('④ ★APPROVED 면 grant 없이도 들어온다 — 대표 2026-09-27 「승인만 받으면 들어오게」', async () => {
+    /* 계약 §4 는 grant 까지 요구하지만, 프리패스 데이터가 승인 시 `grants` 를
+       ['audit-dashboard'] 로 덮어써서 freepass-admin 을 넣을 길이 없다. 그걸 고칠 때까지의 결정이다.
+       ★그쪽이 고쳐지면 이 검사를 «거절» 로 되돌린다. */
     await db.collection(ACCOUNTS).doc(EMAIL).update({ status: 'APPROVED', grants: ['audit-dashboard'] });
     forgetAuthority(user.uid);
-    assert.equal(await denialOf(await cookieFor(EMAIL)), 'NOT_APPROVED');
+    assert.equal(await denialOf(await cookieFor(EMAIL)), null);
   });
 
-  await t.test('⑤ grant 를 받으면 들어온다', async () => {
+  await t.test('⑤ grant 가 있어도 물론 들어온다', async () => {
     await db.collection(ACCOUNTS).doc(EMAIL).update({ grants: ['audit-dashboard', APP_GRANT] });
     forgetAuthority(user.uid);
     const r = await resolveSession(await cookieFor(EMAIL));
@@ -95,14 +98,14 @@ test('신원 여정 — 가입부터 취소까지', async (t) => {
     assert.equal(r.who.id, EMAIL);
   });
 
-  await t.test('⑥ grant 를 거두면 다시 막힌다', async () => {
-    await db.collection(ACCOUNTS).doc(EMAIL).update({ grants: ['audit-dashboard'] });
+  await t.test('⑥ 승인을 거두면 다시 막힌다', async () => {
+    await db.collection(ACCOUNTS).doc(EMAIL).update({ status: 'REJECTED' });
     forgetAuthority(user.uid);
     assert.equal(await denialOf(await cookieFor(EMAIL)), 'NOT_APPROVED');
   });
 
   await t.test('⑦ 계정을 지우면 쿠키가 남아 있어도 막힌다', async () => {
-    await db.collection(ACCOUNTS).doc(EMAIL).update({ grants: ['audit-dashboard', APP_GRANT] });
+    await db.collection(ACCOUNTS).doc(EMAIL).update({ status: 'APPROVED' });   /* ⑥ 에서 거둔 승인을 되돌린다 */
     forgetAuthority(user.uid);
     const cookie = await cookieFor(EMAIL);
     assert.equal(await denialOf(cookie), null, '지우기 전엔 들어와진다');

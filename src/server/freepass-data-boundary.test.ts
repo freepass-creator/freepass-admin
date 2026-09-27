@@ -39,7 +39,15 @@ test('server helpers cannot reach persistence on their own; identity reaches onl
     && /(?:from|import\()\s*['"][^'"]*(?:adapters\/erp5|firebase-admin|firebase\/database)/.test(readFileSync(path, 'utf8')));
   assert.deepEqual(violations, []);
 
-  const identity = readFileSync('src/server/identity.ts', 'utf8');
+  /**
+   * Assert on what the file DOES, not on what it says. Three assertions in this suite have now
+   * tripped on their own explanatory comments, which is a test reporting a fault that is not there.
+   */
+  const code = (path: string) => readFileSync(path, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  const identity = code('src/server/identity.ts');
   // Identity never touches operational data, and never the retired ERP3/RTDB.
   assert.doesNotMatch(identity, /from ['"][^'"]*(?:adapters\/erp5|firebase\/database)/);
   assert.doesNotMatch(identity, /freepasserp3|AUTH_PROJECT_ID|ADMIN_EMAILS|ADMIN_UIDS/);
@@ -48,6 +56,12 @@ test('server helpers cannot reach persistence on their own; identity reaches onl
   assert.match(identity, /const ACCOUNTS = 'identity_accounts'/);
   // The contract forbids an application minting its own session token or keeping its own allowlist.
   assert.match(identity, /createSessionCookie/);
+  // Owner, 2026-09-27: the door asks only whether this is a real colleague, because FreePass
+  // Data's approval overwrites grants with ['audit-dashboard'] and nothing can grant this app.
+  // Pinned so it cannot drift back silently in either direction: restoring the grant check is a
+  // deliberate edit here too, once that side merges grants per application.
+  assert.doesNotMatch(identity, /grants\.includes\(APP_GRANT\)/);
+  assert.match(identity, /a\?\.status === 'APPROVED'/);
   // Emulator journey cannot prove these two, so pin them here instead of letting them drift.
   // Revocation must be checked (the Auth emulator does not implement it for session cookies).
   assert.match(identity, /verifySessionCookie\(cookie, true\)/);
@@ -59,11 +73,11 @@ test('server helpers cannot reach persistence on their own; identity reaches onl
   assert.ok(/5 \* 60_000/.test(ttl), `authority cache must stay within 5 minutes, saw ${ttl}`);
 
   // The door itself holds no database and no password.
-  const door = readFileSync('src/server/auth.ts', 'utf8');
+  const door = code('src/server/auth.ts');
   assert.doesNotMatch(door, /from ['"][^'"]*firebase|getFirestore\(|getAuth\(|initializeApp\(|\.collection\(/);
-  assert.doesNotMatch(readFileSync('src/app/login/actions.ts', 'utf8'), /signIn\(|password/i);
+  assert.doesNotMatch(code('src/app/login/actions.ts'), /signIn\(|password/i);
   // The shared screen is worn, not edited: the app passes brand and policy only.
-  const worn = readFileSync('src/app/login/LoginScreen.tsx', 'utf8');
+  const worn = code('src/app/login/LoginScreen.tsx');
   assert.match(worn, /policy: 'APPROVAL'/);
   assert.match(worn, /from '\.\/shared\/login\.js'/);
 });

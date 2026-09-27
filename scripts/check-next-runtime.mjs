@@ -95,8 +95,21 @@ try {
   check('unauthenticated GET redirects to login', redirected.pathname === '/login');
   check('login redirect preserves exact protected destination', redirected.searchParams.get('next') === '/products?q=sample', redirected.search);
   check('real login UI rendered', await login.getByRole('heading',{name:'로그인'}).count() === 1);
-  const hiddenNext = await login.locator('input[name="next"]').getAttribute('value');
-  check('login form carries redirect destination', hiddenNext === '/products?q=sample', String(hiddenNext));
+  /* 돌아갈 곳을 문이 들고 있나 — 문 «모양»이 아니라 그것만 본다.
+     폼이면 숨은 칸에, 구글 문이면 링크 주소의 next 에 실린다(2026-09-27 erp3 폼 → 구글 문).
+     ★문이 아예 없을 수도 있다: 로그인 자격증명은 배포 때 들어오는 값이라 CI 에는 없다.
+       그때는 «없는 것을 통과시키지 않고», 까닭을 적고 닫혔는지를 대신 검사한다 —
+       설정이 없다고 다른 문이 열리거나 빈 화면이 서면 그게 사고다. */
+  const formNext = await login.locator('input[name="next"]').first().getAttribute('value').catch(() => null);
+  const linkHref = await login.locator('a[href*="/login/google"]').first().getAttribute('href').catch(() => null);
+  const carried = formNext ?? (linkHref ? new URL(linkHref, origin).searchParams.get('next') : null);
+  if (carried === null) {
+    const closed = await login.getByText('구글 로그인 설정이 아직 없습니다').count();
+    const fields = await login.locator('input[type="password"], input[name="id"], input[name="email"]').count();
+    check('login door absent: says why and offers no other way in', closed === 1 && fields === 0, `notice=${closed} fields=${fields}`);
+  } else {
+    check('login door carries redirect destination', carried === '/products?q=sample', String(carried));
+  }
   await login.screenshot({path:path.join(out,'390-login-redirect.png'),fullPage:true});
 
   const post = await anon.request.post(origin + '/settlement', {
@@ -163,6 +176,19 @@ try {
         await page.screenshot({path:path.join(out,`${width}-products-error-retry.png`),fullPage:true});
       }
     }
+
+    /* ★데이터 연결 상태 — 운영 연결을 증명하라고 만든 화면이다. DOM 에 글이 «있는» 것으로는 부족하다:
+       PC 셸이 .erp-screen 아닌 자식을 전부 걷어서 이 화면이 통째로 빈 칸이었다(실측 2026-09-27 —
+       서버는 200 으로 내용을 내는데 화면에는 아무것도 없었다). 그래서 «보이는지»를 본다. */
+    await page.goto(origin + '/system/data-status', { waitUntil:'networkidle' });
+    const status = page.locator('main .fn-data-status').first();
+    const statusBox = await status.boundingBox().catch(() => null);
+    check(`${width}px /system/data-status is actually visible, not just present`,
+      (await status.isVisible().catch(() => false)) && (statusBox?.height ?? 0) > 0,
+      JSON.stringify(statusBox));
+    check(`${width}px /system/data-status shows its probes`,
+      (await page.locator('main .fn-data-status').innerText().catch(() => '')).includes('상품'));
+    await page.screenshot({path:path.join(out,`${width}-data-status.png`),fullPage:true});
 
     await page.goto(origin + '/', { waitUntil:'networkidle' });
     check(`${width}px authenticated root redirects to canonical intake route`, new URL(page.url()).pathname === '/intake', page.url());

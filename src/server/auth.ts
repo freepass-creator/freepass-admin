@@ -33,9 +33,12 @@ export async function verifySession(cookie: string | undefined): Promise<AdminUs
   } catch { return null; }
 }
 
-/** 로그인 없이 열리는 길 — 청구 링크 · 사진 · 로그인 자체 · Next 내부 */
+/** 로그인 없이 열리는 길 — 청구 링크 · 사진 · 글꼴 · 로그인 자체 · Next 내부 */
 export function isPublicPath(path: string): boolean {
   return path === '/login' || path.startsWith('/login/google') || path.startsWith('/c/') || path.startsWith('/api/img')
     || path.startsWith('/sign/') || path.startsWith('/api/esign/public/')
+    /* ★/fonts 는 통째로 연다 — 확장자만 보면 글꼴 CSS(.css)가 빠져 로그인으로 튕기고, 로그인 화면이
+       제 글꼴 없이 선다(실측 2026-09-27). 이 아래에는 OFL 글꼴과 그 라이선스 글뿐이다. */
+    || path.startsWith('/fonts/')
     || path.startsWith('/_next/') || path === '/favicon.ico' || /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(path);
 }

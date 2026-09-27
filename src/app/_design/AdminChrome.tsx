@@ -7,8 +7,6 @@ import { Icon } from './Icon';
 import { currentAdmin } from '../../server/require-admin';
 import { esignEnabled } from '../../server/esign-scope';
 
-/** 규격 기본 글꼴 — Pretendard Variable (OFL). 규격 erp.css 의 --erp-font-family 첫 글꼴. */
-const PRETENDARD = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
 
 /**
@@ -31,7 +29,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
   const esign = esignEnabled();
   return (
     <>
-      <link rel="stylesheet" href={PRETENDARD} precedence="default" />
       {/* 단일 UI 표지 — body 격자와 Admin 전용 범위를 세우는 구조 marker. */}
       <i className="erp-theme-flag" hidden />
 

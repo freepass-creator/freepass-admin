@@ -11,6 +11,9 @@ describe('로그인 없이 열리는 길', () => {
       '/api/esign/public/token-123/asset',
       '/api/img',
       '/login',
+      '/fonts/pretendard/pretendard.css',
+      '/fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.0.woff2',
+      '/fonts/OFL-Pretendard.txt',
       '/_next/static/x.js',
       '/favicon.ico',
     ]) assert.ok(isPublicPath(p), p);

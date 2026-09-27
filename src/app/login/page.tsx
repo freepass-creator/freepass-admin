@@ -1,3 +1,4 @@
+import { Wordmark } from '../_design/Brand';
 import { googleLoginReady, workspaceDomain } from '../../server/google-login';
 import { safeNextPath } from '../../server/safe-next';
 
@@ -21,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="lg-main">
       <section className="lg-card">
         <div className="lg-brand">
-          <span><b>freepass</b><i>admin</i></span>
+          <Wordmark />
         </div>
         <header>
           <h1>로그인</h1>

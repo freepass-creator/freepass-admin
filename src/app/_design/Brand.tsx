@@ -26,6 +26,19 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
 }
 
 /**
+ * 밝은 바탕 워드마크 — 같은 공식 CI, 띠 밖에서 쓴다(로그인 등). 누르는 것이 아니라 얼굴이라 Link 가 아니다.
+ *   색  main `#1B2A4A` · base `#7F93B3` — CI/BI Center 의 밝은 바탕 값 그대로.
+ *   ★크기·색은 쓰는 쪽 CSS 가 정한다. 여기서 고정하는 것은 «레터링(Exo 2)과 굵기»뿐이다.
+ */
+export function Wordmark({ tail = 'admin', className }: { tail?: string; className?: string }) {
+  return (
+    <span className={`${레터링.className}${className ? ` ${className}` : ''}`}>
+      <b>freepass</b><i>{tail}</i>
+    </span>
+  );
+}
+
+/**
  * 기존 이름 TopMenu는 호환을 위해 유지한다. 현재 위치는 PC 하단 업무 버튼(2026-09-21).
  *   Sales 기준: 흰 바탕, 아이콘·라벨만 강조. 활성 메뉴에 진한 버튼 면을 칠하지 않는다.
  * ★폰에서는 이 메뉴가 안 보인다 — `_design/MobileTabBar`의 다섯 걸음

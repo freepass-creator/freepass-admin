@@ -33,7 +33,11 @@
    * 겹치잖아」). */
   body:has(> .erp-theme-flag) > header.fn-top,
   body:has(> .erp-theme-flag) > .dz-tabbar,
-  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen) { display: none !important; }
+  /* ★시스템 정보 쪽(.fn-sysinfo — 데이터 상태)은 판 셋 조립이 아니라 한 칸짜리 정보 화면이라
+     PC 용 .erp-screen 짝이 없다. 이 줄이 그것까지 걷어서 «데이터 연결 상태» 화면이 PC 에서
+     통째로 빈 칸이었다(실측 2026-09-27 — 서버는 200 으로 내용을 내는데 화면에 아무것도 없었다).
+     폰 쪽(max-width:900) 은 .erp-screen 만 걷으므로 .fn-sysinfo 는 거기서도 그대로 선다. */
+  body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen):not(.fn-sysinfo) { display: none !important; }
   body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
   /* 가상 데이터 표지 — 운영 데이터로 오해하지 않게 상단바에 늘 보인다 */

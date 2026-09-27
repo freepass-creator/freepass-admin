@@ -32,7 +32,7 @@ const noInlineStyleFiles = internalAdminUiFiles;
  * audience/shell 자체가 다른 surface라서다. 공통 interaction 원칙은 별도 검증 대상으로 올린다.
  */
 const explicitSurfaceExceptions = [
-  'src/app/login/LoginForm.tsx',
+  'src/app/login/page.tsx',
   'src/app/c/[token]/ClaimDoor.tsx',
   'src/app/sign/[token]/SignClient.tsx',
 ];

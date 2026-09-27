@@ -8,7 +8,7 @@ export default async function DataStatusPage() {
   const s = await adminDataStatus();
   const legacyCatalog = s.catalog.servedBy === 'LEGACY_ERP5_BRIDGE';
   return (
-    <section className="fn-data-status">
+    <section className="fn-data-status fn-sysinfo">
       <PanelHeader title="데이터 연결 상태" count={s.live ? 'LIVE' : 'CHECK'} />
       <p className="fn-muted">데이터 정본: 프리패스 데이터 · 상품 모드 {s.catalog.mode} · 확인 {s.checkedAt}</p>
       {legacyCatalog

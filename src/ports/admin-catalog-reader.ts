@@ -14,7 +14,7 @@ export type AdminCatalogReceipt = {
   /** Shared data authority. The currently served transport may still be a legacy bridge during migration. */
   authority: 'FREEPASS_DATA';
   mode: AdminCatalogReadMode;
-  servedBy: 'LEGACY_ERP5_BRIDGE' | 'FREEPASS_DATA';
+  servedBy: 'LEGACY_ERP5_BRIDGE' | 'FREEPASS_DATA_COMPAT_BRIDGE' | 'FREEPASS_DATA';
   cutoverAuthorized: boolean;
   holdReasons: string[];
   cutover?: {

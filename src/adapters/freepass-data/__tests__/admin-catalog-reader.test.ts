@@ -16,13 +16,13 @@ const legacy = {
   },
 };
 
-test('Admin Catalog defaults to FreePass Data OBSERVE boundary while serving the legacy bridge', async () => {
+test('Admin Catalog defaults to OBSERVE while serving the FreePass Data compatibility bridge', async () => {
   assert.equal(adminCatalogReadMode(undefined), 'OBSERVE');
   const reader = new AdminCatalogSwitchboard(legacy, undefined, () => 'OBSERVE');
   const result = await reader.list();
   assert.deepEqual(result.rows, [product]);
   assert.equal(result.receipt.authority, 'FREEPASS_DATA');
-  assert.equal(result.receipt.servedBy, 'LEGACY_ERP5_BRIDGE');
+  assert.equal(result.receipt.servedBy, 'FREEPASS_DATA_COMPAT_BRIDGE');
   assert.equal(result.receipt.cutoverAuthorized, false);
   assert.deepEqual(result.receipt.holdReasons, ['FREEPASS_DATA_ADMIN_CATALOG_CONTRACT_NOT_ACTIVE']);
 });
@@ -37,7 +37,7 @@ test('SHADOW_READ returns legacy rows but records HOLD when Data reader is not c
   const reader = new AdminCatalogSwitchboard(legacy, undefined, () => 'SHADOW_READ', () => cutover('SHADOW_READ'));
   const result = await reader.list();
   assert.deepEqual(result.rows, [product]);
-  assert.equal(result.receipt.servedBy, 'LEGACY_ERP5_BRIDGE');
+  assert.equal(result.receipt.servedBy, 'FREEPASS_DATA_COMPAT_BRIDGE');
   assert.equal(result.receipt.shadow?.status, 'HOLD');
   assert.deepEqual(result.receipt.holdReasons, ['FREEPASS_DATA_SHADOW_READER_NOT_CONFIGURED']);
 });
@@ -150,7 +150,7 @@ test('PARITY_VERIFIED rechecks approved release and shadow parity but keeps lega
   );
   const result = await reader.list();
   assert.equal(result.receipt.shadow?.status,'MATCH');
-  assert.equal(result.receipt.servedBy,'LEGACY_ERP5_BRIDGE');
+  assert.equal(result.receipt.servedBy,'FREEPASS_DATA_COMPAT_BRIDGE');
   assert.equal(result.receipt.cutoverAuthorized,false);
   assert.equal(result.rows[0]?.updatedAt,shadowProduct.updatedAt);
 });

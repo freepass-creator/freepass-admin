@@ -27,13 +27,13 @@ test('lead falls back to buyout offers when they are the only offers', () => {
   assert.equal(picked?.id, '48개월_인수형');
 });
 
-test('lead prefers the FreePass Data default preview over a cheaper non-default term', () => {
+test('lead prefers the FreePass Data listing price and keeps preview separate', () => {
   const picked = lead([
-    { ...offer('24개월', 450_000), isDefaultPreview: false },
-    { ...offer('36개월', 520_000), isDefaultPreview: true },
-    { ...offer('48개월', 430_000), isDefaultPreview: false },
+    { ...offer('24개월', 450_000), isListingPrice: false, isDefaultPreview: false },
+    { ...offer('36개월', 520_000), isListingPrice: false, isDefaultPreview: true },
+    { ...offer('48개월', 430_000), isListingPrice: true, isDefaultPreview: false },
   ]);
-  assert.equal(picked?.id, '36개월');
+  assert.equal(picked?.id, '48개월');
 });
 
 test('deposit display keeps unknown distinct from zero', () => {

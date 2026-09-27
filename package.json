@@ -15,7 +15,9 @@
     "test:freepass-data-firestore": "tsx --test src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts",
     "postinstall": "node scripts/install-fonts.mjs",
     "visual:qa": "node scripts/visual-qa.cjs",
-    "deploy:check": "tsx scripts/check-deploy-env.mts"
+    "deploy:check": "tsx scripts/check-deploy-env.mts",
+    "test:identity-journey": "tsx --test scripts/check-identity-journey.mts",
+    "identity:journey": "firebase emulators:exec --only auth,firestore --project freepasserp5 \"npm run test:identity-journey\""
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",

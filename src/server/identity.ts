@@ -37,12 +37,16 @@ const AUTHORITY_TTL_MS = 5 * 60_000;
 export interface Identity { uid: string; id: string; name: string; role: 'MASTER' | 'MEMBER' }
 
 /** 브라우저가 쓰는 Firebase 웹 설정 — 비밀이 아니다(공개 배포물에 실린다) */
-export interface WebConfig { apiKey: string; authDomain: string; projectId: string }
+export interface WebConfig { apiKey: string; authDomain: string; projectId: string; authEmulatorHost?: string }
 export function webConfig(): WebConfig | null {
   const apiKey = process.env.IDENTITY_FIREBASE_WEB_API_KEY?.trim();
   const authDomain = process.env.IDENTITY_FIREBASE_AUTH_DOMAIN?.trim();
   const projectId = process.env.IDENTITY_FIREBASE_PROJECT_ID?.trim();
-  return apiKey && authDomain && projectId ? { apiKey, authDomain, projectId } : null;
+  if (!apiKey || !authDomain || !projectId) return null;
+  /* 개발·검증 전용 — 이것이 없으면 에뮬레이터로 전체 흐름을 돌려볼 길이 없다.
+     ★운영에 들어가면 사고다 — deploy-env 가 error 로 막는다. */
+  const authEmulatorHost = process.env.IDENTITY_FIREBASE_AUTH_EMULATOR_HOST?.trim();
+  return { apiKey, authDomain, projectId, ...(authEmulatorHost ? { authEmulatorHost } : {}) };
 }
 export const identityReady = () => !!webConfig() && !!serviceAccountRaw();
 
@@ -105,13 +109,25 @@ export const forgetAuthority = (uid: string) => cache.delete(uid);
 /**
  * 세션 쿠키 → 들어와도 되는 사람. 계약 ②③ 이 여기서 한 번에 걸린다.
  * ★`checkRevoked` 를 켠다 — 비밀번호를 바꾸거나 강제 로그아웃한 세션이 남아 돌지 않게.
+ * ★★거절한 «까닭»을 가른다. 메일 인증을 안 한 사람에게 「승인 대기」라고 하면
+ *   오지 않을 승인을 기다리며 영영 막힌다. 화면에 나가는 문구는 이 둘만 가르고, 그 밖은 뭉뚱그린다.
  */
-export async function identityFromCookie(cookie: string | undefined): Promise<Identity | null> {
-  if (!cookie) return null;
+export type Denial = 'NO_SESSION' | 'EMAIL_UNVERIFIED' | 'NOT_APPROVED';
+
+export async function resolveSession(cookie: string | undefined): Promise<{ who: Identity } | { denied: Denial }> {
+  if (!cookie) return { denied: 'NO_SESSION' };
+  let uid: string, email: string, verified: boolean;
   try {
     const d = await getAuth(identityApp()).verifySessionCookie(cookie, true);
-    const email = String(d.email ?? '');
-    if (!email || d.email_verified !== true) return null;   /* 메일 확인 전에는 들이지 않는다 */
-    return await authorityOf(d.uid, email);
-  } catch { return null; }
+    uid = d.uid; email = String(d.email ?? ''); verified = d.email_verified === true;
+  } catch { return { denied: 'NO_SESSION' }; }
+  if (!email) return { denied: 'NO_SESSION' };
+  if (!verified) return { denied: 'EMAIL_UNVERIFIED' };   /* 메일 확인 전에는 들이지 않는다 */
+  const who = await authorityOf(uid, email);
+  return who ? { who } : { denied: 'NOT_APPROVED' };
+}
+
+export async function identityFromCookie(cookie: string | undefined): Promise<Identity | null> {
+  const r = await resolveSession(cookie);
+  return 'who' in r ? r.who : null;
 }

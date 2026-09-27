@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE } from '../../../server/auth';
-import { SESSION_MS, identityFromCookie, revokeSessions, sessionCookieFrom } from '../../../server/identity';
+import { SESSION_MS, resolveSession, revokeSessions, sessionCookieFrom } from '../../../server/identity';
 
 /**
  * 로그인 마무리 — 공용 로그인 화면이 Firebase 로 사람을 확인한 «뒤» 그 ID 토큰을 여기로 보낸다.
@@ -22,11 +22,14 @@ export async function POST(req: NextRequest) {
   }
 
   /* ★쿠키를 내주기 «전에» 권한을 푼다 — 승인 안 된 사람에게 들어온 표를 쥐여 주지 않는다 */
-  const who = await identityFromCookie(cookie);
-  if (!who) {
+  const resolved = await resolveSession(cookie);
+  if ('denied' in resolved) {
     await revokeSessions(cookie).catch(() => {});
-    return NextResponse.json({ error: 'APPROVAL_PENDING' }, { status: 403 });
+    /* ★메일 인증과 승인은 다른 사건이다. 합쳐서 말하면 메일만 누르면 될 사람이
+       오지 않을 승인을 기다리며 영영 막힌다. */
+    return NextResponse.json({ error: resolved.denied }, { status: 403 });
   }
+  const who = resolved.who;
 
   const res = NextResponse.json({ ok: true, name: who.name });
   res.cookies.set(AUTH_COOKIE, cookie, {

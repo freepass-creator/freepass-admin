@@ -48,6 +48,11 @@ test('server helpers cannot reach persistence on their own; identity reaches onl
   assert.match(identity, /const ACCOUNTS = 'identity_accounts'/);
   // The contract forbids an application minting its own session token or keeping its own allowlist.
   assert.match(identity, /createSessionCookie/);
+  // Emulator journey cannot prove these two, so pin them here instead of letting them drift.
+  // Revocation must be checked (the Auth emulator does not implement it for session cookies).
+  assert.match(identity, /verifySessionCookie\(cookie, true\)/);
+  // An unreachable authority denies rather than admits.
+  assert.match(identity, /catch \{ who = null; \}/);
   assert.doesNotMatch(identity, /createHmac|scrypt|passwordHash/);
   // Authority must be re-resolved often enough that revocation lands (contract: at most 5 minutes).
   const ttl = identity.match(/AUTHORITY_TTL_MS = ([^;]+);/)?.[1] ?? '';

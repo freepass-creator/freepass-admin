@@ -21,7 +21,7 @@ const FREEPASS_ADMIN_BRAND: SharedLoginBrand = {
   ],
 };
 
-export interface WebConfig { apiKey: string; authDomain: string; projectId: string }
+export interface WebConfig { apiKey: string; authDomain: string; projectId: string; authEmulatorHost?: string }
 
 export function LoginScreen({ config, next }: { config: WebConfig | null; next: string }) {
   const host = useRef<HTMLDivElement>(null);
@@ -37,8 +37,11 @@ export function LoginScreen({ config, next }: { config: WebConfig | null; next: 
           import('firebase/auth'),
         ]);
         if (!alive || !host.current) return;
-        const app = getApps()[0] ?? initializeApp(config);
+        const { authEmulatorHost, ...appConfig } = config;
+        const app = getApps()[0] ?? initializeApp(appConfig);
         const instance = auth.getAuth(app);
+        /* 개발·검증 전용 — 에뮬레이터가 없으면 전체 흐름을 돌려볼 길이 없다 */
+        if (authEmulatorHost) auth.connectAuthEmulator(instance, `http://${authEmulatorHost}`, { disableWarnings: true });
         await instance.authStateReady?.();
         if (!alive || !host.current) return;
         mount(host.current, {
@@ -58,9 +61,13 @@ export function LoginScreen({ config, next }: { config: WebConfig | null; next: 
             if (res.ok) { window.location.assign(next || '/'); return; }
             const body = (await res.json().catch(() => null)) as { error?: string } | null;
             await auth.signOut(instance).catch(() => {});
-            throw new Error(body?.error === 'APPROVAL_PENDING'
-              ? '아직 승인되지 않은 계정입니다 — 마스터 승인 뒤에 들어올 수 있습니다'
-              : (body?.error ?? '지금 로그인할 수 없습니다 — 잠시 뒤 다시 해 주세요'));
+            /* ★메일 인증과 승인을 합쳐서 말하지 않는다 — 할 일이 서로 다르다 */
+            const WHY: Record<string, string> = {
+              EMAIL_UNVERIFIED: '메일 인증이 아직입니다 — 받으신 인증 메일의 링크를 누른 뒤 다시 로그인해 주세요',
+              NOT_APPROVED: '아직 승인되지 않은 계정입니다 — 마스터 승인 뒤에 들어올 수 있습니다',
+              NO_SESSION: '로그인이 끈겼습니다 — 다시 해 주세요',
+            };
+            throw new Error(WHY[body?.error ?? ''] ?? '지금 로그인할 수 없습니다 — 잠시 뒤 다시 해 주세요');
           },
         });
       } catch {

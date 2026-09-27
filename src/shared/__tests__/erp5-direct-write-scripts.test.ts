@@ -24,9 +24,17 @@ test('direct ERP5 write scripts cannot bypass the maintenance approval gate', ()
 
   assert.ok(candidates.length >= 5, 'expected known ERP5 maintenance writers');
 
+  /**
+   * A script that binds itself to an emulator host cannot touch the operational store, so the
+   * maintenance approval gate does not apply to it. Judged by what the source does rather than by
+   * its name, so a new emulator-only check does not have to be added to a list to be recognised.
+   */
+  const emulatorBound = (source: string) =>
+    /process\.env\.(?:FIRESTORE|FIREBASE_AUTH|FIREBASE_STORAGE)_EMULATOR_HOST\s*=/.test(source);
+
   for (const { file, source } of candidates) {
-    if (/verify-esign-pdf-emulator/.test(file)) {
-      assert.match(source, /FIRESTORE_EMULATOR_HOST|emulator/i, file);
+    if (emulatorBound(source)) {
+      assert.doesNotMatch(source, /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH/, `${file} must not reach for operational credentials`);
       continue;
     }
     assert.match(source, /assertErp5MaintenanceWrite/, file);

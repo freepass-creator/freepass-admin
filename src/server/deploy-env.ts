@@ -112,7 +112,7 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   if (origins.size > 1) err('APP_BASE_URL', 'APP_BASE_URL · PUBLIC_BASE_URL · CLAIM_LINK_BASE 가 같은 주소여야 합니다');
 
   /* 운영에 있으면 안 되는 것 */
-  for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FPA_DATA_DIR']) {
+  for (const k of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST', 'IDENTITY_FIREBASE_AUTH_EMULATOR_HOST', 'FPA_DATA_DIR']) {
     if (set(env, k)) err(k, '운영 환경에 두면 안 됩니다');
   }
   if (env.FPA_DEMO?.trim() === 'on') {

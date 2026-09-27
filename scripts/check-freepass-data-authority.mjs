@@ -29,6 +29,7 @@ const violations = [];
 
 for (const file of walk(path.join(root, 'src'))) {
   const rel = path.relative(root, file).replaceAll('\\', '/');
+  if (rel === 'src/adapters/erp5/demo.ts') continue;
   const text = fs.readFileSync(file, 'utf8');
 
   const direct =

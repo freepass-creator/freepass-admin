@@ -10,6 +10,7 @@ import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { SettlementScreen } from '../_erp/SettlementScreen';
 import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal } from './group-signal';
+import { pendingTerminationClawbackRows, terminationClawbackReview } from '../../domain/settlement/clawback';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,8 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
 
   const [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]);
   const rows = all.map((x) => x.row);
+  const terminationQueue = pendingTerminationClawbackRows(rows, cb);
+  const terminationMode = sp(q.followup) === 'clawback';
   const focusCode = sp(q.focus).trim();
   const focus = focusCode ? locateSettlementFocus(rows, cb, focusCode, requestedTab) : null;
   const focusMiss = !!focusCode && !focus;
@@ -68,7 +71,9 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
     mode === 'all' ? groups.length : groups.filter((g) => ledgerGroupAttention(g) === mode).length;
   const gSel = shownGroups.find((g) => g.party === (focus?.party ?? sp(q.g))) ?? shownGroups[0];
   const nextGroupParty = gSel ? nextActionableLedgerParty(groups, gSel.party) : null;
-  const ic = focus?.code ?? sp(q.ic);
+  const ic = terminationMode
+    ? (sp(q.ic) || terminationQueue[0]?.id || '')
+    : (focus?.code ?? sp(q.ic));
 
   /* 실적 줄 찾기 — 판정은 domain/performance-filter 한 곳에서만 한다. */
   const lq = sp(q.lq).trim();
@@ -149,8 +154,11 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               </div>
             </form>
             <div className="quick-filters">
-              <Link className={tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', g: '', ic: '' })}>청구 · 공급사</Link>
-              <Link className={tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', g: '', ic: '' })}>지급 · 영업채널</Link>
+              <Link className={!terminationMode && tab === 'claim' ? 'active' : ''} href={keep({ tab: 'claim', followup: '', g: '', ic: '' })}>청구 · 공급사</Link>
+              <Link className={!terminationMode && tab === 'pay' ? 'active' : ''} href={keep({ tab: 'pay', followup: '', g: '', ic: '' })}>지급 · 영업채널</Link>
+              <Link className={terminationMode ? 'active warn' : 'warn'} href={keep({ followup: 'clawback', g: '', ic: '', v: 'detail' })}>
+                환수검토 <small>{terminationQueue.length}</small>
+              </Link>
               <Link className={gs === 'all' ? 'active' : ''} href={keep({ gs: 'all', g: '', ic: '', v: 'list' })}>전체 <small>{groupCount('all')}</small></Link>
               <Link className={gs === 'issue' ? 'active warn' : 'warn'} href={keep({ gs: 'issue', g: '', ic: '', v: 'list' })}>이슈 <small>{groupCount('issue')}</small></Link>
               <Link className={gs === 'todo' ? 'active' : ''} href={keep({ gs: 'todo', g: '', ic: '', v: 'list' })}>미처리 <small>{groupCount('todo')}</small></Link>
@@ -193,9 +201,12 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
         {/* ── 실적 줄 — 고른 묶음 ─────────────────────────────── */}
         <section className="panel detail-panel st-lines" data-panel-role="list">
           <div className="dz-listtop">
-            <PanelHeader title={gSel ? gSel.party : '실적 줄'} count={gSel ? `${performanceLines.length} / ${gSel.lines.length}줄` : undefined}
-              backHref={keep({ v: 'list' })} backLabel="묶음으로" />
-            {gSel && (
+            <PanelHeader
+              title={terminationMode ? '계약해지 환수 검토' : (gSel ? gSel.party : '실적 줄')}
+              count={terminationMode ? `${terminationQueue.length}건` : (gSel ? `${performanceLines.length} / ${gSel.lines.length}줄` : undefined)}
+              backHref={keep({ v: 'list' })} backLabel="묶음으로"
+            />
+            {!terminationMode && gSel && (
               <>
                 <form className="dz-find" action="/settlement">
                   <input type="hidden" name="tab" value={tab} />
@@ -215,7 +226,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
                 </div>
               </>
             )}
-            {gSel && (
+            {!terminationMode && gSel && (
               <SummaryGrid>
                 <SummaryItem label="합">{won(gSel.total)}원</SummaryItem>
                 <SummaryItem label="환수">{gSel.clawbackTotal ? `−${won(gSel.clawbackTotal)}원` : '—'}</SummaryItem>
@@ -225,7 +236,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               </SummaryGrid>
             )}
             {/* 발행 — 번호 · 미리보기(공급가 · 부가세 · 합계) · 막힌 까닭 · 발행 뒤 원장이 바뀜 */}
-            {gSel && 계획 && (
+            {!terminationMode && gSel && 계획 && (
               <div className="dz-issue">
                 <p><b>{문서}</b> {장 ? <>{장.invoiceNo} · 발행 {new Date(장.issuedAt).toISOString().slice(0, 10)}</> : <span className="dz-muted">아직 안 나감</span>}</p>
                 {계획.ok
@@ -240,7 +251,28 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
             )}
           </div>
           <div className="list">
-            {performanceLines.map(({ row: r, amount, broken, ratio }) => {
+            {terminationMode && terminationQueue.map((r) => {
+              const state = terminationClawbackReview(r, cb);
+              return (
+                <ListRow
+                  key={r.id}
+                  href={keep({ followup: 'clawback', g: '', ic: r.id, v: 'work' })}
+                  selected={r.id === ic}
+                  status={{
+                    icon: state === 'REQUIRED' ? 'repeat' : 'alert',
+                    label: state === 'REQUIRED' ? '환수 등록' : '검토 대기',
+                    tone: state === 'REQUIRED' ? 'red' : 'amber',
+                  }}
+                  title={txt(r.customer)}
+                  mainValue={state === 'REQUIRED' ? '환수 금액 등록 필요' : '환수 여부 검토 필요'}
+                  tone="warn"
+                  meta={[r.plate, r.model, r.contractTerminationDate ? `해지 ${r.contractTerminationDate}` : ''].filter(Boolean).join(' · ') || '—'}
+                  value={r.contractTerminationReason || '해지 사유 확인'}
+                />
+              );
+            })}
+            {terminationMode && terminationQueue.length === 0 && <EmptyState>환수 검토를 기다리는 계약해지 건이 없습니다.</EmptyState>}
+            {!terminationMode && performanceLines.map(({ row: r, amount, broken, ratio }) => {
               const 끝 = tab === 'claim' ? r.progress.collected : r.progress.paid;
               return (
                 <ListRow key={r.id} href={keep({ g: gSel?.party ?? '', ic: r.id, v: 'work' })} selected={r.id === ic}
@@ -258,7 +290,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               );
             })}
             {/* 환수 — 접수 줄의 체크가 아니라 «반대 부호의 한 줄»(기능 세션) */}
-            {shownClawbacks.map((c, k) => (
+            {!terminationMode && shownClawbacks.map((c, k) => (
               <div key={`환수-${k}`} className="dz-row dz-row-minus">
                 <StatusTile s={{ icon: 'repeat', label: '환수', tone: 'red' }} />
                 <span className="dz-row-body">
@@ -268,11 +300,11 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
                 </span>
               </div>
             ))}
-            {!gSel && <EmptyState>왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</EmptyState>}
-            {gSel && performanceLines.length === 0 && shownClawbacks.length === 0 && <EmptyState>이 검색/상태에 맞는 실적이 없습니다.</EmptyState>}
+            {!terminationMode && !gSel && <EmptyState>왼쪽에서 {who}를 고르면 그 실적 줄이 여기 섭니다.</EmptyState>}
+            {!terminationMode && gSel && performanceLines.length === 0 && shownClawbacks.length === 0 && <EmptyState>이 검색/상태에 맞는 실적이 없습니다.</EmptyState>}
           </div>
           {/* ★하단바(§14-3) — 묶음 판의 주 걸음 = 발행. 막혔으면(청구월 미정 · 금액 모름 · 정정 중) 눌리지 않는다 */}
-          {gSel && (
+          {!terminationMode && gSel && (
             <ActionBar>
               <button type="submit" form="issue-form" className="primary" disabled={!계획?.ok}>
                 {장 ? `다시 발행 · ${장.invoiceNo}` : `${문서} 발행`}
@@ -284,17 +316,19 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
         {/* ── 접수 상세 — 계약접수와 같은 판 ─────────────────── */}
         <section className="panel work-panel" data-panel-role="work">
           {ic
-            ? <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
-                life={{
-                  axis,
-                  mode: sp(q.lc),
-                  link: (lc: string) => keep({ lc, v: 'work' }),
-                  nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined,
-                  nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined,
-                  nextAxisHref: !nextPerformanceCode && !nextGroupParty ? 지급인계Href : undefined,
-                  nextAxisLabel: '지급 업무로',
-                  invoiceBiz: 장?.partyBizNo,
-                }} />
+            ? (terminationMode
+              ? <IntakeDetailPanel code={ic} back={keep({ followup: 'clawback', ic: '', lc: '', v: 'detail' })} />
+              : <IntakeDetailPanel code={ic} back={keep({ ic: '', lc: '', v: 'detail' })}
+                  life={{
+                    axis,
+                    mode: sp(q.lc),
+                    link: (lc: string) => keep({ lc, v: 'work' }),
+                    nextHref: nextPerformanceCode ? keep({ ic: nextPerformanceCode, lc: '', ls: 'all', v: 'work' }) : undefined,
+                    nextGroupHref: !nextPerformanceCode && nextGroupParty ? keep({ g: nextGroupParty, ic: '', lc: '', ls: 'todo', v: 'detail' }) : undefined,
+                    nextAxisHref: !nextPerformanceCode && !nextGroupParty ? 지급인계Href : undefined,
+                    nextAxisLabel: '지급 업무로',
+                    invoiceBiz: 장?.partyBizNo,
+                  }} />)
             : (
               <>
                 <PanelHeader title="접수 상세" backHref={keep({ v: 'detail' })} backLabel="실적으로" />

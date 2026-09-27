@@ -150,6 +150,23 @@ it('계약해지 provenance를 ERP5 정산행에서 그대로 읽는다', () => 
   assert.equal(row.contractTerminationContractId,'ctr_term_1');
 });
 
+it('계약해지 환수 검토 사실을 정산행 projection에서 그대로 읽는다', () => {
+  const reviewedAt = Date.parse('2026-09-27T00:00:00Z');
+  const { row } = toSettlementRow({
+    code: 'stl_claw_review',
+    contractTerminatedAt: Date.parse('2026-09-25T00:00:00Z'),
+    contractTerminationDate: '2026-09-25',
+    contractClawbackReviewDecision: 'REQUIRED',
+    contractClawbackReviewedAt: reviewedAt,
+    contractClawbackReviewReason: '3개월 유지조건 미충족',
+    contractClawbackReviewOperationId: 'clawreview_projection_1234',
+  }, 'stl_claw_review');
+  assert.equal(row.contractClawbackReviewDecision, 'REQUIRED');
+  assert.equal(row.contractClawbackReviewedAt, reviewedAt);
+  assert.equal(row.contractClawbackReviewReason, '3개월 유지조건 미충족');
+  assert.equal(row.contractClawbackReviewOperationId, 'clawreview_projection_1234');
+});
+
 describe('계약금 수납 projection', () => {
   it('완전한 계약금 수납 사실은 보증금/선납과 별도로 읽는다', () => {
     const { row, warnings } = toSettlementRow({

@@ -204,6 +204,11 @@ export interface SettlementRow {
   contractTerminationOperationId?: Maybe<string>;
   contractTerminationContractId?: Maybe<string>;
   contractTerminationBy?: Maybe<string>;
+  /** 계약해지 뒤 사람이 확정하는 환수 검토 사실. 환수 금액/원장과는 별개다. */
+  contractClawbackReviewDecision?: Maybe<string>;
+  contractClawbackReviewedAt?: Maybe<number>;
+  contractClawbackReviewReason?: Maybe<string>;
+  contractClawbackReviewOperationId?: Maybe<string>;
 
   /* ── 진행 · 정산 ──────────────────────────────────────── */
   progress: SettlementProgress;

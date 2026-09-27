@@ -47,6 +47,16 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   if (dataToken.length < 32) err('FREEPASS_DATA_ADMIN_CATALOG_TOKEN', '32자 이상 consumer token이 필요합니다');
   else ok('FREEPASS_DATA_ADMIN_CATALOG_TOKEN', '설정됨');
 
+  if (env.VERCEL_ENV?.trim() === 'production') {
+    for (const k of ['FREEPASS_DATA_GCP_WIF_AUDIENCE', 'FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL'] as const) {
+      if (!set(env, k)) err(k, 'private FreePass Data Cloud Run 호출에 필요합니다');
+      else ok(k, '설정됨');
+    }
+    if (set(env, 'FREEPASS_DATA_CLOUD_RUN_ID_TOKEN')) {
+      warn('FREEPASS_DATA_CLOUD_RUN_ID_TOKEN', '진단용 호환값입니다 — 운영 정본은 Vercel OIDC → GCP WIF입니다');
+    }
+  }
+
   /* 쓰기 · 전자계약 · 카탈로그 */
   const write = env.ERP5_WRITE?.trim() || 'off';
   if (write !== 'on' && write !== 'off') {

@@ -148,7 +148,7 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
     return {
       authority: 'FREEPASS_DATA',
       mode,
-      servedBy: 'LEGACY_ERP5_BRIDGE',
+      servedBy: mode === 'LEGACY_DIRECT' ? 'LEGACY_ERP5_BRIDGE' : 'FREEPASS_DATA_COMPAT_BRIDGE',
       cutoverAuthorized: false,
       holdReasons: holdReasons ?? (mode === 'LEGACY_DIRECT'
         ? ['FREEPASS_DATA_ADMIN_CATALOG_CUTOVER_NOT_STARTED']

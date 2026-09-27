@@ -184,15 +184,17 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
 
             {selOffer?.conditionEvidence?.length ? (
               <div>
-                <p className="erp-subtitle">가격 적용 조건</p>
+                <p className="erp-subtitle">선택한 대여료 구성</p>
                 <div className="erp-tile-group">
                   <div className="erp-info-card erp-tile">
                     <h3 className="erp-tile-title">
-                      {selOffer.conditionStatus === 'PARTIAL'
-                        ? `확인된 조건 · 미확인 ${selOffer.unknownConditionKeys?.length ?? 0}개`
-                        : '확인된 가격 조건'}
+                      {selOffer.termMonths}개월 · 월 {won0(selOffer.monthlyRent)}원
+                      {selOffer.isListingPrice ? ' · 최저가' : ''}
+                      {selOffer.isDefaultPreview ? ' · 기본조건' : ''}
                     </h3>
                     <dl>
+                      <div><dt>월 대여료</dt><dd>{won0(selOffer.monthlyRent)}원</dd></div>
+                      <div><dt>보증금</dt><dd>{보증금(selOffer.deposit)}</dd></div>
                       {selOffer.conditionEvidence.filter((item) => item.status === 'KNOWN').map((item) => (
                         <div key={item.dimensionKey}>
                           <dt>{CONDITION_LABEL[item.dimensionKey] ?? item.dimensionKey}</dt>
@@ -204,10 +206,12 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                       ))}
                       {(selOffer.unknownConditionKeys ?? []).length ? (
                         <div>
-                          <dt>미확인</dt>
+                          <dt>아직 모르는 조건</dt>
                           <dd>{(selOffer.unknownConditionKeys ?? []).map((key) => CONDITION_LABEL[key] ?? key).join(' · ')}</dd>
                         </div>
-                      ) : null}
+                      ) : (
+                        <div><dt>조건 확인</dt><dd>이 대여료의 기준조건 확인 완료</dd></div>
+                      )}
                     </dl>
                   </div>
                 </div>

@@ -14,7 +14,7 @@ export type Erp5WriteApproval = {
 
 export type Erp5WriteGate = {
   enabled: boolean;
-  mode: 'OFF' | 'DEMO' | 'EMULATOR' | 'PRODUCTION_APPROVED' | 'HOLD';
+  mode: 'OFF' | 'DEMO' | 'EMULATOR' | 'PRODUCTION_APPROVED' | 'FREEPASS_DATA' | 'HOLD';
   reason: string;
   approval?: Erp5WriteApproval;
 };
@@ -156,6 +156,67 @@ export function erp5WriteGate(
     mode: 'PRODUCTION_APPROVED',
     reason: `운영 쓰기 승인 ${approval.value.approvalRef}`,
     approval: approval.value,
+  };
+}
+
+
+/**
+ * Runtime write gate after the Admin business-data transport moves behind FreePass Data.
+ *
+ * The Admin process no longer proves Firebase IAM with its own service account because it
+ * no longer owns one. Production write authority is instead double-gated:
+ * - Admin explicitly enables ERP5_WRITE and the Data workflow capability.
+ * - FreePass Data independently enables the server-side workflow write route.
+ *
+ * IAM / backup / restore evidence belongs to the FreePass Data control plane.
+ */
+export function freepassDataWriteGate(
+  env: Record<string, string | undefined>,
+  demo: boolean,
+): Erp5WriteGate {
+  if (env.ERP5_WRITE?.trim() !== 'on') {
+    return { enabled: false, mode: 'OFF', reason: 'ERP5_WRITE가 off입니다' };
+  }
+  if (demo) {
+    return { enabled: false, mode: 'DEMO', reason: '데모 모드는 읽기 전용입니다' };
+  }
+  const emulatorHost = env.FIRESTORE_EMULATOR_HOST?.trim();
+  if (emulatorHost) {
+    if (!isLocalFirestoreEmulatorHost(emulatorHost)) {
+      return { enabled: false, mode: 'HOLD', reason: '원격 FIRESTORE_EMULATOR_HOST는 허용하지 않습니다' };
+    }
+    return { enabled: true, mode: 'EMULATOR', reason: '로컬 Firestore emulator 격리 쓰기' };
+  }
+
+  const onVercel = env.VERCEL?.trim() === '1' || !!env.VERCEL_ENV?.trim();
+  if (onVercel && env.VERCEL_ENV?.trim() !== 'production') {
+    return { enabled: false, mode: 'HOLD', reason: 'Vercel preview/development 배포에는 운영 쓰기를 열지 않습니다' };
+  }
+  if (env.FREEPASS_DATA_ADMIN_WORKFLOW_WRITE?.trim() !== 'on') {
+    return { enabled: false, mode: 'HOLD', reason: 'FreePass Data Admin workflow 쓰기가 off입니다' };
+  }
+
+  const raw = env.FREEPASS_DATA_BASE_URL?.trim();
+  const token = env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
+  if (!raw || token.length < 32) {
+    return { enabled: false, mode: 'HOLD', reason: 'FreePass Data workflow 연결 정보가 없습니다' };
+  }
+  try {
+    const url = new URL(raw);
+    if (url.username || url.password || url.search || url.hash || (url.pathname !== '/' && url.pathname !== '')) {
+      return { enabled: false, mode: 'HOLD', reason: 'FREEPASS_DATA_BASE_URL은 origin만 허용합니다' };
+    }
+    if (env.NODE_ENV === 'production' && url.protocol !== 'https:') {
+      return { enabled: false, mode: 'HOLD', reason: '운영 FreePass Data는 HTTPS여야 합니다' };
+    }
+  } catch {
+    return { enabled: false, mode: 'HOLD', reason: 'FREEPASS_DATA_BASE_URL이 올바르지 않습니다' };
+  }
+
+  return {
+    enabled: true,
+    mode: 'FREEPASS_DATA',
+    reason: 'FreePass Data workflow gateway 승인 쓰기',
   };
 }
 

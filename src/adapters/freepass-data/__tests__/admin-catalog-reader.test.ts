@@ -67,6 +67,7 @@ const meta = {
   inputDigest: 'input', dataDigest: 'data', revision: 1,
   generatedAt: '2026-09-25T00:00:00.000Z', activatedAt: '2026-09-25T00:01:00.000Z',
   policyParity: 'COMPLETE' as const, missingPolicyOfferIds: [], invalidPolicyFactRefs: [],
+  commercialCoverage: 'COMPLETE' as const, commercialMissingOfferIds: [],
 };
 
 const cutover = (targetStage: AdminCutoverStage, override?: Partial<{
@@ -187,6 +188,21 @@ test('FREEPASS_DATA_READ fails closed when current ACTIVE release differs from t
     e instanceof FreePassDataCatalogHoldError && /APPROVED_RELEASE_MISMATCH/.test(e.message));
 });
 
+test('FREEPASS_DATA_READ holds when commercial coverage is incomplete', async () => {
+  const incomplete = { ...meta, commercialCoverage: 'INCOMPLETE' as const, commercialMissingOfferIds: ['O-1'] };
+  const freepass = {
+    async list() { return { rows: [structuredClone(shadowProduct)], meta: incomplete }; },
+    async get() { return structuredClone(shadowProduct); },
+  };
+  const reader = new AdminCatalogSwitchboard(
+    shadowLegacy, freepass, () => 'FREEPASS_DATA_READ', () => cutover('FREEPASS_DATA_READ'),
+  );
+  await assert.rejects(
+    () => reader.list(),
+    (e:unknown) => e instanceof FreePassDataCatalogHoldError && /COMMERCIAL_COVERAGE_INCOMPLETE/.test(e.message),
+  );
+});
+
 test('unknown Admin Catalog read mode is rejected', () => {
   assert.throws(() => adminCatalogReadMode('DIRECT_FIRESTORE'), /모르는 프리패스 데이터/);
 });
@@ -199,6 +215,10 @@ test('shadow parity detects intake-critical price, vehicle, and policy drift', (
     ['trim', (p) => { p.vehicle.trimId = 'CALLIGRAPHY'; }],
     ['offer policy', (p) => { p.offers[0]!.policyValues = [{ policyId:'min-age',type:'NUMBER',value:26 }]; }],
     ['product policy', (p) => { p.productPolicies = [{ policyId:'license',type:'TEXT',value:'1년 이상' }]; }],
+    ['commercial condition', (p) => {
+      p.offers[0]!.conditionStatus = 'PARTIAL';
+      p.offers[0]!.unknownConditionKeys = ['property_compensation_limit'];
+    }],
   ];
   for (const [name, mutate] of cases) {
     const changed = structuredClone(shadowProduct);

@@ -42,14 +42,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
                   tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
                   title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                   subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
-                  meta={[
-                    `${offer.termMonths}개월`,
-                    salesPriceReason(offer),
-                    `보증 ${보증금(offer.deposit)}`,
-                    offer.conditionStatus === 'PARTIAL'
-                      ? `조건 ${offer.unknownConditionKeys?.length ?? 0}개 미확인`
-                      : null,
-                  ].filter(Boolean).join(' · ')}
+                  meta={`${offer.termMonths}개월 · 보증 ${보증금(offer.deposit)}${salesPriceReason(offer) ? ` · ${salesPriceReason(offer)}` : ''}${offer.conditionStatus === 'PARTIAL' ? ` · 조건 ${offer.unknownConditionKeys?.length ?? 0}개 미확인` : ''}`}
                   facts={[
                     ['상품구분', txt(p.productKind)],
                     ['기간', `${offer.termMonths}개월`],
@@ -58,7 +51,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
                       ? `미확인 ${offer.unknownConditionKeys?.length ?? 0}개`
                       : offer.conditionStatus === 'COMPLETE' ? '확인' : '기존 데이터'],
                   ]}
-                  amount={`월 ${manWon(offer.monthlyRent)} 원부터`} unit="" />
+                  amount={`월 ${manWon(offer.monthlyRent)} 원`} amountLabel="부터" unit="" />
               ))}
             </RowCards>
           ) : (

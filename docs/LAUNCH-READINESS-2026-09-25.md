@@ -1,3 +1,115 @@
+# 2026-09-27 운영개시 — 실제 배포에서 전 route 500, 원인과 조치
+
+사용자 지시: 「운영개시하자」
+기준 revision: main `2c44e17` (PR #136 통합본)
+작업 branch: `work/ops/launch-runtime-fix` (최신 main에서 딴 임시 1개, 검증 → PR → merge 후 회수)
+
+## 1. 관측 — 문서의 PASS가 실제 배포에서 재현되지 않았다
+
+Vercel 팀 `freepass-projects`에 `freepass-admin` 프로젝트가 실제로 생성되고(2026-09-27 08:36 KST)
+GitHub `main` 연결 · production 배포 `● Ready` 까지 갔다. 따라서 위 2026-09-26 절의
+「실제 Vercel project: NOT CREATED」는 superseded다.
+
+그런데 배포된 런타임은 **전 route 500**이었다.
+
+```
+/ · /login · /system/data-status · /intake · /settlement  → 모두 HTTP 500
+```
+
+환경변수 누락이 아니었다. 실제 런타임 오류:
+
+```
+Failed to load external module firebase-admin/auth:
+ERR_REQUIRE_ESM: require() of ES Module node_modules/jose/dist/webapi/index.js
+from node_modules/jwks-rsa/src/utils.js not supported
+```
+
+## 2. 원인
+
+- `next.config.ts`가 `firebase-admin`을 `serverExternalPackages`에 둔다 → 런타임에 CJS `require`로 불린다.
+- `firebase-admin@14.4.0` → `jwks-rsa@4.1.0`(CJS) → `jose@^6.1.3`.
+- `jose@6`은 ESM 전용이다. `exports["."]`에 `require` 조건이 없고 `dist/webapi/index.js`(type: module) 하나뿐이다.
+- 즉 `jwks-rsa@4.x`는 **Node의 `require(esm)`에 의존**한다. 운영 런타임에서 그것이 없으면 깨진다.
+
+`jwks-rsa` 4.0.0/4.0.1/4.1.0 전부 `jose@^6.1.3`이다. 버전 선택으로는 피할 수 없다.
+
+### 왜 로컬·CI는 통과했나
+
+로컬 Node 24.19.0은 `require(esm)`를 지원하므로 `require('jose')`가 성공한다.
+그래서 typecheck/test/build/Next runtime check 전부 PASS였고, 문서의
+「actual Next production-route verification: PASS」도 거짓 기록이 아니었다.
+**실제 배포 런타임에만 없는 조건이었다.**
+
+실패 런타임을 로컬에서 정확히 재현하는 방법:
+
+```bash
+node --no-experimental-require-module -e "require('firebase-admin/auth')"
+# → ERR_REQUIRE_ESM, 배포 로그와 같은 파일·같은 스택
+```
+
+## 3. 조치
+
+`package.json`에 override 하나:
+
+```json
+"overrides": { "jose": "^5.10.0" }
+```
+
+`jose@5.10.0`은 `exports["."].require → ./dist/node/cjs/index.js`를 아직 제공한다.
+그래서 `require(esm)` 지원 여부와 **무관하게** 로드된다.
+
+- `jose` 의존자는 lockfile 전체에서 `jwks-rsa` 하나뿐이다. 앱 소스는 `jose`를 직접 쓰지 않는다.
+- `jwks-rsa`가 실제로 쓰는 API는 `importJWK` · `exportSPKI` 두 개이며 jose@5에 둘 다 있다.
+  실 RSA JWK로 `retrieveSigningKeys()`를 돌려 정상 SPKI PEM이 나오는 것을 확인했다.
+
+### 회귀 방지
+
+`src/server/server-externals-cjs.test.ts` — `serverExternalPackages` 4개를
+`--no-experimental-require-module`로 require 해서 배포 런타임 조건을 고정한다.
+override가 풀리면 이 테스트가 먼저 깨진다.
+
+## 4. production 환경변수 바인딩
+
+사용자 결정(2026-09-27): 로그인은 **Google Workspace OAuth**, freepasserp5 서비스계정은 **읽기 전용으로 투입**.
+
+| 변수 | 상태 |
+|---|---|
+| `SESSION_SECRET` | 설정 — 새로 생성한 64자 무작위값 |
+| `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` | 설정 — `project_id=freepasserp5` |
+| `APP_BASE_URL` / `PUBLIC_BASE_URL` / `CLAIM_LINK_BASE` | 설정 — 셋 다 `https://freepass-admin.vercel.app` |
+| `ERP5_WRITE` / `ESIGN_ENABLED` / `FREEPASS_DATA_ADMIN_CATALOG_READ_MODE` | 기존값 유지 — `off` / `off` / `OBSERVE` |
+| `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | **미설정 — 운영자 투입 대기** |
+
+`ERP5_WRITE`는 열지 않았다. 운영 쓰기는 `ERP5_WRITE_APPROVAL_JSON`(최소권한 IAM + 실제
+backup/restore drill 증거)이 먼저다. 이 저장소에는 여전히 production backup/restore job이 없다.
+
+## 5. 남은 것
+
+1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.
+2. 승인된 리디렉션 URI `https://freepass-admin.vercel.app/login/google/callback` 등록.
+3. Workspace 계정 로그인 성공 / 외부 계정 거부 확인.
+4. `/system/data-status` 실제 probe 수치 확인, 상품·접수·정산 조회 확인.
+5. backup/restore drill + 최소권한 IAM 확인 → `ERP5_WRITE_APPROVAL_JSON` → `ERP5_WRITE=on`.
+6. 비고객 테스트 접수 1건으로 write → reload → 중복클릭 idempotency 확인.
+
+## 6. 로컬 gate 실측 (main `2c44e17` + 이 변경)
+
+| 검사 | 결과 |
+|---|---|
+| `npm run typecheck` | PASS |
+| `npm run ui:check` | PASS |
+| `npm run data:check` | PASS |
+| `npm run build` | PASS |
+| `npm test` | 749개 중 739 PASS |
+
+`npm test`의 실패 10건은 전부 전자계약 PDF 렌더러 테스트이며, Windows 로컬에
+serverless Chromium이 없어서 브라우저가 뜨지 않은 환경 문제다. 이 변경과 무관하고
+전자계약은 운영개시 범위 밖(`ESIGN_ENABLED=off`)이다. 해당 job의 판정은 Linux CI를 따른다.
+
+> `DEPLOYMENT VERIFIED` / `PRODUCTION PERSISTENCE VERIFIED`는 위 5번 증거가 나온 뒤에만 적는다.
+
+---
+
 # 2026-09-26 운영개시 최신 상태
 
 기준 branch: `work/release/operational-launch`  

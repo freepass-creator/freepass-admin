@@ -31,6 +31,25 @@ export interface RegistrationInfo {
   firstRegistrationDate?: string;
 }
 
+export type CommercialConditionEvidence = {
+  dimensionKey: string;
+  status: 'KNOWN' | 'UNKNOWN';
+  value?: boolean | number | string | string[];
+  origin:
+    | 'SOURCE_PRICE_KEY'
+    | 'CANONICAL_PRICE_TERM'
+    | 'LINKED_POLICY_FACT'
+    | 'MATCHED_POLICY_FACT'
+    | 'UNRESOLVED';
+  sourceRef?: string;
+};
+
+export type CommercialPolicyMatchStatus =
+  | 'UNIQUE_MATCH'
+  | 'AMBIGUOUS'
+  | 'NO_MATCH'
+  | 'INSUFFICIENT_EVIDENCE';
+
 export interface Offer {
   id: string;
   /** Supplier belongs to the Offer. Product-level supplier fields are legacy compatibility only. */
@@ -42,6 +61,20 @@ export interface Offer {
   prepayment?: number;
   annualMileageKm?: number;
   policyValues: PolicyValue[];
+  /** FreePass Data의 원 Offer / 가격행 정체성. */
+  sourceOfferId?: string;
+  termKey?: string;
+  /** Data 기본 Preview가 선택한 가격행. 상품찾기 대표가격은 이 행을 우선한다. */
+  isDefaultPreview?: boolean;
+  /** Preview 적용 전 원천 Basis. 운영 검수용. */
+  basisMonthlyRent?: number;
+  basisDeposit?: number;
+  /** 상품조건 산출/귀속 상태. */
+  commercialStatus?: 'READY' | 'NEEDS_DECISION' | 'INVALID';
+  conditionStatus?: 'COMPLETE' | 'PARTIAL';
+  conditionEvidence?: CommercialConditionEvidence[];
+  unknownConditionKeys?: string[];
+  policyMatchStatus?: CommercialPolicyMatchStatus;
 }
 
 export type PolicyValue =

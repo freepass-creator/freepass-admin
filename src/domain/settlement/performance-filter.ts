@@ -1,4 +1,5 @@
 import type { LedgerLine } from './ledgers';
+import { workflowConsistencyIssues } from './consistency';
 
 export type PerformanceAxis = '공급사' | '영업채널';
 export type PerformanceFilterMode = 'all' | 'todo' | 'issue' | 'done';
@@ -9,15 +10,18 @@ export function performanceDone(line: LedgerLine, axis: PerformanceAxis): boolea
 
 export function performanceIssue(line: LedgerLine, axis: PerformanceAxis): boolean {
   const stage = axis === '공급사' ? line.row.claimStage : line.row.payStage;
-  return line.broken || (axis === '공급사' && line.row.progress.billHold) || stage === '정정';
+  return workflowConsistencyIssues(line.row).length > 0
+    || line.broken
+    || (axis === '공급사' && line.row.progress.billHold)
+    || stage === '정정';
 }
 
 export function performanceMatchesMode(line: LedgerLine, axis: PerformanceAxis, mode: PerformanceFilterMode): boolean {
   if (mode === 'all') return true;
   const done = performanceDone(line, axis);
-  const issue = !done && performanceIssue(line, axis);
-  if (mode === 'done') return done;
+  const issue = performanceIssue(line, axis);
   if (mode === 'issue') return issue;
+  if (mode === 'done') return done && !issue;
   return !done && !issue;
 }
 

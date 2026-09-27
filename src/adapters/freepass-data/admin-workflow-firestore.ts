@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { freepassDataCloudRunHeaders } from './cloud-run-auth';
 
 type WorkflowResource =
   | 'products' | 'policies' | 'vehicleMaster'
@@ -70,6 +71,7 @@ class Transport {
     const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/admin-workflow/${path}`, {
       method: 'POST',
       headers: {
+        ...(await freepassDataCloudRunHeaders(base)),
         authorization: `Bearer ${token}`,
         accept: 'application/json',
         'content-type': 'application/json',

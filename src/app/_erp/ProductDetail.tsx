@@ -4,11 +4,55 @@
  *   새로 그리지 않는다). 원래 Workspace.tsx 안에 있던 것을 그대로 뽑았다 — 모양 · 계산 전부 그대로.
  */
 import Link from 'next/link';
-import type { CanonicalProduct, Offer } from '../../domain/product/types';
+import type { CanonicalProduct, CommercialConditionEvidence, Offer } from '../../domain/product/types';
 import { txt } from '../_fn/fmt';
 import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, PanelState, won0, type Tone } from './parts';
+import { 보증금 } from '../products/workspace-config';
 
 type Q = Record<string, string | string[] | undefined>;
+
+const CONDITION_LABEL: Record<string, string> = {
+  term_months: '기간',
+  annual_mileage_km: '약정 주행거리',
+  driver_age: '기본 운전자 연령',
+  additional_driver_count: '추가운전자 기본 포함',
+  personal_driver_scope: '개인 운전자 범위',
+  business_driver_scope: '법인 운전자 범위',
+  license_period: '면허 경력',
+  insurance_included: '보험',
+  property_compensation_limit: '대물 한도',
+  injury_compensation_limit: '대인 한도',
+  self_body_accident_limit: '자기신체사고',
+  uninsured_damage_limit: '무보험차상해',
+  own_damage_compensation: '자차 보상',
+  own_damage_repair_ratio: '자차 자기부담률',
+  own_damage_min_deductible: '자차 최소면책',
+  own_damage_max_deductible: '자차 최대면책',
+  maintenance_service: '정비',
+  roadside_assistance: '긴급출동',
+  replacement_car: '대차',
+  settlement_type: '만기 방식',
+};
+
+const ORIGIN_LABEL: Record<CommercialConditionEvidence['origin'], string> = {
+  SOURCE_PRICE_KEY: '원천 가격키',
+  CANONICAL_PRICE_TERM: '가격 원천',
+  LINKED_POLICY_FACT: '연결 정책',
+  MATCHED_POLICY_FACT: '역매칭 정책',
+  UNRESOLVED: '미확인',
+};
+
+const conditionValue = (condition: CommercialConditionEvidence) => {
+  const value = condition.value;
+  if (value === undefined) return '—';
+  if (condition.dimensionKey === 'annual_mileage_km' && typeof value === 'number') {
+    return `연 ${value.toLocaleString('ko-KR')}km`;
+  }
+  if (condition.dimensionKey === 'term_months' && typeof value === 'number') return `${value}개월`;
+  if (Array.isArray(value)) return value.join(' · ');
+  return String(value);
+};
+
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
 export const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
 
@@ -55,9 +99,12 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                 {selOffers.map((o) => {
                   const selected = selOffer?.id === o.id;
                   const support = [
-                    o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음',
+                    `보증금 ${보증금(o.deposit)}`,
                     o.prepayment ? `선납금 ${won0(o.prepayment)}원` : null,
                     o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : null,
+                    o.conditionStatus === 'PARTIAL'
+                      ? `조건 ${o.unknownConditionKeys?.length ?? 0}개 미확인`
+                      : null,
                   ].filter(Boolean).join(' · ');
                   return (
                     <Link key={o.id} className="erp-offer-card" role="listitem"
@@ -71,6 +118,39 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                 })}
               </div>
             </div>
+
+
+            {selOffer?.conditionEvidence?.length ? (
+              <div>
+                <p className="erp-subtitle">가격 적용 조건</p>
+                <div className="erp-tile-group">
+                  <div className="erp-info-card erp-tile">
+                    <h3 className="erp-tile-title">
+                      {selOffer.conditionStatus === 'PARTIAL'
+                        ? `확인된 조건 · 미확인 ${selOffer.unknownConditionKeys?.length ?? 0}개`
+                        : '확인된 가격 조건'}
+                    </h3>
+                    <dl>
+                      {selOffer.conditionEvidence.filter((item) => item.status === 'KNOWN').map((item) => (
+                        <div key={item.dimensionKey}>
+                          <dt>{CONDITION_LABEL[item.dimensionKey] ?? item.dimensionKey}</dt>
+                          <dd>
+                            {conditionValue(item)}
+                            <span className="erp-condition-origin"> · {ORIGIN_LABEL[item.origin]}</span>
+                          </dd>
+                        </div>
+                      ))}
+                      {(selOffer.unknownConditionKeys ?? []).length ? (
+                        <div>
+                          <dt>미확인</dt>
+                          <dd>{(selOffer.unknownConditionKeys ?? []).map((key) => CONDITION_LABEL[key] ?? key).join(' · ')}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {(sel.p.perks ?? []).length ? (
               <div>

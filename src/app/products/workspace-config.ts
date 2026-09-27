@@ -14,9 +14,9 @@ import { won } from '../_fn/fmt';
 export function lead(offers: Offer[]): Offer | undefined {
   const plain = offers.filter((o) => !o.id.includes('인수형'));
   const pool = plain.length ? plain : offers;
-  const preview = pool.filter((o) => o.isDefaultPreview);
-  const candidates = preview.length ? preview : pool;
-  return candidates.reduce<Offer | undefined>(
+  const listing = pool.find((o) => o.isListingPrice);
+  if (listing) return listing;
+  return pool.reduce<Offer | undefined>(
     (a, b) => (!a || b.monthlyRent < a.monthlyRent ? b : a),
     undefined,
   );

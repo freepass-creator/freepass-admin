@@ -83,6 +83,54 @@ override가 풀리면 이 테스트가 먼저 깨진다.
 `ERP5_WRITE`는 열지 않았다. 운영 쓰기는 `ERP5_WRITE_APPROVAL_JSON`(최소권한 IAM + 실제
 backup/restore drill 증거)이 먼저다. 이 저장소에는 여전히 production backup/restore job이 없다.
 
+## 4-A. 로그인 문 — ERP3/ERP5 계정을 쓰지 않는다 (2026-09-27 확정)
+
+대표: 「프리패스 ERP3는 이제 안 쓰는 건데 그걸 또 갖고 오면 어떻게 하냐」
+    「ERP5에 로그인 정보는 갖다 놨잖아 그 중에 구글 워크스페이스 멤버들만 로그인 할수 있으면 되는데」
+
+이 절은 2026-09-18 의 「일단 프리패스erp4 계정을 같이 쓰자」를 **뒤집는다.**
+
+### 관측 — 실제 배포 직전 `/login` 이 폐기된 창고를 정문으로 쓰고 있었다
+
+- `/login` 이 렌더하던 것은 erp4(freepasserp3) Auth 로 붙는 이메일·비밀번호 폼 하나뿐이었다.
+- 구글 문(`/login/google`)은 구현돼 있었지만 **UI 어디에서도 링크되지 않았다.** 주소를 직접 쳐야만 닿았다.
+- 즉 `GOOGLE_OAUTH_CLIENT_ID/SECRET` 을 넣어도 화면은 ERP3 폼 그대로였을 것이다.
+
+### 실측 — freepasserp5 계정으로는 「워크스페이스 멤버만」을 골라낼 수 없다
+
+2026-09-27 서비스계정 읽기:
+
+| 항목 | 값 |
+|---|---|
+| Firebase Auth 계정 | 185 — 전부 비밀번호, 구글 계정 0 |
+| 이메일 도메인 | naver 105 · gmail 52 · nate 5 · `.test` 4 · oooo.ooo 2 · hanmail 2 · **teamjpk.com 2** · kakao 2 |
+| Firestore `user` 문서 | 168 — agent 146 · provider 16 · admin 4 · agent_admin 1 · 역할없음 1 |
+| `user` 문서 중 teamjpk.com 주소 | **0건** |
+| 마지막 로그인 | 가장 최근 2026-09-10 (옮겨 놓은 사본) |
+
+1. `role=admin` 4건(박영협 · 관리자 · 박태윤 · 프리패스)은 **이메일 칸이 비어 있다** — 워크스페이스와 대조할 값이 없다.
+2. teamjpk.com Auth 계정 2개는 **둘 다 `emailVerified=false`** 다. Firebase 비밀번호 가입은 공개 웹키로 아무나 되므로,
+   주소 끝만 보는 문은 남이 먼저 가입한 `아무개@teamjpk.com` 을 관리자로 들인다.
+3. 나머지 183은 영업자·공급사다. 원장을 고치는 어드민에 들어오면 안 된다.
+
+### 결정 — 정문은 Google Workspace 하나
+
+- 워크스페이스 구성원 명단이 곧 직원 명단이고, 구글이 `hd=teamjpk.com` 으로 서명해 보낸다.
+- 따로 만들 계정도, 맞춰 둘 명단도 없다. 퇴사로 워크스페이스 계정이 정지되면 어드민도 그 순간 닫힌다.
+- 예외 인원 없음 — 대표 2026-09-27 확인.
+- 185개 ERP5 계정은 그대로 둔다. SALES/화이트라벨의 문이고 어드민이 쓰지 않을 뿐이다.
+
+### 코드에서 걷어낸 것
+
+- `src/app/login/LoginForm.tsx` 삭제, `/login` 은 구글 문 하나만 띄운다. 설정이 없으면 **다른 문을 내주지 않고** 까닭만 적는다.
+- `loginAction`(비밀번호 로그인 서버 액션) 삭제 — 폼을 지우는 것만으로는 서버 액션이 남는다.
+- `src/server/auth.ts` 에서 `signIn` · `signOut` · `adminOf` · `erp4App` · `ADMIN_EMAILS` · `ADMIN_UIDS` 제거.
+  `verifySession` 은 이제 `g1.` 구글 세션만 연다. identity 코드는 **어떤 데이터베이스도 건드리지 않는다.**
+- `.env.example` 의 option B 블록 제거. `AUTH_PROJECT_ID` · `AUTH_FIREBASE_SERVICE_ACCOUNT_JSON` ·
+  `FIREBASE_WEB_API_KEY` · `ADMIN_EMAILS` · `ADMIN_UIDS` 는 더 이상 읽지 않는다. 배포 환경에 남아 있으면 지운다.
+- 회귀 방지: `freepass-data-boundary.test.ts` 가 auth.ts 의 firebase-admin import · `getFirestore` · `.collection(` ·
+  위 환경변수 읽기를 전부 금지하고, `auth.test.ts` 가 erp4 세션 쿠키 꼴이 열리지 않는 것을 고정한다.
+
 ## 5. 남은 것
 
 1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.

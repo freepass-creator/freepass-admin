@@ -289,6 +289,12 @@ html:has(.lg-main), html:has(.lg-main) body { background: var(--바닥); min-hei
   font-size: var(--글메인); font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .lg-card button:disabled { opacity: .5; cursor: default; }
+/* 구글 문 — 주 단추와 같은 옷을 입은 링크(폼이 아니라 이동이다) */
+.lg-card .lg-go {
+  height: var(--ui-action-h); border-radius: var(--ui-radius); background: var(--ci남색); color: #fff;
+  font-size: var(--글메인); font-weight: 700; text-decoration: none;
+  display: flex; align-items: center; justify-content: center;
+}
 .lg-err { margin: 0; padding: 8px 10px; border-radius: var(--r); background: #fdecea; color: #a8261d; font-size: var(--글보조); font-weight: 700; }
 .lg-foot { margin: 0; font-size: var(--글보조); color: #9aa3ad; text-align: center; }
 @media (max-width: 600px) {

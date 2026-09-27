@@ -23,6 +23,7 @@ test('one FreePass Data gateway composes catalog and workflow persistence withou
   assert.match(data, /new AdminCatalogSwitchboard\(legacyProducts, freepassDataProducts\)/);
   assert.match(data, /new FreePassDataAdminCompatProductRepository\(\)/);
   assert.match(data, /adminCatalogReadMode\(\) === 'LEGACY_DIRECT'/);
+  assert.match(data, /!adminCompatibilityTransportConfigured\(\)/);
   assert.match(data, /new Erp5SettlementRepository\(\)/);
   assert.match(data, /new Erp5ContractRepository\(\)/);
   assert.match(data, /export \{ esignAssets, esignRepository \} from/);

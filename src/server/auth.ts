@@ -1,22 +1,23 @@
 /**
- * **어드민 로그인 — Google Workspace(teamjpk.com) 문 하나뿐.**
+ * **어드민 로그인 — 프리패스 공용 신원 계약을 입는다.**
  *
- * ★대표 2026-09-27 「프리패스 ERP3는 이제 안 쓰는 건데 그걸 또 갖고 오면 어떻게 하냐」
- *   ⇒ 2026-09-18 의 「일단 프리패스erp4 계정을 같이 쓰자」는 «뒤집혔다». erp4(freepasserp3) Auth 로 받던
- *     이메일·비밀번호 문과 그 경로(signIn · signOut · adminOf · ADMIN_EMAILS · ADMIN_UIDS)를 걷어냈다.
- *   ⇒ 운영 정문은 src/server/google-login.ts 하나다 — 구글이 서명한 hd=teamjpk.com 표시가 있을 때만 연다.
- *   ★폐기한 ERP3 에는 로그인도 데이터도 붙이지 않는다. 원장·상품 «데이터» 는 그대로 ERP5(freepasserp5).
+ * ★대표 2026-09-27 「로그인화면 갖고오자」
+ *   ⇒ 화면은 프리패스 데이터의 공용 로그인(`src/app/login/shared/*` — 그쪽 정본을 «고치지 않고» 옮긴 것),
+ *     계정·승인·권한은 프리패스 데이터가 정본(`src/server/identity.ts`).
+ *   ⇒ 이전 순서(freepass-data `docs/SHARED-LOGIN-DESIGN.md` §5, `IDENTITY-AND-ACCESS.md` §5)의 2번이
+ *     이 앱이며, 그 항목이 「구글 OAuth 와 허용목록을 걷어내고 붙인다 · APPROVAL」이다. 그대로 했다.
+ * ★대표 2026-09-27 「프리패스 ERP3는 이제 안 쓰는 건데」 — erp4(freepasserp3) 문은 앞서 걷어냈다.
  *
  * ── 세션
- *   `g1.<본문>.<서명>` — HMAC-SHA256(SESSION_SECRET) · 5일 · httpOnly · secure · sameSite=lax.
- *   요청마다 proxy.ts 가, 서버 액션은 require-admin.ts 가 «다시» 본다.
+ *   Firebase 가 발급한 세션 쿠키다. 우리가 만든 토큰이 아니다(계약 §2).
+ *   ★proxy 는 «쿠키가 있는지»만 본다 — 모든 요청 앞에서 도는 자리에 firebase-admin 을 싣지 않는다.
+ *     진짜 검증(서명 · 취소 · 승인 · grant)은 require-admin.ts 가 쪽과 서버 액션 앞에서 한다.
+ *     그래서 가짜 쿠키는 proxy 를 지나가더라도 «아무것도 못 보고 못 고친다».
  *
  * ── 켜고 끄기
  *   배포(NODE_ENV=production)에서는 «늘 켜짐» — 끌 수 없다(끄는 칸을 두면 언젠가 꺼진 채 나간다).
  *   개발에서는 ADMIN_AUTH=on 일 때만 — 화면을 만지는 동안 매번 로그인하지 않게.
  */
-import { verifyGoogleSession } from './google-login';
-
 export const AUTH_COOKIE = 'fpa_session';
 
 export const authEnforced = () =>
@@ -24,18 +25,17 @@ export const authEnforced = () =>
 
 export interface AdminUser { uid: string; name: string; role: 'admin'; email?: string }
 
-/** 쿠키 → 관리자. ★구글 워크스페이스 세션(g1.…)만 연다 — 다른 꼴은 전부 닫는다 */
-export async function verifySession(cookie: string | undefined): Promise<AdminUser | null> {
-  if (!cookie?.startsWith('g1.')) return null;
-  try {
-    const g = verifyGoogleSession(cookie);
-    return g ? { uid: g.uid, name: g.name, role: 'admin', email: g.email } : null;
-  } catch { return null; }
+/**
+ * proxy 전용 — 쿠키가 «있는지»만. 이것으로 사람을 들이지 않는다.
+ * Firebase 세션 쿠키는 JWT 꼴이라 점 둘로 나뉜다. 꼴이 아니면 볼 것도 없다.
+ */
+export function looksLikeSession(cookie: string | undefined): boolean {
+  return !!cookie && cookie.split('.').length === 3 && cookie.length > 32;
 }
 
 /** 로그인 없이 열리는 길 — 청구 링크 · 사진 · 글꼴 · 로그인 자체 · Next 내부 */
 export function isPublicPath(path: string): boolean {
-  return path === '/login' || path.startsWith('/login/google') || path.startsWith('/c/') || path.startsWith('/api/img')
+  return path === '/login' || path.startsWith('/api/session') || path.startsWith('/c/') || path.startsWith('/api/img')
     || path.startsWith('/sign/') || path.startsWith('/api/esign/public/')
     /* ★/fonts 는 통째로 연다 — 확장자만 보면 글꼴 CSS(.css)가 빠져 로그인으로 튕기고, 로그인 화면이
        제 글꼴 없이 선다(실측 2026-09-27). 이 아래에는 OFL 글꼴과 그 라이선스 글뿐이다. */

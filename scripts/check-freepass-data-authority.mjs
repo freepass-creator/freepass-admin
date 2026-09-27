@@ -2,14 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const legacyDebt = new Set([
+
+/**
+ * Explicit exceptions only:
+ * - firestore.ts: isolated local emulator composition root; production uses FreePass Data.
+ * - esign-repository.ts: Storage transport remains blocked in production while e-sign is off.
+ * - auth.ts: identity authority exception (ERP4 user directory), not operational business data.
+ */
+const explicitExceptions = new Set([
   'src/adapters/erp5/firestore.ts',
-  'src/adapters/erp5/product-repository.ts',
-  'src/adapters/erp5/settlement-repository.ts',
-  'src/adapters/erp5/contract-repository.ts',
   'src/adapters/erp5/esign-repository.ts',
-  'src/adapters/erp5/fee-rules.ts',
-  'src/adapters/erp5/vehicle-master.ts',
   'src/server/auth.ts',
 ]);
 
@@ -24,37 +26,40 @@ function walk(dir) {
   });
 }
 
-const debtSeen = [];
+const exceptionsSeen = [];
 const violations = [];
 
 for (const file of walk(path.join(root, 'src'))) {
   const rel = path.relative(root, file).replaceAll('\\', '/');
   if (rel === 'src/adapters/erp5/demo.ts') continue;
   const text = fs.readFileSync(file, 'utf8');
+  const runtimeText = text.replace(/import\s+type\s+[^;]+from\s+['"][^'"]+['"];?/g, '');
 
-  const direct =
-    /\berp5\s*\(/.test(text) ||
-    /from\s+['"]firebase-admin\/(?:app|firestore|storage)['"]/.test(
-      text.replace(/import\s+type\s+/g, 'import type ')
-    ) && !/import\s+type\s+[^;]+from\s+['"]firebase-admin\/(?:firestore|storage)['"]/.test(text);
+  const directSdk =
+    /from\s+['"]firebase-admin\/(?:app|firestore|storage|database)['"]/.test(runtimeText)
+    || /from\s+['"]firebase\/(?:firestore|database|storage)['"]/.test(runtimeText);
+  const businessCredential =
+    /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH/.test(runtimeText);
 
-  if (!direct) continue;
-  if (legacyDebt.has(rel)) debtSeen.push(rel);
+  if (!directSdk && !businessCredential) continue;
+  if (explicitExceptions.has(rel)) exceptionsSeen.push(rel);
   else violations.push(rel);
 }
 
-for (const rel of legacyDebt) {
+for (const rel of explicitExceptions) {
   if (!fs.existsSync(path.join(root, rel))) {
-    violations.push(`legacy debt entry no longer exists and must be removed from allowlist: ${rel}`);
+    violations.push(`authority exception no longer exists and must be removed: ${rel}`);
   }
 }
 
 if (violations.length) {
-  console.error('FreePass Data authority violation: Admin added direct Firebase business-data access.');
+  console.error('FreePass Data authority violation: Admin directly owns Firebase business-data access.');
   for (const rel of [...new Set(violations)].sort()) console.error('- ' + rel);
   process.exit(1);
 }
 
 console.log('FreePass Data authority guard OK.');
-console.log('Admin migration debt still allowed temporarily:');
-for (const rel of [...new Set(debtSeen)].sort()) console.log('- ' + rel);
+if (exceptionsSeen.length) {
+  console.log('Explicit non-operational / identity exceptions:');
+  for (const rel of [...new Set(exceptionsSeen)].sort()) console.log('- ' + rel);
+}

@@ -1,5 +1,5 @@
 import type { LedgerLine } from './ledgers';
-import { workflowConsistencyIssues } from './consistency';
+import { workflowConsistencyIssues, type WorkflowConsistencyCode } from './consistency';
 
 export type PerformanceAxis = '공급사' | '영업채널';
 export type PerformanceFilterMode = 'all' | 'todo' | 'issue' | 'done';
@@ -8,9 +8,34 @@ export function performanceDone(line: LedgerLine, axis: PerformanceAxis): boolea
   return axis === '공급사' ? line.row.progress.collected : line.row.progress.paid;
 }
 
+const globalConsistency = new Set<WorkflowConsistencyCode>([
+  'CANCELLED_AND_DELIVERED',
+  'CANCELLED_AND_TERMINATED',
+  'CONTRACT_CANCELLED_NOT_EXCLUDED',
+  'TERMINATED_NOT_DELIVERED',
+  'TERMINATED_AND_CANCELLED',
+  'DELIVERY_DATE_INVALID',
+  'DELIVERY_BEFORE_INTAKE',
+  'FINANCIAL_ACTIVITY_BEFORE_DELIVERY',
+]);
+const supplierConsistency = new Set<WorkflowConsistencyCode>([
+  'INVOICE_WITHOUT_BILL',
+  'COLLECTED_STAGE_MISMATCH',
+  'BILL_HOLD_AFTER_BILL',
+]);
+const payConsistency = new Set<WorkflowConsistencyCode>([
+  'PAID_STAGE_MISMATCH',
+]);
+
+function consistencyIssueForAxis(line: LedgerLine, axis: PerformanceAxis): boolean {
+  return workflowConsistencyIssues(line.row).some(({ code }) =>
+    globalConsistency.has(code)
+    || (axis === '공급사' ? supplierConsistency.has(code) : payConsistency.has(code)));
+}
+
 export function performanceIssue(line: LedgerLine, axis: PerformanceAxis): boolean {
   const stage = axis === '공급사' ? line.row.claimStage : line.row.payStage;
-  return workflowConsistencyIssues(line.row).length > 0
+  return consistencyIssueForAxis(line, axis)
     || line.broken
     || (axis === '공급사' && line.row.progress.billHold)
     || stage === '정정';

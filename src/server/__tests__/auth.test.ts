@@ -11,6 +11,9 @@ describe('로그인 없이 열리는 길', () => {
       '/api/esign/public/token-123/asset',
       '/api/img',
       '/login',
+      '/fonts/pretendard/pretendard.css',
+      '/fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.0.woff2',
+      '/fonts/OFL-Pretendard.txt',
       '/_next/static/x.js',
       '/favicon.ico',
     ]) assert.ok(isPublicPath(p), p);
@@ -31,12 +34,31 @@ describe('로그인 없이 열리는 길', () => {
   });
 });
 
-import { adminOf } from '../auth.js';
-describe('ADMIN_EMAILS — 대표 「이 두명은 로그인되게」', () => {
-  it('목록의 이메일은 ERP5 user 문서 없이도 관리자 · 대소문자 안 가림', async () => {
-    process.env.ADMIN_EMAILS = 'pyh@teamjpk.com, kjs@teamjpk.com';
-    process.env.ADMIN_UIDS = 'uid-test-1,uid-test-2';
-    assert.equal((await adminOf('uid-test-1', 'PYH@teamjpk.com'))?.role, 'admin');
-    assert.equal((await adminOf('uid-test-2', 'kjs@teamjpk.com'))?.name, 'kjs');
+import { verifySession } from '../auth.js';
+import { googleSessionOf } from '../google-login.js';
+/* 모듈은 설정을 «부를 때» 읽는다 */
+process.env.SESSION_SECRET = 'test-secret-test-secret-test-secret-000';
+process.env.GOOGLE_WORKSPACE_DOMAIN = 'teamjpk.com';
+
+describe('문은 구글 워크스페이스 하나 — 대표 2026-09-27 「ERP3는 이제 안 쓰는 건데」', () => {
+  it('구글 세션(g1.…)만 연다', async () => {
+    const u = { uid: 'google:1', email: 'kjs@teamjpk.com', name: 'kjs' };
+    assert.deepEqual(await verifySession(googleSessionOf(u)), { uid: u.uid, name: u.name, role: 'admin', email: u.email });
+  });
+
+  it('★erp4(freepasserp3) 세션 쿠키 꼴은 열리지 않는다 — 폐기한 창고로 되돌아가지 않게', async () => {
+    /* Firebase 세션 쿠키는 점 셋으로 나뉜 JWT 다. 그 꼴로 와도 g1. 이 아니면 문을 열지 않는다 */
+    const firebaseLike = ['eyJhbGciOiJSUzI1NiJ9', 'eyJ1aWQiOiJ1aWQtdGVzdCJ9', 'c2ln'].join('.');
+    assert.equal(await verifySession(firebaseLike), null);
+  });
+
+  it('쿠키가 없거나 위조면 열리지 않는다', async () => {
+    assert.equal(await verifySession(undefined), null);
+    const [p, body] = googleSessionOf({ uid: 'google:2', email: 'x@teamjpk.com', name: 'x' }).split('.');
+    assert.equal(await verifySession(`${p}.${body}.wrong-signature`), null);
+  });
+
+  it('워크스페이스 밖 주소는 세션이 있어도 열리지 않는다', async () => {
+    assert.equal(await verifySession(googleSessionOf({ uid: 'google:3', email: 'someone@gmail.com', name: 'someone' })), null);
   });
 });

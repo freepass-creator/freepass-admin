@@ -83,6 +83,104 @@ override가 풀리면 이 테스트가 먼저 깨진다.
 `ERP5_WRITE`는 열지 않았다. 운영 쓰기는 `ERP5_WRITE_APPROVAL_JSON`(최소권한 IAM + 실제
 backup/restore drill 증거)이 먼저다. 이 저장소에는 여전히 production backup/restore job이 없다.
 
+## 4-A. 로그인 문 — ERP3/ERP5 계정을 쓰지 않는다 (2026-09-27 확정)
+
+대표: 「프리패스 ERP3는 이제 안 쓰는 건데 그걸 또 갖고 오면 어떻게 하냐」
+    「ERP5에 로그인 정보는 갖다 놨잖아 그 중에 구글 워크스페이스 멤버들만 로그인 할수 있으면 되는데」
+
+이 절은 2026-09-18 의 「일단 프리패스erp4 계정을 같이 쓰자」를 **뒤집는다.**
+
+### 관측 — 실제 배포 직전 `/login` 이 폐기된 창고를 정문으로 쓰고 있었다
+
+- `/login` 이 렌더하던 것은 erp4(freepasserp3) Auth 로 붙는 이메일·비밀번호 폼 하나뿐이었다.
+- 구글 문(`/login/google`)은 구현돼 있었지만 **UI 어디에서도 링크되지 않았다.** 주소를 직접 쳐야만 닿았다.
+- 즉 `GOOGLE_OAUTH_CLIENT_ID/SECRET` 을 넣어도 화면은 ERP3 폼 그대로였을 것이다.
+
+### 실측 — freepasserp5 계정으로는 「워크스페이스 멤버만」을 골라낼 수 없다
+
+2026-09-27 서비스계정 읽기:
+
+| 항목 | 값 |
+|---|---|
+| Firebase Auth 계정 | 185 — 전부 비밀번호, 구글 계정 0 |
+| 이메일 도메인 | naver 105 · gmail 52 · nate 5 · `.test` 4 · oooo.ooo 2 · hanmail 2 · **teamjpk.com 2** · kakao 2 |
+| Firestore `user` 문서 | 168 — agent 146 · provider 16 · admin 4 · agent_admin 1 · 역할없음 1 |
+| `user` 문서 중 teamjpk.com 주소 | **0건** |
+| 마지막 로그인 | 가장 최근 2026-09-10 (옮겨 놓은 사본) |
+
+1. `role=admin` 4건(박영협 · 관리자 · 박태윤 · 프리패스)은 **이메일 칸이 비어 있다** — 워크스페이스와 대조할 값이 없다.
+2. teamjpk.com Auth 계정 2개는 **둘 다 `emailVerified=false`** 다. Firebase 비밀번호 가입은 공개 웹키로 아무나 되므로,
+   주소 끝만 보는 문은 남이 먼저 가입한 `아무개@teamjpk.com` 을 관리자로 들인다.
+3. 나머지 183은 영업자·공급사다. 원장을 고치는 어드민에 들어오면 안 된다.
+
+### 결정 — 정문은 Google Workspace 하나
+
+- 워크스페이스 구성원 명단이 곧 직원 명단이고, 구글이 `hd=teamjpk.com` 으로 서명해 보낸다.
+- 따로 만들 계정도, 맞춰 둘 명단도 없다. 퇴사로 워크스페이스 계정이 정지되면 어드민도 그 순간 닫힌다.
+- 예외 인원 없음 — 대표 2026-09-27 확인.
+- 185개 ERP5 계정은 그대로 둔다. SALES/화이트라벨의 문이고 어드민이 쓰지 않을 뿐이다.
+
+### 코드에서 걷어낸 것
+
+- `src/app/login/LoginForm.tsx` 삭제, `/login` 은 구글 문 하나만 띄운다. 설정이 없으면 **다른 문을 내주지 않고** 까닭만 적는다.
+- `loginAction`(비밀번호 로그인 서버 액션) 삭제 — 폼을 지우는 것만으로는 서버 액션이 남는다.
+- `src/server/auth.ts` 에서 `signIn` · `signOut` · `adminOf` · `erp4App` · `ADMIN_EMAILS` · `ADMIN_UIDS` 제거.
+  `verifySession` 은 이제 `g1.` 구글 세션만 연다. identity 코드는 **어떤 데이터베이스도 건드리지 않는다.**
+- `.env.example` 의 option B 블록 제거. `AUTH_PROJECT_ID` · `AUTH_FIREBASE_SERVICE_ACCOUNT_JSON` ·
+  `FIREBASE_WEB_API_KEY` · `ADMIN_EMAILS` · `ADMIN_UIDS` 는 더 이상 읽지 않는다. 배포 환경에 남아 있으면 지운다.
+- 회귀 방지: `freepass-data-boundary.test.ts` 가 auth.ts 의 firebase-admin import · `getFirestore` · `.collection(` ·
+  위 환경변수 읽기를 전부 금지하고, `auth.test.ts` 가 erp4 세션 쿠키 꼴이 열리지 않는 것을 고정한다.
+
+## 4-B. 계정·로그인 정본은 프리패스 데이터다 (2026-09-27 확정)
+
+대표: 「프리패스 데이터에서 계정 통합해서 거기서 회원 데이터 관리하고 다 관리할 거거든」
+    「프리패스 데이터에서 먼저 로그인 할수 있게끔 만들 거고 그거를 갖다 쓰던지 동일하게 하던지 할 거라고」
+    「기존 만들던 거는 중복이면 폐기하고 이쪽에서 더 좋은 점이 있으면 그쪽에다가 합치고」
+
+### 결정
+
+- **계정·회원·승인의 정본은 프리패스 데이터**다. 어드민은 소비하는 쪽이다.
+- 프리패스 데이터가 로그인을 먼저 세운다. 어드민은 그 뒤에 **갖다 쓰거나 같은 방식으로 맞춘다.**
+- **어드민은 자기 계정 창고를 만들지 않는다.** 이 절이 그 금지의 근거다.
+
+### 걷어낸 것 — 다시 만들지 마라
+
+2026-09-27 이 세션에서 어드민 쪽에 `마스터 + 가입 승인`을 한 벌 구현했다가 **커밋 전에 폐기**했다.
+스키마·scrypt 형식·마스터 판정·잠금 규칙이 프리패스 데이터 구현의 복제였다 — 두 번째 계정 창고였다.
+폐기한 것: `src/server/accounts.ts` · `src/app/login/LoginCard.tsx` · `src/app/system/accounts/**` ·
+`auth.ts`/`require-admin.ts`/`login/actions.ts` 의 `a1.` 세션 경로.
+
+### 프리패스 데이터 구현 관측 (2026-09-27, 커밋 전 untracked)
+
+`dashboard/api/_lib/{auth,store}.mjs` · `dashboard/api/[...path].mjs` · 컬렉션 `dashboard_accounts`.
+이메일+비밀번호(scrypt N=16384) · HMAC 서명 세션 쿠키 `fpd_session` 12시간 · 8회 실패 15분 잠금 ·
+`status` `PENDING`/`APPROVED`/`REJECTED` · 마스터는 `DASHBOARD_MASTER_ID` 이며 정의상 승인됨.
+
+**그쪽이 더 나은 점 — 유지할 것.** `login` 은 없는 계정에도 `hashPassword` 를 한 번 돌려
+응답 시간으로 계정 존재 여부가 새지 않게 한다.
+
+**합칠 것 하나.** `register` 가 이미 있는 계정에 `409 ACCOUNT_EXISTS` 를 돌려준다
+(`dashboard/api/[...path].mjs:99`). 로그인은 계정 열거를 막아 놨는데 **가입이 그 구멍을 연다** —
+아이디를 넣어 보는 것만으로 누가 가입돼 있는지 훑을 수 있다. 가입도 로그인과 같은 답을 돌려줘야 한다.
+
+### 어드민이 갖다 쓰려면 프리패스 데이터에 있어야 할 것
+
+현재 그 코드는 자기 대시보드 페이지 전용이라 다른 앱이 쓸 문이 없다.
+
+1. 다른 앱이 부를 인증·세션 검증 엔드포인트. 지금 세션 쿠키는 `SameSite=Strict` + 그 origin 전용이라
+   어드민으로 넘어가지 않는다.
+2. 계정 창고가 어느 Firestore 프로젝트인지 고정 — `DASHBOARD_FIREBASE_SERVICE_ACCOUNT_JSON` 만 있고
+   `.env.example`·문서·Vercel 프로젝트가 모두 없다.
+3. `consumer-gateway.ts` 의 capability와 `docs/DATA-DOMAIN-CATALOG.md` 에 신원 도메인 추가.
+4. `docs/FIREBASE-ACCESS-MIGRATION-MAP.md` 의 「사용자 신원은 각 앱이 가진다」는 문장은 이 결정과
+   반대다. 계정을 데이터가 통합하면 그 문장부터 고쳐야 한다.
+
+### 그때까지 어드민의 상태
+
+`/login` 은 구글 워크스페이스 문 하나로 서 있고, OAuth 클라이언트가 없어 **아직 아무도 로그인할 수 없다.**
+이는 의도된 대기 상태다. 프리패스 데이터 로그인이 서면 그 방식에 맞춘다.
+**그 전에 어드민에 임시 로그인을 만들지 않는다** — 임시로 낸 문은 안 닫힌다.
+
 ## 5. 남은 것
 
 1. Google Cloud OAuth 웹 클라이언트 ID/SECRET 투입.

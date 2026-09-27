@@ -1,6 +1,6 @@
 import { erp5 } from './firestore';
 import { demoMode } from './demo';
-import { erp5WriteGate } from '../../shared/erp5-write-approval';
+import { freepassDataWriteGate } from '../../shared/erp5-write-approval';
 import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
@@ -39,10 +39,10 @@ const eventIdOf = (d: Record<string, unknown>) =>
 
 export class WriteDisabledError extends Error {
   constructor(reason?: string) {
-    super(`ERP5 쓰기가 열리지 않았습니다 — ${reason ?? erp5WriteGate(process.env, demoMode()).reason}`);
+    super(`FreePass Data 쓰기가 열리지 않았습니다 — ${reason ?? freepassDataWriteGate(process.env, demoMode()).reason}`);
   }
 }
-export const writeGate = () => erp5WriteGate(process.env, demoMode());
+export const writeGate = () => freepassDataWriteGate(process.env, demoMode());
 export const writeEnabled = () => writeGate().enabled;
 const mustWrite = () => {
   const gate = writeGate();

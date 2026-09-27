@@ -8,7 +8,7 @@ import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
 import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
-import { clawbackId, clawbackRecord, type ClawbackInput } from '../../domain/settlement/clawback';
+import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
 import { feeOf } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
@@ -570,6 +570,59 @@ export class Erp5SettlementRepository {
         ? { axis: '영업채널' as const, amount: change.amount, day: change.day, kind: change.kind }
         : undefined;
     return this.mutateRow(code, (_cur, row) => lifePatch(row, change), by, operationId, cash);
+  }
+
+  /**
+   * 계약해지 뒤 환수 검토 확정.
+   * 금액을 만들지 않고 REQUIRED / NOT_REQUIRED 판단 사실만 저장한다.
+   * 같은 operationId 재시도는 domain plan이 idempotent로 처리한다.
+   */
+  async reviewTerminationClawback(
+    code: string,
+    input: TerminationClawbackReviewInput,
+    by: string = BY,
+  ): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    mustWrite();
+    const db = erp5();
+    const ref = db.collection(ROWS).doc(code);
+    return db.runTransaction(async (tx) => {
+      const [doc, clawDocs] = await Promise.all([
+        tx.get(ref),
+        tx.get(db.collection('settlement_clawbacks').where('code', '==', code)),
+      ]);
+      if (!doc.exists) return { ok: false as const, error: `없는 줄입니다: ${code}` };
+      const cur = doc.data() as Record<string, unknown>;
+      const { row } = toSettlementRow(cur, doc.id);
+      const now = Date.now();
+      const plan = planTerminationClawbackReview(
+        row,
+        clawDocs.docs.map((d) => ({ code: S(d.data().code) || d.id })),
+        input,
+        now,
+      );
+      if (!plan.ok) return plan;
+      if (plan.idempotent) return { ok: true as const, changed: 0 };
+
+      tx.update(ref, {
+        ...plan.patch,
+        updatedAt: now,
+        stateAt: new Date(now).toISOString(),
+      });
+      const eventKey = 'aud_clawback_review_' + createHash('sha256')
+        .update(code + '|' + input.operationId.trim()).digest('hex').slice(0, 16);
+      tx.set(db.collection(EVENTS).doc(eventIdOf(cur)), {
+        [eventKey]: {
+          at: now,
+          by,
+          operationId: input.operationId.trim(),
+          field: '환수검토',
+          from: '',
+          to: input.decision === 'REQUIRED' ? '환수 필요' : '환수 없음',
+          reason: input.reason.trim(),
+        },
+      }, { merge: true });
+      return { ok: true as const, changed: 1 };
+    });
   }
 
   /**

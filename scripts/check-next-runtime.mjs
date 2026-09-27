@@ -155,10 +155,17 @@ try {
       check(`${width}px ${route} does not expose credential diagnostics`, !leaked);
     }
 
+    /* 위조된 세션의 쓰기는 «거부»되어야 한다. 꼴만 보는 proxy 를 지나가므로
+       거부하는 자리가 바뀜다 — 서버 액션은 requireAdmin 이, 그상 POST 는 쪽의 문이 막는다.
+       그래서 답이 401 일 수도, 로그인으로 돌려보내는 307 일 수도 있다.
+       ★가를 것은 «열렸는가»이다 — 2xx 가 나오면 사고고, 돌려보낸다면 로그인이어야 한다. */
     const post = await ctx.request.post(origin + '/settlement', {
       headers:{'content-type':'application/json'}, data:{test:true}, maxRedirects:0,
     });
-    check(`${width}px forged session cannot POST`, post.status() === 401 || post.status() === 403, String(post.status()));
+    const status = post.status();
+    const sentTo = status >= 300 && status < 400 ? new URL(post.headers()['location'] ?? '/', origin).pathname : null;
+    const refused = status >= 400 || (status >= 300 && status < 400 && sentTo === '/login');
+    check(`${width}px forged session cannot write`, refused, `${status}${sentTo ? ' -> ' + sentTo : ''}`);
     const esignApi = await ctx.request.get(origin + '/api/esign/asset/not-real/not-real', { maxRedirects:0 });
     check(`${width}px forged session cannot reach the private esign API`,
       esignApi.status() === 401 || esignApi.status() === 404, String(esignApi.status()));

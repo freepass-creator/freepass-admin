@@ -9,8 +9,9 @@
  * Admin Services own workflow semantics; this module owns their persistence entrypoint.
  * No separate Admin database or ledger authority is created.
  */
-import { AdminCatalogSwitchboard } from '../adapters/freepass-data/admin-catalog-reader';
+import { AdminCatalogSwitchboard, adminCatalogReadMode } from '../adapters/freepass-data/admin-catalog-reader';
 import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
+import { FreePassDataAdminCompatProductRepository } from '../adapters/freepass-data/admin-compat-product-repository';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
 import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository';
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
@@ -26,8 +27,28 @@ const g = globalThis as unknown as {
   };
 };
 
-export const legacyProducts = new Erp5ProductRepository();
+export const directLegacyProducts = new Erp5ProductRepository();
+export const compatibilityProducts = new FreePassDataAdminCompatProductRepository();
 export const freepassDataProducts = new FreePassDataAdminCatalogClient();
+
+/**
+ * Transport selector for the legacy-shape comparison source.
+ * Only explicit LEGACY_DIRECT may touch ERP5 from Admin. Every migration stage routes the
+ * same compatibility values through FreePass Data first, so Admin can shed Firebase credentials
+ * before semantic cutover to the approved admin-catalog projection.
+ */
+export const legacyProducts = {
+  list: () => adminCatalogReadMode() === 'LEGACY_DIRECT'
+    ? directLegacyProducts.list()
+    : compatibilityProducts.list(),
+  get: (id: string) => adminCatalogReadMode() === 'LEGACY_DIRECT'
+    ? directLegacyProducts.get(id)
+    : compatibilityProducts.get(id),
+  report: () => adminCatalogReadMode() === 'LEGACY_DIRECT'
+    ? directLegacyProducts.report()
+    : compatibilityProducts.report(),
+};
+
 export const adminCatalog = new AdminCatalogSwitchboard(legacyProducts, freepassDataProducts);
 
 const TTL = 60_000;

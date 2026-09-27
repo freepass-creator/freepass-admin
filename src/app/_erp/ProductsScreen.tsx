@@ -11,8 +11,7 @@ import type { CanonicalProduct } from '../../domain/product/types';
 import { sp, txt } from '../_fn/fmt';
 import { FilterSheet } from '../_design/FilterSheet';
 import { buildProductList } from './productList';
-import { 보증금 } from '../products/workspace-config';
-import { ProductDetail, ProductThumb, STATUS_TONE, carName, salesPriceReason } from './ProductDetail';
+import { ProductDetail, ProductThumb, STATUS_TONE, carName } from './ProductDetail';
 import { Badge, hrefWith, Panel, PanelBody, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, manWon } from './parts';
 
 type Q = Record<string, string | string[] | undefined>;
@@ -42,16 +41,12 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
                   tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
                   title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                   subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
-                  meta={`${offer.termMonths}개월 · 보증 ${보증금(offer.deposit)}${salesPriceReason(offer) ? ` · ${salesPriceReason(offer)}` : ''}${offer.conditionStatus === 'PARTIAL' ? ` · 조건 ${offer.unknownConditionKeys?.length ?? 0}개 미확인` : ''}`}
+                  meta={txt(p.supplierName ?? p.supplierId)}
                   facts={[
                     ['상품구분', txt(p.productKind)],
-                    ['기간', `${offer.termMonths}개월`],
-                    ['가격근거', salesPriceReason(offer) || '조건 데이터 없음'],
-                    ['조건상태', offer.conditionStatus === 'PARTIAL'
-                      ? `미확인 ${offer.unknownConditionKeys?.length ?? 0}개`
-                      : offer.conditionStatus === 'COMPLETE' ? '확인' : '기존 데이터'],
+                    ['공급사', txt(p.supplierName ?? p.supplierId)],
                   ]}
-                  amount={`월 ${manWon(offer.monthlyRent)} 원`} amountLabel="부터" unit="" />
+                  amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
               ))}
             </RowCards>
           ) : (

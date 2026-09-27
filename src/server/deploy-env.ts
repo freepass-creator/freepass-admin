@@ -1,4 +1,4 @@
-import { parseErp5WriteApproval } from '../shared/erp5-write-approval';
+import { freepassDataWriteGate } from '../shared/erp5-write-approval';
 import { parseAdminCutoverApproval, type AdminCutoverStage } from '../shared/freepass-data-admin-cutover';
 
 /**
@@ -8,7 +8,6 @@ import { parseAdminCutoverApproval, type AdminCutoverStage } from '../shared/fre
  */
 export type EnvFinding = { level: 'error' | 'warn' | 'ok'; key: string; message: string };
 
-const ERP5_PROJECT_ID = 'freepasserp5';
 const set = (env: Record<string, string | undefined>, k: string) => !!env[k]?.trim();
 
 function originOf(v: string): string | null {
@@ -37,42 +36,25 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
   const domain = env.GOOGLE_WORKSPACE_DOMAIN?.trim();
   ok('GOOGLE_WORKSPACE_DOMAIN', domain ? `${domain} 구성원만 로그인` : '미설정 → 기본값 teamjpk.com');
 
-  /* FreePass Data (Firestore freepasserp5) */
-  const raw = env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  let serviceAccountEmail: string | null = null;
-  if (!raw) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', '서비스계정 JSON 전체가 필요합니다');
-  else {
-    try {
-      const sa = JSON.parse(raw) as Record<string, unknown>;
-      const email = String(sa.client_email ?? '').trim();
-      serviceAccountEmail = email || null;
-      if (!email || !sa.private_key) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'client_email · private_key 가 없습니다');
-      else if (sa.project_id !== ERP5_PROJECT_ID) err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `project_id 가 ${ERP5_PROJECT_ID} 가 아닙니다`);
-      else if (!email.endsWith(`@${ERP5_PROJECT_ID}.iam.gserviceaccount.com`)) {
-        err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `client_email 이 ${ERP5_PROJECT_ID} 서비스계정이 아닙니다`);
-      } else ok('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', `${ERP5_PROJECT_ID} 서비스계정`);
-    } catch { err('ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'JSON 으로 읽히지 않습니다(따옴표·줄바꿈 확인)'); }
+  /* FreePass Data — Admin must not hold Firebase business-data credentials. */
+  for (const k of ['ERP5_FIREBASE_SERVICE_ACCOUNT_JSON', 'ERP5_SERVICE_ACCOUNT_PATH'] as const) {
+    if (set(env, k)) err(k, 'Admin 운영 런타임에는 두지 않습니다 — Firebase 업무데이터 접근은 FreePass Data만 소유합니다');
   }
-  if (set(env, 'ERP5_SERVICE_ACCOUNT_PATH')) warn('ERP5_SERVICE_ACCOUNT_PATH', '배포에서는 파일 경로가 아니라 JSON 값을 씁니다');
+  const dataOrigin = originOf(env.FREEPASS_DATA_BASE_URL?.trim() ?? '');
+  if (!dataOrigin) err('FREEPASS_DATA_BASE_URL', '운영 FreePass Data HTTPS origin이 필요합니다');
+  else ok('FREEPASS_DATA_BASE_URL', dataOrigin);
+  const dataToken = env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN?.trim() ?? '';
+  if (dataToken.length < 32) err('FREEPASS_DATA_ADMIN_CATALOG_TOKEN', '32자 이상 consumer token이 필요합니다');
+  else ok('FREEPASS_DATA_ADMIN_CATALOG_TOKEN', '설정됨');
 
   /* 쓰기 · 전자계약 · 카탈로그 */
   const write = env.ERP5_WRITE?.trim() || 'off';
   if (write !== 'on' && write !== 'off') {
     err('ERP5_WRITE', 'on 또는 off');
   } else if (write === 'on') {
-    const approval = parseErp5WriteApproval(env.ERP5_WRITE_APPROVAL_JSON);
-    if (!approval.ok) {
-      err('ERP5_WRITE_APPROVAL_JSON', `운영 쓰기 승인 증거가 불완전합니다 — ${approval.reason}`);
-    } else {
-      const appOrigin = originOf(env.APP_BASE_URL?.trim() ?? '');
-      if (!serviceAccountEmail || approval.value.serviceAccountEmail !== serviceAccountEmail) {
-        err('ERP5_WRITE_APPROVAL_JSON', '승인 serviceAccountEmail과 실제 배포 서비스계정이 다릅니다');
-      } else if (!appOrigin || approval.value.productionOrigin !== appOrigin) {
-        err('ERP5_WRITE_APPROVAL_JSON', '승인 productionOrigin과 APP_BASE_URL이 다릅니다');
-      } else {
-        ok('ERP5_WRITE', `on — IAM/backup-restore 승인 ${approval.value.approvalRef}`);
-      }
-    }
+    const gate = freepassDataWriteGate(env, false);
+    if (!gate.enabled) err('FREEPASS_DATA_ADMIN_WORKFLOW_WRITE', gate.reason);
+    else ok('ERP5_WRITE', `on — ${gate.reason}`);
   } else {
     ok('ERP5_WRITE', 'off (조회 전용)');
   }

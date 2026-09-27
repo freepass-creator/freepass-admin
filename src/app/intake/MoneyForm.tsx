@@ -7,7 +7,7 @@
  *   ⚠ 저장 단추는 운영 원장(ERP5)에 바로 쓴다. 에러 문구(청구서 나감 · 지급 끝남 거절 등)는 받은 그대로 보인다.
  */
 import { startTransition, useActionState } from 'react';
-import { clawbackAction, feeAction, moneyAction, type FormState } from './actions';
+import { clawbackAction, feeAction, moneyAction, terminationClawbackReviewAction, type FormState } from './actions';
 
 const 칸값 = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n));
 
@@ -64,6 +64,45 @@ export function FeeForm({ code, claim, pay, disabled }: { code: string; claim: n
         <label className="wide">사유 *<input name="feeReason" /></label>
         {s.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
         <button type="submit" disabled={disabled || pending} aria-busy={pending}>{pending ? '저장 중…' : '수수료 저장'}</button>
+      </form>
+    </div>
+  );
+}
+
+/**
+ * 계약해지 환수 검토. 여기서는 금액을 만들지 않는다.
+ * 환수 필요 / 환수 없음과 사람이 확인한 사유만 확정한다.
+ */
+export function TerminationClawbackReviewForm({
+  code,
+  operationId,
+  disabled = false,
+}: {
+  code: string;
+  operationId: string;
+  disabled?: boolean;
+}) {
+  const [s, act, pending] = useActionState<FormState, FormData>(terminationClawbackReviewAction, { errors: [] });
+  return (
+    <div className="dz-money">
+      <form aria-busy={pending} onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        const btn = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        if (btn?.name) fd.set(btn.name, btn.value);
+        startTransition(() => act(fd));
+      }}>
+        <input type="hidden" name="code" value={code} />
+        <input type="hidden" name="operationId" value={operationId} />
+        <b>계약해지 환수 검토</b>
+        <label className="wide">검토 사유 *<input name="reason" placeholder="공급사 조건·정산 이력 확인 결과" disabled={disabled || pending} /></label>
+        {s.errors.length > 0 && <ul className="dz-errs" role="alert" aria-live="assertive">{s.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
+        <div className="wide dz-form-actions">
+          <button type="submit" name="decision" value="NOT_REQUIRED" disabled={disabled || pending}>환수 없음</button>
+          <button type="submit" name="decision" value="REQUIRED" disabled={disabled || pending} className="dz-action-caution">
+            {pending ? '저장 중…' : '환수 필요'}
+          </button>
+        </div>
       </form>
     </div>
   );

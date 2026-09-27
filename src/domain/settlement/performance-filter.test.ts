@@ -26,13 +26,42 @@ const line = (r: SettlementRow, o: Partial<LedgerLine> = {}): LedgerLine => ({ r
 test('performance modes separate todo issue and done from authoritative ledger state',()=>{
   const todo=line(row());
   const issue=line(row({progress:{...row().progress,billHold:true}}));
-  const done=line(row({progress:{...row().progress,collected:true,paid:true}}));
+  const done=line(row({progress:{...row().progress,collected:true,paid:true},claimStage:'수금',payStage:'지급'}));
   assert.equal(performanceMatchesMode(todo,'공급사','todo'),true);
   assert.equal(performanceMatchesMode(todo,'공급사','issue'),false);
   assert.equal(performanceMatchesMode(issue,'공급사','issue'),true);
   assert.equal(performanceMatchesMode(issue,'공급사','todo'),false);
   assert.equal(performanceMatchesMode(done,'공급사','done'),true);
   assert.equal(performanceMatchesMode(done,'공급사','todo'),false);
+  assert.equal(performanceMatchesMode(done,'공급사','issue'),false);
+});
+
+test('completed rows with damage stay in issue instead of disappearing into done',()=>{
+  const corrected=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'정정',
+  }));
+  const broken=line(row({
+    progress:{...row().progress,collected:true},
+  }),{broken:true});
+  const inconsistent=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'확인',
+  }));
+
+  for(const candidate of [corrected,broken,inconsistent]){
+    assert.equal(performanceMatchesMode(candidate,'공급사','issue'),true);
+    assert.equal(performanceMatchesMode(candidate,'공급사','done'),false);
+    assert.equal(performanceMatchesMode(candidate,'공급사','todo'),false);
+  }
+});
+
+test('clean completed rows remain done and do not become issues',()=>{
+  const done=line(row({
+    progress:{...row().progress,collected:true},
+    claimStage:'수금',
+  }));
+  assert.equal(performanceMatchesMode(done,'공급사','done'),true);
   assert.equal(performanceMatchesMode(done,'공급사','issue'),false);
 });
 

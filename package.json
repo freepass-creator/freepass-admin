@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run check:data-authority && tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "ui:check": "tsx scripts/check-ui-ssot.mts",
     "data:check": "tsx scripts/check-live-data-wiring.mts",
@@ -20,7 +20,8 @@
     "identity:journey": "firebase emulators:exec --only auth,firestore --project freepasserp5 \"npm run test:identity-journey\"",
     "local:emulators": "firebase emulators:start --only auth,firestore --project freepasserp5",
     "local:approve": "tsx scripts/local-approve.mts",
-    "local:setup": "tsx scripts/local-setup.mts"
+    "local:setup": "tsx scripts/local-setup.mts",
+    "check:data-authority": "node scripts/check-freepass-data-authority.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",

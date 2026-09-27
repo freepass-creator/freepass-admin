@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { erp5 } from '../firestore';
 import { Erp5ContractRepository } from '../contract-repository';
+import { Erp5SettlementRepository } from '../settlement-repository';
 import { intakeEventDocId } from '../../../domain/settlement/code';
 
 const emulatorHost=process.env.FIRESTORE_EMULATOR_HOST?.trim();
@@ -169,4 +170,77 @@ emulatorTest('Firestore: 계약/접수 한쪽만 해지된 partial state는 자�
   assert.equal(contractSnap.data()!.contract_status,'계약완료');
   assert.equal(intakeSnap.data()!.contractTerminatedAt,100);
   assert.equal(eventSnap.size,0);
+});
+
+
+emulatorTest('Firestore: 계약해지 환수 검토는 한 번만 저장되고 같은 operation 재시도는 idempotent다',async()=>{
+  const terminatedAt=Date.parse('2026-09-25T00:00:00Z');
+  const {db,intakeId,intake}=await seed({
+    intake:{
+      contractTerminatedAt:terminatedAt,
+      contractTerminationDate:'2026-09-25',
+      contractTerminationReason:'중도해지',
+      contractTerminationOperationId:'terminate_review_1234567890',
+    },
+  });
+  const repo=new Erp5SettlementRepository();
+  const input={
+    decision:'REQUIRED' as const,
+    reason:'3개월 유지조건 미충족',
+    operationId:'clawreview_emulator_123456',
+  };
+
+  const first=await repo.reviewTerminationClawback(intakeId,input,'reviewer');
+  const retry=await repo.reviewTerminationClawback(intakeId,input,'reviewer');
+
+  assert.deepEqual(first,{ok:true,changed:1});
+  assert.deepEqual(retry,{ok:true,changed:0});
+
+  const eventId=intakeEventDocId(
+    intake.plate,intake.sourceProductId,intake.receivedAt,
+    intake.intakeRequestId,intake.intakeIdentityMode,
+  );
+  const [rowSnap,eventSnap]=await Promise.all([
+    db.collection('settlement_rows').doc(intakeId).get(),
+    db.collection('settlement_events').doc(eventId).get(),
+  ]);
+  const row=rowSnap.data()!;
+  assert.equal(row.contractClawbackReviewDecision,'REQUIRED');
+  assert.equal(row.contractClawbackReviewReason,input.reason);
+  assert.equal(row.contractClawbackReviewOperationId,input.operationId);
+  assert.ok(Number(row.contractClawbackReviewedAt)>=terminatedAt);
+
+  const reviewEvents=Object.values(eventSnap.data()??{})
+    .filter((value):value is Record<string,unknown>=>!!value&&typeof value==='object')
+    .filter((value)=>value.field==='환수검토');
+  assert.equal(reviewEvents.length,1);
+  assert.equal(reviewEvents[0]?.operationId,input.operationId);
+});
+
+emulatorTest('Firestore: 이미 확정된 환수 검토를 다른 판단으로 덮어쓰지 않는다',async()=>{
+  const {db,intakeId}=await seed({
+    intake:{
+      contractTerminatedAt:Date.parse('2026-09-25T00:00:00Z'),
+      contractTerminationDate:'2026-09-25',
+    },
+  });
+  const repo=new Erp5SettlementRepository();
+  const first=await repo.reviewTerminationClawback(intakeId,{
+    decision:'NOT_REQUIRED',
+    reason:'유지기간 충족',
+    operationId:'clawreview_none_emu_12345',
+  },'reviewer');
+  assert.equal(first.ok,true);
+
+  const second=await repo.reviewTerminationClawback(intakeId,{
+    decision:'REQUIRED',
+    reason:'판단 변경 시도',
+    operationId:'clawreview_change_emu_123',
+  },'other');
+  assert.equal(second.ok,false);
+  assert.match(second.ok?'':second.error,/이미 환수 검토가 확정/);
+
+  const row=(await db.collection('settlement_rows').doc(intakeId).get()).data()!;
+  assert.equal(row.contractClawbackReviewDecision,'NOT_REQUIRED');
+  assert.equal(row.contractClawbackReviewReason,'유지기간 충족');
 });

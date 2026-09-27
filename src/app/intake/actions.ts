@@ -280,6 +280,35 @@ export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
 }
 
 /**
+ * 계약해지 환수 검토 — 금액을 만들지 않고 「환수 필요 / 환수 없음」 판단만 확정한다.
+ * 실제 환수 금액은 환수 필요로 확정된 뒤 clawbackAction에서 사람이 입력한다.
+ */
+export async function terminationClawbackReviewAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
+  const decision = S(f, 'decision');
+  if (decision !== 'REQUIRED' && decision !== 'NOT_REQUIRED') {
+    return { errors: ['환수 검토 결과는 환수 필요 또는 환수 없음이어야 합니다'] };
+  }
+  const operationId = S(f, 'operationId');
+  if (!/^[A-Za-z0-9_-]{16,128}$/.test(operationId)) {
+    return { errors: ['환수 검토 요청 식별자가 없습니다 — 화면을 새로 열어 다시 처리합니다'] };
+  }
+  try {
+    const r = await settlements.reviewTerminationClawback(
+      S(f, 'code'),
+      { decision, reason: S(f, 'reason'), operationId },
+      await currentActor(),
+    );
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [writeError('환수 검토를 저장하지 못했습니다', e)] };
+  }
+  revalidatePath('/settlement');
+  revalidatePath('/intake');
+  return { errors: [] };
+}
+
+/**
  * 환수 세우기 — 대표 「환수가 생기는경우가 있을수도 있으니까 그건 열어두고」.
  * 폼 칸: code · at(환수일 YYYY-MM-DD) · supplierAmt(공급사에 돌려줄 것) · agentAmt(영업채널에서 돌려받을 것) · reason(필수)
  * ★금액은 사람이 넣는다(조건이 공급사마다 다르다). 그 달 청구·지급에서 빠진다.

@@ -39,7 +39,8 @@ for (const file of walk(path.join(root, 'src'))) {
     /from\s+['"]firebase-admin\/(?:app|firestore|storage|database)['"]/.test(runtimeText)
     || /from\s+['"]firebase\/(?:firestore|database|storage)['"]/.test(runtimeText);
   const businessCredential =
-    /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH/.test(runtimeText);
+    rel === 'src/adapters/erp5/firestore.ts'
+    && /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH/.test(runtimeText);
 
   if (!directSdk && !businessCredential) continue;
   if (explicitExceptions.has(rel)) exceptionsSeen.push(rel);

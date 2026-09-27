@@ -150,7 +150,9 @@ try {
       const landed = new URL(page.url()).pathname;
       const body = await page.locator('body').innerText();
       const leaked = /ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON|private_key|자격증명이 없다/.test(body);
-      receipt.routeChecks.push({width,route,landed,rawCredentialLeak:leaked});
+      /* ★`ok` 를 빼면 영수증의 failed 계산(`routeChecks.some(x => !x.ok)`)이 undefined 를 보고
+         «전부 통과했는데 실패» 가 된다. 인쇄된 결과와 종료 코드가 어긋나면 둘 다 못 믿는다. */
+      receipt.routeChecks.push({width,route,landed,ok:landed === '/login',rawCredentialLeak:leaked});
       check(`${width}px forged session cannot open ${route}`, landed === '/login', landed);
       check(`${width}px ${route} does not expose credential diagnostics`, !leaked);
     }

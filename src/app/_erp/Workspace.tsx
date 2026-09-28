@@ -113,7 +113,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
   return (
     <Screen name="intake-workspace">
     <div className="erp-workspace">
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="상품찾기" count={`전체 ${hits.length}건`} />
         <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']}
           filter={<FilterSheet axes={상품판축} count={hits.length} unit="대" label="필터" />} />
@@ -140,7 +140,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
         </PanelBody>
       </Panel>
 
-      <Panel flip={!!cur || newMode}>
+      <Panel kind={newMode ? 'input' : 'detail'} flip={!!cur || newMode}>
         {cur ? (
           <SettlementDetail cur={cur} base={base} q={q} now={now} />
         ) : newMode ? (
@@ -158,7 +158,7 @@ async function IntakeWorkspace({ q }: { q: Q }) {
         )}
       </Panel>
 
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title={iTitle} count={`전체 ${iShown.length}건`} />
         <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv']}
           filter={<FilterSheet axes={접수판축} count={iShown.length} unit="건" label="필터" />} />
@@ -281,7 +281,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
   return (
     <Screen name="performance-workspace">
     <div className="erp-workspace">
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="분납실적" count={`전체 ${분납.length}건`} />
         <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'dqs', 'month']}
           filter={<FilterSheet axes={dFacets} count={분납.length} unit="건" label="필터" />} />
@@ -292,7 +292,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         <PanelBody>{list('분납실적', 분납, '분납실적')}</PanelBody>
       </Panel>
 
-      <Panel>
+      <Panel kind="detail">
         {cur ? (
           <SettlementDetail cur={cur} base={base} q={q} now={now} />
         ) : (
@@ -303,7 +303,7 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
         )}
       </Panel>
 
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="완납실적" count={`전체 ${완납.length}건`} />
         <SearchBar base={base} q={q} name="wiq" placeholder="고객 · 차번 · 모델 · 공급사 · 담당" keep={['wiv', 'fqs', 'month']}
           filter={<FilterSheet axes={fFacets} count={완납.length} unit="건" label="필터" />} />

@@ -51,8 +51,8 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     return (
       <Screen name="settlement-workspace">
         <div className="erp-workspace">
-          <Panel compact>
-            <PanelHead kind="상태" title="정산관리" count="읽기 실패" />
+          <Panel kind="list" compact>
+            <PanelHead kind="목록" title="정산관리" count="읽기 실패" />
             <PanelBody>
               <PanelState kind="error" title="정산 데이터를 불러오지 못했습니다.">
                 잠시 후 다시 시도해 주세요. 계속 실패하면 데이터 연결 상태를 확인해 주세요.
@@ -149,7 +149,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   return (
     <Screen name="settlement-workspace">
     <div className="erp-workspace">
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
         <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" facets={[claimKindFacet]} keep={['month', 'cgs']} />
         {/* 상태 QuickFilter 업무 항목은 미확정. 정산월 + 전체/미처리 예시만 유지한다. */}
@@ -160,7 +160,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         <PanelBody>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 
-      <Panel>
+      <Panel kind="detail">
         {focusedLine && gSel ? (
           <SettlementDetail cur={focusedLine.row} base={base} q={q} now={new Date(`${today()}T12:00:00+09:00`)}
             life={{
@@ -231,7 +231,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         )}
       </Panel>
 
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="지급목록" count={`${payG.length}곳`} />
         <SearchBar base={base} q={q} name="pq" placeholder="영업채널 이름" facets={[payKindFacet]} keep={['month', 'pgs']} />
         {/* 상태 QuickFilter 업무 항목은 미확정. 정산월 + 전체/미처리 예시만 유지한다. */}

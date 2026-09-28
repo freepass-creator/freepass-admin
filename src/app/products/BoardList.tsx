@@ -71,9 +71,9 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
     return () => { 멈춤 = true; 대상.removeEventListener('scroll', 볼); };
   }, [more, items.length, 전체, 부르는중]);
 
-  /* 고른 카드가 처음부터 보이게(목록 안에서만) */
+  /* 고른 카드는 목록 맨 위에 둔다. 상세를 읽고 돌아와도 현재 선택 위치를 즉시 찾을 수 있어야 한다. */
   useEffect(() => {
-    판.current?.querySelector<HTMLElement>('.row.selected')?.scrollIntoView({ block: 'nearest' });
+    판.current?.querySelector<HTMLElement>('.row.selected')?.scrollIntoView({ block: 'start', inline: 'nearest' });
   }, [selectedId]);
 
   /* `/` — 어디서든 그 판의 검색칸으로(글 쓰는 칸 안에서는 그냥 글자) */
@@ -107,8 +107,13 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
       {items.map((r) => {
         const on = r.id === 고른;
         return (
-          <Link key={r.id} href={r.href} className={`row${on ? ' selected' : ''}`} aria-current={on ? 'true' : undefined}
-            onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) set누른(r.id); }}>
+          <Link key={r.id} href={r.href} className={`row${on ? ' selected' : ''}${누른 === r.id ? ' just-selected' : ''}`} aria-current={on ? 'true' : undefined}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+              set누른(r.id);
+              const card=e.currentTarget;
+              requestAnimationFrame(() => card.scrollIntoView({ behavior:'smooth', block:'start', inline:'nearest' }));
+            }}>
             <span className={`thumb${r.thumb ? ' photo' : r.thumbLabel ? ' label' : ' car'}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {r.thumb ? <img src={r.thumb} alt="" loading="lazy" decoding="async" />

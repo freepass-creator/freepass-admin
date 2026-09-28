@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { demoMode, erp5Ready, writeEnabled } from '../../server/freepass-data';
+import { demoMode, erp5Ready } from '../../server/freepass-data';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { SideMenu } from './SideMenu';
@@ -72,13 +72,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       <main className="fn-main" data-ui-authority="intake">
         {children}
       </main>
-
-      {/* ── PC ⑧ 상태바 ── */}
-      <footer className="erp-statusbar erp-std" data-region="statusbar">
-        <span className={data.ok ? 'erp-statusbar-ok' : ''}>● ERP5 {data.ok ? '데이터 설정됨' : '데이터 설정 필요'}</span>
-        <span>{writeEnabled() ? '쓰기 허용' : '조회 전용'}</span>
-        {demoMode() && <span>가상 데이터 · 화면 확인용</span>}
-      </footer>
 
       {/*
         폰 depth 0 전역탭 — PC와 같은 업무축(상품 · 접수 · 실적 · 정산).

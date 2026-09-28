@@ -28,24 +28,25 @@ test('settlement is panelized like the intake workspace, not a standalone §4 pa
   assert.ok(src.includes('<SearchBar'), 'search bar');
   // 목록 kind 판(청구목록 · 지급목록)은 둘 다 compact — 다른 목록 판과 같은 규격(대표 2026-09-24
   // 「목록 패널은 좀 제발 좀 목록 패널에 맞게끔 하라고」)
-  assert.equal((src.match(/<Panel compact>/g) ?? []).length, 3, '청구목록·지급목록 목록 판(+오류 화면)이 compact');
+  assert.equal((src.match(/<Panel kind="list" compact>/g) ?? []).length, 3, '청구목록·지급목록 목록 판(+오류 화면)이 compact');
   assert.ok(src.includes('<IssueForm'), '발행 폼은 가운데 정산상세 판에 있다');
   assert.equal(/style=\{\{/.test(src), false, 'no inline style');
 });
 
-test('products is a two-panel wide-list + detail workspace, not a standalone §4 page', () => {
+test('products reuses the exact intake list/detail panels and only widens the list', () => {
   // 대표 2026-09-24 「상품 찾기 페이지가 메인이야 … 패널 두 개를 합쳐서 상품 목록을 두 줄로 깔면 돼
   // … 상품 찾기는 목록 패널이 1 곱하기 2짜리가 들어가. 그리고 상세 패널은 계약 접수 페이지에도 있는
   // 그 패널이 동일하게」 — §4 erp-cols(「저 화면은 안 쓰는 거야」)를 걷어내고 §5-4 erp-panel 둘
   // (목록 1×2 wide | 상품상세)로 다시 짰다. 상세 판은 계약접수와 같은 부품(ProductDetail)을 쓴다.
-  const src = read('src/app/_erp/ProductsScreen.tsx');
-  assert.equal(src.includes('<PageHeader'), false, 'no standalone page header — panels carry their own PanelHead');
-  assert.equal(src.includes('erp-cols'), false, 'no §4 two-column card grid');
-  assert.ok(src.includes('<Panel compact wide>'), '목록 판은 compact + wide(1×2)');
-  assert.ok(src.includes('<ProductDetail'), '상품상세 판은 계약접수와 같은 부품을 재사용, 새로 안 그린다');
-  assert.ok(src.includes('<RowCards') && src.includes('<RowCard '), 'long card list');
-  assert.ok(src.includes('<SearchBar') && src.includes('filter={<FilterSheet'), 'search bar with filter button');
-  assert.equal(/style=\{\{/.test(src), false, 'no inline style');
+  const page = read('src/app/products/page.tsx');
+  const intake = read('src/app/intake/page.tsx');
+  const board = read('src/app/products/board.tsx');
+  const css = read('src/app/products/board.css');
+  assert.ok(page.includes('<ProductsBoard q={q} mode="find" />'), '상품찾기는 계약접수와 같은 ProductsBoard');
+  assert.ok(intake.includes('<ProductsBoard q={q} mode="intake" />'), '계약접수도 같은 ProductsBoard');
+  assert.equal((board.match(/className="web-panel pb-list"/g) ?? []).length, 1, '공용 상품목록 패널은 하나만 존재');
+  assert.equal((board.match(/className="web-panel pb-detail"/g) ?? []).length, 1, '공용 상품상세 패널은 하나만 존재');
+  assert.ok(css.includes('.pb[data-mode="find"] .pb-list { grid-column:span 2; }'), '상품찾기는 목록 폭만 2배');
 });
 
 test('esign is a two-panel list + detail workspace, not a standalone §4 page', () => {
@@ -83,7 +84,7 @@ test('no page renders the older §4 skeleton (PageHeader/erp-cols) any more', ()
 
 test('each actual route preserves responsive composition across target viewports', () => {
   for (const [page, screen, board] of [
-    ['src/app/products/page.tsx', '<ProductsScreen', '<ProductWorkspace'],
+    ['src/app/products/page.tsx', '<ProductsBoard', 'mode="find"'],
     ['src/app/settlement/page.tsx', '<SettlementScreen', '<SettlementBoards'],
     ['src/app/esign/page.tsx', '<EsignScreen', '<EsignBoards'],
   ]) {

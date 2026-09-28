@@ -32,13 +32,12 @@ export type FacetAxis = { key: string; label: string; options: FacetOption[] };
 const HEAD_COUNT = 8;
 
 
-export function FilterSheet({ axes, count, unit, label = '세부검색' }: {
+export function FilterSheet({ axes, count, unit, label = '필터' }: {
   axes: FacetAxis[];
   /** 지금 조건으로 남는 수 — 바닥 단추가 든다 */
   count: number;
   unit: '대' | '건';
-  /** 단추 글자 — 폰은 「세부검색」(원본 그대로), PC 규격 화면(erp-searchbar)은 「필터」(§5-1, 대표
-   *  2026-09-24 「검색창 옆에는 필터 버튼이 있다」)로 다르게 부른다. */
+  /** 단추 글자 — 모든 화면에서 짧고 통상적인 「필터」를 기본값으로 쓴다. */
   label?: string;
 }) {
   const router = useRouter();

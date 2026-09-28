@@ -120,9 +120,9 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
     })));
   const 사진 = car ? 사진들(car) : [];
   const 스펙 = car ? [
-    car.specs.fuel, car.specs.drivetrain, car.specs.seats ? `${car.specs.seats}인승` : undefined,
+    car.specs.fuel,
     car.specs.modelYear ? `${car.specs.modelYear}년식` : undefined,
-  ].filter((x): x is string => !!x).slice(0, 3) : [];
+  ].filter((x): x is string => !!x) : [];
   const 구역 = car ? productSections(car)
     .map((s) => ({ ...s, items: s.items.filter(있음) }))
     .filter((s) => s.items.length > 0) : [];

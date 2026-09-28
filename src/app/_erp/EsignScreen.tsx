@@ -59,7 +59,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
   return (
     <Screen name="esign-workspace">
     <div className="erp-workspace">
-      <Panel compact>
+      <Panel kind="list" compact>
         <PanelHead kind="목록" title="전자계약목록" count={`전체 ${searched.filter((c) => !agent || c.agent === agent).length}건`} />
         <SearchBar base={base} q={q} placeholder="고객 · 차번 · 계약코드 · 담당" facets={[agentFacet]} keep={['sign']}
           dropdown={<AutoSelect name="status" value={status} label="계약상태" options={[['', '계약상태 전체'], ...statuses.map((v) => [v, v] as [string, string])]} />} />
@@ -93,7 +93,7 @@ export async function EsignScreen({ q, base = '/esign' }: { q: Q; base?: string 
         </PanelBody>
       </Panel>
 
-      <Panel>
+      <Panel kind="detail">
         {sel ? (
           <>
             <PanelHead kind="상세내용" title={`${txt(sel.customer)} · ${txt(sel.code)}`} count={sel.status ?? '—'} />

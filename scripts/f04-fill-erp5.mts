@@ -44,6 +44,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { intakeRecord } from '../src/domain/settlement/intake';
+import { ADMIN_INTAKE_CUTOVER_DATE, intakeAuthorityForDate } from '../src/domain/settlement/code';
 import { intakeEventDocId, settlementCode, settlementKey } from '../src/domain/settlement/code';
 import { f04SettlementField } from '../src/adapters/f04/sheet.ts';
 import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
@@ -161,12 +162,22 @@ const 고칠것: {
   events: Record<string, unknown>;
 }[] = [];
 const 새줄: { id: string; data: Record<string, unknown>; auditEventId: string; auditKey: string }[] = [];
+const 컷오버보류: Record<string, unknown>[] = [];
 let 안바뀜 = 0, 달라도둠 = 0;
 const 다른칸 = new Map<string, number>();
 
 for (const f of F04.rows as Record<string, unknown>[]) {
   const k = 열쇠(f);
   const e = E.get(k);
+
+  /* 10월 운영 전환 뒤 신규 접수 정본은 Admin이다. 시트 신규행은 자동 이관하지 않고 HOLD한다. */
+  if (intakeAuthorityForDate(f.receivedAt) !== 'SHEET_HISTORY') {
+    if (!e) 컷오버보류.push({
+      ...f,
+      why: `접수일 ${String(f.receivedAt ?? '')}은 ${ADMIN_INTAKE_CUTOVER_DATE} Admin 컷오버 이후다 — Admin에서 접수하고 시트는 이력으로만 본다`,
+    });
+    continue;
+  }
 
   if (!e) {
     /* ② 시트에만 — 새로 세운다. ★어디서 왔는지 박는다
@@ -238,7 +249,8 @@ for (const f of F04.rows as Record<string, unknown>[]) {
  * ⚠ id 가 탭·행이라, 시트 위에 줄이 끼면 같은 보류가 다른 id 로 한 번 더 설 수 있다.
  *   보류는 «사람이 보고 정할 목록» 이지 원장이 아니므로 금액을 두 번 세지 않는다 — 그래도 알고 둔다.
  */
-const 보류전부 = (F04.held as Record<string, unknown>[]).map((h, i) => ({
+const 보류원본 = [...F04.held as Record<string, unknown>[], ...컷오버보류];
+const 보류전부 = 보류원본.map((h, i) => ({
   id: 안전id(`${h.tab ?? 'tab'}_${h.row ?? i}`),
   data: { ...h, _f04: { run: RUN, at: STAMP, why: '차량번호가 없어 원장 줄과 맞출 수 없었다 — 「없다」가 아니라 「모른다」' } },
 }));
@@ -258,6 +270,7 @@ p(`      이미 다 차 있어 안 바뀌는 줄       ${String(안바뀜).padSt
 p(`      ★값이 달라도 «안 건드린» 칸       ${String(달라도둠).padStart(4)}   ← 덮지 않는다`);
 p(`   ② 시트에만 있어 «새로 세울» 줄       ${String(새줄.length).padStart(4)}`);
 p(`   ③ 보류를 settlement_held 에 둘 줄   ${String(보류.length).padStart(4)}   (이미 둔 것 ${보류전부.length - 보류.length})`);
+if (컷오버보류.length) p(`      ★10월 Admin 컷오버 뒤 시트 신규행 HOLD ${컷오버보류.length}`);
 if (겹친열쇠.size || 미래접수.length) {
   p('');
   p('── ⚠ ERP5 안에서 사람이 봐야 할 것 — 고치지 않고 알린다');

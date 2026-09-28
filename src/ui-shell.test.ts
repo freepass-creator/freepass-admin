@@ -98,6 +98,15 @@ test('1280 desktop collapses only the navigation rail to preserve three-panel wo
   assert.ok(shellCss.includes('grid-template-columns: 64px minmax(0, 1fr) 128px'));
 });
 
+test('desktop side navigation can be collapsed explicitly and remembers the preference',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  assert.ok(side.includes("freepass-admin:sidenav-collapsed"));
+  assert.ok(side.includes("aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}"));
+  assert.ok(side.includes("nav.dataset.collapsed = String(collapsed)"));
+  assert.ok(shellCss.includes('.erp-sidenav[data-collapsed="true"]'));
+  assert.ok(shellCss.includes('grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr)'));
+});
+
 test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
   for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {

@@ -9,6 +9,7 @@
  * */
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 
 type Item = { key: string; label: string; href: string; icon: string };
@@ -47,8 +48,24 @@ function MenuLink({ it, now }: { it: Item; now: string }) {
 /** esign=false 이면 전자계약 문을 숨긴다 — 운영 개시 범위에서 제외(ESIGN_ENABLED, 대표 2026-09-25). */
 export function SideMenu({ esign = true }: { esign?: boolean }) {
   const now = useCurrent();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [preferenceLoaded, setPreferenceLoaded] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem('freepass-admin:sidenav-collapsed') === 'true');
+    setPreferenceLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!preferenceLoaded) return;
+    const nav = rootRef.current?.closest<HTMLElement>('.erp-sidenav');
+    if (nav) nav.dataset.collapsed = String(collapsed);
+    window.localStorage.setItem('freepass-admin:sidenav-collapsed', String(collapsed));
+  }, [collapsed, preferenceLoaded]);
+
   return (
-    <>
+    <div className="erp-sidenav-inner" ref={rootRef}>
       <div className="erp-nav-group">업무</div>
       {FLOW.map((it) => <MenuLink key={it.key} it={it} now={now} />)}
       {/* 전자계약 · 시스템 — 둘 다 «업무 흐름 밖의 따로 된 문»이라 같은 구분선 처리를 받는다(대표 2026-09-24
@@ -60,7 +77,13 @@ export function SideMenu({ esign = true }: { esign?: boolean }) {
       </>}
       <div className="erp-nav-group erp-nav-group--apart">시스템</div>
       <MenuLink it={SYSTEM} now={now} />
-    </>
+      <button type="button" className="erp-sidenav-toggle" onClick={() => setCollapsed((value) => !value)}
+        aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} aria-expanded={!collapsed}
+        title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}>
+        <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={18} />
+        <span className="erp-nav-label">사이드바 접기</span>
+      </button>
+    </div>
   );
 }
 

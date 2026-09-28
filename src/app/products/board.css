@@ -16,9 +16,9 @@
   --shadow:0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
   /* 글자 — 폰 기본. 웹은 아래 PC 단에서 한 단계 올린다 */
   --head:17px; --title:14px; --body:13px; --support:12px; --meta:11px;
-  /* 높이 두 벌(대표 2026-09-22 「같은 규격으로 높이」) — 컨트롤(검색 · 필터 · 입력 · 고르기 · 단추) = --control · 칩 = --chip
-     PC 44 · 폰 48(아래 폰 단). 모서리 — 컨트롤 6 · 카드 12 · 패널 12 */
-  --control:44px; --chip:36px; --r-control:6px; --r-card:12px; --gap:8px; --space:12px;
+  /* 최신 공통 규격: PC standard 36 · compact 32, 모바일 action/touch 44.
+     간격은 8/12/20, 모서리는 control 6 · card/panel 8 한 벌만 쓴다. */
+  --control:36px; --chip:32px; --r-control:6px; --r-card:8px; --gap:8px; --space:12px;
   color:var(--ink); background:var(--ground);
   font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   font-size:14px; line-height:1.5; letter-spacing:0; font-variant-numeric:tabular-nums;
@@ -44,9 +44,9 @@
 .pb .web-panel-head h2 { margin:0; font-size:var(--head); font-weight:600; line-height:1.3; }
 .pb .web-panel-head span { color:var(--navy); font-size:var(--title); font-weight:600; }
 .pb .web-panel-head small { margin-left:auto; color:var(--muted); font-size:var(--meta); }
-.pb .section { margin-top:18px; }
+.pb .section { margin-top:20px; }
 .pb .section h4, .pb .work-title { margin:0 0 8px; font-size:var(--title); font-weight:600; }
-.pb .work-title { margin-top:18px; }
+.pb .work-title { margin-top:20px; }
 .pb .empty { padding:40px 12px; text-align:center; color:var(--muted); font-size:var(--body); }
 .pb .pb-error { margin:24px 16px; color:var(--bad); font-size:var(--body); }
 .pb .notice { margin:0 0 10px; padding:10px 12px; border-radius:10px; background:#fff; box-shadow:inset 0 0 0 1px var(--line); color:var(--sub); font-size:var(--support); }
@@ -136,7 +136,7 @@
 .pb .context-card { margin-bottom:10px; }
 
 /* ── 6. 상세 — 사진 카드 · 기간 카드 · 정보 표 ──────────────────────────── */
-.pb .product-hero { margin-bottom:18px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+.pb .product-hero { margin-bottom:20px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
 .pb .product-photo { position:relative; height:180px; display:grid; place-items:center; overflow:hidden; background:var(--box); }
 .pb .product-photo > svg { width:88px; height:88px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
 .pb .product-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -182,7 +182,7 @@
 .pb .step.now { background:var(--picked); box-shadow:inset 0 0 0 1.5px rgba(27,42,74,.35); }
 .pb .step.now i { background:var(--navy); }
 .pb .step.now b { color:var(--navy); font-weight:600; }
-.pb details.more { margin-top:18px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+.pb details.more { margin-top:20px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
 .pb details.more > summary { min-height:44px; padding:0 12px; display:flex; align-items:center; justify-content:space-between; list-style:none; cursor:pointer; font-size:var(--title); font-weight:600; }
 .pb details.more > summary::-webkit-details-marker { display:none; }
 .pb details.more > summary::after { content:"＋"; color:var(--muted); font-weight:400; }
@@ -295,7 +295,7 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
   .pb .statusbar, .pb .only-phone { display:none !important; }
   .pb .web-workspace { height:100%; min-height:0; padding:12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
   .pb .web-panel { min-width:0; min-height:0; padding:16px; display:flex; flex-direction:column; overflow:hidden;
-    border:1px solid rgba(16,24,40,.06); border-radius:12px; background:var(--ground); box-shadow:0 1px 2px rgba(16,24,40,.04); font-size:var(--body); }
+    border:1px solid rgba(16,24,40,.06); border-radius:8px; background:var(--ground); box-shadow:0 1px 2px rgba(16,24,40,.04); font-size:var(--body); }
   .pb .web-scroll { flex:1; min-height:0; overflow:auto; padding-right:2px; }
   .pb .web-actions > * { font-size:15px; }
   .pb .web-actions.single-web { grid-template-columns:1fr; }
@@ -345,7 +345,7 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
   .pb .row { grid-template-columns:84px minmax(0,1fr); }
   .pb .thumb { min-height:64px; }
   .pb[data-phone="list"] .row.selected { background:var(--card); box-shadow:var(--shadow); }   /* 폰 목록은 고른 표시 없음 */
-  /* 단추 바 — 바닥 고정 · 둘 = 3 : 7 · 셋 = 3 : 3 : 4 · 높이 48 */
+  /* 단추 바 — 바닥 고정 · 둘 = 3 : 7 · 셋 = 3 : 3 : 4 · 높이 44 */
   .pb .web-actions { position:fixed; left:0; right:0; bottom:0; z-index:30; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); }
   .pb .pb-detail-actions, .pb .web-actions.three { grid-template-columns:3fr 3fr 4fr; }
   .pb[data-home] .pb-work .web-actions { display:none; }
@@ -400,7 +400,8 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
   .pb .dz-fs-sheet { border-radius:16px 16px 0 0 !important; box-shadow:0 -6px 20px rgba(15,23,42,.14); }
 }
 @media (max-width:900px) {
-  .pb { --control:48px; }
+  .pb { --control:44px; --chip:32px; }
+  .pb .chip::after { inset:-6px 0; }
   .pb .list-tools { position:sticky; top:60px; z-index:10; margin:0 -16px; padding:12px 16px 0; background:var(--ground); }
   .pb .dz-fs-back { position:fixed; z-index:60; background:rgba(15,23,42,.42); }
 }

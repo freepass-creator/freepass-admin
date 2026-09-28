@@ -151,6 +151,14 @@ test('product board uses one no-photo vehicle thumbnail across desktop and mobil
   assert.equal(boardCss.includes('.thumb.car::before'),false);
 });
 
+test('approved board structure uses the latest desktop and mobile control scale',()=>{
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(boardCss.includes('--control:36px; --chip:32px; --r-control:6px; --r-card:8px;'));
+  assert.ok(boardCss.includes('.pb { --control:44px; --chip:32px; }'));
+  assert.ok(boardCss.includes('.pb .section { margin-top:20px; }'));
+  assert.equal(boardCss.includes('--control:48px'),false);
+});
+
 test('admin exposes one visual authority and no theme-switch route',()=>{
   assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('ThemeSwitch'),false);

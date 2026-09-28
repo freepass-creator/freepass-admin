@@ -20,6 +20,7 @@ import { IntakeDetail, IntakeList } from '../intake/IntakeSide';
 import { NewIntakePanel } from '../intake/panels';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { previewFeeAction, type FeePreview } from '../intake/actions';
+import { Icon } from '../_design/Icon';
 
 /**
  * ★★★ 상품찾기 새 판 — 목업(docs/ui/mockups/admin-mobile-five-functions.html) 마크업 그대로 (대표 2026-09-22 「판갈이」)
@@ -35,21 +36,6 @@ const 요금곁 = (o: Offer) => [
   o.prepayment ? `선납 ${won(o.prepayment)}원` : '',
   o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : '',
 ].filter(Boolean).join(' · ');
-
-/* 사진 없는 자리 — 목업의 차량 자리 그림 그대로 */
-function CarArt() {
-  return (
-    <svg viewBox="0 0 168 78" role="img" aria-label="차량 대표사진 없음">
-      <ellipse cx="84" cy="70" rx="70" ry="4.5" fill="rgba(0,0,0,.09)" />
-      <path d="M8 56V45c0-6 4-9 12-10.5L44 31c8-11 19-15 35-15h29c14 0 23 4 31 14l14 6c6 2 8 5 8 11v9Z" fill="#263954" stroke="rgba(0,0,0,.14)" />
-      <path d="M50 31c7-9 15-12 28-12h7v13Z" fill="#8c99a3" opacity=".82" />
-      <path d="M91 19h16c11 0 17 3 22 11l-38 2Z" fill="#8c99a3" opacity=".82" />
-      <circle cx="46" cy="56" r="12.5" fill="#1b2126" /><circle cx="46" cy="56" r="4.8" fill="#aeb7be" />
-      <circle cx="129" cy="56" r="12.5" fill="#1b2126" /><circle cx="129" cy="56" r="4.8" fill="#aeb7be" />
-    </svg>
-  );
-}
-
 
 /**
  * mode — 'find'(상품 · /products): 오른쪽 = 신규 계약접수.
@@ -218,7 +204,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 <article className="product-hero">
                   <div className="product-photo">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {사진[0] ? <img src={사진[0]} alt={이름(car)} /> : <CarArt />}
+                    {사진[0] ? <img src={사진[0]} alt={이름(car)} /> : <Icon name="car" size={88} />}
                     {사진.length > 0 && <span className="photo-count">대표사진 · 1/{사진.length}</span>}
                   </div>
                   <div className="product-hero-body">
@@ -293,7 +279,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 <article className="row context-card" aria-label="선택 상품">
                   <span className={`thumb${사진[0] ? ' photo' : ' car'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {사진[0] ? <img src={사진[0]} alt="" /> : null}
+                    {사진[0] ? <img src={사진[0]} alt="" /> : <Icon name="car" size={36} />}
                   </span>
                   <span className="row-body">
                     <span className="row-title"><b>{이름(car)}</b>{car.perks?.[0] ? <span className="tag">{car.perks[0]}</span> : null}</span>

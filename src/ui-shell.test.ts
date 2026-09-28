@@ -137,7 +137,18 @@ test('admin chrome uses one workflow axis across desktop and mobile with no top 
   // PC 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18) — 통합검색(erp-gsearch)은 조회라 예외.
   const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
   assert.equal(/<button/.test(top),false);
+  assert.equal(top.includes('erp-company'),false,'상단에 회사/조회전용 칩을 다시 넣지 않는다');
   assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
+});
+
+test('product board uses one no-photo vehicle thumbnail across desktop and mobile',()=>{
+  const board=read('src/app/products/board.tsx');
+  const list=read('src/app/products/BoardList.tsx');
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(board.includes('<Icon name="car" size={88} />'));
+  assert.ok(board.includes('<Icon name="car" size={36} />'));
+  assert.ok(list.includes('r.thumbLabel ?? <Icon name="car" size={36} />'));
+  assert.equal(boardCss.includes('.thumb.car::before'),false);
 });
 
 test('admin exposes one visual authority and no theme-switch route',()=>{

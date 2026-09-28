@@ -112,7 +112,8 @@
 .pb .row.selected, .pb .row.selected:hover { background:var(--picked); box-shadow:inset 0 0 0 1.5px rgba(27,42,74,.45); }
 .pb .thumb { position:relative; min-height:72px; border-radius:8px; background:var(--box); display:grid; place-items:center; overflow:hidden; }
 .pb .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.pb .thumb.car::before { content:""; width:56px; height:22px; border-radius:13px 16px 6px 6px; background:linear-gradient(135deg,#40516b,#1b2a4a); box-shadow:0 16px 0 -7px #9aa6b5; }
+.pb .thumb.car { color:#7d8998; }
+.pb .thumb.car > svg { width:36px; height:36px; stroke:currentColor; stroke-width:1.6; }
 .pb .thumb.label { color:var(--muted); font-size:var(--meta); font-weight:600; }
 .pb .row-body { min-width:0; align-self:center; display:grid; gap:4px; }
 .pb .row-title { min-width:0; display:flex; align-items:baseline; gap:6px; }
@@ -137,7 +138,7 @@
 /* ── 6. 상세 — 사진 카드 · 기간 카드 · 정보 표 ──────────────────────────── */
 .pb .product-hero { margin-bottom:18px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
 .pb .product-photo { position:relative; height:180px; display:grid; place-items:center; overflow:hidden; background:var(--box); }
-.pb .product-photo svg { width:min(82%,300px); height:auto; }
+.pb .product-photo > svg { width:88px; height:88px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
 .pb .product-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .pb .photo-count { position:absolute; right:10px; bottom:10px; padding:4px 8px; border-radius:999px; background:rgba(16,24,40,.72); color:#fff; font-size:var(--meta); line-height:1; }
 .pb .product-hero-body { padding:12px; }

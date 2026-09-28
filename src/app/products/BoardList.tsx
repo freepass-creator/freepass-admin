@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from 'next/link';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Icon } from '../_design/Icon';
 
 export type BoardRow = {
   id: string; href: string; title: string; tag?: string; meta: string; value: string; thumb?: string;
@@ -110,7 +111,8 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
             onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) set누른(r.id); }}>
             <span className={`thumb${r.thumb ? ' photo' : r.thumbLabel ? ' label' : ' car'}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {r.thumb ? <img src={r.thumb} alt="" loading="lazy" decoding="async" /> : r.thumbLabel}
+              {r.thumb ? <img src={r.thumb} alt="" loading="lazy" decoding="async" />
+                : r.thumbLabel ?? <Icon name="car" size={36} />}
             </span>
             <span className="row-body">
               <span className="row-title">

@@ -1,5 +1,13 @@
 import { createHash } from 'node:crypto';
 
+/** 2026-10-01부터 신규 접수의 입력 정본은 Admin/FreePass Data다. 시트는 과거 조회 증거다. */
+export const ADMIN_INTAKE_CUTOVER_DATE = '2026-10-01';
+export const intakeAuthorityForDate = (receivedAt: unknown): 'SHEET_HISTORY' | 'ADMIN' | 'HOLD' => {
+  const date = String(receivedAt ?? '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'HOLD';
+  return date < ADMIN_INTAKE_CUTOVER_DATE ? 'SHEET_HISTORY' : 'ADMIN';
+};
+
 /**
  * **정산 줄의 ERP5 코드 — `stl_` + 결정 토큰.**
  *

@@ -351,3 +351,14 @@ Admin의 도메인 규칙과 원장 사실에서 계산해 읽기 전용 상태�
 - 계약 목록·상세 조회를 접수 화면 안에 합치지 않는다.
 - 관리자 페이지 공개와 실제 전자서명 실행 활성화는 분리한다.
 - 고객 서명 링크와 발행·승인 API는 `ESIGN_ENABLED=on` 전까지 기존처럼 닫아 둔다.
+
+---
+
+## DEC-2026-09-28-02 — 2026년 10월 신규 접수는 Admin이 정본
+상태: USER CONFIRMED / ADOPTED
+
+- `2026-10-01`부터 신규 접수는 FreePass Admin에서만 생성한다.
+- Admin은 FreePass Data 경계를 통해 Intake/`settlement_rows`에 저장하며, 저장 당시 Product/Offer Snapshot과 감사이력을 보존한다.
+- 과거 계약현황 시트와 F04의 `2026-09-30` 이전 행은 조회·이관·출처 증거로 보존한다.
+- 컷오버 이후 시트에 새로 생긴 접수행은 자동으로 신규 접수화하지 않고 `HOLD`한다. Admin 접수와 중복 생성하지 않는다.
+- 운영 개시는 최소권한 IAM, backup/restore 검증, `ERP5_WRITE_APPROVAL_JSON`, 저장 후 재조회 및 중복 제출 검증을 통과한 뒤에만 선언한다.

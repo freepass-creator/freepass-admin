@@ -19,7 +19,7 @@ const FLOW: Item[] = [
   { key: '실적', label: '실적', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
   { key: '정산', label: '정산관리', href: '/settlement', icon: 'wallet' },
 ];
-const ESIGN: Item = { key: '계약', label: '전자계약', href: '/esign', icon: 'file-text' };
+const ESIGN: Item = { key: '계약', label: '계약서작성 및 관리', href: '/esign', icon: 'file-text' };
 const SYSTEM: Item = { key: '시스템', label: '데이터 상태', href: '/system/data-status', icon: 'gauge' };
 export const 실적칸 = ['분납실적', '완납실적'];
 
@@ -72,7 +72,7 @@ export function SideMenu() {
           UI/UX 재검토 — 전에는 계약서 그룹만 --apart 라 시스템 그룹 앞엔 구분선이 없어서 둘의 성격이
           같은데 처리가 달랐다). */}
       <>
-        <div className="erp-nav-group erp-nav-group--apart">계약서</div>
+        <div className="erp-nav-group erp-nav-group--apart">전자계약</div>
         <MenuLink it={ESIGN} now={now} />
       </>
       <div className="erp-nav-group erp-nav-group--apart">시스템</div>

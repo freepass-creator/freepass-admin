@@ -109,12 +109,12 @@ test('desktop side navigation can be collapsed explicitly and remembers the pref
 
 test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
-  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','계약서작성 및 관리']]) {
+  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적현황'],['/settlement','정산관리'],['/esign','계약서작성 및 관리']]) {
     assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
     assert.ok(side.includes(label),`side menu missing ${label}`);
   }
   // 업무 차례: 상품 · 접수 · 실적 · 정산, 전자계약은 따로(대표 2026-09-23)
-  const order=['상품찾기','계약접수','실적','정산관리','계약서작성 및 관리'].map((w)=>side.indexOf(`label: '${w}'`));
+  const order=['상품찾기','계약접수','실적현황','정산관리','계약서작성 및 관리'].map((w)=>side.indexOf(`label: '${w}'`));
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));

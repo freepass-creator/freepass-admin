@@ -52,13 +52,18 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const APPLY = process.argv.includes('--apply');
+const arg = (key: string, fallback: string) => {
+  const index = process.argv.indexOf(key);
+  return index > 0 ? process.argv[index + 1] : fallback;
+};
 /**
  * ★★대표 2026-09-18 「있으면 안 올리면 되잖아 같은거는」
  *   ⇒ 기본은 «새 줄만» 올린다. ERP5 에 이미 있는 줄은 «한 칸도» 안 건드린다(빈 칸도 안 채운다).
  *   빈 칸 메우기는 `--fill` 을 따로 붙였을 때만 한다 — 대표가 따로 말하기 전에는 안 쓴다.
  */
 const FILL = process.argv.includes('--fill');
-const SA = 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json';
+const SA = arg('--sa', 'C:/dev/freepasserp4-rtdb-current/tmp/firebase-auth/freepasserp5-sa.json');
+const SNAPSHOT = arg('--snapshot', 'docs/ui/mockups/f04.ssot.js');
 const ROWS = 'settlement_rows';
 const EVENTS = 'settlement_events';
 const HELD = 'settlement_held';
@@ -74,7 +79,7 @@ assertErp5MaintenanceWrite(process.env, APPLY, 'f04-fill-erp5', Date.now(), Stri
 const db = getFirestore(initializeApp({ credential: cert(sa), projectId: sa.project_id }, 'fill'));
 
 // eslint-disable-next-line no-eval
-const F04 = eval(`${readFileSync('docs/ui/mockups/f04.ssot.js', 'utf8')};F04`);
+const F04 = eval(`${readFileSync(SNAPSHOT, 'utf8')};F04`);
 
 /* ── 무엇을 옮기나 ─────────────────────────────────────────── */
 

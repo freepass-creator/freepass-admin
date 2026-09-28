@@ -16,7 +16,7 @@ type Item = { key: string; label: string; href: string; icon: string };
 const FLOW: Item[] = [
   { key: '상품', label: '상품찾기', href: '/products', icon: 'search' },
   { key: '접수', label: '계약접수', href: '/intake', icon: 'clipboard' },
-  { key: '실적', label: '실적현황', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
+  { key: '실적', label: '실적', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
   { key: '정산', label: '정산관리', href: '/settlement', icon: 'wallet' },
 ];
 const ESIGN: Item = { key: '계약', label: '계약서작성 및 관리', href: '/esign', icon: 'file-text' };

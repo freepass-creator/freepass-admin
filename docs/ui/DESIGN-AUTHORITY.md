@@ -1,6 +1,7 @@
 # FreePass Admin Design Authority
 
-상태: **CANONICAL — USER APPROVED 2026-09-26 (PC) · PR #92 actual route only**  
+상태: **CANONICAL — USER APPROVED 2026-09-28 · ProductsBoard intake actual route**
+최신 확정: 사용자 2026-09-28 「로컬 목업을 메인으로 흡수」 「이걸 메인으로 승격」. `/intake`는 로컬에서 실데이터로 고도화된 `ProductsBoard`의 `상품찾기 | 상품상세 | 접수목록/업무` 3패널 구조를 메인으로 사용한다. 기존 PR #92 계보는 다른 업무 화면과 재사용 부품의 기준으로 남지만 `/intake` 구조보다 우선하지 않는다.
 확정: 사용자 2026-09-26 「큰 화면으로 준 92버전이 정본이고 그게 메인으로 합쳐져야 돼」 「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」  
 main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기능)
 
@@ -25,6 +26,9 @@ PC 정산 실적줄은 정산 route를 벗어나지 않는다. `focus`로 가운
 ## 현재 단일 디자인 정본
 
 PC actual route 구현:
+- `src/app/products/board.tsx`
+- `src/app/products/board.css`
+- `src/app/products/product-view.tsx`
 - `src/app/_erp/Workspace.tsx`
 - `src/app/_erp/ProductsScreen.tsx`
 - `src/app/_erp/SettlementScreen.tsx`

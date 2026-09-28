@@ -11,6 +11,7 @@ export type IntakeDefaults = {
   product?: string; rentKind?: string; price?: string;
   intakeRequestId?: string;
   sourceProductId?: string; sourceProductVersion?: string; sourceOfferId?: string; sourceSnapshotId?: string;
+  customer?: string; channel?: string; agent?: string;
 };
 export type IntakeOptions = {
   channels: string[]; channelCode: Record<string, string>;

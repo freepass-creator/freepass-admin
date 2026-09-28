@@ -1,5 +1,4 @@
-import { ProductWorkspace } from '../products/workspace';
-import { WorkspaceScreen } from '../_erp/Workspace';
+import { ProductsBoard } from '../products/board';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +13,5 @@ export const dynamic = 'force-dynamic';
  */
 export default async function IntakeMain({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
-  /* 같은 actual route가 viewport에 따라 적응형 composition으로 렌더링된다. */
-  return <><WorkspaceScreen q={q} /><ProductWorkspace q={q} mode="intake" base="/intake" /></>;
+  return <ProductsBoard q={q} mode="intake" />;
 }

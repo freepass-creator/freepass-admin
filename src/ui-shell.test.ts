@@ -169,10 +169,11 @@ test('approved board structure uses the latest desktop and mobile control scale'
   assert.ok(boardCss.includes('--control:36px; --chip:32px; --r-control:6px; --r-card:8px;'));
   assert.ok(boardCss.includes('.pb { --control:44px; --chip:32px; }'));
   assert.ok(boardCss.includes('.pb .section { margin-top:20px; }'));
-  assert.ok(boardCss.includes('min-height:88px; padding:12px;'));
-  assert.ok(boardCss.includes('--head:16px; --title:13px; --body:13px; --support:12px; --meta:11px;'));
-  assert.ok(boardCss.includes('grid-template-columns:64px minmax(0,1fr); gap:12px;'));
-  assert.ok(boardCss.includes('min-height:64px; border-radius:8px;'));
+  assert.ok(boardCss.includes('--head:14px; --title:13px; --body:13px; --support:12px; --meta:11px;'));
+  assert.ok(boardCss.includes('--control:32px; --chip:28px; --gap:6px; --space:8px;'));
+  assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
+  assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
+  assert.ok(boardCss.includes('.pb .product-photo { height:136px; }'));
   assert.equal(boardCss.includes('--title:15px'), false);
   assert.equal(boardCss.includes('--support:13px'), false);
   assert.equal(boardCss.includes('font-size:15px;'), false);
@@ -195,20 +196,25 @@ test('admin exposes one visual authority and no theme-switch route',()=>{
 
 test('all admin workspaces inherit the intake control grammar',()=>{
   const finalCss=read('src/app/_design/admin-final.css');
+  const standardCss=read('src/app/_erp/erp-standard.css');
   assert.ok(finalCss.includes('계약접수(/intake)가 내부 Admin 전체 UI/UX의 시각 정본'));
   assert.ok(finalCss.includes('--컨트롤: 36px;'));
   assert.ok(finalCss.includes('--ui-quick-filter-h: 34px;'));
   assert.ok(finalCss.includes('--컨트롤: 44px; --ui-control-h: 44px;'));
   assert.ok(shellCss.includes('2026-09-28 — /intake visual authority'));
-  assert.ok(shellCss.includes('--fp-workspace-gap: 12px;'));
+  assert.ok(shellCss.includes('--fp-workspace-gap: 10px;'));
   assert.ok(shellCss.includes('.erp-std .erp-rowcard[aria-current="true"]'));
-  assert.ok(shellCss.includes('height: 36px;'));
+  assert.ok(shellCss.includes('height: 32px;'));
   assert.ok(shellCss.includes('--erp-fs-body: 13px;'));
   assert.ok(shellCss.includes('--erp-fs-caption: 11px;'));
-  assert.ok(shellCss.includes('font-size: 16px;'));
-  assert.ok(shellCss.includes('grid-template-columns: 64px minmax(0, 1fr) auto;'));
-  assert.ok(shellCss.includes('width: 64px;'));
-  assert.ok(shellCss.includes('height: 64px;'));
+  assert.ok(shellCss.includes('font-size: 14px;'));
+  assert.ok(shellCss.includes('grid-template-columns: 56px minmax(0, 1fr) auto;'));
+  assert.ok(shellCss.includes('width: 56px;'));
+  assert.ok(shellCss.includes('height: 56px;'));
+  assert.ok(shellCss.includes('min-height: 76px;'));
+  assert.ok(standardCss.includes('2026-09-28 — desktop compact visual tile contract'));
+  assert.ok(standardCss.includes('min-width: 56px;'));
+  assert.ok(standardCss.includes('min-height: 56px;'));
   assert.ok(shellCss.includes('.erp-std .erp-panel-kind'));
 });
 test('product workspace is bound to real repositories and whole-offer selection',()=>{

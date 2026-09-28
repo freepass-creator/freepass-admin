@@ -1191,6 +1191,24 @@
     "rule": "QuickFilter layout is standardized, but business filter items stay provisional until explicitly configured."
   },
   "typographyRoles": {
+    "desktopCompactOverride20260928": {
+      "status": "USER_DIRECTED",
+      "panelTitlePx": 14,
+      "cardIdentityPx": 13,
+      "bodyPx": 13,
+      "inputPx": 13,
+      "buttonPx": 13,
+      "supportPx": 12,
+      "metaPx": 11,
+      "controlHeightPx": 32,
+      "quickFilterHeightPx": 28,
+      "listCardMinHeightPx": 76,
+      "listVisualPx": 56,
+      "listCardPaddingPx": 10,
+      "panelPaddingPx": 12,
+      "workspaceGapPx": 10,
+      "rule": "Desktop uses compact mouse-and-keyboard density. Mobile keeps the existing touch geometry. This override takes precedence over older desktop defaults."
+    },
     "desktop": {
       "panelTitlePx": 14,
       "sectionTitlePx": 14,

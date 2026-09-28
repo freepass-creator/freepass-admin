@@ -294,17 +294,21 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
 
 /* ═══ PC(901+) — 틀은 늘 1 : 1 : 1. 페이지 스크롤 없음, 판 안에서만 ═══════════ */
 @media (min-width:901px) {
-  .pb { height:100%; background:var(--page); }
+  .pb {
+    --head:14px; --title:13px; --body:13px; --support:12px; --meta:11px;
+    --control:32px; --chip:28px; --gap:6px; --space:8px;
+    height:100%; background:var(--page);
+  }
   html:has(.pb), body:has(.pb) { height:100dvh; overflow:hidden; }
   body:has(.pb) .fn-main { height:calc(100dvh - 56px); min-height:0 !important; overflow:hidden; }
   .pb .statusbar, .pb .only-phone { display:none !important; }
-  .pb .web-workspace { height:100%; min-height:0; padding:12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-  .pb .web-panel { min-width:0; min-height:0; padding:16px; display:flex; flex-direction:column; overflow:hidden;
+  .pb .web-workspace { height:100%; min-height:0; padding:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .pb .web-panel { min-width:0; min-height:0; padding:12px; display:flex; flex-direction:column; overflow:hidden;
     border:1px solid rgba(16,24,40,.06); border-radius:8px; background:var(--ground); box-shadow:0 1px 2px rgba(16,24,40,.04); font-size:var(--body); }
   .pb .web-scroll { flex:1; min-height:0; overflow:auto; padding-right:2px; }
   .pb .web-actions > * { font-size:var(--body); }
   .pb .web-actions.single-web { grid-template-columns:1fr; }
-  .pb .product-photo { height:160px; }
+  .pb .product-photo { height:136px; }
   .pb .dz-fs-sheet { top:46px; }
   /* 상품찾기 — 목록 두 칸(카드 두 줄) · 상세 한 칸 */
   .pb[data-mode="find"] .pb-list { grid-column:span 2; }
@@ -421,12 +425,17 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
 .pb .section, .pb details.more, .pb .work-title { margin-top:20px; }
 .pb .list { padding:2px 0 16px; }                 /* 첫 카드 그림자 · 끝 숨 */
 @media (min-width:901px) {
-  .pb .web-scroll { margin-right:-16px; padding-right:10px; scrollbar-width:auto; scrollbar-color:auto; }   /* 10 + 막대 6 = 16 — 위 검색칸과 끝선이 같다(전역 thin 을 풀어야 6px 막대가 선다) */
+  .pb .web-panel-head { margin-bottom:8px; }
+  .pb .section, .pb details.more, .pb .work-title { margin-top:16px; }
+  .pb .row { min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px; }
+  .pb .thumb { min-height:56px; border-radius:6px; }
+  .pb .thumb.car > svg { width:32px; height:32px; }
+  .pb .web-scroll { margin-right:-12px; padding-right:6px; scrollbar-width:auto; scrollbar-color:auto; }   /* 6 + 막대 6 = 12 — 검색칸과 같은 안쪽 끝선 */
   .pb .web-scroll::-webkit-scrollbar { width:6px; }
   .pb .web-scroll::-webkit-scrollbar-thumb { border-radius:3px; background:#cbd3dc; }
   .pb .web-scroll::-webkit-scrollbar-thumb:hover { background:#98a2b3; }
   .pb .web-scroll::-webkit-scrollbar-track { background:transparent; }
-  .pb .web-actions { padding-top:12px; }
+  .pb .web-actions { padding-top:8px; }
 }
 @supports not selector(::-webkit-scrollbar) {
   @media (min-width:901px) { .pb .web-scroll { scrollbar-width:thin; scrollbar-color:#cbd3dc transparent; } }

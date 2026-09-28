@@ -2828,6 +2828,20 @@ Visual QA:
 - 제목은 크기보다 굵기·색·여백으로 구분한다.
 - 목표는 디자인한 티가 아니라 오래 써도 자연스러운 시판형 ERP다.
 
+## 62-1. Desktop compact density — USER DIRECTED 2026-09-28
+
+사용자 최신 결정: 웹 ERP 화면은 제목을 이유 없이 키우지 않고 마우스·키보드 사용에 맞는 compact density를 쓴다. 모바일 터치 규격은 유지한다.
+
+- Desktop panel title: 14px / 600
+- Desktop card identity, body, input, button: 13px
+- Desktop support: 12px, meta: 11px
+- Desktop standard control: 32px, quick filter: 28px
+- Desktop list card: 최소 76px, visual 56px, padding 10px, card gap 8px
+- Desktop panel padding: 12px, workspace gutter/gap: 10px
+- Mobile: 기존 44px action/touch와 64px visual 규격 유지
+
+큰 글자와 큰 여백을 위계로 사용하지 않는다. 위계는 weight, color, alignment, grouping으로 만든다. 이 절은 desktop density에 한해 아래의 과거 14px/36px/64px/88px 기본값보다 우선한다.
+
 # 63. Solid commercial ERP materiality
 
 목표는 화려함이 아니라 **단단하고 오래된 제품처럼 일관된 물성**이다.

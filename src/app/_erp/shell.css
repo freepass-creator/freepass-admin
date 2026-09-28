@@ -516,17 +516,19 @@
  * ═══════════════════════════════════════════════════════════════════════ */
 @media (min-width: 901px) {
   :root {
-    --fp-workspace-gutter-x: 12px;
-    --fp-workspace-gutter-y: 12px;
-    --fp-workspace-gap: 12px;
+    --fp-workspace-gutter-x: 10px;
+    --fp-workspace-gutter-y: 10px;
+    --fp-workspace-gap: 10px;
   }
 
   .erp-std .erp-workspace {
     --erp-fs-body: 13px;
     --erp-fs-label: 12px;
     --erp-fs-caption: 11px;
-    padding: 12px;
-    gap: 12px;
+    --erp-fs-panel: 14px;
+    --erp-fs-section: 13px;
+    padding: 10px;
+    gap: 10px;
     background: var(--erp-color-canvas);
   }
 
@@ -538,8 +540,8 @@
   }
 
   .erp-std .erp-panel-head {
-    min-height: 44px;
-    padding: 12px 16px 8px;
+    min-height: 36px;
+    padding: 10px 12px 6px;
     gap: 6px;
     border-bottom: 0;
     background: transparent;
@@ -550,7 +552,7 @@
   }
 
   .erp-std .erp-panel-head h2 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
   }
 
@@ -562,13 +564,13 @@
 
   .erp-std :is(.erp-searchbar,.erp-toolbar) {
     min-height: 0;
-    padding: 0 16px 12px;
+    padding: 0 12px 8px;
     border: 0;
     background: transparent;
   }
 
   .erp-std .erp-search {
-    height: 36px;
+    height: 32px;
     border: 0;
     border-radius: 6px;
     background: #fff;
@@ -576,12 +578,12 @@
   }
 
   .erp-std .erp-facet-opts {
-    gap: 8px;
+    gap: 6px;
   }
 
   .erp-std .erp-facet-opt {
-    min-height: 32px;
-    padding: 0 12px;
+    min-height: 28px;
+    padding: 0 10px;
     border: 0;
     border-radius: 6px;
     background: var(--erp-color-primary-weak);
@@ -596,15 +598,15 @@
 
   .erp-std .erp-rowcards,
   .erp-std .erp-panel--compact .erp-rowcards {
-    gap: 12px;
-    padding: 0 16px 16px;
+    gap: 8px;
+    padding: 0 12px 12px;
     background: transparent;
   }
 
   .erp-std .erp-rowcard,
   .erp-std .erp-panel--compact .erp-rowcard {
-    min-height: 88px;
-    padding: 12px;
+    min-height: 76px;
+    padding: 10px;
     border: 0;
     border-radius: 8px;
     background: #fff;
@@ -613,15 +615,15 @@
 
   .erp-std .erp-panel--compact .erp-rowcard,
   .erp-std .erp-panel--compact .erp-rowcard--no-steps {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
     grid-template-areas: "thumb id amount";
-    column-gap: 12px;
+    column-gap: 10px;
   }
 
   .erp-std .erp-panel--compact .erp-rowcard-thumb {
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
   }
 
   .erp-std .erp-rowcard:hover,
@@ -644,15 +646,15 @@
   }
 
   .erp-std :is(.erp-btn,.erp-panel-foot .erp-btn) {
-    height: 36px;
+    height: 32px;
     border: 0;
     border-radius: 6px;
     box-shadow: none;
   }
 
   .erp-std .erp-panel-foot {
-    min-height: 60px;
-    padding: 12px 16px;
+    min-height: 48px;
+    padding: 8px 12px;
     border-top: 0;
     background: var(--erp-color-bg);
   }

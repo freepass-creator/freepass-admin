@@ -67,7 +67,9 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
           MDI(열어 둔 화면 탭)가 아니라 그냥 같은 이동 메뉴를 위아래로 두 번 보여주는 중복이었다. 이동은
           왼쪽 메뉴 하나로 정하고(AdminChrome 자신의 머리 주석 「② 왼쪽 업무 메뉴」, DEC-2026-09-23-01
           「상단은 정보만」과 일관되게) 이 줄을 없앴다. */}
-      <main className="fn-main">
+      {/* 계약접수(/intake)가 내부 Admin 전체의 UI/UX 시각 정본이다.
+          다른 업무는 데이터와 패널 수만 달라질 수 있고, 조작 문법을 따로 만들지 않는다. */}
+      <main className="fn-main" data-ui-authority="intake">
         {children}
       </main>
 

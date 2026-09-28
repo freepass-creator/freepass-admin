@@ -161,9 +161,18 @@ test('approved board structure uses the latest desktop and mobile control scale'
 
 test('admin exposes one visual authority and no theme-switch route',()=>{
   assert.ok(chrome.includes('className="erp-theme-flag"'));
+  assert.ok(chrome.includes('data-ui-authority="intake"'));
   assert.equal(chrome.includes('ThemeSwitch'),false);
   assert.equal(chrome.includes('data-theme='),false);
   assert.equal(css.includes('data-theme="retro"'),false);
+});
+
+test('all admin workspaces inherit the intake control grammar',()=>{
+  const finalCss=read('src/app/_design/admin-final.css');
+  assert.ok(finalCss.includes('계약접수(/intake)가 내부 Admin 전체 UI/UX의 시각 정본'));
+  assert.ok(finalCss.includes('--컨트롤: 36px;'));
+  assert.ok(finalCss.includes('--ui-quick-filter-h: 34px;'));
+  assert.ok(finalCss.includes('--컨트롤: 44px; --ui-control-h: 44px;'));
 });
 test('product workspace is bound to real repositories and whole-offer selection',()=>{
   assert.ok(workspace.includes('productList()'));

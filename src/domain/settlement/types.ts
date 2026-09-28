@@ -228,8 +228,18 @@ export interface SettlementRow {
   note: Maybe<string>;
   settleNote: Maybe<string>;
 
-  /** 어디서 왔나 — ★옮기는 동안만 쓰고 대조가 끝나면 뗀다 */
-  source: { rowNo: Maybe<number>; tab: Maybe<string>; sheet: Maybe<string> };
+  /**
+   * 어디서 왜 들어왔나. 차량번호+접수일로 원본 한 줄을 다시 찾을 수 있어야 하므로
+   * 이관 뒤에도 지우지 않는 영구 provenance다. 시트 탭은 출처일 뿐 현재 상태가 아니다.
+   */
+  source: {
+    rowNo: Maybe<number>;
+    tab: Maybe<string>;
+    sheet: Maybe<string>;
+    importRun?: Maybe<string>;
+    importedAt?: Maybe<string>;
+    originalPlate?: Maybe<string>;
+  };
 }
 
 /* ══ 읽는 법 — 화면과 셈이 «같은 함수» 를 써야 갈리지 않는다 ══ */

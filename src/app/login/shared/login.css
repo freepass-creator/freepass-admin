@@ -52,7 +52,7 @@
  * ⚠ 여기에 text-transform 이나 서체를 적지 말 것 — 그러면 채널 이름이
  *   우리 CI 규칙을 뒤집어쓴다. 남의 회사 이름은 그 회사 규격대로 선다.
  */
-.fpl-brand { display: flex; align-items: baseline; justify-content: center; gap: 1px; line-height: 1; }
+.fpl-brand { display: flex; align-items: baseline; justify-content: center; gap: 2px; line-height: 1; }
 
 .fpl-card {
   position: relative;

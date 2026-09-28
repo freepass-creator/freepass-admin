@@ -118,14 +118,16 @@ test('admin chrome uses one workflow axis across desktop and mobile with no top 
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
-  assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
+  assert.ok(chrome.includes('<MobileTabBar />'));
   for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
     assert.ok(mobileTabs.includes(`['${label}', '${href}']`), `mobile workflow missing ${label}`);
   }
   assert.equal(mobileTabs.includes("['청구',"), false);
   assert.equal(mobileTabs.includes("['지급',"), false);
-  /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
-  assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));
+  /* 전자계약은 접수와 분리된 독립 관리자 페이지이며 메뉴와 폰 탭에 항상 선다. */
+  assert.ok(chrome.includes('<SideMenu />'));
+  assert.equal(chrome.includes('esignEnabled()'), false);
+  assert.ok(mobileTabs.includes("['계약', '/esign']"));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
   // 모바일은 전역 상단바 자체를 안 둔다(2026-09-24 — 전역 상태줄 header 를 걷어내고 Panel 이 화면

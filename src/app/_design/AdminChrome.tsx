@@ -7,7 +7,6 @@ import { Icon } from './Icon';
 import { redirect } from 'next/navigation';
 import { authEnforced } from '../../server/auth';
 import { currentAdmin } from '../../server/require-admin';
-import { esignEnabled } from '../../server/esign-scope';
 
 
 
@@ -32,7 +31,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
      꼴만 맞춘 쿠키가 실데이터를 읽는다. 관리자 쪽은 전부 이 틀을 거친다. */
   if (authEnforced() && !나) redirect('/login');
   const data = erp5Ready();
-  const esign = esignEnabled();
   return (
     <>
       {/* 단일 UI 표지 — body 격자와 Admin 전용 범위를 세우는 구조 marker. */}
@@ -66,7 +64,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
 
       {/* ── PC ② 좌측 메뉴 ── */}
       <nav className="erp-sidenav erp-std" data-region="sidenav" aria-label="업무 이동">
-        <SideMenu esign={esign} />
+        <SideMenu />
       </nav>
 
       {/* ── 본문: viewport에 따라 같은 actual route의 responsive composition을 배치한다. (대표 2026-09-24 「좌측 사이드
@@ -88,11 +86,11 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
 
       {/*
         폰 depth 0 전역탭 — PC와 같은 업무축(상품 · 접수 · 실적 · 정산).
-        전자계약이 활성화된 경우에만 계약을 마지막 별도 문으로 붙인다.
+        전자계약은 마지막 독립 업무 문으로 붙인다.
         청구/지급은 정산 안의 축이며 전역탭으로 분리하지 않는다.
         depth 1·2 화면에서는 이 바 대신 현재 Panel의 ActionBar가 선다.
       */}
-      <MobileTabBar esign={esign} />
+      <MobileTabBar />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE, authEnforced, isPublicPath, looksLikeSession } from './server/auth';
-import { esignEnabled, isEsignPath } from './server/esign-scope';
+import { esignEnabled, isEsignRuntimePath } from './server/esign-scope';
 
 /**
  * **모든 요청 앞의 문** (Next 16 proxy · Node 에서 돈다).
@@ -10,9 +10,9 @@ import { esignEnabled, isEsignPath } from './server/esign-scope';
  */
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  /* ★전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED=on 전에는 화면·고객 링크·API 모두 닫는다(src/server/esign-scope.ts).
-   *   로그인 문이 먼저다: 관리자 전용 전자계약 API 는 로그인 없으면 지금처럼 401, 로그인했으면 404. */
-  const esignClosed = !esignEnabled() && isEsignPath(path);
+  /* 관리자 전자계약 목록(/esign)은 독립 페이지로 열되, 실제 고객 링크·발행/승인 API는
+   * ESIGN_ENABLED=on 전까지 닫는다. 로그인 문이 먼저라 관리자 API는 비로그인 401, 로그인 404다. */
+  const esignClosed = !esignEnabled() && isEsignRuntimePath(path);
   if (!authEnforced() || isPublicPath(path)) return esignClosed ? closedEsign(req, path) : NextResponse.next();
   /* ★쿠키가 «있는지»만 본다 — 모든 요청 앞이라 firebase-admin 을 싣지 않는다.
      진짜 검증(서명 · 취소 · 승인 · grant)은 require-admin.ts 가 쪽과 서버 액션 앞에서 한다. */
@@ -26,12 +26,8 @@ export async function proxy(req: NextRequest) {
   return NextResponse.redirect(to);
 }
 
-/** 닫힌 전자계약 — 관리자 목록은 접수로 돌려보내고, 고객 링크·API 는 없는 주소로 답한다 */
+/** 닫힌 전자계약 실행 경로 — 고객 링크·API는 없는 주소로 답한다. */
 function closedEsign(req: NextRequest, path: string) {
-  if (path === '/esign' && req.method === 'GET') {
-    const to = req.nextUrl.clone(); to.pathname = '/intake'; to.search = '';
-    return NextResponse.redirect(to);
-  }
   return path.startsWith('/api/')
     ? NextResponse.json({ error: '전자계약은 현재 운영 범위가 아닙니다' }, { status: 404 })
     : new NextResponse('Not Found', { status: 404 });

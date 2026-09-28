@@ -3,7 +3,7 @@
  * 폰 하단 전역 업무탭.
  * 최신 Admin 운영축과 PC SideMenu를 그대로 따른다:
  *   상품 → 접수 → 실적 → 정산
- * 전자계약은 운영축 밖의 별도 문이며 ESIGN_ENABLED=on일 때만 마지막에 붙는다.
+ * 전자계약은 운영축 밖의 별도 문이며 마지막 독립 탭으로 붙는다.
  * 청구/지급은 별도 전역탭이 아니라 정산 화면 안의 두 축(공급사/영업채널)으로 전환한다.
  * depth 1+에서는 전역탭 대신 현재 Panel의 ActionBar가 선다.
  */
@@ -38,12 +38,11 @@ function useCurrent(): string {
   return '';
 }
 
-export function MobileTabBar({ esign = true }: { esign?: boolean }) {
+export function MobileTabBar() {
   const now = useCurrent();
-  const tabs = esign ? TABS : TABS.filter(([label]) => label !== '계약');
   return (
     <nav className="dz-tabbar" aria-label="판 바꾸기">
-      {tabs.map(([label, href]) => (
+      {TABS.map(([label, href]) => (
         <Link key={label} href={href} className={now === label ? 'on' : undefined} aria-current={now === label ? 'page' : undefined}>
           <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth={1.8}
             strokeLinecap="round" strokeLinejoin="round" aria-hidden>{아이콘[label]}</svg>

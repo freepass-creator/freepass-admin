@@ -84,7 +84,6 @@ test('no page renders the older §4 skeleton (PageHeader/erp-cols) any more', ()
 test('each actual route preserves responsive composition across target viewports', () => {
   for (const [page, screen, board] of [
     ['src/app/products/page.tsx', '<ProductsScreen', '<ProductWorkspace'],
-    ['src/app/intake/page.tsx', '<WorkspaceScreen', '<ProductWorkspace'],
     ['src/app/settlement/page.tsx', '<SettlementScreen', '<SettlementBoards'],
     ['src/app/esign/page.tsx', '<EsignScreen', '<EsignBoards'],
   ]) {
@@ -94,4 +93,15 @@ test('each actual route preserves responsive composition across target viewports
   }
   const shell = read('src/app/_erp/shell.css');
   assert.ok(/max-width: 900px[\s\S]*\.erp-screen/.test(shell), 'responsive breakpoint is explicit');
+});
+
+test('intake actual route promotes the approved ProductsBoard three-panel workspace', () => {
+  const page = read('src/app/intake/page.tsx');
+  const board = read('src/app/products/board.tsx');
+  const shell = read('src/app/_erp/shell.css');
+  assert.ok(page.includes('<ProductsBoard q={q} mode="intake" />'));
+  assert.equal(page.includes('<WorkspaceScreen'), false, 'superseded intake screen is not rendered');
+  for (const panel of ['pb-list', 'pb-detail', 'pb-work']) assert.ok(board.includes(panel), panel);
+  assert.ok(board.includes("from '../../server/freepass-data'"), 'FreePass Data remains the runtime gateway');
+  assert.ok(shell.includes(':not(.pb)'), 'desktop shell keeps ProductsBoard visible');
 });

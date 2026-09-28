@@ -62,6 +62,9 @@ test('actual-route UI remains the declared authority', () => {
     'src/app/_erp/ProductDetail.tsx',
     'src/app/_erp/erp-standard.css',
     'src/app/_erp/shell.css',
+    'src/app/products/board.tsx',
+    'src/app/products/board.css',
+    'src/app/products/product-view.tsx',
   ]) assert.ok(authority.includes(file), file);
 });
 
@@ -84,9 +87,10 @@ test('current project documents contain no removed UI source references', () => 
   assert.deepEqual(hits, []);
 });
 
-test('PR #92 PC screen is the user-approved canonical UI and other lineages stay discarded (2026-09-26)', () => {
+test('ProductsBoard intake is the latest user-approved canonical intake UI (2026-09-28)', () => {
   const authority = read('docs/ui/DESIGN-AUTHORITY.md');
-  assert.ok(authority.includes('CANONICAL — USER APPROVED 2026-09-26'), 'authority status');
+  assert.ok(authority.includes('CANONICAL — USER APPROVED 2026-09-28'), 'authority status');
+  assert.ok(authority.includes('ProductsBoard'), 'latest intake lineage');
   assert.ok(authority.includes('## 폐기 (DISCARDED)'), 'discard list');
   const registry = JSON.parse(read('registry/active-work.json')) as {
     ui_authority?: { status?: string; lineage?: string };

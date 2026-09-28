@@ -8,6 +8,8 @@ const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
+const brand=read('src/app/_design/Brand.tsx');
+const loginScreen=read('src/app/login/LoginScreen.tsx');
 const mobileTabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
@@ -33,6 +35,13 @@ const css=[read('src/app/globals.css'),read('src/app/_design/admin-final.css'),r
 test('admin root enters the real intake workspace and contains no demo runtime',()=>{
   assert.ok(/redirect\(['"]\/intake['"]\)/.test(root));
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
+});
+
+test('admin surfaces use the official freepass mobility CI instead of inventing an admin wordmark',()=>{
+  assert.ok(brand.includes("tail = 'mobility'"));
+  assert.ok(loginScreen.includes("label: 'freepass mobility'"));
+  assert.ok(loginScreen.includes("{ text: 'mobility', weight: 300, color: '#7F93B3' }"));
+  assert.equal(loginScreen.includes("label: 'freepass admin'"),false);
 });
 
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.

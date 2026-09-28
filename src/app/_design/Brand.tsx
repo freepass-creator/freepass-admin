@@ -1,7 +1,6 @@
 'use client';
 /**
- * ★★★**freepass-admin 의 얼굴 — 공식 CI 워드마크 그대로** (대표 2026-09-18)
- *   「freepass admin 은 우리 CI 규격에 맞춰서 BI 규격으로 해주세요」 · 「공식적인 CI 에는 그 체크박스 네모가 없어」
+ * ★★★**freepass-admin 의 얼굴 — 프리패스모빌리티 공식 CI 워드마크 그대로**
  *
  * 정본 = CI / BI Center(`C:\dev\ci_center\index.html` BRANDS · roleColor) — 새로 짓지 않는다. 거기 적힌 값을 옮긴다.
  *   · **마크 없음 — 워드마크뿐.** Exo 2 · 앞말 600(main) + 뒷말 300(base) · 사이 2px.
@@ -16,8 +15,8 @@ import { Exo_2 } from 'next/font/google';
 
 const 레터링 = Exo_2({ weight: ['300', '600'], subsets: ['latin'], display: 'swap' });
 
-/** 워드마크 — 「freepass」(600) 「admin」(300). 누르면 첫 화면으로. */
-export function Brand({ tail = 'admin' }: { tail?: string }) {
+/** 워드마크 — 「freepass」(600) 「mobility」(300). 누르면 첫 화면으로. */
+export function Brand({ tail = 'mobility' }: { tail?: string }) {
   return (
     <Link href="/" className={`dz-brand ${레터링.className}`} aria-label={`freepass ${tail}`}>
       <span className="dz-word"><b>freepass</b><i>{tail}</i></span>
@@ -30,7 +29,7 @@ export function Brand({ tail = 'admin' }: { tail?: string }) {
  *   색  main `#1B2A4A` · base `#7F93B3` — CI/BI Center 의 밝은 바탕 값 그대로.
  *   ★크기·색은 쓰는 쪽 CSS 가 정한다. 여기서 고정하는 것은 «레터링(Exo 2)과 굵기»뿐이다.
  */
-export function Wordmark({ tail = 'admin', className }: { tail?: string; className?: string }) {
+export function Wordmark({ tail = 'mobility', className }: { tail?: string; className?: string }) {
   return (
     <span className={`${레터링.className}${className ? ` ${className}` : ''}`}>
       <b>freepass</b><i>{tail}</i>

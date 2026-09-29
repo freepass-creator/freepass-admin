@@ -156,10 +156,12 @@ test('product board uses one no-photo vehicle thumbnail across desktop and mobil
   assert.equal(boardCss.includes('.thumb.car::before'),false);
 });
 
-test('new list selection moves to the top and shows a transient selection cue',()=>{
+test('new list selection keeps the list position, resets detail to the top, and shows a transient selection cue',()=>{
   const boardList=read('src/app/products/BoardList.tsx');
   const boardCss=read('src/app/products/board.css');
-  assert.ok(boardList.includes("scrollIntoView({ behavior:'smooth', block:'start', inline:'nearest' })"));
+  assert.equal(boardList.includes('scrollIntoView('),false);
+  assert.ok(boardList.includes("querySelector<HTMLElement>('.pb-detail > .web-scroll')"));
+  assert.ok(boardList.includes("scrollTo({ top: 0, behavior: 'auto' })"));
   assert.ok(boardList.includes("' just-selected'"));
   assert.ok(boardCss.includes('.pb .row.just-selected'));
   assert.ok(boardCss.includes('@keyframes pb-select'));

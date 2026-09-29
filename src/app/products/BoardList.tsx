@@ -44,8 +44,15 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
     if (앞열쇠.current !== 열쇠) { 앞열쇠.current = 열쇠; setItems(rows); }
     else setItems((cur) => (rows.length > cur.length ? rows : cur));
   }, [열쇠, rows]);
-  /* 서버가 고른 줄을 알려 오면 «누른» 표시는 내려놓는다 */
-  useEffect(() => { set누른(undefined); }, [selectedId]);
+  /* 서버가 새 상품을 그리면 «누른» 표시는 내려놓고 상세는 처음부터 보여 준다.
+     목록 위치는 유지한다 — 새로 읽어야 하는 것은 선택 카드가 아니라 상세 내용이다. */
+  useEffect(() => {
+    set누른(undefined);
+    if (!selectedId) return;
+    판.current?.closest<HTMLElement>('.pb')
+      ?.querySelector<HTMLElement>('.pb-detail > .web-scroll')
+      ?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [selectedId]);
 
   /* 끝에 가까워지면 다음 줄 — 스크롤 위치로 판단(판 안 스크롤 · 폰은 창 스크롤) */
   useEffect(() => {
@@ -70,11 +77,6 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
     void 볼();
     return () => { 멈춤 = true; 대상.removeEventListener('scroll', 볼); };
   }, [more, items.length, 전체, 부르는중]);
-
-  /* 고른 카드는 목록 맨 위에 둔다. 상세를 읽고 돌아와도 현재 선택 위치를 즉시 찾을 수 있어야 한다. */
-  useEffect(() => {
-    판.current?.querySelector<HTMLElement>('.row.selected')?.scrollIntoView({ block: 'start', inline: 'nearest' });
-  }, [selectedId]);
 
   /* `/` — 어디서든 그 판의 검색칸으로(글 쓰는 칸 안에서는 그냥 글자) */
   useEffect(() => {
@@ -111,8 +113,6 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
             onClick={(e) => {
               if (e.metaKey || e.ctrlKey || e.shiftKey) return;
               set누른(r.id);
-              const card=e.currentTarget;
-              requestAnimationFrame(() => card.scrollIntoView({ behavior:'smooth', block:'start', inline:'nearest' }));
             }}>
             <span className={`thumb${r.thumb ? ' photo' : r.thumbLabel ? ' label' : ' car'}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}

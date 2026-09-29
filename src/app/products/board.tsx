@@ -228,7 +228,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                     return (
                       <Link key={o.id} href={keep({ id: car.id, offer: o.id, v: 'detail' })}
                         className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}>
-                        <strong>{요금줄(o)}{on && <span className="sr-only"> (선택됨)</span>}</strong>
+                        <strong>{요금줄(o)}{on && <span className="offer-picked">선택됨</span>}</strong>
                         <small>{요금곁(o)}</small>
                       </Link>
                     );

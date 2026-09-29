@@ -176,7 +176,7 @@ test('approved board structure uses the latest desktop and mobile control scale'
   assert.ok(boardCss.includes('--control:32px; --chip:28px; --gap:6px; --space:8px;'));
   assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
   assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
-  assert.ok(boardCss.includes('.pb .product-photo { height:136px; }'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-hero .dz-gal-main { height:120px; }'));
   assert.equal(boardCss.includes('--title:15px'), false);
   assert.equal(boardCss.includes('--support:13px'), false);
   assert.equal(boardCss.includes('font-size:15px;'), false);
@@ -246,6 +246,15 @@ test('vehicle introduction card keeps only fuel and model year as summary badges
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
+});
+
+test('product detail makes the selected rental offer explicit and keeps the intro photo compact',()=>{
+  const board=read('src/app/products/board.tsx');
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(board.includes('<span className="offer-picked">선택됨</span>'));
+  assert.ok(boardCss.includes('.pb .product-hero .dz-gal-main { height:128px; aspect-ratio:auto;'));
+  assert.ok(boardCss.includes('.pb .product-photo { position:relative; height:128px;'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-hero .dz-gal-main { height:120px; }'));
 });
 
 test('mobile workspace uses explicit list detail work depth',()=>{

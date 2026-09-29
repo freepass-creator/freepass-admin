@@ -124,6 +124,8 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
     car.specs.fuel,
     car.specs.modelYear ? `${car.specs.modelYear}년식` : undefined,
   ].filter((x): x is string => !!x) : [];
+  const 주요요약 = car ? [렌트사, txt(car.status), txt(car.productKind)] : [];
+  const 부가요약 = car ? [txt(car.registration?.vehicleNumber), ...스펙] : [];
   const 구역 = car ? productSections(car, chosen)
     .map((s) => ({ ...s, items: s.items.filter(있음) }))
     .filter((s) => s.items.length > 0) : [];
@@ -216,12 +218,9 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
                     </div>
-                    {스펙.length > 0 && <p className="product-hero-meta">{스펙.join(' · ')}</p>}
+                    <p className="product-intro-primary">{주요요약.join(' · ')}</p>
                     <div className="product-intro-divider" />
-                    <div className="fact"><span>렌트사</span><b>{txt(렌트사)}</b></div>
-                    <div className="fact"><span>배차상태</span><b>{txt(car.status)}</b></div>
-                    <div className="fact"><span>상품분류</span><b>{txt(car.productKind)}</b></div>
-                    <div className="fact"><span>차량번호</span><b>{txt(car.registration?.vehicleNumber)}</b></div>
+                    <p className="product-intro-secondary">{부가요약.join(' · ')}</p>
                   </div>
                 </div>
 

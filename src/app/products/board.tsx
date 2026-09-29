@@ -31,7 +31,6 @@ import { PhotoGallery } from '../_design/PhotoGallery';
  *   저장은 /intake 신규 접수와 같은 createIntakeAction(BoardIntakeForm) — 저장되면 그 접수(/intake?ic=…)로 간다.
  */
 
-const 결 = (status?: string) => (status === '즉시출고' || status === '출고가능' ? 'good' : status ? 'warn' : '');
 const 요금곁 = (o: Offer) => [
   o.deposit ? `보증금 ${won(o.deposit)}원` : '무보증',
   o.prepayment ? `선납 ${won(o.prepayment)}원` : '',
@@ -216,13 +215,13 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                   <div className="facts product-intro-card">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
-                      {car.status ? <span className={`tag ${결(car.status)}`}>{car.status}</span> : null}
                     </div>
                     {스펙.length > 0 && <p className="product-hero-meta">{스펙.join(' · ')}</p>}
                     <div className="product-intro-divider" />
-                    <div className="fact"><span>차량번호</span><b>{txt(car.registration?.vehicleNumber)}</b></div>
-                    <div className="fact"><span>상품분류</span><b>{txt(car.productKind)}</b></div>
                     <div className="fact"><span>렌트사</span><b>{txt(렌트사)}</b></div>
+                    <div className="fact"><span>배차상태</span><b>{txt(car.status)}</b></div>
+                    <div className="fact"><span>상품분류</span><b>{txt(car.productKind)}</b></div>
+                    <div className="fact"><span>차량번호</span><b>{txt(car.registration?.vehicleNumber)}</b></div>
                   </div>
                 </div>
 

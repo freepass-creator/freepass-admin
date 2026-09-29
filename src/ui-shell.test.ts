@@ -21,6 +21,8 @@ const claimDoor=read('src/app/c/[token]/ClaimDoor.tsx');
 const claimLinkUi=read('src/app/settlement/LifeForms.tsx');
 const intakeDetail=read('src/app/intake/IntakeDetailPanel.tsx');
 const filterSheet=read('src/app/_design/FilterSheet.tsx');
+const detailTabs=read('src/app/_design/DetailTabs.tsx');
+const photoGallery=read('src/app/_design/PhotoGallery.tsx');
 const routeState=read('src/app/_design/RouteState.tsx');
 const parts=read('src/app/_erp/parts.tsx');
 const productsDesktop=read('src/app/_erp/ProductsScreen.tsx');
@@ -260,6 +262,22 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
+});
+
+test('admin shell and rich media preserve WCAG keyboard navigation contracts',()=>{
+  assert.ok(chrome.includes('className="erp-skip-link" href="#admin-main"'));
+  assert.ok(chrome.includes('<main id="admin-main"'));
+  assert.ok(chrome.includes('tabIndex={-1}'));
+  assert.ok(chrome.includes('<input name="q"'));
+  assert.ok(detailTabs.includes('role="tabpanel" aria-labelledby={summaryTab} tabIndex={0}'));
+  assert.ok(detailTabs.includes('role="tabpanel" aria-labelledby={infoTab} tabIndex={0}'));
+  assert.ok(photoGallery.includes('className="dz-gal-open" aria-haspopup="dialog"'));
+  assert.ok(photoGallery.includes('<dialog ref={modal}'));
+  assert.ok(photoGallery.includes('d.showModal()'));
+  assert.ok(photoGallery.includes('onCancel='));
+  assert.ok(photoGallery.includes('opener.current?.focus()'));
+  assert.ok(css.includes('.erp-skip-link:focus'));
+  assert.ok(css.includes('.dz-gal-big::backdrop'));
 });
 
 test('product detail keeps rental offer selection minimal and the intro photo compact',()=>{

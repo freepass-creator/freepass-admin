@@ -966,7 +966,8 @@ body { background: var(--바닥); }
   position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--r);
   background: var(--박스); cursor: zoom-in; touch-action: pan-y; user-select: none;
 }
-.dz-gal-main img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.dz-gal-open { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.dz-gal-main img, .dz-gal-open img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .dz-gal-main.empty { display: flex; align-items: center; justify-content: center; cursor: default; font-size: var(--글보조); color: #98a1ab; }
 .dz-gal-main.empty a { color: var(--ci남색); font-weight: 600; }
 .dz-gal-step {
@@ -999,6 +1000,8 @@ body { background: var(--바닥); }
   position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
   background: rgba(10, 16, 30, .94); cursor: zoom-out;
 }
+.dz-gal-big[open] { display: flex; margin: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none; padding: 0; border: 0; }
+.dz-gal-big::backdrop { background: rgba(5, 12, 26, .88); }
 .dz-gal-big img { max-width: 94vw; max-height: 88vh; object-fit: contain; cursor: default; }
 .dz-gal-big .dz-gal-step { width: var(--ui-touch-min); height: var(--ui-touch-min); }
 .dz-gal-big small { right: 50%; transform: translateX(50%); bottom: 16px; }

@@ -1,18 +1,10 @@
 name: freepass-data-persistence
 
 on:
+  # This workflow is a required branch-protection check. Required workflows
+  # must create a check run for every PR; a paths filter leaves unrelated PRs
+  # permanently blocked with "Expected — Waiting for status to be reported".
   pull_request:
-    paths:
-      - "src/domain/contracts/**"
-      - "src/domain/settlement/**"
-      - "src/adapters/erp5/contract-repository.ts"
-      - "src/adapters/erp5/settlement-repository.ts"
-      - "src/adapters/erp5/firestore.ts"
-      - "src/adapters/erp5/__tests__/contract-termination-firestore.integration.ts"
-      - "src/adapters/erp5/__tests__/intake-catalog-firestore.integration.ts"
-      - "package.json"
-      - "firebase.json"
-      - ".github/workflows/contract-persistence.yml"
   workflow_dispatch:
 
 permissions:

@@ -21,6 +21,8 @@ const catalogSwitch=await read('src/adapters/freepass-data/admin-catalog-reader.
 const catalogClient=await read('src/adapters/freepass-data/admin-catalog-client.ts');
 const productRepo=await read('src/adapters/erp5/product-repository.ts');
 const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
+const firestoreTransport=await read('src/adapters/erp5/firestore.ts');
+const workflowTransport=await read('src/adapters/freepass-data/admin-workflow-firestore.ts');
 const intakeActions=await read('src/app/intake/actions.ts');
 const status=await read('src/server/data-status.ts');
 
@@ -67,7 +69,11 @@ must(/const ROWS = 'settlement_rows'/.test(settlementRepo),'settlement repositor
 must(/const CASH_EVENTS = 'settlement_cash_events'/.test(settlementRepo),'cash movement ledger must use settlement_cash_events');
 must(/async cashEvents\(\)/.test(settlementRepo),'cash movement ledger read must be exposed for runtime status/audit');
 must(/ERP5_WRITE/.test(settlementRepo),'settlement writes must be explicitly gated');
-must(/erp5WriteGate/.test(settlementRepo),'settlement writes must pass the shared production approval gate');
+must(/freepassDataWriteGate/.test(settlementRepo),'settlement writes must pass the FreePass Data production write gate');
+must(/freepassDataWorkflowFirestore/.test(firestoreTransport),'operational Firestore facade must route through FreePass Data');
+must(!/ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH|cert\(/.test(firestoreTransport),'Admin operational Firestore transport must not own Firebase business-data credentials');
+must(/admin-workflow\/\$\{path\}/.test(workflowTransport) && /this\.call<ReadResult>\('read'/.test(workflowTransport) && /this\.call<Record<string, unknown>>\('commit'/.test(workflowTransport),'Admin workflow transport must use FreePass Data read/commit contracts');
+must(/FREEPASS_DATA_ADMIN_WORKFLOW_WRITE/.test(settlementRepo + await read('src/shared/erp5-write-approval.ts')),'Admin workflow writes must remain explicitly gated');
 must(/planClaimResponse/.test(settlementRepo),'claim link response must be final and retry-idempotent in the settlement transaction');
 must(/CLAIM_LINK_BASE/.test(intakeActions) && /new URL\(rawBase\)/.test(intakeActions),'claim link creation must require an absolute public base before token creation');
 must(/adminDataStatus/.test(status),'live data status probe missing');
@@ -87,9 +93,9 @@ if(errors.length){
 }else{
   console.log('LIVE DATA WIRING CHECK PASS');
   console.log('- products -> FreePass Data AdminCatalogReader boundary (OBSERVE default; SHADOW/PARITY compare Data; final read requires approved release and serves Data directly)');
-  console.log('- intake + settlement -> FreePass Data gateway -> Erp5SettlementRepository / settlement_rows');
+  console.log('- intake + settlement -> Admin domain repository -> FreePass Data workflow gateway -> Firestore');
   console.log('- settlement -> clawbacks + invoices + lifecycle actions + cash events');
-  console.log('- esign list and persistence -> FreePass Data gateway -> shared contract/session/private/Storage adapters');
+  console.log('- contract/esign document persistence -> FreePass Data workflow gateway; production Storage remains blocked while e-sign is off');
   console.log('- esign runtime -> EsignService / esign_session + esign_private + Storage + Chromium PDF renderer');
-  console.log('- writes remain fail-closed unless ERP5_WRITE=on plus the production IAM/backup approval gate');
+  console.log('- writes remain fail-closed unless ERP5_WRITE=on and FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on on the approved Data boundary');
 }

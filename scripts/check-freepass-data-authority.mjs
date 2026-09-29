@@ -2,28 +2,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const legacyDebt = new Set([
-  'src/adapters/erp5/firestore.ts',
-  'src/adapters/erp5/product-repository.ts',
-  'src/adapters/erp5/settlement-repository.ts',
-  'src/adapters/erp5/contract-repository.ts',
-  'src/adapters/erp5/esign-repository.ts',
-  'src/adapters/erp5/fee-rules.ts',
-  'src/adapters/erp5/vehicle-master.ts',
-]);
-
-/**
- * Identity is not business data. The shared contract (freepass-data
- * docs/IDENTITY-AND-ACCESS.md §1) keeps credentials in Firebase Authentication and the approval
- * record in `identity_accounts`, and explicitly allows a consumer application to hold Firebase Auth
- * for user identity while forbidding it a business-data credential.
- *
- * So this file may reach Firebase, but it is checked rather than waved through: it must touch the
- * account collection and nothing else, and must not reach an ERP5 adapter. An allowlist entry that
- * is never verified is how "temporary" debt becomes permanent.
- */
 const IDENTITY = 'src/server/identity.ts';
 const ACCOUNT_COLLECTION = 'identity_accounts';
+
+/**
+ * Explicit direct-SDK exceptions only:
+ * - firestore.ts: isolated local Firestore emulator composition root; production uses FreePass Data.
+ * - esign-repository.ts: Storage transport remains blocked in production while e-sign is off.
+ * - identity.ts: shared Firebase Auth + identity_accounts only; never operational business data.
+ */
+const explicitExceptions = new Set([
+  'src/adapters/erp5/firestore.ts',
+  'src/adapters/erp5/esign-repository.ts',
+  IDENTITY,
+]);
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -36,50 +28,60 @@ function walk(dir) {
   });
 }
 
-const debtSeen = [];
+const exceptionsSeen = [];
 const violations = [];
 
 for (const file of walk(path.join(root, 'src'))) {
   const rel = path.relative(root, file).replaceAll('\\', '/');
   if (rel === 'src/adapters/erp5/demo.ts') continue;
   const text = fs.readFileSync(file, 'utf8');
+  const runtimeText = text.replace(/import\s+type\s+[^;]+from\s+['"][^'"]+['"];?/g, '');
 
-  const direct =
-    /\berp5\s*\(/.test(text) ||
-    /from\s+['"]firebase-admin\/(?:app|firestore|storage)['"]/.test(
-      text.replace(/import\s+type\s+/g, 'import type ')
-    ) && !/import\s+type\s+[^;]+from\s+['"]firebase-admin\/(?:firestore|storage)['"]/.test(text);
+  const directSdk =
+    /from\s+['"]firebase-admin\/(?:app|auth|firestore|storage|database)['"]/.test(runtimeText)
+    || /from\s+['"]firebase\/(?:auth|firestore|database|storage)['"]/.test(runtimeText);
+  // Ownership means runtime code actually reads the credential from process.env.
+  // Deployment validators and regression tests are allowed to mention the forbidden key names.
+  const businessCredential =
+    /process\.env\.(?:ERP5_FIREBASE_SERVICE_ACCOUNT_JSON|ERP5_SERVICE_ACCOUNT_PATH)/.test(runtimeText);
 
-  if (!direct) continue;
+  if (!directSdk && !businessCredential) continue;
 
   if (rel === IDENTITY) {
-    const collections = [...text.matchAll(/\.collection\((?:'([^']+)'|([A-Z_]+))\)/g)]
+    const collections = [...runtimeText.matchAll(/\.collection\((?:'([^']+)'|([A-Z_]+))\)/g)]
       .map((m) => m[1] ?? m[2]);
     const named = [...new Set(collections)];
-    /* 공백을 한 칸으로 고른 뒤 그대로 찾는다 — 문자열 안의 \s 는 JS 가 s 로 뭉갠다 */
-    const bound = text.replace(/\s+/g, ' ').includes(`= '${ACCOUNT_COLLECTION}'`);
-    if (/adapters\/erp5/.test(text)) violations.push(`${rel} must not reach an ERP5 adapter`);
+    const bound = runtimeText.replace(/\s+/g, ' ').includes(`= '${ACCOUNT_COLLECTION}'`);
+    if (/adapters\/erp5/.test(runtimeText)) violations.push(`${rel} must not reach an ERP5 adapter`);
+    else if (businessCredential) violations.push(`${rel} must not read ERP5 business-data credentials`);
     else if (named.length !== 1) violations.push(`${rel} must read exactly one collection, saw ${named.join(', ') || 'none'}`);
     else if (!bound) violations.push(`${rel} must bind its collection to '${ACCOUNT_COLLECTION}'`);
+    else exceptionsSeen.push(rel);
     continue;
   }
 
-  if (legacyDebt.has(rel)) debtSeen.push(rel);
+  if (businessCredential) {
+    violations.push(`${rel} must not own ERP5 business-data credentials`);
+    continue;
+  }
+  if (explicitExceptions.has(rel)) exceptionsSeen.push(rel);
   else violations.push(rel);
 }
 
-for (const rel of legacyDebt) {
+for (const rel of explicitExceptions) {
   if (!fs.existsSync(path.join(root, rel))) {
-    violations.push(`legacy debt entry no longer exists and must be removed from allowlist: ${rel}`);
+    violations.push(`authority exception no longer exists and must be removed: ${rel}`);
   }
 }
 
 if (violations.length) {
-  console.error('FreePass Data authority violation: Admin added direct Firebase business-data access.');
+  console.error('FreePass Data authority violation: Admin directly owns Firebase business-data access.');
   for (const rel of [...new Set(violations)].sort()) console.error('- ' + rel);
   process.exit(1);
 }
 
 console.log('FreePass Data authority guard OK.');
-console.log('Admin migration debt still allowed temporarily:');
-for (const rel of [...new Set(debtSeen)].sort()) console.log('- ' + rel);
+if (exceptionsSeen.length) {
+  console.log('Explicit emulator / e-sign / identity exceptions:');
+  for (const rel of [...new Set(exceptionsSeen)].sort()) console.log('- ' + rel);
+}

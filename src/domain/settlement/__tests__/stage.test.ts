@@ -8,6 +8,7 @@ import {
   lastPaymentDate,
   lockedMonthsOf,
   nextInstallmentDate,
+  performanceMonth,
   stageOf,
   ym,
 } from '../stage';
@@ -101,6 +102,32 @@ test('존재하지 않는 인도일은 계산 엔진에서도 fail-closed 한다
 test('명시된 납입회차가 전체 회차면 여유기간 전에도 완납실적이다', () => {
   const r = row('2026-09-10', '2회분납', 2);
   assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '완납실적');
+});
+
+test('과거 접수를 지금 인도완료하면 접수월이 아니라 인도월 실적에 선다', () => {
+  const r = row('2026-09-20', '일시납', null, { receivedAt: '2024-01-15' });
+  assert.equal(stageOf(r, new Date('2026-09-20T12:00:00+09:00')), '완납실적');
+  assert.equal(performanceMonth(r), '2026-09');
+  assert.equal(billingMonth(r, new Date('2026-09-20T12:00:00+09:00')), '2026-09');
+});
+
+test('인도 체크만 있고 실제 인도일이 없으면 실적월을 추정하지 않는다', () => {
+  const r = row(null, '일시납', null, {
+    progress: {
+      delivered: true,
+      deliveredAt: '',
+      cancelled: false,
+      billMonth: null,
+      billed: false,
+      invoiceIssued: false,
+      collected: false,
+      paid: false,
+      settleExclude: false,
+    },
+  });
+  assert.equal(performanceMonth(r), null);
+  assert.equal(stageOf(r), '접수');
+  assert.equal(billingMonth(r), null);
 });
 
 test('현재 달 문서 발행과 월마감을 분리하고 explicit CLOSED만 새 계산을 막는다', () => {

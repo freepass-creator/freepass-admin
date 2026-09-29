@@ -31,6 +31,25 @@ export interface RegistrationInfo {
   firstRegistrationDate?: string;
 }
 
+export type CommercialConditionEvidence = {
+  dimensionKey: string;
+  status: 'KNOWN' | 'UNKNOWN';
+  value?: boolean | number | string | string[];
+  origin:
+    | 'SOURCE_PRICE_KEY'
+    | 'CANONICAL_PRICE_TERM'
+    | 'LINKED_POLICY_FACT'
+    | 'MATCHED_POLICY_FACT'
+    | 'UNRESOLVED';
+  sourceRef?: string;
+};
+
+export type CommercialPolicyMatchStatus =
+  | 'UNIQUE_MATCH'
+  | 'AMBIGUOUS'
+  | 'NO_MATCH'
+  | 'INSUFFICIENT_EVIDENCE';
+
 export interface Offer {
   id: string;
   /** Supplier belongs to the Offer. Product-level supplier fields are legacy compatibility only. */
@@ -42,6 +61,25 @@ export interface Offer {
   prepayment?: number;
   annualMileageKm?: number;
   policyValues: PolicyValue[];
+  /** FreePass Data의 원 Offer / 가격행 정체성. */
+  sourceOfferId?: string;
+  termKey?: string;
+  /** FreePass Data가 상품찾기 대표 최저가로 지정한 원천 Basis 행. */
+  isListingPrice?: boolean;
+  /** Data 기본 Preview가 선택한 가격행. 상세 기본선택용이며 목록 대표가격과 별개다. */
+  isDefaultPreview?: boolean;
+  /** 원천 Basis 가격. monthlyRent/deposit 자체도 Basis를 유지한다. */
+  basisMonthlyRent?: number;
+  basisDeposit?: number;
+  /** 기본조건 산출 결과. Basis를 덮어쓰지 않는다. */
+  previewMonthlyRent?: number;
+  previewDeposit?: number;
+  /** 상품조건 산출/귀속 상태. */
+  commercialStatus?: 'READY' | 'NEEDS_DECISION' | 'INVALID';
+  conditionStatus?: 'COMPLETE' | 'PARTIAL';
+  conditionEvidence?: CommercialConditionEvidence[];
+  unknownConditionKeys?: string[];
+  policyMatchStatus?: CommercialPolicyMatchStatus;
 }
 
 export type PolicyValue =

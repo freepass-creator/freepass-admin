@@ -41,8 +41,11 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
                   tone={STATUS_TONE[p.status ?? ''] ?? 'neutral'} thumb={<ProductThumb p={p} />}
                   title={carName(p)} badge={p.status ? <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge> : null}
                   subId={txt(p.registration?.vehicleNumber)} sub={txt(p.productKind)}
-                  meta={`${offer.termMonths}개월 · 보증 ${offer.deposit ? `${manWon(offer.deposit)} 원` : '없음'}`}
-                  facts={[['상품구분', txt(p.productKind)], ['기간', `${offer.termMonths}개월`]]}
+                  meta={txt(p.supplierName ?? p.supplierId)}
+                  facts={[
+                    ['상품구분', txt(p.productKind)],
+                    ['공급사', txt(p.supplierName ?? p.supplierId)],
+                  ]}
                   amount={`월 ${manWon(offer.monthlyRent)} 원`} unit="" />
               ))}
             </RowCards>

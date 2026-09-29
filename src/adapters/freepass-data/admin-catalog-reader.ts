@@ -75,6 +75,22 @@ const offerFacts = (p: CanonicalProduct) => p.offers.map((o) => ({
   prepayment: o.prepayment ?? null,
   annualMileageKm: o.annualMileageKm ?? null,
   policyValues: policyFacts(o.policyValues),
+  basisMonthlyRent: o.basisMonthlyRent ?? null,
+  basisDeposit: o.basisDeposit ?? null,
+  isDefaultPreview: o.isDefaultPreview ?? null,
+  commercialStatus: o.commercialStatus ?? null,
+  conditionStatus: o.conditionStatus ?? null,
+  unknownConditionKeys: [...(o.unknownConditionKeys ?? [])].sort(),
+  policyMatchStatus: o.policyMatchStatus ?? null,
+  conditionEvidence: (o.conditionEvidence ?? [])
+    .map((item) => ({
+      dimensionKey: item.dimensionKey,
+      status: item.status,
+      value: Array.isArray(item.value) ? [...item.value].sort() : item.value ?? null,
+      origin: item.origin,
+      sourceRef: item.sourceRef ?? null,
+    }))
+    .sort((a, b) => a.dimensionKey.localeCompare(b.dimensionKey)),
 })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
 const productFacts = (p: CanonicalProduct) => ({
@@ -184,6 +200,7 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
         const live = await this.freepass.list();
         const holds = [
           ...(live.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
+          ...(live.meta.commercialCoverage === 'COMPLETE' ? [] : ['FREEPASS_DATA_COMMERCIAL_COVERAGE_INCOMPLETE']),
           ...(assertApprovedRelease(approval, live.meta) ? [assertApprovedRelease(approval, live.meta)!] : []),
         ];
         if (holds.length) {
@@ -251,6 +268,7 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
         : null;
       const holds = [
         ...(shadow.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
+        ...(shadow.meta.commercialCoverage === 'COMPLETE' ? [] : ['FREEPASS_DATA_COMMERCIAL_COVERAGE_INCOMPLETE']),
         ...(comparison.status === 'MATCH' ? [] : ['FREEPASS_DATA_SHADOW_MISMATCH']),
         ...(releaseHold ? [releaseHold] : []),
       ];

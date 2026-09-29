@@ -51,7 +51,7 @@ export function webConfig(): WebConfig | null {
 export const identityReady = () => !!webConfig() && !!serviceAccountRaw();
 
 const serviceAccountRaw = () =>
-  process.env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim() || process.env.ERP5_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  process.env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
 
 const IDENTITY_APP = 'freepass-admin-identity';
 let cachedApp: App | null = null;

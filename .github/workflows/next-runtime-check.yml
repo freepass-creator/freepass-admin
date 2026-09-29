@@ -1,15 +1,6 @@
 name: Next runtime check
 on:
   pull_request:
-    paths:
-      - 'src/app/**'
-      - 'src/proxy.ts'
-      - 'src/server/auth.ts'
-      - 'src/server/google-login.ts'
-      - 'scripts/check-next-runtime.mjs'
-      - '.github/workflows/next-runtime-check.yml'
-      - 'package.json'
-      - 'package-lock.json'
 permissions:
   contents: read
 concurrency:

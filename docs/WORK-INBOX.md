@@ -1,3 +1,34 @@
+## 0-LIVE-INTAKE. 2026-09-29 — 운영 접수 쓰기 개통
+
+`0-PREDEPLOY`의 쓰기 OFF 상태를 현재 운영 상태로 사용하지 않는다. 사용자 승인 후 FreePass Admin의
+접수 저장 경계를 FreePass Data Admin 전용 런타임으로 개통했다.
+
+- 운영 Admin: `https://freepass-admin.vercel.app`
+- Admin 업무데이터 경로: Vercel OIDC → private `freepass-data-admin` Cloud Run → FreePass Data
+  Admin workflow transaction → `freepasserp5` Firestore
+- Admin 운영 런타임의 `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON`은 제거했다. Admin이 업무데이터 Firebase
+  자격증명을 직접 소유하거나 RTDB fallback을 사용하지 않는다.
+- 운영 write gate: Admin의 `ERP5_WRITE=on`, `FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on`과 Data Admin
+  runtime의 `FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on`을 모두 확인했다. 비밀값은 문서에 기록하지 않는다.
+- 개통 전 `settlement_*`, partner, contract 관련 10개 컬렉션 889건을 비공개 GCS로 export하고 별도 임시
+  Firestore DB에 복원했다. 원본/복원 컬렉션별 건수가 모두 일치했고 임시 DB는 검증 후 삭제했다.
+- 비고객 접수 `stl_4qw4uanayc`를 실제 경계로 생성했다. 같은 요청 재시도는 `created=false`로 중복 없이
+  같은 접수를 반환했고, 검증 직후 취소 처리 및 감사이력 재조회까지 확인했다.
+- FreePass Admin production deployment: `dpl_D3qMSdWhoUjgpZDDSFcaAeMB2MCq` (`READY`).
+- FreePass Data Admin deploy 재시도 안전성은 FreePass Data PR #240 / merge
+  `26991b8f44e966592dd7b118bc6c89bd47ce2df0`에 반영했다.
+
+현재 구분:
+- `CODED / TESTED / PERSISTENCE VERIFIED / DEPLOYMENT VERIFIED`: 완료
+- 실제 고객 접수: 운영자가 로그인 후 수행. 개통 검증에서 실제 고객정보는 생성하지 않음
+- Catalog semantic cutover는 계속 `OBSERVE`; 이것은 Admin workflow read/write 개통과 별도 상태
+- 전자계약은 계속 `ESIGN_ENABLED=off`
+
+next_start_here: Claude/Codex는 반드시 current main 또는 이 문서가 포함된 최신 clean worktree를 root로
+지정한다. `C:\dev\freepass-admin`의 오래된 checkout 상태나 `0-PREDEPLOY`만 보고 쓰기 OFF로 판정하지 않는다.
+
+---
+
 ## 0-F04-INTAKE. 2026-09-26 — 접수 → 실적 → 정산 운영 보강
 
 사용자 최신 결정과 실제 [F04 사용중] 프리패스 정산원장 / 프리패스 당월 계약접수를 대조해 접수 흐름을 보강한다.
@@ -24,7 +55,7 @@
 - 코드/테스트/build/Firestore·Storage emulator/Next runtime/actual-route Visual QA PASS
 - 현재 개발 ACTIVE branch 없음; main만 배포 후보
 - 전자계약은 launch scope 밖: `ESIGN_ENABLED=off`
-- 첫 배포는 `ERP5_WRITE=off`, Catalog `OBSERVE`
+- 첫 배포 당시 `ERP5_WRITE=off`, Catalog `OBSERVE`였음 — 현재 쓰기 상태는 상단 `0-LIVE-INTAKE`로 대체됨
 - 연결된 Vercel team `freepass-projects`의 project count는 0으로 관측됨
 - 다음 단계는 Vercel 프로젝트 생성·GitHub 연결·production env/OAuth/service account/IAM 바인딩 후 live smoke
 - 첫 배포 시도 전 일반 고도화 금지. 배포 차단 결함만 current main에서 short-lived fix branch로 처리
@@ -33,7 +64,7 @@
 
 # WORK-INBOX — Chat R&D → Work 개발 반영용
 
-최종 갱신: 2026-09-26
+최종 갱신: 2026-09-29
 프로젝트: freepass-admin (구 freepasserp.com 저장소)
 목적: ChatGPT 채팅에서 사용자와 확정한 R&D 내용을 Work가 자동 추측하지 않고, GitHub에서 한 곳만 읽고 개발에 반영하도록 만드는 공용 인수인계 문서.
 

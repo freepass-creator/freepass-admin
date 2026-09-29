@@ -120,6 +120,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
       href: keep({ [ax.key]: 켜끔(explicitPsel[ax.key as keyof typeof explicitPsel], k) }),
     })));
   const 사진 = car ? 사진들(car) : [];
+  const 렌트사 = car ? (chosen?.supplierName ?? chosen?.supplierId ?? 공급사(car)) : '';
   const 스펙 = car ? [
     car.specs.fuel,
     car.specs.modelYear ? `${car.specs.modelYear}년식` : undefined,
@@ -211,7 +212,11 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                       <h3>{이름(car)}</h3>
                       {car.status ? <span className={`tag ${결(car.status)}`}>{car.status}</span> : null}
                     </div>
-                    <p>{[공급사(car), car.registration?.vehicleNumber].filter(Boolean).join(' · ')}</p>
+                    <dl className="product-intro-facts" aria-label="차량 주요 정보">
+                      <div><dt>차량번호</dt><dd>{txt(car.registration?.vehicleNumber)}</dd></div>
+                      <div><dt>상품분류</dt><dd>{txt(car.productKind)}</dd></div>
+                      <div><dt>렌트사</dt><dd>{txt(렌트사)}</dd></div>
+                    </dl>
                     {스펙.length > 0 && <div className="quick-specs">{스펙.map((x) => <span key={x}>{x}</span>)}</div>}
                   </div>
                 </article>

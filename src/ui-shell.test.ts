@@ -237,6 +237,11 @@ test('vehicle introduction card keeps only fuel and model year as summary badges
   assert.equal(summary.includes('car.specs.seats'),false);
   assert.ok(board.includes('<PhotoGallery'));
   assert.equal(board.includes('className="product-rent"'),false);
+  assert.ok(board.includes('className="product-intro-facts"'));
+  assert.ok(board.includes('<dt>차량번호</dt>'));
+  assert.ok(board.includes('<dt>상품분류</dt>'));
+  assert.ok(board.includes('<dt>렌트사</dt>'));
+  assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
 });

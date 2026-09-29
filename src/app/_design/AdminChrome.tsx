@@ -47,8 +47,8 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
           <input name="pq" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
           <kbd>Enter</kbd>
         </form>
-        {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}
         <div className="erp-topbar-right">
+          {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}
           <a className="erp-iconbtn" href="/system/data-status" aria-label={data.ok ? '데이터 설정됨' : '데이터 설정 필요'} {...(data.ok ? {} : { 'data-alert': true })}>
             <Icon name="gauge" size={18} />
           </a>

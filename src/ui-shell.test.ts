@@ -122,6 +122,7 @@ test('admin chrome uses one workflow axis across desktop and mobile with no top 
   assert.ok(side.includes('erp-nav-group--apart'));
   assert.ok(side.includes('erp-nav-group erp-nav-group--apart">전자계약</div>'));
   assert.ok(chrome.includes('<MobileTabBar />'));
+  assert.ok(chrome.indexOf('className="erp-demo-flag"') > chrome.indexOf('className="erp-topbar-right"'), 'data state belongs with the right-side status/user cluster');
   for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적현황','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
     assert.ok(mobileTabs.includes(`['${label}', '${href}']`), `mobile workflow missing ${label}`);
   }

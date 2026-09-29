@@ -140,6 +140,10 @@ function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
 function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
   const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => ({
     id: `${offer.offerId}#${term.termKey}`,
+    sourceOfferId: offer.offerId,
+    ...(offer.policyId ? { policyId: offer.policyId } : {}),
+    offerRevision: offer.offerRevision,
+    policyState: offer.policyState,
     supplierId: offer.supplierId,
     termMonths: term.termMonths,
     monthlyRent: term.monthlyRent.amount,

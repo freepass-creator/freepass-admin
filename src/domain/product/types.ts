@@ -33,6 +33,12 @@ export interface RegistrationInfo {
 
 export interface Offer {
   id: string;
+  /** FreePass Data의 원본 Offer 식별자. `id`는 가격조건(termKey)까지 포함한 선택 ID다. */
+  sourceOfferId?: string;
+  /** 선택 Offer에 연결된 정책 식별자. 화면·접수·계약서가 같은 정책을 추적한다. */
+  policyId?: string;
+  offerRevision?: number;
+  policyState?: 'COMPLETE' | 'MISSING' | 'INVALID';
   /** Supplier belongs to the Offer. Product-level supplier fields are legacy compatibility only. */
   supplierId?: string;
   supplierName?: string;

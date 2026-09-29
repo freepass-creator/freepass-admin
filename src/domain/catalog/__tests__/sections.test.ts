@@ -29,6 +29,17 @@ describe('productSections — 성격별 구역', () => {
   });
   it('사전에 없는 정책 칸은 버리지 않고 따로 모은다', () =>
     assert.ok(s.find((x) => x.key === 'policy_other')!.items.some((i) => i.key === 'content')));
+  it('선택 Offer 정책이 상품 정책을 덮어 화이트라벨과 같은 적용값을 보여준다', () => {
+    const selected = {
+      id: 'O-A#36_2만', sourceOfferId: 'O-A', policyId: 'POL-A', offerRevision: 3,
+      policyState: 'COMPLETE' as const, termMonths: 36, monthlyRent: 690_000,
+      policyValues: [{ policyId: 'basic_driver_age', type: 'NUMBER' as const, value: 21 }],
+    };
+    const sections = productSections(p, selected);
+    const age = sections.flatMap((x) => x.items).find((x) => x.key === 'basic_driver_age');
+    assert.equal(age?.value, 21);
+    assert.match(sections.find((x) => x.key === 'policy_product')?.hint ?? '', /POL-A/);
+  });
 });
 
 describe('settlementSections — erp4 묶음 그대로 + 새 칸', () => {

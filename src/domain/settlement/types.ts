@@ -134,6 +134,10 @@ export interface IntakeCatalogSnapshot {
   };
   offer: {
     id: string;
+    sourceOfferId?: Maybe<string>;
+    policyId?: Maybe<string>;
+    offerRevision?: Maybe<number>;
+    policyState?: Maybe<'COMPLETE' | 'MISSING' | 'INVALID'>;
     /** Added for FreePass Data multi-supplier Offer parity. Older snapshots may not contain these fields. */
     supplierId?: Maybe<string>;
     supplierName?: Maybe<string>;

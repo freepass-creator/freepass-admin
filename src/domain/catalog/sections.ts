@@ -17,7 +17,8 @@
  *   internal 은 «내부 전용» 이다 — 심사기준·신용등급·수수료 환수. ★손님 화면·견적서에 절대 안 나간다(erp4 사고).
  *   어드민은 다 보되, 화면은 이 딱지를 보여서 «밖에 말하면 안 되는 값» 임을 알려야 한다.
  */
-import type { CanonicalProduct, PolicyValue } from '../product/types';
+import type { CanonicalProduct, Offer, PolicyValue } from '../product/types';
+import { resolveOfferPolicies } from '../product/resolve-policies';
 import { MATCH_LABEL } from '../product/master-match';
 import { POLICY_FIELDS, POLICY_LAYER_LABEL } from './policy-fields.generated';
 import { SETTLEMENT_FIELDS } from './settlement-fields.generated';
@@ -58,7 +59,7 @@ const policyType = (p: PolicyValue | undefined): FieldType =>
   !p ? 'text' : p.type === 'MONEY' ? 'money' : p.type === 'PERCENTAGE' ? 'percent' : p.type === 'BOOLEAN' ? 'boolean'
     : p.type === 'NUMBER' ? 'number' : p.type === 'MULTI_SELECT' ? 'list' : p.type === 'DATE' ? 'date' : 'text';
 
-export function productSections(p: CanonicalProduct): Section[] {
+export function productSections(p: CanonicalProduct, selectedOffer?: Offer): Section[] {
   const s = p.specs, r = p.registration, vh = p.vehicle;
   const out: Section[] = [
     {
@@ -125,12 +126,16 @@ export function productSections(p: CanonicalProduct): Section[] {
   ];
 
   /* ── 정책 — 층마다 한 구역. 사전 차례 그대로 ── */
-  const byId = new Map(p.productPolicies.map((x) => [x.policyId, x]));
+  const effectivePolicies = selectedOffer ? resolveOfferPolicies(p, selectedOffer) : p.productPolicies;
+  const byId = new Map(effectivePolicies.map((x) => [x.policyId, x]));
   const known = new Set<string>();
   for (const layer of ['product', 'sales', 'contract'] as const) {
     const fields = POLICY_FIELDS.filter((f) => f.layer === layer);
     out.push({
-      key: `policy_${layer}`, title: `정책 · ${POLICY_LAYER_LABEL[layer].split(' — ')[0]}`, hint: POLICY_LAYER_LABEL[layer].split(' — ')[1],
+      key: `policy_${layer}`, title: `정책 · ${POLICY_LAYER_LABEL[layer].split(' — ')[0]}`,
+      hint: selectedOffer
+        ? `선택 계약조건 적용값 · Offer 정책 우선${selectedOffer.policyId ? ` · ${selectedOffer.policyId}` : ''}`
+        : POLICY_LAYER_LABEL[layer].split(' — ')[1],
       items: fields.map((f) => {
         known.add(f.key);
         const pv = byId.get(f.key);
@@ -142,7 +147,7 @@ export function productSections(p: CanonicalProduct): Section[] {
     });
   }
   /* 사전에 없는 정책 칸 — 버리지 않고 따로 둔다 (옛 이름 _legacy · 설명 글 등) */
-  const rest = p.productPolicies.filter((x) => !known.has(x.policyId));
+  const rest = effectivePolicies.filter((x) => !known.has(x.policyId));
   if (rest.length) out.push({
     key: 'policy_other', title: '정책 · 사전에 없는 칸', hint: '옛 이름·설명 글 — 사전(erp4 policy-tier)에 없어 층을 모른다',
     items: rest.map((x) => ({ key: x.policyId, label: x.policyId, value: policyValue(x), type: policyType(x) })),

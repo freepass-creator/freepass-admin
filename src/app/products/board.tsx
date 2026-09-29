@@ -123,7 +123,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
     car.specs.fuel,
     car.specs.modelYear ? `${car.specs.modelYear}년식` : undefined,
   ].filter((x): x is string => !!x) : [];
-  const 구역 = car ? productSections(car)
+  const 구역 = car ? productSections(car, chosen)
     .map((s) => ({ ...s, items: s.items.filter(있음) }))
     .filter((s) => s.items.length > 0) : [];
   const 상태 = <span className={`sync${data.ok ? '' : ' warn'}`}>{data.ok ? '연결 정상' : '데이터 설정 필요'}</span>;

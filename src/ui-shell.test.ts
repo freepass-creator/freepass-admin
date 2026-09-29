@@ -177,8 +177,11 @@ test('approved board structure uses the latest desktop and mobile control scale'
   assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
   assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
   assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
-  assert.ok(boardCss.includes('.pb .facts.product-intro-card { gap:4px; }'));
-  assert.ok(boardCss.includes('.pb .product-hero-title { display:flex; align-items:center; gap:8px; min-height:0; }'));
+  assert.ok(boardCss.includes('.pb .facts.product-intro-card { grid-auto-rows:18px; gap:2px; }'));
+  assert.ok(boardCss.includes('.pb .product-hero-title h3 { margin:0; color:var(--ink); font-size:var(--head); font-weight:700; line-height:18px;'));
+  assert.ok(boardCss.includes('.pb .product-intro-primary { margin:0; color:var(--sub); font-size:var(--support); font-weight:600; line-height:18px; }'));
+  assert.ok(boardCss.includes('.pb .product-intro-secondary { margin:0; color:var(--muted); font-size:var(--meta); line-height:18px; }'));
+  assert.ok(boardCss.includes('.pb .product-hero-title { min-height:18px; display:flex; align-items:center; gap:8px; }'));
   assert.equal(boardCss.includes('--title:15px'), false);
   assert.equal(boardCss.includes('--support:13px'), false);
   assert.equal(boardCss.includes('font-size:15px;'), false);

@@ -150,11 +150,10 @@
 .pb .product-photo-card .dz-gal-main { height:128px; aspect-ratio:auto; border-radius:0; box-shadow:none; }
 .pb .product-photo-card .dz-gal-thumbs { display:none; }
 .pb .product-intro-section { margin-top:0; }
-.pb .product-intro-card { gap:7px; }
+.pb .product-intro-card { gap:5px; }
 .pb .product-hero-title { display:flex; align-items:center; gap:8px; min-height:24px; }
 .pb .product-hero-title h3 { margin:0; color:var(--ink); font-size:var(--head); font-weight:700; line-height:1.3; letter-spacing:-.02em; }
 .pb .product-intro-primary { margin:0; color:var(--sub); font-size:var(--support); font-weight:600; line-height:1.4; }
-.pb .product-intro-divider { height:1px; margin:5px 0; background:var(--line); }
 .pb .product-intro-secondary { margin:0; color:var(--muted); font-size:var(--meta); line-height:1.4; }
 .pb .offer { width:100%; padding:12px; display:grid; gap:4px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); transition:background .12s, box-shadow .12s; }
 .pb .offer + .offer { margin-top:8px; }

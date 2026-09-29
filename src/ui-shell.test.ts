@@ -240,6 +240,7 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.ok(board.includes('<PhotoGallery'));
   assert.ok(board.includes("<p className=\"product-intro-primary\">{주요요약.join(' · ')}</p>"));
   assert.ok(board.includes("<p className=\"product-intro-secondary\">{부가요약.join(' · ')}</p>"));
+  assert.equal(board.includes('product-intro-divider'),false);
   assert.equal(board.includes('className="quick-specs"'),false);
   assert.equal(board.includes('className="product-rent"'),false);
   assert.ok(board.includes('className="product-photo-card"'));

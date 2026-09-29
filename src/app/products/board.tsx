@@ -219,7 +219,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                       <h3>{이름(car)}</h3>
                     </div>
                     <p className="product-intro-primary">{주요요약.join(' · ')}</p>
-                    <div className="product-intro-divider" />
                     <p className="product-intro-secondary">{부가요약.join(' · ')}</p>
                   </div>
                 </div>

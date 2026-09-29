@@ -51,7 +51,7 @@ export function webConfig(): WebConfig | null {
   return { apiKey, authDomain, projectId, ...(authEmulatorHost ? { authEmulatorHost } : {}) };
 }
 /** Dedicated trust: no ERP credential, default ADC or arbitrary token endpoint fallback. */
-export const IDENTITY_WIF_AUDIENCE = '//iam.googleapis.com/projects/110304297079/locations/global/workloadIdentityPools/vercel/providers/freepass-admin-identity-production';
+export const IDENTITY_WIF_AUDIENCE = '//iam.googleapis.com/projects/110304297079/locations/global/workloadIdentityPools/vercel/providers/freepass-admin-identity-prod';
 export const IDENTITY_SERVICE_ACCOUNT = 'freepass-admin-identity@freepasserp5.iam.gserviceaccount.com';
 export function identityFederationConfig(env: Record<string, string | undefined> = process.env) {
   const audience = env.IDENTITY_GCP_WIF_AUDIENCE?.trim();

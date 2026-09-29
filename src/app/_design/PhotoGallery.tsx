@@ -17,6 +17,8 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
   const [big, setBig] = useState(false);
   const [x0, setX0] = useState<number | null>(null);
   const strip = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const modal = useRef<HTMLDialogElement>(null);
   const n = photos.length;
   const go = (d: number) => { if (n > 1) setI((k) => (k + d + n) % n); };
 
@@ -28,11 +30,18 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     s.scrollTo({ top: Math.max(0, el.offsetTop - (s.clientHeight - el.clientHeight) / 2), behavior: reduce ? 'auto' : 'smooth' });
   }, [i]);
-  /* 크게 보기 — ← → 넘기기 · Esc 닫기 */
+  const closeBig = () => {
+    modal.current?.close();
+    setBig(false);
+    requestAnimationFrame(() => opener.current?.focus());
+  };
+
+  /* 네이티브 modal dialog로 바깥 화면을 inert 처리하고, 닫으면 연 단추로 focus를 돌린다. */
   useEffect(() => {
     if (!big) return;
+    const d = modal.current;
+    if (d && !d.open) d.showModal();
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setBig(false);
       if (e.key === 'ArrowLeft') go(-1);
       if (e.key === 'ArrowRight') go(1);
     };
@@ -64,11 +73,15 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
           /* 화살표처럼 pointerdown 을 부모까지 안 올린 조작은 크게보기로 번지지 않는다. */
           if (s === null) return;
           if (Math.abs(e.clientX - s) > 40) { go(e.clientX < s ? 1 : -1); return; }
+          if ((e.target as Element).closest('button')) return;
           setBig(true);
         }}
         onPointerCancel={() => setX0(null)}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photos[i]} alt={alt} draggable={false} />
+        <button ref={opener} type="button" className="dz-gal-open" aria-haspopup="dialog"
+          aria-label={`${alt} 사진 크게 보기`} onClick={() => setBig(true)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photos[i]} alt={alt} draggable={false} />
+        </button>
         {넘김}
         <small>{i + 1} / {n}</small>
       </div>
@@ -83,13 +96,15 @@ export function PhotoGallery({ photos, alt, link }: { photos: string[]; alt: str
         </div>
       )}
       {big && (
-        <div className="dz-gal-big" role="dialog" aria-modal="true" aria-label="사진 크게 보기" onClick={() => setBig(false)}>
+        <dialog ref={modal} className="dz-gal-big" aria-label="사진 크게 보기"
+          onCancel={(e) => { e.preventDefault(); closeBig(); }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeBig(); }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={photos[i]} alt={alt} onClick={(e) => e.stopPropagation()} />
           {넘김}
-          <button type="button" className="dz-gal-close" aria-label="닫기" onClick={() => setBig(false)}><Icon name="x" size={22} /></button>
+          <button type="button" className="dz-gal-close" aria-label="닫기" onClick={closeBig}><Icon name="x" size={22} /></button>
           <small>{i + 1} / {n}</small>
-        </div>
+        </dialog>
       )}
     </div>
   );

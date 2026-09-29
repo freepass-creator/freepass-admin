@@ -518,6 +518,12 @@ header.dz-statusbar a:focus-visible, .dz-desktop-bottom a:focus-visible {
 
 
 /* ══ 공통 키보드/모션 UX — 시각 디자인은 평상시 그대로, 상호작용 상태만 보강 ══ */
+.erp-skip-link {
+  position: fixed; z-index: 10000; top: 8px; left: 8px; transform: translateY(-160%);
+  padding: 8px 12px; border-radius: 6px; background: #fff; color: var(--ci남색);
+  font-size: 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(15, 27, 53, .18);
+}
+.erp-skip-link:focus { transform: translateY(0); }
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--ci남색);
   outline-offset: 2px;

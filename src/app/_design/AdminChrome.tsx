@@ -33,6 +33,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
   const data = erp5Ready();
   return (
     <>
+      <a className="erp-skip-link" href="#admin-main">본문 바로가기</a>
       {/* 단일 UI 표지 — body 격자와 Admin 전용 범위를 세우는 구조 marker. */}
       <i className="erp-theme-flag" hidden />
 
@@ -44,7 +45,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
             검색이 q 로 남아 있어 조용히 죽어 있었다). */}
         <form className="erp-gsearch" action="/products" role="search">
           <Icon name="search" size={16} />
-          <input name="pq" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
+          <input name="q" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
           <kbd>Enter</kbd>
         </form>
         <div className="erp-topbar-right">
@@ -69,7 +70,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
           「상단은 정보만」과 일관되게) 이 줄을 없앴다. */}
       {/* 계약접수(/intake)가 내부 Admin 전체의 UI/UX 시각 정본이다.
           다른 업무는 데이터와 패널 수만 달라질 수 있고, 조작 문법을 따로 만들지 않는다. */}
-      <main className="fn-main" data-ui-authority="intake">
+      <main id="admin-main" className="fn-main" data-ui-authority="intake" tabIndex={-1}>
         {children}
       </main>
 

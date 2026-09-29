@@ -373,12 +373,24 @@ if (/ERP5 를 못 읽었습니다/.test(esignMobileSource)) {
 }
 
 const accessibilityAndLongTextBaseline = [
+  ['src/app/_design/AdminChrome.tsx', [
+    /className="erp-skip-link" href="#admin-main"/,
+    /<main id="admin-main"[^>]+tabIndex=\{-1\}/,
+    /<input name="q"[^>]+aria-label="통합 검색"/,
+  ]],
   ['src/app/_design/FilterSheet.tsx', [
     /aria-modal="true"/,
     /keepDialogFocus/,
     /e\.shiftKey && activeEl === first/,
     /!e\.shiftKey && activeEl === last/,
     /trigger\.current\?\.focus\(\)/,
+  ]],
+  ['src/app/_design/PhotoGallery.tsx', [
+    /className="dz-gal-open" aria-haspopup="dialog"/,
+    /<dialog ref=\{modal\}/,
+    /d\.showModal\(\)/,
+    /onCancel=/,
+    /opener\.current\?\.focus\(\)/,
   ]],
   ['src/app/_erp/parts.tsx', [
     /title=\{typeof title === 'string' \|\| typeof title === 'number' \? String\(title\) : undefined\}/,
@@ -549,6 +561,8 @@ for (const [re, label] of formCssBaseline) {
 const accessibilityBehaviorBaseline = [
   ['src/app/_design/DetailTabs.tsx', [
     /tabIndex=\{tab === 'summary' \? 0 : -1\}/,
+    /role="tabpanel" aria-labelledby=\{summaryTab\} tabIndex=\{0\}/,
+    /role="tabpanel" aria-labelledby=\{infoTab\} tabIndex=\{0\}/,
     /ArrowRight/,
     /ArrowLeft/,
     /Home/,

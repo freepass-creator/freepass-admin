@@ -58,8 +58,8 @@ export function DetailTabs({ summary, info, applyBase, initialOffer }: {
           onKeyDown={onTabKey} onClick={() => setTab('info')}>상세정보</button>
       </div>
       <div className="dz-tabbody">
-        <div id={summaryPanel} role="tabpanel" aria-labelledby={summaryTab} hidden={tab !== 'summary'}>{summary}</div>
-        <div id={infoPanel} role="tabpanel" aria-labelledby={infoTab} hidden={tab !== 'info'}>{info}</div>
+        <div id={summaryPanel} role="tabpanel" aria-labelledby={summaryTab} tabIndex={0} hidden={tab !== 'summary'}>{summary}</div>
+        <div id={infoPanel} role="tabpanel" aria-labelledby={infoTab} tabIndex={0} hidden={tab !== 'info'}>{info}</div>
       </div>
       {/* ★하단바 — 판 바닥(§14-3): [공유 3] [이 상품 접수하기 7] */}
       <ActionBar>

@@ -1,5 +1,6 @@
 import { freepassDataWriteGate } from '../shared/erp5-write-approval';
 import { parseAdminCutoverApproval, type AdminCutoverStage } from '../shared/freepass-data-admin-cutover';
+import { identityFederationConfig } from './identity';
 
 export type EnvFinding = { level: 'error' | 'warn' | 'ok'; key: string; message: string };
 
@@ -24,7 +25,15 @@ export function checkDeployEnv(env: Record<string, string | undefined>): EnvFind
     if (!set(env, k)) err(k, '공용 로그인 화면에 필요합니다'); else ok(k, '설정됨');
   }
   const identityRaw = env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (!identityRaw) {
+  const federated = set(env, 'IDENTITY_GCP_WIF_AUDIENCE') || set(env, 'IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL');
+  if (federated) {
+    try {
+      identityFederationConfig(env);
+      ok('IDENTITY_GCP_WIF_AUDIENCE', 'Production 전용 신원 계정 OIDC 연결 설정됨');
+    } catch {
+      err('IDENTITY_GCP_WIF_AUDIENCE', '신원 project/account/provider와 production 범위를 확인하세요. 장기 키와 함께 설정하지 않습니다');
+    }
+  } else if (!identityRaw) {
     err('IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON', 'ID 토큰 서버 검증과 identity_accounts 조회에 필요합니다');
   } else {
     try {

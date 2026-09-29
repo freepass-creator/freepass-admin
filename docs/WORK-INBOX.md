@@ -5,7 +5,8 @@
 - 운영 관측: 브라우저 비밀번호 인증 이후 `/api/session` 401. Production deployment와 프로젝트 설정 모두 신원 전용 서버 자격증명이 빠져 있음. 사용자 비밀번호/토큰은 기록하지 않음.
 - 변경: 로그인·내부 내비게이션 앱 이름, 신원 설정 누락 503 안내, Production build preflight, 기존 인증 emulator CI 여정 연결, 회귀 검사.
 - 검증: 관련 검사 64건, typecheck, UI SSOT, build PASS. 로컬 actual `/login` 렌더와 브라우저 오류 0 확인. 전체 테스트의 Windows Chromium 환경 실패는 별도이며 운영 복구 PASS로 간주하지 않음.
-- 남음: 전용 신원 서비스계정/권한 provisioning, Production secret 바인딩, 재배포 및 승인된 계정의 실제 로그인 확인. 기존 업무데이터 관리자 키로 대체하지 않음.
+- 후속: 승인된 전용 계정/최소 역할은 생성됨. 장기 키 생성·저장은 도구 정책이 실행 전 차단했고 사용자 관리 키 0개를 확인했다. 사용자 연결 해결 요청에 따라 기존 identity 모듈·Google auth library·Vercel OIDC 방식을 확장해 키 없는 인증을 검증 중이다. 장기 키 명령은 재시도하지 않는다.
+- 남음: Production 전용 WIF trust/비밀 없는 환경값 연결, Claude 독립 검토, 재배포 및 승인 계정의 실제 로그인 확인. 기존 업무데이터 관리자 키로 대체하지 않음.
 - next_start_here: `docs/RELEASE.md`의 로그인 장애 복구 적용안과 PR 검증을 확인한 후 승인된 운영 provisioning을 진행한다. 현재 단계는 운영 복구 완료가 아니다.
 
 ---

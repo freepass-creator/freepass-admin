@@ -4,12 +4,15 @@ import { checkDeployEnv } from './deploy-env';
 import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from './identity';
 
 test('actual production build command stops when identity configuration is missing', () => {
   const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
   assert.match(scripts.build, /^node --import tsx scripts\/check-deploy-env\.mts --vercel-build && next build$/);
   const env: NodeJS.ProcessEnv = { ...process.env, VERCEL_ENV: 'production' };
   delete env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON;
+  delete env.IDENTITY_GCP_WIF_AUDIENCE;
+  delete env.IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL;
   const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/check-deploy-env.mts', '--vercel-build'], { env, encoding: 'utf8' });
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stdout, /ERROR IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON/);
@@ -36,6 +39,21 @@ const good = {
 };
 const errors = (env: Record<string, string | undefined>) =>
   checkDeployEnv(env).filter((f) => f.level === 'error').map((f) => f.key);
+
+test('production keyless identity requires exact complete trust; preview, mixed credentials and partial config are rejected', () => {
+  const keyless = {
+    ...good, VERCEL_ENV: 'production', IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: undefined,
+    IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
+    IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: IDENTITY_SERVICE_ACCOUNT,
+    FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/provider',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'caller@project.iam.gserviceaccount.com',
+  };
+  assert.deepEqual(errors(keyless), []);
+  for (const change of [
+    { VERCEL_ENV: 'preview' }, { IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: identitySa },
+    { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: '' }, { IDENTITY_FIREBASE_PROJECT_ID: 'other' },
+  ]) assert.ok(errors({ ...keyless, ...change }).includes('IDENTITY_GCP_WIF_AUDIENCE'));
+});
 
 test('complete first-deploy env has no errors and never echoes secret values', () => {
   const findings = checkDeployEnv(good);

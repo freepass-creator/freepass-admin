@@ -22,9 +22,11 @@
  *   Firebase Auth 와 `identity_accounts` 뿐이다. 업무 원장(settlement_rows · contract · products)은
  *   건드리지 않는다. 그 경계는 freepass-data-boundary 테스트가 지킨다.
  */
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { cert, getApps, initializeApp, type App, type Credential } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { IdentityPoolClient } from 'google-auth-library';
+import { getVercelOidcToken } from '@vercel/oidc';
 
 /** ★프리패스 데이터와 같은 이름이어야 한다 — 한쪽만 바꾸면 권한이 갈라진다 */
 const ACCOUNTS = 'identity_accounts';
@@ -48,7 +50,52 @@ export function webConfig(): WebConfig | null {
   const authEmulatorHost = process.env.IDENTITY_FIREBASE_AUTH_EMULATOR_HOST?.trim();
   return { apiKey, authDomain, projectId, ...(authEmulatorHost ? { authEmulatorHost } : {}) };
 }
-export const identityReady = () => !!webConfig() && !!serviceAccountRaw();
+/** Dedicated trust: no ERP credential, default ADC or arbitrary token endpoint fallback. */
+export const IDENTITY_WIF_AUDIENCE = '//iam.googleapis.com/projects/110304297079/locations/global/workloadIdentityPools/vercel/providers/freepass-admin-identity-production';
+export const IDENTITY_SERVICE_ACCOUNT = 'freepass-admin-identity@freepasserp5.iam.gserviceaccount.com';
+export function identityFederationConfig(env: Record<string, string | undefined> = process.env) {
+  const audience = env.IDENTITY_GCP_WIF_AUDIENCE?.trim();
+  const email = env.IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL?.trim();
+  if (!audience && !email) return null;
+  if (audience !== IDENTITY_WIF_AUDIENCE || email !== IDENTITY_SERVICE_ACCOUNT
+    || env.IDENTITY_FIREBASE_PROJECT_ID?.trim() !== 'freepasserp5'
+    || env.VERCEL_ENV !== 'production' || env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) {
+    throw new Error('IDENTITY_FEDERATION_CONFIG_INVALID');
+  }
+  return { audience, email, projectId: 'freepasserp5' };
+}
+export const identityReady = () => {
+  try { return !!webConfig() && (!!identityFederationConfig() || !!serviceAccountRaw()); }
+  catch { return false; }
+};
+
+let federatedClient: IdentityPoolClient | null = null;
+function identityClient(): IdentityPoolClient {
+  if (federatedClient) return federatedClient;
+  const config = identityFederationConfig();
+  if (!config) throw new Error('IDENTITY_FEDERATION_NOT_CONFIGURED');
+  return (federatedClient = new IdentityPoolClient({
+    audience: config.audience,
+    subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+    token_url: 'https://sts.googleapis.com/v1/token',
+    service_account_impersonation_url: 'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/'
+      + encodeURIComponent(config.email) + ':generateAccessToken',
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    transporterOptions: { timeout: 5_000, retry: false },
+    // Read fresh request context on refresh; do not freeze a deployment-time OIDC token.
+    subject_token_supplier: { getSubjectToken: () => getVercelOidcToken() },
+  }));
+}
+
+export const identityFederatedCredential: Credential = {
+  async getAccessToken() {
+    const client = identityClient();
+    const { token } = await client.getAccessToken();
+    const expires = Math.floor(((client.credentials.expiry_date ?? 0) - Date.now()) / 1000);
+    if (!token || expires <= 0) throw new Error('IDENTITY_ACCESS_TOKEN_UNAVAILABLE');
+    return { access_token: token, expires_in: expires };
+  },
+};
 
 const serviceAccountRaw = () =>
   process.env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -60,6 +107,10 @@ function identityApp(): App {
   if (cachedApp) return cachedApp;
   const hit = getApps().find((a) => a.name === IDENTITY_APP);
   if (hit) return (cachedApp = hit);
+  const federation = identityFederationConfig();
+  if (federation) {
+    return (cachedApp = initializeApp({ credential: identityFederatedCredential, projectId: federation.projectId }, IDENTITY_APP));
+  }
   const raw = serviceAccountRaw();
   if (!raw) throw new Error('신원 자격증명이 없습니다(IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON)');
   const sa = JSON.parse(raw) as { project_id: string; client_email: string; private_key: string };
@@ -85,6 +136,26 @@ export async function revokeSessions(cookie: string): Promise<void> {
 interface Authority { status?: string; role?: string; grants?: unknown; name?: string }
 const cache = new Map<string, { at: number; who: Identity | null }>();
 
+/** Firebase Admin Firestore rejects custom credentials. Use Google's document GET for WIF.
+ * The sole path is the shared account collection, with no list/write/business-data operation.
+ */
+export async function identityAccountFromFederation(id: string): Promise<Authority | null> {
+  const config = identityFederationConfig();
+  if (!config) throw new Error('IDENTITY_FEDERATION_NOT_CONFIGURED');
+  const { access_token } = await identityFederatedCredential.getAccessToken();
+  const response = await fetch('https://firestore.googleapis.com/v1/projects/' + config.projectId
+    + '/databases/(default)/documents/' + ACCOUNTS + '/' + encodeURIComponent(id), {
+    headers: { authorization: 'Bearer ' + access_token },
+    cache: 'no-store', signal: AbortSignal.timeout(5_000),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error('IDENTITY_ACCOUNT_HTTP_' + response.status);
+  const body = await response.json() as { fields?: Record<string, { stringValue?: unknown }> };
+  const field = (key: string) => typeof body.fields?.[key]?.stringValue === 'string'
+    ? body.fields[key].stringValue as string : undefined;
+  return { status: field('status'), role: field('role'), name: field('name') };
+}
+
 /**
  * 계약 ③ — 권한을 풀고 fail-closed. 못 읽었다고 열어 주지 않는다.
  *
@@ -106,8 +177,12 @@ async function authorityOf(uid: string, email: string): Promise<Identity | null>
   if (hit && Date.now() - hit.at < AUTHORITY_TTL_MS) return hit.who;
   let who: Identity | null = null;
   try {
-    const snap = await getFirestore(identityApp()).collection(ACCOUNTS).doc(id).get();
-    const a = (snap.exists ? snap.data() : null) as Authority | null;
+    let a: Authority | null;
+    if (identityFederationConfig()) a = await identityAccountFromFederation(id);
+    else {
+      const snap = await getFirestore(identityApp()).collection(ACCOUNTS).doc(id).get();
+      a = (snap.exists ? snap.data() : null) as Authority | null;
+    }
     if (a?.status === 'APPROVED') {
       who = { uid, id, name: String(a.name ?? id.split('@')[0]), role: a.role === 'MASTER' ? 'MASTER' : 'MEMBER' };
     }

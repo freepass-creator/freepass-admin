@@ -27,6 +27,74 @@ const base = {
         { termKey: '36_2만', termMonths: 36, monthlyRent: { amount: 690000, currency: 'KRW' as const }, deposit: { amount: 0, currency: 'KRW' as const }, depositState: 'ZERO' as const, mileageLimitKmPerYear: 20000 },
         { termKey: '48_2만', termMonths: 48, monthlyRent: { amount: 650000, currency: 'KRW' as const }, depositState: 'UNKNOWN' as const, mileageLimitKmPerYear: 20000 },
       ],
+      commercial: {
+        offerId: 'O-A',
+        supplierId: 'SUP-A',
+        basisRows: [
+          {
+            termKey: '36_2만',
+            monthlyRent: { amount: 690000, currency: 'KRW' as const },
+            deposit: { state: 'ZERO' as const, amount: { amount: 0, currency: 'KRW' as const } },
+            attribution: {
+              status: 'PARTIAL' as const,
+              conditions: [
+                { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 36, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
+                { dimensionKey: 'annual_mileage_km', status: 'KNOWN' as const, value: 20000, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
+                { dimensionKey: 'driver_age', status: 'KNOWN' as const, value: 21, origin: 'LINKED_POLICY_FACT' as const, sourceRef: 'POL-A:basic_driver_age' },
+                { dimensionKey: 'additional_driver_count', status: 'UNKNOWN' as const, origin: 'UNRESOLVED' as const },
+              ],
+              unknownConditionKeys: ['additional_driver_count'],
+              monthlyRentOrigin: { origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
+              depositOrigin: { origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
+            },
+          },
+          {
+            termKey: '48_2만',
+            monthlyRent: { amount: 650000, currency: 'KRW' as const },
+            deposit: { state: 'UNKNOWN' as const },
+            attribution: {
+              status: 'PARTIAL' as const,
+              conditions: [
+                { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 48, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+              ],
+              unknownConditionKeys: ['additional_driver_count'],
+              monthlyRentOrigin: { origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+              depositOrigin: { origin: 'UNRESOLVED' as const },
+            },
+          },
+        ],
+        listing: {
+          strategy: 'LOWEST_BASIS_MONTHLY_RENT' as const,
+          termKey: '48_2만',
+          monthlyRent: { amount: 650000, currency: 'KRW' as const },
+          deposit: { state: 'UNKNOWN' as const },
+          attribution: {
+            status: 'PARTIAL' as const,
+            conditions: [
+              { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 48, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+            ],
+            unknownConditionKeys: ['additional_driver_count'],
+            monthlyRentOrigin: { origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '48_2만' },
+            depositOrigin: { origin: 'UNRESOLVED' as const },
+          },
+        },
+        conditionSummary: {
+          known: [
+            { dimensionKey: 'term_months', status: 'KNOWN' as const, value: 36, origin: 'CANONICAL_PRICE_TERM' as const, sourceRef: '36_2만' },
+          ],
+          unknown: ['additional_driver_count'],
+        },
+        preview: {
+          status: 'READY' as const,
+          selection: { termMonths: 36, mileageKmPerYear: 20000, driverAge: 21, additionalDriverCount: 0, options: {} },
+          basisTermKey: '36_2만',
+          monthlyRent: { amount: 700000, currency: 'KRW' as const },
+          deposit: { state: 'ZERO' as const, amount: { amount: 0, currency: 'KRW' as const } },
+          decisions: [],
+          invalidFacts: [],
+        },
+        review: { status: 'READY' as const, decisions: [], invalidFacts: [] },
+      },
     },
     {
       offerId: 'O-B', offerRevision: 2, supplierId: 'SUP-B',
@@ -49,6 +117,15 @@ test('FreePass Data mapper preserves multi-supplier Offers and unknown deposit s
   assert.deepEqual(product.offers.slice(0, 2).map((o) => o.offerRevision), [3,3]);
   assert.deepEqual(product.offers.slice(0, 2).map((o) => o.policyState), ['COMPLETE','COMPLETE']);
   assert.equal(product.offers[0]?.deposit, 0);
+  assert.equal(product.offers[0]?.monthlyRent, 690000);
+  assert.equal(product.offers[0]?.basisMonthlyRent, 690000);
+  assert.equal(product.offers[0]?.previewMonthlyRent, 700000);
+  assert.equal(product.offers[0]?.isDefaultPreview, true);
+  assert.equal(product.offers[0]?.isListingPrice, false);
+  assert.equal(product.offers[1]?.isListingPrice, true);
+  assert.equal(product.offers[0]?.conditionStatus, 'PARTIAL');
+  assert.deepEqual(product.offers[0]?.unknownConditionKeys, ['additional_driver_count']);
+  assert.equal(product.offers[0]?.conditionEvidence?.find((x) => x.dimensionKey === 'driver_age')?.origin, 'LINKED_POLICY_FACT');
   assert.equal(product.offers[1]?.deposit, undefined);
   assert.equal(product.offers[2]?.deposit, undefined);
   assert.equal(product.consumerPrice, 48_000_000);

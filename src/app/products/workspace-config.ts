@@ -14,7 +14,12 @@ import { won } from '../_fn/fmt';
 export function lead(offers: Offer[]): Offer | undefined {
   const plain = offers.filter((o) => !o.id.includes('인수형'));
   const pool = plain.length ? plain : offers;
-  return pool.reduce<Offer | undefined>((a, b) => (!a || b.monthlyRent < a.monthlyRent ? b : a), undefined);
+  const listing = pool.find((o) => o.isListingPrice);
+  if (listing) return listing;
+  return pool.reduce<Offer | undefined>(
+    (a, b) => (!a || b.monthlyRent < a.monthlyRent ? b : a),
+    undefined,
+  );
 }
 
 /** 지금 나갈 수 있는 것이 앞. */

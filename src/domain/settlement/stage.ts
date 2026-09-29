@@ -79,6 +79,16 @@ type R = Pick<SettlementRow, 'payKind' | 'receivedAt' | 'supplier'> & {
 };
 const deliveredDay = (r: R) => (r.progress.delivered ? dateOf(r.progress.deliveredAt) : null);
 
+/**
+ * 실적이 귀속되는 달은 접수월이 아니라 실제 인도월이다.
+ * 오래전에 접수한 행을 오늘 인도완료 처리해도 오늘의 분납/완납 실적에서 빠지지 않아야 한다.
+ * 인도일이 없거나 깨졌으면 임의로 접수월에 넣지 않고 null로 닫는다.
+ */
+export const performanceMonth = (r: R): string | null => {
+  const d = deliveredDay(r);
+  return d ? ym(d) : null;
+};
+
 export function invalidPaidRounds(r: R): boolean {
   if (r.paidRounds === null || r.paidRounds === undefined) return false;
   const n = roundsOf(r.payKind);

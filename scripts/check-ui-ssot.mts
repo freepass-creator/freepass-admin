@@ -834,8 +834,8 @@ for (const [re, label] of cardLineContractBaseline) {
 }
 
 const cardPriorityBaseline = [
-  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product card term/deposit priority line'],
-  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product list natural monthly rent display'],
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{txt\(p\.supplierName \?\? p\.supplierId\)\}/, 'product card support stays non-pricing'],
+  ['src/app/_erp/ProductsScreen.tsx', /amount=\{`월 \$\{manWon\(offer\.monthlyRent\)\} 원`\}/, 'product list shows monthly rent only'],
 ] as const;
 for (const [file, re, label] of cardPriorityBaseline) {
   const src = await readSource(file);
@@ -857,7 +857,7 @@ for (const [file, re, label] of listAmountLanguageBaseline) {
 
 const cardInformationMatrixBaseline = [
   ['src/app/_erp/ProductsScreen.tsx', /subId=\{txt\(p\.registration\?\.vehicleNumber\)\} sub=\{txt\(p\.productKind\)\}/, 'product key line'],
-  ['src/app/_erp/ProductsScreen.tsx', /meta=\{`\$\{offer\.termMonths\}개월 · 보증 /, 'product support line'],
+  ['src/app/_erp/ProductsScreen.tsx', /meta=\{txt\(p\.supplierName \?\? p\.supplierId\)\}/, 'product support line stays supplier-only'],
   ['src/app/_erp/Workspace.tsx', /subId=\{txt\(r\.plate\)\} sub=\{`\$\{txt\(r\.model\)\} · \$\{txt\(r\.product\)\} · \$\{r\.term \?\? '—'\}개월`\}/, 'intake/performance key line'],
   ['src/app/_erp/Workspace.tsx', /meta=\{`수수료 청구 /, 'intake/performance support line'],
   ['src/app/_erp/SettlementScreen.tsx', /sub=\{`\$\{name\} \$\{g\.done\}\/\$\{g\.lines\.length\}`\}/, 'settlement group key line'],
@@ -941,7 +941,7 @@ const crossShellListParityBaseline = [
   ['src/app/_design/ListRow.tsx', /mainValue\?: ReactNode/, 'mobile main-right primary value slot'],
   ['src/app/products/workspace.tsx', /mainValue=\{o \? `월 /, 'mobile product monthly rent main value'],
   ['src/app/products/workspace.tsx', /meta=\{\[txt\(p\.registration\?\.vehicleNumber\), txt\(p\.productKind\)(?:, txt\(p\.status\))?\]/, 'mobile product key line'],
-  ['src/app/products/workspace.tsx', /value=\{o \? `\$\{o\.termMonths\}개월 · 보증 /, 'mobile product support line'],
+  ['src/app/products/workspace.tsx', /value=\{o \? txt\(o\.supplierName \?\? o\.supplierId \?\? p\.supplierName \?\? p\.supplierId\) : '—'\}/, 'mobile product support line stays supplier-only'],
   ['src/app/products/workspace.tsx', /mainValue=\{r\.rent \? `월 /, 'mobile intake monthly rent main value'],
   ['src/app/products/workspace.tsx', /value=\{`청구 \$\{r\.money\.claim/, 'mobile intake exact fee support'],
   ['src/app/settlement/page.tsx', /mainValue=\{tab === 'claim'/, 'mobile settlement active-axis main fee'],

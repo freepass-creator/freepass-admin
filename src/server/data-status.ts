@@ -1,4 +1,4 @@
-import { ERP5_PROJECT_ID, erp5Ready, writeGate } from './erp5';
+import { erp5Ready, writeGate } from './erp5';
 import { esign } from './esign';
 import { adminCatalogListFresh, adminCatalogStatus } from './freepass-data';
 import { contracts, settlements } from './erp5';
@@ -41,8 +41,8 @@ export async function adminDataStatus() {
     schema: 'freepass-admin-data-runtime/v2',
     authority: 'FREEPASS_DATA' as const,
     catalog,
-    /** Transitional Admin workflow store and Catalog legacy bridge physical project. */
-    project: ERP5_PROJECT_ID,
+    /** Admin runtime knows the FreePass Data boundary, not Firebase collection topology. */
+    project: 'freepass-data',
     credential,
     writeEnabled: gate.enabled,
     writeGate: {

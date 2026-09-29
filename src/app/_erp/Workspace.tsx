@@ -15,7 +15,7 @@ import { 많은순 } from '../products/workspace-config';
 import { standingFixed, tallyMatch } from '../_design/facet-standing';
 import { FilterSheet, type FacetAxis } from '../_design/FilterSheet';
 import { 고른값 } from '../_design/pick';
-import { BUCKETS, bucketOf, type Bucket } from '../../domain/settlement/stage';
+import { BUCKETS, bucketOf, performanceMonth, type Bucket } from '../../domain/settlement/stage';
 import { sortIntakeRows } from '../../domain/settlement/intake-list';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { NewIntakePanel } from '../intake/panels';
@@ -215,14 +215,14 @@ async function PerformanceWorkspace({ q }: { q: Q }) {
   const icId = sp(q.ic);
   const cur = icId ? rows.find((r) => r.id === icId) : undefined;
 
-  /* 실적월 — 그 접수가 들어온 달(receivedAt). 정산의 청구월(billingMonthIn)과는 다른 개념이라
-   * 갖다 쓰지 않는다 — 청구월 기준으로 걸렀더니 분납·완납 실적 대부분이 0건으로 사라졌다(실적은
-   * "인도 후 완납/분납" 상태고 청구월은 그중 하나의 부분집합일 뿐이라 서로 안 맞았다). 드롭다운은
+  /* 실적월 — 실제 인도월. 청구월(billingMonthIn)과는 다른 개념이라 갖다 쓰지 않는다.
+   * 접수월을 쓰면 과거에 접수한 차량을 지금 인도완료 처리했을 때 현재 실적에서 사라져 보인다.
+   * 드롭다운은
    * 검색창이 아니라 퀵 필터 줄에 선다(대표 2026-09-24 「그 드랍다운은 퀵필터라고 생각을 하고 퀵필터
    * 라인에 있어야 돼」).
    */
   const nowMonth = today().slice(0, 7);
-  const rowMonth = (r: SettlementRow) => r.receivedAt?.slice(0, 7) ?? '';
+  const rowMonth = (r: SettlementRow) => performanceMonth(r) ?? '';
   const 실적후보 = searched.filter((r) => bucketOf(r, now) === '분납실적' || bucketOf(r, now) === '완납실적');
   const months = [...new Set(실적후보.map(rowMonth).filter(Boolean))].sort((a, b) => b.localeCompare(a));
   const month = sp(q.month) || months.find((m) => m <= nowMonth) || months[0] || nowMonth;

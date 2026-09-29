@@ -1,4 +1,5 @@
 import type { CanonicalProduct } from '../../domain/product/types';
+import { freepassDataCloudRunHeaders } from './cloud-run-auth';
 import { indexMaster, type VehicleMasterNode } from '../../domain/product/master-match';
 import type { Erp5ReadReport, SkipTally } from '../erp5/product-repository';
 import { toCanonicalProduct, type Erp5Doc } from '../erp5/to-canonical';
@@ -106,7 +107,7 @@ export class FreePassDataAdminCompatProductRepository {
     const { base, token } = config();
     const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/catalog-compat`, {
       method: 'GET',
-      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      headers: { ...(await freepassDataCloudRunHeaders(base)), authorization: `Bearer ${token}`, accept: 'application/json' },
       cache: 'no-store',
       signal: AbortSignal.timeout(8_000),
     });

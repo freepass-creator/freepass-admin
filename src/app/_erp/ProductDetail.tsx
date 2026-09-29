@@ -4,11 +4,110 @@
  *   새로 그리지 않는다). 원래 Workspace.tsx 안에 있던 것을 그대로 뽑았다 — 모양 · 계산 전부 그대로.
  */
 import Link from 'next/link';
-import type { CanonicalProduct, Offer } from '../../domain/product/types';
+import type { CanonicalProduct, CommercialConditionEvidence, Offer } from '../../domain/product/types';
 import { txt } from '../_fn/fmt';
 import { Badge, hrefWith, PanelBody, PanelFoot, PanelHead, PanelState, won0, type Tone } from './parts';
+import { 보증금 } from '../products/workspace-config';
 
 type Q = Record<string, string | string[] | undefined>;
+
+const CONDITION_LABEL: Record<string, string> = {
+  term_months: '기간',
+  annual_mileage_km: '약정 주행거리',
+  driver_age: '기본 운전자 연령',
+  additional_driver_count: '추가운전자 기본 포함',
+  personal_driver_scope: '개인 운전자 범위',
+  business_driver_scope: '법인 운전자 범위',
+  license_period: '면허 경력',
+  insurance_included: '보험',
+  property_compensation_limit: '대물 한도',
+  injury_compensation_limit: '대인 한도',
+  self_body_accident_limit: '자기신체사고',
+  uninsured_damage_limit: '무보험차상해',
+  own_damage_compensation: '자차 보상',
+  own_damage_repair_ratio: '자차 자기부담률',
+  own_damage_min_deductible: '자차 최소면책',
+  own_damage_max_deductible: '자차 최대면책',
+  maintenance_service: '정비',
+  roadside_assistance: '긴급출동',
+  replacement_car: '대차',
+  settlement_type: '만기 방식',
+};
+
+const ORIGIN_LABEL: Record<CommercialConditionEvidence['origin'], string> = {
+  SOURCE_PRICE_KEY: '원천 가격키',
+  CANONICAL_PRICE_TERM: '가격 원천',
+  LINKED_POLICY_FACT: '연결 정책',
+  MATCHED_POLICY_FACT: '역매칭 정책',
+  UNRESOLVED: '미확인',
+};
+
+const conditionValue = (condition: CommercialConditionEvidence) => {
+  const value = condition.value;
+  if (value === undefined) return '—';
+  if (condition.dimensionKey === 'annual_mileage_km' && typeof value === 'number') {
+    return `연 ${value.toLocaleString('ko-KR')}km`;
+  }
+  if (condition.dimensionKey === 'term_months' && typeof value === 'number') return `${value}개월`;
+  if (Array.isArray(value)) return value.join(' · ');
+  return String(value);
+};
+
+const knownCondition = (offer: Offer, key: string) =>
+  offer.conditionEvidence?.find((item) => item.dimensionKey === key && item.status === 'KNOWN');
+
+const compactMoney = (value: number) => {
+  if (value >= 100_000_000 && value % 100_000_000 === 0) return `${value / 100_000_000}억`;
+  if (value >= 10_000 && value % 10_000 === 0) return `${value / 10_000}만원`;
+  return `${value.toLocaleString('ko-KR')}원`;
+};
+
+const insuranceSummary = (offer: Offer) => {
+  const evidence = knownCondition(offer, 'insurance_included');
+  if (!evidence) return offer.unknownConditionKeys?.includes('insurance_included') ? '보험 미확인' : null;
+  const value = evidence.value;
+  if (value === true) return '보험 포함';
+  if (value === false) return '보험 별도';
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  if (/미포함|별도|불포함/.test(text)) return '보험 별도';
+  if (/포함/.test(text)) return '보험 포함';
+  return `보험 ${text}`;
+};
+
+export const salesPriceReason = (offer: Offer): string => {
+  const parts: string[] = [];
+
+  const mileage = knownCondition(offer, 'annual_mileage_km');
+  if (typeof mileage?.value === 'number') {
+    const km = mileage.value;
+    parts.push(km % 10_000 === 0 ? `연 ${km / 10_000}만km` : `연 ${km.toLocaleString('ko-KR')}km`);
+  } else if (offer.annualMileageKm) {
+    const km = offer.annualMileageKm;
+    parts.push(km % 10_000 === 0 ? `연 ${km / 10_000}만km` : `연 ${km.toLocaleString('ko-KR')}km`);
+  }
+
+  const age = knownCondition(offer, 'driver_age');
+  if (typeof age?.value === 'number') parts.push(`만${age.value}세 이상`);
+  else if (typeof age?.value === 'string' && age.value.trim()) parts.push(age.value.trim());
+
+  const insurance = insuranceSummary(offer);
+  if (insurance) parts.push(insurance);
+
+  const property = knownCondition(offer, 'property_compensation_limit');
+  if (typeof property?.value === 'number') parts.push(`대물 ${compactMoney(property.value)}`);
+  else if (typeof property?.value === 'string' && property.value.trim()) parts.push(`대물 ${property.value.trim()}`);
+
+  const maintenance = knownCondition(offer, 'maintenance_service');
+  if (typeof maintenance?.value === 'string' && maintenance.value.trim()) {
+    parts.push(`정비 ${maintenance.value.trim()}`);
+  }
+
+  if (!insurance && offer.unknownConditionKeys?.includes('insurance_included')) parts.push('보험 미확인');
+
+  return parts.slice(0, 5).join(' · ');
+};
+
 export const STATUS_TONE: Record<string, Tone> = { 즉시출고: 'ok', 출고가능: 'info', 출고협의: 'warn', 출고불가: 'err' };
 export const carName = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId;
 
@@ -58,15 +157,25 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                 {selOffers.map((o) => {
                   const selected = selOffer?.id === o.id;
                   const support = [
-                    o.deposit ? `보증금 ${won0(o.deposit)}원` : '보증금 없음',
+                    `보증금 ${보증금(o.deposit)}`,
                     o.prepayment ? `선납금 ${won0(o.prepayment)}원` : null,
-                    o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : null,
+                    salesPriceReason(o) || null,
+                    o.isDefaultPreview && o.previewMonthlyRent !== undefined && o.previewMonthlyRent !== o.monthlyRent
+                      ? `기본조건 산출 월 ${won0(o.previewMonthlyRent)}원`
+                      : null,
+                    o.conditionStatus === 'PARTIAL'
+                      ? `조건 ${o.unknownConditionKeys?.length ?? 0}개 미확인`
+                      : null,
                   ].filter(Boolean).join(' · ');
                   return (
                     <Link key={o.id} className="erp-offer-card" role="listitem"
                       aria-current={selected ? 'true' : undefined}
                       href={hrefWith(base, q, { offer: o.id })}>
-                      <strong className="erp-offer-term">{o.termMonths}개월</strong>
+                      <strong className="erp-offer-term">
+                        {o.termMonths}개월
+                        {o.isListingPrice ? <> <Badge tone="ok">최저가</Badge></> : null}
+                        {o.isDefaultPreview ? <> <Badge tone="info">기본조건</Badge></> : null}
+                      </strong>
                       <b className="erp-offer-rent">{won0(o.monthlyRent)}원/월</b>
                       <span className="erp-offer-conditions">{support}</span>
                     </Link>
@@ -74,6 +183,43 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
                 })}
               </div>
             </div>
+
+
+            {selOffer?.conditionEvidence?.length ? (
+              <div>
+                <p className="erp-subtitle">선택한 대여료 구성</p>
+                <div className="erp-tile-group">
+                  <div className="erp-info-card erp-tile">
+                    <h3 className="erp-tile-title">
+                      {selOffer.termMonths}개월 · 월 {won0(selOffer.monthlyRent)}원
+                      {selOffer.isListingPrice ? ' · 최저가' : ''}
+                      {selOffer.isDefaultPreview ? ' · 기본조건' : ''}
+                    </h3>
+                    <dl>
+                      <div><dt>월 대여료</dt><dd>{won0(selOffer.monthlyRent)}원</dd></div>
+                      <div><dt>보증금</dt><dd>{보증금(selOffer.deposit)}</dd></div>
+                      {selOffer.conditionEvidence.filter((item) => item.status === 'KNOWN').map((item) => (
+                        <div key={item.dimensionKey}>
+                          <dt>{CONDITION_LABEL[item.dimensionKey] ?? item.dimensionKey}</dt>
+                          <dd>
+                            {conditionValue(item)}
+                            <span className="erp-condition-origin"> · {ORIGIN_LABEL[item.origin]}</span>
+                          </dd>
+                        </div>
+                      ))}
+                      {(selOffer.unknownConditionKeys ?? []).length ? (
+                        <div>
+                          <dt>아직 모르는 조건</dt>
+                          <dd>{(selOffer.unknownConditionKeys ?? []).map((key) => CONDITION_LABEL[key] ?? key).join(' · ')}</dd>
+                        </div>
+                      ) : (
+                        <div><dt>조건 확인</dt><dd>이 대여료의 기준조건 확인 완료</dd></div>
+                      )}
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {(sel.p.perks ?? []).length ? (
               <div>

@@ -1,5 +1,5 @@
 import type { PolicyValue } from '../product/types';
-import type { ContractPaymentFact } from '../contracts/payment';
+import type { ContractPaymentDispositionState, ContractPaymentFact } from '../contracts/payment';
 
 /**
  * 실적 한 줄 — ERP5 `settlement_rows` 461줄을 실측해 세운 꼴.
@@ -197,6 +197,7 @@ export interface SettlementRow {
   esignContractId?: Maybe<string>;
   /** 고객에게 실제로 받은 계약금. 차량 보증금(deposit)·선납(prepaid)과 다른 사실이다. */
   contractPayment?: ContractPaymentFact | null;
+  contractPaymentDisposition?: ContractPaymentDispositionState;
   contractCancelledAt?: Maybe<number>;
   contractCancellationReason?: Maybe<string>;
   contractCancellationOperationId?: Maybe<string>;

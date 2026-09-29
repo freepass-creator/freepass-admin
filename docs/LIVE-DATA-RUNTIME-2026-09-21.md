@@ -1,6 +1,6 @@
 # FreePass Admin Live Data Runtime — 2026-09-25 authority correction
 
-Status: **FREEPASS DATA CONSUMER BOUNDARY CODED / ADMIN CATALOG CUTOVER HOLD**
+Status: **FREEPASS DATA BUSINESS-DATA TRANSPORT CODED / ADMIN CATALOG SEMANTIC CUTOVER HOLD**
 
 ## Authority
 
@@ -19,18 +19,27 @@ Admin public contract가 아니며 UI/use case가 직접 의존하지 않는다.
 /products + /intake product panels
   -> AdminCatalogReader (authority: FreePass Data)
       -> OBSERVE
-          -> Legacy ERP5 product bridge (temporary read-only)
+          -> FreePass Data compatibility transport
       -> SHADOW_READ / PARITY_VERIFIED / FREEPASS_DATA_READ
-          -> HOLD until Admin-specific FreePass Data contract exists
+          -> approved Admin projection when semantic cutover evidence exists
 
 /intake workflow
-  -> Erp5SettlementRepository -> settlement_rows + events
+  -> Erp5SettlementRepository (Admin business semantics)
+  -> FreePass Data admin-workflow/read|commit
+  -> settlement rows + events
 
 /settlement workflow
-  -> Erp5SettlementRepository -> rows/clawbacks/invoices/cash events
+  -> Erp5SettlementRepository (Admin business semantics)
+  -> FreePass Data admin-workflow/read|commit
+  -> rows/clawbacks/invoices/cash events
+
+/contracts
+  -> Erp5ContractRepository
+  -> FreePass Data admin-workflow/read|commit
 
 /esign
-  -> Erp5ContractRepository + EsignService -> contract/session/private/assets
+  -> document/session persistence through FreePass Data workflow gateway
+  -> binary Storage remains disabled in production while ESIGN_ENABLED=off
 ```
 
 Catalog read cutover and Admin workflow persistence/writer cutover are separate operations.
@@ -54,18 +63,19 @@ instead of silently returning legacy data and pretending the requested stage is 
 This follows the central FreePass Data switchboard:
 `LEGACY_DIRECT -> OBSERVE -> SHADOW_READ -> PARITY_VERIFIED -> FREEPASS_DATA_READ`.
 
-## Transitional physical binding
+## Operational transport binding
 
-The legacy Catalog bridge and current Admin workflow adapters use the `freepasserp5` Firebase project.
+FreePass Admin does not hold the business-data Firebase credential.
 
-Read credential:
-- `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON`, or
-- `ERP5_SERVICE_ACCOUNT_PATH`
+Required Admin transport bindings:
+- `FREEPASS_DATA_BASE_URL`
+- `FREEPASS_DATA_ADMIN_CATALOG_TOKEN`
 
-Write gate for Admin workflow adapters:
-- `ERP5_WRITE=on`
+Workflow writes are double-gated:
+- Admin: `ERP5_WRITE=on` + `FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on`
+- FreePass Data runtime: `FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on`
 
-These keys do **not** make freepasserp5 the Catalog authority.
+Firestore IAM, physical collection names, audit persistence and backup/restore evidence belong to the FreePass Data control plane. Local Firestore emulator access remains isolated test-only behavior.
 
 ## Runtime proof
 
@@ -76,8 +86,8 @@ It reports separately:
 - Admin Catalog read mode
 - current Catalog serving path (legacy bridge vs FreePass Data)
 - Catalog HOLD reasons
-- transitional Firebase project/credential state
-- Admin workflow write gate
+- FreePass Data workflow transport readiness
+- Admin/Data workflow write gate
 - product/intake/clawback/cash/contract read probes
 
 ## Regression guard

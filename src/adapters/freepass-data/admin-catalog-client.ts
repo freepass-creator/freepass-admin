@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { freepassDataCloudRunHeaders } from './cloud-run-auth';
 import { z } from 'zod';
 import type { CanonicalProduct, Offer, PolicyValue } from '../../domain/product/types';
 
@@ -31,6 +32,87 @@ const PriceTerm = z.object({
     ctx.addIssue({ code: 'custom', message: 'unknown/not-applicable deposit cannot carry amount' });
   }
 });
+
+const CommercialFactValue = z.union([z.boolean(), z.number(), z.string(), z.array(z.string())]);
+const CommercialConditionEvidence = z.object({
+  dimensionKey: z.string().min(1),
+  status: z.enum(['KNOWN','UNKNOWN']),
+  value: CommercialFactValue.optional(),
+  origin: z.enum([
+    'SOURCE_PRICE_KEY','CANONICAL_PRICE_TERM','LINKED_POLICY_FACT','MATCHED_POLICY_FACT','UNRESOLVED',
+  ]),
+  sourceRef: z.string().optional(),
+});
+const CommercialPolicyMatch = z.object({
+  status: z.enum(['UNIQUE_MATCH','AMBIGUOUS','NO_MATCH','INSUFFICIENT_EVIDENCE']),
+  matchedPolicyId: z.string().optional(),
+  candidatePolicyIds: z.array(z.string()),
+  matchedDimensionKeys: z.array(z.string()),
+  sourceRefs: z.array(z.string()),
+});
+const CommercialDeposit = z.object({
+  state: z.enum(['KNOWN','ZERO','UNKNOWN','NOT_APPLICABLE']),
+  amount: Money.optional(),
+});
+const CommercialAttribution = z.object({
+  status: z.enum(['COMPLETE','PARTIAL']),
+  conditions: z.array(CommercialConditionEvidence),
+  unknownConditionKeys: z.array(z.string()),
+  policyMatch: CommercialPolicyMatch.optional(),
+  monthlyRentOrigin: z.object({
+    origin: z.literal('CANONICAL_PRICE_TERM'),
+    sourceRef: z.string().min(1),
+  }),
+  depositOrigin: z.object({
+    origin: z.enum(['CANONICAL_PRICE_TERM','UNRESOLVED']),
+    sourceRef: z.string().optional(),
+  }),
+});
+const CommercialSelection = z.object({
+  termMonths: z.number().int().positive().optional(),
+  mileageKmPerYear: z.number().int().positive().optional(),
+  driverAge: z.number().int().positive().optional(),
+  additionalDriverCount: z.number().int().nonnegative().optional(),
+  options: z.record(z.string(), CommercialFactValue),
+});
+const CommercialPreview = z.object({
+  status: z.enum(['READY','NEEDS_DECISION','INVALID']),
+  selection: CommercialSelection,
+  basisTermKey: z.string().optional(),
+  monthlyRent: Money.optional(),
+  deposit: CommercialDeposit.optional(),
+  decisions: z.array(z.string()),
+  invalidFacts: z.array(z.string()),
+});
+const CommercialOffer = z.object({
+  offerId: z.string().min(1),
+  supplierId: z.string().min(1),
+  policyId: z.string().optional(),
+  basisRows: z.array(z.object({
+    termKey: z.string().min(1),
+    monthlyRent: Money,
+    deposit: CommercialDeposit,
+    attribution: CommercialAttribution,
+  })),
+  listing: z.object({
+    strategy: z.literal('LOWEST_BASIS_MONTHLY_RENT'),
+    termKey: z.string().min(1),
+    monthlyRent: Money,
+    deposit: CommercialDeposit,
+    attribution: CommercialAttribution,
+  }),
+  conditionSummary: z.object({
+    known: z.array(CommercialConditionEvidence),
+    unknown: z.array(z.string()),
+  }),
+  preview: CommercialPreview,
+  review: z.object({
+    status: z.enum(['READY','NEEDS_DECISION','INVALID']),
+    decisions: z.array(z.string()),
+    invalidFacts: z.array(z.string()),
+  }),
+});
+
 const DataOffer = z.object({
   offerId: z.string().min(1),
   offerRevision: z.number().int().positive(),
@@ -40,6 +122,7 @@ const DataOffer = z.object({
   policyValues: z.array(PolicyValueSchema),
   invalidPolicyFactRefs: z.array(z.string()),
   priceTerms: z.array(PriceTerm).min(1),
+  commercial: CommercialOffer.optional(),
 }).passthrough();
 const DataProduct = z.object({
   productId: z.string().min(1),
@@ -84,6 +167,8 @@ const ResponseSchema = z.object({
     policyParity: z.enum(['COMPLETE','INCOMPLETE']),
     missingPolicyOfferIds: z.array(z.string()),
     invalidPolicyFactRefs: z.array(z.string()),
+    commercialCoverage: z.enum(['COMPLETE','INCOMPLETE']).optional(),
+    commercialMissingOfferIds: z.array(z.string()).optional(),
   }).passthrough(),
 }).passthrough();
 
@@ -124,6 +209,7 @@ function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
       policyState: offer.policyState,
       invalidPolicyFactRefs: [...offer.invalidPolicyFactRefs].sort(),
       policyValues: policySnapshotFacts(offer.policyValues),
+      commercial: offer.commercial ?? null,
       priceTerms: offer.priceTerms.map((term) => ({
         termKey: term.termKey,
         termMonths: term.termMonths,
@@ -138,20 +224,58 @@ function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
 }
 
 function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
-  const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => ({
-    id: `${offer.offerId}#${term.termKey}`,
-    sourceOfferId: offer.offerId,
-    ...(offer.policyId ? { policyId: offer.policyId } : {}),
-    offerRevision: offer.offerRevision,
-    policyState: offer.policyState,
-    supplierId: offer.supplierId,
-    termMonths: term.termMonths,
-    monthlyRent: term.monthlyRent.amount,
-    ...(term.depositState === 'KNOWN' || term.depositState === 'ZERO' ? { deposit: term.deposit?.amount } : {}),
-    ...(term.mileageLimitKmPerYear !== null && term.mileageLimitKmPerYear !== undefined
-      ? { annualMileageKm: term.mileageLimitKmPerYear } : {}),
-    policyValues: policyCopy(offer.policyValues),
-  })));
+  const offers: Offer[] = source.offers.flatMap((offer) => offer.priceTerms.map((term) => {
+    const commercial = offer.commercial;
+    const basisRow = commercial?.basisRows.find((row) => row.termKey === term.termKey);
+    const isListingPrice = commercial?.listing.termKey === term.termKey;
+    const isDefaultPreview = commercial?.preview.basisTermKey === term.termKey;
+    const previewReady = isDefaultPreview && commercial?.preview.status === 'READY';
+    const previewRent = previewReady ? commercial?.preview.monthlyRent?.amount : undefined;
+    const previewDeposit = previewReady
+      && (commercial?.preview.deposit?.state === 'KNOWN' || commercial?.preview.deposit?.state === 'ZERO')
+      ? commercial.preview.deposit.amount?.amount
+      : undefined;
+
+    return {
+      id: `${offer.offerId}#${term.termKey}`,
+      sourceOfferId: offer.offerId,
+      ...(offer.policyId ? { policyId: offer.policyId } : {}),
+      offerRevision: offer.offerRevision,
+      policyState: offer.policyState,
+      termKey: term.termKey,
+      supplierId: offer.supplierId,
+      termMonths: term.termMonths,
+      monthlyRent: term.monthlyRent.amount,
+      basisMonthlyRent: term.monthlyRent.amount,
+      ...(term.depositState === 'KNOWN' || term.depositState === 'ZERO'
+        ? { deposit: term.deposit?.amount }
+        : {}),
+      ...((term.depositState === 'KNOWN' || term.depositState === 'ZERO') && term.deposit
+        ? { basisDeposit: term.deposit.amount }
+        : {}),
+      ...(previewRent !== undefined ? { previewMonthlyRent: previewRent } : {}),
+      ...(previewDeposit !== undefined ? { previewDeposit } : {}),
+      ...(term.mileageLimitKmPerYear !== null && term.mileageLimitKmPerYear !== undefined
+        ? { annualMileageKm: term.mileageLimitKmPerYear } : {}),
+      ...(commercial ? {
+        isListingPrice,
+        isDefaultPreview,
+        commercialStatus: commercial.preview.status,
+      } : {}),
+      ...(basisRow ? {
+        conditionStatus: basisRow.attribution.status,
+        conditionEvidence: basisRow.attribution.conditions.map((item) => ({
+          ...item,
+          ...(Array.isArray(item.value) ? { value: [...item.value] } : {}),
+        })),
+        unknownConditionKeys: [...basisRow.attribution.unknownConditionKeys],
+        ...(basisRow.attribution.policyMatch
+          ? { policyMatchStatus: basisRow.attribution.policyMatch.status }
+          : {}),
+      } : {}),
+      policyValues: policyCopy(offer.policyValues),
+    };
+  }));
   const supplierIds = [...new Set(source.offers.map((o) => o.supplierId))];
   const sourceSnapshotId = 'freepass-data:' + sourceSnapshotDigest(source);
   const vm = source.vehicleModel;
@@ -220,7 +344,7 @@ export class FreePassDataAdminCatalogClient {
     const { base, token } = config();
     const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/catalog`, {
       method: 'GET',
-      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      headers: { ...(await freepassDataCloudRunHeaders(base)), authorization: `Bearer ${token}`, accept: 'application/json' },
       cache: 'no-store',
       signal: AbortSignal.timeout(5_000),
     });

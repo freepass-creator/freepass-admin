@@ -177,6 +177,8 @@ test('approved board structure uses the latest desktop and mobile control scale'
   assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
   assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
   assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
+  assert.ok(boardCss.includes('.pb .facts.product-intro-card { gap:4px; }'));
+  assert.ok(boardCss.includes('.pb .product-hero-title { display:flex; align-items:center; gap:8px; min-height:0; }'));
   assert.equal(boardCss.includes('--title:15px'), false);
   assert.equal(boardCss.includes('--support:13px'), false);
   assert.equal(boardCss.includes('font-size:15px;'), false);

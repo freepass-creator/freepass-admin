@@ -11,6 +11,7 @@
 1. FreePass Data 신원 프로젝트 `freepasserp5`에 Admin 신원용 서비스계정을 별도로 준비한다. 현재 목록에는 신원 전용 계정이 없었다. 기존 ERP/업무데이터 관리자 키를 복사하거나 fallback으로 사용하지 않는다.
 2. 후보 이름 `freepass-admin-identity`; 권한 후보는 `firebaseauth.users.createSession`, `firebaseauth.users.get`, `firebaseauth.users.update`(기존 세션 취소), `datastore.entities.get`(승인문서 조회)이다. Owner/Editor/Firebase Admin/Firestore 쓰기 권한을 묶어 부여하지 않는다. Firestore IAM 문서 조회 권한은 collection 전용 격리와 같지 않으므로 해당 노출 범위는 승인 시 명시한다.
 3. 승인된 credential을 Production의 `IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON`에 Sensitive로 바인딩한다. 값은 Git/로그/문서/PR에 남기지 않고 동일 identity project인지 검증한다.
+   새 build guard는 이 설정 없이 Production build를 의도적으로 막는다. 먼저 credential을 바인딩하고 이 변경을 병합/배포하며, guard를 우회해 먼저 배포하지 않는다.
 4. `npm run deploy:check` PASS 및 승인된 source의 Production build 뒤 재배포한다. 환경 저장만으로 기존 deployment가 바뀌었다고 판단하지 않는다.
 5. 승인 계정으로 실제 로그인 → `/intake` 진입 → 새로고침 후 인증 유지까지 읽기 전용 검증한다. 고객 접수/정산 데이터는 만들거나 변경하지 않는다.
 

@@ -39,7 +39,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
 
       {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
       <header className="erp-topbar erp-std" data-region="topbar">
-        <div className="erp-brand"><Brand /></div>
+        <div className="erp-brand"><Brand tail="admin" /></div>
         {/* 상품찾기(ProductsScreen)의 검색 칸 이름과 같아야 실제로 걸린다 — pq(대표 2026-09-24
             「검색창도 검색창 옆에 필터」 작업 때 계약접수와 같은 이름(pq)으로 맞추면서, 여기 통합
             검색이 q 로 남아 있어 조용히 죽어 있었다). */}

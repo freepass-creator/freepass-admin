@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --import tsx scripts/check-deploy-env.mts --vercel-build && next build",
     "start": "next start",
     "typecheck": "npm run check:data-authority && tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",

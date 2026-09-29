@@ -3,6 +3,21 @@
 ## Principle
 코드가 존재하는 것, 테스트가 통과한 것, 배포 권한이 있는 것, 실제 운영 배포가 끝난 것은 서로 다른 상태다.
 
+## 2026-09-30 로그인 장애 복구 적용안 — PENDING PROVISIONING
+
+대상: Vercel `freepass-projects/freepass-admin`, Production, `freepass-admin.vercel.app`.
+관측 deployment: `dpl_7KJ1oaWynX5wba7v2JhccoDE9GqE`, source `932dd42`.
+
+1. FreePass Data 신원 프로젝트 `freepasserp5`에 Admin 신원용 서비스계정을 별도로 준비한다. 현재 목록에는 신원 전용 계정이 없었다. 기존 ERP/업무데이터 관리자 키를 복사하거나 fallback으로 사용하지 않는다.
+2. 후보 이름 `freepass-admin-identity`; 권한 후보는 `firebaseauth.users.createSession`, `firebaseauth.users.get`, `firebaseauth.users.update`(기존 세션 취소), `datastore.entities.get`(승인문서 조회)이다. Owner/Editor/Firebase Admin/Firestore 쓰기 권한을 묶어 부여하지 않는다. Firestore IAM 문서 조회 권한은 collection 전용 격리와 같지 않으므로 해당 노출 범위는 승인 시 명시한다.
+3. 승인된 credential을 Production의 `IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON`에 Sensitive로 바인딩한다. 값은 Git/로그/문서/PR에 남기지 않고 동일 identity project인지 검증한다.
+4. `npm run deploy:check` PASS 및 승인된 source의 Production build 뒤 재배포한다. 환경 저장만으로 기존 deployment가 바뀌었다고 판단하지 않는다.
+5. 승인 계정으로 실제 로그인 → `/intake` 진입 → 새로고침 후 인증 유지까지 읽기 전용 검증한다. 고객 접수/정산 데이터는 만들거나 변경하지 않는다.
+
+rollback: 코드 적용 실패 시 위 기존 deployment로 복귀한다(기존 로그인 장애까지 복귀함을 알린다). 새 credential 적용이 문제면 해당 바인딩과 새 서비스계정 키만 회수한다. 사용자 계정/승인문서를 삭제하거나 인증을 끄지 않는다.
+
+실행 전에는 새 IAM/credential 범위와 운영 배포에 대한 직전 승인을 확인한다.
+
 ## Required gates
 
 ### G1 — Source gate

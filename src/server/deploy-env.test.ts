@@ -2,6 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { checkDeployEnv } from './deploy-env';
 import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+test('actual production build command stops when identity configuration is missing', () => {
+  const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
+  assert.match(scripts.build, /^node --import tsx scripts\/check-deploy-env\.mts --vercel-build && next build$/);
+  const env: NodeJS.ProcessEnv = { ...process.env, VERCEL_ENV: 'production' };
+  delete env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON;
+  const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/check-deploy-env.mts', '--vercel-build'], { env, encoding: 'utf8' });
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stdout, /ERROR IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON/);
+});
 
 const identitySa = JSON.stringify({
   project_id: 'freepasserp5',

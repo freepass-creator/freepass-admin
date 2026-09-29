@@ -1,3 +1,15 @@
+## 0-LOGIN-REPAIR. 2026-09-30 — 운영 로그인 장애 수정 준비
+
+- 목적: 운영 로그인 복구, `freepass admin` 앱 이름 복원, 설정 누락 재배포 차단.
+- 기준 revision: `932dd42f71d5a33b8794f9523cecff11702eefa1`; work branch `work/freepass-admin/login-repair-20260930`.
+- 운영 관측: 브라우저 비밀번호 인증 이후 `/api/session` 401. Production deployment와 프로젝트 설정 모두 신원 전용 서버 자격증명이 빠져 있음. 사용자 비밀번호/토큰은 기록하지 않음.
+- 변경: 로그인·내부 내비게이션 앱 이름, 신원 설정 누락 503 안내, Production build preflight, 기존 인증 emulator CI 여정 연결, 회귀 검사.
+- 검증: 관련 검사 64건, typecheck, UI SSOT, build PASS. 로컬 actual `/login` 렌더와 브라우저 오류 0 확인. 전체 테스트의 Windows Chromium 환경 실패는 별도이며 운영 복구 PASS로 간주하지 않음.
+- 남음: 전용 신원 서비스계정/권한 provisioning, Production secret 바인딩, 재배포 및 승인된 계정의 실제 로그인 확인. 기존 업무데이터 관리자 키로 대체하지 않음.
+- next_start_here: `docs/RELEASE.md`의 로그인 장애 복구 적용안과 PR 검증을 확인한 후 승인된 운영 provisioning을 진행한다. 현재 단계는 운영 복구 완료가 아니다.
+
+---
+
 ## 0-CATALOG-PARITY. 2026-09-29 — 운영 읽기 전용 parity 증거 경로
 
 - Catalog serving mode는 계속 `OBSERVE`이며 사용자 상품 결과를 바꾸지 않는다.

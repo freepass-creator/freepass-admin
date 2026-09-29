@@ -90,6 +90,12 @@ jobs:
           npx --yes firebase-tools@15.30.2 emulators:exec --config firebase.release-test.json --only firestore,storage --project freepasserp5 \
             'npm run test:freepass-data-firestore && npx tsx scripts/verify-esign-pdf-emulator.mts' \
             2>&1 | tee artifacts/operational-persistence/emulators.log
+      - name: Shared identity journey (emulators only)
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@15.30.2 emulators:exec --only auth,firestore --project freepasserp5 \
+            'npm run test:identity-journey' \
+            2>&1 | tee artifacts/operational-persistence/identity.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

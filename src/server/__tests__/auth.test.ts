@@ -1,6 +1,25 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { isPublicPath, looksLikeSession } from '../auth.js';
+import { NextRequest } from 'next/server';
+import { POST } from '../../app/api/session/route';
+
+it('missing server identity configuration returns 503 without a session or secrets', async () => {
+  const key = 'IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON';
+  const previous = process.env[key];
+  delete process.env[key];
+  try {
+    const response = await POST(new NextRequest('https://admin.example.test/api/session', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ idToken: 'untrusted-test-token' }),
+    }));
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('set-cookie'), null);
+    assert.deepEqual(await response.json(), { error: 'IDENTITY_NOT_CONFIGURED' });
+  } finally {
+    if (previous === undefined) delete process.env[key]; else process.env[key] = previous;
+  }
+});
 
 describe('로그인 없이 열리는 길', () => {
   it('청구 링크 · 고객 전자계약 · 사진 · 글꼴 · 로그인은 공개한다', () => {

@@ -67,7 +67,7 @@ const cases = [
   { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
   { name: 'settlement-desktop-1280', route: '/settlement', width: 1280, height: 800 },
   { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
-  { name: 'products-empty-desktop-1280', route: '/products?pq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'products-empty-desktop-1280', route: '/products?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'intake-empty-desktop-1280', route: '/intake?wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'performance-empty-desktop-1280', route: '/intake?wiv=실적&wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'esign-empty-desktop-1280', route: '/esign?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
@@ -988,8 +988,9 @@ async function runInteractiveStates(page, c) {
           }
         }
         for (const x of info.radiusSamples.cards || []) {
-          if (Math.abs(x.radius - 8) > 0.6) {
-            problems.push(`card/tile radius mismatch ${x.radius}px expected 8px: ${JSON.stringify(x)}`);
+          const expected = c.width <= 900 ? 6 : 8;
+          if (Math.abs(x.radius - expected) > 0.6) {
+            problems.push(`card/tile radius mismatch ${x.radius}px expected ${expected}px: ${JSON.stringify(x)}`);
           }
         }
         for (const x of info.radiusSamples.controls || []) {

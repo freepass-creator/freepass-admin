@@ -248,10 +248,12 @@ test('vehicle introduction card keeps only fuel and model year as summary badges
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
 });
 
-test('product detail makes the selected rental offer explicit and keeps the intro photo compact',()=>{
+test('product detail keeps rental offer selection minimal and the intro photo compact',()=>{
   const board=read('src/app/products/board.tsx');
   const boardCss=read('src/app/products/board.css');
-  assert.ok(board.includes('<span className="offer-picked">선택됨</span>'));
+  assert.ok(board.includes("className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}"));
+  assert.equal(board.includes('offer-picked'),false);
+  assert.equal(boardCss.includes('.offer-picked'),false);
   assert.ok(boardCss.includes('.pb .product-hero .dz-gal-main { height:128px; aspect-ratio:auto;'));
   assert.ok(boardCss.includes('.pb .product-photo { position:relative; height:128px;'));
   assert.ok(boardCss.includes('.pb .product-photo, .pb .product-hero .dz-gal-main { height:120px; }'));

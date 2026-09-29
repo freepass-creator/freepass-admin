@@ -49,8 +49,8 @@ test('admin async/empty/error/readonly states share the canonical panel grammar'
   assert.ok(parts.includes('export function PanelState'));
   assert.ok(routeState.includes('<Screen name="route-loading">'));
   assert.ok(routeState.includes('<Screen name="route-error">'));
-  assert.ok(routeState.includes('className="erp-route-progress"'));
-  assert.ok(routeState.includes('aria-label="데이터 불러오는 중"'));
+  assert.ok(routeState.includes('<PanelState kind="loading"'));
+  assert.ok(routeState.includes('데이터를 불러오고 있습니다.'));
   assert.equal(routeState.includes('최신 데이터를 확인하고 있습니다.'), false);
   assert.ok(routeState.includes('kind="error"'));
   assert.ok(productsDesktop.includes('<PanelState title={all.length ?'));

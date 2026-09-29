@@ -11,7 +11,9 @@ export function RouteLoading({ title }: { title: string }) {
           <Panel kind="list">
             <PanelHead kind="목록" title={title} count={<span className="sr-only">불러오는 중</span>} />
             <PanelBody>
-              <div className="erp-route-progress" role="status" aria-label="데이터 불러오는 중" />
+              <PanelState kind="loading" title="데이터를 불러오고 있습니다.">
+                잠시만 기다려 주세요.
+              </PanelState>
             </PanelBody>
           </Panel>
         </div>

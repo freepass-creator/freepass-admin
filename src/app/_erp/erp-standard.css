@@ -2173,6 +2173,10 @@ ul.erp-field-error { padding: 0; list-style: none; display: flex; flex-direction
   }
 
   .erp-std .erp-panel--compact .erp-rowcard-id {
+    --erp-card-line-h: 18px;
+    --erp-card-line-gap: 1px;
+    grid-template-rows: repeat(3, var(--erp-card-line-h));
+    grid-auto-rows: var(--erp-card-line-h);
     min-height: 56px;
     height: 56px;
     align-content: center;

@@ -212,12 +212,12 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                       <h3>{이름(car)}</h3>
                       {car.status ? <span className={`tag ${결(car.status)}`}>{car.status}</span> : null}
                     </div>
+                    {스펙.length > 0 && <p className="product-hero-meta">{스펙.join(' · ')}</p>}
                     <dl className="product-intro-facts" aria-label="차량 주요 정보">
                       <div><dt>차량번호</dt><dd>{txt(car.registration?.vehicleNumber)}</dd></div>
                       <div><dt>상품분류</dt><dd>{txt(car.productKind)}</dd></div>
                       <div><dt>렌트사</dt><dd>{txt(렌트사)}</dd></div>
                     </dl>
-                    {스펙.length > 0 && <div className="quick-specs">{스펙.map((x) => <span key={x}>{x}</span>)}</div>}
                   </div>
                 </article>
 

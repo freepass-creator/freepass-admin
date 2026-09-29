@@ -229,7 +229,7 @@ test('product workspace is bound to real repositories and whole-offer selection'
   assert.ok(workspace.includes('matchedOffers'));
 });
 
-test('vehicle introduction card keeps only fuel and model year as summary badges',()=>{
+test('vehicle introduction card keeps fuel and model year as compact metadata',()=>{
   const board=read('src/app/products/board.tsx');
   const productDetail=read('src/app/_erp/ProductDetail.tsx');
   const summary=board.slice(board.indexOf('const 스펙 = car ? ['),board.indexOf('const 구역 = car ?'));
@@ -238,6 +238,8 @@ test('vehicle introduction card keeps only fuel and model year as summary badges
   assert.equal(summary.includes('car.specs.drivetrain'),false);
   assert.equal(summary.includes('car.specs.seats'),false);
   assert.ok(board.includes('<PhotoGallery'));
+  assert.ok(board.includes("<p className=\"product-hero-meta\">{스펙.join(' · ')}</p>"));
+  assert.equal(board.includes('className="quick-specs"'),false);
   assert.equal(board.includes('className="product-rent"'),false);
   assert.ok(board.includes('className="product-intro-facts"'));
   assert.ok(board.includes('<dt>차량번호</dt>'));

@@ -127,8 +127,9 @@
     "launch_scope": {
       "esign": "OFF",
       "catalog_mode": "OBSERVE",
-      "intake_write_gate": "ERP5_WRITE=on with a valid non-expired ERP5_WRITE_APPROVAL_JSON receipt",
-      "data_admin_workflow_write_gate": "FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on"
+      "admin_runtime_write_gate": "ERP5_WRITE=on and FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on with HTTPS gateway origin and Admin consumer token",
+      "production_deploy_preflight": "Vercel production also requires the FreePass Data WIF audience and caller service-account identity",
+      "data_control_plane_gate": "The FreePass Data Admin runtime independently enables workflow writes; Firebase IAM and backup approval remain in that control plane"
     }
   }
 }

@@ -1,5 +1,10 @@
 # 2026-09-27 운영개시 — 실제 배포에서 전 route 500, 원인과 조치
 
+> **HISTORICAL / SUPERSEDED.** 이 문서는 2026-09-27 직접 Firebase 자격증명 방식의 배포 실패와 당시
+> 복구 과정을 보존한 기록이다. 현재 운영 경계는 `docs/WORK-INBOX.md`의 `0-LIVE-INTAKE`,
+> `docs/OPERATIONS-FIRST-USE.md`, `registry/active-work.json`을 따른다. 아래의
+> `ERP5_FIREBASE_SERVICE_ACCOUNT_JSON` 및 Admin-side `ERP5_WRITE_APPROVAL_JSON` 설정을 현재 운영에 재적용하지 않는다.
+
 사용자 지시: 「운영개시하자」
 기준 revision: main `2c44e17` (PR #136 통합본)
 작업 branch: `work/ops/launch-runtime-fix` (최신 main에서 딴 임시 1개, 검증 → PR → merge 후 회수)

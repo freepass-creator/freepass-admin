@@ -29,6 +29,15 @@ export default async function DataStatusPage() {
       {s.catalog.holdReasons.length > 0 && (
         <p className="fn-muted">Catalog HOLD · {s.catalog.holdReasons.join(' · ')}</p>
       )}
+      {s.catalogParity.readiness === 'READY'
+        ? <Notice tone="ok">
+            Catalog parity 일치 · 호환 {s.catalogParity.legacyRows?.toLocaleString('ko-KR')}건 · FreePass Data {s.catalogParity.freepassRows?.toLocaleString('ko-KR')}건 · Release {s.catalogParity.release?.releaseId}
+          </Notice>
+        : s.catalogParity.readiness === 'NOT_CONFIGURED'
+          ? <Notice tone="warn">Catalog parity 감사 미구성 · 운영 연결 설정 후 읽기 전용으로 확인합니다.</Notice>
+          : <Notice tone="warn">
+            Catalog parity HOLD · {s.catalogParity.holdReasons.join(' · ')}
+          </Notice>}
       <div className="fn-data-grid">
         {s.probes.map((p) => (
           <div className="fn-box" key={p.key}>

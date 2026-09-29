@@ -9,7 +9,7 @@
  * Admin Services own workflow semantics; this module owns their persistence entrypoint.
  * No separate Admin database or ledger authority is created.
  */
-import { AdminCatalogSwitchboard, adminCatalogReadMode } from '../adapters/freepass-data/admin-catalog-reader';
+import { AdminCatalogSwitchboard, adminCatalogReadMode, assessAdminCatalogParity } from '../adapters/freepass-data/admin-catalog-reader';
 import { FreePassDataAdminCatalogClient } from '../adapters/freepass-data/admin-catalog-client';
 import { FreePassDataAdminCompatProductRepository, adminCompatibilityTransportConfigured } from '../adapters/freepass-data/admin-compat-product-repository';
 import { Erp5ProductRepository } from '../adapters/erp5/product-repository';
@@ -25,6 +25,32 @@ const g = globalThis as unknown as {
     mode: AdminCatalogReadMode;
     rows: CanonicalProduct[];
     receipt: AdminCatalogReceipt;
+  };
+  __fpaCatalogParity?: {
+    at: number;
+    promise: Promise<AdminCatalogParityAuditResult>;
+  };
+};
+
+export type AdminCatalogParityAuditResult = {
+  readiness: 'READY' | 'HOLD' | 'NOT_CONFIGURED';
+  comparisonStatus: 'MATCH' | 'MISMATCH' | null;
+  checkedAt: string;
+  legacyRows: number | null;
+  freepassRows: number | null;
+  missingInFreePass: number | null;
+  extraInFreePass: number | null;
+  differentProducts: number | null;
+  holdReasons: string[];
+  errorCode?: 'FREEPASS_DATA_PARITY_AUDIT_FAILED' | 'FREEPASS_DATA_PARITY_AUDIT_TIMEOUT';
+  release: null | {
+    releaseId: string;
+    manifestId: string;
+    revision: number;
+    inputDigest: string;
+    dataDigest: string;
+    policyParity: 'COMPLETE' | 'INCOMPLETE';
+    commercialCoverage: 'COMPLETE' | 'INCOMPLETE';
   };
 };
 
@@ -88,6 +114,97 @@ export async function productByIdFresh(id: string) {
 /** Runtime/status probe must bypass the UI cache. */
 export async function adminCatalogListFresh() {
   return adminCatalog.list();
+}
+
+/**
+ * Read-only operator evidence. This never changes the serving mode or the rows returned to users.
+ * It compares the compatibility result with the ACTIVE Admin Catalog contract using the same
+ * intake-critical comparator as SHADOW_READ.
+ */
+type AdminCatalogParityAuditDependencies = {
+  configured: boolean;
+  readLegacy: () => Promise<CanonicalProduct[]>;
+  readFreepass: () => ReturnType<FreePassDataAdminCatalogClient['list']>;
+  now?: () => number;
+  timeoutMs?: number;
+};
+
+export async function runAdminCatalogParityAudit({
+  configured,
+  readLegacy,
+  readFreepass,
+  now = Date.now,
+  timeoutMs = 8_000,
+}: AdminCatalogParityAuditDependencies): Promise<AdminCatalogParityAuditResult> {
+  const checkedAt = new Date(now()).toISOString();
+  if (!configured) {
+    return {
+      readiness: 'NOT_CONFIGURED', comparisonStatus: null, checkedAt,
+      legacyRows: null, freepassRows: null, missingInFreePass: null,
+      extraInFreePass: null, differentProducts: null,
+      holdReasons: ['FREEPASS_DATA_PARITY_AUDIT_NOT_CONFIGURED'], release: null,
+    };
+  }
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const reads = Promise.all([readLegacy(), readFreepass()]);
+    const timed = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error('FREEPASS_DATA_PARITY_AUDIT_TIMEOUT')), timeoutMs);
+    });
+    const [legacyRows, freepass] = await Promise.race([reads, timed]);
+    const assessment = assessAdminCatalogParity(legacyRows, freepass.rows, freepass.meta);
+    return {
+      readiness: assessment.holdReasons.length === 0 ? 'READY' : 'HOLD',
+      comparisonStatus: assessment.status,
+      checkedAt,
+      legacyRows: legacyRows.length,
+      freepassRows: freepass.rows.length,
+      missingInFreePass: assessment.missingInFreePass,
+      extraInFreePass: assessment.extraInFreePass,
+      differentProducts: assessment.differentProducts,
+      holdReasons: assessment.holdReasons,
+      release: {
+        releaseId: freepass.meta.releaseId,
+        manifestId: freepass.meta.manifestId,
+        revision: freepass.meta.revision,
+        inputDigest: freepass.meta.inputDigest,
+        dataDigest: freepass.meta.dataDigest,
+        policyParity: freepass.meta.policyParity,
+        commercialCoverage: freepass.meta.commercialCoverage ?? 'INCOMPLETE',
+      },
+    };
+  } catch (error) {
+    const timedOut = error instanceof Error && error.message === 'FREEPASS_DATA_PARITY_AUDIT_TIMEOUT';
+    return {
+      readiness: 'HOLD',
+      comparisonStatus: null,
+      checkedAt,
+      legacyRows: null,
+      freepassRows: null,
+      missingInFreePass: null,
+      extraInFreePass: null,
+      differentProducts: null,
+      holdReasons: [timedOut ? 'FREEPASS_DATA_PARITY_AUDIT_TIMEOUT' : 'FREEPASS_DATA_PARITY_AUDIT_FAILED'],
+      errorCode: timedOut ? 'FREEPASS_DATA_PARITY_AUDIT_TIMEOUT' : 'FREEPASS_DATA_PARITY_AUDIT_FAILED',
+      release: null,
+    };
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+const PARITY_AUDIT_TTL = 60_000;
+
+export function adminCatalogParityAudit(): Promise<AdminCatalogParityAuditResult> {
+  const hit = g.__fpaCatalogParity;
+  if (hit && Date.now() - hit.at < PARITY_AUDIT_TTL) return hit.promise;
+  const promise = runAdminCatalogParityAudit({
+    configured: adminCompatibilityTransportConfigured() && !demoMode(),
+    readLegacy: () => legacyProducts.list(),
+    readFreepass: () => freepassDataProducts.list(),
+  });
+  g.__fpaCatalogParity = { at: Date.now(), promise };
+  return promise;
 }
 
 export function adminCatalogStatus() {

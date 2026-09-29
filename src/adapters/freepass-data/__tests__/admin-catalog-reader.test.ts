@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CanonicalProduct } from '../../../domain/product/types';
-import { AdminCatalogSwitchboard, FreePassDataCatalogHoldError, adminCatalogReadMode, compareAdminCatalogShadow } from '../admin-catalog-reader';
+import { AdminCatalogSwitchboard, FreePassDataCatalogHoldError, adminCatalogReadMode, assessAdminCatalogParity, compareAdminCatalogShadow } from '../admin-catalog-reader';
 import type { AdminCutoverDecision, AdminCutoverStage } from '../../../shared/freepass-data-admin-cutover';
 
 const product = { id: 'P-1' } as CanonicalProduct;
@@ -237,6 +237,24 @@ test('shadow parity ignores policy list ordering but not policy values', () => {
   right.productPolicies.reverse();
   (right.productPolicies[1] as { policyId:string; type:'MULTI_SELECT'; value:string[] }).value.reverse();
   assert.equal(compareAdminCatalogShadow([left], [right]).status, 'MATCH');
+});
+
+test('operator parity audit uses the same completeness gates as SHADOW_READ', () => {
+  const complete = assessAdminCatalogParity([shadowProduct], [structuredClone(shadowProduct)], {
+    policyParity: 'COMPLETE',
+    commercialCoverage: 'COMPLETE',
+  });
+  assert.equal(complete.status, 'MATCH');
+  assert.deepEqual(complete.holdReasons, []);
+
+  const held = assessAdminCatalogParity([shadowProduct], [structuredClone(shadowProduct)], {
+    policyParity: 'INCOMPLETE',
+    commercialCoverage: 'INCOMPLETE',
+  });
+  assert.deepEqual(held.holdReasons, [
+    'FREEPASS_DATA_POLICY_PARITY_INCOMPLETE',
+    'FREEPASS_DATA_COMMERCIAL_COVERAGE_INCOMPLETE',
+  ]);
 });
 
 

@@ -1,3 +1,17 @@
+## 0-CATALOG-PARITY. 2026-09-29 — 운영 읽기 전용 parity 증거 경로
+
+- Catalog serving mode는 계속 `OBSERVE`이며 사용자 상품 결과를 바꾸지 않는다.
+- `/system/data-status`가 운영 서버의 기존 비밀 경계를 이용해 compatibility Catalog와 FreePass Data
+  ACTIVE Admin Catalog를 같은 intake-critical comparator로 읽기 전용 비교한다.
+- 비교 실행은 60초 공유 캐시와 8초 제한을 사용한다. 원문 transport 오류나 비밀값은 화면에 표시하지 않는다.
+- `READY / HOLD / NOT_CONFIGURED`와 `MATCH / MISMATCH`를 분리해 상태와 데이터 차이를 섞지 않는다.
+- CODED / STATIC CHECKED / TESTED. Production parity 결과와 Catalog stage 전환 승인은 아직 별도다.
+
+next_start_here: main 배포 후 로그인된 `/system/data-status`에서 Release identity, 양쪽 행 수,
+누락/추가/변경 수와 policy/commercial coverage를 재조회한다. `MATCH`만으로 cutover하지 않는다.
+
+---
+
 ## 0-LIVE-INTAKE. 2026-09-29 — 운영 접수 쓰기 개통
 
 `0-PREDEPLOY`의 쓰기 OFF 상태를 현재 운영 상태로 사용하지 않는다. 사용자 승인 후 FreePass Admin의

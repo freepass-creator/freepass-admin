@@ -176,7 +176,7 @@ test('approved board structure uses the latest desktop and mobile control scale'
   assert.ok(boardCss.includes('--control:32px; --chip:28px; --gap:6px; --space:8px;'));
   assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
   assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
-  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-hero .dz-gal-main { height:120px; }'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
   assert.equal(boardCss.includes('--title:15px'), false);
   assert.equal(boardCss.includes('--support:13px'), false);
   assert.equal(boardCss.includes('font-size:15px;'), false);
@@ -241,10 +241,12 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.ok(board.includes("<p className=\"product-hero-meta\">{스펙.join(' · ')}</p>"));
   assert.equal(board.includes('className="quick-specs"'),false);
   assert.equal(board.includes('className="product-rent"'),false);
-  assert.ok(board.includes('className="product-intro-facts"'));
-  assert.ok(board.includes('<dt>차량번호</dt>'));
-  assert.ok(board.includes('<dt>상품분류</dt>'));
-  assert.ok(board.includes('<dt>렌트사</dt>'));
+  assert.ok(board.includes('className="product-photo-card"'));
+  assert.ok(board.includes('className="facts product-intro-card"'));
+  assert.ok(board.includes('<span>차량번호</span>'));
+  assert.ok(board.includes('<span>상품분류</span>'));
+  assert.ok(board.includes('<span>렌트사</span>'));
+  assert.ok(board.includes("const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle')"));
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
@@ -256,9 +258,9 @@ test('product detail keeps rental offer selection minimal and the intro photo co
   assert.ok(board.includes("className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}"));
   assert.equal(board.includes('offer-picked'),false);
   assert.equal(boardCss.includes('.offer-picked'),false);
-  assert.ok(boardCss.includes('.pb .product-hero .dz-gal-main { height:128px; aspect-ratio:auto;'));
+  assert.ok(boardCss.includes('.pb .product-photo-card .dz-gal-main { height:128px; aspect-ratio:auto;'));
   assert.ok(boardCss.includes('.pb .product-photo { position:relative; height:128px;'));
-  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-hero .dz-gal-main { height:120px; }'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
 });
 
 test('mobile workspace uses explicit list detail work depth',()=>{

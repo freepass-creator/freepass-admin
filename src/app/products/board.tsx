@@ -128,6 +128,8 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   const 구역 = car ? productSections(car, chosen)
     .map((s) => ({ ...s, items: s.items.filter(있음) }))
     .filter((s) => s.items.length > 0) : [];
+  const 차량구역 = 구역.find((s) => s.key === 'vehicle');
+  const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle');
   const 상태 = <span className={`sync${data.ok ? '' : ' warn'}`}>{data.ok ? '연결 정상' : '데이터 설정 필요'}</span>;
 
   /* 폰 상태표시줄 — 그 판의 제목 하나(목업 statusbar) */
@@ -203,23 +205,29 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
           <div className="web-scroll">
             {car ? (
               <>
-                <article className="product-hero">
+                <article className="product-photo-card">
                   {사진.length > 0
                     ? <PhotoGallery key={`소개사진-${car.id}`} photos={사진} alt={이름(car)} link={car.photoLink} />
                     : <div className="product-photo"><Icon name="car" size={88} /></div>}
-                  <div className="product-hero-body">
+                </article>
+
+                <div className="section product-intro-section">
+                  <h4>차량 정보</h4>
+                  <div className="facts product-intro-card">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
                       {car.status ? <span className={`tag ${결(car.status)}`}>{car.status}</span> : null}
                     </div>
                     {스펙.length > 0 && <p className="product-hero-meta">{스펙.join(' · ')}</p>}
-                    <dl className="product-intro-facts" aria-label="차량 주요 정보">
-                      <div><dt>차량번호</dt><dd>{txt(car.registration?.vehicleNumber)}</dd></div>
-                      <div><dt>상품분류</dt><dd>{txt(car.productKind)}</dd></div>
-                      <div><dt>렌트사</dt><dd>{txt(렌트사)}</dd></div>
-                    </dl>
+                    <div className="product-intro-divider" />
+                    <div className="fact"><span>차량번호</span><b>{txt(car.registration?.vehicleNumber)}</b></div>
+                    <div className="fact"><span>상품분류</span><b>{txt(car.productKind)}</b></div>
+                    <div className="fact"><span>렌트사</span><b>{txt(렌트사)}</b></div>
+                    {차량구역?.items.filter((it) => it.key !== 'car_number').map((it) => (
+                      <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>
+                    ))}
                   </div>
-                </article>
+                </div>
 
                 <div className="section" role="group" aria-labelledby="pb-offer-title">
                   <h4 id="pb-offer-title">계약조건 선택</h4>
@@ -236,7 +244,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                   {offers.length === 0 && <p className="empty">받은 요금이 없습니다.</p>}
                 </div>
 
-                {구역.map((s) => (
+                {나머지구역.map((s) => (
                   <div key={s.key} className="section">
                     <h4>{s.title === '차량' ? '차량 정보' : s.title}</h4>
                     <div className="facts">

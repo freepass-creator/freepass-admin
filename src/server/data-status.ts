@@ -1,6 +1,6 @@
 import { erp5Ready, writeGate } from './erp5';
 import { esign } from './esign';
-import { adminCatalogListFresh, adminCatalogStatus } from './freepass-data';
+import { adminCatalogListFresh, adminCatalogParityAudit, adminCatalogStatus } from './freepass-data';
 import { contracts, settlements } from './erp5';
 
 export type DataProbe = {
@@ -29,18 +29,22 @@ export async function adminDataStatus() {
   const credential = erp5Ready();
   const gate = writeGate();
   const esignFinalization = esign.finalizationReadiness();
-  const probes = await Promise.all([
+  const [probes, catalogParity] = await Promise.all([
+    Promise.all([
     probe('products', '상품', async () => (await adminCatalogListFresh()).rows),
     probe('intakes', '접수·정산원장', async () => (await settlements.list()).map((x) => x.row)),
     probe('clawbacks', '환수', () => settlements.clawbacks()),
     probe('cashEvents', '수금·지급 거래', () => settlements.cashEvents()),
     probe('contracts', '전자계약', () => contracts.list()),
+    ]),
+    adminCatalogParityAudit(),
   ]);
   const catalog = adminCatalogStatus();
   return {
     schema: 'freepass-admin-data-runtime/v2',
     authority: 'FREEPASS_DATA' as const,
     catalog,
+    catalogParity,
     /** Admin runtime knows the FreePass Data boundary, not Firebase collection topology. */
     project: 'freepass-data',
     credential,

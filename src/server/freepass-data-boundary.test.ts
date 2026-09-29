@@ -107,3 +107,60 @@ test('cutover stages never reuse the 60-second legacy UI cache', () => {
   assert.match(data, /if \(cacheable && hit && hit\.mode === mode && Date\.now\(\) - hit\.at < TTL\)/);
   assert.match(data, /else delete g\.__fpaCatalog/);
 });
+
+test('operator parity audit is read-only, bounded and fail-closed', async () => {
+  const row = {
+    id: 'P-1', version: 1, supplierId: 'S-1', supplierProductKey: 'P-1',
+    vehicle: {
+      nodeId: 'V-1', originId: 'KR', manufacturerId: 'HYUNDAI', modelId: 'AVANTE',
+      matchLevel: 'MODEL' as const,
+    },
+    specs: {}, offers: [], productPolicies: [], sourceSnapshotId: 'snapshot-1',
+    updatedAt: '2026-09-29T00:00:00.000Z',
+  } satisfies import('../domain/product/types').CanonicalProduct;
+  const meta = {
+    consumerId: 'freepass-admin-catalog' as const,
+    projectionId: 'admin-catalog' as const,
+    authority: 'CANONICAL_ACTIVE' as const,
+    schemaVersion: '1.0.0' as const,
+    releaseId: 'rel-1', manifestId: 'manifest-1', inputDigest: 'input-1',
+    revision: 1, dataDigest: 'data-1', policyParity: 'COMPLETE' as const,
+    commercialCoverage: 'COMPLETE' as const,
+    generatedAt: '2026-09-29T00:00:00.000Z',
+    activatedAt: '2026-09-29T00:00:00.000Z',
+    missingPolicyOfferIds: [], invalidPolicyFactRefs: [], commercialMissingOfferIds: [],
+  };
+  const matched = await gateway.runAdminCatalogParityAudit({
+    configured: true,
+    readLegacy: async () => [row],
+    readFreepass: async () => ({ rows: [row], meta }),
+    now: () => Date.parse('2026-09-29T00:00:00.000Z'),
+  });
+  assert.equal(matched.readiness, 'READY');
+  assert.equal(matched.comparisonStatus, 'MATCH');
+  assert.deepEqual(matched.holdReasons, []);
+
+  const held = await gateway.runAdminCatalogParityAudit({
+    configured: true,
+    readLegacy: async () => [row],
+    readFreepass: async () => { throw new Error('secret-bearing transport detail'); },
+  });
+  assert.equal(held.readiness, 'HOLD');
+  assert.equal(held.errorCode, 'FREEPASS_DATA_PARITY_AUDIT_FAILED');
+  assert.equal(JSON.stringify(held).includes('secret-bearing'), false);
+
+  const timed = await gateway.runAdminCatalogParityAudit({
+    configured: true,
+    readLegacy: () => new Promise(() => undefined),
+    readFreepass: async () => ({ rows: [row], meta }),
+    timeoutMs: 5,
+  });
+  assert.equal(timed.errorCode, 'FREEPASS_DATA_PARITY_AUDIT_TIMEOUT');
+
+  const missing = await gateway.runAdminCatalogParityAudit({
+    configured: false,
+    readLegacy: async () => { throw new Error('must not read'); },
+    readFreepass: async () => { throw new Error('must not read'); },
+  });
+  assert.equal(missing.readiness, 'NOT_CONFIGURED');
+});

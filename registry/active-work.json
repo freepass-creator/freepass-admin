@@ -52,7 +52,7 @@
       "branch": "work/freepass-admin/catalog-observe-parity-20260929",
       "writer": "Codex",
       "reviewer": "Claude Code (read-only)",
-      "phase": "READ_ONLY_AUDIT",
+      "phase": "RUNTIME_EVIDENCE_CODED",
       "production_cutover_authorized": false
     }
   ],

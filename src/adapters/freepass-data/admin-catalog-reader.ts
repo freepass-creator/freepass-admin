@@ -57,6 +57,10 @@ export type ShadowComparison = {
   differentProducts: number;
 };
 
+export type AdminCatalogParityAssessment = ShadowComparison & {
+  holdReasons: string[];
+};
+
 const policyFacts = (values: CanonicalProduct['productPolicies']) => values
   .map((p) => ({
     policyId: p.policyId,
@@ -143,6 +147,22 @@ export function compareAdminCatalogShadow(
   return {
     status: missingInFreePass || extraInFreePass || differentProducts ? 'MISMATCH' : 'MATCH',
     missingInFreePass, extraInFreePass, differentProducts,
+  };
+}
+
+export function assessAdminCatalogParity(
+  legacyRows: CanonicalProduct[],
+  freepassRows: CanonicalProduct[],
+  meta: Pick<FreePassDataAdminCatalogMeta, 'policyParity' | 'commercialCoverage'>,
+): AdminCatalogParityAssessment {
+  const comparison = compareAdminCatalogShadow(legacyRows, freepassRows);
+  return {
+    ...comparison,
+    holdReasons: [
+      ...(meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
+      ...(meta.commercialCoverage === 'COMPLETE' ? [] : ['FREEPASS_DATA_COMMERCIAL_COVERAGE_INCOMPLETE']),
+      ...(comparison.status === 'MATCH' ? [] : ['FREEPASS_DATA_SHADOW_MISMATCH']),
+    ],
   };
 }
 
@@ -262,14 +282,12 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
 
     try {
       const shadow = await this.freepass.list();
-      const comparison = compareAdminCatalogShadow(rows, shadow.rows);
+      const assessment = assessAdminCatalogParity(rows, shadow.rows, shadow.meta);
       const releaseHold = approval && mode === 'PARITY_VERIFIED'
         ? assertApprovedRelease(approval, shadow.meta)
         : null;
       const holds = [
-        ...(shadow.meta.policyParity === 'COMPLETE' ? [] : ['FREEPASS_DATA_POLICY_PARITY_INCOMPLETE']),
-        ...(shadow.meta.commercialCoverage === 'COMPLETE' ? [] : ['FREEPASS_DATA_COMMERCIAL_COVERAGE_INCOMPLETE']),
-        ...(comparison.status === 'MATCH' ? [] : ['FREEPASS_DATA_SHADOW_MISMATCH']),
+        ...assessment.holdReasons,
         ...(releaseHold ? [releaseHold] : []),
       ];
       const baseReceipt: AdminCatalogReceipt = {
@@ -289,7 +307,13 @@ export class AdminCatalogSwitchboard implements AdminCatalogReader {
           policyParity: shadow.meta.policyParity,
           rows: shadow.rows.length,
         },
-        shadow: { ...comparison, comparedAt: new Date().toISOString() },
+        shadow: {
+          status: assessment.status,
+          missingInFreePass: assessment.missingInFreePass,
+          extraInFreePass: assessment.extraInFreePass,
+          differentProducts: assessment.differentProducts,
+          comparedAt: new Date().toISOString(),
+        },
       };
       this.lastReceipt = baseReceipt;
       return { rows, receipt: baseReceipt };

@@ -235,6 +235,8 @@ test('vehicle introduction card keeps only fuel and model year as summary badges
   assert.ok(summary.includes('car.specs.modelYear'));
   assert.equal(summary.includes('car.specs.drivetrain'),false);
   assert.equal(summary.includes('car.specs.seats'),false);
+  assert.ok(board.includes('<PhotoGallery'));
+  assert.equal(board.includes('className="product-rent"'),false);
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
 });

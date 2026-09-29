@@ -21,6 +21,7 @@ import { NewIntakePanel } from '../intake/panels';
 import type { SettlementRow } from '../../domain/settlement/types';
 import { previewFeeAction, type FeePreview } from '../intake/actions';
 import { Icon } from '../_design/Icon';
+import { PhotoGallery } from '../_design/PhotoGallery';
 
 /**
  * ★★★ 상품찾기 새 판 — 목업(docs/ui/mockups/admin-mobile-five-functions.html) 마크업 그대로 (대표 2026-09-22 「판갈이」)
@@ -202,18 +203,15 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
             {car ? (
               <>
                 <article className="product-hero">
-                  <div className="product-photo">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {사진[0] ? <img src={사진[0]} alt={이름(car)} /> : <Icon name="car" size={88} />}
-                    {사진.length > 0 && <span className="photo-count">대표사진 · 1/{사진.length}</span>}
-                  </div>
+                  {사진.length > 0
+                    ? <PhotoGallery key={`소개사진-${car.id}`} photos={사진} alt={이름(car)} link={car.photoLink} />
+                    : <div className="product-photo"><Icon name="car" size={88} /></div>}
                   <div className="product-hero-body">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
                       {car.status ? <span className={`tag ${결(car.status)}`}>{car.status}</span> : null}
                     </div>
                     <p>{[공급사(car), car.registration?.vehicleNumber].filter(Boolean).join(' · ')}</p>
-                    <div className="product-rent"><span>선택 대여료</span><strong>{chosen ? `월 ${won(chosen.monthlyRent)}원` : '—'}</strong></div>
                     {스펙.length > 0 && <div className="quick-specs">{스펙.map((x) => <span key={x}>{x}</span>)}</div>}
                   </div>
                 </article>

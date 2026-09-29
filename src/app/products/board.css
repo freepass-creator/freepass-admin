@@ -145,16 +145,16 @@
 .pb .product-photo { position:relative; height:180px; display:grid; place-items:center; overflow:hidden; background:var(--box); }
 .pb .product-photo > svg { width:88px; height:88px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
 .pb .product-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.pb .photo-count { position:absolute; right:10px; bottom:10px; padding:4px 8px; border-radius:999px; background:rgba(16,24,40,.72); color:#fff; font-size:var(--meta); line-height:1; }
+.pb .product-hero .dz-gal,
+.pb .product-hero .dz-gal.many { display:block; }
+.pb .product-hero .dz-gal-main { border-radius:0; box-shadow:none; }
+.pb .product-hero .dz-gal-thumbs { display:none; }
 .pb .product-hero-body { padding:12px; }
 .pb .product-hero-title { display:flex; align-items:center; gap:6px; }
 .pb .product-hero-title h3 { margin:0; font-size:var(--head); font-weight:600; line-height:1.3; }
 .pb .product-hero-body > p { margin:4px 0 0; color:var(--muted); font-size:var(--support); }
-.pb .product-rent { margin-top:10px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-.pb .product-rent span { color:var(--muted); font-size:var(--meta); }
-.pb .product-rent strong { color:var(--navy); font-size:var(--head); font-weight:600; }
-.pb .quick-specs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
-.pb .quick-specs span { padding:8px 6px; border-radius:8px; background:var(--box); color:var(--sub); font-size:var(--support); text-align:center; }
+.pb .quick-specs { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.pb .quick-specs span { min-width:84px; padding:8px 16px; border-radius:9px; background:var(--box); color:var(--sub); font-size:var(--support); text-align:center; }
 .pb .offer { width:100%; padding:12px; display:grid; gap:4px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); transition:background .12s, box-shadow .12s; }
 .pb .offer + .offer { margin-top:8px; }
 .pb .offer:hover { background:#f9fafb; }

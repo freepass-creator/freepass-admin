@@ -16,7 +16,8 @@
 ### Branch lifecycle — unified main / single writer
 - 사용자 최신 지시(2026-09-26): **「자 메인으로 병합하고 이제 하나로 합치자」**.
 - `main`만 코드 정본이다. I #128 → F #129 → E #130 → U #127 → F 후속 #133은 모두 main에 병합됐다.
-- 완료된 작업을 기다리는 ACTIVE 기능 branch는 없다. U/F/E/I는 통합 작업의 검토 축이며, 별도 영구 branch나 독립 writer가 아니다.
+- 완료된 U/F/E/I 기능 lane을 기다리는 ACTIVE branch는 없다. 현재 단일 임시 작업선은
+  `registry/active-work.json`만 권위로 삼으며, U/F/E/I는 별도 영구 branch나 독립 writer가 아니다.
 - 하나의 통합 작업에 writer는 한 시점에 1명만 둔다. 다른 AI는 review/audit와 인계만 한다. 채팅을 열었다는 이유만으로 writer가 되지 않는다.
 - 새 AI는 원격 main과 `docs/BRANCH-WORKFLOW.md`, `registry/active-work.json`을 먼저 확인한다. 과거 branch HEAD에서 개발을 재개하지 않는다.
 - `고도화`, `다음`, `계속`은 통합 작업을 잇는 뜻이며 신규 병렬 branch 생성 지시가 아니다.

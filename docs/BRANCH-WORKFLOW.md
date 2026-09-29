@@ -1,7 +1,7 @@
 # FreePass Admin Branch Workflow
 
 상태: **ACTIVE / CANONICAL — UNIFIED MAIN / SINGLE WRITER**
-기준일: **2026-09-26**
+기준일: **2026-09-29**
 사용자 최신 지시: **「자 메인으로 병합하고 이제 하나로 합치자」**
 
 이 문서와 `registry/active-work.json`은 현재 브랜치 운영 정본이다. 과거 `docs/WORK-INBOX.md` 등의 ACTIVE branch 목록은 당시 이력이며 현재 작업 배정이 아니다.
@@ -9,11 +9,13 @@
 ## 1. 현재 통합 결과
 
 - `main`만 통합 코드 정본이다.
+- 최신 main 병합은 PR #153 / `678372cb5b6a692096ba6e1cfe97a1e8ceeffa66`이다. 운영 접수 개통과
+  공동작업 handoff가 반영됐으며 현재 운영 상태는 `docs/WORK-INBOX.md`의 `0-LIVE-INTAKE`를 따른다.
 - I #128 → F #129 → E #130 → U #127 → F 후속 #133이 모두 main에 병합됐다.
-- 마지막 기능 병합: PR #133, `e72fee1d17ac07d99f6d7d587ae89d153058a270`.
+- 마지막 기능 통합 병합은 PR #133, `e72fee1d17ac07d99f6d7d587ae89d153058a270`이다.
 - PR #133 검증 head: `c36f5cf599750d17c5d39555cde908dbf49d2d37`; main `da0834d7f85d4bedbab04d2be3a4d3073be6fc6a`를 포함하고 behind=0이었다.
 - 최종 head 검사 7개 PASS: Canon Guard #261, admin-core-domain #402, CI #1385, backend-check #1382, freepass-data-persistence #335, Next runtime check #265, Visual QA #103.
-- 이 통합 직후 열린 PR은 0개로 확인했다. 이는 관측 기록이며 후속 작업 전에는 원격 상태를 다시 읽는다.
+- PR #153 병합 직후 열린 PR은 0개로 확인했다. 이는 관측 기록이며 후속 작업 전에는 원격 상태를 다시 읽는다.
 - 과거 PR #120/#121/#122의 운영 준비·승인 UI·운영 확정사항도 유지한다.
 
 ## 2. 하나의 작업선
@@ -40,8 +42,10 @@
 - 데이터: FreePass Data 정본 및 `src/server/freepass-data.ts` 단일 진입점 유지. RTDB 재활성화 금지.
 - 접수·정산 정본: `Intake / settlement_rows / src/domain/settlement/**` 유지.
 - 코드 통합은 운영 배포·실데이터 write·cutover·전자계약 활성화 승인이 아니다.
-- 운영 개통은 별도 담당자의 환경/권한/live smoke/rollback 검증을 따른다. 이 통합에서 환경값이나 승인 gate는 변경하지 않았다.
-- 기존 launch scope의 `ERP5_WRITE=off`, `ESIGN_ENABLED=off`, Catalog `OBSERVE`를 임의로 열지 않는다.
+- 운영 개통은 별도 담당자의 환경/권한/live smoke/rollback 검증을 따른다. PR #133 기능 통합 자체에서는
+  환경값이나 승인 gate를 변경하지 않았고, 이후 운영 개통은 `0-LIVE-INTAKE`의 별도 검증으로 수행됐다.
+- 운영 접수 write는 사용자 승인과 검증을 거쳐 `ERP5_WRITE=on`으로 개통됐다.
+- 전자계약 `ESIGN_ENABLED=off`와 Catalog `OBSERVE`는 계속 유지하며 별도 검증·승인 없이 열지 않는다.
 
 ## 5. 완료 판정
 

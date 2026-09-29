@@ -1,10 +1,10 @@
 {
   "schema": "freepass-admin-active-work/v1",
-  "updated_at": "2026-09-26",
+  "updated_at": "2026-09-29",
   "authority": "docs/BRANCH-WORKFLOW.md",
   "main": {
     "branch": "main",
-    "role": "PRE_DEPLOY_CANDIDATE"
+    "role": "PRODUCTION_ACTIVE"
   },
   "coordination": {
     "mode": "UNIFIED_MAIN_SINGLE_WRITER",
@@ -45,7 +45,17 @@
     "execution": "EXACT_SHA_ALLOWLIST_ON_MERGED_PR",
     "completion_evidence": "Branch Hygiene success log and live remote refs; not this intent record"
   },
-  "active": [],
+  "active": [
+    {
+      "work_order": "catalog-observe-parity-20260929",
+      "objective": "Verify Catalog OBSERVE parity and define the fail-closed promotion evidence without changing the production read authority.",
+      "branch": "work/freepass-admin/catalog-observe-parity-20260929",
+      "writer": "Codex",
+      "reviewer": "Claude Code (read-only)",
+      "phase": "READ_ONLY_AUDIT",
+      "production_cutover_authorized": false
+    }
+  ],
   "archived": [
     {
       "branch": "work/uiux",
@@ -88,29 +98,37 @@
     "status": "CANONICAL_USER_APPROVED",
     "decided_at": "2026-09-28",
     "lineage": "ProductsBoard intake actual route (src/app/products/board.tsx)",
-    "merged_via": "PENDING_CURRENT_CHANGE",
+    "merged_via": "ProductsBoard actual-route lineage present on origin/main and reverified at PR #153 merge",
     "doc": "docs/ui/DESIGN-AUTHORITY.md"
   },
   "deployment": {
-    "status": "PRE_DEPLOY_READY_CODE_GATES_GREEN",
+    "status": "PRODUCTION_ACTIVE_INTAKE_WRITE_VERIFIED",
     "source_branch": "main",
     "release_pr": 120,
     "ui_pr": 121,
     "launch_decisions_pr": 122,
     "vercel": {
       "team": "freepass-projects",
-      "project_status": "NOT_CREATED",
-      "observed_project_count": 0
+      "project_status": "READY",
+      "production_url": "https://freepass-admin.vercel.app",
+      "deployment": "dpl_D3qMSdWhoUjgpZDDSFcaAeMB2MCq"
     },
-    "blockers": [
-      "Create/connect Vercel project for freepass-admin",
-      "Bind production OAuth/service-account/environment values without exposing secrets",
-      "Verify live production login, FreePass Data read, rollback/backup/IAM, then controlled write acceptance"
+    "blockers": [],
+    "intake_activation_evidence": [
+      "User-confirmed production login",
+      "FreePass Data control-plane IAM and 889-document backup/restore receipt",
+      "Production write-gate acceptance and idempotent non-customer intake readback",
+      "Cancellation and audit-event readback"
+    ],
+    "remaining_gates": [
+      "Catalog stays OBSERVE until parity evidence is accepted",
+      "ESIGN_ENABLED stays off until its separate finalization and deployment gates pass"
     ],
     "launch_scope": {
       "esign": "OFF",
       "catalog_mode": "OBSERVE",
-      "initial_write_gate": "ERP5_WRITE=off"
+      "intake_write_gate": "ERP5_WRITE=on with a valid non-expired ERP5_WRITE_APPROVAL_JSON receipt",
+      "data_admin_workflow_write_gate": "FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on"
     }
   }
 }

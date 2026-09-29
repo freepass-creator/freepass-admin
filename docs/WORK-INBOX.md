@@ -47,7 +47,10 @@ next_start_here: Claude/Codex는 반드시 current main 또는 이 문서가 포
 
 ---
 
-## 0-PREDEPLOY. 2026-09-26 — 배포 직전 동결
+## 0-PREDEPLOY. 2026-09-26 — 배포 직전 동결(종료된 이력)
+
+> 이 절의 Vercel 미생성·쓰기 OFF·다음 단계는 당시 기록이며 실행 지시가 아니다.
+> 현재 운영 상태와 다음 시작점은 위 `0-LIVE-INTAKE` 및 `registry/active-work.json`을 따른다.
 
 - PR #121 UI 정본 main 반영 완료
 - PR #122 운영 확정분 main 반영 완료
@@ -72,11 +75,14 @@ next_start_here: Claude/Codex는 반드시 current main 또는 이 문서가 포
 
 
 
-## 0-AAAAA. 2026-09-26 현재 ACTIVE 브랜치 — 임시 작업 브랜치 2개
+## 0-AAAAA. 2026-09-26 당시 ACTIVE 브랜치 — 종료된 이력
+
+> 이 절은 2026-09-26 당시 기록이다. 현재 ACTIVE 작업선은
+> `docs/BRANCH-WORKFLOW.md`와 `registry/active-work.json`만 따른다. 아래 두 브랜치를 재개하지 않는다.
 
 브랜치는 더 이상 Function/UIUX/E-sign 고정 lane으로 재사용하지 않는다. 브랜치는 현재 변경을 격리하는 임시 작업 공간이며, 완료 후 main merge + 폐기한다.
 
-현재 ACTIVE branch:
+당시 ACTIVE branch(현재 종료):
 - `work/ui/finalize-baseline` — UI/UX 최종 확정
 - `work/release/operational-launch` — 운영 개시
 

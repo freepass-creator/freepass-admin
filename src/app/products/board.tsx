@@ -212,7 +212,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </article>
 
                 <div className="section product-intro-section">
-                  <h4>차량 정보</h4>
+                  <h4>차량 요약</h4>
                   <div className="facts product-intro-card">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
@@ -223,9 +223,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                     <div className="fact"><span>차량번호</span><b>{txt(car.registration?.vehicleNumber)}</b></div>
                     <div className="fact"><span>상품분류</span><b>{txt(car.productKind)}</b></div>
                     <div className="fact"><span>렌트사</span><b>{txt(렌트사)}</b></div>
-                    {차량구역?.items.filter((it) => it.key !== 'car_number').map((it) => (
-                      <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>
-                    ))}
                   </div>
                 </div>
 
@@ -243,6 +240,15 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                   })}
                   {offers.length === 0 && <p className="empty">받은 요금이 없습니다.</p>}
                 </div>
+
+                {차량구역 && (
+                  <div className="section">
+                    <h4>차량 정보</h4>
+                    <div className="facts">
+                      {차량구역.items.map((it) => <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>)}
+                    </div>
+                  </div>
+                )}
 
                 {나머지구역.map((s) => (
                   <div key={s.key} className="section">

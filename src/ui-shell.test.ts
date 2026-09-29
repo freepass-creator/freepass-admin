@@ -243,10 +243,13 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.equal(board.includes('className="product-rent"'),false);
   assert.ok(board.includes('className="product-photo-card"'));
   assert.ok(board.includes('className="facts product-intro-card"'));
+  assert.ok(board.includes('<h4>차량 요약</h4>'));
   assert.ok(board.includes('<span>차량번호</span>'));
   assert.ok(board.includes('<span>상품분류</span>'));
   assert.ok(board.includes('<span>렌트사</span>'));
   assert.ok(board.includes("const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle')"));
+  assert.ok(board.indexOf('<h4>차량 요약</h4>') < board.indexOf('id="pb-offer-title"'));
+  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf('<h4>차량 정보</h4>'));
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);

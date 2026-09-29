@@ -363,4 +363,6 @@ Admin의 도메인 규칙과 원장 사실에서 계산해 읽기 전용 상태�
 - Admin은 FreePass Data 경계를 통해 Intake/`settlement_rows`에 저장하며, 저장 당시 Product/Offer Snapshot과 감사이력을 보존한다.
 - 과거 계약현황 시트와 F04의 `2026-09-30` 이전 행은 조회·이관·출처 증거로 보존한다.
 - 컷오버 이후 시트에 새로 생긴 접수행은 자동으로 신규 접수화하지 않고 `HOLD`한다. Admin 접수와 중복 생성하지 않는다.
-- 운영 개시는 최소권한 IAM, backup/restore 검증, `ERP5_WRITE_APPROVAL_JSON`, 저장 후 재조회 및 중복 제출 검증을 통과한 뒤에만 선언한다.
+- 운영 개시는 FreePass Data control plane의 최소권한 IAM·backup/restore 검증, Admin/Data 양쪽 write gate,
+  인증된 HTTPS gateway 설정, 저장 후 재조회 및 중복 제출 검증을 통과한 뒤에만 선언한다.
+  `ERP5_WRITE_APPROVAL_JSON`은 Firebase credential을 직접 소유하는 legacy/maintenance 경로에만 적용한다.

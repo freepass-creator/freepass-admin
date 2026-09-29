@@ -44,13 +44,13 @@ As of 2026-09-26 the central FreePass Data main registry still records `freepass
 
 Deploy the verified revision to a preview with ERP5_WRITE=off. Verify the authorized administrator can sign in, an unauthorized account cannot, `/system/data-status` shows fresh probes, and catalog list/detail/selected Offer agree. Configure the approved HTTPS origin for OAuth, electronic-contract and claim links.
 
-Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment. Record that verification as the non-secret `ERP5_WRITE_APPROVAL_JSON` receipt described in `.env.example`; production runtime stays fail-closed without it. Then explicitly enable `ERP5_WRITE=on` only for the approved production store. A local developer process does not bypass this gate: unapproved development writes must use the local Firestore emulator. Vercel preview/development deployments remain read-only even if the approval receipt is present. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
+Before operational writes, verify least-privilege Firestore/Storage IAM, approved backup/restore and the ability to return to the prior deployment in the FreePass Data control plane. The production Admin does not own Firebase credentials. It enables the delegated path only when `ERP5_WRITE=on`, `FREEPASS_DATA_ADMIN_WORKFLOW_WRITE=on`, an HTTPS gateway origin, the Admin consumer token and the production WIF caller identity are all present; the FreePass Data Admin runtime independently keeps its workflow write gate. A local developer process does not bypass this boundary: unapproved development writes must use the local Firestore emulator. Vercel preview/development deployments remain read-only. Use a designated non-customer acceptance record; do not test on an actual customer contract, send a real claim, or move money.
 
-### Production write approval receipt
+### Production write authority
 
-`ERP5_WRITE_APPROVAL_JSON` is an operational receipt, not a substitute for the checks it records. It must identify `freepasserp5`, confirm least-privilege IAM and a real backup/restore verification, bind the exact approved service-account email and production HTTPS origin, carry traceable IAM/restore/approval references, record `approvedAt`, and include a future `validUntil`. The runtime rejects an expired receipt or one copied to a different service account/origin. Do not set either verification flag from emulator tests, a green CI badge, or the mere existence of a service-account key.
+`ERP5_WRITE_APPROVAL_JSON` applies only to legacy direct-Firebase or one-off maintenance paths that still own a Firebase credential. It is not an Admin gateway runtime variable. For the delegated production path, IAM and backup/restore evidence is retained by the FreePass Data control plane, while Admin fails closed unless both write gates and the authenticated gateway configuration are valid. Do not infer that evidence from emulator tests, a green CI badge or the mere existence of configuration.
 
-This repository and the current FreePass Data repository do not implement a production Firestore backup/restore job. Until an external Firebase/GCP backup and restore drill is actually verified, production writes must remain off. The application intentionally cannot prove cloud IAM roles from a service-account JSON key; that verification also remains an operator/cloud-control-plane receipt.
+The application cannot prove cloud IAM roles from configuration alone. Backup/restore and minimum-IAM verification therefore remain operator/control-plane evidence even after the runtime gates are enabled.
 
 Verify save, reload, re-login and retrieval preserve the same record. Check duplicate clicks/concurrent submissions produce one intake and one audited outcome. Complete a normal intake/contract/delivery/settlement-record journey. Pre-delivery cancellation must create no new billing/payment/clawback; post-delivery termination must retain prior facts and track any clawback separately.
 
@@ -58,7 +58,7 @@ Verify save, reload, re-login and retrieval preserve the same record. Check dupl
 
 - Settlement records do not prove an external tax invoice has been issued or a bank transfer made. Record externally completed actions with evidence; do not mark them completed from UI intent alone.
 - Mixed clawback cash allocation remains guarded pending an explicit allocation policy. Do not guess how to allocate money across rows.
-- Claude owns electronic-signature implementation. Preserve its guards for image upload size, missing documents, expired/revoked sessions, changed terms and overflowing PDF text. A blocked case must be explained, not silently truncated or signed.
+- Codex remains the single writer for electronic-signature implementation; Claude reviews it read-only. Preserve the existing guards for image upload size, missing documents, expired/revoked sessions, changed terms and overflowing PDF text. A blocked case must be explained, not silently truncated or signed.
 - Missing supplier logos use company-name fallback; final catalog cutover and Galaxy keyboard/hardware acceptance are separate remaining checks.
 
 ## Rollback

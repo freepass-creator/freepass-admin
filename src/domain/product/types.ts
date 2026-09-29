@@ -67,8 +67,6 @@ export interface Offer {
   prepayment?: number;
   annualMileageKm?: number;
   policyValues: PolicyValue[];
-  /** FreePass Data의 원 Offer / 가격행 정체성. */
-  sourceOfferId?: string;
   termKey?: string;
   /** FreePass Data가 상품찾기 대표 최저가로 지정한 원천 Basis 행. */
   isListingPrice?: boolean;

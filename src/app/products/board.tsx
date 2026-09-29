@@ -7,7 +7,7 @@ import { sp, txt, won } from '../_fn/fmt';
 import { erp5Ready, settlements } from '../../server/freepass-data';
 import { FilterSheet } from '../_design/FilterSheet';
 import { Share } from '../_design/Share';
-import { productSections } from '../../domain/catalog/sections';
+import { productSections, type SectionItem } from '../../domain/catalog/sections';
 import { 꼴, 있음 } from '../_design/Sections';
 import type { CanonicalProduct, Offer } from '../../domain/product/types';
 import { buildIntakeOptions } from '../intake/intake-options';
@@ -22,6 +22,7 @@ import type { SettlementRow } from '../../domain/settlement/types';
 import { previewFeeAction, type FeePreview } from '../intake/actions';
 import { Icon } from '../_design/Icon';
 import { PhotoGallery } from '../_design/PhotoGallery';
+import { LEGACY_POLICY_LABELS } from '../_design/ProductInfo';
 
 /**
  * ★★★ 상품찾기 새 판 — 목업(docs/ui/mockups/admin-mobile-five-functions.html) 마크업 그대로 (대표 2026-09-22 「판갈이」)
@@ -36,6 +37,14 @@ const 요금곁 = (o: Offer) => [
   o.prepayment ? `선납 ${won(o.prepayment)}원` : '',
   o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : '',
 ].filter(Boolean).join(' · ');
+const 정책값 = (it: SectionItem) => {
+  if (it.key !== 'sheet_synced_at') return 꼴(it);
+  const ms = Number(it.value);
+  if (!Number.isFinite(ms) || ms <= 0) return 꼴(it);
+  return new Date(ms).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+};
 
 /**
  * mode — 'find'(상품 · /products): 오른쪽 = 신규 계약접수.
@@ -249,9 +258,9 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
 
                 {나머지구역.map((s) => (
                   <div key={s.key} className="section">
-                    <h4>{s.title === '차량' ? '차량 정보' : s.title}</h4>
+                    <h4>{s.key === 'policy_other' ? '기타 정책 정보' : s.title}</h4>
                     <div className="facts">
-                      {s.items.map((it) => <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>)}
+                      {s.items.map((it) => <div key={it.key} className="fact"><span>{LEGACY_POLICY_LABELS[it.key] ?? it.label}</span><b>{정책값(it)}</b></div>)}
                     </div>
                   </div>
                 ))}

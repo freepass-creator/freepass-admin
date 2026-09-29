@@ -21,12 +21,12 @@ const 수 = (n: number) => n.toLocaleString('ko-KR');
 const 원 = (n?: number | null) => (n === undefined || n === null ? '—' : `${수(Math.round(n))}원`);
 
 /** 옛 이름 칸(사전에 없는 칸) → 사람 말. 여기 없는 영문 칸은 안 세운다 */
-const 옛이름: Record<string, string> = {
-  injury_deductible: '대인 면책금', property_deductible: '대물 면책금', self_body_deductible: '자기신체 면책금',
-  uninsured_deductible: '무보험 면책금', own_damage_min_deductible: '자차 최소 면책금', own_damage_max_deductible: '자차 최대 면책금',
-  penalty_condition: '중도해지 조건', policy_name: '정책 이름', term_description: '정책 설명',
-  age_21_cost: '만21세 하향 요금', age_23_cost: '만23세 하향 요금', over_mileage_rate_per_km: '초과 주행요금(1km당)',
-  sheet_synced_at: '시트 반영',
+export const LEGACY_POLICY_LABELS: Record<string, string> = {
+  injury_deductible: '대인 면책금', property_deductible: '대물 면책금', self_body_deductible: '자손 면책금',
+  uninsured_deductible: '무보험차상해 면책금', own_damage_min_deductible: '자차 최소 면책금', own_damage_max_deductible: '자차 최대 면책금',
+  penalty_condition: '중도해지 위약금', policy_name: '정책명', term_description: '정책 설명',
+  age_21_cost: '만 21세 하향 추가요금', age_23_cost: '만 23세 하향 추가요금', over_mileage_rate_per_km: '초과주행 요금(1km당)',
+  sheet_synced_at: '원천 시트 동기화 시각', product_type: '상품구분',
 };
 /** 겹쳐서 안 세우는 칸 — 제목·요약이 이미 든다 */
 const 뺌 = new Set(['perks']);
@@ -111,7 +111,7 @@ export function ProductInfo({ sections, offers }: { sections: Section[]; offers:
     for (const it of s.items) {
       if (s.key === 'policy_other') {
         if (옛겹침.has(it.key)) continue;
-        if (옛이름[it.key]) 칸.set(it.key, { ...it, label: 옛이름[it.key] });
+        if (LEGACY_POLICY_LABELS[it.key]) 칸.set(it.key, { ...it, label: LEGACY_POLICY_LABELS[it.key] });
         else 옛칸.push(it);
       } else if (!뺌.has(it.key)) 칸.set(it.key, it);
     }

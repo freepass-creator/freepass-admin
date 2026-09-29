@@ -268,6 +268,18 @@ test('product detail keeps rental offer selection minimal and the intro photo co
   assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
 });
 
+test('legacy policy fields use the established Korean business labels',()=>{
+  const board=read('src/app/products/board.tsx');
+  const info=read('src/app/_design/ProductInfo.tsx');
+  for (const label of ['대인 면책금','자차 최대 면책금','중도해지 위약금','정책명','대물 면책금','자손 면책금','정책 설명','무보험차상해 면책금','만 21세 하향 추가요금','만 23세 하향 추가요금','초과주행 요금(1km당)','원천 시트 동기화 시각','상품구분']) {
+    assert.ok(info.includes(`'${label}'`),label);
+  }
+  assert.ok(board.includes("s.key === 'policy_other' ? '기타 정책 정보'"));
+  assert.ok(board.includes('LEGACY_POLICY_LABELS[it.key] ?? it.label'));
+  assert.ok(board.includes("if (it.key !== 'sheet_synced_at') return 꼴(it)"));
+  assert.ok(board.includes("timeZone: 'Asia/Seoul'"));
+});
+
 test('mobile workspace uses explicit list detail work depth',()=>{
   assert.ok(workspace.includes("['list', 'detail', 'work']"));
   assert.ok(workspace.includes('data-phone={view}'));

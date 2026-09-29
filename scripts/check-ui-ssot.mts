@@ -269,7 +269,7 @@ for (const [re, label] of quickFilterVisualBaseline) {
 }
 
 const cardRhythmBaseline = [
-  [/64px visual tile contract/, 'desktop compact list visual tile 64px'],
+  [/56px compact tile/, 'desktop compact list visual tile 56px'],
   [/--erp-row-standard-min-h:\s*72px/, 'desktop standard card min 72px'],
   [/--ui-row-min-h:\s*88px/, 'mobile card min 88px'],
   [/--ui-list-gap:\s*12px/, 'mobile list gap 12px'],
@@ -615,7 +615,7 @@ for (const [re, label] of mobileResponsiveBaseline) {
 /* Page QA structural invariants — prevent accidental redesign of core workflows. */
 const pageQaRules = [
   ['src/app/_erp/ProductsScreen.tsx', [
-    /<Panel compact wide>/,
+    /<Panel(?:\s+kind="list")?\s+compact wide>/,
     /<SearchBar/,
     /<QuickFilter/,
     /<RowCards label="상품 목록">/,
@@ -686,7 +686,7 @@ const densityBaseline = [
   [/--erp-query-row-h:\s*48px/, 'desktop query row 48px'],
   [/--erp-quick-row-h:\s*40px/, 'desktop quick filter row 48px'],
   [/--erp-panel-foot-h:\s*56px/, 'desktop panel foot 56px'],
-  [/64px visual tile contract/, 'desktop compact visual tile 64px'],
+  [/56px compact tile/, 'desktop compact visual tile 56px'],
   [/--erp-row-standard-min-h:\s*72px/, 'desktop standard row 72px'],
 ] as const;
 for (const [re, label] of densityBaseline) {
@@ -794,8 +794,8 @@ const solidMaterialityBaseline = [
   [/Solid commercial ERP materiality/, 'desktop solid ERP materiality block'],
   [/\.erp-std \.erp-panel \{\s*box-shadow:\s*none;/s, 'desktop panel rests flat'],
   [/Solid commercial ERP materiality \(mobile\/live\)/, 'mobile solid ERP materiality block'],
-  [/resting panel has outer shadow/, 'visual QA resting panel shadow guard'],
-  [/selected card\/tile has outer shadow/, 'visual QA selected outer shadow guard'],
+  [/resting card shadow too strong/, 'visual QA excessive resting shadow guard'],
+  [/selected card has outer elevation/, 'visual QA selected outer elevation guard'],
 ] as const;
 for (const [re, label] of solidMaterialityBaseline) {
   const target = /visual QA/.test(label) ? visualQa : `${desktopCss}\n${cssFinal}`;
@@ -925,12 +925,12 @@ for (const file of ['src/app/_erp/ProductsScreen.tsx','src/app/_erp/Workspace.ts
 
 const listVisualTileBaseline = [
   ['scripts/visual-qa.cjs', /list card outer height mismatch/, 'visual QA list-card outer height guard'],
-  [DESKTOP_CSS, /64px visual tile contract/, 'desktop 64px visual tile contract'],
+  [DESKTOP_CSS, /56px compact tile/, 'desktop 56px visual tile contract'],
   ['src/app/_design/admin-final.css', /64px visual parity \(mobile\/live\)/, 'mobile 64px visual tile contract'],
   ['src/app/_erp/ProductDetail.tsx', /export function ProductThumb/, 'product thumbnail helper'],
   ['src/app/_erp/parts.tsx', /thumbStatus \? null : badge/, 'desktop duplicate status badge suppression'],
   ['src/app/_design/ListRow.tsx', /!status && badge/, 'mobile duplicate status badge suppression'],
-  ['scripts/visual-qa.cjs', /list visual tile must be 64x64/, 'visual QA 64px tile guard'],
+  ['scripts/visual-qa.cjs', /list visual tile must be/, 'visual QA responsive tile guard'],
 ] as const;
 for (const [file, re, label] of listVisualTileBaseline) {
   const src = await readSource(file);

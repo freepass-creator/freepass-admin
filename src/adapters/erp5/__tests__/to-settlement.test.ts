@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { feeOf, toSettlementRow } from '../to-settlement.js';
 import { blockOf, isOpenIntake, isPerformance, margin } from '../../../domain/settlement/types.js';
+import { stageEvidenceOf } from '../../../domain/settlement/stage.js';
 
 /* 값은 ERP5(freepasserp5) settlement_rows 461줄 실측에서 그대로 딴 것이다. */
 
@@ -224,5 +225,43 @@ describe('F04 legacy installment round compatibility', () => {
       rounds: 2,
     }, 'stl_current_rounds');
     assert.equal(row.paidRounds, 3);
+  });
+
+  it('keeps F04 import provenance after migration', () => {
+    const { row } = toSettlementRow({
+      code: 'stl_source', plate: '12가3456', receivedAt: '2026-09-21',
+      fromSheet: 'F04 연동', _f04: { tab: '접수', row: 67, run: 'f04fill-20260928', at: '2026-09-28T03:00:00.000Z' },
+    }, 'stl_source');
+    assert.deepEqual(row.source, {
+      sheet: 'F04 연동', tab: '접수', rowNo: 67,
+      importRun: 'f04fill-20260928', importedAt: '2026-09-28T03:00:00.000Z',
+      originalPlate: '12가3456',
+    });
+  });
+
+  it('derives current state from facts instead of the source tab', () => {
+    const cancelled = toSettlementRow({
+      code: 'stl_cancelled', plate: '12가3456', receivedAt: '2026-09-21',
+      sourceTab: '접수', delivered: true, payKind: '2회분납', cancelled: true,
+    }, 'stl_cancelled').row;
+    assert.deepEqual(stageEvidenceOf(cancelled), {
+      state: '취소', reason: '취소 사실이 기록돼 있습니다.',
+    });
+
+    const installment = toSettlementRow({
+      code: 'stl_installment', plate: '34나5678', receivedAt: '2026-09-22',
+      sourceTab: '접수', delivered: true, deliveredAt: '2026-09-22', payKind: '2회분납', paidRounds: 1,
+    }, 'stl_installment').row;
+    assert.deepEqual(stageEvidenceOf(installment, new Date('2026-09-28T00:00:00Z')), {
+      state: '분납실적', reason: '인도완료 후 2회 분납 진행 중 · 납입 1회차.',
+    });
+
+    const unknownPayKind = toSettlementRow({
+      code: 'stl_unknown_pay', plate: '56다7890', receivedAt: '2026-09-23',
+      sourceTab: '완납실적', delivered: true,
+    }, 'stl_unknown_pay').row;
+    assert.deepEqual(stageEvidenceOf(unknownPayKind), {
+      state: '접수', reason: '유효한 인도완료일이 아직 없습니다.',
+    });
   });
 });

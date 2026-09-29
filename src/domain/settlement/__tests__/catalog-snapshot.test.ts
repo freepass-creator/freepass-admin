@@ -5,6 +5,10 @@ import type { CanonicalProduct, Offer } from '../../product/types';
 
 const offer=(partial:Partial<Offer>={}):Offer=>({
   id:'offer-36',
+  sourceOfferId:'O-A',
+  policyId:'POL-A',
+  offerRevision:3,
+  policyState:'COMPLETE',
   termMonths:36,
   monthlyRent:690_000,
   deposit:1_000_000,
@@ -52,6 +56,10 @@ test('sealed intake snapshot preserves product policy, offer policy, and resolve
   assert.equal(s.product.status,'즉시출고');
   assert.equal(s.product.specs?.mileageKm,32_000);
   assert.equal(s.product.consumerPrice,40_000_000);
+  assert.equal(s.offer.sourceOfferId,'O-A');
+  assert.equal(s.offer.policyId,'POL-A');
+  assert.equal(s.offer.offerRevision,3);
+  assert.equal(s.offer.policyState,'COMPLETE');
   assert.match(String(s.digest),/^[a-f0-9]{64}$/);
 });
 

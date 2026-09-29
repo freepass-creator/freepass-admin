@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { intakeCode, intakeKey, settlementCode, settlementKey, eventDocId } from '../code.js';
+import {
+  ADMIN_INTAKE_CUTOVER_DATE, eventDocId, intakeAuthorityForDate,
+  intakeCode, intakeKey, settlementCode, settlementKey,
+} from '../code.js';
 import { intakeRecord, progressPatch, validateIntake, type IntakeInput } from '../intake.js';
 import { claimLedger, ledgerMonths, payLedger } from '../ledgers.js';
 import { billingMonth, bucketOf, nextInstallmentDate, paidRoundsOf, stageOf } from '../stage.js';
@@ -17,6 +20,12 @@ const base: IntakeInput = {
 };
 
 describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은 코드 (병행 입력에서 두 줄이 안 선다)', () => {
+  it('10월 운영 전환 전은 시트 이력, 10월부터는 Admin 접수 정본이다', () => {
+    assert.equal(ADMIN_INTAKE_CUTOVER_DATE, '2026-10-01');
+    assert.equal(intakeAuthorityForDate('2026-09-30'), 'SHEET_HISTORY');
+    assert.equal(intakeAuthorityForDate('2026-10-01'), 'ADMIN');
+    assert.equal(intakeAuthorityForDate(''), 'HOLD');
+  });
   it('띄어쓰기가 달라도 같은 열쇠 · 같은 코드', () => {
     assert.equal(settlementKey('12가 3456', '2026-09-18'), settlementKey('12가3456', '2026-09-18'));
     assert.equal(settlementCode('12가 3456', '2026-09-18'), settlementCode('12가3456', '2026-09-18'));

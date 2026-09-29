@@ -239,6 +239,9 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
     return {
       id: `${offer.offerId}#${term.termKey}`,
       sourceOfferId: offer.offerId,
+      ...(offer.policyId ? { policyId: offer.policyId } : {}),
+      offerRevision: offer.offerRevision,
+      policyState: offer.policyState,
       termKey: term.termKey,
       supplierId: offer.supplierId,
       termMonths: term.termMonths,

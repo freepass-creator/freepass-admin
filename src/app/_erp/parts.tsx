@@ -26,12 +26,27 @@ export function Screen({ name, children, footer }: { name: string; children: Rea
  * compact 와 같이 쓰면 좁은 카드가 두 칸 그리드로 깐다(대표 2026-09-24 「패널 두 개를 합쳐서 … 목록
  * 패널이 1 곱하기 2짜리가 들어가」).
  */
-export function Panel({ compact, wide, flip, children }: { compact?: boolean; wide?: boolean; flip?: boolean; children: ReactNode }) {
-  return <section className={`erp-panel${compact ? ' erp-panel--compact' : ''}${wide ? ' erp-panel--wide' : ''}${flip ? ' erp-panel--flip' : ''}`}>{children}</section>;
+export type PanelKind = 'list' | 'detail' | 'input';
+
+export function Panel({ kind, compact, wide, flip, children }: {
+  kind: PanelKind;
+  compact?: boolean;
+  wide?: boolean;
+  flip?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={`erp-panel${compact ? ' erp-panel--compact' : ''}${wide ? ' erp-panel--wide' : ''}${flip ? ' erp-panel--flip' : ''}`}
+      data-panel-kind={kind}
+    >
+      {children}
+    </section>
+  );
 }
 
 /** 패널 머리 — 왼쪽 이름표 칩 + 제목, 오른쪽 칩(§5-4 「전체 N건」/「고른 <대상>」). */
-export function PanelHead({ kind, title, count }: { kind: string; title: ReactNode; count: ReactNode }) {
+export function PanelHead({ kind, title, count }: { kind: '목록' | '상세내용' | '입력'; title: ReactNode; count: ReactNode }) {
   return (
     <div className="erp-panel-head">
       <span className="erp-panel-kind">{kind}</span>

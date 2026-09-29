@@ -9,15 +9,15 @@ import { useEffect, useRef, useState } from 'react';
 import { mount, type SharedLoginBrand } from './shared/login.js';
 import './shared/login.css';
 
-/** 어드민 간판 — 공식 CI(Exo 2 · freepass 600 #1B2A4A + 뒷말 300 #7F93B3) */
-const FREEPASS_ADMIN_BRAND: SharedLoginBrand = {
+/** 프리패스모빌리티 공식 CI(Exo 2 · freepass 600 #1B2A4A + mobility 300 #7F93B3) */
+const FREEPASS_MOBILITY_BRAND: SharedLoginBrand = {
   kind: 'ours',
-  label: 'freepass admin',
+  label: 'freepass mobility',
   color: '#1B2A4A',
   colorHover: '#24365E',
   wordmark: [
     { text: 'freepass', weight: 600 },
-    { text: 'admin', weight: 300, color: '#7F93B3' },
+    { text: 'mobility', weight: 300, color: '#7F93B3' },
   ],
 };
 
@@ -45,7 +45,7 @@ export function LoginScreen({ config, next }: { config: WebConfig | null; next: 
         await instance.authStateReady?.();
         if (!alive || !host.current) return;
         mount(host.current, {
-          brand: FREEPASS_ADMIN_BRAND,
+          brand: FREEPASS_MOBILITY_BRAND,
           policy: 'APPROVAL',   /* 어드민은 승인제 — SHARED-LOGIN-DESIGN.md §4 */
           fields: 'basic',      /* 사업자번호·활동유형은 영업 가입에만 */
           consent: false,

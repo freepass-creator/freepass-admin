@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { esignEnabled, isEsignPath } from './esign-scope';
+import { esignEnabled, isEsignRuntimePath } from './esign-scope';
 
 test('esign stays closed unless ESIGN_ENABLED=on', () => {
   const before = process.env.ESIGN_ENABLED;
@@ -16,11 +16,11 @@ test('esign stays closed unless ESIGN_ENABLED=on', () => {
   }
 });
 
-test('esign paths cover admin list, customer link, esign API and intake-to-contract only', () => {
-  for (const p of ['/esign', '/sign/abc', '/api/esign/public/t', '/api/esign/admin/c1/approve', '/api/esign/final/s1', '/api/intake/I-1/contract']) {
-    assert.equal(isEsignPath(p), true, p);
+test('esign runtime gate covers customer links and write APIs but not the admin page', () => {
+  for (const p of ['/sign/abc', '/api/esign/public/t', '/api/esign/admin/c1/approve', '/api/esign/final/s1', '/api/intake/I-1/contract']) {
+    assert.equal(isEsignRuntimePath(p), true, p);
   }
-  for (const p of ['/intake', '/intake/list', '/settlement', '/products', '/c/token', '/signin', '/esignature', '/api/contracts/c1/terminate']) {
-    assert.equal(isEsignPath(p), false, p);
+  for (const p of ['/esign', '/esign/detail', '/intake', '/intake/list', '/settlement', '/products', '/c/token', '/signin', '/esignature', '/api/contracts/c1/terminate']) {
+    assert.equal(isEsignRuntimePath(p), false, p);
   }
 });

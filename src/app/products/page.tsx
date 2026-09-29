@@ -1,11 +1,12 @@
-import { ProductWorkspace } from './workspace';
-import { ProductsScreen } from '../_erp/ProductsScreen';
+import { ProductsBoard } from './board';
 
 export const dynamic = 'force-dynamic';
 
-/** 상품찾기 — 찾고 상세 보는 데 특화. 상품 목록(판 두 개 폭) + 상품 상세. (대표 2026-09-18) */
+/**
+ * 상품찾기 — 계약접수와 동일한 목록/상세 패널을 그대로 쓴다.
+ * `mode="find"`에서 목록 패널의 폭만 2배가 되고, 패널 내부 구조와 상품상세는 /intake와 같다.
+ */
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
-  /* 같은 actual route가 viewport에 따라 적응형 composition으로 렌더링된다. */
-  return <><ProductsScreen q={q} /><ProductWorkspace q={q} mode="find" base="/products" /></>;
+  return <ProductsBoard q={q} mode="find" />;
 }

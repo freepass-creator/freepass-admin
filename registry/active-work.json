@@ -86,9 +86,9 @@
   },
   "ui_authority": {
     "status": "CANONICAL_USER_APPROVED",
-    "decided_at": "2026-09-26",
-    "lineage": "PR #92 actual route (src/app/_erp/*)",
-    "merged_via": "PR #121",
+    "decided_at": "2026-09-28",
+    "lineage": "ProductsBoard intake actual route (src/app/products/board.tsx)",
+    "merged_via": "PENDING_CURRENT_CHANGE",
     "doc": "docs/ui/DESIGN-AUTHORITY.md"
   },
   "deployment": {

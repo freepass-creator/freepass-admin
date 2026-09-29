@@ -144,7 +144,10 @@ export function ProductDetail({ sel, selOffers, selOffer, base, q }: {
               <div className="erp-hero-info">
                 <h2 className="name">{carName(sel.p)} {sel.p.status ? <Badge tone={STATUS_TONE[sel.p.status] ?? 'neutral'}>{sel.p.status}</Badge> : null}</h2>
                 <p className="sub"><b>{txt(sel.p.registration?.vehicleNumber)}</b>{txt(sel.p.vehicle.manufacturerId)} · {txt(sel.p.supplierName ?? sel.p.supplierId)}</p>
-                <p className="erp-hero-line">{sel.p.specs.modelYear ?? '—'}식 · {typeof sel.p.specs.mileageKm === 'number' ? `${sel.p.specs.mileageKm.toLocaleString('ko-KR')}km` : '—'} · {txt(sel.p.extColor)} · {txt(sel.p.productKind)}</p>
+                <div className="erp-tags" aria-label="차량 주요 정보">
+                  {sel.p.specs.fuel ? <span className="erp-tag">{sel.p.specs.fuel}</span> : null}
+                  {sel.p.specs.modelYear ? <span className="erp-tag">{sel.p.specs.modelYear}년식</span> : null}
+                </div>
               </div>
             </div>
 

@@ -12,7 +12,8 @@ import { ClawbackForm, FeeForm, MoneyForm, TerminationClawbackReviewForm } from 
 import { LifeForm, SideStep } from '../settlement/LifeForms';
 import { cashRemainingOf, type Axis } from '../../domain/settlement/lifecycle';
 import { PaidRounds } from './PaidRounds';
-import { billingMonth, nextInstallmentDate, roundsOf, stageOf } from '../../domain/settlement/stage';
+import { billingMonth, nextInstallmentDate, roundsOf, stageEvidenceOf, stageOf } from '../../domain/settlement/stage';
+import { intakeKey } from '../../domain/settlement/code';
 import { Sections } from '../_design/Sections';
 import { settlementSections } from '../../domain/catalog/sections';
 import { progressFormId } from './progress-form-id';
@@ -194,6 +195,14 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
   ]);
   const 환수검토 = terminationClawbackReview(r, clawbacks);
   const 다음 = 다음블록 ? adminBlockLabel(다음블록) : (r.progress.cancelled ? '취소됨' : '끝');
+  const 상태근거 = stageEvidenceOf(r);
+  const 원본위치 = [r.source.sheet, r.source.tab, r.source.rowNo ? `${r.source.rowNo}행` : null].filter(Boolean).join(' · ');
+  const 연결키 = intakeKey(r.plate, r.catalogRef?.productId, r.receivedAt, raw.intakeRequestId, raw.intakeIdentityMode);
+  const 기록충돌 = [
+    !r.progress.delivered && r.progress.deliveredAt ? '인도일은 있으나 인도완료 표시가 없습니다.' : null,
+    r.progress.delivered && !r.progress.deliveredAt ? '인도완료는 있으나 인도일이 없습니다.' : null,
+    r.progress.cancelled && r.progress.delivered ? '취소와 인도완료가 함께 기록돼 있어 원본 확인이 필요합니다.' : null,
+  ].filter(Boolean) as string[];
   return (
     <>
       {/* 폰 — 목록(intake) 또는 실적(settlement)으로 뒤로. back 은 부르는 쪽이 정한다 */}
@@ -223,6 +232,19 @@ export async function IntakeDetailPanel({ code, created, exists, back, newHref, 
         <SummaryItem label="영업담당자">{txt(r.agent)}</SummaryItem>
         <SummaryItem label="현재 업무">{업무흐름}</SummaryItem>
       </SummaryGrid>
+
+      <h3 className="dz-sub">데이터 출처 · 현재 상태 근거</h3>
+      <SummaryGrid>
+        <SummaryItem label="현재 상태">{상태근거.state}</SummaryItem>
+        <SummaryItem label="판정 근거">{상태근거.reason}</SummaryItem>
+        <SummaryItem label="원본 위치">{원본위치 || (r.source.importRun ? '출처 위치 미기록' : 'Admin 직접 접수')}</SummaryItem>
+        <SummaryItem label="원본 차량번호">{txt(r.source.originalPlate)}</SummaryItem>
+        <SummaryItem label="연결 기준">{연결키 || '원본 식별자 확인 필요'}</SummaryItem>
+        <SummaryItem label="이관 실행">{txt(r.source.importRun)}</SummaryItem>
+        <SummaryItem label="이관 시각">{txt(r.source.importedAt)}</SummaryItem>
+      </SummaryGrid>
+      {r.source.tab && <Notice tone="ok">원본 탭 「{r.source.tab}」은 출처 위치이며, 현재 상태는 기록된 사실로 별도 판정합니다.</Notice>}
+      {기록충돌.map((message) => <Notice key={message} tone="warn">원본 확인 필요 · {message}</Notice>)}
 
       <h3 className="dz-sub">계약 · 실적 기준</h3>
       <SummaryGrid>

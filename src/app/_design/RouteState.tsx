@@ -8,11 +8,11 @@ export function RouteLoading({ title }: { title: string }) {
     <>
       <Screen name="route-loading">
         <div className="erp-workspace">
-          <Panel>
-            <PanelHead kind="상태" title={title} count="불러오는 중" />
+          <Panel kind="list">
+            <PanelHead kind="목록" title={title} count={<span className="sr-only">불러오는 중</span>} />
             <PanelBody>
-              <PanelState kind="loading" title="최신 데이터를 확인하고 있습니다.">
-                화면 구성을 유지한 채 데이터를 불러옵니다.
+              <PanelState kind="loading" title="데이터를 불러오고 있습니다.">
+                잠시만 기다려 주세요.
               </PanelState>
             </PanelBody>
           </Panel>
@@ -21,13 +21,7 @@ export function RouteLoading({ title }: { title: string }) {
       <section className="workspace dz-route-state" data-phone="list" aria-busy="true" aria-live="polite">
         <section className="panel product-panel">
           <PanelHeader title={title} />
-          <div className="dz-state-block">
-            <strong>불러오는 중…</strong>
-            <p>최신 데이터를 확인하고 있습니다.</p>
-            <span className="dz-state-skeleton" aria-hidden />
-            <span className="dz-state-skeleton short" aria-hidden />
-            <span className="dz-state-skeleton" aria-hidden />
-          </div>
+          <div className="dz-route-progress" role="status" aria-label="데이터 불러오는 중" />
         </section>
       </section>
     </>
@@ -49,8 +43,8 @@ export function RouteError({ title, error, reset }: {
     <>
       <Screen name="route-error">
         <div className="erp-workspace">
-          <Panel>
-            <PanelHead kind="상태" title={title} count="읽기 실패" />
+          <Panel kind="list">
+            <PanelHead kind="목록" title={title} count="읽기 실패" />
             <PanelBody>
               <PanelState kind="error" title="데이터를 불러오지 못했습니다.">
                 일시적인 오류가 발생했습니다. 다시 시도해 주세요.{error.digest ? ` 오류번호 ${error.digest}` : ''}

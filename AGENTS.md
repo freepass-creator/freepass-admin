@@ -26,9 +26,9 @@
 - `docs/WORK-INBOX.md` 등 과거 기록의 「ACTIVE branch 2개」와 UI→운영개시 대기 순서는 종료된 이력이다. 현재 작업 상태는 이 절과 `docs/BRANCH-WORKFLOW.md`, `registry/active-work.json`을 따른다.
 - 코드 병합은 운영 배포/실데이터 쓰기/cutover/전자계약 활성화 승인이 아니다. 운영 개통 담당의 별도 승인·검증을 유지한다.
 
-## -1. SINGLE UI LINEAGE — PR #92 · USER APPROVED 2026-09-26
+## -1. SINGLE UI LINEAGE — ProductsBoard intake · USER APPROVED 2026-09-28
 
-**화면 정본 확정.** PC 화면은 PR #92 계보(현재 main의 `src/app/_erp/*`) 하나다. 그 밖의 화면·목업·브랜치·과거 잠금 문서는 **폐기(DISCARDED)** 이며, `docs/ui/DESIGN-AUTHORITY.md`의 폐기 목록을 되살리거나 참고해 화면을 바꾸지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
+**최신 화면 정본 확정.** `/intake`는 사용자 재확정에 따라 로컬에서 실데이터로 고도화된 `ProductsBoard`의 3패널 구조를 메인 actual route로 사용한다. PR #92 계보는 다른 업무 화면과 공용 부품의 기준으로 유지하지만 `/intake`보다 우선하지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
 
 UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 1. `docs/ui/DESIGN-AUTHORITY.md`
@@ -36,7 +36,7 @@ UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 3. `docs/ui/ADMIN-UI-UX-SSOT.md`
 4. `docs/ui/admin-ui-ux-ssot.json`
 
-**PC 디자인 정본은 PR #92 actual route의 `src/app/_erp/*` 구현 한 계보뿐이다.** (사용자 확정 2026-09-26: 「큰 화면으로 준 92버전이 정본이고 메인으로 합쳐져야 돼」)
+**계약접수 PC 디자인 정본은 `src/app/products/board.tsx` + `board.css`의 actual route다.** (사용자 확정 2026-09-28: 「로컬 목업을 메인으로 흡수」 「이걸 메인으로 승격」)
 
 UI 규칙:
 - 현재 actual route와 UI SSOT만 사용한다.

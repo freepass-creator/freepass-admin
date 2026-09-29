@@ -14,15 +14,32 @@
   body:has(> .erp-theme-flag) {
     display: grid;
     grid-template-columns: var(--erp-sidenav-w) minmax(0, 1fr);
-    grid-template-rows: var(--erp-topbar-h) minmax(0, 1fr) var(--erp-statusbar-h);
-    grid-template-areas: "top top" "side main" "side status";
+    grid-template-rows: var(--erp-topbar-h) minmax(0, 1fr);
+    grid-template-areas: "top top" "side main";
     height: 100dvh; min-width: var(--erp-app-min-w); margin: 0; padding: 0; overflow: hidden;
     background: var(--erp-color-bg); color: var(--erp-color-text);
     font-family: var(--erp-font-family);
   }
   body:has(> .erp-theme-flag) > .erp-topbar { grid-area: top; }
   body:has(> .erp-theme-flag) > .erp-sidenav { grid-area: side; }
-  body:has(> .erp-theme-flag) > .erp-statusbar { grid-area: status; }
+  body:has(> .erp-theme-flag):has(> .erp-sidenav[data-collapsed="true"]) {
+    grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr);
+  }
+  body:has(> .erp-theme-flag) > .erp-sidenav[data-collapsed="true"] {
+    padding-inline: 6px; overflow-x: hidden;
+  }
+  .erp-sidenav-inner { min-height: 100%; display: flex; flex-direction: column; }
+  .erp-sidenav-toggle {
+    min-height: 40px; margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0; border-radius: var(--erp-r-md); background: var(--erp-color-nav-raised);
+    color: var(--erp-color-nav-text); font: inherit; font-size: var(--erp-fs-body);
+  }
+  .erp-sidenav-toggle:hover { color: var(--erp-color-nav-text-strong); }
+  .erp-sidenav[data-collapsed="true"] .erp-nav-group { display: none; }
+  .erp-sidenav[data-collapsed="true"] :is(.erp-nav-item,.erp-sidenav-toggle) {
+    width: 44px; min-height: 44px; margin-inline: auto; padding: 0; justify-content: center; gap: 0;
+  }
+  .erp-sidenav[data-collapsed="true"] .erp-nav-label { display: none; }
   body:has(> .erp-theme-flag) > main.fn-main {
     grid-area: main; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
     padding: 0; background: var(--erp-color-bg);
@@ -40,8 +57,14 @@
   body:has(> .erp-theme-flag) > main.fn-main > :not(.erp-screen):not(.fn-sysinfo) { display: none !important; }
   body:has(> .erp-theme-flag) > main.fn-main > .erp-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .erp-std .erp-brand .dz-brand { color: var(--erp-color-nav-text-strong); }
+  /* 상단바는 검색과 상태/사용자 묶음을 양 끝 축으로 정렬한다. 상태 표지가 검색창 옆에 떠 있지 않게 한다. */
+  .erp-std.erp-topbar { overflow: hidden; }
+  .erp-std .erp-gsearch { min-width: 280px; }
+  .erp-std .erp-topbar-right { flex: none; min-width: 0; }
+  .erp-std .erp-user { flex: none; min-width: 136px; }
+  .erp-std .erp-user > div { min-width: 0; line-height: 1.2; white-space: nowrap; }
   /* 가상 데이터 표지 — 운영 데이터로 오해하지 않게 상단바에 늘 보인다 */
-  .erp-std .erp-demo-flag { padding: 3px 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-warn-bg); color: var(--erp-color-warn); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); }
+  .erp-std .erp-demo-flag { flex: none; padding: 3px 10px; border-radius: var(--erp-r-pill); background: var(--erp-color-warn-bg); color: var(--erp-color-warn); font-size: var(--erp-fs-label); font-weight: var(--erp-fw-bold); white-space: nowrap; }
   /* 규격 카드 안에 기능 쪽 판(접수 양식 · 처리)을 앉힐 때 — 판의 겉틀만 걷는다(안의 입력 · 단추는 기능 쪽 그대로) */
   .erp-std .erp-embed .panel { border: 0; box-shadow: none; padding: 0; background: transparent; min-height: 0; overflow: visible; }
   .erp-std .erp-embed .panel-head { display: none; }
@@ -463,5 +486,182 @@
 
   .erp-std :is(.dz-fs-open) {
     border-radius: var(--erp-r-md);
+  }
+}
+
+/* 새로고침 중에는 설명문으로 화면을 가리지 않고 패널 상단에 진행선만 보인다. */
+.erp-route-progress,
+.dz-route-progress {
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(27,42,74,.08);
+}
+.erp-route-progress::after,
+.dz-route-progress::after {
+  content: "";
+  display: block;
+  width: 36%;
+  height: 100%;
+  background: var(--erp-color-primary, #1b2a4a);
+  animation: fp-route-progress 1s ease-in-out infinite alternate;
+}
+@keyframes fp-route-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(280%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .erp-route-progress::after,
+  .dz-route-progress::after { animation: none; width: 100%; opacity: .45; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-09-28 — /intake visual authority
+ * 상품·실적·정산·전자계약의 PC 화면도 계약접수와 같은 밀도와 물성을 쓴다.
+ * 업무별 데이터/패널 수는 유지하고, 간격·컨트롤·카드·선택 표현만 한 문법으로 수렴한다.
+ * ═══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  :root {
+    --fp-workspace-gutter-x: 10px;
+    --fp-workspace-gutter-y: 10px;
+    --fp-workspace-gap: 10px;
+  }
+
+  .erp-std .erp-workspace {
+    --erp-fs-body: 13px;
+    --erp-fs-label: 12px;
+    --erp-fs-caption: 11px;
+    --erp-fs-panel: 14px;
+    --erp-fs-section: 13px;
+    padding: 10px;
+    gap: 10px;
+    background: var(--erp-color-canvas);
+  }
+
+  .erp-std .erp-panel {
+    border: 1px solid rgba(16,24,40,.06);
+    border-radius: 8px;
+    background: var(--erp-color-bg);
+    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+  }
+
+  .erp-std .erp-panel-head {
+    min-height: 36px;
+    padding: 10px 12px 6px;
+    gap: 6px;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .erp-std .erp-panel-kind {
+    display: none;
+  }
+
+  .erp-std .erp-panel-head h2 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .erp-std .erp-panel-count {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .erp-std :is(.erp-searchbar,.erp-toolbar) {
+    min-height: 0;
+    padding: 0 12px 8px;
+    border: 0;
+    background: transparent;
+  }
+
+  .erp-std .erp-search {
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px var(--erp-color-line-strong);
+  }
+
+  .erp-std .erp-facet-opts {
+    gap: 6px;
+  }
+
+  .erp-std .erp-facet-opt {
+    min-height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--erp-color-primary-weak);
+    box-shadow: none;
+  }
+
+  .erp-std .erp-facet-opt[aria-pressed="true"],
+  .erp-std .erp-facet-opt[aria-current="true"] {
+    background: var(--erp-color-primary);
+    color: var(--erp-color-on-primary);
+  }
+
+  .erp-std .erp-rowcards,
+  .erp-std .erp-panel--compact .erp-rowcards {
+    gap: 8px;
+    padding: 0 12px 12px;
+    background: transparent;
+  }
+
+  .erp-std .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard {
+    min-height: 76px;
+    padding: 10px;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard,
+  .erp-std .erp-panel--compact .erp-rowcard--no-steps {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-areas: "thumb id amount";
+    column-gap: 10px;
+  }
+
+  .erp-std .erp-panel--compact .erp-rowcard-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+  }
+
+  .erp-std .erp-rowcard:hover,
+  .erp-std .erp-panel--compact .erp-rowcard:hover {
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(16,24,40,.09);
+  }
+
+  .erp-std .erp-rowcard[aria-current="true"],
+  .erp-std .erp-panel--compact .erp-rowcard[aria-current="true"] {
+    background: var(--erp-color-primary-weak);
+    box-shadow: inset 0 0 0 1.5px rgba(27,42,74,.42);
+  }
+
+  .erp-std :is(.erp-tile,.erp-listcard,.erp-info-card,.erp-offer-card) {
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+  }
+
+  .erp-std :is(.erp-btn,.erp-panel-foot .erp-btn) {
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .erp-std .erp-panel-foot {
+    min-height: 48px;
+    padding: 8px 12px;
+    border-top: 0;
+    background: var(--erp-color-bg);
   }
 }

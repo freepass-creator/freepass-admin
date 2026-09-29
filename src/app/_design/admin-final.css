@@ -3,13 +3,14 @@
  * 파일 분리 전 source order를 그대로 유지하기 위해 layout에서 globals.css 다음, _fn/fn.css 전에 import한다.
  */
 
-/* 현행: FreePass Sales 컨트롤 44 / 모서리 6 / 간격 8.
- * 패널·목록·정보 위계는 ADMIN-UI-UX-SSOT.md, 출처는 SALES-APP-BASELINE.md. */
+/* 현행: 계약접수(/intake)가 내부 Admin 전체 UI/UX의 시각 정본이다.
+ * 업무별 화면은 데이터와 패널 수만 달라질 수 있고, 버튼·간격·선택·상태·모바일 깊이 문법은
+ * 계약접수와 같은 규격을 쓴다. PC standard 36 / compact 32 / mobile touch 44. */
 :root {
-  --컨트롤: 44px; --카드: #f6f7f9; --카드손: #eef1f4;
+  --컨트롤: 36px; --카드: #f6f7f9; --카드손: #eef1f4;
 
   /* ★공통 UI/UX SSOT aliases — 화면값은 안 바꾸고, 다음 화면이 같은 숫자를 재사용하게 이름만 세운다.
-     현행 관리자 workspace 기준: 본문 컨트롤 44 · 주행동/모바일 터치 44 · 패널 라운드 4 · 컨트롤 라운드 6 · 글 18/14/12. */
+     현행 관리자 workspace 기준: PC 본문 36 · compact 32 · 주행동/모바일 터치 44 · 컨트롤 라운드 6 · 글 18/14/12. */
   --ui-text-title: var(--글제목);
   --ui-text-main: var(--글메인);
   --ui-text-support: var(--글보조);
@@ -50,9 +51,9 @@
 .dz-fs-axis { height: var(--ui-control-h); }
 /* 검색창 안 세부검색 — 32, 창 안에서 위아래·오른쪽 4 */
 .dz-fs-open { top: 6px; right: 4px; height: 32px; line-height: 16px; }
-/* 폰 판 탭도 40(띠 = 8 + 40 + 8) */
+/* 폰 판 탭은 44px 터치 영역을 유지한다. */
 @media (max-width: 900px) {
-  :root { --판탭: 56px; }
+  :root { --판탭: 56px; --컨트롤: 44px; --ui-control-h: 44px; }
   .phone-tabs { height: var(--판탭); }
   .phone-tabs a { height: var(--ui-control-h); line-height: 16px; }
   .fn-main .workspace .dz-bar-go > .primary, .fn-main .workspace .dz-bar-go > .dz-bar-sub { height: var(--ui-action-h); }  /* 폰 엄지 자리만 44 */

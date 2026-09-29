@@ -235,6 +235,19 @@ export function stageOf(r: R, now = new Date()): Stage {
   return due && due >= midnight(now) ? '분납실적' : '완납실적';
 }
 
+/** stageOf 정본 판정을 사람이 이해할 수 있는 근거와 함께 보여 준다. */
+export function stageEvidenceOf(r: R, now = new Date()): { state: Stage; reason: string } {
+  const state = stageOf(r, now);
+  if (state === '취소') return { state, reason: '취소 사실이 기록돼 있습니다.' };
+  if (state === '접수') return { state, reason: '유효한 인도완료일이 아직 없습니다.' };
+  if (state === '분납실적') {
+    const rounds = roundsOf(r.payKind);
+    const paid = invalidPaidRounds(r) ? null : r.paidRounds;
+    return { state, reason: `인도완료 후 ${rounds}회 분납 진행 중${paid ? ` · 납입 ${paid}회차` : ''}.` };
+  }
+  return { state, reason: '인도완료 및 납입 조건·회차·기한을 기준으로 완납 판정됐습니다.' };
+}
+
 /**
  * 사람이 보는 칸 — 접수를 둘로 가른다 (사장님 2026-08-26 「당월접수탭 있고 미완료탭 있어서」)
  *   당월접수  이번 달에 받은 계약 — 인도됐든 아니든 이 달 실적

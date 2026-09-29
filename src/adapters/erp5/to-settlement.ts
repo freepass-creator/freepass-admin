@@ -75,8 +75,10 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
   if (supplierFee.mode === 'UNKNOWN') warnings.push('공급사 수수료를 모른다');
 
   const plate = s(d.plate);
+  const receivedAt = s(d.receivedAt);
   const supplier = s(d.supplier);
   if (!plate) warnings.push('★차량번호가 없다 — 접수는 유지되지만 인도·정산 전에 차량번호를 배정해야 한다');
+  if (!receivedAt) warnings.push('★접수일이 없다 — 차량번호만으로 원본 한 줄을 확정할 수 없다');
   if (!supplier) warnings.push('★공급사가 없다 — 청구할 곳이 없다');
 
   const ratio = n(d.settleRatio) ?? 1;
@@ -90,9 +92,14 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
   }
   if (ratio !== 1 && !s(d.settleNote)) warnings.push(`정산비율이 ${ratio} 인데 까닭이 안 적혀 있다`);
 
+  const f04 = d._f04 && typeof d._f04 === 'object' && !Array.isArray(d._f04)
+    ? d._f04 as Record<string, unknown>
+    : {};
+  const hasExplicitSource = d.sourceRow !== undefined || d.sourceTab !== undefined;
+  const hasF04Source = Object.keys(f04).length > 0;
   const row: SettlementRow = {
     id: s(d.code) ?? docId,
-    plate, receivedAt: s(d.receivedAt), customer: s(d.customer),
+    plate, receivedAt, customer: s(d.customer),
     supplier, supplierCode: s(d.supplierCode),
     channel: s(d.channel), channelCode: s(d.channelCode),
     agent: s(d.agent), agentCode: s(d.agentCode), model: s(d.model),
@@ -160,7 +167,14 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     settleTarget: pick(d.settleTarget, TARGETS, '양쪽'),
     settleRatio: ratio,
     note: s(d.note), settleNote: s(d.settleNote),
-    source: { rowNo: n(d.sourceRow), tab: s(d.sourceTab), sheet: s(d.fromSheet) },
+    source: {
+      rowNo: hasExplicitSource ? n(d.sourceRow) : n(f04.row),
+      tab: hasExplicitSource ? s(d.sourceTab) : s(f04.tab),
+      sheet: s(d.fromSheet) ?? (hasF04Source ? 'F04 정산원장' : null),
+      importRun: s(f04.run),
+      importedAt: s(f04.at),
+      originalPlate: hasExplicitSource || hasF04Source ? (s(f04.plate) ?? plate) : null,
+    },
   };
   return { row, warnings };
 }

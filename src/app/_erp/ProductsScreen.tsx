@@ -25,7 +25,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
   return (
     <Screen name="products-workspace">
     <div className="erp-workspace">
-      <Panel compact wide>
+      <Panel kind="list" compact wide>
         <PanelHead kind="목록" title="상품찾기" count={`전체 ${hits.length}건`} />
         <SearchBar base={base} q={q} name="pq" placeholder="차량번호 · 차명 · 공급사" keep={['id', 'offer', 'pst']}
           filter={<FilterSheet axes={facets} count={hits.length} unit="대" label="필터" />} />
@@ -57,7 +57,7 @@ export async function ProductsScreen({ q, base = '/products' }: { q: Q; base?: s
         </PanelBody>
       </Panel>
 
-      <Panel>
+      <Panel kind="detail">
         <ProductDetail sel={hits.length ? sel : undefined} selOffers={hits.length ? selOffers : []}
           selOffer={hits.length ? selOffer : undefined} base={base} q={q} />
       </Panel>

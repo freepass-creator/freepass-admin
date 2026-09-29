@@ -20,6 +20,7 @@ const base = {
   offers: [
     {
       offerId: 'O-A', offerRevision: 3, supplierId: 'SUP-A',
+      policyId: 'POL-A',
       policyState: 'COMPLETE' as const, invalidPolicyFactRefs: [],
       policyValues: [{ policyId: 'basic_driver_age', type: 'NUMBER' as const, value: 21 }],
       priceTerms: [
@@ -111,6 +112,10 @@ test('FreePass Data mapper preserves multi-supplier Offers and unknown deposit s
   assert.equal(product.id, 'P-1');
   assert.equal(product.supplierId, '');
   assert.deepEqual(product.offers.map((o) => o.supplierId), ['SUP-A','SUP-A','SUP-B']);
+  assert.deepEqual(product.offers.slice(0, 2).map((o) => o.sourceOfferId), ['O-A','O-A']);
+  assert.deepEqual(product.offers.slice(0, 2).map((o) => o.policyId), ['POL-A','POL-A']);
+  assert.deepEqual(product.offers.slice(0, 2).map((o) => o.offerRevision), [3,3]);
+  assert.deepEqual(product.offers.slice(0, 2).map((o) => o.policyState), ['COMPLETE','COMPLETE']);
   assert.equal(product.offers[0]?.deposit, 0);
   assert.equal(product.offers[0]?.monthlyRent, 690000);
   assert.equal(product.offers[0]?.basisMonthlyRent, 690000);

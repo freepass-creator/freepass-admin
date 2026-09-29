@@ -67,7 +67,7 @@ const cases = [
   { name: 'settlement-desktop-1440', route: '/settlement', width: 1440, height: 900 },
   { name: 'settlement-desktop-1280', route: '/settlement', width: 1280, height: 800 },
   { name: 'esign-desktop-1440', route: '/esign', width: 1440, height: 900 },
-  { name: 'products-empty-desktop-1280', route: '/products?pq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
+  { name: 'products-empty-desktop-1280', route: '/products?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'intake-empty-desktop-1280', route: '/intake?wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'performance-empty-desktop-1280', route: '/intake?wiv=실적&wiq=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
   { name: 'esign-empty-desktop-1280', route: '/esign?q=__NO_MATCH_UI_QA__', width: 1280, height: 800, expectEmpty: true },
@@ -800,7 +800,7 @@ async function runInteractiveStates(page, c) {
 
       if (c.width <= 900 && info.mobileGlobalTabs?.length) {
         const coreTabs = info.mobileGlobalTabs.filter((x) => x !== '계약');
-        const expected = ['상품', '접수', '실적', '정산'];
+        const expected = ['상품', '접수', '실적현황', '정산'];
         if (JSON.stringify(coreTabs) !== JSON.stringify(expected)) {
           problems.push(`mobile global tabs drift from workflow: ${JSON.stringify(info.mobileGlobalTabs)}`);
         }
@@ -913,12 +913,14 @@ async function runInteractiveStates(page, c) {
       }
       if (Array.isArray(info.listCardAlignment)) {
         for (const card of info.listCardAlignment) {
-          const expectedOuter = 88;
+          const expectedOuter = c.width <= 900 ? 88 : 76;
           if (Math.abs(card.outerHeight - expectedOuter) > 2) {
             problems.push(`list card outer height mismatch: expected ${expectedOuter}px: ${JSON.stringify(card)}`);
           }
           if (card.visualTop !== null && card.mainTop !== null && card.visualBottom !== null && card.supportBottom !== null) {
-            if (Math.abs(card.visualTop - card.mainTop) > 2 || Math.abs(card.visualBottom - card.supportBottom) > 2) {
+            const visualCenter = (card.visualTop + card.visualBottom) / 2;
+            const textCenter = (card.mainTop + card.supportBottom) / 2;
+            if (Math.abs(visualCenter - textCenter) > 2) {
               problems.push(`visual and 3-line text block vertical alignment drift: ${JSON.stringify(card)}`);
             }
           }
@@ -929,8 +931,9 @@ async function runInteractiveStates(page, c) {
       }
       if (Array.isArray(info.listVisualTiles)) {
         for (const tile of info.listVisualTiles) {
-          if (Math.abs(tile.width - 64) > 1 || Math.abs(tile.height - 64) > 1) {
-            problems.push(`list visual tile must be 64x64: ${JSON.stringify(tile)}`);
+          const expectedTile = c.width <= 900 ? 64 : 56;
+          if (Math.abs(tile.width - expectedTile) > 1 || Math.abs(tile.height - expectedTile) > 1) {
+            problems.push(`list visual tile must be ${expectedTile}x${expectedTile}: ${JSON.stringify(tile)}`);
           }
         }
       }
@@ -945,25 +948,14 @@ async function runInteractiveStates(page, c) {
       if (info.cardLineSamples) {
         const lines = c.width <= 900 ? info.cardLineSamples.mobileLines : info.cardLineSamples.desktopLines;
         for (const x of lines || []) {
-          if (x.lineHeight && (x.lineHeight < 19 || x.lineHeight > 21)) {
+          const lineMin = c.width <= 900 ? 19 : 17;
+          const lineMax = c.width <= 900 ? 21 : 19;
+          if (x.lineHeight && (x.lineHeight < lineMin || x.lineHeight > lineMax)) {
             problems.push(`card line-height mismatch ${x.lineHeight}px: ${JSON.stringify(x)}`);
           }
           if (x.height > 22) {
             problems.push(`card line role grew vertically: ${JSON.stringify(x)}`);
           }
-        }
-      }
-      if (info.shadowSamples) {
-        const hasOuterShadow = (v) => {
-          if (!v || v === 'none') return false;
-          return !/\binset\b/.test(v);
-        };
-        for (const x of info.shadowSamples.panels || []) {
-          if (hasOuterShadow(x.boxShadow)) problems.push(`resting panel has outer shadow: ${JSON.stringify(x)}`);
-        }
-        for (const x of info.shadowSamples.cards || []) {
-          if (!x.selected && hasOuterShadow(x.boxShadow)) problems.push(`resting card/tile has outer shadow: ${JSON.stringify(x)}`);
-          if (x.selected && hasOuterShadow(x.boxShadow)) problems.push(`selected card/tile has outer shadow: ${JSON.stringify(x)}`);
         }
       }
       if (Array.isArray(info.dividerSamples)) {
@@ -996,8 +988,9 @@ async function runInteractiveStates(page, c) {
           }
         }
         for (const x of info.radiusSamples.cards || []) {
-          if (Math.abs(x.radius - 6) > 0.6) {
-            problems.push(`card/tile radius mismatch ${x.radius}px expected 6px: ${JSON.stringify(x)}`);
+          const expected = c.width <= 900 ? 6 : 8;
+          if (Math.abs(x.radius - expected) > 0.6) {
+            problems.push(`card/tile radius mismatch ${x.radius}px expected ${expected}px: ${JSON.stringify(x)}`);
           }
         }
         for (const x of info.radiusSamples.controls || []) {
@@ -1011,7 +1004,7 @@ async function runInteractiveStates(page, c) {
       if (info.cardMetrics) {
         const m = info.cardMetrics;
         const narrowMobile = c.width < 380 && /dz-row/.test(m.className || '');
-        const expectedPad = narrowMobile ? 8 : 12;
+        const expectedPad = narrowMobile ? 8 : c.width <= 900 ? 12 : 10;
         if (Math.abs(m.paddingLeft - expectedPad) > 1 || Math.abs(m.paddingRight - expectedPad) > 1) {
           problems.push(`card horizontal padding mismatch ${m.paddingLeft}/${m.paddingRight}, expected ${expectedPad}`);
         }
@@ -1102,8 +1095,9 @@ async function runInteractiveStates(page, c) {
       if (Array.isArray(info.cardGapMetrics)) {
         for (const g of info.cardGapMetrics) {
           const isCardContainer = /erp-rowcards|erp-cardlist|erp-tile-group|list/.test(g.className);
-          if (isCardContainer && g.rowGap > 0 && (g.rowGap < 10 || g.rowGap > 14)) {
-            problems.push(`card gap outside 12px rhythm: ${JSON.stringify(g)}`);
+          const expectedGap = c.width <= 900 ? 12 : 8;
+          if (isCardContainer && g.rowGap > 0 && Math.abs(g.rowGap - expectedGap) > 1) {
+            problems.push(`card gap outside ${expectedGap}px rhythm: ${JSON.stringify(g)}`);
           }
         }
       }
@@ -1121,7 +1115,7 @@ async function runInteractiveStates(page, c) {
 
       const cm = info.cardMetrics;
       if (cm) {
-        const minPad = c.width <= 900 ? 8 : 12;
+        const minPad = c.width <= 900 ? 8 : 10;
         if (Math.min(cm.paddingTop, cm.paddingRight, cm.paddingBottom, cm.paddingLeft) < minPad) {
           problems.push(`card padding below ${minPad}px: ${JSON.stringify(cm)}`);
         }

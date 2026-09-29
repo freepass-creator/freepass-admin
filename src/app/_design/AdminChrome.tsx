@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { demoMode, erp5Ready, writeEnabled } from '../../server/freepass-data';
+import { demoMode, erp5Ready } from '../../server/freepass-data';
 import { Brand } from './Brand';
 import { MobileTabBar } from './MobileTabBar';
 import { SideMenu } from './SideMenu';
@@ -7,7 +7,6 @@ import { Icon } from './Icon';
 import { redirect } from 'next/navigation';
 import { authEnforced } from '../../server/auth';
 import { currentAdmin } from '../../server/require-admin';
-import { esignEnabled } from '../../server/esign-scope';
 
 
 
@@ -32,7 +31,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
      꼴만 맞춘 쿠키가 실데이터를 읽는다. 관리자 쪽은 전부 이 틀을 거친다. */
   if (authEnforced() && !나) redirect('/login');
   const data = erp5Ready();
-  const esign = esignEnabled();
   return (
     <>
       {/* 단일 UI 표지 — body 격자와 Admin 전용 범위를 세우는 구조 marker. */}
@@ -41,12 +39,6 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
       {/* ── PC ① 상단바 — 규격 erp-topbar 그대로(브랜드 · 워크스페이스 · 통합검색 · 상태 · 사람) ── */}
       <header className="erp-topbar erp-std" data-region="topbar">
         <div className="erp-brand"><Brand /></div>
-        {/* 정보만 — 회사 전환 기능이 없는데 링크로 두면 오른쪽 게이지 단추와 똑같은 자리(/system/data-status)로
-            두 번 가는 중복 이동이 된다(대표 2026-09-24 「상단바랑 사이드바만 … 규격 제대로 검토해봐」).
-            "지금 어느 회사 · 어느 모드인가"를 보여주는 정보 칩으로만 둔다. */}
-        <span className="erp-company">
-          <Icon name="building" size={16} />프리패스 본사 · {writeEnabled() ? '쓰기 허용' : '조회 전용'}
-        </span>
         {/* 상품찾기(ProductsScreen)의 검색 칸 이름과 같아야 실제로 걸린다 — pq(대표 2026-09-24
             「검색창도 검색창 옆에 필터」 작업 때 계약접수와 같은 이름(pq)으로 맞추면서, 여기 통합
             검색이 q 로 남아 있어 조용히 죽어 있었다). */}
@@ -55,8 +47,8 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
           <input name="pq" placeholder="차번 · 모델 · 공급사 · 고객 검색" aria-label="통합 검색" />
           <kbd>Enter</kbd>
         </form>
-        {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}
         <div className="erp-topbar-right">
+          {demoMode() && <span className="erp-demo-flag" title="FPA_DEMO=on — 화면 확인용 가상 데이터. 저장되지 않습니다.">가상 데이터</span>}
           <a className="erp-iconbtn" href="/system/data-status" aria-label={data.ok ? '데이터 설정됨' : '데이터 설정 필요'} {...(data.ok ? {} : { 'data-alert': true })}>
             <Icon name="gauge" size={18} />
           </a>
@@ -66,7 +58,7 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
 
       {/* ── PC ② 좌측 메뉴 ── */}
       <nav className="erp-sidenav erp-std" data-region="sidenav" aria-label="업무 이동">
-        <SideMenu esign={esign} />
+        <SideMenu />
       </nav>
 
       {/* ── 본문: viewport에 따라 같은 actual route의 responsive composition을 배치한다. (대표 2026-09-24 「좌측 사이드
@@ -75,24 +67,19 @@ export async function AdminChrome({ children }: { children: ReactNode }) {
           MDI(열어 둔 화면 탭)가 아니라 그냥 같은 이동 메뉴를 위아래로 두 번 보여주는 중복이었다. 이동은
           왼쪽 메뉴 하나로 정하고(AdminChrome 자신의 머리 주석 「② 왼쪽 업무 메뉴」, DEC-2026-09-23-01
           「상단은 정보만」과 일관되게) 이 줄을 없앴다. */}
-      <main className="fn-main">
+      {/* 계약접수(/intake)가 내부 Admin 전체의 UI/UX 시각 정본이다.
+          다른 업무는 데이터와 패널 수만 달라질 수 있고, 조작 문법을 따로 만들지 않는다. */}
+      <main className="fn-main" data-ui-authority="intake">
         {children}
       </main>
 
-      {/* ── PC ⑧ 상태바 ── */}
-      <footer className="erp-statusbar erp-std" data-region="statusbar">
-        <span className={data.ok ? 'erp-statusbar-ok' : ''}>● ERP5 {data.ok ? '데이터 설정됨' : '데이터 설정 필요'}</span>
-        <span>{writeEnabled() ? '쓰기 허용' : '조회 전용'}</span>
-        {demoMode() && <span>가상 데이터 · 화면 확인용</span>}
-      </footer>
-
       {/*
         폰 depth 0 전역탭 — PC와 같은 업무축(상품 · 접수 · 실적 · 정산).
-        전자계약이 활성화된 경우에만 계약을 마지막 별도 문으로 붙인다.
+        전자계약은 마지막 독립 업무 문으로 붙인다.
         청구/지급은 정산 안의 축이며 전역탭으로 분리하지 않는다.
         depth 1·2 화면에서는 이 바 대신 현재 Panel의 ActionBar가 선다.
       */}
-      <MobileTabBar esign={esign} />
+      <MobileTabBar />
     </>
   );
 }

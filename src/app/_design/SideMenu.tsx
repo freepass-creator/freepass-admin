@@ -9,16 +9,17 @@
  * */
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 
 type Item = { key: string; label: string; href: string; icon: string };
 const FLOW: Item[] = [
   { key: '상품', label: '상품찾기', href: '/products', icon: 'search' },
   { key: '접수', label: '계약접수', href: '/intake', icon: 'clipboard' },
-  { key: '실적', label: '실적', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
+  { key: '실적', label: '실적현황', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
   { key: '정산', label: '정산관리', href: '/settlement', icon: 'wallet' },
 ];
-const ESIGN: Item = { key: '계약', label: '전자계약', href: '/esign', icon: 'file-text' };
+const ESIGN: Item = { key: '계약', label: '계약서작성 및 관리', href: '/esign', icon: 'file-text' };
 const SYSTEM: Item = { key: '시스템', label: '데이터 상태', href: '/system/data-status', icon: 'gauge' };
 export const 실적칸 = ['분납실적', '완납실적'];
 
@@ -44,23 +45,45 @@ function MenuLink({ it, now }: { it: Item; now: string }) {
   );
 }
 
-/** esign=false 이면 전자계약 문을 숨긴다 — 운영 개시 범위에서 제외(ESIGN_ENABLED, 대표 2026-09-25). */
-export function SideMenu({ esign = true }: { esign?: boolean }) {
+/** 전자계약은 접수와 분리된 독립 관리자 페이지다(사용자 확정 2026-09-28). */
+export function SideMenu() {
   const now = useCurrent();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [preferenceLoaded, setPreferenceLoaded] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem('freepass-admin:sidenav-collapsed') === 'true');
+    setPreferenceLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!preferenceLoaded) return;
+    const nav = rootRef.current?.closest<HTMLElement>('.erp-sidenav');
+    if (nav) nav.dataset.collapsed = String(collapsed);
+    window.localStorage.setItem('freepass-admin:sidenav-collapsed', String(collapsed));
+  }, [collapsed, preferenceLoaded]);
+
   return (
-    <>
+    <div className="erp-sidenav-inner" ref={rootRef}>
       <div className="erp-nav-group">업무</div>
       {FLOW.map((it) => <MenuLink key={it.key} it={it} now={now} />)}
       {/* 전자계약 · 시스템 — 둘 다 «업무 흐름 밖의 따로 된 문»이라 같은 구분선 처리를 받는다(대표 2026-09-24
           UI/UX 재검토 — 전에는 계약서 그룹만 --apart 라 시스템 그룹 앞엔 구분선이 없어서 둘의 성격이
           같은데 처리가 달랐다). */}
-      {esign && <>
-        <div className="erp-nav-group erp-nav-group--apart">계약서</div>
+      <>
+        <div className="erp-nav-group erp-nav-group--apart">전자계약</div>
         <MenuLink it={ESIGN} now={now} />
-      </>}
+      </>
       <div className="erp-nav-group erp-nav-group--apart">시스템</div>
       <MenuLink it={SYSTEM} now={now} />
-    </>
+      <button type="button" className="erp-sidenav-toggle" onClick={() => setCollapsed((value) => !value)}
+        aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} aria-expanded={!collapsed}
+        title={collapsed ? '사이드바 펼치기' : '사이드바 접기'}>
+        <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={18} />
+        <span className="erp-nav-label">사이드바 접기</span>
+      </button>
+    </div>
   );
 }
 

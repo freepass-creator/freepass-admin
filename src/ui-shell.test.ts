@@ -8,6 +8,8 @@ const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
 const chrome=read('src/app/_design/AdminChrome.tsx');
+const brand=read('src/app/_design/Brand.tsx');
+const loginScreen=read('src/app/login/LoginScreen.tsx');
 const mobileTabs=read('src/app/_design/MobileTabBar.tsx');
 const workspace=read('src/app/products/workspace.tsx');
 const intakeForm=read('src/app/intake/new/IntakeForm.tsx');
@@ -35,12 +37,21 @@ test('admin root enters the real intake workspace and contains no demo runtime',
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
+test('admin surfaces use the official freepass mobility CI instead of inventing an admin wordmark',()=>{
+  assert.ok(brand.includes("tail = 'mobility'"));
+  assert.ok(loginScreen.includes("label: 'freepass mobility'"));
+  assert.ok(loginScreen.includes("{ text: 'mobility', weight: 300, color: '#7F93B3' }"));
+  assert.equal(loginScreen.includes("label: 'freepass admin'"),false);
+});
+
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.
 test('admin async/empty/error/readonly states share the canonical panel grammar',()=>{
   assert.ok(parts.includes('export function PanelState'));
   assert.ok(routeState.includes('<Screen name="route-loading">'));
   assert.ok(routeState.includes('<Screen name="route-error">'));
-  assert.ok(routeState.includes('kind="loading"'));
+  assert.ok(routeState.includes('<PanelState kind="loading"'));
+  assert.ok(routeState.includes('데이터를 불러오고 있습니다.'));
+  assert.equal(routeState.includes('최신 데이터를 확인하고 있습니다.'), false);
   assert.ok(routeState.includes('kind="error"'));
   assert.ok(productsDesktop.includes('<PanelState title={all.length ?'));
   assert.ok(workspaceDesktop.includes('이 조건에 맞는 접수가 없습니다.'));
@@ -89,25 +100,38 @@ test('1280 desktop collapses only the navigation rail to preserve three-panel wo
   assert.ok(shellCss.includes('grid-template-columns: 64px minmax(0, 1fr) 128px'));
 });
 
+test('desktop side navigation can be collapsed explicitly and remembers the preference',()=>{
+  const side=read('src/app/_design/SideMenu.tsx');
+  assert.ok(side.includes("freepass-admin:sidenav-collapsed"));
+  assert.ok(side.includes("aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}"));
+  assert.ok(side.includes("nav.dataset.collapsed = String(collapsed)"));
+  assert.ok(shellCss.includes('.erp-sidenav[data-collapsed="true"]'));
+  assert.ok(shellCss.includes('grid-template-columns: var(--erp-sidenav-w-collapsed) minmax(0, 1fr)'));
+});
+
 test('admin chrome uses one workflow axis across desktop and mobile with no top actions',()=>{
   const side=read('src/app/_design/SideMenu.tsx');
-  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적'],['/settlement','정산관리'],['/esign','전자계약']]) {
+  for (const [href,label] of [['/products','상품찾기'],['/intake','계약접수'],['/intake?iv=완납실적&wiv=실적','실적현황'],['/settlement','정산관리'],['/esign','계약서작성 및 관리']]) {
     assert.ok(side.includes(`href: '${href}'`),`side menu missing ${href}`);
     assert.ok(side.includes(label),`side menu missing ${label}`);
   }
   // 업무 차례: 상품 · 접수 · 실적 · 정산, 전자계약은 따로(대표 2026-09-23)
-  const order=['상품찾기','계약접수','실적','정산관리','전자계약'].map((w)=>side.indexOf(`label: '${w}'`));
+  const order=['상품찾기','계약접수','실적현황','정산관리','계약서작성 및 관리'].map((w)=>side.indexOf(`label: '${w}'`));
   assert.ok(order.every((i)=>i>=0),'every menu label is defined');
   assert.deepEqual([...order].sort((a,b)=>a-b),order);
   assert.ok(side.includes('erp-nav-group--apart'));
-  assert.ok(chrome.includes('<MobileTabBar esign={esign} />'));
-  for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
+  assert.ok(side.includes('erp-nav-group erp-nav-group--apart">전자계약</div>'));
+  assert.ok(chrome.includes('<MobileTabBar />'));
+  assert.ok(chrome.indexOf('className="erp-demo-flag"') > chrome.indexOf('className="erp-topbar-right"'), 'data state belongs with the right-side status/user cluster');
+  for (const [label,href] of [['상품','/products'],['접수','/intake?v=work'],['실적현황','/intake?wiv=실적&iv=분납실적&v=work'],['정산','/settlement']]) {
     assert.ok(mobileTabs.includes(`['${label}', '${href}']`), `mobile workflow missing ${label}`);
   }
   assert.equal(mobileTabs.includes("['청구',"), false);
   assert.equal(mobileTabs.includes("['지급',"), false);
-  /* 전자계약은 운영 개시 범위 밖 — ESIGN_ENABLED 로만 메뉴 · 폰 탭에 선다 */
-  assert.ok(chrome.includes('<SideMenu esign={esign} />') && chrome.includes('const esign = esignEnabled();'));
+  /* 전자계약은 접수와 분리된 독립 관리자 페이지이며 메뉴와 폰 탭에 항상 선다. */
+  assert.ok(chrome.includes('<SideMenu />'));
+  assert.equal(chrome.includes('esignEnabled()'), false);
+  assert.ok(mobileTabs.includes("['계약', '/esign']"));
   assert.ok(chrome.includes('className="erp-theme-flag"'));
   assert.equal(chrome.includes('className="rail"'),false);
   // 모바일은 전역 상단바 자체를 안 둔다(2026-09-24 — 전역 상태줄 header 를 걷어내고 Panel 이 화면
@@ -116,14 +140,90 @@ test('admin chrome uses one workflow axis across desktop and mobile with no top 
   // PC 상단 정보줄에는 실행 버튼을 두지 않는다(2026-09-18) — 통합검색(erp-gsearch)은 조회라 예외.
   const top=chrome.slice(chrome.indexOf('<header'),chrome.indexOf('</header>'));
   assert.equal(/<button/.test(top),false);
+  assert.equal(top.includes('erp-company'),false,'상단에 회사/조회전용 칩을 다시 넣지 않는다');
+  assert.equal(chrome.includes('className="erp-statusbar'),false,'PC 하단 상태바를 다시 넣지 않는다');
+  assert.equal(shellCss.includes('"side status"'),false,'제거한 상태바용 grid row를 다시 만들지 않는다');
   assert.ok(/max-width: 900px\)\s*\{\s*\.erp-std[^}]*display:\s*none/.test(read('src/app/_erp/shell.css')), 'phone hides the PC shell');
+});
+
+test('product board uses one no-photo vehicle thumbnail across desktop and mobile',()=>{
+  const board=read('src/app/products/board.tsx');
+  const list=read('src/app/products/BoardList.tsx');
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(board.includes('<Icon name="car" size={88} />'));
+  assert.ok(board.includes('<Icon name="car" size={36} />'));
+  assert.ok(list.includes('r.thumbLabel ?? <Icon name="car" size={36} />'));
+  assert.equal(boardCss.includes('.thumb.car::before'),false);
+});
+
+test('new list selection keeps the list position, resets detail to the top, and shows a transient selection cue',()=>{
+  const boardList=read('src/app/products/BoardList.tsx');
+  const boardCss=read('src/app/products/board.css');
+  assert.equal(boardList.includes('scrollIntoView('),false);
+  assert.ok(boardList.includes("querySelector<HTMLElement>('.pb-detail > .web-scroll')"));
+  assert.ok(boardList.includes("scrollTo({ top: 0, behavior: 'auto' })"));
+  assert.ok(boardList.includes("' just-selected'"));
+  assert.ok(boardCss.includes('.pb .row.just-selected'));
+  assert.ok(boardCss.includes('@keyframes pb-select'));
+});
+
+test('approved board structure uses the latest desktop and mobile control scale',()=>{
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(boardCss.includes('--control:36px; --chip:32px; --r-control:6px; --r-card:8px;'));
+  assert.ok(boardCss.includes('.pb { --control:44px; --chip:32px; }'));
+  assert.ok(boardCss.includes('.pb .section { margin-top:20px; }'));
+  assert.ok(boardCss.includes('--head:14px; --title:13px; --body:13px; --support:12px; --meta:11px;'));
+  assert.ok(boardCss.includes('--control:32px; --chip:28px; --gap:6px; --space:8px;'));
+  assert.ok(boardCss.includes('min-height:76px; padding:10px; grid-template-columns:56px minmax(0,1fr); gap:10px;'));
+  assert.ok(boardCss.includes('min-height:56px; border-radius:6px;'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
+  assert.ok(boardCss.includes('.pb .facts.product-intro-card { grid-auto-rows:18px; gap:2px; }'));
+  assert.ok(boardCss.includes('.pb .product-hero-title h3 { margin:0; color:var(--ink); font-size:var(--head); font-weight:700; line-height:18px;'));
+  assert.ok(boardCss.includes('.pb .product-intro-primary { margin:0; color:var(--sub); font-size:var(--support); font-weight:600; line-height:18px; }'));
+  assert.ok(boardCss.includes('.pb .product-intro-secondary { margin:0; color:var(--muted); font-size:var(--meta); line-height:18px; }'));
+  assert.ok(boardCss.includes('.pb .product-hero-title { min-height:18px; display:flex; align-items:center; gap:8px; }'));
+  assert.equal(boardCss.includes('--title:15px'), false);
+  assert.equal(boardCss.includes('--support:13px'), false);
+  assert.equal(boardCss.includes('font-size:15px;'), false);
+  assert.ok(boardCss.includes('width:auto !important; min-width:var(--control) !important;'));
+  assert.ok(boardCss.includes('padding:0 12px !important;'));
+  assert.ok(boardCss.includes('.pb .search { display:flex; align-items:stretch;'));
+  assert.ok(boardCss.includes('gap:var(--gap); margin:0 0 var(--gap);'));
+  assert.ok(boardCss.includes('top:0 !important; right:auto !important;'));
+  assert.match(read('src/app/_design/FilterSheet.tsx'), /label = '필터'/);
+  assert.equal(boardCss.includes('--control:48px'),false);
 });
 
 test('admin exposes one visual authority and no theme-switch route',()=>{
   assert.ok(chrome.includes('className="erp-theme-flag"'));
+  assert.ok(chrome.includes('data-ui-authority="intake"'));
   assert.equal(chrome.includes('ThemeSwitch'),false);
   assert.equal(chrome.includes('data-theme='),false);
   assert.equal(css.includes('data-theme="retro"'),false);
+});
+
+test('all admin workspaces inherit the intake control grammar',()=>{
+  const finalCss=read('src/app/_design/admin-final.css');
+  const standardCss=read('src/app/_erp/erp-standard.css');
+  assert.ok(finalCss.includes('계약접수(/intake)가 내부 Admin 전체 UI/UX의 시각 정본'));
+  assert.ok(finalCss.includes('--컨트롤: 36px;'));
+  assert.ok(finalCss.includes('--ui-quick-filter-h: 34px;'));
+  assert.ok(finalCss.includes('--컨트롤: 44px; --ui-control-h: 44px;'));
+  assert.ok(shellCss.includes('2026-09-28 — /intake visual authority'));
+  assert.ok(shellCss.includes('--fp-workspace-gap: 10px;'));
+  assert.ok(shellCss.includes('.erp-std .erp-rowcard[aria-current="true"]'));
+  assert.ok(shellCss.includes('height: 32px;'));
+  assert.ok(shellCss.includes('--erp-fs-body: 13px;'));
+  assert.ok(shellCss.includes('--erp-fs-caption: 11px;'));
+  assert.ok(shellCss.includes('font-size: 14px;'));
+  assert.ok(shellCss.includes('grid-template-columns: 56px minmax(0, 1fr) auto;'));
+  assert.ok(shellCss.includes('width: 56px;'));
+  assert.ok(shellCss.includes('height: 56px;'));
+  assert.ok(shellCss.includes('min-height: 76px;'));
+  assert.ok(standardCss.includes('2026-09-28 — desktop compact visual tile contract'));
+  assert.ok(standardCss.includes('min-width: 56px;'));
+  assert.ok(standardCss.includes('min-height: 56px;'));
+  assert.ok(shellCss.includes('.erp-std .erp-panel-kind'));
 });
 test('product workspace is bound to real repositories and whole-offer selection',()=>{
   assert.ok(workspace.includes('productList()'));
@@ -132,6 +232,57 @@ test('product workspace is bound to real repositories and whole-offer selection'
   assert.ok(workspace.includes('<FilterSheet'));
   assert.ok(workspace.includes('quick-filters'));
   assert.ok(workspace.includes('matchedOffers'));
+});
+
+test('vehicle introduction card keeps fuel and model year as compact metadata',()=>{
+  const board=read('src/app/products/board.tsx');
+  const productDetail=read('src/app/_erp/ProductDetail.tsx');
+  const summary=board.slice(board.indexOf('const 스펙 = car ? ['),board.indexOf('const 구역 = car ?'));
+  assert.ok(summary.includes('car.specs.fuel'));
+  assert.ok(summary.includes('car.specs.modelYear'));
+  assert.equal(summary.includes('car.specs.drivetrain'),false);
+  assert.equal(summary.includes('car.specs.seats'),false);
+  assert.ok(board.includes('<PhotoGallery'));
+  assert.ok(board.includes("<p className=\"product-intro-primary\">{주요요약.join(' · ')}</p>"));
+  assert.ok(board.includes("<p className=\"product-intro-secondary\">{부가요약.join(' · ')}</p>"));
+  assert.equal(board.includes('product-intro-divider'),false);
+  assert.equal(board.includes('className="quick-specs"'),false);
+  assert.equal(board.includes('className="product-rent"'),false);
+  assert.ok(board.includes('className="product-photo-card"'));
+  assert.ok(board.includes('className="facts product-intro-card"'));
+  assert.ok(board.includes('<h4>차량 요약</h4>'));
+  assert.ok(board.includes('const 주요요약 = car ? [렌트사, txt(car.status), txt(car.productKind)] : []'));
+  assert.ok(board.includes('const 부가요약 = car ? [txt(car.registration?.vehicleNumber), ...스펙] : []'));
+  assert.equal(board.includes('className={`tag ${결(car.status)}`}'),false);
+  assert.ok(board.includes("const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle')"));
+  assert.ok(board.indexOf('<h4>차량 요약</h4>') < board.indexOf('id="pb-offer-title"'));
+  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf('<h4>차량 정보</h4>'));
+  assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
+  assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
+  assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);
+});
+
+test('product detail keeps rental offer selection minimal and the intro photo compact',()=>{
+  const board=read('src/app/products/board.tsx');
+  const boardCss=read('src/app/products/board.css');
+  assert.ok(board.includes("className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}"));
+  assert.equal(board.includes('offer-picked'),false);
+  assert.equal(boardCss.includes('.offer-picked'),false);
+  assert.ok(boardCss.includes('.pb .product-photo-card .dz-gal-main { height:128px; aspect-ratio:auto;'));
+  assert.ok(boardCss.includes('.pb .product-photo { position:relative; height:128px;'));
+  assert.ok(boardCss.includes('.pb .product-photo, .pb .product-photo-card .dz-gal-main { height:120px; }'));
+});
+
+test('legacy policy fields use the established Korean business labels',()=>{
+  const board=read('src/app/products/board.tsx');
+  const info=read('src/app/_design/ProductInfo.tsx');
+  for (const label of ['대인 면책금','자차 최대 면책금','중도해지 위약금','정책명','대물 면책금','자손 면책금','정책 설명','무보험차상해 면책금','만 21세 하향 추가요금','만 23세 하향 추가요금','초과주행 요금(1km당)','원천 시트 동기화 시각','상품구분']) {
+    assert.ok(info.includes(`'${label}'`),label);
+  }
+  assert.ok(board.includes("s.key === 'policy_other' ? '기타 정책 정보'"));
+  assert.ok(board.includes('LEGACY_POLICY_LABELS[it.key] ?? it.label'));
+  assert.ok(board.includes("if (it.key !== 'sheet_synced_at') return 꼴(it)"));
+  assert.ok(board.includes("timeZone: 'Asia/Seoul'"));
 });
 
 test('mobile workspace uses explicit list detail work depth',()=>{

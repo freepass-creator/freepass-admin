@@ -29,7 +29,7 @@
 
 ## -1. SINGLE UI LINEAGE — ProductsBoard intake · USER APPROVED 2026-09-30
 
-**최신 화면 정본 확정.** 현재 `ProductsBoard` 3패널과 input/select 규격을 단일 메인 UI로 고정한다. PR92 복구·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이며 구현 근거로 되살리지 않는다. 사용 중인 공용 부품은 보존하지만 과거 디자인 승인으로 해석하지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
+**최신 화면 정본 확정.** 사용자 정정: 기존 ProductsBoard 모양을 고정하지 않는다. 마지막 웹·모바일 3장 시안으로 화면 틀을 교체하며 `docs/ui/DESIGN-AUTHORITY.md`의 MAIN_CODE_RENDER_V1 구현 계약을 따른다. 시안은 실제 코드 캡처로 제공하고 확인한 코드를 그대로 사용한다. PR92 복구·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이며 구현 근거로 되살리지 않는다. 사용 중인 기능·데이터·공용 부품은 보존하지만 과거 디자인 승인으로 해석하지 않는다.
 
 UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 1. `docs/ui/DESIGN-AUTHORITY.md`

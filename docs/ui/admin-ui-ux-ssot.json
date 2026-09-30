@@ -11,6 +11,15 @@
     "notImplemented": ["contact persistence", "age adjustment persistence", "mileage adjustment persistence"]
   },
   "status": "MAIN_UI_CANONICAL",
+  "renderContract": {
+    "id": "MAIN_CODE_RENDER_V1",
+    "target": "last three web/mobile proposal images, not the former ProductsBoard appearance",
+    "method": "capture actual /intake React runtime; never image generation or separate prototype implementation",
+    "components": ["AdminChrome", "SideMenu", "ProductsBoard", "BoardList", "BoardIntakeForm", "PhotoGallery", "IntakeList", "IntakeDetail"],
+    "geometry": { "sidebar": 152, "header": 56, "panelGap": 10, "panelPadding": 16, "panelRadius": 8, "mobileBreakpoint": 900 },
+    "verification": "CODED_NOT_VISUAL_PARITY_APPROVED",
+    "remaining": ["contact and adjustment persistence contracts", "save-to-list context preservation", "detail tabs and independent progress disclosures"]
+  },
   "retiredDesigns": { "status": "HISTORICAL_ONLY / RESTORE_FORBIDDEN", "runtimeComponentDeletionAuthorized": false },
   "authority": [
     "latest-user-decision",

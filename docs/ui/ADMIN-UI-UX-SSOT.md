@@ -1,5 +1,7 @@
 # FreePass Admin UI/UX SSOT
 
+> 최신 사용자 정정(2026-09-30): 기존 ProductsBoard 외형을 고정하지 않는다. 마지막 웹·모바일 3장 시안을 실제 코드로 구현하고 그 코드의 렌더를 시안으로 제공한다. 구현 파일·geometry·상태·기능 연결·미구현 차이는 `docs/ui/DESIGN-AUTHORITY.md`의 MAIN_CODE_RENDER_V1 계약과 JSON `renderContract`를 따른다. 아래 이전 규격은 새 시안과 충돌하면 복원하지 않는다. 현재는 접수 작성 화면의 첫 코드 렌더이며 3상태 완전동일 판정 전이다.
+
 상태: **MAIN_UI_CANONICAL / SINGLE UI LINEAGE**
 기준일: **2026-09-30**
 적용 저장소: `freepass-creator/freepass-admin`  

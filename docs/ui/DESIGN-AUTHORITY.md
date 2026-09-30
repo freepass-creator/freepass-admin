@@ -4,7 +4,21 @@
 
 ## 단일 메인 기준 · 이전 디자인 폐기
 
-사용자 2026-09-30 「이제 메인 ui ux로 자리하고 기존거 또 안따라오게 확실하게 폐기」에 따라 현재 ProductsBoard 3패널과 접수 input/select 규격만 메인 디자인 기준으로 삼는다. PR92 복구 화면·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이다. 과거 기록은 구현 요구사항이나 대체 디자인 정본이 아니다.
+사용자 최신 정정: **기존 ProductsBoard 모양을 잠그는 것이 아니라, 마지막 웹·모바일 3장 시안으로 화면 틀을 교체한다.** ProductsBoard는 기존 기능을 이어 쓰는 구현 위치이지 과거 디자인의 승인 근거가 아니다. PR92 복구 화면·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이다.
+
+## MAIN_CODE_RENDER_V1 — 렌더와 구현을 같은 코드로
+
+- 기준 원본: 마지막 3장 `exec-084a6166-2033-4e5f-8286-1bf741e9d9b5.png` (작성), `exec-36d9f176-bbe4-44a3-9d3b-88bf7db301af.png` (목록), `exec-fc747e30-cf14-4fbd-a853-e9805c67763a.png` (상세). 원본 위치: `C:/Users/admin/.codex/generated_images/01a0e3d8-73bf-7ab1-90a4-bac2a882f585/`.
+- 이후 시안 이미지는 실제 `/intake` 코드를 브라우저에서 캡처한다. 생성 이미지·별도 시안 HTML·다른 저장 엔진으로 대체하지 않는다.
+- shell: `AdminChrome` + `SideMenu`; 네이비 152px sidebar, 흰색 56px header, 접기 64px. 전역 검색은 계약접수에서 반복하지 않고 현재 업무 제목만 표시한다. 데모 데이터 표지는 운영 오인 방지를 위해 유지한다.
+- composition: `ProductsBoard`의 3개 동일 폭 패널, 10px gutter, 흰색 panel, 16px 내부 padding, 8px radius. 각 패널 독립 scroll와 고정 footer. Mobile ≤900은 같은 DOM을 `v=list/detail/work`로 한 장씩 표시한다.
+- list card: `BoardList` + `productRows`; web 76px/56px thumbnail, mobile 88px/64px thumbnail. 첫 줄 차명·오른쪽 월 대여료, 둘째 공급사·상품·상태, 셋째 차번·기간·보증금. 알려지지 않은 보증금은 0이 아니라 미확인이다.
+- detail: `PhotoGallery` → plain summary → 기간/월 대여료/보증금의 세로 Offer 표 → 차량·정책 정보. 선택은 pale blue와 radio 신호. fuel/year 중첩 박스 없음. `offer.id`와 snapshot 의미는 그대로 유지한다.
+- form: `BoardIntakeForm`; 고객명 먼저, 채널/담당자/payKind native select, label/control 2열, 선택 메모 disclosure, 취소/접수 저장 footer. 웹 input 32px, mobile input/touch 44px; 기존 저장 action·오류 초안 유지·코드 매핑 재사용.
+- task states: 작성 `w=new`, 접수목록 `ic` 없음, 접수상세 `ic=<실제 접수 ID>`; 상품/Offer 문맥을 잃지 않도록 저장 redirect를 후속 정합화한다. 성공 알림은 실제 저장 성공에만 표시한다.
+- 연결 계약: `productView`/`freepass-data` → 기존 CanonicalProduct/Offer → 기존 `createIntakeAction`/snapshot/service. 새 UI가 다른 DB·계산·정책을 만들지 않는다.
+- 남은 차이: 연락처·추가 연령/주행 조건은 별도 저장 계약이 아직 없다. 등록 계약서·필수서류·잔금 세부 workflow, 저장 후 목록 전환 및 상세 탭/accordion은 마지막 시안에 맞추는 후속 구현 대상이다. UI만 만들어 저장 완료를 주장하지 않는다.
+- 완료 기준: 1440/1280/390/360 실제 캡처, overflow 0, 검색/Offer 선택/입력/오류/목록·상세 전환, 타입·관련 테스트·build. 각 캡처의 viewport/commit/data mode/미구현 차이를 함께 남긴다. 현재 첫 구현은 CODED이며 마지막 이미지와 완전 동일 판정은 아직 미통과다.
 
 목록 / 상세 보기 / 입력의 세 가지 패널을 조합하며 복합 패널도 허용한다. 상품 선택은 상세 스크롤을 위로 초기화하고 접수하기는 오른쪽 업무 패널만 바꾼다. 대여료는 세로 선택 목록이다. 웹과 모바일은 같은 업무 의미와 공용 컨트롤을 사용한다. 새 디자인 분기·내 처리함·과한 중첩 박스를 추가하지 않는다.
 

@@ -48,11 +48,11 @@
   "active": [
     {
       "work_order": "intake-controls-20260930",
-      "objective": "Standardize intake input/select controls and lock the approved ProductsBoard as sole main UI authority; retire competing design authority without deleting active runtime components or changing persistence.",
+      "objective": "Replace the former UI appearance with the latest three-state web/mobile proposal through actual runtime code renders and an executable implementation contract, preserving data and business functions.",
       "branch": "work/freepass-admin/intake-controls-20260930",
       "writer": "Codex",
       "reviewer": "Claude Code (read-only)",
-      "phase": "LOCAL_VERIFIED_MAIN_GATE_HOLD",
+      "phase": "CODE_RENDER_FIRST_STATE_VERIFIED_REMAINING_STATES_PENDING",
       "production_cutover_authorized": false
     },
     {

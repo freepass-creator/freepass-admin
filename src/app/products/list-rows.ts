@@ -33,11 +33,11 @@ export function productRows(sorted: { product: CanonicalProduct; lead?: Offer }[
   return sorted.map(({ product: p, lead: o }) => ({
     id: p.id,
     href: keepUrl(q, base, { id: p.id, offer: '', v: 'detail', w: '' }),
-    kind: p.productKind ?? undefined,
     title: 이름(p),
     tag: p.perks?.[0],
-    meta: [공급사(p), p.registration?.vehicleNumber, txt(p.status)].filter(Boolean).join(' · '),
-    value: 요금줄(o),
+    price: o ? `월 ${won(o.monthlyRent)}원` : '요금 미확인',
+    meta: [공급사(p), p.productKind, txt(p.status)].filter(Boolean).join(' · '),
+    value: [p.registration?.vehicleNumber, o ? `${o.termMonths}개월` : '', o?.deposit == null ? '보증금 미확인' : `보증 ${won(o.deposit)}원`].filter(Boolean).join(' · '),
     thumb: 사진들(p)[0],
   }));
 }

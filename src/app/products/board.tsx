@@ -25,7 +25,7 @@ import { PhotoGallery } from '../_design/PhotoGallery';
 import { LEGACY_POLICY_LABELS } from '../_design/ProductInfo';
 
 /**
- * ★★★ 상품찾기 새 판 — 목업(docs/ui/mockups/admin-mobile-five-functions.html) 마크업 그대로 (대표 2026-09-22 「판갈이」)
+ * MAIN_CODE_RENDER_V1 — 2026-09-30 마지막 웹/모바일 3장 시안의 실제 런타임.
  *   PC: 상품목록 | 상품상세 | 신규 계약접수 — 셋 다 1/3. 폰: 한 판씩(?v=list|detail|work), 위는 그 판의 상태표시줄 하나.
  *   카드를 위에서 아래로 죽죽 쌓는다 — 탭·아코디언 없음. 데이터·거름은 옛 판과 같은 `productView` 를 쓴다.
  *   동선(대표 2026-09-22): 상세에서 기간 카드를 누르고 [접수하기] → 오른쪽 접수 칸이 열린다 → [취소] [저장하기].
@@ -33,7 +33,6 @@ import { LEGACY_POLICY_LABELS } from '../_design/ProductInfo';
  */
 
 const 요금곁 = (o: Offer) => [
-  o.deposit ? `보증금 ${won(o.deposit)}원` : '무보증',
   o.prepayment ? `선납 ${won(o.prepayment)}원` : '',
   o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : '',
 ].filter(Boolean).join(' · ');
@@ -146,7 +145,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   const 폰머리 = {
     list: { title: <>상품찾기<span>{sorted.length}대</span></>, sub: 즉시 ? `즉시출고 ${즉시}대` : '판매 가능' },
     detail: { title: <>상품 상세</>, sub: car ? `${txt(car.status)} · 계약조건 선택` : '차를 고르세요' },
-    work: 접수중 ? { title: <>신규 계약접수</>, sub: '작성 중 · 저장 전' }
+    work: 접수중 ? { title: <>신규접수</>, sub: '' }
       : ic ? { title: <>접수 상세</>, sub: '진행 · 다음 업무' }
         : { title: <>접수 목록</>, sub: '진행 중부터' },
   }[view];
@@ -166,6 +165,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
       <header className="statusbar">
         <div><h1>{폰머리.title}</h1><small>{폰머리.sub}</small></div>
         {상태}
+        {접수중 && <Link className="panel-close" href={keep({ w: '', v: 'detail' })} aria-label="접수 작성 닫기">×</Link>}
       </header>
 
       <div className="web-workspace">
@@ -222,7 +222,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </article>
 
                 <div className="section product-intro-section">
-                  <h4>차량 요약</h4>
                   <div className="facts product-intro-card">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
@@ -233,14 +232,17 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </div>
 
                 <div className="section" role="group" aria-labelledby="pb-offer-title">
-                  <h4 id="pb-offer-title">계약조건 선택</h4>
+                  <h4 id="pb-offer-title">기간별 대여료</h4>
+                  <div className="offer-columns" aria-hidden="true"><span>기간</span><span>월 대여료</span><span>보증금</span></div>
                   {offers.map((o) => {
                     const on = !!chosen && o.id === chosen.id;
                     return (
                       <Link key={o.id} href={keep({ id: car.id, offer: o.id, v: 'detail' })}
                         className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}>
-                        <strong>{요금줄(o)}</strong>
-                        <small>{요금곁(o)}</small>
+                        <span className="offer-term"><span className="offer-radio" aria-hidden="true" />{o.termMonths}개월</span>
+                        <strong>{won(o.monthlyRent)}원</strong>
+                        <span>{o.deposit == null ? '미확인' : `${won(o.deposit)}원`}</span>
+                        {요금곁(o) && <small className="offer-extra">{요금곁(o)}</small>}
                       </Link>
                     );
                   })}
@@ -273,12 +275,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
               <Share />
               {mode === 'find'
                 ? <Link className="primary" href={접수로}>접수하기</Link>
-                : 접수중
-                  ? /* 다시 누르면 접수를 닫는다 — 켜고 끄는 한 단추 (대표 2026-09-23) */
-                  <Link className="secondary is-on" href={keep({ w: '', v: 'detail' })} aria-current="step" aria-label="접수 취소">
-                    접수 중<span aria-hidden="true"> ✕</span><span className="sr-only"> — 누르면 접수를 닫습니다</span>
-                  </Link>
-                  : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}>접수하기</Link>}
+                : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}><Icon name="clipboard" size={16} />접수하기</Link>}
             </div>
           )}
         </section>
@@ -288,7 +285,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
           <section className="web-panel pb-work">
             <header className="web-panel-head">
               {직접접수 ? <><h2>직접 접수</h2><small>차 없이 · 견적출고 · 신차발주</small></>
-                : 접수중 ? <><h2>신규 계약접수</h2><small>작성 중 · 저장 전</small></>
+                : 접수중 ? <><h2>신규접수</h2><Link className="panel-close" href={keep({ w: '', v: 'detail' })} aria-label="접수 작성 닫기">×</Link></>
                 : ic ? <><h2>접수 상세</h2><small>진행 · 다음 업무</small></>
                   : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
             </header>

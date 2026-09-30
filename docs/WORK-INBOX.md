@@ -1,4 +1,15 @@
-## 0-MAIN-UI. 2026-09-30 — 단일 메인 UI와 구형 디자인 폐기
+## 0-CODE-RENDER. 2026-09-30 — 마지막 이미지 시안의 실제 코드 구현
+
+- 목적: 기존 ProductsBoard의 모양 잠금이 아니라 마지막 웹/모바일 3장 시안으로 틀 교체. 코드 렌더 캡처와 구현 명세를 함께 제공.
+- 대상: 기존 intake-controls 작업선, 기준 `69d954d`. 별도 시안 엔진/새 브랜치 없음.
+- 구현 계약: `docs/ui/DESIGN-AUTHORITY.md` MAIN_CODE_RENDER_V1 / machine-readable `renderContract`. 파일·컴포넌트·토큰·상태·저장 연결·미구현 차이를 명시.
+- 변경: shell/nav, 흰색 동일폭 패널, 3줄 상품행/우측 월대여료, 세로 Offer 표, plain summary, label/control 입력 배치, 메모 disclosure, 모바일 닫기.
+- 검증: typecheck/ui:check/build PASS, 관련 102 tests PASS. 1440 웹 패널 416×824 세 개 동일. 390 모바일 1패널/44px 입력/overflow 0. 실제 캡처 사용, demo mode이며 실데이터 write 없음.
+- Claude: 읽기 전용 응답 + exit 0 확인. 차량가액 control grid, route-order dependent 제목, 중복 보증금 지적 반영. 중간 diff 변경을 지적했으므로 후속 고정 revision 재검토 필요. 별도 ANSWERED JSON 영수증은 출력되지 않아 필수 receipt gate는 미완료.
+- 남음: 연락처/추가조건 저장 계약, 목록/상세 탭과 disclosure, save redirect 문맥보존. 마지막 이미지 완전동일/전체 플랫폼 교체 완료 아님. main 병합/배포 없음.
+- next_start_here: 같은 코드로 미구현 task states를 완성하고 3상태×웹/모바일 캡처를 대조. 기존 모양 잠금을 되살리지 않는다.
+
+## 0-MAIN-UI. 2026-09-30 — 단일 메인 UI와 구형 디자인 폐기 (아래 ProductsBoard 모양 잠금은 최신 정정으로 대체)
 
 - 목적: 현재 ProductsBoard 3패널/input/select를 단일 디자인 기준으로 고정. 이전 화면의 재유입 차단.
 - 대상 revision: `afc3c5b`, 기존 intake-controls 작업선 연속. 새 디자인/브랜치 생성 없음.

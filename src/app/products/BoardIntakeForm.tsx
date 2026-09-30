@@ -62,6 +62,7 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
       <div className="web-scroll">
       {children}
       <div className="form">
+        <label><span>고객명 <span className="required-mark" aria-hidden="true">*</span></span><input name="customer" defaultValue={defaults.customer} required autoComplete="off" placeholder="고객명을 입력하세요" /></label>
         {choices.length > 0 && (
           <label>상품구분
             <select name="product" value={구분} required onChange={(e) => set구분(e.target.value)}>
@@ -89,14 +90,13 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
             {options.agents.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         ) : <input name="agent" value={agent} required autoComplete="off" placeholder="담당자 이름" onChange={(e) => setAgent(e.target.value)} />}</label>
-        <label>고객명<input name="customer" defaultValue={defaults.customer} required autoComplete="off" placeholder="고객명을 입력하세요" /></label>
         <label>분납여부
           <select name="payKind" defaultValue="" required>
             <option value="">선택하세요</option>
             {options.payKinds.filter((v) => ['일시납', '2회분납', '3회분납'].includes(v)).map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </label>
-        <label>메모<textarea name="note" rows={2} placeholder="필요한 내용만 입력하세요" /></label>
+        <details className="form-disclosure"><summary>메모 <small>(선택)</small></summary><label>메모<textarea name="note" rows={2} placeholder="필요한 내용만 입력하세요" /></label></details>
         {차량가로 && !원장차량가 && (
           <label>차량가액 <small className="pb-hint">수수료 산출 근거 — ERP5 에 없어 사람이 넣습니다</small>
             <input name="price" value={차량가} inputMode="numeric" required placeholder="예: 32,000,000"
@@ -124,7 +124,7 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
 
       <div className="web-actions">
         <Link className="tertiary" href={cancelHref}>취소</Link>
-        <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '저장하기'}</button>
+        <button type="submit" className="primary" disabled={pending} aria-busy={pending}>{pending ? '저장 중…' : '접수 저장'}</button>
       </div>
     </form>
   );

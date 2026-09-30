@@ -65,6 +65,9 @@ const errors: string[] = [];
 // Old recovery records must never become a competing main design authority again.
 const uiAuthority = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8'));
 if (uiAuthority.status !== 'MAIN_UI_CANONICAL') errors.push('UI authority must remain MAIN_UI_CANONICAL');
+if (uiAuthority.renderContract?.id !== 'MAIN_CODE_RENDER_V1') errors.push('Latest coded-render implementation contract is required; do not freeze the former UI');
+const boardStyles = await readFile(path.join(root, 'src/app/products/board.css'), 'utf8');
+if (!boardStyles.includes('MAIN_CODE_RENDER_V1')) errors.push('Operational CSS must implement the coded-render proposal');
 for (const file of ['src/app/products/board.tsx', 'src/app/products/board.css', 'src/app/products/BoardIntakeForm.tsx']) {
   if (!uiAuthority.authority.includes(file)) errors.push(`Main UI authority missing: ${file}`);
 }

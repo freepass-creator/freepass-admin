@@ -48,6 +48,7 @@ test('Vercel OIDC exchanges through Google STS and IAM Credentials for a Cloud R
     const url = String(input);
     calls.push({ url, init });
     if (url === 'https://sts.googleapis.com/v1/token') {
+      assert.equal(new URLSearchParams(String(init?.body)).get('subject_token'), 'request-context-token');
       return new Response(JSON.stringify({ access_token: 'sts-access', expires_in: 3600 }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
@@ -68,15 +69,24 @@ test('Vercel OIDC exchanges through Google STS and IAM Credentials for a Cloud R
   }) as typeof fetch;
 
   try {
-    const headers = await freepassDataCloudRunHeaders('https://data.example.test', {
-      VERCEL_OIDC_TOKEN: 'vercel-token',
+    let tokenReads = 0;
+    const env = {
       FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/provider',
       FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'caller@example.iam.gserviceaccount.com',
-    });
+    };
+    const supply = async () => { tokenReads++; return 'request-context-token'; };
+    const headers = await freepassDataCloudRunHeaders('https://data.example.test', env, supply);
     assert.deepEqual(headers, { 'x-serverless-authorization': 'Bearer cloud-run-id-token' });
     assert.equal(calls.length, 2);
     assert.equal(calls[0]?.url, 'https://sts.googleapis.com/v1/token');
     assert.match(calls[1]?.url ?? '', /caller%40example\.iam\.gserviceaccount\.com:generateIdToken$/);
+    assert.deepEqual(await freepassDataCloudRunHeaders('https://data.example.test', env, supply), headers);
+    assert.equal(tokenReads, 1, 'cached Google token needs no new OIDC exchange');
+    assert.equal(calls.length, 2);
+    resetFreepassDataCloudRunTokenForTest();
+    await assert.rejects(freepassDataCloudRunHeaders('https://data.example.test', env, async () => ''), /OIDC_TOKEN_MISSING/);
+    await assert.rejects(freepassDataCloudRunHeaders('https://data.example.test', env, async () => { throw new Error('OIDC unavailable'); }), /OIDC unavailable/);
+    assert.equal(calls.length, 2, 'no token means no STS or Cloud Run request');
   } finally {
     globalThis.fetch = originalFetch;
     resetFreepassDataCloudRunTokenForTest();

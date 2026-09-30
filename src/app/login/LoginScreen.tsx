@@ -9,15 +9,15 @@ import { useEffect, useRef, useState } from 'react';
 import { mount, type SharedLoginBrand } from './shared/login.js';
 import './shared/login.css';
 
-/** 프리패스모빌리티 공식 CI(Exo 2 · freepass 600 #1B2A4A + mobility 300 #7F93B3) */
-const FREEPASS_MOBILITY_BRAND: SharedLoginBrand = {
+/** 프리패스 어드민 — 공용 CI와 앱 이름을 구분한다. */
+const FREEPASS_ADMIN_BRAND: SharedLoginBrand = {
   kind: 'ours',
-  label: 'freepass mobility',
+  label: 'freepass admin',
   color: '#1B2A4A',
   colorHover: '#24365E',
   wordmark: [
     { text: 'freepass', weight: 600 },
-    { text: 'mobility', weight: 300, color: '#7F93B3' },
+    { text: 'admin', weight: 300, color: '#7F93B3' },
   ],
 };
 
@@ -45,7 +45,7 @@ export function LoginScreen({ config, next }: { config: WebConfig | null; next: 
         await instance.authStateReady?.();
         if (!alive || !host.current) return;
         mount(host.current, {
-          brand: FREEPASS_MOBILITY_BRAND,
+          brand: FREEPASS_ADMIN_BRAND,
           policy: 'APPROVAL',   /* 어드민은 승인제 — SHARED-LOGIN-DESIGN.md §4 */
           fields: 'basic',      /* 사업자번호·활동유형은 영업 가입에만 */
           consent: false,
@@ -63,6 +63,7 @@ export function LoginScreen({ config, next }: { config: WebConfig | null; next: 
             await auth.signOut(instance).catch(() => {});
             /* ★메일 인증과 승인을 합쳐서 말하지 않는다 — 할 일이 서로 다르다 */
             const WHY: Record<string, string> = {
+              IDENTITY_NOT_CONFIGURED: '로그인 서버 설정이 완료되지 않았습니다 — 운영 관리자에게 문의해 주세요',
               EMAIL_UNVERIFIED: '메일 인증이 아직입니다 — 받으신 인증 메일의 링크를 누른 뒤 다시 로그인해 주세요',
               NOT_APPROVED: '아직 승인되지 않은 계정입니다 — 마스터 승인 뒤에 들어올 수 있습니다',
               NO_SESSION: '로그인이 끈겼습니다 — 다시 해 주세요',

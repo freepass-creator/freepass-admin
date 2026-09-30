@@ -48,6 +48,14 @@ export function 꼴(it: SectionItem) {
   if (typeof v === 'boolean' || it.type === 'boolean') return v === true || v === 'true' || v === 'Y' ? '예' : '아니오';
   const n = typeof v === 'number' ? v : Number(String(v).replace(/,/g, ''));
   const isNum = typeof v === 'number' || (String(v).trim() !== '' && !Number.isNaN(n));
+  // Display only: keep canonical values numeric, and never guess units from a label.
+  if (isNum && Number.isFinite(n)) {
+    if (['basic_driver_age', 'driver_age_lowering', 'driver_age_upper_limit'].includes(it.key)) return `만 ${수(n)}세`;
+    if (['annual_mileage', 'max_annual_mileage'].includes(it.key)) return `연 ${수(n)}km`;
+    if (['deposit_return_days', 'impound_keep_days', 'engine_control_overdue_days', 'auto_terminate_overdue_days', 'renewal_notice_days', 'buyout_notice_days'].includes(it.key)) return `${수(n)}일`;
+    if (it.key === 'seats') return `${수(n)}인승`;
+    if (it.key === 'year') return `${n}년식`;
+  }
   switch (it.type) {
     case 'money': return isNum ? `${n < 0 ? '−' : ''}${수(Math.abs(Math.round(n)))}원` : String(v);
     case 'km': return isNum ? `${수(n)}km` : String(v);

@@ -81,12 +81,15 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   const offers = sel?.matchedOffers ?? [];
   const chosen = offers.find((o) => o.id === sp(q.offer)) ?? sel?.lead ?? offers[0];
   const ic = mode === 'intake' ? sp(q.ic) : '';
-  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v))
+  const requestedView = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v))
     ?? (mode === 'intake' && (ic || sp(q.w)) ? 'work' : selId ? 'detail' : 'list');
   /* 접수 칸은 [접수하기]를 눌러야 열린다 — PC 에서 두 판에 주 버튼이 같이 서지 않게(AI Core: 판마다 주 버튼 하나) */
-  const 접수중 = (mode === 'intake' ? sp(q.w) === 'new' : view === 'work') && !!car && !!chosen;
+  const 접수중 = (mode === 'intake' ? sp(q.w) === 'new' : requestedView === 'work') && !!car && !!chosen;
   /* 차 없이 직접 접수 — 상품 목록을 거치지 않는 견적출고 · 신차발주(기능 쪽 NewIntakePanel 그대로) */
   const 직접접수 = mode === 'intake' && sp(q.w) === 'direct';
+  const 접수상세 = mode === 'intake' && !!ic && !접수중 && !직접접수;
+  // Desktop keeps the case list in the right panel; mobile opens the shared detail panel.
+  const view = 접수상세 ? 'detail' : requestedView;
   /* 계약접수 메인 — 오른쪽 접수 목록 · 상세가 원장 줄을 쓴다(신규 접수의 채널·담당 선택지도 같은 줄에서) */
   let 원장: SettlementRow[] = [];
   let 원장오류 = '';
@@ -144,7 +147,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   /* 폰 상태표시줄 — 그 판의 제목 하나(목업 statusbar) */
   const 폰머리 = {
     list: { title: <>상품찾기<span>{sorted.length}대</span></>, sub: 즉시 ? `즉시출고 ${즉시}대` : '판매 가능' },
-    detail: { title: <>상품 상세</>, sub: car ? `${txt(car.status)} · 계약조건 선택` : '차를 고르세요' },
+    detail: 접수상세 ? { title: <>접수상세</>, sub: '' } : { title: <>상품 상세</>, sub: car ? `${txt(car.status)} · 계약조건 선택` : '차를 고르세요' },
     work: 접수중 ? { title: <>신규접수</>, sub: '' }
       : ic ? { title: <>접수 상세</>, sub: '진행 · 다음 업무' }
         : { title: <>접수 목록</>, sub: '진행 중부터' },
@@ -211,7 +214,12 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
 
         {/* ── 상품 상세 ─────────────────────────────── */}
         <section className="web-panel pb-detail">
-          <header className="web-panel-head"><h2>상품 상세</h2><small>{car ? txt(car.status) : ''}</small></header>
+          <header className="web-panel-head"><h2>{접수상세 ? '접수상세' : '상품 상세'}</h2>{접수상세
+            ? <Link className="panel-close" href={keep({ ic: '', v: 'work' })} aria-label="접수상세 닫기">×</Link>
+            : <small>{car ? txt(car.status) : ''}</small>}</header>
+          {접수상세 ? (
+            <IntakeDetail code={ic} keep={keep} created={!!sp(q.created)} exists={!!sp(q.exists)} />
+          ) : (<>
           <div className="web-scroll">
             {car ? (
               <>
@@ -278,6 +286,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}><Icon name="clipboard" size={16} />접수하기</Link>}
             </div>
           )}
+          </>)}
         </section>
 
         {/* ── 접수 — 계약접수 메인에서만(상품찾기는 두 판) ── */}
@@ -286,8 +295,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
             <header className="web-panel-head">
               {직접접수 ? <><h2>직접 접수</h2><small>차 없이 · 견적출고 · 신차발주</small></>
                 : 접수중 ? <><h2>신규접수</h2><Link className="panel-close" href={keep({ w: '', v: 'detail' })} aria-label="접수 작성 닫기">×</Link></>
-                : ic ? <><h2>접수 상세</h2><small>진행 · 다음 업무</small></>
-                  : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
+                : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
             </header>
             {직접접수 ? (
               <div className="web-scroll pb-legacy">
@@ -311,8 +319,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
               </BoardIntakeForm>
             ) : 원장오류 ? (
               <div className="web-scroll"><p className="pb-errs" role="alert">접수 원장을 못 읽었습니다 — {원장오류}</p></div>
-            ) : ic ? (
-              <IntakeDetail code={ic} keep={keep} created={!!sp(q.created)} exists={!!sp(q.exists)} />
             ) : (
               <IntakeList q={q} keep={keep} all={원장} />
             )}

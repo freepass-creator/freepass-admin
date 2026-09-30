@@ -1,3 +1,12 @@
+## 0-CASE-MASTER-DETAIL. 2026-09-30 — 접수목록을 유지하는 상세 동선
+
+- 목적: 접수목록 선택 시 가운데 상세 패널에 접수상세 표시. 오른쪽 목록을 유지하여 다음 건으로 직접 전환.
+- 대상 revision: `8bbed48`, 기존 intake-controls 작업선. 새 브랜치/운영 데이터 변경 없음.
+- 변경: 접수 선택은 `ic + v=detail`, 오른쪽 IntakeList 유지 및 선택 표시. 상품 선택은 ic 해제. 모바일 복귀 URL은 검색/필터/상품/Offer 조건 보존. 최신 동선은 이전 이미지의 오른쪽 목록→상세보다 우선.
+- 검증: typecheck, ui:check, build, 관련 테스트 23개 PASS. 1440px 브라우저에서 두 접수 연속 선택→중앙 상세 변경/오른쪽 목록 유지/선택 표시 확인. 실제 렌더 캡처 `coded-intake-list-detail-web.jpg`.
+- 남음: 모바일 브라우저 재검증은 연결 timeout으로 미완료. Claude 독립 검토는 응답 대기, PASS 아님. main 병합/원격 push/배포 없음.
+- next_start_here: 같은 작업선에서 Claude receipt와 모바일 목록 복귀/필터 유지 검증을 마친 뒤 통합. 운영 저장 성공과 UI 검증을 혼동하지 않는다.
+
 ## 0-CODE-RENDER. 2026-09-30 — 마지막 이미지 시안의 실제 코드 구현
 
 - 목적: 기존 ProductsBoard의 모양 잠금이 아니라 마지막 웹/모바일 3장 시안으로 틀 교체. 코드 렌더 캡처와 구현 명세를 함께 제공.

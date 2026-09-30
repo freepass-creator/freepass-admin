@@ -32,7 +32,7 @@ export const 사진들 = (p: CanonicalProduct) =>
 export function productRows(sorted: { product: CanonicalProduct; lead?: Offer }[], q: Q, base: string): BoardRow[] {
   return sorted.map(({ product: p, lead: o }) => ({
     id: p.id,
-    href: keepUrl(q, base, { id: p.id, offer: '', v: 'detail', w: '' }),
+    href: keepUrl(q, base, { id: p.id, offer: '', v: 'detail', w: '', ic: '' }),
     title: 이름(p),
     tag: p.perks?.[0],
     price: o ? `월 ${won(o.monthlyRent)}원` : '요금 미확인',

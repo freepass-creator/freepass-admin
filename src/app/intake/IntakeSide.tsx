@@ -62,7 +62,7 @@ export function IntakeList({ q, keep, all }: { q: Record<string, string | string
         )}
       </div>
       <div className="web-scroll">
-        <BoardList rows={firstWindow(rows)} total={rows.length} page={PAGE} more={moreIntakeRows.bind(null, flat(q))} unit="건" empty="조건에 맞는 접수가 없습니다." />
+        <BoardList rows={firstWindow(rows, sp(q.ic))} selectedId={sp(q.ic) || undefined} total={rows.length} page={PAGE} more={moreIntakeRows.bind(null, flat(q))} unit="건" empty="조건에 맞는 접수가 없습니다." />
       </div>
     </>
   );

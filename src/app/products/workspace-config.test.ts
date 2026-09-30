@@ -148,6 +148,25 @@ test('current mileage exact limit rejects unknown and over-limit vehicles', () =
 });
 
 import { offerAxisMatches } from '../../domain/search/finder';
+import { firstWindow, keepUrl } from './list-rows';
+
+test('접수 상세 전환과 목록 복귀는 검색·필터·상품 조건을 보존한다', () => {
+  const q = { id: 'FP-0006', offer: 'FP-0006#36', iq: '고객', iv: '미완료', isup: '공급사', created: '1' };
+  const detail = new URL(keepUrl(q, '/intake', { ic: 'case-2', w: '', v: 'detail' }), 'http://localhost');
+  assert.equal(detail.searchParams.get('v'), 'detail');
+  assert.equal(detail.searchParams.get('ic'), 'case-2');
+  for (const key of ['id', 'offer', 'iq', 'iv', 'isup'] as const) assert.equal(detail.searchParams.get(key), q[key]);
+  assert.equal(detail.searchParams.has('created'), false);
+  const back = new URL(keepUrl(Object.fromEntries(detail.searchParams), '/intake', { ic: '', v: 'work' }), 'http://localhost');
+  assert.equal(back.searchParams.has('ic'), false);
+  assert.equal(back.searchParams.get('iq'), q.iq);
+  assert.equal(back.searchParams.get('iv'), q.iv);
+});
+
+test('뒤쪽 접수 선택도 초기 목록 창에서 빠지지 않는다', () => {
+  const rows = Array.from({ length: 100 }, (_, i) => ({ id: `case-${i}` }));
+  assert.ok(firstWindow(rows, 'case-75').some((row) => row.id === 'case-75'));
+});
 
 test('supplier facet is Offer-level so one Product preserves multiple suppliers', () => {
   const a: Offer = { ...offer('a', 500_000), supplierId: 'SUP-A', supplierName: '공급사 A' };

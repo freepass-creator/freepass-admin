@@ -148,7 +148,24 @@ test('current mileage exact limit rejects unknown and over-limit vehicles', () =
 });
 
 import { offerAxisMatches } from '../../domain/search/finder';
-import { firstWindow, keepUrl } from './list-rows';
+import { firstWindow, keepUrl, savedIntakeHref } from './list-rows';
+
+test('접수 저장은 목록 조건과 선택 상품을 보존하고 중앙 상세로 돌아간다', () => {
+  const href = savedIntakeHref('/intake?id=car&offer=offer%2324&iq=test&iv=미완료&isup=supplier&w=new&exists=1', 'case/1', true);
+  const u = new URL(href, 'http://localhost');
+  for (const [k, v] of Object.entries({ id: 'car', offer: 'offer#24', iq: 'test', iv: '미완료', isup: 'supplier', ic: 'case/1', v: 'detail', created: '1' })) assert.equal(u.searchParams.get(k), v);
+  assert.equal(u.searchParams.has('w'), false);
+  assert.equal(u.searchParams.has('exists'), false);
+});
+
+test('접수 저장 복귀는 외부 URL이나 다른 route를 신뢰하지 않는다', () => {
+  for (const context of ['https://evil.example/intake?iq=bad', '//evil.example/intake', '/login?iq=bad']) {
+    const u = new URL(savedIntakeHref(context, 'case', false), 'http://localhost');
+    assert.equal(u.pathname, '/intake');
+    assert.equal(u.searchParams.has('iq'), false);
+    assert.equal(u.searchParams.get('exists'), '1');
+  }
+});
 
 test('접수 상세 전환과 목록 복귀는 검색·필터·상품 조건을 보존한다', () => {
   const q = { id: 'FP-0006', offer: 'FP-0006#36', iq: '고객', iv: '미완료', isup: '공급사', created: '1' };

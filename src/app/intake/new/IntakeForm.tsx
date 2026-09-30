@@ -173,6 +173,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
       <datalist id="dl-supplier">{options.suppliers.map((v) => <option key={v} value={v} />)}</datalist>
 
       <input type="hidden" name="intakeRequestId" value={defaults.intakeRequestId ?? ''} />
+      <input type="hidden" name="returnContext" value={cancelHref ?? '/intake'} />
       {picked ? (
         <>
           {/* 차에서 이미 정해진 것 — 판 위 카드가 보여 준다. 여기는 숨은 칸으로만 간다 */}

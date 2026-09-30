@@ -10,7 +10,7 @@ import type { IntakeNextAction } from './next-action';
  *   맨 위 = 지금 할 한 가지(하단바 주 버튼이 그것을 저장). 드문 일(고침·되돌림·취소)은 「다른 작업」에 접어 둔다.
  *   ★규칙(인도일 필수 · 취소 사유 필수 · 순서)은 서버가 다시 본다 — 여기서 새로 정하지 않는다.
  */
-export function IntakeWork({ code, next, plate, paper, delivered, deliveredAt, cancelled, today, settleHref, backHref, readOnly, money, head }: {
+export function IntakeWork({ code, next, plate, paper, delivered, deliveredAt, cancelled, today, settleHref, backHref, readOnly, money, head, intakeCancellationAllowed = true }: {
   code: string; next: IntakeNextAction; plate: string; paper: boolean; delivered: boolean; deliveredAt: string;
   cancelled: boolean; today: string; settleHref: string; readOnly: boolean;
   /** 하단바 왼쪽 [접수 목록] — 오른쪽 판을 목록으로 되돌린다 */
@@ -19,6 +19,7 @@ export function IntakeWork({ code, next, plate, paper, delivered, deliveredAt, c
   head?: ReactNode;
   /** 돈 고치기(수수료 · 프로모션 · 가감 · 환수) — 기능 쪽 MoneyForm 들을 판이 넘겨준다 */
   money?: ReactNode;
+  intakeCancellationAllowed?: boolean;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(progressAction, { errors: [] });
   const [보냄, set보냄] = useState(false);
@@ -99,17 +100,18 @@ export function IntakeWork({ code, next, plate, paper, delivered, deliveredAt, c
             <form className="tool" onSubmit={send}>
               {숨은('cancelled')}
               {cancelled
-                ? <><div className="form"><label>취소<input value="취소됨" readOnly tabIndex={-1} /></label></div>
-                    <button name="on" value="0" className="small-btn" disabled={pending || readOnly}>취소 풀기</button></>
-                : <><div className="form"><label>취소 사유<input name="reason" placeholder="취소할 때만 — 사유 필수" disabled={pending || readOnly} /></label></div>
-                    <button name="on" value="1" className="small-btn danger" disabled={pending || readOnly}>접수 취소</button></>}
+                ? <><div className="form"><label>취소 해제 사유<input name="reason" placeholder="해제 사유 필수" required disabled={pending || readOnly || !intakeCancellationAllowed} /></label></div>
+                    <button name="on" value="0" className="small-btn" disabled={pending || readOnly || !intakeCancellationAllowed}>취소 풀기</button></>
+                : <><div className="form"><label>취소 사유<input name="reason" placeholder="취소할 때만 — 사유 필수" disabled={pending || readOnly || !intakeCancellationAllowed} /></label></div>
+                    <button name="on" value="1" className="small-btn danger" disabled={pending || readOnly || !intakeCancellationAllowed}>접수 취소</button></>}
             </form>
+            {!cancelled && !intakeCancellationAllowed && <p className="notice warn">계약금 수납 후에는 계약취소, 인도 후에는 계약해지로 처리해야 합니다. 접수취소로 되돌리지 않습니다.</p>}
           </div>
         </details>
         {money && (
           <details className="more">
             <summary>돈 고치기 · 환수</summary>
-            <div className="more-body form pb-money">{money}</div>
+            <fieldset className="more-body form pb-money" disabled={readOnly}>{money}</fieldset>
           </details>
         )}
       </div>

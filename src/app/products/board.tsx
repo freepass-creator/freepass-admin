@@ -4,7 +4,7 @@ import './board.css';
 import { productView } from './product-view';
 import { 상품축이름 } from './product-view-config';
 import { sp, txt, won } from '../_fn/fmt';
-import { erp5Ready, settlements } from '../../server/freepass-data';
+import { erp5Ready, settlements, writeEnabled } from '../../server/freepass-data';
 import { FilterSheet } from '../_design/FilterSheet';
 import { Share } from '../_design/Share';
 import { productSections, type SectionItem } from '../../domain/catalog/sections';
@@ -302,8 +302,8 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 <NewIntakePanel rows={원장} productId="" offerId="" back={keep({ w: '', ic: '', v: 'work' })} />
               </div>
             ) : 접수중 && 접수 && 접수선택지 ? (
-              <BoardIntakeForm key={`${car.id}:${chosen.id}`} defaults={접수.defaults} options={접수선택지} choices={접수.choices}
-                cancelHref={keep({ w: '', v: 'detail' })} fee={수수료}>
+              <BoardIntakeForm key={car.id} defaults={접수.defaults} options={접수선택지} choices={접수.choices}
+                cancelHref={keep({ w: '', v: 'detail' })} fee={수수료} disabled={!writeEnabled()}>
                 <article className="row context-card" aria-label="선택 상품">
                   <span className={`thumb${사진[0] ? ' photo' : ' car'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}

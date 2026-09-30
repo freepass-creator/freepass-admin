@@ -1,3 +1,14 @@
+## 0-INTAKE-AUDIT-UPGRADE. 2026-09-30 — 접수 검수 오류와 상세 정보 보강
+
+- 목적 / 정본: 기존 intake-controls 작업선, 기준 `5e3524d108013bb0df81936528563fe36daaaa73`. 새 브랜치·운영 데이터 수정·배포 없음.
+- 변경: 정산 링크 404 수정, Offer 변경 시 고객/분납 초안 유지, 저장 후 검색/상품/Offer 문맥 보존, 미확인 마진을 0으로 계산하지 않음. 조회 전용 저장/금액 버튼 차단, 숨은 모바일 목록 자동 로딩 방지.
+- 상세: 실적 단계·청구월·납입회차·다음 납입일·메모·계약 수납 사실·당시 상품/Offer/정책 Snapshot 표시. 직접접수 audit identity 보존. 취소 해제 사유 입력, 이탈 안내 스크롤/포커스 보강.
+- 검증: 타입/UI 검사, production build, 관련 164 tests PASS. 전체 795 tests: 785 PASS, PDF Chromium 실행 파일 ENOENT 환경 오류 10 FAIL. 오래된 UI 단정 2건은 최신 사용자 결정과 기존 HEAD 구현에 맞춰 엄격한 현재 계약으로 수정. 초안 보호 회귀 검사 추가.
+- Claude: 본문과 exit 0 수신. 수수료 입력 unmount, 성공 후 경고 오탐, 이탈 안내 시야 밖, 취소 해제 사유 지적 반영. 별도 ANSWERED JSON 미출력으로 receipt gate 완료 아님.
+- 브라우저: 확인창 차단 해소 후 모바일 초안 유지/이탈 복귀, PC 실제 접수목록 클릭→가운데 상세 갱신/오른쪽 목록 유지 확인. 조회 전용 demo이며 운영 저장하지 않음. 실제 캡처 `C:/Users/admin/AppData/Local/Temp/freepass-admin-intake-upgraded.jpg`.
+- 남음: 연락처/연령/주행거리 저장 계약, 계약 수납·취소·해지 실행 동선, 서류/잔금, 환수 REQUIRED 서버 강제 조건. 저장 성공 실데이터 검증 및 직접 수수료 입력 UI 회귀 검증 없음.
+- next_start_here: 같은 작업선에서 최신 클릭 동선 재검증, PDF 실행 환경 복구, 환수 서버 가드의 독립 검토/회귀 검증 후 통합. 전체 완료/PERSISTENCE VERIFIED/DEPLOYMENT VERIFIED로 표현하지 않는다.
+
 ## 0-CASE-MASTER-DETAIL. 2026-09-30 — 접수목록을 유지하는 상세 동선
 
 - 목적: 접수목록 선택 시 가운데 상세 패널에 접수상세 표시. 오른쪽 목록을 유지하여 다음 건으로 직접 전환.

@@ -22,6 +22,16 @@ export function keepUrl(q: Q, base: string, extra: Record<string, string>) {
   return s ? `${base}?${s}` : base;
 }
 
+/** Save always returns to the local intake workspace; a browser field cannot redirect elsewhere. */
+export function savedIntakeHref(context: string, code: string, created: boolean): string {
+  let q: Q = {};
+  try {
+    const u = new URL(context, 'http://intake.local');
+    if (u.origin === 'http://intake.local' && u.pathname === '/intake') q = Object.fromEntries(u.searchParams);
+  } catch { /* malformed context has a safe local fallback */ }
+  return keepUrl(q, '/intake', { ic: code, w: '', v: 'detail', [created ? 'created' : 'exists']: '1' });
+}
+
 export const 이름 = (p: CanonicalProduct) => p.vehicle.subModelId || p.vehicle.modelId || vehicleName(p) || p.id;
 export const 공급사 = (p: CanonicalProduct) => p.supplierName ?? p.supplierId;
 export const 요금줄 = (o?: Offer) => (o ? `${o.termMonths}개월 · 월 ${won(o.monthlyRent)}원` : '요금 없음');

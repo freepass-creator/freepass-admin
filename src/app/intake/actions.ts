@@ -11,6 +11,7 @@ import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { buildIntakeCatalogSnapshot } from '../../domain/settlement/catalog-snapshot';
 import { directIntakeRentKind, resolveLedgerKindSelection } from '../../domain/settlement/product-kind';
+import { savedIntakeHref } from '../products/list-rows';
 
 /**
  * **써도 되는지 물은 뒤 부른다** — 관리자 액션 10개가 첫 줄에서 requireAdmin() 을 부르는 모양은
@@ -117,9 +118,9 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
   /*
    * ★이미 있던 줄이면 새로 안 만들고 그 줄로 보낸다 (대표 「있으면 안 올리면 되잖아」)
    * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
-   *   오른쪽 판만 방금 만든 접수로 바뀐다 (/intake?ic=… — 디자인 세션과 맞춘 주소)
+   *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
    */
-  redirect(`/intake?ic=${encodeURIComponent(res.code)}&${res.created ? 'created=1' : 'exists=1'}`);
+  redirect(savedIntakeHref(S(f, 'returnContext'), res.code, res.created));
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {

@@ -87,9 +87,9 @@ test('current project documents contain no removed UI source references', () => 
   assert.deepEqual(hits, []);
 });
 
-test('ProductsBoard intake is the latest user-approved canonical intake UI (2026-09-28)', () => {
+test('ProductsBoard intake is the latest user-approved canonical intake UI (2026-09-30)', () => {
   const authority = read('docs/ui/DESIGN-AUTHORITY.md');
-  assert.ok(authority.includes('CANONICAL — USER APPROVED 2026-09-28'), 'authority status');
+  assert.ok(authority.includes('MAIN_UI_CANONICAL — USER APPROVED 2026-09-30'), 'authority status');
   assert.ok(authority.includes('ProductsBoard'), 'latest intake lineage');
   assert.ok(authority.includes('## 폐기 (DISCARDED)'), 'discard list');
   const registry = JSON.parse(read('registry/active-work.json')) as {

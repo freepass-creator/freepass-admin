@@ -61,7 +61,7 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
     const 창 = root && getComputedStyle(root).overflowY !== 'visible' ? root : null;
     let 멈춤 = false;
     const 볼 = async () => {
-      if (멈춤) return;
+      if (멈춤 || !판.current?.getClientRects().length) return;
       const 남음 = 창 ? 창.scrollHeight - 창.scrollTop - 창.clientHeight
         : document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
       if (남음 > 600) return;

@@ -544,3 +544,7 @@ body:has(.pb) { background:#eef2f6 !important; }
 .pb .tools-sum { flex:none; margin-left:auto; padding-left:8px; color:var(--muted); font-size:var(--support); white-space:nowrap; }
 .pb .tools-sum b { color:var(--ink); }
 .pb .tools-sum .warn { color:var(--warn); }
+
+.pb fieldset.more-body { min-width:0; margin:0; border:0; }
+.pb .intake-note { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--sub); }
+.pb .fact b { overflow-wrap:anywhere; }

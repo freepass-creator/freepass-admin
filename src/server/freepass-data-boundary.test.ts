@@ -54,6 +54,11 @@ test('server helpers cannot reach persistence on their own; identity reaches onl
   const collections = [...identity.matchAll(/\.collection\('([^']+)'\)|\.collection\((\w+)\)/g)];
   assert.equal(collections.length, 1, 'identity reads exactly one collection');
   assert.match(identity, /const ACCOUNTS = 'identity_accounts'/);
+  // The WIF REST read is bound to the same single collection as the emulator SDK path.
+  assert.equal((identity.match(/fetch\(/g) ?? []).length, 1);
+  assert.match(identity, /fetch\('https:\/\/firestore\.googleapis\.com\/v1\/projects\/' \+ config\.projectId/);
+  assert.match(identity, /'\/databases\/\(default\)\/documents\/' \+ ACCOUNTS \+ '\/' \+ encodeURIComponent\(id\)/);
+  assert.doesNotMatch(identity, /method:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/);
   // The contract forbids an application minting its own session token or keeping its own allowlist.
   assert.match(identity, /createSessionCookie/);
   // Owner, 2026-09-27: the door asks only whether this is a real colleague, because FreePass

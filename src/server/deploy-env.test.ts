@@ -4,7 +4,7 @@ import { checkDeployEnv } from './deploy-env';
 import { tokenSha256 } from '../shared/freepass-data-admin-cutover';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from './identity';
+import { IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from '../shared/identity-federation';
 
 test('actual production build command stops when identity configuration is missing', () => {
   const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
@@ -15,7 +15,7 @@ test('actual production build command stops when identity configuration is missi
   delete env.IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL;
   const result = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/check-deploy-env.mts', '--vercel-build'], { env, encoding: 'utf8' });
   assert.equal(result.status, 1, result.stderr);
-  assert.match(result.stdout, /ERROR IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(result.stdout, /ERROR IDENTITY_GCP_WIF_AUDIENCE/);
 });
 
 const identitySa = JSON.stringify({
@@ -49,6 +49,7 @@ test('production keyless identity requires exact complete trust; preview, mixed 
     FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'caller@project.iam.gserviceaccount.com',
   };
   assert.deepEqual(errors(keyless), []);
+  assert.ok(errors({ ...good, VERCEL_ENV: 'production' }).includes('IDENTITY_GCP_WIF_AUDIENCE'), 'production never accepts a persistent key instead of federation');
   for (const change of [
     { VERCEL_ENV: 'preview' }, { IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: identitySa },
     { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: '' }, { IDENTITY_FIREBASE_PROJECT_ID: 'other' },
@@ -199,6 +200,9 @@ test('Vercel production requires private FreePass Data Cloud Run WIF caller sett
   const configured = checkDeployEnv({
     ...good,
     VERCEL_ENV: 'production',
+    IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: undefined,
+    IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
+    IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: IDENTITY_SERVICE_ACCOUNT,
     FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/vercel',
     FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'freepass-admin-caller@freepasserp5.iam.gserviceaccount.com',
   });

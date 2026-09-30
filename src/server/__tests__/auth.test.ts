@@ -4,7 +4,8 @@ import { isPublicPath, looksLikeSession } from '../auth.js';
 import { NextRequest } from 'next/server';
 import { POST } from '../../app/api/session/route';
 import { IdentityPoolClient } from 'google-auth-library';
-import { identityAccountFromFederation, identityFederatedCredential, identityFederationConfig, identityReady, IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from '../identity';
+import { identityAccountFromFederation, identityFederatedCredential, identityFederationOptions, resetIdentityFederationForTest, identityReady } from '../identity';
+import { identityFederationConfig, IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from '../../shared/identity-federation';
 
 const federation = {
   IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
@@ -21,7 +22,8 @@ it('identity federation accepts only the dedicated production trust and never fa
     { IDENTITY_FIREBASE_PROJECT_ID: 'other' }, { IDENTITY_GCP_WIF_AUDIENCE: 'https://attacker.test' },
     { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: 'business-writer@freepasserp5.iam.gserviceaccount.com' },
     { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: '' }, { IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: '{}' },
-  ]) assert.throws(() => identityFederationConfig({ ...federation, ...change }), /CONFIG_INVALID/);
+  ]) assert.throws(() => identityFederationConfig({ ...federation, ...change }), /IDENTITY_FEDERATION_/);
+  assert.throws(() => identityFederationConfig({ VERCEL_ENV: 'production', IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: '{}' }), /FEDERATION_REQUIRED/);
 });
 
 it('federated authority reads one encoded document; missing, denied, malformed and expired credentials fail closed', async (t) => {
@@ -29,6 +31,15 @@ it('federated authority reads one encoded document; missing, denied, malformed a
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   Object.assign(process.env, federation);
   delete process.env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON;
+  resetIdentityFederationForTest();
+  const options = identityFederationOptions();
+  assert.equal(options.token_url, 'https://sts.googleapis.com/v1/token');
+  assert.equal(options.audience, IDENTITY_WIF_AUDIENCE);
+  assert.equal(options.service_account_impersonation_url, 'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/freepass-admin-identity%40freepasserp5.iam.gserviceaccount.com:generateAccessToken');
+  assert.equal(options.subject_token_type, 'urn:ietf:params:oauth:token-type:jwt');
+  assert.deepEqual(options.scopes, ['https://www.googleapis.com/auth/cloud-platform']);
+  assert.equal(typeof options.subject_token_supplier?.getSubjectToken, 'function');
+  assert.equal(options.credential_source, undefined, 'no persistent credential source');
   let tokenCalls = 0;
   let expired = false;
   t.mock.method(IdentityPoolClient.prototype, 'getAccessToken', async function(this: IdentityPoolClient) {
@@ -63,6 +74,7 @@ it('federated authority reads one encoded document; missing, denied, malformed a
     process.env.IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL = 'other';
     assert.equal(identityReady(), false);
   } finally {
+    resetIdentityFederationForTest();
     for (const key of keys) {
       if (previous[key] === undefined) delete process.env[key]; else process.env[key] = previous[key];
     }

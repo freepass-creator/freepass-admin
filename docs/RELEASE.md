@@ -13,6 +13,7 @@
 3. 안전한 대안은 장기 키가 없는 Vercel OIDC → GCP WIF → 전용 identity 계정이다. 기존 `vercel` pool을 재사용하되 provider `freepass-admin-identity-prod`에는 issuer `https://oidc.vercel.com/freepass-projects`, audience `https://vercel.com/freepass-projects`, subject `owner:freepass-projects:project:freepass-admin:environment:production`을 제한한다. 해당 단일 principal에만 이 계정의 `roles/iam.workloadIdentityUser`를 준다. Preview/Development나 업무 계정의 권한을 넓히지 않는다.
    Production 환경값은 비밀이 아닌 `IDENTITY_GCP_WIF_AUDIENCE`와 `IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL` 두 개다. 장기 키 설정과 혼용하지 않는다. 먼저 trust/환경값을 확인하고 build guard를 통과한 코드만 병합/배포한다.
    Auth는 공식 SDK의 custom Credential, 승인문서는 Google Firestore REST document GET으로 읽는다. Firebase Admin Firestore는 custom Credential을 받지 않으므로 억지로 SDK 내부를 바꾸지 않는다. 계정문서 외 경로와 쓰기 API는 추가하지 않는다. OIDC는 공식 `@vercel/oidc`로 매 token refresh 시 현재 요청에서 얻는다.
+   Claude 독립 검토를 반영해 Production은 WIF만 받는다. 서비스계정 JSON 경로는 로컬/에뮬레이터 호환용이며 운영 fallback이 아니다. 공용 trust 정책은 `src/shared/identity-federation.ts`에 있어 preflight가 인증 SDK를 불러오지 않는다. STS와 IAM 요청의 일시 장애는 인증 실패로 닫히며, 실패를 이유로 인증을 생략하지 않는다.
 4. `npm run deploy:check` PASS 및 승인된 source의 Production build 뒤 재배포한다. 환경 저장만으로 기존 deployment가 바뀌었다고 판단하지 않는다.
 5. 승인 계정으로 실제 로그인 → `/intake` 진입 → 새로고침 후 인증 유지까지 읽기 전용 검증한다. 고객 접수/정산 데이터는 만들거나 변경하지 않는다.
 

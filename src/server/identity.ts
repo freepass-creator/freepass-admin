@@ -25,8 +25,9 @@
 import { cert, getApps, initializeApp, type App, type Credential } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { IdentityPoolClient } from 'google-auth-library';
+import { IdentityPoolClient, type IdentityPoolClientOptions } from 'google-auth-library';
 import { getVercelOidcToken } from '@vercel/oidc';
+import { identityFederationConfig } from '../shared/identity-federation';
 
 /** ★프리패스 데이터와 같은 이름이어야 한다 — 한쪽만 바꾸면 권한이 갈라진다 */
 const ACCOUNTS = 'identity_accounts';
@@ -50,31 +51,16 @@ export function webConfig(): WebConfig | null {
   const authEmulatorHost = process.env.IDENTITY_FIREBASE_AUTH_EMULATOR_HOST?.trim();
   return { apiKey, authDomain, projectId, ...(authEmulatorHost ? { authEmulatorHost } : {}) };
 }
-/** Dedicated trust: no ERP credential, default ADC or arbitrary token endpoint fallback. */
-export const IDENTITY_WIF_AUDIENCE = '//iam.googleapis.com/projects/110304297079/locations/global/workloadIdentityPools/vercel/providers/freepass-admin-identity-prod';
-export const IDENTITY_SERVICE_ACCOUNT = 'freepass-admin-identity@freepasserp5.iam.gserviceaccount.com';
-export function identityFederationConfig(env: Record<string, string | undefined> = process.env) {
-  const audience = env.IDENTITY_GCP_WIF_AUDIENCE?.trim();
-  const email = env.IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL?.trim();
-  if (!audience && !email) return null;
-  if (audience !== IDENTITY_WIF_AUDIENCE || email !== IDENTITY_SERVICE_ACCOUNT
-    || env.IDENTITY_FIREBASE_PROJECT_ID?.trim() !== 'freepasserp5'
-    || env.VERCEL_ENV !== 'production' || env.IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) {
-    throw new Error('IDENTITY_FEDERATION_CONFIG_INVALID');
-  }
-  return { audience, email, projectId: 'freepasserp5' };
-}
 export const identityReady = () => {
   try { return !!webConfig() && (!!identityFederationConfig() || !!serviceAccountRaw()); }
   catch { return false; }
 };
 
 let federatedClient: IdentityPoolClient | null = null;
-function identityClient(): IdentityPoolClient {
-  if (federatedClient) return federatedClient;
+export function identityFederationOptions(): IdentityPoolClientOptions {
   const config = identityFederationConfig();
   if (!config) throw new Error('IDENTITY_FEDERATION_NOT_CONFIGURED');
-  return (federatedClient = new IdentityPoolClient({
+  return {
     audience: config.audience,
     subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
     token_url: 'https://sts.googleapis.com/v1/token',
@@ -84,8 +70,12 @@ function identityClient(): IdentityPoolClient {
     transporterOptions: { timeout: 5_000, retry: false },
     // Read fresh request context on refresh; do not freeze a deployment-time OIDC token.
     subject_token_supplier: { getSubjectToken: () => getVercelOidcToken() },
-  }));
+  };
 }
+function identityClient(): IdentityPoolClient {
+  return (federatedClient ??= new IdentityPoolClient(identityFederationOptions()));
+}
+export function resetIdentityFederationForTest() { federatedClient = null; }
 
 export const identityFederatedCredential: Credential = {
   async getAccessToken() {

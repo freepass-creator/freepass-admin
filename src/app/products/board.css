@@ -484,6 +484,7 @@ body:has(.pb) { background:#eef2f6 !important; }
   body:has(.pb) .erp-sidenav { background:#10283d; padding:0 8px 8px; }
   body:has(.pb) .erp-sidenav-inner::before { content:"freepass"; display:flex; align-items:center; height:56px; padding:0 12px; color:#fff; font-size:20px; font-weight:700; }
   body:has(.pb) .erp-nav-group { display:block; }
+  body:has(.pb) .erp-sidenav[data-collapsed="true"] .erp-nav-group { display:none; }
   body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-label { display:inline; }
   body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-item { width:auto; margin:0; justify-content:flex-start; }
   body:has(.pb) .erp-nav-item { min-height:48px; padding:0 10px; gap:10px; border-radius:6px; color:#dce5ee; font-size:13px; }

@@ -557,7 +557,7 @@ body:has(.pb) { background:#eef2f6 !important; }
 .pb .section h4 svg { flex:none; color:var(--sub); }
 .pb .product-intro-section { margin-bottom:16px; }
 .pb .product-intro-card { padding:0; }
-@media (min-width:901px) and (max-width:1439px) {
+@media (min-width:1280px) and (max-width:1439px) {
   body:has(.pb) { grid-template-columns:64px minmax(0,1fr) !important; }
   body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-label,
   body:has(.pb) .erp-nav-group { display:none; }

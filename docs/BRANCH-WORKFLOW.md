@@ -38,7 +38,7 @@
 
 ## 4. 변경하지 않은 경계
 
-- UI: PR #92 actual-route 계보와 `docs/ui/DESIGN-AUTHORITY.md` 유지.
+- UI: 현재 ProductsBoard intake actual route와 `docs/ui/DESIGN-AUTHORITY.md`만 메인 기준. PR92 복구·과거 디자인은 HISTORICAL_ONLY / RESTORE_FORBIDDEN.
 - 데이터: FreePass Data 정본 및 `src/server/freepass-data.ts` 단일 진입점 유지. RTDB 재활성화 금지.
 - 접수·정산 정본: `Intake / settlement_rows / src/domain/settlement/**` 유지.
 - 코드 통합은 운영 배포·실데이터 write·cutover·전자계약 활성화 승인이 아니다.

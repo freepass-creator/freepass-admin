@@ -1,7 +1,15 @@
 # FreePass Admin Design Authority
 
-상태: **CANONICAL — USER APPROVED 2026-09-28 · ProductsBoard intake actual route**
-최신 확정: 사용자 2026-09-28 「로컬 목업을 메인으로 흡수」 「이걸 메인으로 승격」. `/intake`는 로컬에서 실데이터로 고도화된 `ProductsBoard`의 `상품찾기 | 상품상세 | 접수목록/업무` 3패널 구조를 메인으로 사용한다. 기존 PR #92 계보는 다른 업무 화면과 재사용 부품의 기준으로 남지만 `/intake` 구조보다 우선하지 않는다.
+상태: **MAIN_UI_CANONICAL — USER APPROVED 2026-09-30 · ProductsBoard intake actual route**
+
+## 단일 메인 기준 · 이전 디자인 폐기
+
+사용자 2026-09-30 「이제 메인 ui ux로 자리하고 기존거 또 안따라오게 확실하게 폐기」에 따라 현재 ProductsBoard 3패널과 접수 input/select 규격만 메인 디자인 기준으로 삼는다. PR92 복구 화면·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이다. 과거 기록은 구현 요구사항이나 대체 디자인 정본이 아니다.
+
+목록 / 상세 보기 / 입력의 세 가지 패널을 조합하며 복합 패널도 허용한다. 상품 선택은 상세 스크롤을 위로 초기화하고 접수하기는 오른쪽 업무 패널만 바꾼다. 대여료는 세로 선택 목록이다. 웹과 모바일은 같은 업무 의미와 공용 컨트롤을 사용한다. 새 디자인 분기·내 처리함·과한 중첩 박스를 추가하지 않는다.
+
+다른 업무 페이지에서 실제 사용하는 `_erp`·`_design` 부품은 기능 보존을 위해 유지하지만 과거 형태를 재도입할 권한은 아니다. 기존 코드의 존재와 디자인 승인 상태를 구분한다. 다른 페이지의 전체 시각 통일 완료를 이 결정만으로 주장하지 않는다.
+최신 확정: 사용자 2026-09-30 기존 디자인 폐기 결정. `/intake`는 `ProductsBoard`의 `상품찾기 | 상품상세 | 접수목록/업무` 3패널 구조를 메인으로 사용한다. 기존 PR #92 계보는 통합 이력과 재사용 코드의 출처로만 남으며 디자인 기준이 아니다.
 확정: 사용자 2026-09-26 「큰 화면으로 준 92버전이 정본이고 그게 메인으로 합쳐져야 돼」 「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」  
 main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기능)
 
@@ -42,7 +50,7 @@ PC actual route 구현:
 - `docs/ui/ADMIN-UI-UX-SSOT.md`
 - `docs/ui/admin-ui-ux-ssot.json`
 
-복구 진행판:
+과거 복구 기록 (HISTORICAL_ONLY / RESTORE_FORBIDDEN):
 - `docs/recovery/PR92-LATESTIZATION-STATUS.md`
 
 ## 현재 사용 규칙

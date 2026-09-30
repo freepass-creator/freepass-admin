@@ -1,5 +1,7 @@
 # PR #92 최신화 진행판
 
+> **HISTORICAL_ONLY / RESTORE_FORBIDDEN — 2026-09-30 폐기 확정.** 아래 진행률·복구 목표·브랜치는 당시 기록이며 현재 작업 지시가 아니다. 복구 작업을 재개하거나 이 화면을 메인에 재도입하지 않는다. 현재 단일 정본은 `docs/ui/DESIGN-AUTHORITY.md`의 ProductsBoard intake actual route다. 아래 이력의 PASS는 현재 변경의 검증이 아니다.
+
 상태: **RECOVERY / SINGLE-LINEAGE CONSOLIDATION**  
 기준 PR: **#92** (`claude/erp-platform-ui-ux-hvfyfa`)  
 통합 작업장: **#112** (`recovery/pr92-modernize-20260926`)  

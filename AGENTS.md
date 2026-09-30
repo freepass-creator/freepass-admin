@@ -27,21 +27,22 @@
 - `docs/WORK-INBOX.md` 등 과거 기록의 「ACTIVE branch 2개」와 UI→운영개시 대기 순서는 종료된 이력이다. 현재 작업 상태는 이 절과 `docs/BRANCH-WORKFLOW.md`, `registry/active-work.json`을 따른다.
 - 코드 병합은 운영 배포/실데이터 쓰기/cutover/전자계약 활성화 승인이 아니다. 운영 개통 담당의 별도 승인·검증을 유지한다.
 
-## -1. SINGLE UI LINEAGE — ProductsBoard intake · USER APPROVED 2026-09-28
+## -1. SINGLE UI LINEAGE — ProductsBoard intake · USER APPROVED 2026-09-30
 
-**최신 화면 정본 확정.** `/intake`는 사용자 재확정에 따라 로컬에서 실데이터로 고도화된 `ProductsBoard`의 3패널 구조를 메인 actual route로 사용한다. PR #92 계보는 다른 업무 화면과 공용 부품의 기준으로 유지하지만 `/intake`보다 우선하지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
+**최신 화면 정본 확정.** 현재 `ProductsBoard` 3패널과 input/select 규격을 단일 메인 UI로 고정한다. PR92 복구·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이며 구현 근거로 되살리지 않는다. 사용 중인 공용 부품은 보존하지만 과거 디자인 승인으로 해석하지 않는다. 시각 규격 변경은 사용자 명시 승인이 있어야 한다.
 
 UI/UX 작업은 시작 전에 반드시 다음을 읽는다.
 1. `docs/ui/DESIGN-AUTHORITY.md`
-2. `docs/recovery/PR92-LATESTIZATION-STATUS.md`
-3. `docs/ui/ADMIN-UI-UX-SSOT.md`
-4. `docs/ui/admin-ui-ux-ssot.json`
+2. `docs/ui/ADMIN-UI-UX-SSOT.md`
+3. `docs/ui/admin-ui-ux-ssot.json`
+
+`docs/recovery/PR92-LATESTIZATION-STATUS.md`는 폐기된 복구 이력이며 신규 구현 독서 경로가 아니다.
 
 **계약접수 PC 디자인 정본은 `src/app/products/board.tsx` + `board.css`의 actual route다.** (사용자 확정 2026-09-28: 「로컬 목업을 메인으로 흡수」 「이걸 메인으로 승격」)
 
 UI 규칙:
 - 현재 actual route와 UI SSOT만 사용한다.
-- 기능 최신화는 #92의 3패널 line-free visual grammar 안에서만 반영한다.
+- 기능 최신화는 현재 ProductsBoard 3패널과 공용 입력/select 규격 안에서만 반영한다.
 - UI 구조 변경은 actual route, UI SSOT, Visual QA를 같은 변경에서 갱신한다.
 
 
@@ -118,7 +119,7 @@ SALES / WHITE LABEL 화면을 이 저장소 안에 만들지 않는다. 화이�
 접수 저장 시 당시 상품과 선택 Offer/Policy의 필요한 값을 Snapshot으로 보존한다. 현재 상품 변경으로 과거 접수 조건을 조용히 변경하지 않는다. 진행 체크는 계약서/필수서류/잔금/인도와 취소를 중심으로 하며 `차량준비`를 만들지 않는다.
 
 ## 9.5 Backend evidence discipline
-- UI/UX는 `docs/ui/DESIGN-AUTHORITY.md`와 `docs/ui/ADMIN-UI-UX-SSOT.md`의 현재 actual-route 규격(PR #92 계보)을 따른다. 구현 후 현행 Visual QA 없이는 PILOT/CONFORMANT를 주장하지 않는다.
+- UI/UX는 `docs/ui/DESIGN-AUTHORITY.md`와 `docs/ui/ADMIN-UI-UX-SSOT.md`의 현재 ProductsBoard actual-route 규격을 따른다. 폐기된 복구 계보는 재도입하지 않는다. 구현 후 현행 Visual QA 없이는 PILOT/CONFORMANT를 주장하지 않는다.
 - backend write는 가능하면 `UI → Service → Domain → Port → Adapter/Repository` 경계를 통과한다.
 - 운영 저장소 연결 전 transaction, concurrency, idempotency, unique number, retry/failure semantics를 계약과 테스트로 먼저 고정한다.
 - 상태 변경/취소/정산 같은 민감 작업은 actor와 audit evidence를 남길 수 있는 경계를 마련한다.

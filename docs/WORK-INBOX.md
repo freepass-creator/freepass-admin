@@ -1,3 +1,12 @@
+## 0-MAIN-UI. 2026-09-30 — 단일 메인 UI와 구형 디자인 폐기
+
+- 목적: 현재 ProductsBoard 3패널/input/select를 단일 디자인 기준으로 고정. 이전 화면의 재유입 차단.
+- 대상 revision: `afc3c5b`, 기존 intake-controls 작업선 연속. 새 디자인/브랜치 생성 없음.
+- 변경: AGENTS, UI SSOT, branch 지침에서 PR92 복구를 HISTORICAL_ONLY / RESTORE_FORBIDDEN으로 격리. 사용 중인 공용 코드와 모든 데이터/업무 기능은 보존.
+- 검증: typecheck 및 ui:check PASS. 메인 route와 정본 상태의 복귀 방지 guard 추가. 운영 배포/전체 페이지 시각 통일 완료는 이 문서로 주장하지 않는다.
+- 남음: Claude 독립 검토와 main 병합 gate. 전체 테스트의 Windows Chromium 환경 실패는 기존 HOLD.
+- next_start_here: 동일 작업선에서 검토/CI를 확인하고 단일 main으로 통합한다. 과거 복구 진행판의 작업을 재개하지 않는다.
+
 ## 0-INTAKE-CONTROLS. 2026-09-30 — 입력창/드롭다운 규격
 
 - 목적: 사용자 승인에 따라 기존 3패널의 접수 폼을 입력창과 native select 중심으로 통일.

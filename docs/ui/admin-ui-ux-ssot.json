@@ -10,10 +10,14 @@
     "newPayKinds": ["일시납", "2회분납", "3회분납"],
     "notImplemented": ["contact persistence", "age adjustment persistence", "mileage adjustment persistence"]
   },
-  "status": "RECOVERY_CANONICAL / PR92_ACTUAL_ROUTE",
+  "status": "MAIN_UI_CANONICAL",
+  "retiredDesigns": { "status": "HISTORICAL_ONLY / RESTORE_FORBIDDEN", "runtimeComponentDeletionAuthorized": false },
   "authority": [
     "latest-user-decision",
     "current-freepass-admin-actual-route",
+    "src/app/products/board.tsx",
+    "src/app/products/board.css",
+    "src/app/products/BoardIntakeForm.tsx",
     "docs/ui/DESIGN-AUTHORITY.md",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
     "src/app/_erp/Workspace.tsx",

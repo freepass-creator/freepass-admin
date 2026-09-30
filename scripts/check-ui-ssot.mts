@@ -62,6 +62,21 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+// Old recovery records must never become a competing main design authority again.
+const uiAuthority = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8'));
+if (uiAuthority.status !== 'MAIN_UI_CANONICAL') errors.push('UI authority must remain MAIN_UI_CANONICAL');
+for (const file of ['src/app/products/board.tsx', 'src/app/products/board.css', 'src/app/products/BoardIntakeForm.tsx']) {
+  if (!uiAuthority.authority.includes(file)) errors.push(`Main UI authority missing: ${file}`);
+}
+for (const file of ['docs/ui/DESIGN-AUTHORITY.md', 'docs/ui/ADMIN-UI-UX-SSOT.md', 'docs/recovery/PR92-LATESTIZATION-STATUS.md']) {
+  const source = await readFile(path.join(root, file), 'utf8');
+  if (!source.includes('HISTORICAL_ONLY / RESTORE_FORBIDDEN')) errors.push(`${file}: retired design restore prohibition missing`);
+}
+const intakeEntry = await readFile(path.join(root, 'src/app/intake/page.tsx'), 'utf8');
+if (!intakeEntry.includes("import { ProductsBoard } from '../products/board'") || !intakeEntry.includes('mode="intake"') || /import.*Workspace/.test(intakeEntry)) {
+  errors.push('Main intake must use ProductsBoard; restoring the old Workspace entry is forbidden');
+}
+
 // Both entry paths must expose the same finite-choice controls; Board previously omitted mandatory payKind.
 for (const file of ['src/app/products/BoardIntakeForm.tsx', 'src/app/intake/new/IntakeForm.tsx']) {
   const source = await readFile(path.join(root, file), 'utf8');

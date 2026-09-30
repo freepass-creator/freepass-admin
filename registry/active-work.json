@@ -48,7 +48,7 @@
   "active": [
     {
       "work_order": "intake-controls-20260930",
-      "objective": "Standardize intake input/select controls within the approved three-panel UI without changing persistence or policy semantics.",
+      "objective": "Standardize intake input/select controls and lock the approved ProductsBoard as sole main UI authority; retire competing design authority without deleting active runtime components or changing persistence.",
       "branch": "work/freepass-admin/intake-controls-20260930",
       "writer": "Codex",
       "reviewer": "Claude Code (read-only)",

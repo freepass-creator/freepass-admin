@@ -4,6 +4,16 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const read=(p:string)=>readFileSync(resolve(process.cwd(),p),'utf8');
+test('product detail uses unruled semantic facts and responsive action geometry', () => {
+  const detail = read('src/app/products/board.tsx');
+  const styles = read('src/app/products/board.css');
+  assert.ok(detail.includes('<dl className="facts product-facts compact">'));
+  assert.ok(detail.includes('<dt>{it.label}</dt><dd>{꼴(it)}</dd>'));
+  assert.ok(detail.includes('it.type === \'list\''));
+  assert.ok(styles.includes('.pb .product-fact { min-width:0; display:flex; flex-direction:column; gap:4px; }'));
+  assert.ok(styles.includes('height:36px; min-height:36px;'));
+  assert.ok(styles.includes('height:44px; min-height:44px; padding:0 16px;'));
+});
 const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');

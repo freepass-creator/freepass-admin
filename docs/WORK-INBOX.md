@@ -1,3 +1,13 @@
+## 0-PRODUCT-DETAIL-READABILITY. 2026-09-30 — 선 없는 상세와 반응형 정보 배열
+
+- 목적 / 대상: 상품 상세 항목별 선 제거, PC·모바일 배열 및 footer 규격 정리. 기존 intake-controls 작업선, 기준 `b18d05d`. 새 브랜치/DB/운영 변경 없음.
+- 변경: 기존 facts를 의미 있는 dl/dt/dd로 표시. PC 2열, 모바일 차량/제원 2열·나머지 1열, 긴 값 전체 열. 섹션24/제목12/label-value4, PC 행16/열20·모바일 행12/열16. 상세 footer PC36/모바일44·padding16·gap8, 공유 내용폭/접수 잔여폭. 원문·대여료 세로 Offer·선택 identity 유지.
+- 검증: 타입/UI 검사 및 관련 40 tests PASS, production build PASS. 실제 1440/1280/390/360 확인, 가로 overflow 0. 모바일 버튼44 및 padding16, PC36 실측. 36개월 선택→신규접수에 기간/월 대여료 유지 확인. console error 없음. 로컬 demo/write off.
+- Visual QA: 실제 캡처 `C:/Users/admin/AppData/Local/Temp/freepass-product-detail-web.jpg`, `C:/Users/admin/AppData/Local/Temp/freepass-product-detail-mobile.jpg`. 생성 이미지 아님. 전체 플랫폼 시각 conformance 주장 아님.
+- main/branch: origin/main `711ce0d` (#160), 기준 브랜치는 main-only 0 / work-only 5. 충돌 분기 없음. UI 작업은 아직 main에 없음. main merge/push/deploy는 이 작업에서 수행하지 않음.
+- 남음: Claude 현재 diff 읽기 전용 독립 검토 응답 대기, PASS 아님. 기존 PDF Chromium 실행환경 10건 실패 및 업무 미연결 항목은 앞 handoff 유지.
+- next_start_here: 같은 작업선에서 Claude 현재 diff 검토를 회수하고 필요한 지적 반영. main 통합은 기존 미완료 업무 게이트와 별도로 판정.
+
 ## 0-INTAKE-AUDIT-UPGRADE. 2026-09-30 — 접수 검수 오류와 상세 정보 보강
 
 - 목적 / 정본: 기존 intake-controls 작업선, 기준 `5e3524d108013bb0df81936528563fe36daaaa73`. 새 브랜치·운영 데이터 수정·배포 없음.

@@ -258,20 +258,20 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </div>
 
                 {차량구역 && (
-                  <div className="section">
+                  <div className="section product-info-section">
                     <h4>차량 정보</h4>
-                    <div className="facts">
-                      {차량구역.items.map((it) => <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>)}
-                    </div>
+                    <dl className="facts product-facts compact">
+                      {차량구역.items.map((it) => <div key={it.key} className="product-fact"><dt>{it.label}</dt><dd>{꼴(it)}</dd></div>)}
+                    </dl>
                   </div>
                 )}
 
                 {나머지구역.map((s) => (
-                  <div key={s.key} className="section">
+                  <div key={s.key} className="section product-info-section">
                     <h4>{s.key === 'policy_other' ? '기타 정책 정보' : s.title}</h4>
-                    <div className="facts">
-                      {s.items.map((it) => <div key={it.key} className="fact"><span>{LEGACY_POLICY_LABELS[it.key] ?? it.label}</span><b>{정책값(it)}</b></div>)}
-                    </div>
+                    <dl className={`facts product-facts${s.key === 'spec' ? ' compact' : ''}`}>
+                      {s.items.map((it) => <div key={it.key} className={`product-fact${it.type === 'list' || String(it.value ?? '').length > 24 ? ' wide' : ''}`}><dt>{LEGACY_POLICY_LABELS[it.key] ?? it.label}</dt><dd>{정책값(it)}</dd></div>)}
+                    </dl>
                   </div>
                 ))}
               </>

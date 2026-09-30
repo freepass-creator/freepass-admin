@@ -1,5 +1,14 @@
 {
   "version": "2026-09-30",
+  "productDetailFacts": {
+    "markup": "dl/dt/dd label above value, no item separators or nested boxes",
+    "desktopColumns": 2,
+    "mobileColumns": { "vehicleAndSpecs": 2, "policies": 1 },
+    "wide": "lists and long values span all columns",
+    "spacing": { "section": 24, "heading": 12, "labelValue": 4, "desktopRow": 16, "desktopColumn": 20, "mobileRow": 12, "mobileColumn": 16 },
+    "actions": { "desktopHeight": 36, "mobileHeight": 44, "padding": 16, "gap": 8, "icon": 16, "width": "content-sized secondary, flexible primary" },
+    "offers": "retain vertical selection and offer identity"
+  },
   "intakeControls": {
     "finiteChoices": "native select",
     "freeText": "input or textarea",

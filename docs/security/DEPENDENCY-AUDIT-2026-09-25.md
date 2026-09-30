@@ -132,3 +132,21 @@ Re-review this exception when any of the following occurs:
 - before production deployment if the exception still exists.
 
 Do not label the repository “zero vulnerabilities” while these two findings remain.
+# 2026-10-01 gRPC patch follow-up
+
+GHSA-m9gg-hp2v-232j and GHSA-f596-whhp-79r4 are addressed by the
+`@grpc/grpc-js` override `^1.14.5`, with the lockfile fixing the reviewed
+installation at 1.14.5. The minimum excludes affected releases while allowing
+future patched releases; each lockfile update still requires CI and audit.
+
+The umbrella Firebase package includes an unused client Firestore dependency
+whose declared gRPC range is older. This override is audit hygiene for that
+unreachable leg, not a claim of supported client Firestore compatibility.
+The application imports the client SDK for Auth only. The existing server
+boundary suite now rejects client Firestore imports throughout src; introducing
+one requires a fresh compatibility review. Server Firebase Admin is exercised
+by CJS loading and Firestore emulator write/readback integration CI.
+
+Remove the override when both upstream dependency paths naturally resolve to
+patched versions and audit plus runtime integration checks remain green.
+Existing reviewed moderate gaxios/uuid findings are not newly waived.

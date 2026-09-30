@@ -1,5 +1,7 @@
 # FreePass Admin UI/UX SSOT
 
+2026-10-01 공간 비율: PC 패널 동일 폭 유지. 사진 PC120/모바일128px, 사진→요약12px, 요약→대여료16px. 차량정보/대여료 제목에만 16px 아이콘+8px 간격. 1280~1439 메뉴64px rail을 실제 board에서도 유지. 원본 숫자는 그대로, 확인된 field key의 연령/주행거리/일수/인승/연식만 공용 표시기에서 단위 부여.
+
 > 최신 사용자 정정(2026-09-30): 기존 ProductsBoard 외형을 고정하지 않는다. 마지막 웹·모바일 3장 시안을 실제 코드로 구현하고 그 코드의 렌더를 시안으로 제공한다. 구현 파일·geometry·상태·기능 연결·미구현 차이는 `docs/ui/DESIGN-AUTHORITY.md`의 MAIN_CODE_RENDER_V1 계약과 JSON `renderContract`를 따른다. 아래 이전 규격은 새 시안과 충돌하면 복원하지 않는다. 현재는 접수 작성 화면의 첫 코드 렌더이며 3상태 완전동일 판정 전이다.
 
 상태: **MAIN_UI_CANONICAL / SINGLE UI LINEAGE**

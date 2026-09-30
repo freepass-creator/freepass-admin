@@ -1,5 +1,7 @@
 # FreePass Admin Design Authority
 
+2026-10-01 공간 비율 정정: PC 동일폭3패널·모바일1패널 유지. 실제 사진 높이 PC120/모바일128, 사진→요약12/요약→대여료16. 제목 아이콘은 차량/대여료에 16px·gap8만 적용. 1280~1439의 board 메뉴도64px rail. 기존 도메인/Offer/저장 동선 변경 없음.
+
 상태: **MAIN_UI_CANONICAL — USER APPROVED 2026-09-30 · ProductsBoard intake actual route**
 
 ## 단일 메인 기준 · 이전 디자인 폐기

@@ -141,9 +141,9 @@
 .pb .context-card { margin-bottom:10px; }
 
 /* ── 6. 상세 — 사진 카드 · 기간 카드 · 정보 표 ──────────────────────────── */
-.pb .product-photo-card { margin-bottom:20px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+.pb .product-photo-card { margin-bottom:12px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
 .pb .product-photo { position:relative; height:128px; display:grid; place-items:center; overflow:hidden; background:var(--box); }
-.pb .product-photo > svg { width:88px; height:88px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
+.pb .product-photo > svg { width:48px; height:48px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
 .pb .product-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .pb .product-photo-card .dz-gal,
 .pb .product-photo-card .dz-gal.many { display:block; }
@@ -494,13 +494,13 @@ body:has(.pb) { background:#eef2f6 !important; }
   body:has(.pb) .erp-sidenav[data-collapsed="true"] .erp-sidenav-inner::before { font-size:12px; padding:0; justify-content:center; }
   body:has(.pb):has(.erp-sidenav[data-collapsed="true"]) { grid-template-columns:64px minmax(0,1fr) !important; }
   .pb .pb-detail-actions { grid-template-columns:auto 1fr; }
-  .pb .product-photo-card .dz-gal-main { height:148px; }
+  .pb .product-photo-card .dz-gal-main { height:120px; }
   .pb .web-actions > * { min-height:40px; }
 }
 @media (max-width:900px) {
   .pb { background:#fff; }
   .pb .web-workspace { padding:8px 16px 0; }
-  .pb .product-photo-card .dz-gal-main { height:160px; }
+  .pb .product-photo-card .dz-gal-main { height:128px; }
   .pb .form > label { grid-template-columns:minmax(100px,.9fr) minmax(0,1.4fr); min-height:44px; }
   .pb .row { min-height:88px; padding:10px 0; grid-template-columns:64px minmax(0,1fr); gap:10px; }
   .pb .thumb { width:64px; min-height:64px; }
@@ -552,6 +552,13 @@ body:has(.pb) { background:#eef2f6 !important; }
 /* Product detail: proximity rather than ruled rows. Same facts, responsive arrangement. */
 .pb .product-info-section { margin-top:24px; }
 .pb .product-info-section h4 { margin-bottom:12px; }
+.pb .section h4 { display:flex; align-items:center; gap:8px; }
+.pb .section h4 svg { flex:none; color:var(--sub); }
+.pb .product-intro-section { margin-bottom:16px; }
+.pb .product-intro-card { padding:0; }
+@media (min-width:901px) and (max-width:1439px) {
+  body:has(.pb) { grid-template-columns:64px minmax(0,1fr) !important; }
+}
 .pb dl.product-facts { margin:0; display:grid; grid-template-columns:minmax(0,1fr); gap:12px 16px; }
 .pb .product-facts.compact { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .pb .product-fact { min-width:0; display:flex; flex-direction:column; gap:4px; }

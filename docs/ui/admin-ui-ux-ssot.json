@@ -1,6 +1,8 @@
 {
   "version": "2026-09-30",
   "productDetailFacts": {
+    "media": { "desktopPhotoHeight": 120, "mobilePhotoHeight": 128, "photoSummaryGap": 12, "summaryOfferGap": 16, "placeholderIcon": 48 },
+    "sectionIcons": { "vehicle": "car", "offers": "wallet", "size": 16, "gap": 8 },
     "markup": "dl/dt/dd label above value, no item separators or nested boxes",
     "desktopColumns": 2,
     "mobileColumns": { "vehicleAndSpecs": 2, "policies": 1 },

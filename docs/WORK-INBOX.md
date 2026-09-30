@@ -1,3 +1,11 @@
+## 0-SPACE-RATIO. 2026-10-01 — 공간 비율 실측
+
+- 목적 / 대상: 같은 intake-controls 작업선 f06da0a 기반. PC3동일폭과 모바일1패널을 보존하며 상품상세 사진/요약 여백 정리.
+- 변경: 사진 PC120/모바일128, 사진→요약12/요약→대여료16. 차량/대여료 제목16px 아이콘. 1280~1439 메뉴64px rail 충돌 해소. SSOT3종 동시 갱신.
+- 검증: typecheck/ui:check/build PASS, ui-shell36 tests PASS. 실제1440 패널416×3/1280 패널392×3 및 rail64. 모바일390/360 가로 넘침 없음. 만26세/연20000km 표시 확인. 캡처 Temp/freepass-ratio-1440.png 및 freepass-ratio-390.png. Demo/write off이며 운영 저장 없음.
+- 남음: 전체 테스트의 Windows PDF Chromium 오류, Claude 독립 검토 및 원격CI/메인통합/운영배포는 아직 미완료.
+- next_start_here: 같은 작업선에서 원격Linux CI와 독립검토를 확인하고 배포 gate 판정.
+
 ## 0-DISPLAY-UNITS. 2026-10-01 — 숫자 정책의 자연스러운 표시
 
 - 목적 / 대상: intake-controls, e617958 기반. 기존 공용 Sections 표시기 확장; 원본/DB/정책 사전 변경 없음.

@@ -240,7 +240,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </div>
 
                 <div className="section" role="group" aria-labelledby="pb-offer-title">
-                  <h4 id="pb-offer-title">기간별 대여료</h4>
+                  <h4 id="pb-offer-title"><Icon name="wallet" size={16} />기간별 대여료</h4>
                   <div className="offer-columns" aria-hidden="true"><span>기간</span><span>월 대여료</span><span>보증금</span></div>
                   {offers.map((o) => {
                     const on = !!chosen && o.id === chosen.id;
@@ -259,7 +259,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
 
                 {차량구역 && (
                   <div className="section product-info-section">
-                    <h4>차량 정보</h4>
+                    <h4><Icon name="car" size={16} />차량 정보</h4>
                     <dl className="facts product-facts compact">
                       {차량구역.items.map((it) => <div key={it.key} className="product-fact"><dt>{it.label}</dt><dd>{꼴(it)}</dd></div>)}
                     </dl>

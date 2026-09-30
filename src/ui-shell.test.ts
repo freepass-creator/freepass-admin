@@ -269,7 +269,9 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.equal(board.includes('className={`tag ${결(car.status)}`}'),false);
   assert.ok(board.includes("const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle')"));
   assert.ok(board.indexOf('className="facts product-intro-card"') < board.indexOf('id="pb-offer-title"'));
-  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf('<h4>차량 정보</h4>'));
+  const vehicleHeading = '<h4><Icon name="car" size={16} />차량 정보</h4>';
+  assert.ok(board.includes(vehicleHeading));
+  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf(vehicleHeading));
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);

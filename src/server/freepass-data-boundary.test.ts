@@ -18,6 +18,12 @@ test('UI and services cannot bypass the FreePass Data persistence gateway', () =
   assert.deepEqual(violations, []);
 });
 
+test('browser Firebase SDK remains auth-only; Firestore uses the server gateway', () => {
+  const violations = sources('src').filter((path) =>
+    /(?:from\s*|import\s*\(\s*|require\s*\(\s*|import\s*)['"](?:firebase\/firestore(?:\/[^'"]*)?|@firebase\/firestore)['"]/.test(readFileSync(path, 'utf8')));
+  assert.deepEqual(violations, [], 'client Firestore requires a fresh dependency compatibility review');
+});
+
 test('one FreePass Data gateway composes catalog and workflow persistence without owning business commands', () => {
   const data = readFileSync('src/server/freepass-data.ts', 'utf8');
   assert.match(data, /new AdminCatalogSwitchboard\(legacyProducts, freepassDataProducts\)/);

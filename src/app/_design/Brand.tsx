@@ -1,6 +1,7 @@
 'use client';
 /**
- * ★★★**freepass-admin 의 얼굴 — 프리패스모빌리티 공식 CI 워드마크 그대로**
+ * 공용 CI 스타일 부품. 기본 corporate 이름은 mobility이며 AdminChrome은 tail="admin"을 명시한다.
+ * 사용자 확정 앱 이름을 공용 CI 명칭으로 덮어쓰지 않는다(DEC-2026-09-30-01).
  *
  * 정본 = CI / BI Center(`C:\dev\ci_center\index.html` BRANDS · roleColor) — 새로 짓지 않는다. 거기 적힌 값을 옮긴다.
  *   · **마크 없음 — 워드마크뿐.** Exo 2 · 앞말 600(main) + 뒷말 300(base) · 사이 2px.

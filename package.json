@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --import tsx scripts/check-deploy-env.mts --vercel-build && next build",
     "start": "next start",
     "typecheck": "npm run check:data-authority && tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@sparticuz/chromium": "149.0.0",
+    "@vercel/oidc": "3.8.9",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.4.0",
     "google-auth-library": "^10.9.1",

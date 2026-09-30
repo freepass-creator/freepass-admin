@@ -39,11 +39,12 @@ test('admin root enters the real intake workspace and contains no demo runtime',
   assert.equal(/INITIAL_APPS|const\s+PRODUCTS\s*=|demoData|fixtureData|MOCK_/.test(root),false);
 });
 
-test('admin surfaces use the official freepass mobility CI instead of inventing an admin wordmark',()=>{
+test('Admin login and navigation retain the user-approved app name with the shared CI style',()=>{
   assert.ok(brand.includes("tail = 'mobility'"));
-  assert.ok(loginScreen.includes("label: 'freepass mobility'"));
-  assert.ok(loginScreen.includes("{ text: 'mobility', weight: 300, color: '#7F93B3' }"));
-  assert.equal(loginScreen.includes("label: 'freepass admin'"),false);
+  assert.ok(chrome.includes('<Brand tail="admin" />'));
+  assert.ok(loginScreen.includes("label: 'freepass admin'"));
+  assert.ok(loginScreen.includes("{ text: 'admin', weight: 300, color: '#7F93B3' }"));
+  assert.equal(loginScreen.includes("label: 'freepass mobility'"),false);
 });
 
 // PC와 폰은 같은 상위 업무축(상품 → 접수 → 실적 → 정산)을 쓰고, 계약은 활성화 시 별도 문으로 붙는다.

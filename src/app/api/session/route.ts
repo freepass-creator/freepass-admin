@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE } from '../../../server/auth';
-import { SESSION_MS, resolveSession, revokeSessions, sessionCookieFrom } from '../../../server/identity';
+import { SESSION_MS, identityReady, resolveSession, revokeSessions, sessionCookieFrom } from '../../../server/identity';
 
 /**
  * 로그인 마무리 — 공용 로그인 화면이 Firebase 로 사람을 확인한 «뒤» 그 ID 토큰을 여기로 보낸다.
@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
   const { idToken } = (await req.json().catch(() => ({}))) as { idToken?: string };
   if (!idToken || typeof idToken !== 'string') {
     return NextResponse.json({ error: '로그인이 끊겼습니다 — 다시 해 주세요' }, { status: 400 });
+  }
+
+  if (!identityReady()) {
+    console.error('[admin-session] IDENTITY_NOT_CONFIGURED');
+    return NextResponse.json({ error: 'IDENTITY_NOT_CONFIGURED' }, { status: 503 });
   }
 
   let cookie: string;

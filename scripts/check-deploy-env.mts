@@ -5,6 +5,12 @@
  */
 import { checkDeployEnv } from '../src/server/deploy-env';
 
+// Keep local/CI builds credential-free. Every Vercel production build must pass.
+if (process.argv.includes('--vercel-build') && process.env.VERCEL_ENV !== 'production') {
+  console.log('배포 환경 검사: 로컬/preview 빌드에는 운영 자격증명을 요구하지 않습니다');
+  process.exit(0);
+}
+
 const findings = checkDeployEnv(process.env);
 const mark = { error: 'ERROR', warn: 'WARN ', ok: 'OK   ' } as const;
 for (const f of findings) console.log(`${mark[f.level]} ${f.key} — ${f.message}`);

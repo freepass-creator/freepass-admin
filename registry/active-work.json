@@ -47,6 +47,15 @@
   },
   "active": [
     {
+      "work_order": "login-repair-20260930",
+      "objective": "Repair missing production identity configuration, restore the approved Admin name, and block recurrence at build time.",
+      "branch": "work/freepass-admin/login-repair-20260930",
+      "writer": "Codex",
+      "reviewer": "Claude Code (read-only)",
+      "phase": "FIX_VALIDATION",
+      "production_cutover_authorized": false
+    },
+    {
       "work_order": "catalog-observe-parity-20260929",
       "objective": "Verify Catalog OBSERVE parity and define the fail-closed promotion evidence without changing the production read authority.",
       "branch": "work/freepass-admin/catalog-observe-parity-20260929",

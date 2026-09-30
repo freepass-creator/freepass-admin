@@ -3,7 +3,7 @@
 ## Principle
 코드가 존재하는 것, 테스트가 통과한 것, 배포 권한이 있는 것, 실제 운영 배포가 끝난 것은 서로 다른 상태다.
 
-## 2026-09-30 로그인 장애 복구 적용안 — KEYLESS VALIDATION
+## 2026-09-30 로그인 장애 복구 — DEPLOYMENT AND LOGIN VERIFIED
 
 대상: Vercel `freepass-projects/freepass-admin`, Production, `freepass-admin.vercel.app`.
 관측 deployment: `dpl_7KJ1oaWynX5wba7v2JhccoDE9GqE`, source `932dd42`.
@@ -20,6 +20,10 @@
 rollback: 코드 적용 실패 시 위 기존 deployment로 복귀한다(기존 로그인 장애까지 복귀함을 알린다). 신원 연결 문제가 있으면 전용 계정의 위 단일 workload principal binding과 신원 환경값만 회수한다. 공용 pool/다른 provider/사용자 계정/승인문서를 삭제하거나 인증을 끄지 않는다.
 
 사용자는 전용 인증 연결·운영 배포를 승인했고, 차단 후 연결 해결을 다시 요청했다. 장기 키 생성은 계속 중단하며, 키 없는 연결의 독립 검토와 실제 운영 로그인 결과를 완료 근거로 남긴다.
+
+2026-09-30 실행 증거: PR #159 → main `de927a0`; Production `dpl_FttBD45MQDjdA6PCsrv8uzRKrsWP` READY, 운영 build preflight PASS. 사용자 승인 계정의 실제 `/intake` 로그인 및 새로고침 인증 유지, Admin 이름 복원을 브라우저로 확인했다. Key 수 0, provider condition과 SA binding의 exact Production subject readback 완료. Claude 최종 검토와 exact-head CI 및 operational `36648175976`의 세 job 모두 PASS.
+
+후속 범위: 로그인 이후 기존 업무 gateway의 OIDC 환경변수 전용 읽기가 실패했다. `@vercel/oidc` 요청 컨텍스트 읽기로 수정해 기존 상품화면까지 확인한다. 업무 IAM/계정/데이터/쓰기 승인 변경은 없다. 전체 상품 UI 렌더 완료는 아직 주장하지 않는다.
 
 ## Required gates
 

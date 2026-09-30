@@ -1,4 +1,4 @@
-## 0-LOGIN-REPAIR. 2026-09-30 — 운영 로그인 장애 수정 준비
+## 0-LOGIN-REPAIR. 2026-09-30 — 운영 로그인 복구 검증 / 데이터 요청 토큰 후속
 
 - 목적: 운영 로그인 복구, `freepass admin` 앱 이름 복원, 설정 누락 재배포 차단.
 - 기준 revision: `932dd42f71d5a33b8794f9523cecff11702eefa1`; work branch `work/freepass-admin/login-repair-20260930`.
@@ -6,8 +6,10 @@
 - 변경: 로그인·내부 내비게이션 앱 이름, 신원 설정 누락 503 안내, Production build preflight, 기존 인증 emulator CI 여정 연결, 회귀 검사.
 - 검증: 관련 검사 64건, typecheck, UI SSOT, build PASS. 로컬 actual `/login` 렌더와 브라우저 오류 0 확인. 전체 테스트의 Windows Chromium 환경 실패는 별도이며 운영 복구 PASS로 간주하지 않음.
 - 후속: 승인된 전용 계정/최소 역할은 생성됨. 장기 키 생성·저장은 도구 정책이 실행 전 차단했고 사용자 관리 키 0개를 확인했다. 사용자 연결 해결 요청에 따라 기존 identity 모듈·Google auth library·Vercel OIDC 방식을 확장해 키 없는 인증을 검증 중이다. 장기 키 명령은 재시도하지 않는다.
-- 남음: Production 전용 WIF trust/비밀 없는 환경값 연결, Claude 독립 검토, 재배포 및 승인 계정의 실제 로그인 확인. 기존 업무데이터 관리자 키로 대체하지 않음.
-- next_start_here: `docs/RELEASE.md`의 로그인 장애 복구 적용안과 PR 검증을 확인한 후 승인된 운영 provisioning을 진행한다. 현재 단계는 운영 복구 완료가 아니다.
+- 운영 확인: PR #159, main `de927a0`, deployment `dpl_FttBD45MQDjdA6PCsrv8uzRKrsWP`. Production preflight PASS, 전용 WIF provider/단일 production principal/4개 권한/환경값 readback, 사용자 관리 키 0개. 승인 계정 실제 로그인 → `/intake` 진입 → 새로고침 후 인증 유지 확인. `freepass admin` 이름 복원 확인. 비밀번호/토큰/고객원문 기록 없음.
+- 독립 검토: Claude는 Firebase Auth custom Credential + 제한된 승인문서 REST GET 설계에 동의했으며 최종 `e79a833` delta에 blocking security issue 없음. 정책 분리·운영 키 금지·REST 경로 검사를 반영했다. Linux operational run `36648175976`의 code/browser/persistence 전부 PASS.
+- 후속 발견: 로그인 뒤 기존 업무데이터 호출에서 `FREEPASS_DATA_GCP_OIDC_CONFIG_INCOMPLETE`. `cloud-run-auth.ts`가 `process.env.VERCEL_OIDC_TOKEN`만 읽고 있었음. 공식 `getVercelOidcToken()`으로 요청 컨텍스트의 최신 토큰을 읽도록 기존 전송만 수정한다. 업무계정/IAM/쓰기 승인/데이터 모드는 바꾸지 않는다.
+- next_start_here: 데이터 요청 토큰 후속 배포 후 기존 `/intake` 화면을 읽기 전용 확인하고 실제 3단 화면을 캡처한다. 로그인 복구와 상품 데이터 렌더 검증을 합쳐 완료로 표현하지 않는다.
 
 ---
 

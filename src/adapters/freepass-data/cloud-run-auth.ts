@@ -27,22 +27,24 @@ export function freepassDataOrigin(env: Record<string, string | undefined> = pro
 export async function freepassDataCloudRunHeaders(
   base = freepassDataOrigin(),
   env: Record<string, string | undefined> = process.env,
+  oidcTokenSupplier: () => Promise<string> = getVercelOidcToken,
 ): Promise<Record<string, string>> {
   const staticToken = S(env.FREEPASS_DATA_CLOUD_RUN_ID_TOKEN);
   if (staticToken) return { 'x-serverless-authorization': 'Bearer ' + staticToken };
 
-  const vercelOidc = S(env.VERCEL_OIDC_TOKEN);
   const wifAudience = S(env.FREEPASS_DATA_GCP_WIF_AUDIENCE);
   const callerServiceAccount = S(env.FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL);
-  const configured = [vercelOidc, wifAudience, callerServiceAccount].filter(Boolean).length;
-
-  if (configured === 0) return {};
-  if (configured !== 3) throw new Error('FREEPASS_DATA_GCP_OIDC_CONFIG_INCOMPLETE');
+  if (!wifAudience && !callerServiceAccount && !S(env.VERCEL_OIDC_TOKEN)) return {};
+  if (!wifAudience || !callerServiceAccount) throw new Error('FREEPASS_DATA_GCP_OIDC_CONFIG_INCOMPLETE');
 
   const now = Date.now();
   if (cached && cached.expiresAt > now + 60_000) {
     return { 'x-serverless-authorization': 'Bearer ' + cached.token };
   }
+
+  // Vercel Functions supply a fresh token in request context; process.env alone can be empty/stale.
+  const vercelOidc = S(await oidcTokenSupplier());
+  if (!vercelOidc) throw new Error('FREEPASS_DATA_GCP_OIDC_TOKEN_MISSING');
 
   const sts = await fetch('https://sts.googleapis.com/v1/token', {
     method: 'POST',
@@ -94,3 +96,4 @@ export async function freepassDataCloudRunHeaders(
 export function resetFreepassDataCloudRunTokenForTest() {
   cached = null;
 }
+import { getVercelOidcToken } from '@vercel/oidc';

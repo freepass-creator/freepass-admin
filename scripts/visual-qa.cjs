@@ -790,8 +790,12 @@ async function runInteractiveStates(page, c) {
           problems.push(`1280-class compact money clipped: ${JSON.stringify(info.compactAmountOverflow)}`);
         }
       }
-      if (c.width >= 1440 && info.desktopShell?.sideWidth && info.desktopShell.sideWidth < 220) {
-        problems.push(`1440+ sidenav must restore full menu: ${JSON.stringify(info.desktopShell)}`);
+      if (c.width >= 1440 && info.desktopShell?.sideWidth) {
+        const boardRoute = /^\/(products|intake)(?:[/?]|$)/.test(c.route);
+        const wrongWidth = boardRoute ? info.desktopShell.sideWidth !== 152 : info.desktopShell.sideWidth < 220;
+        if (wrongWidth || info.desktopShell.visibleNavLabels === 0 || info.desktopShell.visibleNavGroups === 0) {
+          problems.push(`1440+ sidenav must match route authority and show full menu: ${JSON.stringify(info.desktopShell)}`);
+        }
       }
 
       if (c.route === '/settlement' && info.workflowHandoffs?.some((x) => !x.href.includes('tab=pay'))) {

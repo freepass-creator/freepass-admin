@@ -1,9 +1,43 @@
 {
-  "version": "2026-09-26",
-  "status": "RECOVERY_CANONICAL / PR92_ACTUAL_ROUTE",
+  "version": "2026-09-30",
+  "productDetailFacts": {
+    "media": { "desktopPhotoHeight": 120, "mobilePhotoHeight": 128, "photoSummaryGap": 12, "summaryOfferGap": 16, "placeholderIcon": 48 },
+    "sectionIcons": { "vehicle": "car", "offers": "wallet", "size": 16, "gap": 8 },
+    "markup": "dl/dt/dd label above value, no item separators or nested boxes",
+    "desktopColumns": 2,
+    "mobileColumns": { "vehicleAndSpecs": 2, "policies": 1 },
+    "wide": "lists and long values span all columns",
+    "spacing": { "section": 24, "heading": 12, "labelValue": 4, "desktopRow": 16, "desktopColumn": 20, "mobileRow": 12, "mobileColumn": 16 },
+    "actions": { "desktopHeight": 36, "mobileHeight": 44, "padding": 16, "gap": 8, "icon": 16, "width": "content-sized secondary, flexible primary" },
+    "offers": "retain vertical selection and offer identity"
+  },
+  "intakeControls": {
+    "finiteChoices": "native select",
+    "freeText": "input or textarea",
+    "offerComparison": "existing vertical selectable list",
+    "geometry": "existing shared input/select tokens",
+    "missingChoices": "retain manual channel/agent input",
+    "existingDefaults": "preserve values outside options",
+    "newPayKinds": ["일시납", "2회분납", "3회분납"],
+    "notImplemented": ["contact persistence", "age adjustment persistence", "mileage adjustment persistence"]
+  },
+  "status": "MAIN_UI_CANONICAL",
+  "renderContract": {
+    "id": "MAIN_CODE_RENDER_V1",
+    "target": "last three web/mobile proposal images, not the former ProductsBoard appearance",
+    "method": "capture actual /intake React runtime; never image generation or separate prototype implementation",
+    "components": ["AdminChrome", "SideMenu", "ProductsBoard", "BoardList", "BoardIntakeForm", "PhotoGallery", "IntakeList", "IntakeDetail"],
+    "geometry": { "sidebar": 152, "header": 56, "panelGap": 10, "panelPadding": 16, "panelRadius": 8, "mobileBreakpoint": 900 },
+    "verification": "CODED_NOT_VISUAL_PARITY_APPROVED",
+    "remaining": ["contact and adjustment persistence contracts", "save-to-list context preservation", "detail tabs and independent progress disclosures"]
+  },
+  "retiredDesigns": { "status": "HISTORICAL_ONLY / RESTORE_FORBIDDEN", "runtimeComponentDeletionAuthorized": false },
   "authority": [
     "latest-user-decision",
     "current-freepass-admin-actual-route",
+    "src/app/products/board.tsx",
+    "src/app/products/board.css",
+    "src/app/products/BoardIntakeForm.tsx",
     "docs/ui/DESIGN-AUTHORITY.md",
     "docs/ui/ADMIN-UI-UX-SSOT.md",
     "src/app/_erp/Workspace.tsx",

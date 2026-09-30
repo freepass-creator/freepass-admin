@@ -1,10 +1,14 @@
 # FreePass Admin UI/UX SSOT
 
-상태: **RECOVERY CANONICAL / SINGLE UI LINEAGE**  
-기준일: **2026-09-26**  
+2026-10-01 공간 비율: PC 패널 동일 폭 유지. 사진 PC120/모바일128px, 사진→요약12px, 요약→대여료16px. 차량정보/대여료 제목에만 16px 아이콘+8px 간격. 1280~1439 메뉴64px rail을 실제 board에서도 유지. 원본 숫자는 그대로, 확인된 field key의 연령/주행거리/일수/인승/연식만 공용 표시기에서 단위 부여.
+
+> 최신 사용자 정정(2026-09-30): 기존 ProductsBoard 외형을 고정하지 않는다. 마지막 웹·모바일 3장 시안을 실제 코드로 구현하고 그 코드의 렌더를 시안으로 제공한다. 구현 파일·geometry·상태·기능 연결·미구현 차이는 `docs/ui/DESIGN-AUTHORITY.md`의 MAIN_CODE_RENDER_V1 계약과 JSON `renderContract`를 따른다. 아래 이전 규격은 새 시안과 충돌하면 복원하지 않는다. 현재는 접수 작성 화면의 첫 코드 렌더이며 3상태 완전동일 판정 전이다.
+
+상태: **MAIN_UI_CANONICAL / SINGLE UI LINEAGE**
+기준일: **2026-09-30**
 적용 저장소: `freepass-creator/freepass-admin`  
-기준 계보: **PR #92 actual route** (`claude/erp-platform-ui-ux-hvfyfa`)  
-통합 검증 브랜치: `recovery/pr92-modernize-20260926`  
+현재 기준: **ProductsBoard intake actual route** (`src/app/products/board.tsx`, `board.css`)
+과거 PR92 복구 계보: **HISTORICAL_ONLY / RESTORE_FORBIDDEN**
 
 > 이 문서는 FreePass Admin의 **현재 디자인 정본**이다.
 > 테스트용 mockup, 과거 screenshot, 폐기된 §4 PageHeader/erp-cols 구조보다 이 문서와 현재 구현이 우선한다.
@@ -14,6 +18,14 @@
 ---
 
 ## 0. 한 문장 정의
+
+### 2026-09-30 상품상세 배열 정정
+
+상품 상세 정보는 항목별 가로선을 쓰지 않고 의미 있는 dl/dt/dd 묶음으로 표시한다. 항목명 위·값 아래, PC 2열(행 간격 16 / 열 간격 20), 모바일 차량·제원은 2열/긴 정책은 1열(행 12 / 열 16)이다. 긴 값·목록은 전체 열을 사용하고 원문을 자르지 않는다. 섹션 사이 24, 제목 아래 12, 항목명과 값 사이 4. 새 중첩 카드·박스를 만들지 않는다. 대여료는 기존 세로 비교 목록을 유지한다. 상세 footer는 PC 36px / 모바일 44px 높이, 좌우 padding 16px, 버튼 사이 8px, 아이콘 16px. 공유는 내용폭, 접수하기는 남는 폭을 사용한다. 모바일 목록 복귀 버튼은 유지한다.
+
+### 2026-09-30 접수 컨트롤 확정
+
+유한 선택값(영업채널·담당자·상품구분·분납여부)은 native select, 고객명/메모는 input/textarea다. input과 select는 기존 공용 높이·폰트·라운드·라벨 간격을 공유한다. 기간별 대여료는 비교가 필요한 세로 Offer 목록을 유지한다. 선택지가 비어 있는 채널/담당자는 수기 입력을 유지하고, 기존 기본값은 목록 밖이어도 버리지 않는다. 신규 분납 선택은 도메인이 허용하는 일시납/2회분납/3회분납만 노출한다. 서버 검증 오류 후 초안과 선택 Offer identity는 유지한다. 연락처·연령/주행거리 변경의 별도 접수 저장 계약은 후속 검토 대상이며 이 UI 변경에서 추가하지 않는다.
 
 **FreePass Admin은 “Minimal Operational UI”를 따른다.**
 
@@ -36,6 +48,9 @@
 
 1. 사용자의 가장 최근 명시 결정
 2. 현재 FreePass Admin의 확정 구현
+   - `src/app/products/board.tsx` (메인 3패널)
+   - `src/app/products/board.css` (메인 밀도와 컨트롤)
+   - `src/app/products/BoardIntakeForm.tsx` (입력/select)
    - `src/app/_erp/Workspace.tsx`
    - `src/app/_erp/ProductsScreen.tsx`
    - `src/app/_erp/SettlementScreen.tsx`
@@ -46,12 +61,12 @@
    - `src/app/_erp/erp-standard.css`
    - `src/app/_erp/shell.css`
 4. 이 문서
-5. 과거 문서·mockup·screenshot
+5. 과거 문서·mockup·screenshot은 역사 기록일 뿐 구현 근거가 아니다.
 
 ### 중요한 규칙
 
 - 과거 저장 screenshot/mockup/reference는 현재 트리에서 제거한다.
-- 문서·fixture와 actual route가 충돌하면 **PR #92 actual route 코드가 우선**이다.
+- 문서·fixture와 actual route가 충돌하면 **현재 ProductsBoard intake actual route 코드가 우선**이다. 아래 기존 세부 규격도 최신 승인 화면과 충돌하면 재도입하지 않는다.
 - AI는 UI 작업 전에 반드시 현재 branch HEAD를 새로 조회한다.
 - 오래된 commit/revision을 “최신 디자인”으로 재사용하지 않는다.
 

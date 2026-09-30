@@ -47,6 +47,15 @@
   },
   "active": [
     {
+      "work_order": "intake-controls-20260930",
+      "objective": "Replace the former UI appearance with the latest three-state web/mobile proposal through actual runtime code renders and an executable implementation contract, preserving data and business functions.",
+      "branch": "work/freepass-admin/intake-controls-20260930",
+      "writer": "Codex",
+      "reviewer": "Claude Code (read-only)",
+      "phase": "CODE_RENDER_FIRST_STATE_VERIFIED_REMAINING_STATES_PENDING",
+      "production_cutover_authorized": false
+    },
+    {
       "work_order": "login-repair-20260930",
       "objective": "Repair missing production identity configuration, restore the approved Admin name, and block recurrence at build time.",
       "branch": "work/freepass-admin/login-repair-20260930",

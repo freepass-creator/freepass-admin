@@ -20,8 +20,8 @@ export function intakeDefaults(product: CanonicalProduct | null, offerId: string
     intakeRequestId: randomUUID(),
     plate: product?.registration?.vehicleNumber ?? '',
     model: product ? [product.vehicle.modelId, product.vehicle.subModelId].filter(Boolean).join(' ') : '',
-    supplier: product ? (product.supplierName ?? product.supplierId) : '',   /* 이름이 없으면 코드로 (#89) */
-    supplierCode: product?.supplierId ?? '',
+    supplier: offer?.supplierName ?? offer?.supplierId ?? product?.supplierName ?? product?.supplierId ?? '',
+    supplierCode: offer?.supplierId ?? product?.supplierId ?? '',
     term: offer ? String(offer.termMonths) : '',
     rent: offer ? String(offer.monthlyRent) : '',
     deposit: offer?.deposit !== undefined ? String(offer.deposit) : '',

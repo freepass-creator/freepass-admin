@@ -35,6 +35,12 @@ function useCurrent(): string {
   return '';
 }
 
+/** Same navigation meaning, compact title instead of duplicated global search. */
+export function CurrentPageTitle() {
+  const now = useCurrent();
+  return <span className="pb-page-title" hidden>{[...FLOW, ESIGN, SYSTEM].find((item) => item.key === now)?.label ?? '프리패스 어드민'}</span>;
+}
+
 function MenuLink({ it, now }: { it: Item; now: string }) {
   return (
     <Link href={it.href} className="erp-nav-item" aria-current={now === it.key ? 'page' : undefined}

@@ -7,13 +7,13 @@
 
 /* ── 1. 값(토큰) ───────────────────────────────────────────────────────── */
 .pb {
-  --navy:#1b2a4a; --navy-hover:#14223f; --navy-press:#0f1b35;
+  --navy:#102a48; --navy-hover:#173858; --navy-press:#0f1b35; --accent:#0969e8;
   --ink:#1d2939; --muted:#667085; --sub:#475467;
-  --page:#eef0f2; --ground:#f4f5f6; --card:#fff; --box:#f2f4f7; --picked:#eaf0f8;
+  --page:#eef2f6; --ground:#fff; --card:#fff; --box:#f7f9fc; --picked:#e7f1ff;
   --line:#e4e7ec; --field:#d0d5dd; --field-hover:#98a2b3;
   --good:#067647; --warn:#93370d; --bad:#b42318;
   --focus:#dc6803;
-  --shadow:0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+  --shadow:none;
   /* 세 패널을 동시에 보는 업무 화면: 제목/핵심/보조/메타 네 단계만 쓴다. */
   --head:16px; --title:13px; --body:13px; --support:12px; --meta:11px;
   /* 최신 공통 규격: PC standard 36 · compact 32, 모바일 action/touch 44.
@@ -141,9 +141,9 @@
 .pb .context-card { margin-bottom:10px; }
 
 /* ── 6. 상세 — 사진 카드 · 기간 카드 · 정보 표 ──────────────────────────── */
-.pb .product-photo-card { margin-bottom:20px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
+.pb .product-photo-card { margin-bottom:12px; overflow:hidden; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); }
 .pb .product-photo { position:relative; height:128px; display:grid; place-items:center; overflow:hidden; background:var(--box); }
-.pb .product-photo > svg { width:88px; height:88px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
+.pb .product-photo > svg { width:48px; height:48px; color:#7d8998; stroke:currentColor; stroke-width:1.5; }
 .pb .product-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .pb .product-photo-card .dz-gal,
 .pb .product-photo-card .dz-gal.many { display:block; }
@@ -155,10 +155,16 @@
 .pb .product-hero-title h3 { margin:0; color:var(--ink); font-size:var(--head); font-weight:700; line-height:18px; letter-spacing:-.02em; }
 .pb .product-intro-primary { margin:0; color:var(--sub); font-size:var(--support); font-weight:600; line-height:18px; }
 .pb .product-intro-secondary { margin:0; color:var(--muted); font-size:var(--meta); line-height:18px; }
-.pb .offer { width:100%; padding:12px; display:grid; gap:4px; border-radius:var(--r-card); background:var(--card); box-shadow:var(--shadow); transition:background .12s, box-shadow .12s; }
-.pb .offer + .offer { margin-top:8px; }
+.pb .offer, .pb .offer-columns { width:100%; padding:10px 8px; display:grid; grid-template-columns:1fr 1.2fr 1.2fr; align-items:center; gap:6px; border-radius:0; background:var(--card); border-bottom:1px solid var(--line); transition:background .12s; }
+.pb .offer-columns { background:var(--box); color:var(--muted); font-size:var(--support); }
+.pb .offer > :not(:first-child), .pb .offer-columns > :not(:first-child) { text-align:right; white-space:nowrap; }
+.pb .offer-term { display:flex; align-items:center; gap:8px; }
+.pb .offer-radio { width:14px; height:14px; border:1px solid #98a2b3; border-radius:50%; flex:none; }
+.pb .offer.on .offer-radio { border:4px solid var(--accent); background:#fff; }
+.pb .offer + .offer { margin-top:0; }
+.pb .offer .offer-extra { grid-column:1/-1; text-align:left; white-space:normal; font-size:var(--meta); }
 .pb .offer:hover { background:#f9fafb; }
-.pb .offer.on, .pb .offer.on:hover { background:var(--picked); box-shadow:inset 0 0 0 1.5px rgba(27,42,74,.45); }
+.pb .offer.on, .pb .offer.on:hover { background:var(--picked); box-shadow:none; }
 .pb .offer strong { font-size:var(--title); font-weight:600; }
 .pb .offer.on strong { color:var(--navy); }
 .pb .offer small { color:var(--muted); font-size:var(--support); }
@@ -228,7 +234,7 @@
 .pb.pb input[list]::-webkit-calendar-picker-indicator { display:none !important; }   /* 목록 붙은 칸의 ▼ 만 */
 .pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):hover, .pb.pb select:hover, .pb.pb textarea:hover { border-color:var(--field-hover) !important; }
 .pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):focus, .pb.pb select:focus, .pb.pb textarea:focus { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(27,42,74,.12); }
-.pb.pb input:user-invalid { border-color:#d92d20 !important; }
+.pb.pb :is(input, select, textarea):user-invalid { border-color:#d92d20 !important; }
 .pb.pb input:disabled, .pb.pb select:disabled, .pb.pb textarea:disabled, .pb input[readonly] { background-color:var(--box) !important; color:var(--muted); cursor:not-allowed; }
 .pb.pb input[type="checkbox"], .pb.pb input[type="radio"] { width:20px; height:20px; accent-color:var(--navy); }
 
@@ -441,13 +447,67 @@ body:has(.pb) .dz-desktop-bottom .dz-menu a:focus-visible, body:has(.pb) header.
   @media (min-width:901px) { .pb .web-scroll { scrollbar-width:thin; scrollbar-color:#cbd3dc transparent; } }
 }
 
-/* ═══ 위계 셋 — 바닥 ‹ 판 ‹ 카드 (대표 2026-09-22 「전체 바닥이랑 패널 구분 명확하게」) ═══
-   바닥 = 진한 회청색 · 판 = 밝은 회색 + 테두리 · 카드 = 흰색 + 그림자. 한 단씩 분명히 밝아진다. */
-.pb { --page:#dde3ea; --ground:#f6f7f9; }
-body:has(.pb) { background:#dde3ea !important; }
+/* MAIN_CODE_RENDER_V1 — last approved three-state board, not an image-only prototype.
+   The operational route and its screenshot use these same components and tokens. */
+body:has(.pb) { background:#eef2f6 !important; }
+.pb .web-panel, .pb .row, .pb .facts, .pb .product-photo-card { box-shadow:none; }
+.pb .row { border-bottom:1px solid var(--line); border-radius:0; }
+.pb .row.selected, .pb .row.selected:hover { background:var(--picked); box-shadow:none; border-radius:6px; }
+.pb .list { gap:0; }
+.pb .chip { border:1px solid var(--line); border-radius:999px; background:#fff; }
+.pb .chip.on { border-color:var(--accent); background:var(--accent); }
+.pb .facts { padding:0; background:transparent; }
+.pb .fact { min-height:32px; border-bottom:1px solid var(--line); }
+.pb .product-intro-card { border:0; }
+.pb .product-hero-title b { font-size:18px; }
+.pb .panel-close { margin-left:auto; font-size:22px; line-height:1; padding:0 4px; }
+.pb .row-price { margin-left:auto; font-size:var(--title); font-weight:600; white-space:nowrap; }
+.pb .row .value { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:var(--support); font-weight:400; }
+.pb .product-hero-title h3 { font-size:18px; }
+.pb .form-disclosure { border:1px solid var(--line); border-radius:6px; padding:12px; }
+.pb .form-disclosure summary { cursor:pointer; font-weight:600; }
+.pb .form-disclosure label { margin-top:8px; }
+.pb .required-mark { color:var(--bad); }
+.pb .pb-detail-actions > .primary { display:flex; align-items:center; justify-content:center; gap:8px; }
+.pb .form > label { display:grid; grid-template-columns: minmax(80px,.85fr) minmax(0,1.4fr); align-items:center; }
+.pb .form > label > :is(input, select, textarea) { grid-column:2; grid-row:1; }
+.pb .form > label > small { grid-column:1/-1; }
+.pb .context-card { min-height:100px; padding:12px; margin-bottom:12px; border:1px solid var(--line); border-radius:6px; }
 @media (min-width:901px) {
   .pb { background:var(--page); }
-  .pb .web-panel { background:var(--ground); border:1px solid rgba(16,24,40,.08); box-shadow:0 1px 3px rgba(16,24,40,.08); }
+  .pb .web-panel { background:#fff; border:0; box-shadow:none; padding:16px; }
+  .pb .web-scroll { margin-right:-16px; padding-right:10px; }
+  body:has(.pb) { grid-template-columns:152px minmax(0,1fr) !important; grid-template-areas:"side top" "side main" !important; }
+  body:has(.pb) .erp-topbar { background:#fff; color:var(--ink); padding:0 20px; border-bottom:1px solid #e4e7ec; }
+  body:has(.pb) .erp-topbar .erp-brand, body:has(.pb) .erp-gsearch { display:none; }
+  body:has(.pb) .pb-page-title { display:block; font-size:14px; font-weight:600; margin-right:auto; color:#172033; }
+  body:has(.pb) .erp-sidenav { background:#10283d; padding:0 8px 8px; }
+  body:has(.pb) .erp-sidenav-inner::before { content:"freepass"; display:flex; align-items:center; height:56px; padding:0 12px; color:#fff; font-size:20px; font-weight:700; }
+  body:has(.pb) .erp-nav-group { display:block; }
+  body:has(.pb) .erp-sidenav[data-collapsed="true"] .erp-nav-group { display:none; }
+  body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-label { display:inline; }
+  body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-item { width:auto; margin:0; justify-content:flex-start; }
+  body:has(.pb) .erp-nav-item { min-height:48px; padding:0 10px; gap:10px; border-radius:6px; color:#dce5ee; font-size:13px; }
+  body:has(.pb) .erp-nav-item[aria-current="page"] { background:#0969e8; color:#fff; }
+  body:has(.pb) .erp-user { color:#344054; min-width:0; }
+  body:has(.pb) .erp-user small { display:none; }
+  body:has(.pb) .erp-topbar-right { margin-left:auto; }
+  body:has(.pb) .erp-sidenav[data-collapsed="true"] .erp-sidenav-inner::before { font-size:12px; padding:0; justify-content:center; }
+  body:has(.pb):has(.erp-sidenav[data-collapsed="true"]) { grid-template-columns:64px minmax(0,1fr) !important; }
+  .pb .pb-detail-actions { grid-template-columns:auto 1fr; }
+  .pb .product-photo-card .dz-gal-main { height:120px; }
+  .pb .web-actions > * { min-height:40px; }
+}
+@media (max-width:900px) {
+  .pb { background:#fff; }
+  .pb .web-workspace { padding:8px 16px 0; }
+  .pb .product-photo-card .dz-gal-main { height:128px; }
+  .pb .form > label { grid-template-columns:minmax(100px,.9fr) minmax(0,1.4fr); min-height:44px; }
+  .pb .row { min-height:88px; padding:10px 0; grid-template-columns:64px minmax(0,1fr); gap:10px; }
+  .pb .thumb { width:64px; min-height:64px; }
+  .pb .statusbar .sync { display:none; }
+  .pb .statusbar { height:52px; }
+  .pb .context-card { padding:12px; }
 }
 
 /* 바로 검색 — ✕ 지우기 · 거르는 중엔 돋보기가 남색 · 미완료 칸은 붉은 글자(오래될수록 위험) */
@@ -485,3 +545,38 @@ body:has(.pb) { background:#dde3ea !important; }
 .pb .tools-sum { flex:none; margin-left:auto; padding-left:8px; color:var(--muted); font-size:var(--support); white-space:nowrap; }
 .pb .tools-sum b { color:var(--ink); }
 .pb .tools-sum .warn { color:var(--warn); }
+
+.pb fieldset.more-body { min-width:0; margin:0; border:0; }
+.pb .intake-note { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--sub); }
+.pb .fact b { overflow-wrap:anywhere; }
+
+/* Product detail: proximity rather than ruled rows. Same facts, responsive arrangement. */
+.pb .product-info-section { margin-top:24px; }
+.pb .product-info-section h4 { margin-bottom:12px; }
+.pb .section h4 { display:flex; align-items:center; gap:8px; }
+.pb .section h4 svg { flex:none; color:var(--sub); }
+.pb .product-intro-section { margin-bottom:16px; }
+.pb .product-intro-card { padding:0; }
+@media (min-width:1280px) and (max-width:1439px) {
+  body:has(.pb) { grid-template-columns:64px minmax(0,1fr) !important; }
+  body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-label,
+  body:has(.pb) .erp-nav-group { display:none; }
+  body:has(.pb) .erp-sidenav:not([data-collapsed="true"]) .erp-nav-item { justify-content:center; padding:0; }
+  body:has(.pb) .erp-sidenav-inner::before { font-size:12px; padding:0; justify-content:center; }
+}
+.pb dl.product-facts { margin:0; display:grid; grid-template-columns:minmax(0,1fr); gap:12px 16px; }
+.pb .product-facts.compact { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pb .product-fact { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.pb .product-fact dt { margin:0; color:var(--muted); font-size:var(--support); font-weight:400; overflow-wrap:anywhere; }
+.pb .product-fact dd { margin:0; color:var(--ink); font-size:var(--body); font-weight:500; line-height:1.5; overflow-wrap:anywhere; }
+.pb .product-fact.wide { grid-column:1 / -1; }
+.pb .pb-detail-actions { grid-template-columns:auto auto minmax(0,1fr); gap:8px; }
+.pb .pb-detail-actions > * { height:44px; min-height:44px; padding:0 16px; }
+.pb.pb .pb-detail-actions > .dz-bar-sub { padding:0 16px !important; }
+.pb .pb-detail-actions svg { flex:none; width:16px; height:16px; }
+@media (min-width:901px) {
+  .pb .product-info-section { margin-top:24px; }
+  .pb dl.product-facts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 20px; }
+  .pb .pb-detail-actions { grid-template-columns:auto minmax(0,1fr); }
+  .pb .pb-detail-actions > * { height:36px; min-height:36px; }
+}

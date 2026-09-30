@@ -2,6 +2,20 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { productSections, settlementSections } from '../sections.js';
 import type { CanonicalProduct } from '../../product/types.js';
+import { 꼴 } from '../../../app/_design/Sections';
+
+it('formats known numeric units without mutating values or guessing unknown fields', () => {
+  const age = { key: 'basic_driver_age', label: '연령', value: 26, type: 'number' as const };
+  assert.equal(꼴(age), '만 26세');
+  assert.equal(age.value, 26);
+  assert.equal(꼴({ ...age, value: '만 26세 이상' }), '만 26세 이상');
+  assert.equal(꼴({ ...age, key: 'annual_mileage', value: 20000 }), '연 20,000km');
+  assert.equal(꼴({ ...age, key: 'deposit_return_days', value: 14 }), '14일');
+  assert.equal(꼴({ ...age, key: 'seats', value: 5 }), '5인승');
+  assert.equal(꼴({ ...age, key: 'year', value: 2026 }), '2026년식');
+  assert.equal(꼴({ ...age, key: 'unknown', value: 26 }), '26');
+  assert.notEqual(typeof 꼴({ ...age, value: null }), 'string');
+});
 
 const p: CanonicalProduct = {
   id: 'P1', version: 1, supplierId: 'RP001', supplierName: '손오공', supplierProductKey: '12가3456',

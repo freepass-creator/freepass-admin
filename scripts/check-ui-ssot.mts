@@ -62,6 +62,35 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+// Old recovery records must never become a competing main design authority again.
+const uiAuthority = JSON.parse(await readFile(path.join(root, 'docs/ui/admin-ui-ux-ssot.json'), 'utf8'));
+if (uiAuthority.status !== 'MAIN_UI_CANONICAL') errors.push('UI authority must remain MAIN_UI_CANONICAL');
+if (uiAuthority.renderContract?.id !== 'MAIN_CODE_RENDER_V1') errors.push('Latest coded-render implementation contract is required; do not freeze the former UI');
+const boardStyles = await readFile(path.join(root, 'src/app/products/board.css'), 'utf8');
+if (!boardStyles.includes('MAIN_CODE_RENDER_V1')) errors.push('Operational CSS must implement the coded-render proposal');
+for (const file of ['src/app/products/board.tsx', 'src/app/products/board.css', 'src/app/products/BoardIntakeForm.tsx']) {
+  if (!uiAuthority.authority.includes(file)) errors.push(`Main UI authority missing: ${file}`);
+}
+for (const file of ['docs/ui/DESIGN-AUTHORITY.md', 'docs/ui/ADMIN-UI-UX-SSOT.md', 'docs/recovery/PR92-LATESTIZATION-STATUS.md']) {
+  const source = await readFile(path.join(root, file), 'utf8');
+  if (!source.includes('HISTORICAL_ONLY / RESTORE_FORBIDDEN')) errors.push(`${file}: retired design restore prohibition missing`);
+}
+const intakeEntry = await readFile(path.join(root, 'src/app/intake/page.tsx'), 'utf8');
+if (!intakeEntry.includes("import { ProductsBoard } from '../products/board'") || !intakeEntry.includes('mode="intake"') || /import.*Workspace/.test(intakeEntry)) {
+  errors.push('Main intake must use ProductsBoard; restoring the old Workspace entry is forbidden');
+}
+
+// Both entry paths must expose the same finite-choice controls; Board previously omitted mandatory payKind.
+for (const file of ['src/app/products/BoardIntakeForm.tsx', 'src/app/intake/new/IntakeForm.tsx']) {
+  const source = await readFile(path.join(root, file), 'utf8');
+  for (const name of ['channel', 'agent']) {
+    if (!new RegExp(`<select name="${name}"[^>]*required`).test(source)) errors.push(`${file}: ${name} must provide a required native select`);
+  }
+  if (!source.includes('name="payKind"') && !source.includes("sel('payKind'")) errors.push(`${file}: mandatory payKind control is missing`);
+  if (!source.includes("['일시납', '2회분납', '3회분납']")) errors.push(`${file}: new intake payKind must match domain acceptance`);
+  if (/list="(?:pb-)?dl-(?:channel|agent)"/.test(source)) errors.push(`${file}: finite channel/agent choices must not revert to datalist`);
+}
+
 /* PC 화면 CSS = 공통 규격 생성물 + 앱 고유층. 이 가상 경로를 읽으면 두 파일을 순서대로 이어 붙인다. */
 const DESKTOP_CSS = 'src/app/_erp/{erp-standard,shell}.css';
 const SHELL_MARK = '/* ═══ app shell.css ═══ */';

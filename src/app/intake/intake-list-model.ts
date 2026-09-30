@@ -88,7 +88,7 @@ export function intakeListModel(all: SettlementRow[], q: Record<string, string |
     const m = 칸표(r, b);
     const days = b === '미완료' ? intakeAgeDays(r, today) : null;
     return {
-      id: r.id, href: keep({ ic: r.id, w: '', v: 'work' }), title: 제목(r) || r.id, tag: m.t, tagTone: m.tone, kind: r.product ?? undefined,
+      id: r.id, href: keep({ ic: r.id, w: '', v: 'detail' }), title: 제목(r) || r.id, tag: m.t, tagTone: m.tone, kind: r.product ?? undefined,
       meta: [r.receivedAt ? `접수 ${r.receivedAt.slice(5).replace('-', '/')}` : '', r.plate, r.channel, r.agent].filter(Boolean).join(' · '),
       value: [b === '미완료' ? (days === null ? '지연' : `지연 ${days}일`) : '', 할일말[intakeTaskOf(r)]].filter(Boolean).join(' · '),
       thumbLabel: '접수',

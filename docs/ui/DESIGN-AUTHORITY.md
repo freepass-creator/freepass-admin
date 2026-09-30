@@ -1,7 +1,37 @@
 # FreePass Admin Design Authority
 
-상태: **CANONICAL — USER APPROVED 2026-09-28 · ProductsBoard intake actual route**
-최신 확정: 사용자 2026-09-28 「로컬 목업을 메인으로 흡수」 「이걸 메인으로 승격」. `/intake`는 로컬에서 실데이터로 고도화된 `ProductsBoard`의 `상품찾기 | 상품상세 | 접수목록/업무` 3패널 구조를 메인으로 사용한다. 기존 PR #92 계보는 다른 업무 화면과 재사용 부품의 기준으로 남지만 `/intake` 구조보다 우선하지 않는다.
+2026-10-01 공간 비율 정정: PC 동일폭3패널·모바일1패널 유지. 실제 사진 높이 PC120/모바일128, 사진→요약12/요약→대여료16. 제목 아이콘은 차량/대여료에 16px·gap8만 적용. 1280~1439의 board 메뉴도64px rail. 기존 도메인/Offer/저장 동선 변경 없음.
+
+상태: **MAIN_UI_CANONICAL — USER APPROVED 2026-09-30 · ProductsBoard intake actual route**
+
+## 단일 메인 기준 · 이전 디자인 폐기
+
+사용자 최신 정정: **기존 ProductsBoard 모양을 잠그는 것이 아니라, 마지막 웹·모바일 3장 시안으로 화면 틀을 교체한다.** ProductsBoard는 기존 기능을 이어 쓰는 구현 위치이지 과거 디자인의 승인 근거가 아니다. PR92 복구 화면·옛 브랜치·목업·캡처는 HISTORICAL_ONLY / RESTORE_FORBIDDEN이다.
+
+## MAIN_CODE_RENDER_V1 — 렌더와 구현을 같은 코드로
+
+최신 상품상세 정정(2026-09-30): 항목별 가로선 대신 label-above-value 정보 묶음. PC 2열, 모바일 짧은 차량/제원 2열·정책 1열, 긴 값은 전체 열. 섹션 여백으로 구분하며 추가 카드 테두리를 만들지 않는다. 대여료 세로 선택은 유지. 상세 행동 버튼 높이는 PC 36 / 모바일 44, 고정 너비 없이 공유 내용폭·접수 잔여폭. 이는 아래 과거 fact row 형태보다 우선한다.
+
+### 최신 동선 정정: 목록 보며 처리 (2026-09-30)
+
+웹 접수목록에서 건을 선택하면 가운데 **상세 패널**이 접수상세로 바뀌고 오른쪽 **접수목록은 유지**한다. 선택 신호와 검색·필터·상품/Offer 문맥을 보존하며 같은 목록에서 다음 건을 선택한다. 상품을 다시 선택하면 접수상세 선택을 해제하고 상품상세로 돌아간다. 모바일은 공간상 접수상세 한 장으로 전환하되 목록 복귀 URL은 기존 목록 조건을 보존한다. 이 최신 동선은 앞서 이미지의 「오른쪽 목록 → 오른쪽 상세」보다 우선한다.
+
+- 기준 원본: 마지막 3장 `exec-084a6166-2033-4e5f-8286-1bf741e9d9b5.png` (작성), `exec-36d9f176-bbe4-44a3-9d3b-88bf7db301af.png` (목록), `exec-fc747e30-cf14-4fbd-a853-e9805c67763a.png` (상세). 원본 위치: `C:/Users/admin/.codex/generated_images/01a0e3d8-73bf-7ab1-90a4-bac2a882f585/`.
+- 이후 시안 이미지는 실제 `/intake` 코드를 브라우저에서 캡처한다. 생성 이미지·별도 시안 HTML·다른 저장 엔진으로 대체하지 않는다.
+- shell: `AdminChrome` + `SideMenu`; 네이비 152px sidebar, 흰색 56px header, 접기 64px. 전역 검색은 계약접수에서 반복하지 않고 현재 업무 제목만 표시한다. 데모 데이터 표지는 운영 오인 방지를 위해 유지한다.
+- composition: `ProductsBoard`의 3개 동일 폭 패널, 10px gutter, 흰색 panel, 16px 내부 padding, 8px radius. 각 패널 독립 scroll와 고정 footer. Mobile ≤900은 같은 DOM을 `v=list/detail/work`로 한 장씩 표시한다.
+- list card: `BoardList` + `productRows`; web 76px/56px thumbnail, mobile 88px/64px thumbnail. 첫 줄 차명·오른쪽 월 대여료, 둘째 공급사·상품·상태, 셋째 차번·기간·보증금. 알려지지 않은 보증금은 0이 아니라 미확인이다.
+- detail: `PhotoGallery` → plain summary → 기간/월 대여료/보증금의 세로 Offer 표 → 차량·정책 정보. 선택은 pale blue와 radio 신호. fuel/year 중첩 박스 없음. `offer.id`와 snapshot 의미는 그대로 유지한다.
+- form: `BoardIntakeForm`; 고객명 먼저, 채널/담당자/payKind native select, label/control 2열, 선택 메모 disclosure, 취소/접수 저장 footer. 웹 input 32px, mobile input/touch 44px; 기존 저장 action·오류 초안 유지·코드 매핑 재사용.
+- task states: 작성 `w=new`, 접수목록 `ic` 없음, 접수상세 `ic=<실제 접수 ID>`; 상품/Offer 문맥을 잃지 않도록 저장 redirect를 후속 정합화한다. 성공 알림은 실제 저장 성공에만 표시한다.
+- 연결 계약: `productView`/`freepass-data` → 기존 CanonicalProduct/Offer → 기존 `createIntakeAction`/snapshot/service. 새 UI가 다른 DB·계산·정책을 만들지 않는다.
+- 남은 차이: 연락처·추가 연령/주행 조건은 별도 저장 계약이 아직 없다. 등록 계약서·필수서류·잔금 세부 workflow, 저장 후 목록 전환 및 상세 탭/accordion은 마지막 시안에 맞추는 후속 구현 대상이다. UI만 만들어 저장 완료를 주장하지 않는다.
+- 완료 기준: 1440/1280/390/360 실제 캡처, overflow 0, 검색/Offer 선택/입력/오류/목록·상세 전환, 타입·관련 테스트·build. 각 캡처의 viewport/commit/data mode/미구현 차이를 함께 남긴다. 현재 첫 구현은 CODED이며 마지막 이미지와 완전 동일 판정은 아직 미통과다.
+
+목록 / 상세 보기 / 입력의 세 가지 패널을 조합하며 복합 패널도 허용한다. 상품 선택은 상세 스크롤을 위로 초기화하고 접수하기는 오른쪽 업무 패널만 바꾼다. 대여료는 세로 선택 목록이다. 웹과 모바일은 같은 업무 의미와 공용 컨트롤을 사용한다. 새 디자인 분기·내 처리함·과한 중첩 박스를 추가하지 않는다.
+
+다른 업무 페이지에서 실제 사용하는 `_erp`·`_design` 부품은 기능 보존을 위해 유지하지만 과거 형태를 재도입할 권한은 아니다. 기존 코드의 존재와 디자인 승인 상태를 구분한다. 다른 페이지의 전체 시각 통일 완료를 이 결정만으로 주장하지 않는다.
+최신 확정: 사용자 2026-09-30 기존 디자인 폐기 결정. `/intake`는 `ProductsBoard`의 `상품찾기 | 상품상세 | 접수목록/업무` 3패널 구조를 메인으로 사용한다. 기존 PR #92 계보는 통합 이력과 재사용 코드의 출처로만 남으며 디자인 기준이 아니다.
 확정: 사용자 2026-09-26 「큰 화면으로 준 92버전이 정본이고 그게 메인으로 합쳐져야 돼」 「이제 이거가 정본이고 메인이고 … 확정되지 못한 거는 폐기」  
 main 반영 PR: #121 (PR #92 → #112 → `work/uiux` 계보 + 당시 main 기능)
 
@@ -42,7 +72,7 @@ PC actual route 구현:
 - `docs/ui/ADMIN-UI-UX-SSOT.md`
 - `docs/ui/admin-ui-ux-ssot.json`
 
-복구 진행판:
+과거 복구 기록 (HISTORICAL_ONLY / RESTORE_FORBIDDEN):
 - `docs/recovery/PR92-LATESTIZATION-STATUS.md`
 
 ## 현재 사용 규칙
@@ -62,6 +92,9 @@ UI/UX 작업은 이 문서에 적힌 actual route 구현과 UI SSOT만 읽는다
 UI 완료 판정은 실제 route를 1440 / 1280 / 390에서 렌더링한 Visual QA receipt가 있어야 한다.
 
 ## UI 핵심
+
+- 2026-09-30 사용자 확정: 접수의 유한 선택값은 native select, 자유 텍스트는 input/textarea를 사용한다. 기간별 Offer 비교는 기존 세로 선택목록을 유지한다.
+- 채널·담당자 선택지는 기존 원장 기준이며 기본값이 목록 밖이면 보존한다. 목록이 비어 있으면 수기 입력을 유지한다. 별도 저장 계약이 없는 연락처·연령/주행거리 변경값은 UI만 만들어 저장됐다고 표현하지 않는다.
 
 - PC는 multi-panel
 - 계약접수 기본은 3 Panel

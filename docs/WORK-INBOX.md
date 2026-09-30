@@ -1,3 +1,77 @@
+## 0-SPACE-RATIO. 2026-10-01 — 공간 비율 실측
+
+- 목적 / 대상: 같은 intake-controls 작업선 f06da0a 기반. PC3동일폭과 모바일1패널을 보존하며 상품상세 사진/요약 여백 정리.
+- 변경: 사진 PC120/모바일128, 사진→요약12/요약→대여료16. 차량/대여료 제목16px 아이콘. 1280~1439 메뉴64px rail 충돌 해소. SSOT3종 동시 갱신.
+- 검증: typecheck/ui:check/build PASS, ui-shell36 tests PASS. 실제1440 패널416×3/1280 패널392×3 및 rail64. 모바일390/360 가로 넘침 없음. 만26세/연20000km 표시 확인. 캡처 Temp/freepass-ratio-1440.png 및 freepass-ratio-390.png. Demo/write off이며 운영 저장 없음.
+- 남음: 전체 테스트의 Windows PDF Chromium 오류, Claude 독립 검토 및 원격CI/메인통합/운영배포는 아직 미완료.
+- next_start_here: 같은 작업선에서 원격Linux CI와 독립검토를 확인하고 배포 gate 판정.
+
+## 0-DISPLAY-UNITS. 2026-10-01 — 숫자 정책의 자연스러운 표시
+
+- 목적 / 대상: intake-controls, e617958 기반. 기존 공용 Sections 표시기 확장; 원본/DB/정책 사전 변경 없음.
+- 변경: 확정 key만 연령 만 N세, 연간 주행거리 연 Nkm, 일수 N일, 인승/연식 단위 표시. 이미 문구인 값 보존, 미확인 유지, 이상/이하 조건을 추측하지 않음.
+- 검증: 관련 8 tests 및 typecheck PASS. localhost 서버 연결 거부로 실제 화면 확인 미실시. 시각 검증 및 운영 배포 미실시.
+- 남음 / next_start_here: 중앙 정책의 단위/조건 메타데이터 계약이 생기면 이 로컬 key 매핑을 대체. 같은 작업선 유지.
+
+## 0-PRODUCT-DETAIL-READABILITY. 2026-09-30 — 선 없는 상세와 반응형 정보 배열
+
+- 목적 / 대상: 상품 상세 항목별 선 제거, PC·모바일 배열 및 footer 규격 정리. 기존 intake-controls 작업선, 기준 `b18d05d`. 새 브랜치/DB/운영 변경 없음.
+- 변경: 기존 facts를 의미 있는 dl/dt/dd로 표시. PC 2열, 모바일 차량/제원 2열·나머지 1열, 긴 값 전체 열. 섹션24/제목12/label-value4, PC 행16/열20·모바일 행12/열16. 상세 footer PC36/모바일44·padding16·gap8, 공유 내용폭/접수 잔여폭. 원문·대여료 세로 Offer·선택 identity 유지.
+- 검증: 타입/UI 검사 및 관련 40 tests PASS, production build PASS. 실제 1440/1280/390/360 확인, 가로 overflow 0. 모바일 버튼44 및 padding16, PC36 실측. 36개월 선택→신규접수에 기간/월 대여료 유지 확인. console error 없음. 로컬 demo/write off.
+- Visual QA: 실제 캡처 `C:/Users/admin/AppData/Local/Temp/freepass-product-detail-web.jpg`, `C:/Users/admin/AppData/Local/Temp/freepass-product-detail-mobile.jpg`. 생성 이미지 아님. 전체 플랫폼 시각 conformance 주장 아님.
+- main/branch: origin/main `711ce0d` (#160), 기준 브랜치는 main-only 0 / work-only 5. 충돌 분기 없음. UI 작업은 아직 main에 없음. main merge/push/deploy는 이 작업에서 수행하지 않음.
+- 남음: Claude 현재 diff 읽기 전용 독립 검토 응답 대기, PASS 아님. 기존 PDF Chromium 실행환경 10건 실패 및 업무 미연결 항목은 앞 handoff 유지.
+- next_start_here: 같은 작업선에서 Claude 현재 diff 검토를 회수하고 필요한 지적 반영. main 통합은 기존 미완료 업무 게이트와 별도로 판정.
+
+## 0-INTAKE-AUDIT-UPGRADE. 2026-09-30 — 접수 검수 오류와 상세 정보 보강
+
+- 목적 / 정본: 기존 intake-controls 작업선, 기준 `5e3524d108013bb0df81936528563fe36daaaa73`. 새 브랜치·운영 데이터 수정·배포 없음.
+- 변경: 정산 링크 404 수정, Offer 변경 시 고객/분납 초안 유지, 저장 후 검색/상품/Offer 문맥 보존, 미확인 마진을 0으로 계산하지 않음. 조회 전용 저장/금액 버튼 차단, 숨은 모바일 목록 자동 로딩 방지.
+- 상세: 실적 단계·청구월·납입회차·다음 납입일·메모·계약 수납 사실·당시 상품/Offer/정책 Snapshot 표시. 직접접수 audit identity 보존. 취소 해제 사유 입력, 이탈 안내 스크롤/포커스 보강.
+- 검증: 타입/UI 검사, production build, 관련 164 tests PASS. 전체 795 tests: 785 PASS, PDF Chromium 실행 파일 ENOENT 환경 오류 10 FAIL. 오래된 UI 단정 2건은 최신 사용자 결정과 기존 HEAD 구현에 맞춰 엄격한 현재 계약으로 수정. 초안 보호 회귀 검사 추가.
+- Claude: 본문과 exit 0 수신. 수수료 입력 unmount, 성공 후 경고 오탐, 이탈 안내 시야 밖, 취소 해제 사유 지적 반영. 별도 ANSWERED JSON 미출력으로 receipt gate 완료 아님.
+- 브라우저: 확인창 차단 해소 후 모바일 초안 유지/이탈 복귀, PC 실제 접수목록 클릭→가운데 상세 갱신/오른쪽 목록 유지 확인. 조회 전용 demo이며 운영 저장하지 않음. 실제 캡처 `C:/Users/admin/AppData/Local/Temp/freepass-admin-intake-upgraded.jpg`.
+- 남음: 연락처/연령/주행거리 저장 계약, 계약 수납·취소·해지 실행 동선, 서류/잔금, 환수 REQUIRED 서버 강제 조건. 저장 성공 실데이터 검증 및 직접 수수료 입력 UI 회귀 검증 없음.
+- next_start_here: 같은 작업선에서 최신 클릭 동선 재검증, PDF 실행 환경 복구, 환수 서버 가드의 독립 검토/회귀 검증 후 통합. 전체 완료/PERSISTENCE VERIFIED/DEPLOYMENT VERIFIED로 표현하지 않는다.
+
+## 0-CASE-MASTER-DETAIL. 2026-09-30 — 접수목록을 유지하는 상세 동선
+
+- 목적: 접수목록 선택 시 가운데 상세 패널에 접수상세 표시. 오른쪽 목록을 유지하여 다음 건으로 직접 전환.
+- 대상 revision: `8bbed48`, 기존 intake-controls 작업선. 새 브랜치/운영 데이터 변경 없음.
+- 변경: 접수 선택은 `ic + v=detail`, 오른쪽 IntakeList 유지 및 선택 표시. 상품 선택은 ic 해제. 모바일 복귀 URL은 검색/필터/상품/Offer 조건 보존. 최신 동선은 이전 이미지의 오른쪽 목록→상세보다 우선.
+- 검증: typecheck, ui:check, build, 관련 테스트 23개 PASS. 1440px 브라우저에서 두 접수 연속 선택→중앙 상세 변경/오른쪽 목록 유지/선택 표시 확인. 실제 렌더 캡처 `coded-intake-list-detail-web.jpg`.
+- 남음: 모바일 브라우저 재검증은 연결 timeout으로 미완료. Claude 독립 검토는 응답 대기, PASS 아님. main 병합/원격 push/배포 없음.
+- next_start_here: 같은 작업선에서 Claude receipt와 모바일 목록 복귀/필터 유지 검증을 마친 뒤 통합. 운영 저장 성공과 UI 검증을 혼동하지 않는다.
+
+## 0-CODE-RENDER. 2026-09-30 — 마지막 이미지 시안의 실제 코드 구현
+
+- 목적: 기존 ProductsBoard의 모양 잠금이 아니라 마지막 웹/모바일 3장 시안으로 틀 교체. 코드 렌더 캡처와 구현 명세를 함께 제공.
+- 대상: 기존 intake-controls 작업선, 기준 `69d954d`. 별도 시안 엔진/새 브랜치 없음.
+- 구현 계약: `docs/ui/DESIGN-AUTHORITY.md` MAIN_CODE_RENDER_V1 / machine-readable `renderContract`. 파일·컴포넌트·토큰·상태·저장 연결·미구현 차이를 명시.
+- 변경: shell/nav, 흰색 동일폭 패널, 3줄 상품행/우측 월대여료, 세로 Offer 표, plain summary, label/control 입력 배치, 메모 disclosure, 모바일 닫기.
+- 검증: typecheck/ui:check/build PASS, 관련 102 tests PASS. 1440 웹 패널 416×824 세 개 동일. 390 모바일 1패널/44px 입력/overflow 0. 실제 캡처 사용, demo mode이며 실데이터 write 없음.
+- Claude: 읽기 전용 응답 + exit 0 확인. 차량가액 control grid, route-order dependent 제목, 중복 보증금 지적 반영. 중간 diff 변경을 지적했으므로 후속 고정 revision 재검토 필요. 별도 ANSWERED JSON 영수증은 출력되지 않아 필수 receipt gate는 미완료.
+- 남음: 연락처/추가조건 저장 계약, 목록/상세 탭과 disclosure, save redirect 문맥보존. 마지막 이미지 완전동일/전체 플랫폼 교체 완료 아님. main 병합/배포 없음.
+- next_start_here: 같은 코드로 미구현 task states를 완성하고 3상태×웹/모바일 캡처를 대조. 기존 모양 잠금을 되살리지 않는다.
+
+## 0-MAIN-UI. 2026-09-30 — 단일 메인 UI와 구형 디자인 폐기 (아래 ProductsBoard 모양 잠금은 최신 정정으로 대체)
+
+- 목적: 현재 ProductsBoard 3패널/input/select를 단일 디자인 기준으로 고정. 이전 화면의 재유입 차단.
+- 대상 revision: `afc3c5b`, 기존 intake-controls 작업선 연속. 새 디자인/브랜치 생성 없음.
+- 변경: AGENTS, UI SSOT, branch 지침에서 PR92 복구를 HISTORICAL_ONLY / RESTORE_FORBIDDEN으로 격리. 사용 중인 공용 코드와 모든 데이터/업무 기능은 보존.
+- 검증: typecheck 및 ui:check PASS. 메인 route와 정본 상태의 복귀 방지 guard 추가. 운영 배포/전체 페이지 시각 통일 완료는 이 문서로 주장하지 않는다.
+- 남음: Claude 독립 검토와 main 병합 gate. 전체 테스트의 Windows Chromium 환경 실패는 기존 HOLD.
+- next_start_here: 동일 작업선에서 검토/CI를 확인하고 단일 main으로 통합한다. 과거 복구 진행판의 작업을 재개하지 않는다.
+
+## 0-INTAKE-CONTROLS. 2026-09-30 — 입력창/드롭다운 규격
+
+- 목적: 사용자 승인에 따라 기존 3패널의 접수 폼을 입력창과 native select 중심으로 통일.
+- 대상 revision: main `711ce0d`; work `work/freepass-admin/intake-controls-20260930`, 단일 Codex writer.
+- 변경: BoardIntakeForm 상품구분·채널·담당자 select, 누락된 필수 분납여부와 기존 저장 계약의 메모 노출. 직접접수 채널·담당자도 동일 문법. 기존 데이터/코드 매핑·기본값·수기 fallback·Offer snapshot·수수료는 유지.
+- 남음: 연락처/연령 변경/주행거리 변경은 별도 Intake 저장 계약이 없으므로 가짜 필드를 만들지 않음. 운영 배포·실데이터 쓰기는 이번 범위 밖.
+- 검증: academy READY, typecheck/ui:check/build PASS, 관련 단위 검사 102건 PASS. 실제 읽기 전용 demo route에서 1440/1280/390/360/412 가로 overflow 없음, 입력/select PC 32px·mobile 44px, 담당→채널 자동 연결 및 payKind 빈값 required 검사 확인. 브라우저 error log 0. 전체 npm test는 전자계약 PDF의 Windows Chromium ENOENT로 FAIL. agent-browser 실행은 Windows 앱 제어 정책으로 차단돼 내장 브라우저로 확인했고 보호정책은 변경하지 않음. Claude 읽기 전용 검토는 장시간 응답 미수신으로 해당 호출을 종료(REVIEW_TIMEOUT); 독립 검토 PASS 아님. main 통합은 검토 및 전체 검사 gate 해결 뒤 진행.
+- next_start_here: 이 worktree의 변경 검증 및 main 통합. 새 접수 옵션의 persistence는 별도 계약 검토 후 구현.
+
 ## 0-LOGIN-REPAIR. 2026-09-30 — 운영 로그인 복구 검증 / 데이터 요청 토큰 후속
 
 - 목적: 운영 로그인 복구, `freepass admin` 앱 이름 복원, 설정 누락 재배포 차단.

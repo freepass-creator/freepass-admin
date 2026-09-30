@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '../_design/Icon';
 
 export type BoardRow = {
-  id: string; href: string; title: string; tag?: string; meta: string; value: string; thumb?: string;
+  id: string; href: string; title: string; tag?: string; meta: string; value: string; thumb?: string; price?: string;
   /** 사진 대신 쓰는 글자 자리(목업 접수·계약 카드의 「접수」 등) */
   thumbLabel?: string;
   tagTone?: 'good' | 'warn' | 'bad';
@@ -61,7 +61,7 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
     const 창 = root && getComputedStyle(root).overflowY !== 'visible' ? root : null;
     let 멈춤 = false;
     const 볼 = async () => {
-      if (멈춤) return;
+      if (멈춤 || !판.current?.getClientRects().length) return;
       const 남음 = 창 ? 창.scrollHeight - 창.scrollTop - 창.clientHeight
         : document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
       if (남음 > 600) return;
@@ -122,7 +122,8 @@ export function BoardList({ rows, total, more, selectedId, unit = '대', empty }
             <span className="row-body">
               <span className="row-title">
                 {r.kind ? <span className="kind">{r.kind}</span> : null}<b>{r.title}</b>
-                {r.tag ? <span className={`tag${r.tagTone ? ` ${r.tagTone}` : ''}`}>{r.tag}</span> : null}
+                {r.price ? <strong className="row-price">{r.price}</strong> : null}
+                {r.tag ? <span className={r.price ? 'sr-only' : `tag${r.tagTone ? ` ${r.tagTone}` : ''}`}>{r.tag}</span> : null}
               </span>
               <span className="meta">{r.meta}</span>
               <span className="value">{r.value}</span>

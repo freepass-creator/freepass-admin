@@ -4,6 +4,16 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const read=(p:string)=>readFileSync(resolve(process.cwd(),p),'utf8');
+test('product detail uses unruled semantic facts and responsive action geometry', () => {
+  const detail = read('src/app/products/board.tsx');
+  const styles = read('src/app/products/board.css');
+  assert.ok(detail.includes('<dl className="facts product-facts compact">'));
+  assert.ok(detail.includes('<dt>{it.label}</dt><dd>{꼴(it)}</dd>'));
+  assert.ok(detail.includes('it.type === \'list\''));
+  assert.ok(styles.includes('.pb .product-fact { min-width:0; display:flex; flex-direction:column; gap:4px; }'));
+  assert.ok(styles.includes('height:36px; min-height:36px;'));
+  assert.ok(styles.includes('height:44px; min-height:44px; padding:0 16px;'));
+});
 const root=read('src/app/page.tsx');
 const designRoute=read('src/app/design/page.tsx');
 const intakeListRoute=read('src/app/intake/list/page.tsx');
@@ -253,13 +263,15 @@ test('vehicle introduction card keeps fuel and model year as compact metadata',(
   assert.equal(board.includes('className="product-rent"'),false);
   assert.ok(board.includes('className="product-photo-card"'));
   assert.ok(board.includes('className="facts product-intro-card"'));
-  assert.ok(board.includes('<h4>차량 요약</h4>'));
+  assert.equal(board.includes('<h4>차량 요약</h4>'), false, 'minimal summary uses vehicle name rather than redundant heading');
   assert.ok(board.includes('const 주요요약 = car ? [렌트사, txt(car.status), txt(car.productKind)] : []'));
   assert.ok(board.includes('const 부가요약 = car ? [txt(car.registration?.vehicleNumber), ...스펙] : []'));
   assert.equal(board.includes('className={`tag ${결(car.status)}`}'),false);
   assert.ok(board.includes("const 나머지구역 = 구역.filter((s) => s.key !== 'vehicle')"));
-  assert.ok(board.indexOf('<h4>차량 요약</h4>') < board.indexOf('id="pb-offer-title"'));
-  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf('<h4>차량 정보</h4>'));
+  assert.ok(board.indexOf('className="facts product-intro-card"') < board.indexOf('id="pb-offer-title"'));
+  const vehicleHeading = '<h4><Icon name="car" size={16} />차량 정보</h4>';
+  assert.ok(board.includes(vehicleHeading));
+  assert.ok(board.indexOf('id="pb-offer-title"') < board.indexOf(vehicleHeading));
   assert.ok(board.includes('chosen?.supplierName ?? chosen?.supplierId'));
   assert.ok(productDetail.includes('aria-label="차량 주요 정보"'));
   assert.equal(productDetail.includes('sel.p.specs.mileageKm'),false);

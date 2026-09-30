@@ -4,7 +4,7 @@ import './board.css';
 import { productView } from './product-view';
 import { 상품축이름 } from './product-view-config';
 import { sp, txt, won } from '../_fn/fmt';
-import { erp5Ready, settlements } from '../../server/freepass-data';
+import { erp5Ready, settlements, writeEnabled } from '../../server/freepass-data';
 import { FilterSheet } from '../_design/FilterSheet';
 import { Share } from '../_design/Share';
 import { productSections, type SectionItem } from '../../domain/catalog/sections';
@@ -25,7 +25,7 @@ import { PhotoGallery } from '../_design/PhotoGallery';
 import { LEGACY_POLICY_LABELS } from '../_design/ProductInfo';
 
 /**
- * ★★★ 상품찾기 새 판 — 목업(docs/ui/mockups/admin-mobile-five-functions.html) 마크업 그대로 (대표 2026-09-22 「판갈이」)
+ * MAIN_CODE_RENDER_V1 — 2026-09-30 마지막 웹/모바일 3장 시안의 실제 런타임.
  *   PC: 상품목록 | 상품상세 | 신규 계약접수 — 셋 다 1/3. 폰: 한 판씩(?v=list|detail|work), 위는 그 판의 상태표시줄 하나.
  *   카드를 위에서 아래로 죽죽 쌓는다 — 탭·아코디언 없음. 데이터·거름은 옛 판과 같은 `productView` 를 쓴다.
  *   동선(대표 2026-09-22): 상세에서 기간 카드를 누르고 [접수하기] → 오른쪽 접수 칸이 열린다 → [취소] [저장하기].
@@ -33,7 +33,6 @@ import { LEGACY_POLICY_LABELS } from '../_design/ProductInfo';
  */
 
 const 요금곁 = (o: Offer) => [
-  o.deposit ? `보증금 ${won(o.deposit)}원` : '무보증',
   o.prepayment ? `선납 ${won(o.prepayment)}원` : '',
   o.annualMileageKm ? `연 ${o.annualMileageKm.toLocaleString('ko-KR')}km` : '',
 ].filter(Boolean).join(' · ');
@@ -82,12 +81,15 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   const offers = sel?.matchedOffers ?? [];
   const chosen = offers.find((o) => o.id === sp(q.offer)) ?? sel?.lead ?? offers[0];
   const ic = mode === 'intake' ? sp(q.ic) : '';
-  const view = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v))
+  const requestedView = (['list', 'detail', 'work'] as const).find((v) => v === sp(q.v))
     ?? (mode === 'intake' && (ic || sp(q.w)) ? 'work' : selId ? 'detail' : 'list');
   /* 접수 칸은 [접수하기]를 눌러야 열린다 — PC 에서 두 판에 주 버튼이 같이 서지 않게(AI Core: 판마다 주 버튼 하나) */
-  const 접수중 = (mode === 'intake' ? sp(q.w) === 'new' : view === 'work') && !!car && !!chosen;
+  const 접수중 = (mode === 'intake' ? sp(q.w) === 'new' : requestedView === 'work') && !!car && !!chosen;
   /* 차 없이 직접 접수 — 상품 목록을 거치지 않는 견적출고 · 신차발주(기능 쪽 NewIntakePanel 그대로) */
   const 직접접수 = mode === 'intake' && sp(q.w) === 'direct';
+  const 접수상세 = mode === 'intake' && !!ic && !접수중 && !직접접수;
+  // Desktop keeps the case list in the right panel; mobile opens the shared detail panel.
+  const view = 접수상세 ? 'detail' : requestedView;
   /* 계약접수 메인 — 오른쪽 접수 목록 · 상세가 원장 줄을 쓴다(신규 접수의 채널·담당 선택지도 같은 줄에서) */
   let 원장: SettlementRow[] = [];
   let 원장오류 = '';
@@ -145,8 +147,8 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   /* 폰 상태표시줄 — 그 판의 제목 하나(목업 statusbar) */
   const 폰머리 = {
     list: { title: <>상품찾기<span>{sorted.length}대</span></>, sub: 즉시 ? `즉시출고 ${즉시}대` : '판매 가능' },
-    detail: { title: <>상품 상세</>, sub: car ? `${txt(car.status)} · 계약조건 선택` : '차를 고르세요' },
-    work: 접수중 ? { title: <>신규 계약접수</>, sub: '작성 중 · 저장 전' }
+    detail: 접수상세 ? { title: <>접수상세</>, sub: '' } : { title: <>상품 상세</>, sub: car ? `${txt(car.status)} · 계약조건 선택` : '차를 고르세요' },
+    work: 접수중 ? { title: <>신규접수</>, sub: '' }
       : ic ? { title: <>접수 상세</>, sub: '진행 · 다음 업무' }
         : { title: <>접수 목록</>, sub: '진행 중부터' },
   }[view];
@@ -166,6 +168,7 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
       <header className="statusbar">
         <div><h1>{폰머리.title}</h1><small>{폰머리.sub}</small></div>
         {상태}
+        {접수중 && <Link className="panel-close" href={keep({ w: '', v: 'detail' })} aria-label="접수 작성 닫기">×</Link>}
       </header>
 
       <div className="web-workspace">
@@ -211,7 +214,12 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
 
         {/* ── 상품 상세 ─────────────────────────────── */}
         <section className="web-panel pb-detail">
-          <header className="web-panel-head"><h2>상품 상세</h2><small>{car ? txt(car.status) : ''}</small></header>
+          <header className="web-panel-head"><h2>{접수상세 ? '접수상세' : '상품 상세'}</h2>{접수상세
+            ? <Link className="panel-close" href={keep({ ic: '', v: 'work' })} aria-label="접수상세 닫기">×</Link>
+            : <small>{car ? txt(car.status) : ''}</small>}</header>
+          {접수상세 ? (
+            <IntakeDetail code={ic} keep={keep} created={!!sp(q.created)} exists={!!sp(q.exists)} />
+          ) : (<>
           <div className="web-scroll">
             {car ? (
               <>
@@ -222,7 +230,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </article>
 
                 <div className="section product-intro-section">
-                  <h4>차량 요약</h4>
                   <div className="facts product-intro-card">
                     <div className="product-hero-title">
                       <h3>{이름(car)}</h3>
@@ -233,14 +240,17 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </div>
 
                 <div className="section" role="group" aria-labelledby="pb-offer-title">
-                  <h4 id="pb-offer-title">계약조건 선택</h4>
+                  <h4 id="pb-offer-title"><Icon name="wallet" size={16} />기간별 대여료</h4>
+                  <div className="offer-columns" aria-hidden="true"><span>기간</span><span>월 대여료</span><span>보증금</span></div>
                   {offers.map((o) => {
                     const on = !!chosen && o.id === chosen.id;
                     return (
                       <Link key={o.id} href={keep({ id: car.id, offer: o.id, v: 'detail' })}
                         className={`offer${on ? ' on' : ''}`} aria-current={on ? 'true' : undefined}>
-                        <strong>{요금줄(o)}</strong>
-                        <small>{요금곁(o)}</small>
+                        <span className="offer-term"><span className="offer-radio" aria-hidden="true" />{o.termMonths}개월</span>
+                        <strong>{won(o.monthlyRent)}원</strong>
+                        <span>{o.deposit == null ? '미확인' : `${won(o.deposit)}원`}</span>
+                        {요금곁(o) && <small className="offer-extra">{요금곁(o)}</small>}
                       </Link>
                     );
                   })}
@@ -248,20 +258,20 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
                 </div>
 
                 {차량구역 && (
-                  <div className="section">
-                    <h4>차량 정보</h4>
-                    <div className="facts">
-                      {차량구역.items.map((it) => <div key={it.key} className="fact"><span>{it.label}</span><b>{꼴(it)}</b></div>)}
-                    </div>
+                  <div className="section product-info-section">
+                    <h4><Icon name="car" size={16} />차량 정보</h4>
+                    <dl className="facts product-facts compact">
+                      {차량구역.items.map((it) => <div key={it.key} className="product-fact"><dt>{it.label}</dt><dd>{꼴(it)}</dd></div>)}
+                    </dl>
                   </div>
                 )}
 
                 {나머지구역.map((s) => (
-                  <div key={s.key} className="section">
+                  <div key={s.key} className="section product-info-section">
                     <h4>{s.key === 'policy_other' ? '기타 정책 정보' : s.title}</h4>
-                    <div className="facts">
-                      {s.items.map((it) => <div key={it.key} className="fact"><span>{LEGACY_POLICY_LABELS[it.key] ?? it.label}</span><b>{정책값(it)}</b></div>)}
-                    </div>
+                    <dl className={`facts product-facts${s.key === 'spec' ? ' compact' : ''}`}>
+                      {s.items.map((it) => <div key={it.key} className={`product-fact${it.type === 'list' || String(it.value ?? '').length > 24 ? ' wide' : ''}`}><dt>{LEGACY_POLICY_LABELS[it.key] ?? it.label}</dt><dd>{정책값(it)}</dd></div>)}
+                    </dl>
                   </div>
                 ))}
               </>
@@ -273,14 +283,10 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
               <Share />
               {mode === 'find'
                 ? <Link className="primary" href={접수로}>접수하기</Link>
-                : 접수중
-                  ? /* 다시 누르면 접수를 닫는다 — 켜고 끄는 한 단추 (대표 2026-09-23) */
-                  <Link className="secondary is-on" href={keep({ w: '', v: 'detail' })} aria-current="step" aria-label="접수 취소">
-                    접수 중<span aria-hidden="true"> ✕</span><span className="sr-only"> — 누르면 접수를 닫습니다</span>
-                  </Link>
-                  : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}>접수하기</Link>}
+                : <Link className="primary" href={keep({ id: car.id, offer: chosen?.id ?? '', v: 'work', w: 'new', ic: '' })}><Icon name="clipboard" size={16} />접수하기</Link>}
             </div>
           )}
+          </>)}
         </section>
 
         {/* ── 접수 — 계약접수 메인에서만(상품찾기는 두 판) ── */}
@@ -288,17 +294,16 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
           <section className="web-panel pb-work">
             <header className="web-panel-head">
               {직접접수 ? <><h2>직접 접수</h2><small>차 없이 · 견적출고 · 신차발주</small></>
-                : 접수중 ? <><h2>신규 계약접수</h2><small>작성 중 · 저장 전</small></>
-                : ic ? <><h2>접수 상세</h2><small>진행 · 다음 업무</small></>
-                  : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
+                : 접수중 ? <><h2>신규접수</h2><Link className="panel-close" href={keep({ w: '', v: 'detail' })} aria-label="접수 작성 닫기">×</Link></>
+                : <><h2>접수 목록</h2><span>{원장.length}건</span><small>{원장.filter((r) => !r.progress.cancelled && !r.progress.delivered).length}건 진행 중</small></>}
             </header>
             {직접접수 ? (
               <div className="web-scroll pb-legacy">
                 <NewIntakePanel rows={원장} productId="" offerId="" back={keep({ w: '', ic: '', v: 'work' })} />
               </div>
             ) : 접수중 && 접수 && 접수선택지 ? (
-              <BoardIntakeForm key={`${car.id}:${chosen.id}`} defaults={접수.defaults} options={접수선택지} choices={접수.choices}
-                cancelHref={keep({ w: '', v: 'detail' })} fee={수수료}>
+              <BoardIntakeForm key={car.id} defaults={접수.defaults} options={접수선택지} choices={접수.choices}
+                cancelHref={keep({ w: '', v: 'detail' })} fee={수수료} disabled={!writeEnabled()}>
                 <article className="row context-card" aria-label="선택 상품">
                   <span className={`thumb${사진[0] ? ' photo' : ' car'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -314,8 +319,6 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
               </BoardIntakeForm>
             ) : 원장오류 ? (
               <div className="web-scroll"><p className="pb-errs" role="alert">접수 원장을 못 읽었습니다 — {원장오류}</p></div>
-            ) : ic ? (
-              <IntakeDetail code={ic} keep={keep} created={!!sp(q.created)} exists={!!sp(q.exists)} />
             ) : (
               <IntakeList q={q} keep={keep} all={원장} />
             )}

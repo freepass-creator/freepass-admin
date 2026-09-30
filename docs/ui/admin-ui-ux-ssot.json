@@ -1,5 +1,15 @@
 {
-  "version": "2026-09-26",
+  "version": "2026-09-30",
+  "intakeControls": {
+    "finiteChoices": "native select",
+    "freeText": "input or textarea",
+    "offerComparison": "existing vertical selectable list",
+    "geometry": "existing shared input/select tokens",
+    "missingChoices": "retain manual channel/agent input",
+    "existingDefaults": "preserve values outside options",
+    "newPayKinds": ["일시납", "2회분납", "3회분납"],
+    "notImplemented": ["contact persistence", "age adjustment persistence", "mileage adjustment persistence"]
+  },
   "status": "RECOVERY_CANONICAL / PR92_ACTUAL_ROUTE",
   "authority": [
     "latest-user-decision",

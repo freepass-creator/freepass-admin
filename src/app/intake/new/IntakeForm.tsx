@@ -48,9 +48,10 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createIntakeAction, { errors: [] });
-  const [channel, setChannel] = useState('');
-  const [channelCode, setChannelCode] = useState('');
-  const [agentCode, setAgentCode] = useState('');
+  const [channel, setChannel] = useState(defaults.channel ?? '');
+  const [agent, setAgent] = useState(defaults.agent ?? '');
+  const [channelCode, setChannelCode] = useState(options.channelCode[defaults.channel ?? ''] ?? '');
+  const [agentCode, setAgentCode] = useState(options.agentCode[defaults.agent ?? ''] ?? '');
   const [supplierCode, setSupplierCode] = useState(defaults.supplierCode);
   const [directProduct, setDirectProduct] = useState(defaults.product ?? '');
   const [delivered, setDelivered] = useState(false);
@@ -104,16 +105,31 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
      상품/기간은 이미 선택했고, 분납여부가 인도 뒤 청구월·실적 갈래를 결정한다. */
   const 사람 = (
     <>
-      <label>고객명 *<input name="customer" required autoComplete="off" /></label>
-      <label>영업채널 *<input name="channel" list="dl-channel" value={channel} required autoComplete="off"
-        onChange={(e) => { setChannel(e.target.value); setChannelCode(options.channelCode[e.target.value] ?? ''); }} /></label>
-      <label>영업담당 *<input name="agent" list="dl-agent" required autoComplete="off"
-        onChange={(e) => {
+      <label>고객명 *<input name="customer" defaultValue={defaults.customer} required autoComplete="off" /></label>
+      <label>영업채널 *{options.channels.length ? (
+        <select name="channel" value={channel} required
+          onChange={(e) => { setChannel(e.target.value); setChannelCode(options.channelCode[e.target.value] ?? ''); }}>
+          <option value="">선택하세요</option>
+          {channel && !options.channels.includes(channel) && <option value={channel}>{channel}</option>}
+          {options.channels.map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+      ) : <input name="channel" value={channel} required autoComplete="off"
+        onChange={(e) => { setChannel(e.target.value); setChannelCode(options.channelCode[e.target.value] ?? ''); }} />}</label>
+      <label>영업담당 *{options.agents.length ? (
+        <select name="agent" value={agent} required onChange={(e) => {
           const a = e.target.value;
+          setAgent(a);
           setAgentCode(options.agentCode[a] ?? '');
           if (!channel && options.agentChannel[a]) { setChannel(options.agentChannel[a]); setChannelCode(options.channelCode[options.agentChannel[a]] ?? ''); }
-        }} /></label>
-      {sel('payKind', options.payKinds, '분납여부', '', true)}
+        }}>
+          <option value="">선택하세요</option>
+          {agent && !options.agents.includes(agent) && <option value={agent}>{agent}</option>}
+          {options.agents.map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+      ) : <input name="agent" value={agent} required autoComplete="off" onChange={(e) => {
+        setAgent(e.target.value); setAgentCode(options.agentCode[e.target.value] ?? '');
+      }} />}</label>
+      {sel('payKind', options.payKinds.filter((v) => ['일시납', '2회분납', '3회분납'].includes(v)), '분납여부', '', true)}
     </>
   );
   /* 코드 — 이름을 고르면 원장의 코드로 저절로 찬다. 고칠 일이 드물어 뒤로 */
@@ -154,8 +170,6 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
     <form className="dz-intake-form" aria-busy={pending}
       onChange={(e) => { if (['supplier', 'product', 'model', 'term', 'rent', 'price'].includes((e.target as unknown as HTMLInputElement).name)) 다시셈(e.currentTarget); }}
       onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
-      <datalist id="dl-channel">{options.channels.map((v) => <option key={v} value={v} />)}</datalist>
-      <datalist id="dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
       <datalist id="dl-supplier">{options.suppliers.map((v) => <option key={v} value={v} />)}</datalist>
 
       <input type="hidden" name="intakeRequestId" value={defaults.intakeRequestId ?? ''} />

@@ -62,6 +62,17 @@ const requiredCss = [
 
 const errors: string[] = [];
 
+// Both entry paths must expose the same finite-choice controls; Board previously omitted mandatory payKind.
+for (const file of ['src/app/products/BoardIntakeForm.tsx', 'src/app/intake/new/IntakeForm.tsx']) {
+  const source = await readFile(path.join(root, file), 'utf8');
+  for (const name of ['channel', 'agent']) {
+    if (!new RegExp(`<select name="${name}"[^>]*required`).test(source)) errors.push(`${file}: ${name} must provide a required native select`);
+  }
+  if (!source.includes('name="payKind"') && !source.includes("sel('payKind'")) errors.push(`${file}: mandatory payKind control is missing`);
+  if (!source.includes("['일시납', '2회분납', '3회분납']")) errors.push(`${file}: new intake payKind must match domain acceptance`);
+  if (/list="(?:pb-)?dl-(?:channel|agent)"/.test(source)) errors.push(`${file}: finite channel/agent choices must not revert to datalist`);
+}
+
 /* PC 화면 CSS = 공통 규격 생성물 + 앱 고유층. 이 가상 경로를 읽으면 두 파일을 순서대로 이어 붙인다. */
 const DESKTOP_CSS = 'src/app/_erp/{erp-standard,shell}.css';
 const SHELL_MARK = '/* ═══ app shell.css ═══ */';

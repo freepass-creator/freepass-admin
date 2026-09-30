@@ -228,7 +228,7 @@
 .pb.pb input[list]::-webkit-calendar-picker-indicator { display:none !important; }   /* 목록 붙은 칸의 ▼ 만 */
 .pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):hover, .pb.pb select:hover, .pb.pb textarea:hover { border-color:var(--field-hover) !important; }
 .pb.pb input:where(:not([type="hidden"],[type="checkbox"],[type="radio"])):focus, .pb.pb select:focus, .pb.pb textarea:focus { border-color:var(--navy) !important; box-shadow:0 0 0 3px rgba(27,42,74,.12); }
-.pb.pb input:user-invalid { border-color:#d92d20 !important; }
+.pb.pb :is(input, select, textarea):user-invalid { border-color:#d92d20 !important; }
 .pb.pb input:disabled, .pb.pb select:disabled, .pb.pb textarea:disabled, .pb input[readonly] { background-color:var(--box) !important; color:var(--muted); cursor:not-allowed; }
 .pb.pb input[type="checkbox"], .pb.pb input[type="radio"] { width:20px; height:20px; accent-color:var(--navy); }
 

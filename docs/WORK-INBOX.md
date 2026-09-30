@@ -1,3 +1,12 @@
+## 0-INTAKE-CONTROLS. 2026-09-30 — 입력창/드롭다운 규격
+
+- 목적: 사용자 승인에 따라 기존 3패널의 접수 폼을 입력창과 native select 중심으로 통일.
+- 대상 revision: main `711ce0d`; work `work/freepass-admin/intake-controls-20260930`, 단일 Codex writer.
+- 변경: BoardIntakeForm 상품구분·채널·담당자 select, 누락된 필수 분납여부와 기존 저장 계약의 메모 노출. 직접접수 채널·담당자도 동일 문법. 기존 데이터/코드 매핑·기본값·수기 fallback·Offer snapshot·수수료는 유지.
+- 남음: 연락처/연령 변경/주행거리 변경은 별도 Intake 저장 계약이 없으므로 가짜 필드를 만들지 않음. 운영 배포·실데이터 쓰기는 이번 범위 밖.
+- 검증: academy READY, typecheck/ui:check/build PASS, 관련 단위 검사 102건 PASS. 실제 읽기 전용 demo route에서 1440/1280/390/360/412 가로 overflow 없음, 입력/select PC 32px·mobile 44px, 담당→채널 자동 연결 및 payKind 빈값 required 검사 확인. 브라우저 error log 0. 전체 npm test는 전자계약 PDF의 Windows Chromium ENOENT로 FAIL. agent-browser 실행은 Windows 앱 제어 정책으로 차단돼 내장 브라우저로 확인했고 보호정책은 변경하지 않음. Claude 읽기 전용 검토는 장시간 응답 미수신으로 해당 호출을 종료(REVIEW_TIMEOUT); 독립 검토 PASS 아님. main 통합은 검토 및 전체 검사 gate 해결 뒤 진행.
+- next_start_here: 이 worktree의 변경 검증 및 main 통합. 새 접수 옵션의 persistence는 별도 계약 검토 후 구현.
+
 ## 0-LOGIN-REPAIR. 2026-09-30 — 운영 로그인 복구 검증 / 데이터 요청 토큰 후속
 
 - 목적: 운영 로그인 복구, `freepass admin` 앱 이름 복원, 설정 누락 재배포 차단.

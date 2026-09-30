@@ -58,31 +58,45 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
       {!choices.length && <input type="hidden" name="product" value={defaults.product ?? ''} />}
       <input type="hidden" name="channelCode" value={채널코드} />
       <input type="hidden" name="agentCode" value={담당코드} />
-      <datalist id="pb-dl-channel">{options.channels.map((v) => <option key={v} value={v} />)}</datalist>
-      <datalist id="pb-dl-agent">{options.agents.map((v) => <option key={v} value={v} />)}</datalist>
 
       <div className="web-scroll">
       {children}
       <div className="form">
         {choices.length > 0 && (
-          <fieldset className="pb-choice">
-            <legend>상품구분</legend>
-            <div className="chips" role="radiogroup" aria-label="상품구분">
-              {choices.map((c) => (
-                <label key={c} className="chip"><input type="radio" name="product" value={c} checked={구분 === c} required onChange={() => set구분(c)} /><span>{c}</span></label>
-              ))}
-            </div>
-          </fieldset>
+          <label>상품구분
+            <select name="product" value={구분} required onChange={(e) => set구분(e.target.value)}>
+              <option value="">선택하세요</option>
+              {구분 && !choices.includes(구분) && <option value={구분}>{구분}</option>}
+              {choices.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
         )}
-        <label>영업채널<input name="channel" list="pb-dl-channel" value={channel} required autoComplete="off" placeholder="영업채널"
-          onChange={(e) => setChannel(e.target.value)} /></label>
-        <label>담당자<input name="agent" list="pb-dl-agent" value={agent} required autoComplete="off" placeholder="담당자 이름"
-          onChange={(e) => {
+        <label>영업채널{options.channels.length ? (
+          <select name="channel" value={channel} required onChange={(e) => setChannel(e.target.value)}>
+            <option value="">선택하세요</option>
+            {channel && !options.channels.includes(channel) && <option value={channel}>{channel}</option>}
+            {options.channels.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        ) : <input name="channel" value={channel} required autoComplete="off" placeholder="영업채널" onChange={(e) => setChannel(e.target.value)} />}</label>
+        <label>담당자{options.agents.length ? (
+          <select name="agent" value={agent} required onChange={(e) => {
             const a = e.target.value;
             setAgent(a);
             if (!channel && options.agentChannel[a]) setChannel(options.agentChannel[a]);
-          }} /></label>
+          }}>
+            <option value="">선택하세요</option>
+            {agent && !options.agents.includes(agent) && <option value={agent}>{agent}</option>}
+            {options.agents.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        ) : <input name="agent" value={agent} required autoComplete="off" placeholder="담당자 이름" onChange={(e) => setAgent(e.target.value)} />}</label>
         <label>고객명<input name="customer" defaultValue={defaults.customer} required autoComplete="off" placeholder="고객명을 입력하세요" /></label>
+        <label>분납여부
+          <select name="payKind" defaultValue="" required>
+            <option value="">선택하세요</option>
+            {options.payKinds.filter((v) => ['일시납', '2회분납', '3회분납'].includes(v)).map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+        <label>메모<textarea name="note" rows={2} placeholder="필요한 내용만 입력하세요" /></label>
         {차량가로 && !원장차량가 && (
           <label>차량가액 <small className="pb-hint">수수료 산출 근거 — ERP5 에 없어 사람이 넣습니다</small>
             <input name="price" value={차량가} inputMode="numeric" required placeholder="예: 32,000,000"

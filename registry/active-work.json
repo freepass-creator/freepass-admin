@@ -47,6 +47,15 @@
   },
   "active": [
     {
+      "work_order": "intake-controls-20260930",
+      "objective": "Standardize intake input/select controls within the approved three-panel UI without changing persistence or policy semantics.",
+      "branch": "work/freepass-admin/intake-controls-20260930",
+      "writer": "Codex",
+      "reviewer": "Claude Code (read-only)",
+      "phase": "LOCAL_VERIFIED_MAIN_GATE_HOLD",
+      "production_cutover_authorized": false
+    },
+    {
       "work_order": "login-repair-20260930",
       "objective": "Repair missing production identity configuration, restore the approved Admin name, and block recurrence at build time.",
       "branch": "work/freepass-admin/login-repair-20260930",

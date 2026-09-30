@@ -1,7 +1,7 @@
 # AI Work Result
 
-- 목적: 최신 AI Core 규격과 GitHub 동기화 부트스트랩 적용
-- 대상 revision: c0de112bf14088fd4411e311540400caf9359729
+- 목적: AI Core 키트 v2 — 차단/권고 분리·호환 버전·가지 흐름 경고
+- 대상 revision: 711ce0d4805b88ef58c9b64a5ed4bd18744193ee
 - 변경:
 - 검증:
 - 남음:

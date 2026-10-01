@@ -108,6 +108,8 @@ export function templateFieldsFromContract(contract: Row): Record<string, string
     coverage_self_injury: first(contract, 'self_body_accident_snapshot', 'self_body_accident'),
     coverage_uninsured: first(contract, 'uninsured_damage_snapshot', 'uninsured_damage'),
     self_damage_coverage: first(contract, 'own_damage_compensation_snapshot', 'own_damage_compensation'),
+    deductible_liability_person: money(contract.injury_deductible_snapshot ?? contract.injury_deductible),
+    deductible_liability_property: money(contract.property_deductible_snapshot ?? contract.property_deductible),
     self_damage_deductible_rate: first(contract, 'own_damage_repair_ratio_snapshot', 'own_damage_repair_ratio'),
     emergency_dispatch_limit: first(contract, 'annual_roadside_assistance_snapshot', 'annual_roadside_assistance'),
 

@@ -210,6 +210,7 @@ const contract = () => ({
   vehicle_name_snapshot:'GV70',car_number_snapshot:'12가3456',provider_company_code:'SONO',provider_company_name_snapshot:'손오공',
   rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-22',
   early_termination_rate_under1y_snapshot:0.3,early_termination_rate_over1y_snapshot:0.2,
+  injury_deductible_snapshot:500000,property_deductible_snapshot:300000,
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
 });
 
@@ -224,6 +225,8 @@ test('전자계약은 회사 요율이 없으면 표준 30%/20%로 발행한다'
   const issued=await svc.issue('c1','tester');
   assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y1,'잔여 대여료의 30%');
   assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y2,'잔여 대여료의 20%');
+  assert.equal(issued.session.snapshot.templateFields.deductible_liability_person,'500000');
+  assert.equal(issued.session.snapshot.templateFields.deductible_liability_property,'300000');
 });
 
 test('구간별 회사 요율이 하나만 있으면 나머지 구간에는 표준값을 적용한다', async () => {

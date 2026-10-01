@@ -348,6 +348,7 @@
      헤더·첫 열만 표 역할로 고정한다. 일반 표와 셀 여백·행선은 그대로 공유한다. */
   table.tbl.coverage-matrix thead th{background:var(--th)}
   table.tbl.coverage-matrix tbody th{background:var(--th);color:var(--mute);font-weight:550}
+  table.tbl.coverage-matrix .group-start{box-shadow:inset 1px 0 0 var(--line)}
   table.keyterms td.kt{font-size:var(--fs-name);font-weight:700;padding:7px 8px;color:var(--ink)}
 
   /* 특약/안내 박스 */
@@ -767,29 +768,32 @@
         <table class="tbl coverage-matrix">
           <!-- 열 폭을 못박는다. 자동 폭이면 «자기신체사고»의 긴 문장이 폭을 다 가져가고
                자차 열이 좁아져 「아래 자차 기준」이 두 줄로 접혔다(행 높이도 같이 커졌다). -->
-          <colgroup><col style="width:13%"><col style="width:11%"><col style="width:10%"><col style="width:26%"><col style="width:12%"><col style="width:15%"><col style="width:13%"></colgroup>
-          <thead><tr><th></th><th class="c">대인배상 Ⅰ·Ⅱ</th><th class="c">대물배상</th><th class="c">자기신체사고</th><th class="c">무보험차상해</th><th class="c">자기차량손해</th><th class="c">긴급출동</th></tr></thead>
+          <colgroup><col style="width:13%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:26%"><col style="width:17%"><col style="width:16%"></colgroup>
+          <thead>
+            <tr><th></th><th class="c" colspan="5">보험 담보</th><th class="c group-start">부가서비스</th></tr>
+            <tr><th></th><th class="c">대인배상 Ⅰ</th><th class="c">대인배상 Ⅱ</th><th class="c">대물배상</th><th class="c">자기신체사고</th><th class="c">자기차량손해</th><th class="c group-start">긴급출동</th></tr>
+          </thead>
           <tbody>
             <tr>
               <th>보상 한도</th>
+              <td class="c strong">법정 한도</td>
               <td class="c strong" data-field="coverage_liability_person">무한</td>
               <td class="c strong" data-field="coverage_liability_property">1억원</td>
               <td class="c strong" data-field="coverage_self_injury">사망·후유장애 1인당 3천만원 · 부상 1인당 1,500만원</td>
-              <td class="c strong" data-field="coverage_uninsured">미가입</td>
               <td class="c strong" data-field="self_damage_coverage">차량가</td>
-              <td class="c strong" data-field="emergency_dispatch_limit">연 5회</td>
+              <td class="c strong group-start" data-field="emergency_dispatch_limit">연 5회</td>
             </tr>
             <tr>
               <th>사고 시 면책금</th>
-              <td class="c" data-field="deductible_liability_person">30만원</td>
+              <td class="c" colspan="2" data-field="deductible_liability_person">30만원</td>
               <td class="c" data-field="deductible_liability_property">30만원</td>
               <td class="c" style="color:var(--mute)">없음</td>
-              <td class="c" style="color:var(--mute)">없음</td>
               <td class="c">아래 자차 기준</td>
-              <td class="c" style="color:var(--mute)">없음</td>
+              <td class="c group-start" style="color:var(--mute)">없음</td>
             </tr>
           </tbody>
         </table>
+        <div class="note">※ 무보험차상해: <b data-field="coverage_uninsured">미가입</b></div>
       </div>
 
       <!-- 별도형(개인보험) : 임차인 본인 명의 직접 가입 -->
@@ -797,12 +801,17 @@
         <div class="callout" style="margin-top:3mm">본 상품은 <b>임차인이 본인 명의로 개인 자동차 종합보험에 직접 가입</b>하는 방식입니다. 임차인은 <b>차량 출고 전까지</b> 계약서에 확정된 보장 조건의 보험에 가입하고 <b>회사를 질권자로 설정한 가입증명서</b>를 제출하며, <b>계약기간 내내 효력을 유지</b>하여야 합니다. (약관 제11조)</div>
         <div class="subhead"><span class="sh-ic"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/><path d="M9.5 12l1.8 1.8 3.2-3.6"/></svg></span>개인 종합보험 최소 보장 조건 <span class="subnote">(임차인 의무 가입)</span></div>
         <table class="tbl">
-          <thead><tr><th class="c">대인배상</th><th class="c">대물배상</th><th class="c">자기차량손해</th><th class="c">자기신체사고 / 자동차상해</th></tr></thead>
+          <thead>
+            <tr><th class="c" colspan="5">보험 담보</th><th class="c group-start">부가서비스</th></tr>
+            <tr><th class="c">대인배상 Ⅰ</th><th class="c">대인배상 Ⅱ</th><th class="c">대물배상</th><th class="c">자기신체사고 / 자동차상해</th><th class="c">자기차량손해</th><th class="c group-start">긴급출동</th></tr>
+          </thead>
           <tbody><tr>
+            <td class="c strong">법정 한도</td>
             <td class="c strong">무한</td>
             <td class="c strong">1억원 이상</td>
-            <td class="c strong">차량가액 · 1억원 이상</td>
             <td class="c strong">포함</td>
+            <td class="c strong">차량가액 · 1억원 이상</td>
+            <td class="c strong group-start">임차인 선택 · 회사 요구 없음</td>
           </tr></tbody>
         </table>
         <div class="note" style="margin-bottom:2.5mm">※ 대물·자차 한도는 회사와 협의하여 확정하며, 위 기준 미만으로 가입할 수 없습니다.</div>
@@ -2118,7 +2127,7 @@
       var pct=raw.match(/([0-9]+(?:\.[0-9]+)?)\s*%/);
       return pct ? pct[1]+'%' : (/^[0-9]+(?:\.[0-9]+)?$/.test(raw) ? raw+'%' : raw);
     }
-    if(k==='self_damage_deductible_min'||k==='self_damage_deductible_max'){
+    if(k==='self_damage_deductible_min'||k==='self_damage_deductible_max'||k==='deductible_liability_person'||k==='deductible_liability_property'){
       if(/만원$|억원$|원$/.test(raw)) return raw;
       if(/만$/.test(raw)) return raw+'원';
       var n=Number(raw.replace(/,/g,''));

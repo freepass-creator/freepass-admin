@@ -7,7 +7,7 @@ import {
 } from '../../domain/esign/required-documents';
 import { adminStage, esignStage } from '../../domain/esign/progress';
 import { sha256, signedSnapshot, stableJson } from '../../domain/esign/snapshot';
-import { templateFieldsFromContract } from '../../domain/esign/template-fields';
+import { resolveEarlyTerminationRates, templateFieldsFromContract } from '../../domain/esign/template-fields';
 import type {
   EsignAdminState, EsignPrivateSubmission, EsignSession, EsignSnapshot,
 } from '../../domain/esign/types';
@@ -23,6 +23,20 @@ const B = (v: unknown) => v === true || v === 'true' || v === 'TRUE';
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TTL = 7 * 24 * 60 * 60_000;
 const POST_SUBMISSION = new Set<string>(['pending_review', 'approving', 'signed']);
+
+function policySnapshotValue(snapshot: Record<string, unknown> | null, policyId: string) {
+  if (!snapshot) return undefined;
+  const product = snapshot.product && typeof snapshot.product === 'object' ? snapshot.product as Record<string, unknown> : {};
+  const offer = snapshot.offer && typeof snapshot.offer === 'object' ? snapshot.offer as Record<string, unknown> : {};
+  const lists = [offer.resolvedPolicyValues, offer.policyValues, product.policyValues];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    const found = list.find((item) => item && typeof item === 'object'
+      && S((item as Record<string, unknown>).policyId) === policyId) as Record<string, unknown> | undefined;
+    if (found && found.value !== undefined && found.value !== null && S(found.value)) return found.value;
+  }
+  return undefined;
+}
 
 function uploadMagicOk(type: string, bytes: Uint8Array) {
   if (type === 'application/pdf') return bytes.length >= 5 && Buffer.from(bytes.subarray(0, 5)).toString('ascii') === '%PDF-';
@@ -100,6 +114,11 @@ export class EsignService {
     if (!allowsInsuranceSide(spec, input.insuranceSide)) throw new Error('계약 유형과 보험 주체가 맞지 않습니다.');
 
     const now = Date.now();
+    const earlyTermination = resolveEarlyTerminationRates({
+      under1y: policySnapshotValue(source.catalogSnapshot, 'early_termination_rate_under1y'),
+      over1y: policySnapshotValue(source.catalogSnapshot, 'early_termination_rate_over1y'),
+      single: policySnapshotValue(source.catalogSnapshot, 'early_termination_rate'),
+    });
     const id = 'ctr_intake_' + sha256(source.intakeId).slice(0, 20);
     const code = 'FP-' + input.contractDate.replace(/-/g, '') + '-' + sha256(source.intakeId).slice(0, 6).toUpperCase();
     const result = await this.repo.createContractFromIntake(source, id, {
@@ -117,6 +136,8 @@ export class EsignService {
       rent_amount_snapshot: Math.round(source.rent),
       rent_month_snapshot: Math.round(source.termMonths),
       deposit_amount_snapshot: Math.round(source.deposit),
+      early_termination_rate_under1y_snapshot: earlyTermination.under1y,
+      early_termination_rate_over1y_snapshot: earlyTermination.over1y,
       esign_contract_kind: input.contractKind,
       esign_insurance_side: input.insuranceSide,
       source_intake_id: source.intakeId,
@@ -174,6 +195,8 @@ export class EsignService {
       rent_amount_snapshot: Math.round(input.rent),
       rent_month_snapshot: Math.round(input.termMonths),
       deposit_amount_snapshot: Math.round(input.deposit),
+      early_termination_rate_under1y_snapshot: 0.3,
+      early_termination_rate_over1y_snapshot: 0.2,
       esign_contract_kind: input.contractKind,
       esign_insurance_side: input.insuranceSide,
       created_at: now,
@@ -239,6 +262,14 @@ export class EsignService {
     const pd = spec.kind === '구독'
       ? (spec.maturity === '인수형' ? '구독인수형' : '구독선택형')
       : (spec.maturity === '인수형' ? '렌트인수형' : '렌트선택형');
+    const templateFields = templateFieldsFromContract(c);
+    const missingContractTerms = [
+      ['중도해지 수수료율(1년 미만)', templateFields.early_termination_rate_y1],
+      ['중도해지 수수료율(1년 이상)', templateFields.early_termination_rate_y2],
+    ].filter(([, value]) => !S(value)).map(([label]) => label);
+    if (missingContractTerms.length) {
+      throw new Error('발행 전 계약조건 확정 필요: ' + missingContractTerms.join(' · '));
+    }
 
     return {
       contractId,
@@ -256,7 +287,7 @@ export class EsignService {
       termMonths: term,
       deposit,
       contractDate,
-      templateVersion: 'freepass-rental-contract-erp4-2026-08',
+      templateVersion: 'freepass-rental-contract-2026-10',
       agreementVersion: 'rental-v19-2026-08-13',
       templateState: {
         co: 'auto',
@@ -267,7 +298,7 @@ export class EsignService {
         tax: customerType === '개인사업자' ? '사업자' : '개인',
       },
       templateFields: {
-        ...templateFieldsFromContract(c),
+        ...templateFields,
         contract_code: S(c.contract_code) || contractId,
         contract_date: contractDate,
         customer_name: customerName,

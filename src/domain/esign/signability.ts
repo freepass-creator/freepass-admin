@@ -1,4 +1,5 @@
 import type { EsignSnapshot } from './types';
+import { templateFieldsFromContract } from './template-fields';
 
 const S = (v: unknown) => String(v ?? '').trim();
 const N = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
@@ -14,7 +15,7 @@ const legacyTrue = (v: unknown) => v === true || v === 1 || /^(true|y|1|참|o)$/
  */
 export function signabilityProblem(
   contract: Record<string, unknown> | null | undefined,
-  snapshot: Pick<EsignSnapshot, 'rent' | 'termMonths' | 'deposit' | 'plate' | 'supplierCode'>,
+  snapshot: Pick<EsignSnapshot, 'rent' | 'termMonths' | 'deposit' | 'plate' | 'supplierCode'> & Partial<Pick<EsignSnapshot, 'templateFields'>>,
   intake?: Record<string, unknown> | null,
 ): string | null {
   if (!contract) return '계약을 찾을 수 없습니다.';
@@ -28,6 +29,11 @@ export function signabilityProblem(
   if (N(contract.deposit_amount_snapshot) !== snapshot.deposit) changed.push('보증금');
   if (S(contract.car_number_snapshot || contract.car_number) !== S(snapshot.plate)) changed.push('차량번호');
   if (S(contract.provider_company_code) !== S(snapshot.supplierCode)) changed.push('공급사');
+  if (snapshot.templateFields) {
+    const currentFields = templateFieldsFromContract(contract);
+    if (currentFields.early_termination_rate_y1 !== snapshot.templateFields.early_termination_rate_y1) changed.push('중도해지율(1년 미만)');
+    if (currentFields.early_termination_rate_y2 !== snapshot.templateFields.early_termination_rate_y2) changed.push('중도해지율(1년 이상)');
+  }
   if (changed.length) {
     return '발행 뒤 계약 조건이 바뀌었습니다(' + changed.join(' · ') + ') — 전자계약을 다시 발행해 주세요.';
   }

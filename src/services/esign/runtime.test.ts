@@ -209,7 +209,71 @@ const contract = () => ({
   contract_code:'FP-1',contract_status:'계약대기',customer_name:'홍길동',customer_phone:'01012345678',customer_type:'개인',
   vehicle_name_snapshot:'GV70',car_number_snapshot:'12가3456',provider_company_code:'SONO',provider_company_name_snapshot:'손오공',
   rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-22',
+  early_termination_rate_under1y_snapshot:0.3,early_termination_rate_over1y_snapshot:0.2,
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
+});
+
+test('전자계약은 회사 요율이 없으면 표준 30%/20%로 발행한다', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  const missing:Record<string,unknown>={...contract()};
+  delete missing.early_termination_rate_under1y_snapshot;
+  delete missing.early_termination_rate_over1y_snapshot;
+  repo.contract.set('c1',missing);
+
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y1,'잔여 대여료의 30%');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y2,'잔여 대여료의 20%');
+});
+
+test('구간별 회사 요율이 하나만 있으면 나머지 구간에는 표준값을 적용한다', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{...contract(),early_termination_rate_under1y_snapshot:0.3,early_termination_rate_over1y_snapshot:''});
+
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y1,'잔여 대여료의 30%');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y2,'잔여 대여료의 20%');
+});
+
+test('명시된 회사 단일 요율은 두 구간에 같이 적용한다', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{...contract(),early_termination_rate_under1y_snapshot:'',early_termination_rate_over1y_snapshot:'',early_termination_rate_snapshot:0.2});
+
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y1,'잔여 대여료의 20%');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y2,'잔여 대여료의 20%');
+});
+
+test('관리자 수동 계약 생성도 표준 중도해지율을 계약 행에 고정한다', async () => {
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  const created=await svc.createContract({
+    customerName:'홍길동',customerPhone:'01012345678',customerType:'개인',vehicleName:'GV70',plate:'미정',
+    supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,contractDate:'2026-10-01',
+    contractKind:'rent_return',insuranceSide:'회사포함',
+  });
+  assert.equal(repo.contract.get(created.id)?.early_termination_rate_under1y_snapshot,0.3);
+  assert.equal(repo.contract.get(created.id)?.early_termination_rate_over1y_snapshot,0.2);
+});
+
+test('전자계약은 숫자로 확정되지 않은 중도해지 수수료율도 발행하지 않는다', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',{...contract(),early_termination_rate_under1y_snapshot:'협의'});
+
+  await assert.rejects(svc.issue('c1','tester'),/중도해지 수수료율\(1년 미만\)/);
+  assert.equal(await repo.getCurrentSession('c1'),null);
+});
+
+test('전자계약 중도해지 비율은 계약서 문구로 정규화한다', async () => {
+  process.env.PUBLIC_BASE_URL='https://admin.example.test';
+  const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
+  repo.contract.set('c1',contract());
+
+  const issued=await svc.issue('c1','tester');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y1,'잔여 대여료의 30%');
+  assert.equal(issued.session.snapshot.templateFields.early_termination_rate_y2,'잔여 대여료의 20%');
 });
 
 
@@ -466,7 +530,10 @@ test('admin journey: intake -> contract -> esign submit -> approve -> signed', a
     intakeId:'stl_e2e',sourceDigest:'digest-e2e',customerName:'홍길동',vehicleName:'GV70',plate:'12가3456',
     supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,
     sourceProductId:'prd_e2e',sourceProductVersion:9,sourceOfferId:'off_e2e',sourceSnapshotId:'snap_e2e',
-    catalogSnapshot:{capturedAt:'2026-09-25T00:00:00.000Z'},
+    catalogSnapshot:{capturedAt:'2026-09-25T00:00:00.000Z',offer:{resolvedPolicyValues:[
+      {policyId:'early_termination_rate_under1y',type:'PERCENTAGE',value:0.3},
+      {policyId:'early_termination_rate_over1y',type:'PERCENTAGE',value:0.2},
+    ]}},
   });
 
   const created=await svc.createContractFromIntake({
@@ -476,6 +543,8 @@ test('admin journey: intake -> contract -> esign submit -> approve -> signed', a
   assert.equal(created.created,true);
   assert.equal(repo.contract.get(created.id)?.source_intake_id,'stl_e2e');
   assert.equal(repo.contract.get(created.id)?.source_offer_id,'off_e2e');
+  assert.equal(repo.contract.get(created.id)?.early_termination_rate_under1y_snapshot,0.3);
+  assert.equal(repo.contract.get(created.id)?.early_termination_rate_over1y_snapshot,0.2);
 
   const issued=await svc.issue(created.id,'tester');
   const token=issued.publicUrl.split('/').pop()!;

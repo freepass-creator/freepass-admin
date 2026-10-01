@@ -36,3 +36,19 @@ test('term drift after issue names every changed field', () => {
   assert.match(String(problem), /월 대여료 · 보증금 · 차량번호/);
   assert.match(String(problem), /다시 발행/);
 });
+
+test('termination rate drift after issue blocks sealing', () => {
+  const issued = {
+    ...snapshot,
+    templateFields: {
+      early_termination_rate_y1: '잔여 대여료의 30%',
+      early_termination_rate_y2: '잔여 대여료의 20%',
+    },
+  };
+  const problem = signabilityProblem({
+    ...contract,
+    early_termination_rate_under1y_snapshot: 0.35,
+    early_termination_rate_over1y_snapshot: 0.25,
+  }, issued);
+  assert.match(String(problem), /중도해지율\(1년 미만\) · 중도해지율\(1년 이상\)/);
+});

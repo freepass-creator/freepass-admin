@@ -11,8 +11,9 @@ import type { ContractLifecycleRepository } from '../../ports/contracts/reposito
 /**
  * **전자계약 — ERP5 `contract` 읽기.**
  *
- * ★지금은 «읽기만» 한다. 발행·서명은 erp4 전자계약(템플릿 `rental-contract.html`)이 한다.
- *   여기서 새로 발행하는 길은 따로 양식을 열고 만든다 (DECISION REQUIRED — 템플릿 운영값 미확정).
+ * 이 repository는 계약 목록 projection만 읽는다. 신규 발행·서명은 이 저장소의
+ * `EsignService`가 `public/contract-template/rental-contract.html`을 snapshot으로 봉인하는 경로가 정본이다.
+ * 운영 활성화는 별도 `ESIGN_ENABLED` gate와 검증을 통과해야 하며 ERP4로 fallback하지 않는다.
  * ⚠ `_deleted` · 시험 계약(`is_test` · `test_only`)은 목록에 세우지 않는다 — 세면 건수가 거짓이 된다.
  */
 export interface ContractSummary {

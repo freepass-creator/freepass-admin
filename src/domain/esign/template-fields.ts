@@ -16,6 +16,28 @@ const money = (v: unknown) => {
   return Number.isFinite(n) ? String(Math.round(n)) : S(v);
 };
 
+const earlyTerminationRate = (v: unknown) => {
+  const raw = S(v);
+  if (!raw) return '';
+  const matched = raw.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  if (!matched) return '';
+  const numeric = Number(matched[0]);
+  if (!Number.isFinite(numeric) || numeric < 0) return '';
+  const percent = raw.includes('%') || numeric > 1 ? numeric : numeric * 100;
+  return `잔여 대여료의 ${+percent.toFixed(2)}%`;
+};
+
+export function resolveEarlyTerminationRates(input: { under1y?: unknown; over1y?: unknown; single?: unknown }) {
+  const under1y = S(input.under1y);
+  const over1y = S(input.over1y);
+  const single = S(input.single);
+  if (single) return { under1y: input.single, over1y: input.single };
+  return {
+    under1y: under1y ? input.under1y : 0.3,
+    over1y: over1y ? input.over1y : 0.2,
+  };
+}
+
 /**
  * ERP4 FIELD_MAP의 핵심 data-field를 ERP5 contract snapshot 이름으로 투영한다.
  * 모르는 값을 추정하지 않고 빈칸으로 둔다. 발행 snapshot이 한번 만들어지면 live contract 변경은 영향을 주지 않는다.
@@ -27,6 +49,11 @@ export function templateFieldsFromContract(contract: Row): Record<string, string
     first(contract, 'sub_model_snapshot', 'sub_model'),
   ].filter(Boolean).join(' ') || first(contract, 'vehicle_name_snapshot', 'vehicle_name');
 
+  const earlyTermination = resolveEarlyTerminationRates({
+    under1y: first(contract, 'early_termination_rate_under1y_snapshot', 'early_termination_rate_under1y'),
+    over1y: first(contract, 'early_termination_rate_over1y_snapshot', 'early_termination_rate_over1y'),
+    single: first(contract, 'early_termination_rate_snapshot', 'early_termination_rate'),
+  });
   const out: Record<string, string> = {
     contract_code: first(contract, 'contract_code'),
     contract_date: first(contract, 'contract_date'),
@@ -84,8 +111,8 @@ export function templateFieldsFromContract(contract: Row): Record<string, string
     self_damage_deductible_rate: first(contract, 'own_damage_repair_ratio_snapshot', 'own_damage_repair_ratio'),
     emergency_dispatch_limit: first(contract, 'annual_roadside_assistance_snapshot', 'annual_roadside_assistance'),
 
-    early_termination_rate_y1: first(contract, 'early_termination_rate_under1y_snapshot', 'early_termination_rate_under1y'),
-    early_termination_rate_y2: first(contract, 'early_termination_rate_over1y_snapshot', 'early_termination_rate_over1y'),
+    early_termination_rate_y1: earlyTerminationRate(earlyTermination.under1y),
+    early_termination_rate_y2: earlyTerminationRate(earlyTermination.over1y),
     buyback_price: money(contract.buyout_price_snapshot ?? contract.buyout_price),
     buyback_option: first(contract, 'buyback_option_snapshot', 'buyback_option'),
     maintenance_product: first(contract, 'maintenance_service_snapshot', 'maintenance_service'),

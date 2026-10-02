@@ -111,11 +111,18 @@ export function intakeBillingFormula(head: string[], month: string, previews: re
     return i + 1;
   };
   const c = (name: string) => `CHOOSECOLS(src,${idx(name)})`;
+  const columnName = (index: number): string => {
+    let name = '';
+    for (let n = index; n > 0; n = Math.floor((n - 1) / 26)) name = String.fromCharCode(65 + (n - 1) % 26) + name;
+    return name;
+  };
+  const endColumn = columnName(Math.max(54, head.length));
+  const claimColumn = columnName(idx('판매수수료'));
   const [year, mo] = month.split('-').map(Number);
   const claim = c('판매수수료'), pay = c('출고수수료');
   const cv = `IF(candidate="","",ROUND(candidate*0.1,0))`;
   const pv = `IF(${pay}="","",ROUND(${pay}*0.1,0))`;
-  const basis = `MAP(ROW('접수'!A3:A),LAMBDA(ix,IF(INDEX('접수'!AC:AC,ix)="","HOLD — 산정 조건 확인",IFERROR(FORMULATEXT(INDIRECT("'접수'!AC"&ix)),"정액/확정 기재 공급가액 "&TEXT(INDEX('접수'!AC:AC,ix),"#,##0"))&"; 부가세 = ROUND(공급가액 × 10%)")))`;
+  const basis = `MAP(ROW('접수'!A3:A),LAMBDA(ix,IF(INDEX('접수'!${claimColumn}:${claimColumn},ix)="","HOLD — 산정 조건 확인",IFERROR(FORMULATEXT(INDIRECT("'접수'!${claimColumn}"&ix)),"정액/확정 기재 공급가액 "&TEXT(INDEX('접수'!${claimColumn}:${claimColumn},ix),"#,##0"))&"; 부가세 = ROUND(공급가액 × 10%)")))`;
   let estimate = `IF(${claim}="","",${claim})`, explanation = basis;
   for (const preview of [...previews].reverse()) {
     if (!Number.isInteger(preview.ruleRow) || preview.ruleRow < 3) throw new Error('수수료표 참조 행');
@@ -139,11 +146,11 @@ export function intakeBillingFormula(head: string[], month: string, previews: re
     `IF(${c('차량번호')}<>"","모두","")`, `IF(${c('차량번호')}<>"",1,"")`, c('청구'), c('수금'),
     `IF(${claim}="","금액 미확정","접수 확정기재액 / 금액 셀 수식·메모 확인")`,
     explanation,
-    'candidate', `IF(ISNUMBER(${c('청구가감')}),${c('청구가감')},"")`, c('가감사유'), c('비고'), `"접수!A"&ROW('접수'!A3:A)&":BB"&ROW('접수'!A3:A)`, status];
+    'candidate', `IF(ISNUMBER(${c('청구가감')}),${c('청구가감')},"")`, c('가감사유'), c('비고'), `"접수!A"&ROW('접수'!A3:A)&":${endColumn}"&ROW('접수'!A3:A)`, status];
   const clean = fields.map((f) => f.startsWith('CHOOSECOLS') ? `IF(${f}="","",${f})` : f);
   const yearCol = c('청구년'), monthCol = c('청구월');
   // Explicit year/month only: an invalid or blank year is never silently filled with the current year.
-  return `=ARRAYFORMULA(LET(src,'접수'!A3:BB,candidate,${estimate},body,HSTACK(${clean.join(',')}),IFNA(CHOOSECOLS(SORT(FILTER(HSTACK(body,IF(${c('공급사')}="오토플러스",1,0),IFERROR(IF(ISNUMBER(${c('접수일')}),${c('접수일')},DATEVALUE(${c('접수일')})),999999)),IFERROR(VALUE(${yearCol})=${year},FALSE),IFERROR(VALUE(${monthCol})=${mo},FALSE),${c('인도완료')}=TRUE,${c('취소')}<>TRUE,${c('차량번호')}<>""),35,TRUE,36,TRUE),${Array.from({ length: 34 }, (_, i) => i + 1).join(',')}),"")))`;
+  return `=ARRAYFORMULA(LET(src,'접수'!A3:${endColumn},candidate,${estimate},body,HSTACK(${clean.join(',')}),IFNA(CHOOSECOLS(SORT(FILTER(HSTACK(body,IF(${c('공급사')}="오토플러스",1,0),IFERROR(IF(ISNUMBER(${c('접수일')}),${c('접수일')},DATEVALUE(${c('접수일')})),999999)),IFERROR(VALUE(${yearCol})=${year},FALSE),IFERROR(VALUE(${monthCol})=${mo},FALSE),${c('인도완료')}=TRUE,${c('취소')}<>TRUE,${c('차량번호')}<>""),35,TRUE,36,TRUE),${Array.from({ length: 34 }, (_, i) => i + 1).join(',')}),"")))`;
 }
 
 export function intakeSourceRows(raw: unknown[][], headerIndex: number) {

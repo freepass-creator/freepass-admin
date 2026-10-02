@@ -142,7 +142,8 @@ for (const tab of PERF_TABS) {
       claimVat: p.num(r, '공급사부가세'), claimTotal: p.num(r, '청구금액'),
       pay: p.num(r, '출고수수료'), payIncentive: p.num(r, '에이전시인센티브'),
       paperFee: p.num(r, '계약서대행료'), payVat: p.num(r, '에이전시부가세'),
-      payTotal: p.num(r, '지급액'),
+      // 신규 지급액은 공급가 입력칸이다. VAT 포함 합계와 혼동하지 않는다.
+      payTotal: p.num(r, p.has('지급합계(부가세포함)') ? '지급합계(부가세포함)' : '지급액'),
       claimAdjust: p.num(r, '청구가감'), payAdjust: p.num(r, '지급가감'),
       adjustReason: p.text(r, '가감사유'),
       /* 글 */

@@ -4,28 +4,55 @@ export const fields = [
   ['receiptDate', '접수일', 'date'], ['plate', '차량번호', 'text'],
   ['supplier', '공급사', 'text'], ['product', '상품구분', 'text'],
   ['model', '차종', 'text'], ['customer', '고객명', 'text'],
-  ['channel', '영업회사', 'text'], ['agent', '영업담당자', 'text'],
+  ['channel', '영업채널', 'text'], ['agent', '영업담당자', 'text'],
   ['term', '기간(개월)', 'number'], ['rent', '월 대여료', 'number'],
   ['billingMonth', '청구월', 'month'], ['claim', '청구액(공급가액)', 'number'],
   ['pay', '지급액(공급가액)', 'number'], ['memo', '메모', 'text'],
 ] as const;
-export const checks = [['contract', '계약'], ['documents', '서류'], ['balance', '잔금'],
+export const extraFields = [
+  ['deposit', '보증금', 'text'], ['vehiclePrice', '차량가액', 'number'],
+  ['installment', '분납여부', 'text'], ['deliveryDate', '인도일', 'date'],
+  ['nextRoundDate', '다음회차일', 'date'], ['refundReason', '환수사유', 'text'],
+  ['refundDate', '환수일', 'date'], ['refundAmount', '환수금액', 'number'],
+  ['rentKind', '렌트구분', 'text'], ['supplierRate', '공급사수수료율', 'text'],
+  ['salesFee', '판매수수료', 'number'], ['supplierIncentive', '공급사인센티브', 'number'],
+  ['supplierVat', '공급사부가세', 'number'], ['claimGross', '청구금액(부가세 포함)', 'number'],
+  ['agencyRate', '에이전시수수료율', 'text'], ['deliveryFee', '출고수수료', 'number'],
+  ['agencyIncentive', '에이전시인센티브', 'number'], ['documentFee', '계약서대행료', 'number'],
+  ['agencyVat', '에이전시부가세', 'number'], ['payGross', '지급합계(부가세 포함)', 'number'],
+  ['contractNumber', '계약번호', 'text'], ['contractKind', '계약형태', 'text'],
+  ['age', '연령', 'text'], ['contractRent', '계약대여료', 'number'],
+  ['upsell', '업셀링금액', 'number'], ['region', '출고지역', 'text'],
+  ['writer', '계약서작성담당', 'text'], ['remarks', '비고', 'text'],
+  ['sourceTab', '원본탭', 'text'], ['agentCode', '영업자코드', 'text'],
+  ['paidRounds', '납입회차', 'number'], ['claimAdjustment', '청구가감', 'number'],
+  ['payAdjustment', '지급가감', 'number'], ['adjustmentReason', '가감사유', 'text'],
+  ['claimLink', '청구서 링크', 'text'], ['claimSentDate', '청구 최종발송일', 'date'],
+  ['claimProof', '청구 발송증빙', 'text'], ['collectedAmount', '수금 누계액', 'number'],
+  ['collectionDate', '최종 수금일', 'date'], ['collectionProof', '수금 증빙', 'text'],
+  ['payLink', '지급명세서 링크', 'text'], ['paySentDate', '지급 최종발송일', 'date'],
+  ['payProof', '지급 발송증빙', 'text'], ['paidAmount', '지급 누계액', 'number'],
+  ['paymentDate', '최종 지급일', 'date'], ['paymentProof', '지급 증빙', 'text'],
+  ['history', '처리 이력(수기)', 'text'],
+] as const;
+const allFields = [...fields, ...extraFields];
+export const checks = [['contract', '계약서'], ['documents', '서류'], ['balance', '잔금'],
   ['delivered', '인도'], ['claimed', '청구'], ['collected', '수금'], ['paid', '지급'], ['cancelled', '취소']] as const;
-export type Field = typeof fields[number][0];
+export type Field = typeof allFields[number][0];
 export type Check = typeof checks[number][0];
-const texts = Object.fromEntries(fields.map(([key]) => [key, z.string().max(5000)])) as Record<Field, z.ZodString>;
+const texts = Object.fromEntries(allFields.map(([key]) => [key, z.string().max(5000).default('')])) as Record<Field, z.ZodDefault<z.ZodString>>;
 const flags = Object.fromEntries(checks.map(([key]) => [key, z.boolean()])) as Record<Check, z.ZodBoolean>;
-export const rowSchema = z.object({ id: z.string().min(1), ...texts, ...flags });
+export const rowSchema = z.object({ id: z.string().min(1), ...texts, ...flags, refunded: z.boolean().default(false) });
 export type Row = z.infer<typeof rowSchema>;
 export const savedSchema = z.object({ version: z.literal(1), rows: z.array(rowSchema) });
 export function blankRow(id: string, date: string): Row {
-  return rowSchema.parse({ id, ...Object.fromEntries(fields.map(([key]) => [key, key === 'receiptDate' ? date : ''])),
+  return rowSchema.parse({ id, ...Object.fromEntries(allFields.map(([key]) => [key, key === 'receiptDate' ? date : ''])),
     ...Object.fromEntries(checks.map(([key]) => [key, false])) });
 }
 export function validateRow(row: Row): string | null {
   if (!row.plate.trim()) return '차량번호를 입력해 주세요.';
-  for (const [key, label, type] of fields) {
-    if (type === 'number' && row[key] !== '' && (!Number.isFinite(Number(row[key])) || (key !== 'claim' && key !== 'pay' && Number(row[key]) < 0))) return `${label}에 올바른 숫자를 입력해 주세요.`;
+  for (const [key, label, type] of allFields) {
+    if (type === 'number' && row[key] !== '' && (!row[key].trim() || !Number.isFinite(Number(row[key])) || (['term', 'rent', 'vehiclePrice', 'paidRounds'].includes(key) && Number(row[key]) < 0))) return `${label}에 올바른 숫자를 입력해 주세요.`;
   }
   return null;
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { PanelHeader } from '../../_design/Primitives';
-import { blankRow, checks, fields, savedSchema, validateRow, type Row } from './model';
+import { blankRow, checks, fields, extraFields, savedSchema, validateRow, type Row } from './model';
 import './simple.css';
 
 const storageKey = 'freepass-admin.simple-intake.draft.v1';
@@ -60,35 +60,41 @@ export default function SimpleIntake() {
     .sort((a, b) => a.receiptDate.localeCompare(b.receiptDate));
   const money = (v: string) => v === '' ? '미입력' : Number(v).toLocaleString('ko-KR');
   return <div className="erp-screen simple-intake">
-    <PanelHeader title="접수현황" count={`${rows.length}건`} />
+    <PanelHeader title={draft ? (rows.some(r => r.id === draft.id) ? '접수 수정' : '접수하기') : '접수현황'} count={draft ? undefined : `${rows.length}건`} />
     <p className="simple-notice">초안 · 이 브라우저에만 저장됩니다. 구글시트·운영 원장과 연결되지 않습니다. 실제 고객정보 입력 전 운영 저장 연결이 필요합니다.</p>
-    <div className="simple-tools">
+    {!draft && <div className="simple-tools">
       <input aria-label="접수 검색" placeholder="차량번호 · 고객 · 담당자 검색" value={query} onChange={e => setQuery(e.target.value)} />
       <input type="month" aria-label="청구월 필터" value={month} onChange={e => setMonth(e.target.value)} />
       <select aria-label="접수 상태 필터" value={view} onChange={e => setView(e.target.value)}><option value="all">전체</option><option value="active">취소 제외</option><option value="cancelled">취소</option></select>
-      <button disabled={!ready} onClick={() => select(blankRow(typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), v => v.toString(16).padStart(8, '0')).join(''), new Date().toLocaleDateString('sv-SE')))}>+ 접수 추가</button>
+      <button disabled={!ready} onClick={() => select(blankRow(typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), v => v.toString(16).padStart(8, '0')).join(''), new Date().toLocaleDateString('sv-SE')))}>접수하기</button>
       <button disabled={!rawBackup && (!ready || !rows.length)} onClick={backup}>{rawBackup ? '복구 원문 백업' : '초안 백업'}</button>
-    </div>
+    </div>}
     {error && <p role="alert">{error}</p>}{status && <p role="status">{status}</p>}
-    <div className="simple-body">
+    <div className="simple-body simple-single">
+      {!draft &&
       <section aria-label="접수 목록" className="simple-list">
-        {!shown.length && <p>{ready ? '접수가 없습니다. 접수 추가로 시작하세요.' : '초안 확인 중입니다.'}</p>}
+        {!shown.length && <p>{ready ? '접수가 없습니다. 접수하기로 시작하세요.' : '초안 확인 중입니다.'}</p>}
         {shown.map(r => <button key={r.id} className={`simple-record ${r.cancelled ? 'cancelled' : ''}`} onClick={() => select(r)}>
           <span><strong>{r.plate}</strong><span>{r.receiptDate} · {r.customer || '고객 미입력'}</span></span>
           <span>{r.supplier} · {r.product} · {r.agent}</span>
           <span>청구 {money(r.claim)} / 지급 {money(r.pay)}{r.billingMonth && ` · ${r.billingMonth}`}</span>
           <span>{checks.filter(([key]) => r[key]).map(([, label]) => label).join(' · ') || '진행 체크 없음'}</span>
         </button>)}
-      </section>
+      </section>}
+      {draft &&
       <section aria-label="접수 입력" className="simple-editor">
-        {!draft ? <p>접수를 추가하거나 목록에서 선택해 수정하세요.</p> : <form onSubmit={e => { e.preventDefault(); save(); }}>
-          <h2>{rows.some(r => r.id === draft.id) ? '접수 수정' : '새 접수'}</h2>
+        <form onSubmit={e => { e.preventDefault(); save(); }}>
+          <h2>접수정보</h2>
           <div className="simple-fields">{fields.map(([key, label, type]) => <label key={key}>{label}<input type={type} step={type === 'number' ? 'any' : undefined} value={draft[key]} onChange={e => setDraft({ ...draft, [key]: e.target.value })} /></label>)}</div>
+          <details className="simple-extra"><summary>분납 · 환수 · 계약 · 정산 추가 항목</summary>
+            <div className="simple-fields">{extraFields.map(([key, label, type]) => <label key={key}>{label}<input type={type} step={type === 'number' ? 'any' : undefined} value={draft[key]} onChange={e => setDraft({ ...draft, [key]: e.target.value })} /></label>)}</div>
+            <label><input type="checkbox" checked={draft.refunded} onChange={e => setDraft({ ...draft, refunded: e.target.checked })} />환수</label>
+          </details>
           <fieldset><legend>진행 체크</legend>{checks.map(([key, label]) => <label key={key}><input type="checkbox" checked={draft[key]} onChange={e => setDraft({ ...draft, [key]: e.target.checked })} />{label}</label>)}</fieldset>
           <p>금액은 직접 입력합니다. 체크는 기록용이며 발행·송금 작업을 실행하지 않습니다.</p>
-          <div className="simple-tools"><button type="submit">저장</button><button type="button" onClick={() => { if (window.confirm('저장하지 않은 입력을 닫을까요?')) setDraft(null); }}>닫기</button></div>
-        </form>}
-      </section>
+          <div className="simple-tools simple-form-actions"><button type="button" onClick={() => { if (window.confirm('저장하지 않은 입력을 닫을까요?')) setDraft(null); }}>목록으로</button><button type="submit">{rows.some(r => r.id === draft.id) ? '수정 저장' : '접수하기'}</button></div>
+        </form>
+      </section>}
     </div>
   </div>;
 }

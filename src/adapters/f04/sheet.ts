@@ -97,6 +97,85 @@ export function findHeader(rows: unknown[][], key = '차량번호'): number {
   return rows.findIndex((r) => Array.isArray(r) && r.some((c) => String(c ?? '').trim() === key));
 }
 
+/** 2026-10-02: 접수는 누적 원장. 실적/취소 탭은 보관본이며 다시 합산하지 않는다. */
+export const F04_LEDGER_TABS = ['접수'] as const;
+
+/** 기존 34열 월별 청구표에 누적 접수를 직접 연결한다. 발행/수금 상태를 생성하지 않는다. */
+export function intakeBillingFormula(head: string[], month: string, previews: readonly {
+  plate: string; receivedAt: number | string; ruleRow: number; basis: '정액' | '차량가액' | '대여료×기간';
+}[] = []): string {
+  if (!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('청구월 형식');
+  const idx = (name: string) => {
+    const i = head.indexOf(name);
+    if (i < 0) throw new Error(`접수 필수 열 없음: ${name}`);
+    return i + 1;
+  };
+  const c = (name: string) => `CHOOSECOLS(src,${idx(name)})`;
+  const columnName = (index: number): string => {
+    let name = '';
+    for (let n = index; n > 0; n = Math.floor((n - 1) / 26)) name = String.fromCharCode(65 + (n - 1) % 26) + name;
+    return name;
+  };
+  const endColumn = columnName(Math.max(54, head.length));
+  const claimColumn = columnName(idx('판매수수료'));
+  const [year, mo] = month.split('-').map(Number);
+  const claim = c('판매수수료'), pay = c('출고수수료');
+  const cv = `IF(candidate="","",ROUND(candidate*0.1,0))`;
+  const pv = `IF(${pay}="","",ROUND(${pay}*0.1,0))`;
+  const basis = `MAP(ROW('접수'!A3:A),LAMBDA(ix,IF(INDEX('접수'!${claimColumn}:${claimColumn},ix)="","HOLD — 산정 조건 확인",IFERROR(FORMULATEXT(INDIRECT("'접수'!${claimColumn}"&ix)),"정액/확정 기재 공급가액 "&TEXT(INDEX('접수'!${claimColumn}:${claimColumn},ix),"#,##0"))&"; 부가세 = ROUND(공급가액 × 10%)")))`;
+  let estimate = `IF(${claim}="","",${claim})`, explanation = basis;
+  for (const preview of [...previews].reverse()) {
+    if (!Number.isInteger(preview.ruleRow) || preview.ruleRow < 3) throw new Error('수수료표 참조 행');
+    const match = `(${c('차량번호')}=${JSON.stringify(preview.plate)})*(${c('접수일')}=${JSON.stringify(preview.receivedAt)})*(${claim}="")`;
+    const rate = `'수수료표'!F${preview.ruleRow}`;
+    const base = preview.basis === '차량가액' ? `VALUE(SUBSTITUTE(${c('차량가액')},",",""))`
+      : preview.basis === '대여료×기간' ? `${c('렌탈료')}*${c('계약기간')}` : '1';
+    const calc = `ROUND(${base}*${rate},0)`;
+    const how = preview.basis === '정액' ? `"정액 "&TEXT(${rate},"#,##0")`
+      : preview.basis === '차량가액' ? `"차량가액 "&TEXT(${base},"#,##0")&" × "&TEXT(${rate},"0.00%")`
+        : `"렌탈료 "&TEXT(${c('렌탈료')},"#,##0")&" × "&${c('계약기간')}&"개월 × "&TEXT(${rate},"0.00%")`;
+    estimate = `IF(${match},${calc},${estimate})`;
+    explanation = `IF(${match},"표 기준 예상(유효시점 미확인): "&${how}&" = "&TEXT(${calc},"#,##0")&"원",${explanation})`;
+  }
+  const status = `IF(${c('청구')}=TRUE,"기청구 — 재발행 금지",IF(REGEXMATCH(${c('비고')}&"","8월로 나갔다|이미 청구|청구보류|정산제외"),"HOLD — 기청구/보류 메모 확인",IF(${c('인도일')}="","HOLD — 실제 인도일 확인",IF(${claim}="","HOLD — 공급사 청구액 미확정",IF((${pay}<>"")*(${pay}>${claim}),"HOLD — 역마진/예외 확인",IF(ISNUMBER(${c('청구가감')})*(${c('청구가감')}<>0),"HOLD — 청구가감 적용 확인","청구 검토대상 — 미발송"))))))`;
+  const fields = [c('접수일'), c('차량번호'), c('모델명'), c('고객명'), c('공급사'), c('영업채널'),
+    c('영업담당자'), c('상품구분'), c('계약기간'), c('렌탈료'), c('인도일'), `IF(${c('차량번호')}<>"","청구","")`,
+    c('공급사수수료율'), 'candidate', cv, `IF(candidate="","",candidate+${cv})`, c('에이전시수수료율'), pay, pv,
+    `IF(${pay}="","",${pay}+${pv})`, `IF((${claim}="")+(${pay}=""),"",${claim}-${pay})`,
+    `IF((${claim}="")+(${pay}="")+(${claim}=0),"",(${claim}-${pay})/${claim})`,
+    `IF(${c('차량번호')}<>"","모두","")`, `IF(${c('차량번호')}<>"",1,"")`, c('청구'), c('수금'),
+    `IF(${claim}="","금액 미확정","접수 확정기재액 / 금액 셀 수식·메모 확인")`,
+    explanation,
+    'candidate', `IF(ISNUMBER(${c('청구가감')}),${c('청구가감')},"")`, c('가감사유'), c('비고'), `"접수!A"&ROW('접수'!A3:A)&":${endColumn}"&ROW('접수'!A3:A)`, status];
+  const clean = fields.map((f) => f.startsWith('CHOOSECOLS') ? `IF(${f}="","",${f})` : f);
+  const yearCol = c('청구년'), monthCol = c('청구월');
+  // Explicit year/month only: an invalid or blank year is never silently filled with the current year.
+  return `=ARRAYFORMULA(LET(src,'접수'!A3:${endColumn},candidate,${estimate},body,HSTACK(${clean.join(',')}),IFNA(CHOOSECOLS(SORT(FILTER(HSTACK(body,IF(${c('공급사')}="오토플러스",1,0),IFERROR(IF(ISNUMBER(${c('접수일')}),${c('접수일')},DATEVALUE(${c('접수일')})),999999)),IFERROR(VALUE(${yearCol})=${year},FALSE),IFERROR(VALUE(${monthCol})=${mo},FALSE),${c('인도완료')}=TRUE,${c('취소')}<>TRUE,${c('차량번호')}<>""),35,TRUE,36,TRUE),${Array.from({ length: 34 }, (_, i) => i + 1).join(',')}),"")))`;
+}
+
+export function intakeSourceRows(raw: unknown[][], headerIndex: number) {
+  if (headerIndex < 0) throw new Error('접수 머리글 없음');
+  const p = picker(raw[headerIndex].map(String));
+  const facts = ['접수일', '차량번호', '공급사', '모델명', '영업채널', '영업담당자',
+    '고객명', '특이사항', '상품구분', '계약기간', '렌탈료', '보증금', '차량가액', '분납여부'];
+  const seen = new Set<string>();
+  return raw.slice(headerIndex + 1).map((r, i) => ({ values: r, sourceRow: headerIndex + 2 + i }))
+    .filter(({ values }) => facts.some((name) => {
+      const v = p.raw(values, name);
+      return v !== false && v !== null && v !== undefined && String(v).trim() !== '';
+    }))
+    .map((r) => {
+      const plate = p.text(r.values, '차량번호')?.replace(/\s/g, '');
+      const day = p.date(r.values, '접수일');
+      if (plate && day) {
+        const key = `${plate}|${day}`;
+        if (seen.has(key)) throw new Error(`접수 원장 중복: row ${r.sourceRow}`);
+        seen.add(key);
+      }
+      return r;
+    });
+}
+
 /** 이름으로 칸을 집는 손 — 없는 열은 «없다» 고 말한다 (★-1 로 조용히 0 을 내지 않는다) */
 export function picker(head: string[]) {
   const idx = new Map<string, number>();

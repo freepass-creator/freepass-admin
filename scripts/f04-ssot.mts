@@ -5,7 +5,7 @@
  *
  * ★대표 2026-09-17 「시트에 있는 모든 내용을 일단 SSOT화 하자」
  *
- * 담는 것(원자 — 사람이 적는 것) : 수수료표 · 실적 네 탭 · 정산 진행 · 차량대장 · _상품
+ * 담는 것(원자 — 사람이 적는 것) : 수수료표 · 접수 누적원장 · 정산 진행 · 차량대장 · _상품
  * 안 담는 것(파생 — 기계가 찍는 것) : 월 탭 · 요약 · 구버전  → ★대조에만 쓴다
  *
  * 갈래와 까닭 : docs/dev/F04-SSOT.md
@@ -15,6 +15,7 @@ import { dirname } from 'node:path';
 import { JWT } from 'google-auth-library';
 import {
   billMonthOf, cellDate, findHeader, methodOf, picker, feeValueOf, cellCheck, cellNumber, cellText,
+  F04_LEDGER_TABS, intakeSourceRows,
 } from '../src/adapters/f04/sheet.ts';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -83,7 +84,7 @@ say(`
 for (const t of timingRules) say(`  ${(t.who ?? '').padEnd(12)} ${(t.what ?? '').padEnd(10)} ${t.how ?? ''}`);
 
 /* ══ ② 실적 네 탭 — 54열이 «같은 규격» 이라 한 벌로 합친다 ══ */
-const PERF_TABS = ['접수', '완납실적', '분납실적', '취소'] as const;
+const PERF_TABS = F04_LEDGER_TABS;
 const NEED = ['차량번호', '접수일', '공급사', '영업채널', '청구년', '청구월', '판매수료'];
 const rows: any[] = [];
 const held: { tab: string; row: number; why: string }[] = [];
@@ -98,14 +99,14 @@ for (const tab of PERF_TABS) {
   const p = picker(head);
   const miss = p.missing(['차량번호', '접수일', '공급사', '청구년', '청구월', '판매수수료', '출고수수료']);
   if (miss.length) missingCols[tab] = miss;
-  const body = raw.slice(hi + 1).filter((r) => Array.isArray(r) && r.some((c) => String(c ?? '').trim()));
+  const body = intakeSourceRows(raw, hi);
   readCount[tab] = body.length;
 
-  body.forEach((r, i) => {
+  body.forEach(({ values: r, sourceRow }) => {
     const plate = p.text(r, '차량번호');
     const receivedAt = p.date(r, '접수일');
     /* ★버리지 않는다 — 열쇠가 없으면 보류함에 «까닭과 함께» */
-    if (!plate) { held.push({ tab, row: hi + 2 + i, why: '차량번호 없음' }); return; }
+    if (!plate) { held.push({ tab, row: sourceRow, why: '차량번호 없음' }); return; }
     rows.push({
       /* 열쇠 */
       plate, receivedAt, fromTab: tab,
@@ -141,13 +142,14 @@ for (const tab of PERF_TABS) {
       claimVat: p.num(r, '공급사부가세'), claimTotal: p.num(r, '청구금액'),
       pay: p.num(r, '출고수수료'), payIncentive: p.num(r, '에이전시인센티브'),
       paperFee: p.num(r, '계약서대행료'), payVat: p.num(r, '에이전시부가세'),
-      payTotal: p.num(r, '지급액'),
+      // 신규 지급액은 공급가 입력칸이다. VAT 포함 합계와 혼동하지 않는다.
+      payTotal: p.num(r, p.has('지급합계(부가세포함)') ? '지급합계(부가세포함)' : '지급액'),
       claimAdjust: p.num(r, '청구가감'), payAdjust: p.num(r, '지급가감'),
       adjustReason: p.text(r, '가감사유'),
       /* 글 */
       contractNo: p.text(r, '계약번호'), note: p.text(r, '비고'),
       special: p.text(r, '특이사항'), paperBy: p.text(r, '계약서작성담당'),
-      sourceTab: p.text(r, '원본탭'), sourceRow: hi + 2 + i,
+      sourceTab: p.text(r, '원본탭'), sourceRow,
     });
   });
 }

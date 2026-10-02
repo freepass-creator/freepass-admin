@@ -2,9 +2,57 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, feeValueOf, findHeader, methodOf, picker, serialToDate,
+  F04_LEDGER_TABS, intakeSourceRows, intakeBillingFormula,
 } from '../sheet.js';
 
 /* 값은 F04 시트 실측(2026-09-17)에서 그대로 딴 것이다. */
+
+describe('누적 접수 원장', () => {
+  const head = ['접수일', '차량번호', '고객명', '인도완료'];
+  it('보관 탭은 읽지 않는다', () => assert.deepEqual(F04_LEDGER_TABS, ['접수']));
+  it('템플릿 체크는 제외하되 원본 행 번호와 지원금/날짜 없는 환수는 보존한다', () => {
+    const raw = [[], head, ['', '', '', false], ['2026-09-01', '12가3456'],
+      ['', '', '지원금'], ['', '34나5678', '환수'], ['', '', '', true]];
+    assert.deepEqual(intakeSourceRows(raw, 1).map((r) => r.sourceRow), [4, 5, 6]);
+  });
+  it('차량+접수일 중복은 조용히 합산하지 않는다', () => {
+    assert.throws(() => intakeSourceRows([head, [46266, '12 가3456'], ['2026-09-01', '12가3456']], 0), /중복/);
+  });
+  it('같은 차량 재접수 날짜는 별도 이력이다', () => {
+    assert.equal(intakeSourceRows([head, ['2026-09-01', '12가3456'], ['2026-09-02', '12가3456']], 0).length, 2);
+  });
+  it('공급가 입력열 이동 후에도 56열 범위와 판매수수료 위치를 머리글로 계산한다', () => {
+    const names = ['접수일','차량번호','공급사','모델명','영업채널','영업담당자','영업자연락처','고객명','특이사항','상품구분','계약기간','렌탈료','보증금','차량가액','분납여부','계약서','인도완료','인도일','청구년','청구월','청구액','지급액','취소','다음회차일','환수','환수사유','환수일','환수금액','렌트구분','공급사수수료율','판매수수료','공급사인센티브','공급사부가세','청구금액','에이전시수수료율','출고수수료','에이전시인센티브','계약서대행료','에이전시부가세','지급합계(부가세포함)','계약번호','계약형태','연령','계약대여료','업셀링금액','출고지역','계약서작성담당','비고','원본탭','영업자코드','납입회차','청구','수금','청구가감','지급가감','가감사유'];
+    const f = intakeBillingFormula(names, '2026-09');
+    assert.match(f, /'접수'!A3:BD/);
+    assert.match(f, /INDEX\('접수'!AE:AE/);
+    assert.match(f, /INDIRECT\("'접수'!AE"/);
+    assert.match(f, /CHOOSECOLS\(src,23\)<>TRUE/);
+    assert.doesNotMatch(f, /'접수'!AC:AC/);
+    const p = picker(names);
+    const row: unknown[] = names.map(() => '');
+    row[21] = 800000;
+    assert.equal(p.num(row, '지급합계(부가세포함)'), null);
+    row[39] = 880000;
+    assert.equal(p.num(row, '지급합계(부가세포함)'), 880000);
+  });
+  it('월별 수식은 접수만 참조하고 인도/취소 관문 및 unknown을 보존한다', () => {
+    const names = ['접수일','차량번호','모델명','고객명','공급사','영업채널','영업담당자','상품구분','계약기간','렌탈료','인도일','판매수수료','출고수수료','청구','수금','비고','공급사수수료율','에이전시수수료율','청구가감','가감사유','청구년','청구월','인도완료','취소'];
+    const f = intakeBillingFormula(names, '2026-09');
+    assert.match(f, /'접수'!A3:BB/);
+    assert.match(f, /HOLD — 공급사 청구액 미확정/);
+    assert.match(f, /기청구 — 재발행 금지/);
+    assert.match(f, /ISNUMBER\(CHOOSECOLS\(src,19\)\)/); // checkbox FALSE는 금액 가감이 아니다.
+    assert.match(f, /CHOOSECOLS\(src,23\)=TRUE/);
+    assert.match(f, /CHOOSECOLS\(src,24\)<>TRUE/);
+    assert.doesNotMatch(f, /완납실적|분납실적|IFERROR\([^)]*,0\)/);
+    assert.throws(() => intakeBillingFormula(names, '2026-13'), /형식/);
+    assert.throws(() => intakeBillingFormula([], '2026-09'), /필수 열/);
+    const preview = intakeBillingFormula(names, '2026-09', [{ plate: '12가3456', receivedAt: 46266, ruleRow: 123, basis: '정액' }]);
+    assert.match(preview, /'수수료표'!F123/);
+    assert.match(preview, /HOLD — 공급사 청구액 미확정/); // 예상 표시가 원장 확정액을 대체하지 않는다.
+  });
+});
 
 describe('serialToDate — ★구글 날짜는 숫자로 온다', () => {
   it('serial 을 날짜로 되돌린다', () => {

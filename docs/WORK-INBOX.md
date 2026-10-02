@@ -1,5 +1,7 @@
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
+- 최신 수정 지시: 별도 월별 표/PDF 작업은 멈추고 접수탭 필터로 월별 청구 대상을 조회한다. 접수 G 영업자연락처는 표시 제외(숨김, 원문 보존). U 취소 TRUE에 A3:BB520 전체 붉은 배경/취소선 조건부서식 적용, 기존 다른 규칙 유지. 공유 basicFilter는 청구년/월 VALUE로 숫자·문자 모두 인식하며 인도완료/취소제외/차량번호 유무를 검사한다. 정렬·원본 값 변경 0, 9월 표시26건 재검증. 필터는 문서 공용이며 숨김은 접근통제가 아니다.
+- 이전 변경은 bd3ecef로 보존. output/tmp 산출물은 C:/Users/admin/AppData/Local/Temp/freepass-settlement-ledger-20261002-preserved 로 삭제 없이 이동했으므로 아래 과거 PDF 상대경로는 보관 위치를 따른다. 배포/발송 없음.
 - 사용자 최신 결정: 접수에 전 기록을 누적하고 청구년/청구월로 청구표를 만든다. 인도 후 접수 행을 실적 탭으로 이동시키던 과거 설명보다 우선한다.
 - 대상: F04 접수 483건. 원본 실적/취소 탭과 통합 전 접수 백업 보존. 같은 settlement-ledger-sync 작업선, main 51766ba로 fast-forward 후 기존 F04 adapter/reader 확장(COMPOSE_OR_EXTEND).
 - reader는 접수만 읽고 템플릿 체크 행 제외, 실제 sourceRow 유지, 차량+접수일 중복이면 중단한다. 보관본 재합산 금지.

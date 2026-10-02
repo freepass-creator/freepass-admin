@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blankRow, savedSchema, validateRow } from './model';
+import { blankRow, normalizeRow, savedSchema, validateRow } from './model';
 test('same plate stays separate by stable row id; blank money is not zero', () => {
   const a = { ...blankRow('a', '2026-10-02'), plate: '테스트차량' };
   const b = { ...a, id: 'b' };
@@ -21,4 +21,13 @@ test('amount validation permits negative refunds but not malformed amounts', () 
   const a = { ...blankRow('a', '2026-10-02'), plate: '테스트', claim: '-100000' };
   assert.equal(validateRow(a), null);
   assert.match(validateRow({ ...a, pay: 'oops' })!, /지급액/);
+});
+test('sheet comma amounts normalize without turning blank into zero', () => {
+  const r = normalizeRow({ ...blankRow('r', '2026-10-02'), plate: '테스트', claim: '675,000', pay: '' });
+  assert.equal(r.claim, '675000'); assert.equal(r.pay, ''); assert.equal(validateRow(r), null);
+});
+test('v2 output is readable and missing plate remains corruption', () => {
+  assert.equal(savedSchema.parse({ version: 2, rows: [blankRow('r', '2026-10-02')] }).version, 2);
+  const r = { ...blankRow('r', '2026-10-02') } as Record<string, unknown>; delete r.plate;
+  assert.throws(() => savedSchema.parse({ version: 2, rows: [r] }));
 });

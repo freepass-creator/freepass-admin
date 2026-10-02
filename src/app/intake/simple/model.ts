@@ -42,9 +42,12 @@ export type Field = typeof allFields[number][0];
 export type Check = typeof checks[number][0];
 const texts = Object.fromEntries(allFields.map(([key]) => [key, z.string().max(5000).default('')])) as Record<Field, z.ZodDefault<z.ZodString>>;
 const flags = Object.fromEntries(checks.map(([key]) => [key, z.boolean()])) as Record<Check, z.ZodBoolean>;
-export const rowSchema = z.object({ id: z.string().min(1), ...texts, ...flags, refunded: z.boolean().default(false) });
+export const rowSchema = z.object({ id: z.string().min(1), ...texts, plate: z.string().max(5000), receiptDate: z.string().max(5000), ...flags, refunded: z.boolean().default(false) });
 export type Row = z.infer<typeof rowSchema>;
-export const savedSchema = z.object({ version: z.literal(1), rows: z.array(rowSchema) });
+export const savedSchema = z.object({ version: z.union([z.literal(1), z.literal(2)]), rows: z.array(rowSchema) });
+export function normalizeRow(row: Row): Row {
+  return { ...row, ...Object.fromEntries(allFields.filter(([, , type]) => type === 'number').map(([key]) => [key, row[key].replaceAll(',', '').trim()])) };
+}
 export function blankRow(id: string, date: string): Row {
   return rowSchema.parse({ id, ...Object.fromEntries(allFields.map(([key]) => [key, key === 'receiptDate' ? date : ''])),
     ...Object.fromEntries(checks.map(([key]) => [key, false])) });

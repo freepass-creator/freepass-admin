@@ -2,21 +2,23 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
-import { buildMonthlyInvoice, monthlyInvoiceHtml, type SheetSettlementRow } from '../src/domain/settlement/invoice-document';
+import { buildMonthlyInvoice, monthlyInvoiceHtml, type SheetClawbackRow, type SheetSettlementRow } from '../src/domain/settlement/invoice-document';
 
 const arg = (name: string, fallback = '') => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] ?? fallback : fallback; };
 const month = arg('--month');
 const supplier = arg('--supplier', '우리캐피탈');
+const receiverName = arg('--receiver-name', supplier === '우리캐피탈' ? '우리캐피탈렌터카' : '');
+const receiverBizNo = arg('--receiver-biz-no', supplier === '우리캐피탈' ? '142-81-15688' : '');
 const inputPath = resolve(arg('--input', 'docs/ui/mockups/f04.ssot.js'));
 const outputDir = resolve(arg('--out', `output/settlement/${month || '미지정'}`));
 const htmlDir = resolve(arg('--html-out', 'tmp/pdfs/monthly-settlement'));
 if (!month) throw new Error('--month YYYY-MM가 필요합니다');
-if (supplier !== '우리캐피탈') throw new Error(`${supplier}: 거래처 사업자정보가 등록되지 않아 HOLD입니다`);
+if (!receiverName || !/^\d{3}-?\d{2}-?\d{5}$/.test(receiverBizNo)) throw new Error(`${supplier}: 거래처명과 사업자등록번호가 없어 HOLD입니다(--receiver-name, --receiver-biz-no)`);
 
 const source = readFileSync(inputPath, 'utf8');
 const match = /const F04 = ([\s\S]+);\s*$/.exec(source);
 if (!match) throw new Error('F04 스냅샷 형식이 아닙니다');
-const f04 = JSON.parse(match[1]) as { rows?: SheetSettlementRow[]; report?: { readAt?: string; title?: string; balanced?: boolean } };
+const f04 = JSON.parse(match[1]) as { rows?: SheetSettlementRow[]; clawbacks?: SheetClawbackRow[]; report?: { readAt?: string; title?: string; balanced?: boolean } };
 if (!Array.isArray(f04.rows)) throw new Error('F04 rows가 없습니다');
 if (f04.report?.title !== '[F04 사용중] 프리패스 정산원장') throw new Error('정산 시트 정본 제목이 일치하지 않습니다');
 if (f04.report?.balanced !== true) throw new Error('F04 읽은 줄 = 실은 줄 + 보류한 줄 검증이 통과하지 않았습니다');
@@ -26,9 +28,9 @@ const ageHours = (Date.now() - readAt) / 3_600_000;
 if (ageHours < -1 || ageHours > 24) throw new Error(`F04 스냅샷이 최신이 아닙니다(${ageHours.toFixed(1)}시간) — 시트를 다시 읽은 뒤 발행하세요`);
 
 const invoice = buildMonthlyInvoice({
-  month, supplier, rows:f04.rows,
+  month, supplier, rows:f04.rows, clawbacks:f04.clawbacks,
   issuer:{ name:'프리패스모빌리티 주식회사', bizNo:'528-88-02988', ceo:'박영협', address:'서울시 강서구 양천로 53길 30, 서서울모터리움 1004호', bank:'신한은행', account:'140-014-462206', holder:'프리패스모빌리티 주식회사', manager:'프리패스 매니저', phone:'010-6393-0926', email:'pyh@teamjpk.com', fax:'0504-202-0926' },
-  receiver:{ name:'우리캐피탈렌터카', bizNo:'142-81-15688' },
+  receiver:{ name:receiverName, bizNo:receiverBizNo },
 });
 
 mkdirSync(outputDir, { recursive:true });

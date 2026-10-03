@@ -1,328 +1,114 @@
 /*
- * 접수 데스크 — 왼쪽 목록(보기) | 오른쪽 판(처리). 공용 토큰(erp-standard.css)만 쓴다.
- * ★좌우 스크롤 없음(사용자 2026-10-03) — 세로만 스크롤, 긴 글은 줄바꿈.
- * ★공용 틀의 전역 규칙(label·th·td·button)이 이기지 않도록 모든 선택자를 `.ledger.erp-screen` 아래에 둔다.
+ * 접수 관리 — 기존 판(products/board.css `.pb`) 위에 «이 화면에만 있는 것» 만 더한다.
+ * 색 · 글자 · 입력칸 · 단추 · 판 머리 · 바닥 단추는 모두 board.css 그대로 쓴다(새 규격을 만들지 않는다).
+ *
+ * ★사용자 2026-10-03
+ *   「목록과 상세 2:1 좋다」 · 「접수할 때만 옆이 열리게」 · 「쪼그라들면 항목이 카드처럼 순서대로 아래로」 ·
+ *   「세로 스크롤은 있어도 좌우 스크롤은 없게」 · 「폰트 다 맞추고 허접해 보이면 안 된다」
  */
 
-/* 공용 틀은 앱 최소 폭(1280)을 body 에 건다. 이 화면에서만 풀어 좁은 창에서도 페이지가 좌우로 밀리지 않게 한다. */
-body:has(.ledger.erp-screen) { min-width: 0; }
-
-.ledger.erp-screen {
-  display: flex;
-  gap: 12px;
-  min-width: 0;
-  height: 100%;
-  padding: 16px;
-  font-family: var(--erp-font-family);
-  font-size: 13px;
-  color: var(--erp-color-text);
-  background: var(--erp-color-bg);
-}
-.ledger.erp-screen * { box-sizing: border-box; }
-/* 공용 틀이 화면(.erp-screen)을 세로로 쌓는다(shell.css) — 이 화면은 목록|판 가로 배치라 방향만 되돌린다. */
-body:has(.ledger.erp-screen) main.fn-main > .ledger.erp-screen { flex-direction: row; }
-
-/* ── 왼쪽 목록 ─────────────────────────────────────────── */
-.ledger.erp-screen .ledger-list {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  min-height: 0;
-  padding: 16px;
-  border: 1px solid var(--erp-color-line);
-  border-radius: 8px;
-  background: var(--erp-color-surface);
-}
-.ledger.erp-screen .ledger-head { display: flex; align-items: baseline; gap: 10px; }
-.ledger.erp-screen .ledger-title { margin: 0; font-size: var(--erp-fs-title); font-weight: 700; }
-.ledger.erp-screen .ledger-sub { color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-primary {
-  margin-left: auto;
-  height: 36px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--erp-color-primary);
-  color: var(--erp-color-on-primary);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-.ledger.erp-screen .ledger-primary:hover { background: var(--erp-color-primary-hover); }
-
-/* 지금 손댈 것 — 큰 숫자 칩 */
-.ledger.erp-screen .ledger-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ledger.erp-screen .ledger-chip {
-  display: flex;
-  flex: 1 1 140px;
-  align-items: center;
-  height: auto;
-  min-height: 52px;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 1px solid var(--erp-color-line);
-  border-radius: 8px;
-  background: var(--erp-color-surface);
-  font: inherit;
-  color: var(--erp-color-text-2);
-  text-align: left;
-  cursor: pointer;
-}
-.ledger.erp-screen .ledger-chip b { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.ledger.erp-screen .ledger-chip.tone-yellow b { color: var(--erp-color-warn); }
-.ledger.erp-screen .ledger-chip.tone-red b { color: var(--erp-color-err); }
-.ledger.erp-screen .ledger-chip[aria-pressed="true"] { border-color: var(--erp-color-primary); background: var(--erp-color-primary-weak); color: var(--erp-color-text); }
-
-/* 탭 · 검색 · 청구월 */
-.ledger.erp-screen .ledger-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ledger.erp-screen .ledger-tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 8px; background: var(--erp-color-tabs-bg); }
-.ledger.erp-screen .ledger-tabs button {
-  height: 30px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  font: inherit;
-  color: var(--erp-color-text-2);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.ledger.erp-screen .ledger-tabs button span { margin-left: 4px; font-size: 12px; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-tabs button[aria-selected="true"] { background: var(--erp-color-surface); color: var(--erp-color-text); font-weight: 700; box-shadow: 0 1px 2px rgb(16 24 40 / 8%); }
-.ledger.erp-screen .ledger-search,
-.ledger.erp-screen .ledger-month,
-.ledger.erp-screen .ledger-input {
-  height: 34px;
-  min-width: 0;
-  padding: 0 10px;
-  border: 1px solid var(--erp-color-line-strong);
-  border-radius: 6px;
-  background: var(--erp-color-surface);
-  font: inherit;
-  color: var(--erp-color-text);
-}
-.ledger.erp-screen .ledger-search { flex: 1 1 220px; }
-.ledger.erp-screen .ledger-month { flex: 0 0 auto; }
-.ledger.erp-screen .ledger-input.num { text-align: right; font-variant-numeric: tabular-nums; }
-.ledger.erp-screen .ledger-input:focus,
-.ledger.erp-screen .ledger-search:focus { outline: 2px solid var(--erp-color-focus-ring); border-color: var(--erp-color-info); }
-.ledger.erp-screen .ledger-input:disabled { background: var(--erp-color-sunken); color: var(--erp-color-text-2); }
-
-.ledger.erp-screen .ledger-sum { margin: 0; color: var(--erp-color-text-2); }
-.ledger.erp-screen .ledger-sum b { color: var(--erp-color-text); font-variant-numeric: tabular-nums; }
-.ledger.erp-screen .ledger-sum em { font-style: normal; color: var(--erp-color-warn); }
-
-/* 목록 표 — 화면 폭에 맞춘다. 칸마다 위(진한 글)·아래(작은 글) 두 줄. */
-.ledger.erp-screen .ledger-scroll { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
-.ledger.erp-screen .ledger-grid { width: 100%; table-layout: fixed; border-collapse: collapse; }
-.ledger.erp-screen .ledger-grid th:nth-child(1) { width: 10%; }
-.ledger.erp-screen .ledger-grid th:nth-child(2) { width: 13%; }
-.ledger.erp-screen .ledger-grid th:nth-child(3) { width: 15%; }
-.ledger.erp-screen .ledger-grid th:nth-child(4) { width: 12%; }
-.ledger.erp-screen .ledger-grid th:nth-child(5) { width: 12%; }
-.ledger.erp-screen .ledger-grid th:nth-child(6) { width: 18%; }
-.ledger.erp-screen .ledger-grid th:nth-child(7) { width: 11%; }
-.ledger.erp-screen .ledger-grid th:nth-child(8) { width: 9%; }
-.ledger.erp-screen .ledger-grid th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 8px 6px;
-  border: 0;
-  border-bottom: 1px solid var(--erp-color-line-strong);
-  background: var(--erp-color-surface);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-  color: var(--erp-color-text-2);
-  white-space: normal;
-}
-.ledger.erp-screen .ledger-grid th span { display: block; font-weight: 400; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-grid td {
-  padding: 9px 6px;
-  border: 0;
-  border-bottom: 1px solid var(--erp-color-line-row);
-  vertical-align: top;
-  white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-.ledger.erp-screen .ledger-grid td small { display: block; margin-top: 2px; font-size: 12px; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-grid td:first-child { white-space: nowrap; }
-.ledger.erp-screen .ledger-grid td small.late { color: var(--erp-color-err); font-weight: 600; }
-.ledger.erp-screen .ledger-grid .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ledger.erp-screen .ledger-grid .unknown { color: var(--erp-color-warn); font-weight: 600; }
-.ledger.erp-screen .ledger-grid tbody tr { cursor: pointer; }
-.ledger.erp-screen .ledger-grid tbody tr:hover td { background: var(--erp-color-row-hover); }
-.ledger.erp-screen .ledger-grid tbody tr:focus-visible { outline: 2px solid var(--erp-color-info); outline-offset: -2px; }
-.ledger.erp-screen .ledger-grid tbody tr[aria-selected="true"] td { background: var(--erp-color-selected); }
-.ledger.erp-screen .ledger-grid tbody tr.is-new td { background: var(--erp-color-ok-bg); }
-.ledger.erp-screen .ledger-grid tbody tr.is-cancelled td { color: var(--erp-color-text-3); text-decoration: line-through; }
-
-/* 진행 체크라인 — 지금 막힌 단계만 진하게 */
-.ledger.erp-screen .ledger-steps { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 4px; }
-.ledger.erp-screen .ledger-steps i {
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-style: normal;
-  line-height: 16px;
-}
-.ledger.erp-screen .ledger-steps .step-done { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
-.ledger.erp-screen .ledger-steps .step-done::before { content: '✓ '; }
-.ledger.erp-screen .ledger-steps .step-now { color: var(--erp-color-text); background: var(--erp-color-warn-bg); box-shadow: inset 0 0 0 1px var(--erp-color-warn); font-weight: 700; }
-.ledger.erp-screen .ledger-steps .step-todo { color: var(--erp-color-text-3); background: var(--erp-color-neutral-bg); }
-.ledger.erp-screen .ledger-steps.big i { padding: 3px 8px; font-size: 12px; }
-
-.ledger.erp-screen .ledger-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.ledger.erp-screen .tone-red.ledger-badge { color: var(--erp-color-err); background: var(--erp-color-err-bg); }
-.ledger.erp-screen .tone-yellow.ledger-badge { color: var(--erp-color-warn); background: var(--erp-color-warn-bg); }
-.ledger.erp-screen .tone-green.ledger-badge { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
-.ledger.erp-screen .tone-gray.ledger-badge { color: var(--erp-color-neutral); background: var(--erp-color-neutral-bg); }
-
-.ledger.erp-screen .ledger-empty { margin: 0; padding: 40px 16px; text-align: center; color: var(--erp-color-text-muted); }
-
-/* ── 오른쪽 판 ─────────────────────────────────────────── */
-.ledger.erp-screen .ledger-panel {
-  display: flex;
-  flex: 0 0 360px;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-.ledger.erp-screen .ledger-pane {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  border: 1px solid var(--erp-color-line);
-  border-radius: 8px;
-  background: var(--erp-color-surface);
-}
-.ledger.erp-screen .ledger-pane-head { display: flex; gap: 8px; padding: 16px 16px 12px; border-bottom: 1px solid var(--erp-color-line); }
-.ledger.erp-screen .ledger-pane-head h2 { margin: 0; font-size: var(--erp-fs-panel); font-weight: 700; }
-.ledger.erp-screen .ledger-pane-head h2 span { margin-left: 6px; font-size: 14px; font-weight: 600; color: var(--erp-color-text-2); }
-.ledger.erp-screen .ledger-pane-head p { margin: 4px 0 0; font-size: 12px; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-close {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  margin-left: auto;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--erp-color-text-2);
-  cursor: pointer;
-}
-.ledger.erp-screen .ledger-close:hover { background: var(--erp-color-surface-hover); }
-.ledger.erp-screen .ledger-pane-body { display: flex; flex: 1; flex-direction: column; gap: 18px; min-height: 0; padding: 14px 16px; overflow-x: hidden; overflow-y: auto; }
-.ledger.erp-screen .ledger-pane-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--erp-color-line); }
-.ledger.erp-screen .ledger-pane-foot > .ledger-btn.primary { margin-left: auto; }
-.ledger.erp-screen .ledger-pane-foot > .ledger-input { flex: 1 1 160px; }
-
-.ledger.erp-screen .ledger-state { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ledger.erp-screen .ledger-sec h3 { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
-.ledger.erp-screen .ledger-sec h3 small { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
-.ledger.erp-screen .ledger-line .ledger-input { flex: 1 1 120px; }
-.ledger.erp-screen .ledger-lbl { flex: 0 0 64px; color: var(--erp-color-text-2); }
-.ledger.erp-screen .ledger-hint { margin: 0; font-size: 12px; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-hint.err { color: var(--erp-color-err); }
-
-.ledger.erp-screen label.ledger-tick {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  min-width: 64px;
-  font-size: 13px;
-  color: var(--erp-color-text);
-  cursor: pointer;
-}
-.ledger.erp-screen label.ledger-tick input { width: 16px; height: 16px; margin: 0; }
-
-.ledger.erp-screen .ledger-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.ledger.erp-screen .ledger-money label,
-.ledger.erp-screen label.ledger-fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; color: var(--erp-color-text-2); }
-.ledger.erp-screen .ledger-money .ledger-input { font-size: 15px; font-weight: 700; }
-.ledger.erp-screen .ledger-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 10px; align-items: end; }
-.ledger.erp-screen label.ledger-fld.wide { grid-column: 1 / -1; }
-.ledger.erp-screen .req { margin-left: 2px; color: var(--erp-color-err); }
-.ledger.erp-screen .ledger-more summary { cursor: pointer; color: var(--erp-color-info); margin-bottom: 10px; }
-
-.ledger.erp-screen .ledger-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 0; }
-.ledger.erp-screen .ledger-facts div { min-width: 0; }
-.ledger.erp-screen .ledger-facts .wide { grid-column: 1 / -1; }
-.ledger.erp-screen .ledger-facts dt { font-size: 12px; color: var(--erp-color-text-muted); }
-.ledger.erp-screen .ledger-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
-
-.ledger.erp-screen .ledger-btn {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid var(--erp-color-line-strong);
-  border-radius: 6px;
-  background: var(--erp-color-surface);
-  font: inherit;
-  font-weight: 600;
-  color: var(--erp-color-text);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.ledger.erp-screen .ledger-btn:disabled { opacity: .45; cursor: default; }
-.ledger.erp-screen .ledger-btn.primary { border-color: var(--erp-color-primary); background: var(--erp-color-primary); color: var(--erp-color-on-primary); }
-.ledger.erp-screen .ledger-btn.danger { border-color: var(--erp-color-err-solid); background: var(--erp-color-err-solid); color: var(--erp-color-on-primary); }
-.ledger.erp-screen .ledger-btn.ghost-danger { border-color: transparent; color: var(--erp-color-err); background: transparent; }
-
-.ledger.erp-screen .ledger-alert,
-.ledger.erp-screen .ledger-ok { margin: 0; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
-.ledger.erp-screen .ledger-alert { color: var(--erp-color-err-text); background: var(--erp-color-err-bg); }
-.ledger.erp-screen .ledger-ok { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
-
-/* 공용 틀은 폰에서 PC 화면(.erp-screen)을 숨긴다. 이 화면은 폰에서도 그대로 보인다. */
-@media (max-width: 900px) {
-  .erp-screen.ledger { display: flex !important; }
+/* ── 판 배치: 평소엔 목록이 셋을 다 쓰고, 처리 판이 열리면 2 : 1 ── */
+@media (min-width:901px) {
+  /* 공용 틀의 앱 최소 폭(1280)이 좁은 창에서 페이지를 좌우로 밀지 않게 — 이 화면만 */
+  body:has(.pb.ldesk) { min-width:0 !important; }
+  .pb.ldesk .pb-list { grid-column:1 / -1; }
+  .pb.ldesk[data-panel] .pb-list { grid-column:span 2; }
 }
 
-/* 1280 아래 — 목록은 카드, 오른쪽 판은 화면을 덮는다(열었을 때만). */
-@media (max-width: 1279px) {
-  .ledger.erp-screen { padding: 12px; }
-  .ledger.erp-screen .ledger-list { padding: 12px; }
-  .ledger.erp-screen .ledger-panel { display: none; }
-  .ledger.erp-screen .ledger-panel[data-open] {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    padding: 12px;
-    background: var(--erp-color-bg);
-  }
-  .ledger.erp-screen .ledger-grid,
-  .ledger.erp-screen .ledger-grid tbody { display: block; width: 100%; }
-  .ledger.erp-screen .ledger-grid thead { display: none; }
-  .ledger.erp-screen .ledger-grid tbody tr {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 8px 12px;
-    padding: 12px 4px;
-    border-bottom: 1px solid var(--erp-color-line-strong);
-  }
-  .ledger.erp-screen .ledger-grid td { padding: 0; border: 0; }
-  .ledger.erp-screen .ledger-grid td:empty { display: none; }
-  .ledger.erp-screen .ledger-grid td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--erp-color-text-muted); }
-  .ledger.erp-screen .ledger-grid td[data-label="진행"] { grid-column: span 2; }
-  .ledger.erp-screen .ledger-grid .num { text-align: left; }
+/* ── 판 머리 — 건수 · 합계 · 「+ 새 접수」 ── */
+.pb.ldesk .web-panel-head small b { color:var(--ink); font-weight:600; }
+.pb.ldesk .web-panel-head small em { font-style:normal; color:var(--warn); }
+.pb.ldesk .ldesk-new {
+  flex:none; height:var(--control); margin-left:8px; padding:0 14px;
+  border:0; border-radius:var(--r-control); background:var(--navy); color:#fff;
+  font-size:var(--body); font-weight:600; white-space:nowrap; cursor:pointer;
 }
+.pb.ldesk .ldesk-new:hover { background:var(--navy-hover); }
+.pb.ldesk .ldesk-new:active { background:var(--navy-press); transform:translateY(1px); }
 
-@media (max-width: 600px) {
-  .ledger.erp-screen .ledger-form,
-  .ledger.erp-screen .ledger-money,
-  .ledger.erp-screen .ledger-facts { grid-template-columns: 1fr; }
-  .ledger.erp-screen .ledger-chip b { font-size: 18px; }
-  .ledger.erp-screen .ledger-primary { height: 40px; }
-  .ledger.erp-screen .ledger-input,
-  .ledger.erp-screen .ledger-search,
-  .ledger.erp-screen .ledger-month { height: 44px; }
+/* ── 검색 줄 · 칩 — 칩은 줄바꿈(좌우로 밀지 않는다), 칩 옆 숫자 ── */
+.pb.ldesk .search .filter-select { height:var(--control); }
+.pb.ldesk .chips { flex-wrap:wrap; overflow:visible; }
+.pb.ldesk .chip { gap:6px; border-style:solid; font-family:inherit; }
+.pb.ldesk .chip i { font-style:normal; font-weight:600; color:var(--muted); }
+.pb.ldesk .chip i.warn { color:var(--warn); }
+.pb.ldesk .chip i.bad { color:var(--bad); }
+.pb.ldesk .chip.on i { color:#fff; }
+/* 업무 탭 다음의 「손댈 것」 칩 묶음 — 사이를 띄워 두 무리로 읽히게 */
+.pb.ldesk .chip:not(.ldesk-alert) + .ldesk-alert { margin-left:12px; }
+
+/* ── 목록 카드 — 왼쪽 상태 칸 + 항목들. 항목은 순서대로 흘러 좁아지면 아래 줄로 ── */
+.pb.ldesk .ldesk-row { cursor:pointer; }
+.pb.ldesk .ldesk-row:hover { background:#f9fafb; }
+.pb.ldesk .ldesk-row.selected:hover { background:var(--picked); }
+.pb.ldesk .ldesk-tile {
+  min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  border-radius:6px; text-align:center; line-height:1.2;
+}
+.pb.ldesk .ldesk-tile b { font-size:var(--title); font-weight:600; }
+.pb.ldesk .ldesk-tile small { font-size:var(--meta); font-weight:500; opacity:.85; }
+.pb.ldesk .ldesk-tile.tone-red { background:#fef3f2; color:var(--bad); }
+.pb.ldesk .ldesk-tile.tone-yellow { background:#fffaeb; color:var(--warn); }
+.pb.ldesk .ldesk-tile.tone-green { background:#ecfdf3; color:var(--good); }
+.pb.ldesk .ldesk-tile.tone-gray { background:#f2f4f7; color:var(--muted); }
+
+.pb.ldesk .ldesk-fields { min-width:0; align-self:center; display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px 16px; }
+.pb.ldesk .ldesk-fields .f { min-width:0; display:flex; flex-direction:column; gap:2px; line-height:1.4; overflow-wrap:anywhere; }
+.pb.ldesk .ldesk-fields .f > span { color:var(--ink); font-size:var(--body); }
+.pb.ldesk .ldesk-fields .f > span > b, .pb.ldesk .ldesk-fields .f.who > b { font-weight:600; }
+.pb.ldesk .ldesk-fields .f.who > b { color:var(--ink); font-size:var(--title); }
+.pb.ldesk .ldesk-fields .f > small { color:var(--muted); font-size:var(--support); }
+/* 넓을 때 한 줄에 같은 자리로 서도록 항목마다 기본 폭을 준다(줄이 같아지면 표처럼 맞는다) */
+.pb.ldesk .f.who   { flex:1 1 104px; }
+.pb.ldesk .f.car   { flex:1.4 1 150px; }
+.pb.ldesk .f.deal  { flex:1.1 1 128px; }
+.pb.ldesk .f.sales { flex:1 1 116px; }
+.pb.ldesk .f.flow  { flex:1.6 1 196px; }
+.pb.ldesk .f.day   { flex:.8 1 88px; }
+.pb.ldesk .f.money { flex:1 1 124px; text-align:right; font-variant-numeric:tabular-nums; }
+.pb.ldesk .f.month { flex:.8 1 88px; }
+.pb.ldesk .f .tag { font-size:var(--support); }
+.pb.ldesk .ldesk-row.is-cancelled .ldesk-fields { color:var(--muted); text-decoration:line-through; }
+.pb.ldesk .ldesk-row.is-cancelled .ldesk-fields .f > span { color:var(--muted); }
+
+/* 진행 체크라인 — 지금 단계만 진하게 */
+.pb.ldesk .ldesk-steps { display:flex; flex-wrap:wrap; gap:4px; }
+.pb.ldesk .ldesk-steps i { padding:1px 6px; border-radius:4px; font-size:var(--meta); font-style:normal; font-weight:500; line-height:16px; }
+.pb.ldesk .ldesk-steps .done { background:#ecfdf3; color:var(--good); }
+.pb.ldesk .ldesk-steps .done::before { content:"✓ "; }
+.pb.ldesk .ldesk-steps .now { background:#fffaeb; color:var(--warn); box-shadow:inset 0 0 0 1px #f5c56b; font-weight:600; }
+.pb.ldesk .ldesk-steps .todo { background:var(--box); color:#98a2b3; }
+
+/* ── 처리 판 ── */
+.pb.ldesk .ldesk-state { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 4px; }
+.pb.ldesk .ldesk-state .tag { font-size:var(--body); }
+.pb.ldesk .ldesk-line { display:grid; grid-template-columns:minmax(64px,.7fr) minmax(0,1.6fr) auto; align-items:center; gap:var(--gap); }
+.pb.ldesk .ldesk-line > span { color:var(--sub); font-size:var(--support); font-weight:500; }
+.pb.ldesk .ldesk-cancel .ldesk-line { grid-template-columns:minmax(0,1fr) auto auto; }
+.pb.ldesk .form > label > input[type="checkbox"] { justify-self:start; }
+.pb.ldesk .ldesk-num { text-align:right; font-variant-numeric:tabular-nums; }
+.pb.ldesk .ldesk-wide { width:100%; }
+.pb.ldesk .ldesk-hint { margin:8px 0 0; color:var(--muted); font-size:var(--support); }
+.pb.ldesk .ldesk-cancel { padding:12px; border-radius:var(--r-card); background:#fef3f2; }
+.pb.ldesk .ldesk-cancel h4 { color:var(--bad); }
+.pb.ldesk .ldesk-first { margin-top:0; }
+.pb.ldesk .notice + .ldesk-first, .pb.ldesk .pb-errs + .ldesk-first { margin-top:12px; }
+.pb.ldesk label.ldesk-keep { margin-top:16px; display:flex; align-items:center; gap:8px; color:var(--sub); font-size:var(--support); cursor:pointer; }
+.pb.ldesk .pb-work .pb-errs { margin-bottom:10px; }
+.pb.ldesk .web-panel-head .panel-close { border:0; background:transparent; color:var(--sub); cursor:pointer; }
+
+/* 판 바닥 단추 · 작은 단추 — 기존 판은 링크(<a>)로 그리지만 여기는 <button> 이라 옛 전역 button 규칙이 면을 지운다. 같은 모양으로 되살린다. */
+.pb.ldesk button.primary { background:var(--navy); color:#fff; border:0; }
+.pb.ldesk button.primary:hover { background:var(--navy-hover); }
+.pb.ldesk button.tertiary { background:#fff; color:var(--sub); border:0; box-shadow:inset 0 0 0 1px var(--field); }
+.pb.ldesk button.small-btn { background:#e6ecf5; color:var(--navy); }
+.pb.ldesk button.small-btn.danger { background:#fef3f2; color:var(--bad); }
+.pb.ldesk button:disabled { background:#e4e7ec !important; color:var(--muted) !important; box-shadow:none; cursor:not-allowed; }
+
+/* ── 폰(≤900) — 한 판씩. 목록 카드의 상태 칸은 56 그대로 ── */
+@media (max-width:900px) {
+  .pb.ldesk .row.ldesk-row { grid-template-columns:56px minmax(0,1fr); }
+  .pb.ldesk .statusbar .ldesk-new { height:36px; }
+  .pb.ldesk .statusbar .panel-close { border:0; background:transparent; font-size:26px; line-height:1; color:var(--sub); cursor:pointer; }
+  .pb.ldesk .f.money { text-align:left; }
 }

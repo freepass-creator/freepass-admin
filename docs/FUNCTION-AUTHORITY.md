@@ -106,7 +106,7 @@ Firestore
 | 상품/Offer/Policy 소비 | FreePass Data consumer boundary |
 | 검색/필터 의미 | `src/domain/search/**` |
 | 접수/인도/실적 사실 | `src/domain/settlement/**` |
-| 청구/수금/지급/정산 | `src/domain/settlement/**` |
+| 청구/수금/지급/정산 | `src/domain/settlement/**` · 운영 규칙은 `docs/DECISIONS.md` DEC-2026-10-04-01(지급 ≤ 수령 · 합의 금액 · 회차청구 탭 · 수수료표 정본) |
 | 계약취소/계약해지 규칙 | `src/domain/contracts/**` + Intake/Settlement guard |
 | 환수 | `src/domain/settlement/clawback.ts` |
 | 데이터 조립점 | `src/server/freepass-data.ts` |

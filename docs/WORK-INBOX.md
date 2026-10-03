@@ -1,3 +1,12 @@
+## 0-F04-READ-GWS. 2026-10-03 — F04 읽기를 gws 로그인으로 (우리캐피탈 정산서 403 해소)
+
+- 목적: 2026-10-02 우리캐피탈 정산서(#165)가 서비스계정 키 파일 없음·Sheets 403 으로 멈춤. 10-03 부터 gws(pyh@teamjpk.com)에 spreadsheets·drive 범위가 생겨 그 로그인으로 읽는다(총괄 지시).
+- 대상 revision: main `1f6f98b`, 작업선 `work/freepass-admin/f04-read-gws` (PR #169 — canon guard 가 WORK-INBOX 를 PR 하나만 쥐게 해 이 기록은 #167 에 둔다).
+- 변경: `scripts/f04-ssot.mts` 에 `--auth sa|gws`. 안 주면 키 파일이 있으면 sa, 없으면 gws. gws 는 `spreadsheets.get`/`values.get`(UNFORMATTED_VALUE) 를 실행 파일로 직접 불러 JSON 인자를 shell 따옴표로 깨뜨리지 않는다(GWS_BIN 또는 npm 전역 gws.ps1 이 가리키는 gws.exe). 읽기만 한다.
+- 검증: `npx tsx scripts/f04-ssot.mts --auth gws` → 탭 33 · 접수 485 = 실은 483 + 보류 2(균형 ✓), 스냅샷 생성. 그 스냅샷으로 `generate-monthly-settlement-pdf.mts --month 2026-09` (우리캐피탈) READY — 1건, 공급가 1,839,250 · 부가세 183,925 · 합계 2,023,175. 이 PC 는 번들 Chromium 이 없어 `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH` 로 설치된 Chrome 을 지정해야 렌더된다. 산출물은 저장소 밖에 두었고 발송·발행 없음. tsc PASS, F04·정산서 37 tests PASS.
+- 남음: 정산서 금액은 지금도 접수 AE `판매수수료`(row.claim)를 쓴다 — U `청구액`을 정산 금액으로 볼지(금액 의미 결정)는 대표 확인 대기. 키 파일 경로(sa)는 그대로 둔다.
+- next_start_here: 정산서 발행 전 `npx tsx scripts/f04-ssot.mts --auth gws` → `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH=<chrome.exe> npx tsx scripts/generate-monthly-settlement-pdf.mts --month YYYY-MM --out <저장소 밖>`.
+
 ## 0-INTAKE-DESK. 2026-10-03 — 접수 관리(/ledger): 접수하고 목록 보는 ERP 화면
 
 - 목적: 사용자 결정 「엑셀은 참고. 아주 심플하게, 엑셀보다 편하고 눈에 띄게. 접수만 하면 된다. 직원이 접수를 편하게, 목록을 편하게. ERP처럼」 + 「세로 스크롤은 있어도 좌우 스크롤은 없게, 줄바뀜이 되더라도」. writer=Claude Code, Codex 읽기 전용 상의(목록=보기 / 오른쪽 판=처리, 기본 탭 처리 필요, 막힌 단계만 진하게). codex/intake-ledger-lifecycle 간편접수(브라우저 저장)는 대체하며 병합하지 않는다.

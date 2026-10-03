@@ -297,7 +297,7 @@ export class Erp5SettlementRepository {
       }
     }
     const db = erp5();
-    // Data 일괄 재계산이 끝나면 제거: 필드가 없는 옛 상품만 로컬 표로 계산한다. 직접접수는 유지.
+    // 상품 접수는 Data 발행 값만 쓴다(없으면 미확정). 로컬 수수료표는 직접 접수에만 쓴다.
     const rules = intakeDataFees(input) ? null : await loadFeeRuleSet();
     const fee = rules ? feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price })
       : { status: 'NO_RULE' as const, why: 'Data 기간별 수수료 사용' };

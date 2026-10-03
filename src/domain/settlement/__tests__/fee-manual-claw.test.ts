@@ -352,8 +352,17 @@ describe('Data 기간별 수수료 읽기', () => {
     }
     assert.equal(intakeRecord(dataInput(undefined, economic('ZERO')), 0, autoRule).claimWritten, null);
   });
-  it('legacy missing fields and direct intake preserve local table behavior', () => {
-    for (const input of [base, dataInput(undefined, undefined), { ...dataInput(economic('KNOWN'), economic('ZERO')), sourceProductId: undefined }]) {
+  it('product intake without published fields stays 미확정 — never sealed with a local-table amount', () => {
+    const x = dataInput(undefined, undefined);
+    assert.deepEqual(feeCompletenessErrors(x, autoRule), []);
+    const r = intakeRecord(x, 0, autoRule);
+    assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [null, null, 0, 0]);
+    assert.match(String(r.settleNote), /미발행/);
+    const read = toSettlementRow(r, 'id').row;
+    assert.deepEqual([read.money.claim, read.money.pay], [null, null]);
+  });
+  it('direct intake preserves local table behavior', () => {
+    for (const input of [base, { ...dataInput(economic('KNOWN'), economic('ZERO')), sourceProductId: undefined }]) {
       const r = intakeRecord(input, 0, autoRule);
       assert.deepEqual([r.claimWritten, r.payWritten], [autoRule.claim, autoRule.pay]);
       assert.equal(feeCompletenessErrors(input, noRule).length, 1);

@@ -172,8 +172,8 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
                 {offers.map((o) => (
                   <button key={o.key} type="button" className={pick?.key === o.key ? 'chip on' : 'chip'} aria-pressed={pick?.key === o.key} onClick={() => choose(o)}>
                     {[o.supplier, o.term ? `${o.term}개월` : '', o.rent !== null ? `월 ${won(o.rent)}` : '', o.deposit ? `보증금 ${won(o.deposit)}` : ''].filter(Boolean).join(' · ')}
-                    {/* Data 수수료가 아직 없는 옛 상품은 저장 때 수수료표로 센다 — 「미확정」으로 보이면 안 된다 */}
-                    {(o.supplierBillingFee || o.channelPayoutFee) && ` · 청구 ${dataFeeAmount(o.supplierBillingFee) === null ? '미확정' : `${won(dataFeeAmount(o.supplierBillingFee))}원`} · 지급 ${dataFeeAmount(o.channelPayoutFee) === null ? '미확정' : `${won(dataFeeAmount(o.channelPayoutFee))}원`}`}
+                    {/* Data 가 발행하지 않은 금액은 저장도 「미확정」이다 — 화면도 같게 보인다 */}
+                    {` · 청구 ${dataFeeAmount(o.supplierBillingFee) === null ? '미확정' : `${won(dataFeeAmount(o.supplierBillingFee))}원`} · 지급 ${dataFeeAmount(o.channelPayoutFee) === null ? '미확정' : `${won(dataFeeAmount(o.channelPayoutFee))}원`}`}
                   </button>
                 ))}
                 {pick && <button type="button" className="chip" onClick={clearFeeSelection}>직접 입력으로</button>}

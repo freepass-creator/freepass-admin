@@ -109,10 +109,15 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   return e;
 }
 
-/** 두 필드 모두 없는 옛 상품만 legacy다. 부분 발행도 로컬 표로 채우지 않는다. */
+/**
+ * 상품 접수의 수수료는 «Data 가 발행한 값만» 쓴다(합의 계약: KNOWN/ZERO 만 쓰고 나머지는 미확정).
+ * ★필드가 없어도 로컬 표로 채우지 않는다 — 「재계산 전 옛 상품」과 「Data 발행 실패」를 가를 수 없어서,
+ *   로컬 금액으로 봉인하면 Data 미확정이 확정 금액처럼 굳는다(#171 접수 관문 지적). 없으면 미확정(null)이다.
+ * 직접 접수(상품 없음)만 기존 수수료표를 쓴다.
+ */
 export function intakeDataFees(x: Pick<IntakeInput, 'sourceProductId' | 'catalogSnapshot'>) {
   const o = x.sourceProductId?.trim() ? x.catalogSnapshot?.offer : undefined;
-  if (!o || (o.supplierBillingFee === undefined && o.channelPayoutFee === undefined)) return null;
+  if (!o) return null;
   return { claim: dataFeeAmount(o.supplierBillingFee), pay: dataFeeAmount(o.channelPayoutFee),
     note: [o.supplierBillingFee, o.channelPayoutFee].map((f, i) =>
       `${i === 0 ? '청구' : '지급'} Data 기간별 수수료 · ${f?.policyId ?? 'policyId 없음'} · ${f?.ruleId ?? 'ruleId 없음'} · ${f?.state ?? '미발행'}${f?.reasonCode ? ` · ${f.reasonCode}` : ''}`).join(' / ') };

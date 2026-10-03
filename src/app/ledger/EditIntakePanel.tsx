@@ -14,7 +14,7 @@ import { factsAction, feeAction, lifecycleAction, progressAction, type FormState
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
 import type { Status } from './LedgerBoard';
-import { Field } from './NewIntakePanel';
+import { Field, ToggleField } from './NewIntakePanel';
 import { formatTermInput, formatWonInput, normName, normPlate, parseWon, won, type LedgerRow } from './model';
 
 type Step = { label: string; action: (s: FormState, f: FormData) => Promise<FormState>; fields: Record<string, string> };
@@ -191,8 +191,8 @@ export function EditIntakePanel({ row: r, options, canWrite, today, status, onCl
         <div className="section">
           <h4>진행</h4>
           <div className="form">
-            <Field label="계약서 받음"><input type="checkbox" name="paper" defaultChecked={r.paper} disabled={off} /></Field>
-            <Field label="인도 완료"><input type="checkbox" name="delivered" defaultChecked={r.delivered} disabled={off} onChange={(e) => setDelivered(e.target.checked)} /></Field>
+            <ToggleField label="계약서" name="paper" defaultOn={r.paper} onText="받음" offText="받기 전" disabled={off} />
+            <ToggleField label="인도" name="delivered" defaultOn={r.delivered} onText="완료" offText="인도 전" disabled={off} onChange={setDelivered} />
             <Field label="인도일"><input type="date" name="deliveredAt" defaultValue={r.deliveredAt || today} max={today} disabled={off || !delivered} /></Field>
             <Field label="청구월"><input type="month" name="billMonth" defaultValue={r.billMonth || r.expectedMonth} disabled={off || !r.delivered} /></Field>
           </div>

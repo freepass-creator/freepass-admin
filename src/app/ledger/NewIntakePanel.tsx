@@ -210,8 +210,8 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         <div className="section">
           <h4>진행</h4>
           <div className="form">
-            <Field label="계약서 받음"><input type="checkbox" name="paper" disabled={off} /></Field>
-            <Field label="인도 완료"><input type="checkbox" name="delivered" disabled={off} /></Field>
+            <ToggleField key={`p${requestId}`} label="계약서" name="paper" onText="받음" offText="받기 전" disabled={off} />
+            <ToggleField key={`d${requestId}`} label="인도" name="delivered" onText="완료" offText="인도 전" disabled={off} />
             <Field label="인도일"><input type="date" name="deliveredAt" max={today} disabled={off} /></Field>
           </div>
         </div>
@@ -250,5 +250,23 @@ export function Field({ label, req, children }: { label: string; req?: boolean; 
       <span>{label}{req && <b className="required-mark"> *</b>}</span>
       {children}
     </label>
+  );
+}
+
+/**
+ * 켜고 끄는 단추 — 체크박스 대신(사용자 2026-10-03 「체크로 할 필요 없이 버튼을 누르면 되지」).
+ * 켜지면 숨은 칸에 'on' 을 실어 보낸다(서버는 체크박스와 같은 값으로 읽는다).
+ */
+export function ToggleField({ label, name, defaultOn = false, onText, offText, disabled, onChange }: {
+  label: string; name: string; defaultOn?: boolean; onText: string; offText: string; disabled?: boolean; onChange?: (on: boolean) => void;
+}) {
+  const [on, setOn] = useState(defaultOn);
+  return (
+    <div className="ldesk-toggle-row">
+      <span>{label}</span>
+      {on && <input type="hidden" name={name} value="on" />}
+      <button type="button" className={on ? 'ldesk-toggle on' : 'ldesk-toggle'} aria-pressed={on} disabled={disabled}
+        onClick={() => { setOn(!on); onChange?.(!on); }}>{on ? `✓ ${onText}` : offText}</button>
+    </div>
   );
 }

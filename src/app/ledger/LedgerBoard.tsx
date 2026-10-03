@@ -70,6 +70,24 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
 
   const scrollRef = useRef<HTMLDivElement>(null);
   /* 입력판은 목록 위에 열린다 — 줄을 눌러 열면 맨 위로 올려 입력판이 보이게 */
+  /* 줄의 처리 단추 — 누른 직후 5초 동안 「되돌리기」(오조작 대비, Codex 상의 2026-10-03). 그 뒤의 되돌리기는 고치기 판에서 */
+  const [undo, setUndo] = useState<{ label: string; fields: Record<string, string> } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const press = async (label: string, fields: Record<string, string>, back: Record<string, string>) => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndo(null);
+    if (await run(label, progressAction, fields)) {
+      setUndo({ label, fields: back });
+      undoTimer.current = setTimeout(() => setUndo(null), 5000);
+    }
+  };
+  const revert = async () => {
+    if (!undo) return;
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    const u = undo; setUndo(null);
+    await run(`${u.label} 되돌림`, progressAction, u.fields);
+  };
+
   const show = (what: string | null) => { setOpen(what); setStatus(null); };
   /* 입력판이 그려진 «뒤에» 맨 위로 — 그리기 전에 올리면 입력판이 끼어들며 목록이 밀려 판이 화면 밖에 남는다 */
   useEffect(() => { if (open) scrollRef.current?.scrollTo({ top: 0 }); }, [open]);
@@ -137,7 +155,8 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                 ))}
               </div>
               {/* 줄 안에서 바로 체크한 결과 — 입력판이 닫혀 있을 때 여기 보인다 */}
-              {status && !open && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
+              {status && !open && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}
+                {undo && status.kind === 'ok' && <button type="button" className="ldesk-undo" disabled={busy} onClick={() => void revert()}>되돌리기</button>}</p>}
             </div>
 
             <div className="list" role="list">
@@ -169,18 +188,22 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                       <F k="day" l="접수일" v={shortDay(r.receivedAt)} sub={!r.delivered && !r.cancelled && r.ageDays !== null ? <em className={late ? 'tag bad' : undefined}>{r.ageDays}일째</em> : null} />
                       <F k="channel" l="영업채널" v={r.channel} />
                       <F k="agent" l="담당자" v={r.agent} />
+                      {/* ★체크 대신 버튼(사용자 2026-10-03 「구글처럼 체크로 할 필요 없이 버튼을 누르면 되지」) —
+                          누르면 바로 처리, 처리된 뒤엔 ✓ 와 날짜만 보인다. 되돌리기는 고치기 판에서. */}
                       <span className="f fk-check" onClick={(e) => e.stopPropagation()}>
                         <small>계약서</small>
-                        <input type="checkbox" checked={r.paper} disabled={!canWrite || busy || r.cancelled} aria-label={`${r.plate || r.customer} 계약서`}
-                          onChange={(e) => void run(`${r.plate || r.customer} 계약서`, progressAction, { code: r.code, kind: 'paper', on: e.target.checked ? '1' : '0' })} />
+                        {r.paper
+                          ? <span className="ldesk-done">✓ 받음</span>
+                          : <button type="button" className="ldesk-act" disabled={!canWrite || busy || r.cancelled}
+                              onClick={() => void press(`${r.plate || r.customer} 계약서`, { code: r.code, kind: 'paper', on: '1' }, { code: r.code, kind: 'paper', on: '0' })}>받음</button>}
                       </span>
                       <span className="f fk-check fk-delivered" onClick={(e) => e.stopPropagation()}>
                         <small>인도</small>
-                        <span><input type="checkbox" checked={r.delivered} disabled={!canWrite || busy || r.cancelled} aria-label={`${r.plate || r.customer} 인도`}
-                          onChange={(e) => void run(`${r.plate || r.customer} 인도`, progressAction, { code: r.code, kind: 'delivered', on: e.target.checked ? '1' : '0', deliveredAt: r.deliveredAt || today })} />
-                          {r.deliveredAt && <i>{shortDay(r.deliveredAt)}</i>}</span>
-                      </span>
-                      <F k="month" l={r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'} v={r.billMonth || r.expectedMonth || '미정'} />
+                        {r.delivered
+                          ? <span className="ldesk-done">✓ {shortDay(r.deliveredAt)}</span>
+                          : <button type="button" className="ldesk-act" disabled={!canWrite || busy || r.cancelled} title="오늘 날짜로 인도 완료"
+                              onClick={() => void press(`${r.plate || r.customer} 인도`, { code: r.code, kind: 'delivered', on: '1', deliveredAt: today }, { code: r.code, kind: 'delivered', on: '0', deliveredAt: today })}>인도 완료</button>}
+                      </span>                      <F k="month" l={r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'} v={r.billMonth || r.expectedMonth || '미정'} />
                       <F k="claim" l="청구액" v={r.claim === null ? <b className="tag warn">미확정</b> : won(r.claim)} num strong />
                       <F k="paid" l="지급액" v={r.pay === null ? <b className="tag warn">미확정</b> : won(r.pay)} num strong />
                       <span className="f fk-flow">

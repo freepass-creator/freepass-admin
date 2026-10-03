@@ -59,7 +59,7 @@
   "active": [
     {
       "work_order": "intake-sheet-20261003",
-      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as the Excel/F04 접수 tab — one spreadsheet-style table (entry row, cumulative newest-first list, inline cell edit, 청구월 filter, 청구액/지급액 totals) reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
+      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as a simple ERP intake desk — list for viewing (attention chips, task tabs, one row per intake, progress checkline) and a right panel for work (new intake, selected intake progress/amounts), no horizontal scroll reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
       "branch": "work/freepass-admin/intake-sheet-20261003",
       "writer": "Claude Code",
       "reviewer": "Codex (read-only)",

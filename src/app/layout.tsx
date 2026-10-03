@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata = {
-  title: 'freepasserp.com · admin',
-  description: 'FreePass internal admin ERP',
+  title: 'FreePass Admin · Data Consumer',
+  description: 'FreePass Data versioned read-model consumer',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

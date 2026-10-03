@@ -1,0 +1,39 @@
+{
+  "contract": "freepass-data.admin-read-model/v1",
+  "version": "1.0.0",
+  "consumer": "freepass-admin",
+  "authority": "freepass-data",
+  "transport": "UNBOUND_FIXTURE",
+  "identity": {
+    "required": [
+      "datasetRevision",
+      "canonicalProductId",
+      "productRevision",
+      "sourceSnapshotId",
+      "provenanceRef"
+    ]
+  },
+  "semantics": {
+    "fieldStates": ["KNOWN", "UNKNOWN", "CONFLICT", "PARTIAL", "REDACTED"],
+    "holdStates": ["CLEAR", "HOLD"],
+    "freshnessStates": ["FRESH", "STALE", "PARTIAL", "ERROR"],
+    "matchStates": ["EXACT", "PARTIAL", "UNMATCHED"],
+    "rules": [
+      "UNKNOWN is not zero, false, unavailable, or unlimited",
+      "CONFLICT and PARTIAL remain visible to the consumer",
+      "matchedOfferIds are authoritative and must not be recomputed by Admin",
+      "cursor is bound to datasetRevision, query, filters, and sort",
+      "role redaction is explicit and is not represented as missing data",
+      "Admin does not read supplier sheets, ERP, or source Firestore directly"
+    ]
+  },
+  "operations": [
+    "readDashboard",
+    "readProductDetail",
+    "readAudit"
+  ],
+  "runtimeBinding": {
+    "status": "HOLD_UNTIL_FREEPASS_DATA_CONTRACT_GREEN",
+    "replacementBoundary": "AdminDataPort"
+  }
+}

@@ -207,6 +207,19 @@ export interface PlateOffer {
   supplier: string; model: string; product: string; term: number | null; rent: number | null; deposit: number | null; price: number | null;
 }
 
+/**
+ * 조회 가드 — 접수 원장은 봉인 저장까지 가는 업무라 «정본이 확인된» 상품 조건만 불러온다.
+ * (총괄·Codex 결정 2026-10-03: FreePass Data ACTIVE + policyParity/commercialCoverage COMPLETE 가 아니면 보류. fail-closed)
+ * 돌려주는 값: null = 불러와도 된다 / 글 = 보류 이유(화면에 그대로 보인다).
+ */
+export function catalogLookupHold(meta: { authority?: string; policyParity?: string; commercialCoverage?: string } | null | undefined): string | null {
+  if (!meta) return '프리패스 상품 정본을 확인하지 못했습니다 — 조건을 불러오지 않습니다. 직접 입력해 주세요';
+  if (meta.authority !== undefined && meta.authority !== 'CANONICAL_ACTIVE') return '프리패스 상품 정본(ACTIVE)이 아닙니다 — 조건을 불러오지 않습니다. 직접 입력해 주세요';
+  if (meta.policyParity !== 'COMPLETE') return '프리패스 상품의 정책 검증이 끝나지 않았습니다 — 정본 확인 전이라 조건을 불러오지 않습니다. 직접 입력해 주세요';
+  if (meta.commercialCoverage !== 'COMPLETE') return '프리패스 상품의 거래 조건 검증이 끝나지 않았습니다 — 정본 확인 전이라 조건을 불러오지 않습니다. 직접 입력해 주세요';
+  return null;
+}
+
 /** 차량번호 비교 — 공백·하이픈 무시 */
 export const plateKey = (s: string) => s.replace(/[\s-]/g, '').toUpperCase();
 

@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productByIdFresh, productList } from '../../server/freepass-data';
-import { plateOffers, type PlateOffer } from '../ledger/model';
+import { freepassDataProducts, productByIdFresh } from '../../server/freepass-data';
+import { catalogLookupHold, plateOffers, type PlateOffer } from '../ledger/model';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
@@ -49,21 +49,26 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
 
 /**
  * 접수 관리(/ledger) — 차량번호로 프리패스 상품 조건을 찾는다. 읽기만 한다.
- * 기존 계약접수(/intake)와 같은 상품 출입구(productList)를 쓴다 — 다른 저장소·fallback 을 새로 만들지 않는다.
- * 고른 조건은 저장 때 createIntakeFrom 이 상품을 다시 읽어 봉인(snapshot)한다.
+ * ★FreePass Data ACTIVE 정본만 쓰고, policyParity·commercialCoverage 가 COMPLETE 가 아니면 «보류» 한다
+ *   (총괄·Codex 결정 2026-10-03 — 원장은 봉인 저장까지 가므로 정본 없는 값을 불러오지 않는다. 구 DB/데모 fallback 없음).
+ *   연결 실패도 보류다 — 값을 추측하지 않고 직접 입력을 유지한다.
+ * 고른 조건은 저장 때 createIntakeFrom 이 상품을 다시 읽어 확인·봉인한다(다르면 저장을 막는다).
  */
-export async function ledgerPlateLookupAction(plate: string): Promise<{ offers: PlateOffer[]; message: string }> {
+export async function ledgerPlateLookupAction(plate: string): Promise<{ offers: PlateOffer[]; message: string; held?: boolean }> {
   const denied = await requireAdmin();
   if (denied) return { offers: [], message: denied };
   if (typeof plate !== 'string' || !plate.trim() || plate.length > 30) return { offers: [], message: '차량번호를 확인해 주세요' };
+  let catalog: Awaited<ReturnType<typeof freepassDataProducts.list>>;
   try {
-    const offers = plateOffers((await productList()).rows, plate);
-    return { offers, message: offers.length ? `${offers.length}개 조건이 있습니다 — 고르면 조건이 채워집니다` : '프리패스 상품에 없는 차량입니다 — 직접 입력합니다' };
+    catalog = await freepassDataProducts.list();
   } catch {
-    return { offers: [], message: '프리패스 상품을 읽지 못했습니다 — 조건을 추측하지 않고 직접 입력합니다' };
+    return { offers: [], held: true, message: catalogLookupHold(null)! };
   }
+  const hold = catalogLookupHold(catalog.meta);
+  if (hold) return { offers: [], held: true, message: hold };
+  const offers = plateOffers(catalog.rows, plate);
+  return { offers, message: offers.length ? `${offers.length}개 조건이 있습니다 — 고르면 조건이 채워집니다` : '프리패스 상품에 없는 차량입니다 — 직접 입력합니다' };
 }
-
 /** 접수표(/ledger) — 같은 저장 규칙, 화면을 옮기지 않고 결과만 돌려준다. */
 export type LedgerCreateState = FormState & { code?: string; created?: boolean };
 export async function ledgerCreateAction(_: LedgerCreateState, f: FormData): Promise<LedgerCreateState> {

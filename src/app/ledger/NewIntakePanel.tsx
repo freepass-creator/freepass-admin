@@ -47,6 +47,8 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
   /* 차량번호 조회 — 고른 Offer 가 있으면 «상품 접수» */
   const [offers, setOffers] = useState<PlateOffer[]>([]);
   const [lookupMsg, setLookupMsg] = useState('');
+  /** 정본 확인 전이라 조회를 보류했나 — 이유를 경고로 보인다 */
+  const [held, setHeld] = useState(false);
   const [looking, setLooking] = useState(false);
   const [pick, setPick] = useState<PlateOffer | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -81,7 +83,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
     setLooking(true); setPick(null);
     try {
       const r = await ledgerPlateLookupAction(plate);
-      setOffers(r.offers); setLookupMsg(r.message);
+      setOffers(r.offers); setLookupMsg(r.message); setHeld(!!r.held);
       if (r.offers.length === 1) choose(r.offers[0]);
     } catch {
       setOffers([]); setLookupMsg('조회하지 못했습니다 — 직접 입력합니다');
@@ -153,7 +155,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
             </div>
             {(lookupMsg || offers.length > 0) && (
               <div className="ldesk-offers" role="group" aria-label="프리패스 상품 조건">
-                {lookupMsg && <p className="ldesk-hint">{lookupMsg}</p>}
+                {lookupMsg && <p className={held ? 'notice warn' : 'ldesk-hint'} role={held ? 'status' : undefined}>{lookupMsg}</p>}
                 {offers.map((o) => (
                   <button key={o.key} type="button" className={pick?.key === o.key ? 'chip on' : 'chip'} aria-pressed={pick?.key === o.key} onClick={() => choose(o)}>
                     {[o.supplier, o.term ? `${o.term}개월` : '', o.rent !== null ? `월 ${won(o.rent)}` : '', o.deposit ? `보증금 ${won(o.deposit)}` : ''].filter(Boolean).join(' · ')}

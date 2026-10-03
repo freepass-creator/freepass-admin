@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { CanonicalProduct } from '../../domain/product/types';
 import {
-  billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, normName, normPlate, parseWon, plateOffers, sortLedger, stepsOf, toLedgerRow,
+  billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, catalogLookupHold, normName, normPlate, parseWon, plateOffers, sortLedger, stepsOf, toLedgerRow,
   toneOf, totalsOf, won, type LedgerRow,
 } from './model';
 
@@ -103,6 +103,15 @@ test('plateOffers: one choice per offer, plate spacing ignored, ledger product k
   assert.equal(r[1].supplier, '손오공렌트');
   assert.deepEqual(plateOffers(products, ''), []);
   assert.deepEqual(plateOffers(products, '00가0000'), []);
+});
+
+test('plate lookup is held unless the catalog is ACTIVE with complete parity (fail-closed)', () => {
+  assert.equal(catalogLookupHold({ authority: 'CANONICAL_ACTIVE', policyParity: 'COMPLETE', commercialCoverage: 'COMPLETE' }), null);
+  assert.match(catalogLookupHold(null) ?? '', /확인하지 못했습니다/);
+  assert.match(catalogLookupHold({ authority: 'OBSERVE', policyParity: 'COMPLETE', commercialCoverage: 'COMPLETE' }) ?? '', /ACTIVE/);
+  assert.match(catalogLookupHold({ authority: 'CANONICAL_ACTIVE', policyParity: 'INCOMPLETE', commercialCoverage: 'COMPLETE' }) ?? '', /정책 검증/);
+  assert.match(catalogLookupHold({ authority: 'CANONICAL_ACTIVE', policyParity: 'COMPLETE', commercialCoverage: 'INCOMPLETE' }) ?? '', /거래 조건/);
+  assert.match(catalogLookupHold({ authority: 'CANONICAL_ACTIVE', policyParity: 'COMPLETE' }) ?? '', /거래 조건/, 'missing coverage is not complete');
 });
 
 test('won and parseWon', () => {

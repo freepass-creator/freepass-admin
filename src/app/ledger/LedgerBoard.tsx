@@ -5,11 +5,11 @@
  * ★사용자 2026-10-03 「목록과 상세 2:1 좋다 · 나눠 놓지 말고 접수할 때만 옆이 열리게 ·
  *   쪼그라들면 항목 하나하나가 카드라서 순서대로 아래로 내려가면 된다 · 폰트 다 맞추고 허접해 보이면 안 된다」
  *   - 평소: 목록이 판 셋 너비를 다 쓴다.
- *   - 「+ 새 접수」 또는 줄을 누르면: 목록 2 : 처리 판 1.
+ *   - 「+ 새 접수」 또는 줄을 누르면: 목록 «위»에 입력판이 열리고 목록은 아래로 내려간다(2026-10-03 후속).
  *   - 줄 = 기존 목록 카드(왼쪽 상태 칸 + 항목들). 항목은 순서대로 흘러 좁아지면 아래 줄로 내려간다. 좌우 스크롤 없음.
  *   - 폰: 한 판씩(목록 ↔ 처리), 기존 판과 같은 상태표시줄 · 바닥 단추.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FormState } from '../intake/actions';
 import type { ReactNode } from 'react';
@@ -68,7 +68,11 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
     }
   }, [router]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  /* 입력판은 목록 위에 열린다 — 줄을 눌러 열면 맨 위로 올려 입력판이 보이게 */
   const show = (what: string | null) => { setOpen(what); setStatus(null); };
+  /* 입력판이 그려진 «뒤에» 맨 위로 — 그리기 전에 올리면 입력판이 끼어들며 목록이 밀려 판이 화면 밖에 남는다 */
+  useEffect(() => { if (open) scrollRef.current?.scrollTo({ top: 0 }); }, [open]);
   const onSaved = useCallback((s: Status, code?: string) => {
     setStatus(s);
     if (code) { setJustSaved(code); setTab('처리 필요'); setChip(null); }
@@ -94,34 +98,48 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
             {open !== 'new' && <button type="button" className="ldesk-new" onClick={() => show('new')}>+ 새 접수</button>}
           </header>
 
-          <div className="list-tools">
-            <div className="search">
-              <div className="search-field">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="차량번호 · 고객 · 공급사 · 담당자" aria-label="검색" />
+          {/*
+            ★입력판은 목록 «위»에 연다(사용자 2026-10-03 「목록은 가로로 길게, 접수하기 누르면 그 위에 · 목록은 아래로」).
+            목록은 늘 판 전체 폭. 입력판·검색·목록이 한 스크롤 안에 있어 입력판이 열리면 목록이 그만큼 아래로 내려간다.
+          */}
+          <div className="web-scroll ldesk-scroll" ref={scrollRef}>
+            {open && (
+              <div className="ldesk-top" aria-label={current ? '접수 고치기' : '새 접수'}>
+                {current
+                  ? <EditIntakePanel key={current.code} row={current} options={options} canWrite={canWrite} today={today} status={status}
+                      onClose={() => show(null)} onNew={() => show('new')} onDone={(s) => { setStatus(s); router.refresh(); }} />
+                  : <NewIntakePanel options={options} canWrite={canWrite} today={today} status={status}
+                      onClose={() => show(null)} onSaved={onSaved} />}
               </div>
-              <select className="filter-select" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="청구월">
-                <option value="">청구월 전체</option>
-                {months.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div className="chips" role="tablist" aria-label="업무 상태">
-              {LEDGER_TABS.map((t) => (
-                <button key={t} type="button" role="tab" className={!chip && tab === t ? 'chip on' : 'chip'} aria-selected={!chip && tab === t}
-                  onClick={() => { setTab(t); setChip(null); }}>{t}<i>{tabCounts[t]}</i></button>
-              ))}
-              {LEDGER_CHIPS.map((c) => (
-                <button key={c} type="button" className={['chip', 'ldesk-alert', chip === c ? 'on' : ''].join(' ').trim()} aria-pressed={chip === c}
-                  onClick={() => setChip(chip === c ? null : c)}>
-                  {c}<i className={c === '금액 미확정' ? 'bad' : 'warn'}>{chipCounts[c]}</i>
-                </button>
-              ))}
-            </div>
-          </div>
+            )}
 
-          {/* 줄 안에서 바로 체크한 결과 — 오른쪽 판이 닫혀 있을 때 여기 보인다 */}
-          {status && !open && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
-          <div className="web-scroll">
+            <div className="list-tools ldesk-tools">
+              <div className="search">
+                <div className="search-field">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                  <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="차량번호 · 고객 · 공급사 · 담당자" aria-label="검색" />
+                </div>
+                <select className="filter-select" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="청구월">
+                  <option value="">청구월 전체</option>
+                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="chips" role="tablist" aria-label="업무 상태">
+                {LEDGER_TABS.map((t) => (
+                  <button key={t} type="button" role="tab" className={!chip && tab === t ? 'chip on' : 'chip'} aria-selected={!chip && tab === t}
+                    onClick={() => { setTab(t); setChip(null); }}>{t}<i>{tabCounts[t]}</i></button>
+                ))}
+                {LEDGER_CHIPS.map((c) => (
+                  <button key={c} type="button" className={['chip', 'ldesk-alert', chip === c ? 'on' : ''].join(' ').trim()} aria-pressed={chip === c}
+                    onClick={() => setChip(chip === c ? null : c)}>
+                    {c}<i className={c === '금액 미확정' ? 'bad' : 'warn'}>{chipCounts[c]}</i>
+                  </button>
+                ))}
+              </div>
+              {/* 줄 안에서 바로 체크한 결과 — 입력판이 닫혀 있을 때 여기 보인다 */}
+              {status && !open && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
+            </div>
+
             <div className="list" role="list">
               {shown.map((r) => {
                 const tone = toneOf(r);
@@ -131,21 +149,26 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                   <div key={r.code} role="listitem" className={cls} tabIndex={0} aria-current={r.code === open || undefined}
                     onClick={() => show(r.code)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); show(r.code); } }}>
                     <span className={`ldesk-tile tone-${tone}`}><b>{TILE[r.task]}</b>{r.task !== '완료' && r.task !== '취소' && <small>{r.task === '정산' ? '대기' : '할 일'}</small>}</span>
-                    {/* ★접수 내용을 줄에 다 띄운다(사용자 2026-10-03) — 새 접수와 같은 차례: 차량 → 영업 → 대여 조건 → 진행 → 금액 → 메모 */}
+                    {/*
+                      ★접수 내용을 줄에 다 띄운다. 두 줄로 나눠 읽기 쉽게(사용자 2026-10-03 「순서를 보기 좋게」):
+                        첫 줄 = 계약 내용(누가 · 무슨 차 · 어떤 조건)   둘째 줄 = 진행·정산(언제 · 누가 팔았나 · 어디까지 · 얼마)
+                      넓으면 표처럼 칸이 위아래로 맞고, 좁으면 같은 차례로 흐른다.
+                    */}
                     <span className="ldesk-fields">
-                      <F k="day" l="접수일" v={shortDay(r.receivedAt)} sub={!r.delivered && !r.cancelled && r.ageDays !== null ? <em className={late ? 'tag bad' : undefined}>{r.ageDays}일째</em> : null} />
-                      <F k="plate" l="차량번호" v={r.plate || '미정'} strong />
-                      <F k="supplier" l="공급사" v={r.supplier} />
-                      <F k="model" l="모델" v={r.model} />
-                      <F k="price" l="차량가액" v={won(r.price)} num />
-                      <F k="channel" l="영업채널" v={r.channel} />
-                      <F k="agent" l="담당자" v={r.agent} />
                       <F k="customer" l="고객명" v={r.customer} strong />
+                      <F k="plate" l="차량번호" v={r.plate || '미정'} strong />
+                      <F k="model" l="모델" v={r.model} />
+                      <F k="supplier" l="공급사" v={r.supplier} />
                       <F k="product" l="상품구분" v={r.product} />
                       <F k="term" l="기간" v={r.term ? `${r.term}개월` : ''} />
-                      <F k="rent" l="렌탈료" v={won(r.rent)} num />
+                      <F k="rent" l="렌탈료(월)" v={won(r.rent)} num />
                       <F k="deposit" l="보증금" v={won(r.deposit)} num />
+                      <F k="price" l="차량가액" v={won(r.price)} num />
                       <F k="pay-kind" l="분납" v={r.payKind} />
+
+                      <F k="day" l="접수일" v={shortDay(r.receivedAt)} sub={!r.delivered && !r.cancelled && r.ageDays !== null ? <em className={late ? 'tag bad' : undefined}>{r.ageDays}일째</em> : null} />
+                      <F k="channel" l="영업채널" v={r.channel} />
+                      <F k="agent" l="담당자" v={r.agent} />
                       <span className="f fk-check" onClick={(e) => e.stopPropagation()}>
                         <small>계약서</small>
                         <input type="checkbox" checked={r.paper} disabled={!canWrite || busy || r.cancelled} aria-label={`${r.plate || r.customer} 계약서`}
@@ -169,21 +192,11 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                   </div>
                 );
               })}
-            </div>            {shown.length === 0 && <p className="empty">{chip || tab === '처리 필요' ? '지금 손댈 접수가 없습니다.' : '조건에 맞는 접수가 없습니다.'}</p>}
+            </div>
+            {shown.length === 0 && <p className="empty">{chip || tab === '처리 필요' ? '지금 손댈 접수가 없습니다.' : '조건에 맞는 접수가 없습니다.'}</p>}
           </div>
         </section>
-
-        {open && (
-          <section className="web-panel pb-work" aria-label={current ? '접수 처리' : '새 접수'}>
-            {current
-              ? <EditIntakePanel key={current.code} row={current} options={options} canWrite={canWrite} today={today} status={status}
-                  onClose={() => show(null)} onNew={() => show('new')} onDone={(s) => { setStatus(s); router.refresh(); }} />
-              : <NewIntakePanel options={options} canWrite={canWrite} today={today} status={status}
-                  onClose={() => show(null)} onSaved={onSaved} />}
-          </section>
-        )}
-      </div>
-    </div>
+      </div>    </div>
   );
 }
 

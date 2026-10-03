@@ -207,19 +207,19 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
           </div>
         </div>
 
-        <details className="more form-disclosure">
-          <summary>진행 · 계약서 · 인도</summary>
+        <div className="section">
+          <h4>진행</h4>
           <div className="form">
             <Field label="계약서 받음"><input type="checkbox" name="paper" disabled={off} /></Field>
             <Field label="인도 완료"><input type="checkbox" name="delivered" disabled={off} /></Field>
             <Field label="인도일"><input type="date" name="deliveredAt" max={today} disabled={off} /></Field>
           </div>
-        </details>
+        </div>
 
-        <label className="ldesk-keep"><input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />저장 후 같은 담당자로 이어서 접수</label>
       </div>
 
       <div className="web-actions">
+        <label className="ldesk-keep"><input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />저장 후 같은 담당자로 이어서 접수</label>
         <button type="button" className="tertiary" onClick={onClose}>닫기</button>
         <button type="submit" className="primary" disabled={off} title="Ctrl+Enter 로도 저장됩니다">{pending ? '저장 중…' : '접수하기'}</button>
       </div>

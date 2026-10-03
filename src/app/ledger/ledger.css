@@ -1,0 +1,134 @@
+/* 접수표 — 엑셀 접수 탭처럼 촘촘한 한 장. 공용 토큰(erp-standard.css)만 쓴다. */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 16px;
+  font-family: var(--erp-font-family);
+  color: var(--erp-color-text);
+  background: var(--erp-color-bg);
+}
+
+.ledger-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.ledger-title { margin: 0; font-size: var(--erp-fs-title); font-weight: 700; }
+.ledger .ledger-bar label.ledger-field { white-space: nowrap; display: flex; flex-direction: row; align-items: center; gap: 6px; font-size: 13px; color: var(--erp-color-text-2); }
+.ledger-field select,
+.ledger-field input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--erp-color-line-strong);
+  border-radius: 4px;
+  background: var(--erp-color-surface);
+  font: inherit;
+  color: var(--erp-color-text);
+}
+.ledger-search input { width: 220px; }
+.ledger .ledger-bar label.ledger-check { display: flex; flex-direction: row; align-items: center; gap: 4px; font-size: 13px; color: var(--erp-color-text-2); }
+
+.ledger-totals { display: flex; gap: 16px; margin: 0 0 0 auto; }
+.ledger-totals div { display: flex; align-items: baseline; gap: 6px; }
+.ledger-totals dt { font-size: 12px; color: var(--erp-color-text-muted); }
+.ledger-totals dd { margin: 0; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ledger-totals small { margin-left: 4px; font-size: 12px; font-weight: 500; color: var(--erp-color-warn); }
+
+.ledger-alert,
+.ledger-ok { margin: 0; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+.ledger-alert { color: var(--erp-color-err-text); background: var(--erp-color-err-bg); }
+.ledger-ok { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
+
+/* 표만 가로·세로로 스크롤한다. 페이지 자체는 가로로 넘치지 않는다. */
+.ledger-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--erp-color-line);
+  background: var(--erp-color-surface);
+}
+.ledger-table { border-collapse: separate; border-spacing: 0; font-size: 13px; white-space: nowrap; }
+.ledger-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 32px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--erp-color-line-strong);
+  background: var(--erp-color-tabs-bg);
+  font-weight: 600;
+  text-align: left;
+  color: var(--erp-color-text-2);
+}
+.ledger-table td {
+  height: 30px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--erp-color-line-row);
+  border-right: 1px solid var(--erp-color-line-row);
+  vertical-align: middle;
+}
+.ledger-table td:has(> .cell) { padding: 0; }
+.ledger-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ledger-table .mid { text-align: center; }
+.ledger-table .muted { color: var(--erp-color-text-3); font-size: 12px; }
+.ledger-table .memo { max-width: 240px; overflow: hidden; text-overflow: ellipsis; color: var(--erp-color-text-2); }
+.ledger-table tbody tr:hover td { background: var(--erp-color-row-hover); }
+
+/* 칸 안의 입력은 칸처럼 보인다 — 눌러야 테두리가 보인다. */
+.ledger-table .cell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 88px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.ledger-table .cell.num { min-width: 96px; text-align: right; }
+.ledger-table .cell:focus { outline: none; border-color: var(--erp-color-info); background: var(--erp-color-surface); }
+.ledger-table .cell:disabled { color: inherit; opacity: 1; }
+.ledger-table .cell::placeholder { color: var(--erp-color-text-3); }
+
+/* 맨 위 입력 줄 — 표 머리 바로 아래에 붙어 있다. */
+.ledger-entry td {
+  position: sticky;
+  top: 32px;
+  z-index: 1;
+  background: var(--erp-color-primary-weak);
+  border-bottom: 2px solid var(--erp-color-line-strong);
+}
+.ledger-submit {
+  height: 26px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--erp-color-primary);
+  color: var(--erp-color-on-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ledger-submit:disabled { opacity: .5; cursor: default; }
+
+/* 취소 — 엑셀과 같이 붉은 바탕 + 취소선 */
+.ledger-table tr.is-cancelled td { background: var(--erp-color-err-bg); color: var(--erp-color-err-text); text-decoration: line-through; }
+
+.ledger-empty { margin: 0; padding: 24px; text-align: center; color: var(--erp-color-text-muted); }
+
+/* 공용 틀은 폰에서 PC 화면(.erp-screen)을 숨긴다. 접수표는 한 장짜리라 폰에서도 그대로 보인다. */
+@media (max-width: 900px) {
+  .erp-screen.ledger { display: flex !important; }
+}
+
+@media (max-width: 767px) {
+  .ledger { padding: 12px; }
+  .ledger-totals { margin-left: 0; flex-wrap: wrap; }
+  .ledger-search input { width: 100%; }
+  .ledger-search { flex: 1 1 100%; }
+}

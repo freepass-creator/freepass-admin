@@ -16,6 +16,8 @@ type Item = { key: string; label: string; href: string; icon: string };
 const FLOW: Item[] = [
   { key: '상품', label: '상품찾기', href: '/products', icon: 'search' },
   { key: '접수', label: '계약접수', href: '/intake', icon: 'clipboard' },
+  /* 접수표 — 엑셀 접수 탭 한 장(사용자 결정 2026-10-03). 기존 화면과 나란히 둔다. */
+  { key: '접수표', label: '접수표', href: '/ledger', icon: 'database' },
   { key: '실적', label: '실적현황', href: '/intake?iv=완납실적&wiv=실적', icon: 'circle-check' },
   { key: '정산', label: '정산관리', href: '/settlement', icon: 'wallet' },
 ];
@@ -28,6 +30,7 @@ function useCurrent(): string {
   const path = usePathname() || '/';
   const sp = useSearchParams();
   if (path.startsWith('/settlement')) return '정산';
+  if (path.startsWith('/ledger')) return '접수표';
   if (path.startsWith('/products')) return '상품';
   if (path.startsWith('/intake')) return 실적칸.includes(sp.get('iv') ?? '') || sp.get('wiv') === '실적' ? '실적' : '접수';
   if (path.startsWith('/esign')) return '계약';

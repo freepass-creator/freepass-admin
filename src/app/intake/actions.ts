@@ -36,6 +36,26 @@ const N = (f: FormData, k: string) => {
 };
 
 export async function createIntakeAction(_: FormState, f: FormData): Promise<FormState> {
+  const r = await createIntakeFrom(f);
+  if ('errors' in r) return r;
+  /*
+   * ★이미 있던 줄이면 새로 안 만들고 그 줄로 보낸다 (대표 「있으면 안 올리면 되잖아」)
+   * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
+   *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
+   */
+  redirect(savedIntakeHref(S(f, 'returnContext'), r.code, r.created));
+}
+
+/** 접수표(/ledger) — 같은 저장 규칙, 화면을 옮기지 않고 결과만 돌려준다. */
+export type LedgerCreateState = FormState & { code?: string; created?: boolean };
+export async function ledgerCreateAction(_: LedgerCreateState, f: FormData): Promise<LedgerCreateState> {
+  const r = await createIntakeFrom(f);
+  if ('errors' in r) return r;
+  revalidatePath('/ledger');
+  return { errors: [], code: r.code, created: r.created };
+}
+
+async function createIntakeFrom(f: FormData): Promise<FormState | { code: string; created: boolean }> {
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   let input: IntakeInput = {
     receivedAt: S(f, 'receivedAt'), plate: S(f, 'plate'), model: S(f, 'model'),
@@ -115,12 +135,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
-  /*
-   * ★이미 있던 줄이면 새로 안 만들고 그 줄로 보낸다 (대표 「있으면 안 올리면 되잖아」)
-   * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
-   *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
-   */
-  redirect(savedIntakeHref(S(f, 'returnContext'), res.code, res.created));
+  return res;
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {

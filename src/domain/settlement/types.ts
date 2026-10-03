@@ -1,4 +1,4 @@
-import type { PolicyValue } from '../product/types';
+import type { PolicyValue, TermEconomicAmount } from '../product/types';
 import type { ContractPaymentDispositionState, ContractPaymentFact } from '../contracts/payment';
 
 /**
@@ -133,6 +133,8 @@ export interface IntakeCatalogSnapshot {
     policyValues?: PolicyValue[];
   };
   offer: {
+    supplierBillingFee?: TermEconomicAmount;
+    channelPayoutFee?: TermEconomicAmount;
     id: string;
     sourceOfferId?: Maybe<string>;
     policyId?: Maybe<string>;

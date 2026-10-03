@@ -50,6 +50,22 @@ export type CommercialPolicyMatchStatus =
   | 'NO_MATCH'
   | 'INSUFFICIENT_EVIDENCE';
 
+/** Data가 계산한 계약 전체 공급가액. Admin은 calculation을 재실행하지 않는다. */
+export interface TermEconomicAmount {
+  state: 'KNOWN' | 'ZERO' | 'UNKNOWN' | 'NOT_APPLICABLE';
+  amount: { amount: number; currency: 'KRW' } | null;
+  calculation?: { kind: 'FIXED'; amount: { amount: number; currency: 'KRW' } }
+    | { kind: 'MULTIPLY'; base: 'MONTHLY_RENT'; multiplier: number }
+    | { kind: 'RATE'; base: 'MONTHLY_RENT_X_TERM' | 'VEHICLE_PRICE'; rate: number } | null;
+  sourceRefs: string[];
+  ruleId?: string | null;
+  policyId?: string;
+  reasonCode?: string | null;
+  vatTreatment?: 'EXCLUDED' | 'INCLUDED' | 'UNKNOWN';
+  vatAmount?: number | null;
+  totalAmount?: number | null;
+}
+
 export interface Offer {
   id: string;
   /** FreePass Data의 원본 Offer 식별자. `id`는 가격조건(termKey)까지 포함한 선택 ID다. */
@@ -68,6 +84,8 @@ export interface Offer {
   annualMileageKm?: number;
   policyValues: PolicyValue[];
   termKey?: string;
+  supplierBillingFee?: TermEconomicAmount;
+  channelPayoutFee?: TermEconomicAmount;
   /** FreePass Data가 상품찾기 대표 최저가로 지정한 원천 Basis 행. */
   isListingPrice?: boolean;
   /** Data 기본 Preview가 선택한 가격행. 상세 기본선택용이며 목록 대표가격과 별개다. */

@@ -5,7 +5,7 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
-import { factPatch, feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { factPatch, feeCompletenessErrors, feeManualErrors, intakeDataFees, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
@@ -297,12 +297,13 @@ export class Erp5SettlementRepository {
       }
     }
     const db = erp5();
-    /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
-    const rules = await loadFeeRuleSet();
-    const fee = feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price });
+    // Data 일괄 재계산이 끝나면 제거: 필드가 없는 옛 상품만 로컬 표로 계산한다. 직접접수는 유지.
+    const rules = intakeDataFees(input) ? null : await loadFeeRuleSet();
+    const fee = rules ? feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price })
+      : { status: 'NO_RULE' as const, why: 'Data 기간별 수수료 사용' };
     const feeErr = [...feeCompletenessErrors(input, fee), ...feeManualErrors(input, fee)];
     if (feeErr.length) throw new Error(feeErr.join(' · '));
-    const rec = intakeRecord(input, Date.now(), fee, rules.version);
+    const rec = intakeRecord(input, Date.now(), fee, rules?.version);
     const code = String(rec.code);
     const plate = String(rec.plate ?? '');
     const key = intakeKey(plate, input.sourceProductId, input.receivedAt, input.intakeRequestId);

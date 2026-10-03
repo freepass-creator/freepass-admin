@@ -1,17 +1,9 @@
 name: admin-core-domain
 
 on:
+  # 2026-10-03: paths 필터를 뺐다 — core-domain 은 main 보호의 «필수» 검사라 모든 PR 에서 돌아야 한다.
+  #   필터가 있으면 src/ 를 안 건드리는 PR(문서·키트·설정)은 이 검사가 영영 안 떠서 병합이 막힌다(실측: AI Core 키트 PR #161).
   pull_request:
-    paths:
-      - "src/domain/search/**"
-      - "src/domain/settlement/**"
-      - "src/app/**"
-      - "src/server/**"
-      - "src/services/**"
-      - "docs/WORK-INBOX.md"
-      - "docs/DECISIONS.md"
-      - "docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md"
-      - ".github/workflows/admin-core-domain.yml"
   workflow_dispatch:
 
 permissions:

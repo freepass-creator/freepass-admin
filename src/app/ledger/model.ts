@@ -10,6 +10,7 @@ import { adminBlockLabel, blockOf, intakeTaskOf, type IntakeTask, type Settlemen
 import { billingMonth } from '../../domain/settlement/stage';
 import { intakeAgeDays } from '../../domain/settlement/intake-list';
 import { ledgerKindOf } from '../../domain/settlement/product-kind';
+import { mewcarPayoutWarning } from '../../domain/settlement/fee-rules-f04-extra';
 import type { CanonicalProduct } from '../../domain/product/types';
 
 export interface LedgerRow {
@@ -38,6 +39,8 @@ export interface LedgerRow {
   pay: number | null;
   cancelled: boolean;
   note: string;
+  /** 표시 전용 — 업무 단계와 mutation 가능 여부에는 영향을 주지 않는다. */
+  payoutWarning: ReturnType<typeof mewcarPayoutWarning>;
   /** 업무 단계 — intakeTaskOf 그대로 */
   task: IntakeTask;
   /** 지금 막힌 것(사람용 문구) — blockOf → adminBlockLabel. 없으면 '' */
@@ -74,6 +77,7 @@ export function toLedgerRow(r: SettlementRow, today: string, now = new Date()): 
     pay: r.money.pay ?? null,
     cancelled: !!r.progress.cancelled,
     note: t(r.note),
+    payoutWarning: mewcarPayoutWarning({ supplier: r.supplier, note: r.note, term: r.term, payWritten: r.money.pay }),
     task: intakeTaskOf(r),
     block: block ? adminBlockLabel(block) : '',
     ageDays: intakeAgeDays(r, today),

@@ -11,7 +11,23 @@ const row = (over: Partial<LedgerRow>): LedgerRow => ({
   code: 'stl_a', receivedAt: '2026-10-01', plate: '12가3456', supplier: '손오공', model: '쏘렌토', channel: '프리패스',
   agent: '김영업', customer: '홍길동', product: '장기렌트', term: 36, rent: 500000, deposit: null, price: null,
   payKind: '일시납', paper: false, delivered: false, deliveredAt: '', billMonth: '', expectedMonth: '', claim: null, pay: null,
-  cancelled: false, note: '', task: '계약', block: '계약서', ageDays: 2, ...over,
+  cancelled: false, note: '', payoutWarning: null, task: '계약', block: '계약서', ageDays: 2, ...over,
+});
+
+test('ledger shows Mewcar warnings from payWritten without changing task/block or adding adjustments/tax', () => {
+  // SettlementRow.money.pay is the gateway's payWritten projection, before adjustments/tax.
+  const raw = { id: 'mewcar', supplier: '무카', receivedAt: '2026-10-01', plate: '12가3456',
+    term: 12, note: '선납 추가보증금 1,000,000원', settleTarget: '양쪽',
+    progress: { paper: false, delivered: false, cancelled: false },
+    money: { claim: 400_000, pay: 1_100_000, payAdjust: 100_000, payIncentive: 200_000, vatIncluded: false } };
+  const mapped = (over: Record<string, unknown>) => toLedgerRow({ ...raw, ...over } as unknown as SettlementRow, '2026-10-03');
+  const valid = mapped({});
+  assert.equal(valid.payoutWarning, null);
+  const mismatch = mapped({ money: { ...raw.money, pay: 1_000_000 } });
+  assert.equal(mismatch.payoutWarning?.label, '뮤카 지급액 확인');
+  assert.equal(mismatch.task, valid.task);
+  assert.equal(mismatch.block, valid.block);
+  assert.equal(mapped({ note: '' }).payoutWarning?.label, '뮤카 근거 없음');
 });
 
 test('toLedgerRow takes task and blocker from the domain and keeps unknown money null', () => {

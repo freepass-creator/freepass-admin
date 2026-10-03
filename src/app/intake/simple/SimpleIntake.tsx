@@ -8,6 +8,13 @@ const storageKey = 'freepass-admin.simple-intake.draft.v1';
 export default function SimpleIntake() {
   const [rows, setRows] = useState<Row[]>([]);
   const [draft, setDraft] = useState<Row | null>(null);
+  const [entry, setEntry] = useState<Row | null>(null);
+  const [entryDirty, setEntryDirty] = useState(false);
+  const plateRef = useRef<HTMLInputElement>(null);
+  const tableFields = [fields[1], fields[0], ...fields.slice(2), ...extraFields];
+  function newEntry() {
+    return blankRow(typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), v => v.toString(16).padStart(8, '0')).join(''), new Date().toLocaleDateString('sv-SE'));
+  }
   const [edits, setEdits] = useState<Record<string, Row>>({});
   const sourceRaw = useRef<string | null>(null);
   const alertRef = useRef<HTMLParagraphElement>(null);
@@ -25,11 +32,12 @@ export default function SimpleIntake() {
     try {
       if (raw) setRows(savedSchema.parse(JSON.parse(raw)).rows);
       sourceRaw.current = raw;
+      setEntry(newEntry());
       setReady(true);
     } catch { setRawBackup(raw); setError('저장된 초안 형식을 읽을 수 없습니다. 덮어쓰지 않았습니다. 원문 백업을 내려받아 복구할 수 있습니다.'); }
   }, []);
   useEffect(() => {
-    if (!draft && !Object.keys(edits).length) return;
+    if (!draft && !entryDirty && !Object.keys(edits).length) return;
     const guard = (e: BeforeUnloadEvent) => { e.preventDefault(); };
     const linkGuard = (e: MouseEvent) => {
       if ((e.target as Element).closest('a[href]') && !window.confirm('저장 전 입력이 있습니다. 이 화면을 떠날까요?')) { e.preventDefault(); e.stopPropagation(); }
@@ -37,7 +45,7 @@ export default function SimpleIntake() {
     window.addEventListener('beforeunload', guard);
     document.addEventListener('click', linkGuard, true);
     return () => { window.removeEventListener('beforeunload', guard); document.removeEventListener('click', linkGuard, true); };
-  }, [draft, edits]);
+  }, [draft, edits, entryDirty]);
   useEffect(() => { if (error) alertRef.current?.scrollIntoView({ block: 'nearest' }); }, [error]);
   function select(row: Row) {
     if (draft && !window.confirm('저장하지 않은 입력을 닫을까요?')) return;
@@ -48,7 +56,7 @@ export default function SimpleIntake() {
     const row = normalizeRow(input);
     const issue = validateRow(row);
     if (issue) { setError(issue); return; }
-    const next = rows.some(r => r.id === row.id) ? rows.map(r => r.id === row.id ? row : r) : [...rows, row];
+    const next = rows.some(r => r.id === row.id) ? rows.map(r => r.id === row.id ? row : r) : [row, ...rows];
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw !== sourceRaw.current) {
@@ -60,17 +68,18 @@ export default function SimpleIntake() {
       if (localStorage.getItem(storageKey) !== data) throw new Error('readback');
       sourceRaw.current = data;
       setRows(next); setDraft(null); setEdits(current => { const remaining = { ...current }; delete remaining[row.id]; return remaining; });
+      if (entry?.id === row.id) { setEntry(newEntry()); setEntryDirty(false); requestAnimationFrame(() => plateRef.current?.focus()); }
       setQuery(''); setMonth(''); setView('all'); setError(''); setStatus(`${row.plate} · 이 브라우저에 저장됨`);
     } catch { setError('저장하지 못했습니다. 입력은 유지됩니다.'); }
   }
   function backup(unsaved = false) {
-    const url = URL.createObjectURL(new Blob([unsaved ? JSON.stringify({ draft, edits }, null, 2) : rawBackup ?? JSON.stringify({ version: 2, rows }, null, 2)], { type: 'application/json' }));
+    const url = URL.createObjectURL(new Blob([unsaved ? JSON.stringify({ draft, entry, edits }, null, 2) : rawBackup ?? JSON.stringify({ version: 2, rows }, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = unsaved ? '접수현황-저장전입력.json' : rawBackup ? '접수현황-복구원문.json' : '접수현황-초안.json';
     document.body.appendChild(a); a.click(); a.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const shown = rows.filter(r => (!month || r.billingMonth === month) && (view === 'all' || r.cancelled === (view === 'cancelled')) &&
     [r.plate, r.customer, r.supplier, r.agent, r.channel, r.model].join(' ').toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => a.receiptDate.localeCompare(b.receiptDate));
+    ;
   const money = (v: string) => v === '' ? '미입력' : Number(v).toLocaleString('ko-KR');
   return <div className="erp-screen simple-intake">
     <PanelHeader title={draft ? (rows.some(r => r.id === draft.id) ? '접수 수정' : '접수하기') : '접수현황'} count={draft ? undefined : `${rows.length}건`} />
@@ -79,32 +88,42 @@ export default function SimpleIntake() {
       <input aria-label="접수 검색" placeholder="차량번호 · 고객 · 담당자 검색" value={query} onChange={e => setQuery(e.target.value)} />
       <input type="month" aria-label="청구월 필터" value={month} onChange={e => setMonth(e.target.value)} />
       <select aria-label="접수 상태 필터" value={view} onChange={e => setView(e.target.value)}><option value="all">전체</option><option value="active">취소 제외</option><option value="cancelled">취소</option></select>
-      <button disabled={!ready} onClick={() => select(blankRow(typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), v => v.toString(16).padStart(8, '0')).join(''), new Date().toLocaleDateString('sv-SE')))}>접수하기</button>
+      <button disabled={!ready} onClick={() => plateRef.current?.focus()}>신규 입력으로</button>
       <button disabled={!rawBackup && (!ready || !rows.length)} onClick={() => backup()}>{rawBackup ? '복구 원문 백업' : '초안 백업'}</button>
-      {Object.keys(edits).length > 0 && <button onClick={() => backup(true)}>저장 전 입력 백업</button>}
+      {(entryDirty || Object.keys(edits).length > 0) && <button onClick={() => backup(true)}>저장 전 입력 백업</button>}
     </div>}
     {error && <p role="alert" ref={alertRef}>{error}{draft && <button onClick={() => backup(true)}>저장 전 입력 백업</button>}</p>}{status && <p role="status">{status}</p>}
     <div className="simple-body simple-single">
       {!draft &&
       <section aria-label="접수 목록" className="simple-list">
-        <p className="simple-table-help">한 행이 한 접수입니다. 청구월·금액·진행 체크를 바로 수정하고 행의 저장 버튼을 누르세요. 금액은 공급가액입니다. {shown.length}/{rows.length}건</p>
+        <p className="simple-table-help">맨 위에서 차량번호부터 Tab으로 입력 후 접수하기. 신규 접수는 입력 줄 바로 아래에 쌓입니다. 금액은 공급가액입니다. {shown.length}/{rows.length}건</p>
+        <form id="simple-new-entry" onSubmit={e => { e.preventDefault(); save(entry); }} />
         <div className="simple-table-scroll" tabIndex={0} aria-label="접수현황 가로 스크롤">
         <table className="simple-table"><thead><tr>
-          <th scope="col">접수일</th><th scope="col">차량번호</th><th scope="col">공급사</th><th scope="col">상품</th><th scope="col">차종</th><th scope="col">고객명</th><th scope="col">영업채널</th><th scope="col">담당자</th><th scope="col">기간</th><th scope="col">대여료</th><th scope="col">청구월</th><th scope="col">청구액</th><th scope="col">지급액</th>
+          {tableFields.map(([key, label]) => <th scope="col" key={key}>{label}</th>)}
           {checks.map(([key, label]) => <th scope="col" key={key}>{label}</th>)}<th scope="col">환수</th><th scope="col">수정</th>
         </tr></thead><tbody>
+        {entry && <tr className="simple-entry-row" aria-label="신규 접수 입력 줄">
+          {tableFields.map(([key, label, type]) => {
+            const suggested = key === 'product' ? ['신차렌트', '중고구독', '중고렌트', '오공구독', '픽업구독', '오플구독'] : key === 'term' ? ['12', '24', '36', '48', '60'] : [];
+            const options = [...new Set([...suggested, ...rows.map(r => r[key]).filter(Boolean)])];
+            const selectable = ['supplier', 'product', 'channel', 'agent', 'term', 'installment', 'rentKind', 'contractKind'].includes(key);
+            return <td key={key}><input ref={key === 'plate' ? plateRef : undefined} form="simple-new-entry" aria-label={`신규 ${label}`} required={key === 'plate'} type={type === 'number' ? 'text' : type} inputMode={type === 'number' ? 'decimal' : undefined} list={selectable ? `entry-${key}` : undefined} value={entry[key]} placeholder={label} className={key === 'claim' || key === 'pay' ? 'simple-money' : undefined} onChange={e => { setEntry(current => current ? { ...current, [key]: e.target.value } : current); setEntryDirty(true); }} onBlur={e => { const value = e.target.value; if (value !== entry[key]) { setEntry(current => current ? { ...current, [key]: value } : current); setEntryDirty(true); } }} />{selectable && <datalist id={`entry-${key}`}>{options.map(value => <option key={value} value={value} />)}</datalist>}</td>;
+          })}
+          {checks.map(([key, label]) => <td key={key}><input form="simple-new-entry" type="checkbox" aria-label={`신규 ${label}`} checked={entry[key]} onChange={e => { setEntry({ ...entry, [key]: e.target.checked }); setEntryDirty(true); }} /></td>)}
+          <td><input form="simple-new-entry" type="checkbox" aria-label="신규 환수" checked={entry.refunded} onChange={e => { setEntry({ ...entry, refunded: e.target.checked }); setEntryDirty(true); }} /></td>
+          <td className="simple-row-actions"><button form="simple-new-entry" type="submit" disabled={!ready}>접수하기</button>{entryDirty && <span>입력 중</span>}</td>
+        </tr>}
         {shown.map(original => { const r = edits[original.id] ?? original;
           const change = (patch: Partial<Row>) => { setEdits(current => ({ ...current, [r.id]: { ...(current[r.id] ?? original), ...patch } })); setStatus('저장 전 변경이 있습니다.'); setError(''); };
           return <tr key={r.id} className={r.cancelled ? 'cancelled' : r.refunded ? 'refunded' : ''}>
-            <td>{r.receiptDate}</td><th scope="row">{r.plate}</th><td>{r.supplier}</td><td>{r.product}</td><td>{r.model}</td><td>{r.customer}</td><td>{r.channel}</td><td>{r.agent}</td><td>{r.term}</td><td>{money(r.rent)}</td>
-            <td><input aria-label={`${r.plate} 청구월`} type="month" value={r.billingMonth} onChange={e => change({ billingMonth: e.target.value })} onBlur={e => { if (e.target.value !== r.billingMonth) change({ billingMonth: e.target.value }); }} /></td>
-            {(['claim', 'pay'] as const).map(key => <td key={key}><input className="simple-money" aria-label={`${r.plate} ${key === 'claim' ? '청구액' : '지급액'}`} inputMode="decimal" value={r[key]} placeholder="미입력" onChange={e => change({ [key]: e.target.value })} /></td>)}
+            {tableFields.map(([key, label, type]) => <td key={key}>{key === 'billingMonth' || key === 'claim' || key === 'pay' ? <input aria-label={`${r.plate} ${label}`} type={key === 'billingMonth' ? 'month' : 'text'} inputMode={key === 'billingMonth' ? undefined : 'decimal'} className={key === 'billingMonth' ? undefined : 'simple-money'} value={r[key]} placeholder="미입력" onChange={e => change({ [key]: e.target.value })} onBlur={e => { if (e.target.value !== r[key]) change({ [key]: e.target.value }); }} /> : type === 'number' ? money(r[key]) : r[key]}</td>)}
             {checks.map(([key, label]) => <td key={key}><input type="checkbox" aria-label={`${r.plate} ${label}`} checked={r[key]} onChange={e => change({ [key]: e.target.checked })} /></td>)}
             <td><input type="checkbox" aria-label={`${r.plate} 환수`} checked={r.refunded} onChange={e => change({ refunded: e.target.checked })} /></td>
             <td className="simple-row-actions"><button onClick={() => select(r)}>상세</button>{edits[r.id] && <><span>저장 전</span><button onClick={() => save(r)}>저장</button></>}</td>
           </tr>;
         })}
-        {!shown.length && <tr><td colSpan={23}>{ready ? (rows.length ? '검색 조건에 맞는 접수가 없습니다.' : '접수가 없습니다. 접수하기로 시작하세요.') : '초안 확인 중입니다.'}</td></tr>}
+        {!shown.length && <tr><td colSpan={tableFields.length + checks.length + 2}>{ready ? (rows.length ? '검색 조건에 맞는 접수가 없습니다.' : '맨 위 입력 줄에서 첫 접수를 입력하세요.') : '초안 확인 중입니다.'}</td></tr>}
         </tbody></table></div>
       </section>}
       {draft &&

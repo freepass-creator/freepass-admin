@@ -218,7 +218,10 @@ if (tabs.includes('회차청구')) {
   raw.slice(hi + 1).forEach((r, i) => {
     const at = hi + 2 + i;
     const plate = p.text(r, '차량번호')?.replace(/\s/g, '');
-    if (!plate) return;
+    if (!plate) {
+      if (Array.isArray(r) && r.some((c) => String(c ?? '').trim())) throw new Error(`회차청구 row ${at}: 차량번호 없이 내용이 있다 — 말없이 빼지 않는다`);
+      return;
+    }
     const srcRow = p.num(r, '원 접수행'); const round = p.num(r, '회차'); const amount = p.num(r, '금액(공급가)');
     const month = billMonthOf(p.raw(r, '청구년'), p.raw(r, '청구월'));
     if (!srcRow || !round || round < 2 || !Number.isInteger(round) || !month || amount === null || !(amount > 0)) throw new Error(`회차청구 row ${at}: 원 접수행·회차(2 이상)·청구년월·금액을 확인한다`);
@@ -227,6 +230,10 @@ if (tabs.includes('회차청구')) {
     seen.add(key);
     const base = rows.find((x) => x.fromTab === '접수' && x.sourceRow === srcRow);
     if (!base || String(base.plate).replace(/\s/g, '') !== plate) throw new Error(`회차청구 row ${at}: 접수 ${srcRow}행이 ${plate} 가 아니다`);
+    /* 같은 차의 다른 계약을 가리키지 않게 접수일까지 맞춘다 */
+    if (!p.date(r, '접수일') || !base.receivedAt || p.date(r, '접수일') !== base.receivedAt) throw new Error(`회차청구 row ${at}: 접수일 ${p.date(r, '접수일')} ≠ 접수 ${srcRow}행 ${base.receivedAt}`);
+    /* 원 줄과 같은 달(또는 앞 달)이면 같은 청구서에 두 번 들어가거나 거꾸로 된 회차다 — 멈춘다 */
+    if (!base.billMonth || month <= base.billMonth) throw new Error(`회차청구 row ${at}: 청구월 ${month} 는 원 줄 청구월 ${base.billMonth ?? '(빈칸)'} 보다 뒤여야 한다`);
     installments.push({
       ...base,
       fromTab: '회차청구', sourceTab: '회차청구', sourceRow: at, installmentOf: srcRow, installmentRound: round,

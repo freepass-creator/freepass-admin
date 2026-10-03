@@ -3,7 +3,8 @@
 - 목적: 사용자 결정 「UI UX가 없다고 가정하고 엑셀로 접수 업무 하던 거를 새로」. 정산 백데이터는 접수 한 장에 누적(2026-10-02)과 같은 방향. writer=Claude Code, Codex는 읽기 전용 검토. codex/intake-ledger-lifecycle 간편접수(브라우저 localStorage 저장)는 이어받아 대체하며 그 코드는 병합하지 않는다.
 - 대상 revision: main `1f6f98b`, 작업선 `work/freepass-admin/intake-sheet-20261003`.
 - 변경: 새 주소 `/ledger`(왼쪽 메뉴 「접수표」). 맨 위 입력 줄 → 기존 접수 저장(createIntake와 같은 규칙, `ledgerCreateAction`은 화면 이동 없이 결과만 반환). 최신순 누적 목록, 청구월·검색·취소 포함 필터, 청구액/지급액 합계(취소 제외, 모르는 금액은 0이 아니라 「미확정 n건」). 칸 수정은 기존 경로만: 차량번호·계약서·인도완료/인도일·취소(사유 필수) → progressAction, 청구월 → lifecycleAction, 청구액/지급액 → feeAction(사유 필수). 기존 ProductsBoard 화면은 그대로.
-- 검증: typecheck · ui:check · build PASS, 관련 331 tests PASS(신규 model 6). 가상 데이터 1440 화면/필터 확인, 390 모바일 가로 넘침 0. 로컬 Firestore 에뮬레이터에서 접수 생성 → 계약서 → 인도완료 → 청구월 → 청구액 수정 저장과 settlement_events 감사이력 7건 재조회 일치. 운영 DB 쓰기·배포 없음.
+- 화면 규칙(사용자 2026-10-03 「세로 스크롤은 있어도 좌우 스크롤은 없게, 줄바뀜이 되더라도」): 좌우 스크롤 없음. 1280 이상은 13열 표(함께 보는 두 값을 한 칸 위·아래로 묶음, 열 너비 비율, 글 줄바꿈), 1280 미만·폰은 줄마다 «라벨+값» 카드. 이 화면에서만 공용 앱 최소폭 1280을 해제.
+- 검증: typecheck · ui:check · build PASS, 관련 331 tests PASS(신규 model 6). 1440/1280/1024/375에서 페이지·표 좌우 넘침 0 실측. 가상 데이터 1440 화면/필터 확인, 390 모바일 가로 넘침 0. 로컬 Firestore 에뮬레이터에서 접수 생성 → 계약서 → 인도완료 → 청구월 → 청구액 수정 저장과 settlement_events 감사이력 7건 재조회 일치. 운영 DB 쓰기·배포 없음.
 - 남음: 고객명·공급사·모델·영업채널·담당자·상품구분·기간·렌탈료·보증금·차량가액·분납·메모 칸은 기존 수정 경로가 없어 읽기 전용(가짜 수정 없음) — 다음 단계에서 mutateRow 패턴의 「기본 사실 수정」 도메인 패치+감사이력으로 추가. 상품 검색 자동채움, 엑셀 내보내기, 운영 배포 승인은 별도. U 청구액/V 지급액이 전체 계약 금액인지 회차 몫인지, 인센티브·가감 포함 여부는 사용자 확인 대기.
 - next_start_here: `src/app/ledger/LedgerSheet.tsx` 읽기 전용 칸의 수정 경로 추가(`src/domain/settlement/intake.ts` 패치 + `settlement-repository.ts` mutateRow 메서드 + 액션).
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구

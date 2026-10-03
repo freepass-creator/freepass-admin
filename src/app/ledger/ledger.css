@@ -43,69 +43,113 @@
 .ledger-alert { color: var(--erp-color-err-text); background: var(--erp-color-err-bg); }
 .ledger-ok { color: var(--erp-color-ok); background: var(--erp-color-ok-bg); }
 
-/* 표만 가로·세로로 스크롤한다. 페이지 자체는 가로로 넘치지 않는다. */
+/* ★좌우 스크롤 없음(사용자 2026-10-03) — 표는 화면 폭에 딱 맞고, 칸 글은 줄바꿈한다. 세로만 스크롤. */
 .ledger-scroll {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--erp-color-line);
   background: var(--erp-color-surface);
 }
-.ledger-table { border-collapse: separate; border-spacing: 0; font-size: 13px; white-space: nowrap; }
-.ledger-table th {
+.ledger.erp-screen .ledger-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+/* 열 너비 — 비율(합 100%). 13열(두 값을 위·아래로 묶음). 화면이 줄면 같이 준다. */
+.ledger.erp-screen .ledger-table th:nth-child(1) { width: 10%; }
+.ledger.erp-screen .ledger-table th:nth-child(2) { width: 9.5%; }
+.ledger.erp-screen .ledger-table th:nth-child(3) { width: 8%; }
+.ledger.erp-screen .ledger-table th:nth-child(4) { width: 9%; }
+.ledger.erp-screen .ledger-table th:nth-child(5) { width: 7.5%; }
+.ledger.erp-screen .ledger-table th:nth-child(6) { width: 8%; }
+.ledger.erp-screen .ledger-table th:nth-child(7) { width: 7.5%; }
+.ledger.erp-screen .ledger-table th:nth-child(8) { width: 7%; }
+.ledger.erp-screen .ledger-table th:nth-child(9) { width: 9%; }
+.ledger.erp-screen .ledger-table th:nth-child(10) { width: 8.5%; }
+.ledger.erp-screen .ledger-table th:nth-child(11) { width: 3.5%; }
+.ledger.erp-screen .ledger-table th:nth-child(12) { width: 8%; }
+.ledger.erp-screen .ledger-table th:nth-child(13) { width: 4.5%; }.ledger.erp-screen .ledger-table th {
   position: sticky;
   top: 0;
   z-index: 2;
-  height: 32px;
-  padding: 0 8px;
+  padding: 6px 4px;
   border-bottom: 1px solid var(--erp-color-line-strong);
   background: var(--erp-color-tabs-bg);
   font-weight: 600;
   text-align: left;
   color: var(--erp-color-text-2);
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
-.ledger-table td {
-  height: 30px;
-  padding: 0 8px;
+.ledger.erp-screen .ledger-table td {
+  min-width: 0;
+  padding: 5px 4px;
   border-bottom: 1px solid var(--erp-color-line-row);
   border-right: 1px solid var(--erp-color-line-row);
   vertical-align: middle;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
-.ledger-table td:has(> .cell) { padding: 0; }
-.ledger-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.ledger-table .mid { text-align: center; }
-.ledger-table .muted { color: var(--erp-color-text-3); font-size: 12px; }
-.ledger-table .memo { max-width: 240px; overflow: hidden; text-overflow: ellipsis; color: var(--erp-color-text-2); }
-.ledger-table tbody tr:hover td { background: var(--erp-color-row-hover); }
+.ledger.erp-screen .ledger-table td:has(> .cell) { padding: 0; }
+.ledger.erp-screen .ledger-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ledger.erp-screen .ledger-table .mid { text-align: center; }
+.ledger.erp-screen .ledger-table .muted { color: var(--erp-color-text-3); }
+.ledger.erp-screen .ledger-table .memo { color: var(--erp-color-text-2); }
+.ledger.erp-screen .ledger-table tbody tr:hover td { background: var(--erp-color-row-hover); }
 
-/* 칸 안의 입력은 칸처럼 보인다 — 눌러야 테두리가 보인다. */
-.ledger-table .cell {
+/* 칸 안의 입력은 칸처럼 보인다 — 눌러야 테두리가 보인다. 칸 폭을 넘지 않는다. */
+.ledger.erp-screen .ledger-table .cell {
   box-sizing: border-box;
+  display: block;
   width: 100%;
-  min-width: 88px;
+  min-width: 0;
   height: 30px;
-  padding: 0 8px;
+  padding: 0 4px;
   border: 1px solid transparent;
   background: transparent;
   font: inherit;
   color: inherit;
 }
-.ledger-table .cell.num { min-width: 96px; text-align: right; }
-.ledger-table .cell:focus { outline: none; border-color: var(--erp-color-info); background: var(--erp-color-surface); }
-.ledger-table .cell:disabled { color: inherit; opacity: 1; }
-.ledger-table .cell::placeholder { color: var(--erp-color-text-3); }
+.ledger.erp-screen .ledger-table .cell.num { text-align: right; }
+.ledger.erp-screen .ledger-table input[type="date"].cell,
+.ledger.erp-screen .ledger-table input[type="month"].cell { padding: 0 2px; }
+.ledger.erp-screen .ledger-table .cell::-webkit-calendar-picker-indicator { margin: 0; padding: 0; width: 12px; }
+.ledger.erp-screen .ledger-table .cell:focus { outline: none; border-color: var(--erp-color-info); background: var(--erp-color-surface); }
+.ledger.erp-screen .ledger-table .cell:disabled { color: inherit; opacity: 1; }
+.ledger.erp-screen .ledger-table .cell::placeholder { color: var(--erp-color-text-3); }
+/* 한 칸 안의 위·아래 두 값 — 숫자·날짜는 끊지 않는다(칸이 충분히 넓다). 글은 줄바꿈. */
+.ledger.erp-screen .ledger-pair { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ledger.erp-screen .ledger-pair > div { min-width: 0; min-height: 18px; }
+.ledger.erp-screen .ledger-pair > div + div { color: var(--erp-color-text-2); }
+.ledger.erp-screen .ledger-table .num .ledger-pair > div,
+.ledger.erp-screen .ledger-table th.num { white-space: nowrap; }
+.ledger.erp-screen .ledger-table th span { font-weight: 500; color: var(--erp-color-text-muted); }
+.ledger.erp-screen .ledger-table td .cell { height: 24px; }
+.ledger.erp-screen .ledger-table label.ledger-tick {
+  display: inline-flex; flex-direction: row; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--erp-color-text-2); white-space: nowrap;
+}
+.ledger.erp-screen .ledger-table .ledger-act { padding: 4px; }
 
 /* 맨 위 입력 줄 — 표 머리 바로 아래에 붙어 있다. */
 .ledger-entry td {
   position: sticky;
-  top: 32px;
+  top: var(--ledger-head-h, 30px);
   z-index: 1;
   background: var(--erp-color-primary-weak);
   border-bottom: 2px solid var(--erp-color-line-strong);
 }
 .ledger-submit {
   height: 26px;
-  padding: 0 14px;
+  width: 100%;
+  padding: 0 4px;
   border: 0;
   border-radius: 4px;
   background: var(--erp-color-primary);
@@ -117,13 +161,49 @@
 .ledger-submit:disabled { opacity: .5; cursor: default; }
 
 /* 취소 — 엑셀과 같이 붉은 바탕 + 취소선 */
-.ledger-table tr.is-cancelled td { background: var(--erp-color-err-bg); color: var(--erp-color-err-text); text-decoration: line-through; }
+.ledger.erp-screen .ledger-table tr.is-cancelled td { background: var(--erp-color-err-bg); color: var(--erp-color-err-text); text-decoration: line-through; }
 
 .ledger-empty { margin: 0; padding: 24px; text-align: center; color: var(--erp-color-text-muted); }
+
+/* 공용 틀은 앱 최소 폭(1280)을 body 에 건다 — 그보다 좁은 창에서 페이지째 좌우로 밀린다.
+   접수표는 좌우 스크롤이 없어야 하므로(사용자 2026-10-03) 이 화면에서만 최소 폭을 푼다. 다른 화면은 그대로. */
+body:has(.ledger.erp-screen) { min-width: 0; }
 
 /* 공용 틀은 폰에서 PC 화면(.erp-screen)을 숨긴다. 접수표는 한 장짜리라 폰에서도 그대로 보인다. */
 @media (max-width: 900px) {
   .erp-screen.ledger { display: flex !important; }
+}
+
+/* 1280 아래(좁은 PC·태블릿·폰) — 13열도 다 못 담으므로 카드로 바꾼다. */
+@media (max-width: 1279px) {
+  /* 열을 다 못 담으므로 줄 하나를 카드로 펼친다. 칸·묶음 틀은 풀고(display: contents) 값 하나하나가
+     «라벨 + 값» 으로 폭에 맞춰 줄바꿈된다. 좌우 스크롤 없음. */
+  .ledger.erp-screen .ledger-table,
+  .ledger.erp-screen .ledger-table tbody { display: block; width: 100%; }
+  .ledger.erp-screen .ledger-table thead { display: none; }
+  /* 입력 줄의 form 요소는 보이지 않는 연결용 — 카드 칸을 차지하지 않게 */
+  .ledger.erp-screen .ledger-entry form { display: none; }
+  .ledger.erp-screen .ledger-table tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 6px 8px;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--erp-color-line-strong);
+  }
+  .ledger.erp-screen .ledger-table td,
+  .ledger.erp-screen .ledger-pair { display: contents; }
+  .ledger.erp-screen .ledger-pair > div {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    font-size: 13px; color: var(--erp-color-text); white-space: normal; text-align: left;
+  }
+  .ledger.erp-screen .ledger-pair > div::before { content: attr(data-label); font-size: 11px; color: var(--erp-color-text-muted); }
+  .ledger.erp-screen .ledger-pair > div:empty { display: none; }
+  .ledger.erp-screen .ledger-table td .cell { height: 36px; border-color: var(--erp-color-line); border-radius: 4px; background: var(--erp-color-surface); text-align: left; }
+  .ledger.erp-screen .ledger-entry td { position: static; background: transparent; border: 0; }
+  .ledger.erp-screen .ledger-table tr.ledger-entry { background: var(--erp-color-primary-weak); }
+  .ledger.erp-screen .ledger-table .ledger-act { display: block; grid-column: 1 / -1; padding: 0; }
+  .ledger.erp-screen .ledger-table .ledger-act:empty { display: none; }
+  .ledger-submit { height: 40px; }
 }
 
 @media (max-width: 767px) {

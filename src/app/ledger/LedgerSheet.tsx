@@ -8,7 +8,7 @@
  *   청구액 · 지급액 → feeAction (사유 필수 — 감사 이력에 남는다)
  * 나머지 칸(고객명·공급사·기간·대여료 …)은 아직 고치는 경로가 없어 읽기 전용이다. 가짜로 고친 척하지 않는다.
  */
-import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, type ReactNode, useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { feeAction, lifecycleAction, ledgerCreateAction, progressAction, type FormState, type LedgerCreateState } from '../intake/actions';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
@@ -110,52 +110,90 @@ export function LedgerSheet({ rows, canWrite, today }: { rows: LedgerRow[]; canW
       {!canWrite && <p className="ledger-alert" role="status">지금은 저장이 꺼져 있습니다 — 보기만 할 수 있습니다.</p>}
       {status && <p className={status.kind === 'ok' ? 'ledger-ok' : 'ledger-alert'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
 
+      {/*
+        ★좌우 스크롤 없음(사용자 2026-10-03) — 표를 화면 폭에 맞춘다. 22칸을 한 줄에 다 펴면 숫자·날짜가 칸 안에서
+        끊기므로, 함께 보는 두 칸을 «위·아래» 로 한 칸에 묶어 13열로 줄인다. 세로만 스크롤.
+      */}
       <div className="ledger-scroll">
         <table className="ledger-table">
           <thead>
-            <tr>
-              <th>접수일</th><th>차량번호</th><th>공급사</th><th>모델명</th><th>영업채널</th><th>영업담당자</th><th>고객명</th>
-              <th>상품구분</th><th className="num">기간</th><th className="num">렌탈료</th><th className="num">보증금</th><th className="num">차량가액</th>
-              <th>분납</th><th>계약서</th><th>인도완료</th><th>인도일</th><th>청구월</th><th className="num">청구액</th><th className="num">지급액</th>
-              <th>취소</th><th>메모</th><th></th>
-            </tr>
+            <tr>{COLS.map((c, i) => <th key={i} className={c.cls}>{c.top}{c.bottom && <><br /><span>{c.bottom}</span></>}</th>)}</tr>
           </thead>
           <tbody>
             <EntryRow canWrite={canWrite} today={today} onSaved={(s) => { setStatus(s); router.refresh(); }} />
-            {shown.map((r) => (
-              <tr key={r.code} className={r.cancelled ? 'is-cancelled' : undefined}>
-                <td>{r.receivedAt}</td>
-                <td><input key={r.plate} className="cell" defaultValue={r.plate} disabled={lock || r.cancelled} aria-label="차량번호"
-                  onBlur={(e) => editPlate(r, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} /></td>
-                <td>{r.supplier}</td><td>{r.model}</td><td>{r.channel}</td><td>{r.agent}</td><td>{r.customer}</td>
-                <td>{r.product}</td><td className="num">{r.term ?? ''}</td><td className="num">{won(r.rent)}</td>
-                <td className="num">{won(r.deposit)}</td><td className="num">{won(r.price)}</td><td>{r.payKind}</td>
-                <td className="mid"><input type="checkbox" checked={r.paper} disabled={lock || r.cancelled} aria-label="계약서"
-                  onChange={(e) => togglePaper(r, e.target.checked)} /></td>
-                <td className="mid"><input type="checkbox" checked={r.delivered} disabled={lock || r.cancelled} aria-label="인도완료"
-                  onChange={(e) => setDelivered(r, e.target.checked, r.deliveredAt || today)} /></td>
-                {/* 인도 전·취소·잠김이면 날짜 칸 대신 글만 — 빈 「연도-월-일」 틀이 줄마다 깔리지 않게 */}
-                <td>{lock || r.cancelled || !r.delivered ? r.deliveredAt
-                  : <input key={r.deliveredAt} className="cell" type="date" defaultValue={r.deliveredAt} max={today} aria-label="인도일"
-                    onBlur={(e) => { if (e.target.value && e.target.value !== r.deliveredAt) setDelivered(r, true, e.target.value); }} />}</td>
-                <td>{lock || r.cancelled || !r.delivered ? r.billMonth
-                  : <input key={r.billMonth} className="cell" type="month" defaultValue={r.billMonth} aria-label="청구월"
-                    onBlur={(e) => editBillMonth(r, e.target.value)} />}</td>
-                <td><input key={`c${r.claim}`} className="cell num" inputMode="numeric" defaultValue={won(r.claim)} disabled={lock || r.cancelled} aria-label="청구액"
-                  placeholder="미확정" onBlur={(e) => editFee(r, 'claim', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} /></td>
-                <td><input key={`p${r.pay}`} className="cell num" inputMode="numeric" defaultValue={won(r.pay)} disabled={lock || r.cancelled} aria-label="지급액"
-                  placeholder="미확정" onBlur={(e) => editFee(r, 'pay', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} /></td>
-                <td className="mid"><input type="checkbox" checked={r.cancelled} disabled={lock} aria-label="취소"
-                  onChange={(e) => toggleCancelled(r, e.target.checked)} /></td>
-                <td className="memo" title={r.note}>{r.note}</td>
-                <td />
-              </tr>
-            ))}
+            {shown.map((r) => {
+              const off = lock || r.cancelled;
+              const dateOff = off || !r.delivered;
+              return (
+                <tr key={r.code} className={r.cancelled ? 'is-cancelled' : undefined}>
+                  <Pair i={0} a={r.receivedAt} b={r.product} />
+                  <Pair i={1}
+                    a={<input key={r.plate} className="cell" defaultValue={r.plate} disabled={off} aria-label="차량번호" placeholder="차량번호"
+                      onBlur={(e) => editPlate(r, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />}
+                    b={r.model} />
+                  <Pair i={2} a={r.customer} b={r.payKind} />
+                  <Pair i={3} a={r.supplier} b={r.channel} />
+                  <Pair i={4} a={r.agent} b={r.term === null ? '' : `${r.term}개월`} />
+                  <Pair i={5} a={won(r.rent)} b={won(r.deposit)} />
+                  <Pair i={6} a={won(r.price)} />
+                  <Pair i={7}
+                    a={<label className="ledger-tick"><input type="checkbox" checked={r.paper} disabled={off} onChange={(e) => togglePaper(r, e.target.checked)} />계약서</label>}
+                    b={<label className="ledger-tick"><input type="checkbox" checked={r.delivered} disabled={off} onChange={(e) => setDelivered(r, e.target.checked, r.deliveredAt || today)} />인도</label>} />
+                  {/* 인도 전·취소·잠김이면 날짜 칸 대신 글만 — 빈 「연도-월-일」 틀이 줄마다 깔리지 않게 */}
+                  <Pair i={8}
+                    a={dateOff ? r.deliveredAt : <input key={r.deliveredAt} className="cell" type="date" defaultValue={r.deliveredAt} max={today} aria-label="인도일"
+                      onBlur={(e) => { if (e.target.value && e.target.value !== r.deliveredAt) setDelivered(r, true, e.target.value); }} />}
+                    b={dateOff ? r.billMonth : <input key={r.billMonth} className="cell" type="month" defaultValue={r.billMonth} aria-label="청구월"
+                      onBlur={(e) => editBillMonth(r, e.target.value)} />} />
+                  <Pair i={9}
+                    a={<input key={`c${r.claim}`} className="cell num" inputMode="numeric" defaultValue={won(r.claim)} disabled={off} aria-label="청구액"
+                      placeholder="미확정" onBlur={(e) => editFee(r, 'claim', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />}
+                    b={<input key={`p${r.pay}`} className="cell num" inputMode="numeric" defaultValue={won(r.pay)} disabled={off} aria-label="지급액"
+                      placeholder="미확정" onBlur={(e) => editFee(r, 'pay', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />} />
+                  <Pair i={10} a={<input type="checkbox" checked={r.cancelled} disabled={lock} aria-label="취소" onChange={(e) => toggleCancelled(r, e.target.checked)} />} />
+                  <Pair i={11} a={r.note} />
+                  <td className="ledger-act" />
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {shown.length === 0 && <p className="ledger-empty">조건에 맞는 접수가 없습니다.</p>}
       </div>
     </section>
+  );
+}
+
+/**
+ * 열 — 한 칸에 위·아래 두 값(bottom 이 없으면 한 값). 너비 비율은 ledger.css 가 정한다.
+ * 폰(≤900)에서는 줄 하나가 카드로 펼쳐지고, 각 값 앞에 이 이름이 라벨로 붙는다.
+ */
+const COLS: { top: string; bottom?: string; cls?: string }[] = [
+  { top: '접수일', bottom: '상품구분' },
+  { top: '차량번호', bottom: '모델명' },
+  { top: '고객명', bottom: '분납' },
+  { top: '공급사', bottom: '영업채널' },
+  { top: '담당자', bottom: '기간' },
+  { top: '렌탈료', bottom: '보증금', cls: 'num' },
+  { top: '차량가액', cls: 'num' },
+  { top: '계약서', bottom: '인도' },
+  { top: '인도일', bottom: '청구월' },
+  { top: '청구액', bottom: '지급액', cls: 'num' },
+  { top: '취소', cls: 'mid' },
+  { top: '메모' },
+  { top: '' },
+];
+
+/** 한 칸 = 위·아래 두 줄. 폰 카드에서 각 줄 앞에 라벨이 붙도록 data-label 을 단다. */
+function Pair({ i, a, b }: { i: number; a: ReactNode; b?: ReactNode }) {
+  const c = COLS[i];
+  return (
+    <td className={c.cls}>
+      <div className="ledger-pair">
+        <div data-label={c.top}>{a}</div>
+        {c.bottom && <div data-label={c.bottom}>{b}</div>}
+      </div>
+    </td>
   );
 }
 
@@ -180,6 +218,10 @@ function EntryRow({ canWrite, today, onSaved }: { canWrite: boolean; today: stri
 
   const off = !canWrite || pending;
   const F = 'ledger-new';
+  const text = (name: string, label: string, required = false) =>
+    <input form={F} className="cell" name={name} required={required} disabled={off} aria-label={`새 접수 ${label}`} placeholder={label} />;
+  const num = (name: string, label: string) =>
+    <input form={F} className="cell num" name={name} inputMode="numeric" disabled={off} aria-label={`새 접수 ${label}`} placeholder={label} />;
   return (
     <tr className="ledger-entry">
       <td>
@@ -187,33 +229,34 @@ function EntryRow({ canWrite, today, onSaved }: { canWrite: boolean; today: stri
         <form id={F} ref={formRef} onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }} />
         <input form={F} type="hidden" name="intakeRequestId" value={requestId} />
         <input form={F} type="hidden" name="feeReason" value="접수표 직접 입력" />
-        <input form={F} className="cell" type="date" name="receivedAt" defaultValue={today} max={today} required disabled={off} aria-label="새 접수 접수일" />
+        <div className="ledger-pair">
+          <div data-label="접수일"><input form={F} className="cell" type="date" name="receivedAt" defaultValue={today} max={today} required disabled={off} aria-label="새 접수 접수일" /></div>
+          <div data-label="상품구분"><select form={F} className="cell" name="product" disabled={off} aria-label="새 접수 상품구분" defaultValue="">
+            <option value="">상품구분</option>{LEDGER_PRODUCTS.map((p) => <option key={p}>{p}</option>)}
+          </select></div>
+        </div>
       </td>
-      <td><input form={F} className="cell" name="plate" disabled={off} aria-label="새 접수 차량번호" placeholder="차량번호" /></td>
-      <td><input form={F} className="cell" name="supplier" required disabled={off} aria-label="새 접수 공급사" placeholder="공급사" /></td>
-      <td><input form={F} className="cell" name="model" disabled={off} aria-label="새 접수 모델명" placeholder="모델명" /></td>
-      <td><input form={F} className="cell" name="channel" required disabled={off} aria-label="새 접수 영업채널" placeholder="영업채널" /></td>
-      <td><input form={F} className="cell" name="agent" required disabled={off} aria-label="새 접수 영업담당자" placeholder="담당자" /></td>
-      <td><input form={F} className="cell" name="customer" required disabled={off} aria-label="새 접수 고객명" placeholder="고객명" /></td>
-      <td><select form={F} className="cell" name="product" disabled={off} aria-label="새 접수 상품구분" defaultValue="">
-        <option value="">상품구분</option>{LEDGER_PRODUCTS.map((p) => <option key={p}>{p}</option>)}
-      </select></td>
-      <td><input form={F} className="cell num" name="term" inputMode="numeric" disabled={off} aria-label="새 접수 계약기간" placeholder="개월" /></td>
-      <td><input form={F} className="cell num" name="rent" inputMode="numeric" disabled={off} aria-label="새 접수 렌탈료" placeholder="렌탈료" /></td>
-      <td><input form={F} className="cell num" name="deposit" inputMode="numeric" disabled={off} aria-label="새 접수 보증금" placeholder="보증금" /></td>
-      <td><input form={F} className="cell num" name="price" inputMode="numeric" disabled={off} aria-label="새 접수 차량가액" placeholder="차량가액" /></td>
-      <td><select form={F} className="cell" name="payKind" required disabled={off} aria-label="새 접수 분납여부" defaultValue="">
-        <option value="" disabled>분납</option>{PAY_KINDS.map((p) => <option key={p}>{p}</option>)}
-      </select></td>
-      <td className="mid"><input form={F} type="checkbox" name="paper" disabled={off} aria-label="새 접수 계약서" /></td>
-      <td className="mid"><input form={F} type="checkbox" name="delivered" disabled={off} aria-label="새 접수 인도완료" /></td>
-      <td><input form={F} className="cell" type="date" name="deliveredAt" max={today} disabled={off} aria-label="새 접수 인도일" /></td>
-      <td className="muted">인도 후</td>
-      <td><input form={F} className="cell num" name="feeClaim" inputMode="numeric" disabled={off} aria-label="새 접수 청구액" placeholder="청구액" /></td>
-      <td><input form={F} className="cell num" name="feePay" inputMode="numeric" disabled={off} aria-label="새 접수 지급액" placeholder="지급액" /></td>
+      <td><div className="ledger-pair"><div data-label="차량번호">{text('plate', '차량번호')}</div><div data-label="모델명">{text('model', '모델명')}</div></div></td>
+      <td><div className="ledger-pair"><div data-label="고객명">{text('customer', '고객명', true)}</div>
+        <div data-label="분납"><select form={F} className="cell" name="payKind" required disabled={off} aria-label="새 접수 분납여부" defaultValue="">
+          <option value="" disabled>분납</option>{PAY_KINDS.map((p) => <option key={p}>{p}</option>)}
+        </select></div></div></td>
+      <td><div className="ledger-pair"><div data-label="공급사">{text('supplier', '공급사', true)}</div><div data-label="영업채널">{text('channel', '영업채널', true)}</div></div></td>
+      <td><div className="ledger-pair"><div data-label="담당자">{text('agent', '담당자', true)}</div><div data-label="기간">{num('term', '개월')}</div></div></td>
+      <td><div className="ledger-pair"><div data-label="렌탈료">{num('rent', '렌탈료')}</div><div data-label="보증금">{num('deposit', '보증금')}</div></div></td>
+      <td><div className="ledger-pair"><div data-label="차량가액">{num('price', '차량가액')}</div></div></td>
+      <td><div className="ledger-pair">
+        <div data-label="계약서"><label className="ledger-tick"><input form={F} type="checkbox" name="paper" disabled={off} />계약서</label></div>
+        <div data-label="인도"><label className="ledger-tick"><input form={F} type="checkbox" name="delivered" disabled={off} />인도</label></div>
+      </div></td>
+      <td><div className="ledger-pair">
+        <div data-label="인도일"><input form={F} className="cell" type="date" name="deliveredAt" max={today} disabled={off} aria-label="새 접수 인도일" /></div>
+        <div data-label="청구월" className="muted">인도 후</div>
+      </div></td>
+      <td><div className="ledger-pair"><div data-label="청구액">{num('feeClaim', '청구액')}</div><div data-label="지급액">{num('feePay', '지급액')}</div></div></td>
       <td />
-      <td><input form={F} className="cell" name="note" disabled={off} aria-label="새 접수 메모" placeholder="메모" /></td>
-      <td><button form={F} type="submit" className="ledger-submit" disabled={off}>{pending ? '저장 중' : '접수'}</button></td>
+      <td><div className="ledger-pair"><div data-label="메모">{text('note', '메모')}</div></div></td>
+      <td className="ledger-act"><button form={F} type="submit" className="ledger-submit" disabled={off}>{pending ? '저장 중' : '접수'}</button></td>
     </tr>
   );
 }

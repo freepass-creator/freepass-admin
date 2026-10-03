@@ -1,3 +1,11 @@
+## 0-F04-READ-GWS. 2026-10-03 — F04 읽기를 gws 로그인으로 (우리캐피탈 정산서 403 해소)
+
+- 목적: 2026-10-02 우리캐피탈 정산서(#165)가 서비스계정 키 파일 없음·Sheets 403 으로 멈춤. 10-03 부터 gws(pyh@teamjpk.com)에 spreadsheets·drive 범위가 생겨 그 로그인으로 읽는다(총괄 지시).
+- 대상 revision: main `1f6f98b`, 작업선 `work/freepass-admin/f04-read-gws`.
+- 변경: `scripts/f04-ssot.mts` 에 `--auth sa|gws`. 안 주면 키 파일이 있으면 sa, 없으면 gws. gws 는 `spreadsheets.get`/`values.get`(UNFORMATTED_VALUE) 를 실행 파일로 직접 불러 JSON 인자를 shell 따옴표로 깨뜨리지 않는다(GWS_BIN 또는 npm 전역 gws.ps1 이 가리키는 gws.exe). 읽기만 한다.
+- 검증: `npx tsx scripts/f04-ssot.mts --auth gws` → 탭 33 · 접수 485 = 실은 483 + 보류 2(균형 ✓), 스냅샷 생성. 그 스냅샷으로 `generate-monthly-settlement-pdf.mts --month 2026-09` (우리캐피탈) READY — 1건, 공급가 1,839,250 · 부가세 183,925 · 합계 2,023,175. 이 PC 는 번들 Chromium 이 없어 `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH` 로 설치된 Chrome 을 지정해야 렌더된다. 산출물은 저장소 밖에 두었고 발송·발행 없음. tsc PASS, F04·정산서 37 tests PASS.
+- 남음: 정산서 금액은 지금도 접수 AE `판매수수료`(row.claim)를 쓴다 — U `청구액`을 정산 금액으로 볼지(금액 의미 결정)는 대표 확인 대기. 키 파일 경로(sa)는 그대로 둔다.
+- next_start_here: 정산서 발행 전 `npx tsx scripts/f04-ssot.mts --auth gws` → `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH=<chrome.exe> npx tsx scripts/generate-monthly-settlement-pdf.mts --month YYYY-MM --out <저장소 밖>`.
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
 - 2026-10-02 누락 수수료 후속: 사용자 공급사/상품별 산식으로 빈 금액 계산 지시. F04 최신 접수와 수수료표 재조회, 최근 실제 일반접수6행에 청구6/지급5칸(11칸) 공급가액 입력: 453 아이언 차량40250000×4%/3%, 458 아이카670000×60×2.25%/1.75%, 459 손오공813000×60×2.25%/1.75%, 469 빌린카650000×60×2.25% 청구(기존지급 보존), 470 리더스1420000×36×3.75%/3%, 483 아이카1550000×48×3.25%/2.5%. 정확산식/source note와 미발행·미지급 경계 기록. 금액 재조회 불일치0, 요청 외 값 변경0, Roboto10 서식 유지. Claude 독립검토의 정확매칭/기간율/VAT/예외 경고를 표의 명시적 대여료×기간 기준 대조와 예외 제외로 반영. 40/50만원 고정 지급5칸은 세전/세후 미표기라 아직 보류.

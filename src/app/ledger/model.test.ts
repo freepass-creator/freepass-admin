@@ -121,3 +121,21 @@ test('won and parseWon', () => {
   assert.equal(parseWon('1,234,567원'), 1234567);
   assert.ok(Number.isNaN(parseWon('abc')));
 });
+
+test('plateOffers retains each term fee state and amount without calculating or inventing missing fields', () => {
+  const known = { state: 'KNOWN' as const, amount: { amount: 700000, currency: 'KRW' as const }, sourceRefs: ['raw'], policyId: 'p', ruleId: 'r' };
+  const zero = { ...known, state: 'ZERO' as const, amount: { amount: 0, currency: 'KRW' as const } };
+  const unknown = { ...known, state: 'UNKNOWN' as const, amount: null, reasonCode: 'NO_RULE' };
+  const p = { id: 'p1', version: 1, sourceSnapshotId: 's', productKind: '중고렌트', registration: { vehicleNumber: '12가3456' }, vehicle: { modelId: 'K5' },
+    offers: [
+      { id: 'o12', termMonths: 12, monthlyRent: 1, supplierBillingFee: known, channelPayoutFee: zero },
+      { id: 'o24', termMonths: 24, monthlyRent: 1, supplierBillingFee: unknown, channelPayoutFee: { ...unknown, state: 'NOT_APPLICABLE' } },
+      { id: 'legacy', termMonths: 36, monthlyRent: 1 },
+    ] } as unknown as CanonicalProduct;
+  const r = plateOffers([p], '12가3456');
+  assert.deepEqual(r[0].supplierBillingFee, known);
+  assert.deepEqual(r[0].channelPayoutFee, zero);
+  assert.equal(r[1].supplierBillingFee?.amount, null);
+  assert.equal(r[1].channelPayoutFee?.state, 'NOT_APPLICABLE');
+  assert.equal(r[2].supplierBillingFee, undefined);
+});

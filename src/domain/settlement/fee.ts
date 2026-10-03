@@ -12,6 +12,12 @@
  *   가장 비슷한 규칙에 끼워 넣어 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
  */
 import type { Maybe } from './types';
+import type { TermEconomicAmount } from '../product/types';
+
+/** Data 값 읽기 전용. calculation을 실행하거나 미확정을 0으로 채우지 않는다. */
+export function dataFeeAmount(fee: TermEconomicAmount | undefined): number | null {
+  return fee?.state === 'ZERO' ? 0 : fee?.state === 'KNOWN' ? fee.amount?.amount ?? null : null;
+}
 
 export type FeeBasis = '차량가액' | '대여료×기간' | '정액' | '한달렌탈료' | '구독료+정액' | '범위' | '조건분기';
 export type FeeKind = '신차' | '재렌트' | '구독' | '전기차';

@@ -58,13 +58,13 @@
   },
   "active": [
     {
-      "work_order": "intake-sheet-20261003",
-      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as a simple ERP intake desk — list for viewing (attention chips, task tabs, one row per intake, progress checkline) and a right panel for work (new intake, selected intake progress/amounts), no horizontal scroll reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
-      "branch": "work/freepass-admin/intake-sheet-20261003",
-      "writer": "Claude Code",
-      "reviewer": "Codex (read-only)",
-      "supersedes": "codex/intake-ledger-lifecycle simple intake (browser-only storage); Codex stops writing per user decision",
-      "phase": "CODING",
+      "work_order": "ledger-commission-read-20261003",
+      "objective": "Read FreePass Data per-term commissions (freepass-data PR #289: priceTerms[].supplierBillingFee / channelPayoutFee) into intake: KNOWN/ZERO sealed into the catalog snapshot and written as claim/pay without recomputation; UNKNOWN/NOT_APPLICABLE stay 미확정 (null, never 0); products without the fields keep the local fee table until Data's bulk recompute finishes.",
+      "branch": "work/freepass-admin/ledger-commission-read-20261003",
+      "writer": "Codex (implementation, ordered by Claude Code)",
+      "reviewer": "Claude Code",
+      "supersedes": "intake-sheet-20261003 (merged as PR #167)",
+      "phase": "REVIEW",
       "production_cutover_authorized": false
     }
   ],

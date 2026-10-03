@@ -11,6 +11,7 @@ import { startTransition, useActionState, useEffect, useRef, useState, type Reac
 import { ledgerCreateAction, ledgerPlateLookupAction, type LedgerCreateState } from '../intake/actions';
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
+import { dataFeeAmount } from '../../domain/settlement/fee';
 import type { Status } from './LedgerBoard';
 import { formatTermInput, formatWonInput, normName, normPlate, plateKey, won, type PlateOffer } from './model';
 
@@ -77,10 +78,18 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
 
   const currentPlate = () => { const el = formRef.current?.elements.namedItem('plate'); return el instanceof HTMLInputElement ? el.value : ''; };
 
+  function clearFeeSelection() {
+    for (const name of ['feeClaim', 'feePay', 'feeReason']) {
+      const el = formRef.current?.elements.namedItem(name);
+      if (el instanceof HTMLInputElement && el.type !== 'hidden') el.value = '';
+    }
+    setPick(null);
+  }
+
   async function lookup() {
     const plate = normPlate(currentPlate());
     if (!plate) { setLookupMsg('차량번호를 먼저 넣어 주세요'); return; }
-    setLooking(true); setPick(null);
+    setLooking(true); clearFeeSelection();
     try {
       const r = await ledgerPlateLookupAction(plate);
       setOffers(r.offers); setLookupMsg(r.message); setHeld(!!r.held);
@@ -105,6 +114,10 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
     put('rent', won(o.rent));
     put('deposit', won(o.deposit));
     put('price', won(o.price));
+    put('feeClaim', dataFeeAmount(o.supplierBillingFee) === null ? '' : won(dataFeeAmount(o.supplierBillingFee)));
+    put('feePay', dataFeeAmount(o.channelPayoutFee) === null ? '' : won(dataFeeAmount(o.channelPayoutFee)));
+    const reason = form.elements.namedItem('feeReason');
+    if (reason instanceof HTMLInputElement && reason.type !== 'hidden') reason.value = '';
   }
 
   const off = !canWrite || pending;
@@ -127,7 +140,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         {status && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
         {!canWrite && <p className="notice warn" role="status">지금은 저장이 꺼져 있습니다 — 보기만 할 수 있습니다.</p>}
         <input type="hidden" name="intakeRequestId" value={requestId} />
-        <input type="hidden" name="feeReason" value="접수 화면 직접 입력" />
+        {!pick?.supplierBillingFee && !pick?.channelPayoutFee && <input type="hidden" name="feeReason" value="접수 화면 직접 입력" />}
         {pick && <>
           {/* 상품구분 칸은 잠겨(disabled) 보내지지 않으므로 같은 값을 숨은 칸으로 보낸다 */}
           <input type="hidden" name="product" value={pick.product} />
@@ -148,7 +161,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
               <span>차량번호</span>
               <input name="plate" autoFocus disabled={pending} placeholder="없으면 비워 두기" aria-label="차량번호"
                 onBlur={(e) => { e.currentTarget.value = normPlate(e.currentTarget.value); }}
-                onChange={() => { if (pick || offers.length) { setPick(null); setOffers([]); setLookupMsg('차량번호가 바뀌었습니다 — 조건을 다시 조회해 주세요'); } }}
+                onChange={() => { if (pick || offers.length) { clearFeeSelection(); setOffers([]); setLookupMsg('차량번호가 바뀌었습니다 — 조건을 다시 조회해 주세요'); } }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); void lookup(); } }} />
               {/* 조회는 읽기만 한다 — 저장이 꺼져 있어도 조건을 볼 수 있다 */}
               <button type="button" className="small-btn" disabled={pending || looking} onClick={() => void lookup()}>{looking ? '조회 중' : '조회'}</button>
@@ -159,9 +172,11 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
                 {offers.map((o) => (
                   <button key={o.key} type="button" className={pick?.key === o.key ? 'chip on' : 'chip'} aria-pressed={pick?.key === o.key} onClick={() => choose(o)}>
                     {[o.supplier, o.term ? `${o.term}개월` : '', o.rent !== null ? `월 ${won(o.rent)}` : '', o.deposit ? `보증금 ${won(o.deposit)}` : ''].filter(Boolean).join(' · ')}
+                    {/* Data 가 발행하지 않은 금액은 저장도 「미확정」이다 — 화면도 같게 보인다 */}
+                    {` · 청구 ${dataFeeAmount(o.supplierBillingFee) === null ? '미확정' : `${won(dataFeeAmount(o.supplierBillingFee))}원`} · 지급 ${dataFeeAmount(o.channelPayoutFee) === null ? '미확정' : `${won(dataFeeAmount(o.channelPayoutFee))}원`}`}
                   </button>
                 ))}
-                {pick && <button type="button" className="chip" onClick={() => setPick(null)}>직접 입력으로</button>}
+                {pick && <button type="button" className="chip" onClick={clearFeeSelection}>직접 입력으로</button>}
               </div>
             )}
             {pick && <p className="notice ok">상품 조건으로 접수합니다 — 공급사·모델·조건 칸은 상품 값으로 잠깁니다. 고치려면 「직접 입력으로」를 누르세요.</p>}
@@ -202,8 +217,9 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         <div className="section">
           <h4>금액 <span className="dz-sec-note">공급가액 · 모르면 비워 두기</span></h4>
           <div className="form">
-            <Field label="청구액"><input className="ldesk-num" name="feeClaim" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
-            <Field label="지급액"><input className="ldesk-num" name="feePay" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
+            <Field label="청구액"><input className="ldesk-num" name="feeClaim" onBlur={fixWon} readOnly={dataFeeAmount(pick?.supplierBillingFee) !== null} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
+            <Field label="지급액"><input className="ldesk-num" name="feePay" onBlur={fixWon} readOnly={dataFeeAmount(pick?.channelPayoutFee) !== null} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
+            {(pick?.supplierBillingFee || pick?.channelPayoutFee) && <Field label="수수료 사유"><input name="feeReason" disabled={off} placeholder="미확정 금액 직접 입력 시 필수" /></Field>}
           </div>
         </div>
 

@@ -11,7 +11,6 @@ export default function SimpleIntake() {
   const [entry, setEntry] = useState<Row | null>(null);
   const [entryDirty, setEntryDirty] = useState(false);
   const plateRef = useRef<HTMLInputElement>(null);
-  const tableFields = [...intakeFields, ...feeFields, ...followupFields];
   function newEntry() {
     return blankRow(typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint32Array(4)), v => v.toString(16).padStart(8, '0')).join(''), new Date().toLocaleDateString('sv-SE'));
   }
@@ -98,33 +97,30 @@ export default function SimpleIntake() {
       <section aria-label="접수 목록" className="simple-list">
         <p className="simple-table-help">① 접수정보 입력 → 접수하기 → ② 수수료 확인 → ③ 저장된 행에서 계약·인도·청구 처리. 금액은 공급가액이며 빈 금액은 수수료 확인 필요입니다. {shown.length}/{rows.length}건</p>
         <form id="simple-new-entry" onSubmit={e => { e.preventDefault(); save(entry); }} />
-        <div className="simple-table-scroll" tabIndex={0} aria-label="접수현황 가로 스크롤">
-        <table className="simple-table"><thead><tr className="simple-group-head"><th scope="colgroup" colSpan={intakeFields.length}>접수할 때 입력</th><th scope="colgroup" colSpan={feeFields.length}>수수료 · 공급가액</th><th scope="colgroup" colSpan={followupFields.length + checks.length + 1}>접수 후 진행 · 정산</th><th scope="col">작업</th></tr><tr>
-          {tableFields.map(([key, label]) => <th scope="col" key={key}>{label}</th>)}
-          {checks.map(([key, label]) => <th scope="col" key={key}>{label}</th>)}<th scope="col">환수</th><th scope="col">수정</th>
-        </tr></thead><tbody>
-        {entry && <tr className="simple-entry-row" aria-label="신규 접수 입력 줄">
+        <div className="simple-flow" aria-label="접수현황">
+        {entry && <section className="simple-entry-row simple-flow-record" aria-label="신규 접수 입력">
+          <h2>신규 접수</h2><div className="simple-flow-fields">
           {intakeFields.map(([key, label, type]) => {
             const suggested = key === 'product' ? ['신차렌트', '중고구독', '중고렌트', '오공구독', '픽업구독', '오플구독', '장기렌트', '선출고', '견적출고', '구독'] : key === 'term' ? ['12', '24', '36', '48', '60'] : key === 'installment' ? ['일시납', '2회분납', '3회분납'] : [];
             const options = [...new Set([...suggested, ...rows.map(r => r[key]).filter(Boolean)])];
             const selectable = ['supplier', 'product', 'channel', 'agent', 'term', 'installment', 'rentKind', 'contractKind'].includes(key);
-            return <td key={key}><input ref={key === 'plate' ? plateRef : undefined} form="simple-new-entry" aria-label={`신규 ${label}`} required={key === 'plate'} type={type === 'number' ? 'text' : type} inputMode={type === 'number' ? 'decimal' : undefined} list={selectable ? `entry-${key}` : undefined} value={entry[key]} placeholder={label} className={key === 'claim' || key === 'pay' ? 'simple-money' : undefined} onChange={e => { setEntry(current => current ? { ...current, [key]: e.target.value } : current); setEntryDirty(true); }} onBlur={e => { const value = e.target.value; if (value !== entry[key]) { setEntry(current => current ? { ...current, [key]: value } : current); setEntryDirty(true); } }} />{selectable && <datalist id={`entry-${key}`}>{options.map(value => <option key={value} value={value} />)}</datalist>}</td>;
+            return <label key={key}><span>{label}</span><input ref={key === 'plate' ? plateRef : undefined} form="simple-new-entry" aria-label={`신규 ${label}`} required={key === 'plate'} type={type === 'number' ? 'text' : type} inputMode={type === 'number' ? 'decimal' : undefined} list={selectable ? `entry-${key}` : undefined} value={entry[key]} placeholder={label} onChange={e => { setEntry(current => current ? { ...current, [key]: e.target.value } : current); setEntryDirty(true); }} onBlur={e => { const value = e.target.value; if (value !== entry[key]) { setEntry(current => current ? { ...current, [key]: value } : current); setEntryDirty(true); } }} />{selectable && <datalist id={`entry-${key}`}>{options.map(value => <option key={value} value={value} />)}</datalist>}</label>;
           })}
-          <td colSpan={feeFields.length} className="simple-entry-hint">접수 후 수수료 확인</td>
-          <td colSpan={followupFields.length + checks.length + 1} className="simple-entry-hint">저장된 행에서 처리 · 신규 입력 불필요</td>
-          <td className="simple-row-actions"><button form="simple-new-entry" type="submit" disabled={!ready}>접수하기</button>{entryDirty && <span>입력 중</span>}</td>
-        </tr>}
+          </div><div className="simple-flow-actions"><span>계약·인도·청구는 접수 후 처리합니다.</span><button form="simple-new-entry" type="submit" disabled={!ready}>접수하기</button>{entryDirty && <span>입력 중</span>}</div>
+        </section>}
         {shown.map(original => { const r = edits[original.id] ?? original;
           const change = (patch: Partial<Row>) => { setEdits(current => ({ ...current, [r.id]: { ...(current[r.id] ?? original), ...patch } })); setStatus('저장 전 변경이 있습니다.'); setError(''); };
-          return <tr key={r.id} className={r.cancelled ? 'cancelled' : r.refunded ? 'refunded' : ''}>
-            {tableFields.map(([key, label, type]) => <td key={key}>{key === 'billingMonth' || key === 'deliveryDate' || key === 'claim' || key === 'pay' ? <input aria-label={`${r.plate} ${label}`} type={type === 'number' ? 'text' : type} inputMode={type === 'number' ? 'decimal' : undefined} className={key === 'claim' || key === 'pay' ? 'simple-money' : undefined} value={r[key]} placeholder={key === 'claim' || key === 'pay' ? '확인 필요' : '미입력'} onChange={e => change({ [key]: e.target.value })} onBlur={e => { if (e.target.value !== r[key]) change({ [key]: e.target.value }); }} /> : type === 'number' ? money(r[key]) : r[key]}</td>)}
-            {checks.map(([key, label]) => <td key={key}><input type="checkbox" aria-label={`${r.plate} ${label}`} checked={r[key]} onChange={e => change({ [key]: e.target.checked })} /></td>)}
-            <td><input type="checkbox" aria-label={`${r.plate} 환수`} checked={r.refunded} onChange={e => change({ refunded: e.target.checked })} /></td>
-            <td className="simple-row-actions"><button onClick={() => select(r)}>상세</button>{edits[r.id] && <><span>저장 전</span><button onClick={() => save(r)}>저장</button></>}</td>
-          </tr>;
+          return <article key={r.id} aria-label={`${r.plate} 접수`} className={`simple-flow-record ${r.cancelled ? 'cancelled' : r.refunded ? 'refunded' : ''}`}>
+            <h2>{r.plate} <small>{r.receiptDate}</small></h2>
+            <div className="simple-flow-fields simple-flow-summary">{intakeFields.filter(([key]) => key !== 'plate' && key !== 'receiptDate').map(([key,label,type]) => <div key={key}><span>{label}</span><div>{r[key] === '' ? '미입력' : type === 'number' ? money(r[key]) : r[key]}</div></div>)}</div>
+            <fieldset className="simple-flow-group"><legend>수수료 · 공급가액</legend><div className="simple-flow-fields">{feeFields.map(([key,label]) => <label key={key}><span>{label}</span><input aria-label={`${r.plate} ${label}`} inputMode="decimal" className="simple-money" value={r[key]} placeholder="확인 필요" onChange={e => change({[key]:e.target.value})} /></label>)}</div></fieldset>
+            <fieldset className="simple-flow-group"><legend>접수 후 진행 · 정산</legend><div className="simple-flow-fields">{followupFields.map(([key,label,type]) => <label key={key}><span>{label}</span><input aria-label={`${r.plate} ${label}`} type={type} value={r[key]} onChange={e => change({[key]:e.target.value})} onBlur={e => {if(e.target.value !== r[key]) change({[key]:e.target.value});}} /></label>)}</div>
+            <div className="simple-flow-checks">{checks.map(([key, label]) => <label key={key}><input type="checkbox" aria-label={`${r.plate} ${label}`} checked={r[key]} onChange={e => change({ [key]: e.target.checked })} />{label}</label>)}<label><input type="checkbox" aria-label={`${r.plate} 환수`} checked={r.refunded} onChange={e => change({refunded:e.target.checked})} />환수</label></div></fieldset>
+            <div className="simple-flow-actions"><button onClick={() => select(r)}>상세</button>{edits[r.id] && <><span>저장 전</span><button onClick={() => save(r)}>저장</button></>}</div>
+          </article>;
         })}
-        {!shown.length && <tr><td colSpan={tableFields.length + checks.length + 2}>{ready ? (rows.length ? '검색 조건에 맞는 접수가 없습니다.' : '맨 위 입력 줄에서 첫 접수를 입력하세요.') : '초안 확인 중입니다.'}</td></tr>}
-        </tbody></table></div>
+        {!shown.length && <p>{ready ? (rows.length ? '검색 조건에 맞는 접수가 없습니다.' : '맨 위에서 첫 접수를 입력하세요.') : '초안 확인 중입니다.'}</p>}
+        </div>
       </section>}
       {draft &&
       <section aria-label="접수 입력" className="simple-editor">

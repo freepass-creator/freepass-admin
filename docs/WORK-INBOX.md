@@ -1,5 +1,8 @@
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
+- 2026-10-03 최신 표시결정 / 기준39e7477: 가로 스크롤 표 폐기. 같은 simple 화면을 접수항목 auto-fit grid와 접수건별 동일 줄바꿈 영역으로 변경. 화면폭 부족하면 항목이 다음줄로 이동, 신규14개 및 진행/수수료 구분 유지. label/fieldset/legend/article 사용. 저장모델과 원문필드는 그대로.
+- 검증: 타입검사/단위7건/Next build PASS. 기본921px 4열(내용739px scroll739px), 390px 화면 1열(내용272px scroll272px), body 가로넘침0 확인. 신규접수→계약서체크→저장→새로고침 유지와 입력초기화 확인. 화면 Temp/freepass-intake-wrapped.jpg. low-risk 표시변경이며 수수료엔진/운영저장/배포 미연결 상태 유지. next_start_here: 이 줄바꿈 화면을 기준으로 운영 연결 및 수수료 정합성 작업.
+
 - 2026-10-03 入力/후속 분리 / 대상7e5f377: F04 접수 gid406613808 A2:BS2, 매뉴얼A1:D30, 최근484:486 validation 실조회. 직원입력 A:O에서 영업자연락처 제외14개를 intakeFields로 분리(차번 우선). 수수료2개, 인도일/청구월+진행체크는 저장된행에서만 수정. 추가 계약/가감/증빙값은 기존 상세에 보존. 분납 후보 일시납/2회/3회는 실제validation 사용. 매뉴얼의 인도후 행이동·계약서자동체크·청구월자동지정은 최신결정과 불일치하여 적용하지 않음.
 - 검증: typecheck/단위7건/Next build PASS. 브라우저 신규입력14개·체크0개, 저장후 인도일2026-10-03/계약서체크 수정→저장→새로고침 유지. 수수료 자동조회는 미연결: 기존 previewFeeAction/feeOf REUSE_WITH_ADAPTER 후보 확인했으나 최신 F04→ERP5 rules parity 및 오공/픽업 갈래 검증 없이 연결하지 않는다. 빈금액은 확인필요이지0이 아님. Claude검토 대기(PASS 아님). next_start_here: 실제규칙version/시트수수료표 대조 후 기존미리보기 연결. 운영시트수정/DBwrite/배포 없음.
 

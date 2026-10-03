@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
-  billMonthsOf, countBy, filterLedger, inChip, LEDGER_TABS, inTab, parseWon, sortLedger, stepsOf, toLedgerRow,
+  billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, normName, normPlate, parseWon, sortLedger, stepsOf, toLedgerRow,
   toneOf, totalsOf, won, type LedgerRow,
 } from './model';
 
@@ -73,6 +73,17 @@ test('steps and tone follow the task', () => {
 test('totalsOf skips cancelled rows and counts unknown amounts separately', () => {
   const t = totalsOf([row({ claim: 675000, pay: 540000 }), row({ claim: null, pay: 100000 }), row({ claim: 9, pay: 9, cancelled: true })]);
   assert.deepEqual(t, { rows: 3, claim: 675000, pay: 640000, claimUnknown: 1, payUnknown: 0 });
+});
+
+test('input formats: money commas, months, plate and names', () => {
+  assert.equal(formatWonInput('1234567원'), '1,234,567');
+  assert.equal(formatWonInput(' 500,000 '), '500,000');
+  assert.equal(formatWonInput('abc'), 'abc');
+  assert.equal(formatWonInput(''), '');
+  assert.equal(formatTermInput('36개월'), '36');
+  assert.equal(formatTermInput('x'), 'x');
+  assert.equal(normPlate(' 12가 3456 '), '12가3456');
+  assert.equal(normName('  홍  길동 '), '홍 길동');
 });
 
 test('won and parseWon', () => {

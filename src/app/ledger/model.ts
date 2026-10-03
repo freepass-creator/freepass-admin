@@ -194,6 +194,26 @@ export function won(n: number | null): string {
   return n === null ? '' : n.toLocaleString('ko-KR');
 }
 
+/* ── 입력 공통 규격 — 화면이 저장 전에 같은 꼴로 맞춘다(서버도 같은 규칙으로 다시 읽는다) ── */
+
+/** 금액 칸: 칸을 떠날 때 「1234567원」 → 「1,234,567」. 숫자가 아니면 그대로 둬서 저장 때 오류로 알린다. */
+export function formatWonInput(s: string): string {
+  const n = parseWon(s);
+  return n === null || Number.isNaN(n) ? s.trim() : n.toLocaleString('ko-KR');
+}
+
+/** 개월 칸: 「36개월」 → 「36」 */
+export function formatTermInput(s: string): string {
+  const t = s.replace(/[\s개월,]/g, '');
+  return /^\d+$/.test(t) ? String(Number(t)) : s.trim();
+}
+
+/** 차량번호: 공백 없이 — 원장 열쇠(settlementKey/intakeKey)와 같은 규칙 */
+export const normPlate = (s: string) => s.replace(/\s/g, '');
+
+/** 이름 칸: 앞뒤 공백 · 겹친 공백 정리 */
+export const normName = (s: string) => s.trim().replace(/\s+/g, ' ');
+
 /** 입력 칸 → 수. 빈칸은 null, 숫자가 아니면 NaN(저장 전에 막는다). */
 export function parseWon(s: string): number | null {
   const v = s.replace(/[,\s원]/g, '');

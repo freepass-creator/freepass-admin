@@ -143,7 +143,7 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                         <span>청구 <b className={r.claim === null ? 'tag warn' : undefined}>{r.claim === null ? '미확정' : won(r.claim)}</b></span>
                         <small>지급 <b className={r.pay === null ? 'tag warn' : undefined}>{r.pay === null ? '미확정' : won(r.pay)}</b></small>
                       </span>
-                      <span className="f month"><span>{r.billMonth || '—'}</span><small>{r.billMonth ? '청구월' : r.expectedMonth ? `예정 ${r.expectedMonth}` : '청구월 미정'}</small></span>
+                      <span className="f month"><span>{r.billMonth || r.expectedMonth || '미정'}</span><small>{r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'}</small></span>
                     </span>
                   </div>
                 );
@@ -156,7 +156,7 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
         {open && (
           <section className="web-panel pb-work" aria-label={current ? '접수 처리' : '새 접수'}>
             {current
-              ? <DetailPanel key={current.code} row={current} canWrite={canWrite && !busy} today={today} run={run} status={status}
+              ? <DetailPanel key={current.code} row={current} options={options} canWrite={canWrite && !busy} today={today} run={run} status={status}
                   onClose={() => show(null)} onNew={() => show('new')} />
               : <NewIntakePanel options={options} canWrite={canWrite} today={today} status={status}
                   onClose={() => show(null)} onSaved={onSaved} />}

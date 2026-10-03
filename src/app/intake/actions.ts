@@ -6,7 +6,7 @@ import { productByIdFresh } from '../../server/freepass-data';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
-import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { FACT_LABEL, validateIntake, type FactChange, type FactKey, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { buildIntakeCatalogSnapshot } from '../../domain/settlement/catalog-snapshot';
@@ -291,6 +291,26 @@ export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
     return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
+  revalidatePath('/settlement');
+  return { errors: [] };
+}
+
+/**
+ * 접수 뒤 기본 사실 고치기. 폼 칸: code + 바꿀 칸만(FACT_LABEL 의 키 — customer · model · supplier · supplierCode …).
+ * ★보낸 칸만 견준다 · 접수일과 수수료 금액은 여기서 못 바꾼다 · 막을 때는 도메인 factPatch 가 정한다.
+ */
+export async function factsAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
+  const change: FactChange = {};
+  for (const k of Object.keys(FACT_LABEL) as FactKey[]) if (f.has(k)) change[k] = S(f, k);
+  try {
+    const r = await settlements.setFacts(S(f, 'code'), change, await currentActor());
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [writeError('저장하지 못했습니다', e)] };
+  }
+  revalidatePath('/intake');
+  revalidatePath('/ledger');
   revalidatePath('/settlement');
   return { errors: [] };
 }

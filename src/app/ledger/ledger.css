@@ -97,6 +97,26 @@
 .pb.ldesk .pb-work .pb-errs { margin-bottom:10px; }
 .pb.ldesk .web-panel-head .panel-close { border:0; background:transparent; color:var(--sub); cursor:pointer; }
 
+/* 접수 내용 고치기 — 제목 옆 작은 단추 · 아래 [그만두기][저장] */
+.pb.ldesk .section h4 .ldesk-h4-btn { margin-left:auto; height:28px; padding:0 12px; }
+.pb.ldesk .ldesk-edit { padding:12px; border-radius:var(--r-card); background:var(--box); }
+.pb.ldesk .ldesk-edit .form { margin-top:4px; }
+.pb.ldesk .ldesk-edit .pb-errs { margin-top:10px; }
+.pb.ldesk .ldesk-edit-actions { display:grid; grid-template-columns:3fr 7fr; gap:var(--gap); margin-top:12px; }
+.pb.ldesk .ldesk-edit-actions > * { min-height:var(--control); border-radius:var(--r-control); font-size:var(--body); font-weight:600; cursor:pointer; }
+
+/* 처리 판이 좁을 때(창이 작거나 1:1 이 아닐 때) — 이름표를 위로 올려 날짜·월 칸이 잘리지 않게 */
+.pb.ldesk .pb-work { container-type:inline-size; }
+@container (max-width: 380px) {
+  .pb.ldesk .ldesk-line { grid-template-columns:minmax(0,1fr) auto; row-gap:4px; }
+  .pb.ldesk .ldesk-line > span { grid-column:1 / -1; }
+  .pb.ldesk .form > label { grid-template-columns:minmax(0,1fr); gap:4px; }
+  .pb.ldesk .form > label > :is(input, select, textarea) { grid-column:1; grid-row:auto; }
+  .pb.ldesk .form > label:has(> input[type="checkbox"]) { grid-template-columns:minmax(0,1fr) auto; align-items:center; }
+  .pb.ldesk .form > label > input[type="checkbox"] { grid-column:2; grid-row:1; }
+  .pb.ldesk dl.product-facts.compact { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+}
+
 /* 판 바닥 단추 · 작은 단추 — 기존 판은 링크(<a>)로 그리지만 여기는 <button> 이라 옛 전역 button 규칙이 면을 지운다. 같은 모양으로 되살린다. */
 .pb.ldesk button.primary { background:var(--navy); color:#fff; border:0; }
 .pb.ldesk button.primary:hover { background:var(--navy-hover); }

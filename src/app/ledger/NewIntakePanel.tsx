@@ -10,6 +10,22 @@ import { ledgerCreateAction, type LedgerCreateState } from '../intake/actions';
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
 import type { Status } from './LedgerBoard';
+import { formatTermInput, formatWonInput, normName, normPlate } from './model';
+
+/* 칸을 떠날 때 공통 규격으로 — 금액 콤마 · 개월 숫자 · 이름 공백 정리 */
+const fixWon = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.value = formatWonInput(e.currentTarget.value); };
+const fixTerm = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.value = formatTermInput(e.currentTarget.value); };
+const fixName = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.value = normName(e.currentTarget.value); };
+
+/** 보내기 직전에도 같은 규격으로 — 칸을 떠나지 않고 바로 저장(Ctrl+Enter)해도 「36개월」·「500000원」·「12가 3456」이 그대로 가지 않게 */
+function normalized(fd: FormData): FormData {
+  const get = (k: string) => String(fd.get(k) ?? '');
+  for (const k of ['rent', 'deposit', 'price', 'feeClaim', 'feePay']) fd.set(k, formatWonInput(get(k)));
+  fd.set('term', formatTermInput(get('term')));
+  fd.set('plate', normPlate(get('plate')));
+  for (const k of ['customer', 'model', 'supplier', 'channel', 'agent', 'note']) fd.set(k, normName(get(k)));
+  return fd;
+}
 
 const newRequestId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now()));
 
@@ -50,7 +66,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
   return (
     /* 판 머리 · 구르는 칸 · 바닥 단추를 한 폼으로 — `.pb-work-form` 은 display:contents (기존 판과 같은 틀) */
     <form ref={formRef} className="pb-work-form" aria-label="새 접수"
-      onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => act(fd)); }}
+      onSubmit={(e) => { e.preventDefault(); const fd = normalized(new FormData(e.currentTarget)); startTransition(() => act(fd)); }}
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); formRef.current?.requestSubmit(); } }}>
       <header className="web-panel-head">
         <h2>새 접수</h2><small><b className="required-mark">*</b> 표시만 넣으면 접수됩니다</small>
@@ -72,10 +88,10 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         <div className="section ldesk-first">
           <h4>고객 · 차량</h4>
           <div className="form">
-            <Field label="고객명" req><input name="customer" required disabled={off} autoFocus placeholder="홍길동" /></Field>
+            <Field label="고객명" req><input name="customer" onBlur={fixName} required disabled={off} autoFocus placeholder="홍길동" /></Field>
             <Field label="접수일" req><input type="date" name="receivedAt" defaultValue={today} max={today} required disabled={off} /></Field>
-            <Field label="차량번호"><input name="plate" disabled={off} placeholder="없으면 비워 두기" /></Field>
-            <Field label="모델명"><input name="model" disabled={off} placeholder="쏘렌토 MQ4" /></Field>
+            <Field label="차량번호"><input name="plate" onBlur={(e) => { e.currentTarget.value = normPlate(e.currentTarget.value); }} disabled={off} placeholder="없으면 비워 두기" /></Field>
+            <Field label="모델명"><input name="model" onBlur={fixName} disabled={off} placeholder="쏘렌토 MQ4" /></Field>
           </div>
         </div>
 
@@ -83,12 +99,12 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
           <h4>계약</h4>
           <div className="form">
             <Field label="공급사" req><input name="supplier" list="ldesk-suppliers" required disabled={off}
-              value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="입력하면 목록이 나옵니다" /></Field>
+              value={supplier} onChange={(e) => setSupplier(e.target.value)} onBlur={(e) => setSupplier(normName(e.target.value))} placeholder="입력하면 목록이 나옵니다" /></Field>
             <Field label="상품구분"><select name="product" disabled={off} defaultValue="">
               <option value="">선택</option>{LEDGER_PRODUCTS.map((p) => <option key={p}>{p}</option>)}
             </select></Field>
-            <Field label="계약기간"><input className="ldesk-num" name="term" inputMode="numeric" disabled={off} placeholder="개월" /></Field>
-            <Field label="렌탈료(월)"><input className="ldesk-num" name="rent" inputMode="numeric" disabled={off} placeholder="원" /></Field>
+            <Field label="계약기간"><input className="ldesk-num" name="term" onBlur={fixTerm} inputMode="numeric" disabled={off} placeholder="개월" /></Field>
+            <Field label="렌탈료(월)"><input className="ldesk-num" name="rent" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
             <Field label="분납" req><select name="payKind" required disabled={off} defaultValue="일시납">
               {options.payKinds.slice(0, 3).map((p) => <option key={p}>{p}</option>)}
             </select></Field>
@@ -99,25 +115,25 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
           <h4>영업</h4>
           <div className="form">
             <Field label="담당자" req><input name="agent" list="ldesk-agents" required disabled={off}
-              value={agent} onChange={(e) => pickAgent(e.target.value)} placeholder="고르면 채널이 따라옵니다" /></Field>
+              value={agent} onChange={(e) => pickAgent(e.target.value)} onBlur={(e) => pickAgent(normName(e.target.value))} placeholder="고르면 채널이 따라옵니다" /></Field>
             <Field label="영업채널" req><input name="channel" list="ldesk-channels" required disabled={off}
-              value={channel} onChange={(e) => setChannel(e.target.value)} /></Field>
+              value={channel} onChange={(e) => setChannel(e.target.value)} onBlur={(e) => setChannel(normName(e.target.value))} /></Field>
           </div>
         </div>
 
         <div className="section">
           <h4>금액 <span className="dz-sec-note">공급가액 · 모르면 비워 두기</span></h4>
           <div className="form">
-            <Field label="청구액"><input className="ldesk-num" name="feeClaim" inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
-            <Field label="지급액"><input className="ldesk-num" name="feePay" inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
+            <Field label="청구액"><input className="ldesk-num" name="feeClaim" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
+            <Field label="지급액"><input className="ldesk-num" name="feePay" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
           </div>
         </div>
 
         <details className="more form-disclosure">
           <summary>더 입력 · 보증금 · 차량가액 · 계약서 · 인도 · 메모</summary>
           <div className="form">
-            <Field label="보증금"><input className="ldesk-num" name="deposit" inputMode="numeric" disabled={off} placeholder="원" /></Field>
-            <Field label="차량가액"><input className="ldesk-num" name="price" inputMode="numeric" disabled={off} placeholder="원" /></Field>
+            <Field label="보증금"><input className="ldesk-num" name="deposit" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
+            <Field label="차량가액"><input className="ldesk-num" name="price" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
             <Field label="계약서 받음"><input type="checkbox" name="paper" disabled={off} /></Field>
             <Field label="인도 완료"><input type="checkbox" name="delivered" disabled={off} /></Field>
             <Field label="인도일"><input type="date" name="deliveredAt" max={today} disabled={off} /></Field>

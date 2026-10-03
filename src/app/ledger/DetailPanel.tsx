@@ -8,14 +8,16 @@
  * 나머지(고객·공급사·조건 …)는 아직 고치는 경로가 없어 보기만 한다. 가짜로 고친 척하지 않는다.
  */
 import { useState } from 'react';
-import { feeAction, lifecycleAction, progressAction } from '../intake/actions';
-import { parseWon, STEPS, stepsOf, toneOf, won, type LedgerRow } from './model';
+import { factsAction, feeAction, lifecycleAction, progressAction } from '../intake/actions';
+import type { IntakeOptions } from '../intake/new/IntakeForm';
+import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
+import { formatTermInput, formatWonInput, normName, parseWon, STEPS, stepsOf, toneOf, won, type LedgerRow } from './model';
 import type { Run, Status } from './LedgerBoard';
 
 const TAG = { red: 'bad', yellow: 'warn', green: 'good', gray: '' } as const;
 
-export function DetailPanel({ row: r, canWrite, today, run, status, onClose, onNew }: {
-  row: LedgerRow; canWrite: boolean; today: string; run: Run; status: Status; onClose: () => void; onNew: () => void;
+export function DetailPanel({ row: r, options, canWrite, today, run, status, onClose, onNew }: {
+  row: LedgerRow; options: IntakeOptions; canWrite: boolean; today: string; run: Run; status: Status; onClose: () => void; onNew: () => void;
 }) {
   const who = r.plate || r.customer || '접수';
   const off = !canWrite || r.cancelled;
@@ -106,8 +108,8 @@ export function DetailPanel({ row: r, canWrite, today, run, status, onClose, onN
         <div className="section">
           <h4>금액 <span className="dz-sec-note">공급가액 · 부가세 별도</span></h4>
           <div className="form">
-            <label>청구액<input className="ldesk-num" inputMode="numeric" value={claim} onChange={(e) => setClaim(e.target.value)} disabled={off} placeholder="미확정" /></label>
-            <label>지급액<input className="ldesk-num" inputMode="numeric" value={pay} onChange={(e) => setPay(e.target.value)} disabled={off} placeholder="미확정" /></label>
+            <label>청구액<input className="ldesk-num" inputMode="numeric" value={claim} onChange={(e) => setClaim(e.target.value)} onBlur={(e) => setClaim(formatWonInput(e.target.value))} disabled={off} placeholder="미확정" /></label>
+            <label>지급액<input className="ldesk-num" inputMode="numeric" value={pay} onChange={(e) => setPay(e.target.value)} onBlur={(e) => setPay(formatWonInput(e.target.value))} disabled={off} placeholder="미확정" /></label>
             {moneyDirty && <>
               <label>수정 사유<input value={feeReason} onChange={(e) => setFeeReason(e.target.value)} disabled={off} placeholder="필수 · 변경 이력에 남습니다" /></label>
               <button type="button" className="small-btn ldesk-wide" disabled={off} onClick={() => void saveMoney()}>금액 저장</button>
@@ -116,17 +118,7 @@ export function DetailPanel({ row: r, canWrite, today, run, status, onClose, onN
           {moneyError && <p className="pb-errs" role="alert">{moneyError}</p>}
         </div>
 
-        <div className="section">
-          <h4>접수 내용</h4>
-          <dl className="product-facts compact">
-            <Fact k="접수일" v={r.receivedAt} /><Fact k="상품구분" v={r.product} />
-            <Fact k="공급사" v={r.supplier} /><Fact k="모델" v={r.model} />
-            <Fact k="계약기간" v={r.term ? `${r.term}개월` : ''} /><Fact k="렌탈료(월)" v={won(r.rent)} />
-            <Fact k="보증금" v={won(r.deposit)} /><Fact k="차량가액" v={won(r.price)} />
-            <Fact k="분납" v={r.payKind} /><Fact k="영업채널" v={r.channel} />
-            <Fact k="담당자" v={r.agent} /><Fact k="메모" v={r.note} wide />
-          </dl>
-        </div>
+        <FactsSection row={r} options={options} canWrite={canWrite} run={run} status={status} />
 
         {askCancel && (
           <div className="section ldesk-cancel">
@@ -147,6 +139,93 @@ export function DetailPanel({ row: r, canWrite, today, run, status, onClose, onN
         <button type="button" className="primary" onClick={onNew}>+ 새 접수</button>
       </div>
     </>
+  );
+}
+
+/**
+ * 접수 내용 — 보기 ↔ 고치기. 고치기는 바뀐 칸만 보낸다(factsAction → factPatch).
+ * 접수일은 고칠 수 없다(문서 id·중복 열쇠). 이름을 바꾸면 기존 코드 매핑으로 코드를 맞추고, 없으면 비운다.
+ */
+type Draft = { customer: string; model: string; supplier: string; product: string; term: string; rent: string; deposit: string; price: string; payKind: string; channel: string; agent: string; note: string };
+const draftOf = (r: LedgerRow): Draft => ({
+  customer: r.customer, model: r.model, supplier: r.supplier, product: r.product, term: r.term === null ? '' : String(r.term),
+  rent: won(r.rent), deposit: won(r.deposit), price: won(r.price), payKind: r.payKind, channel: r.channel, agent: r.agent, note: r.note,
+});
+
+function FactsSection({ row: r, options, canWrite, run, status }: { row: LedgerRow; options: IntakeOptions; canWrite: boolean; run: Run; status: Status }) {
+  const [editing, setEditing] = useState(false);
+  const [d, setD] = useState<Draft>(() => draftOf(r));
+  const [err, setErr] = useState('');
+  const set = (k: keyof Draft) => (v: string) => setD((x) => ({ ...x, [k]: v }));
+  const start = () => { setD(draftOf(r)); setErr(''); setEditing(true); };
+
+  async function save() {
+    const was = draftOf(r);
+    const fields: Record<string, string> = { code: r.code };
+    for (const k of Object.keys(d) as (keyof Draft)[]) {
+      const v = k === 'term' ? formatTermInput(d[k]) : ['rent', 'deposit', 'price'].includes(k) ? formatWonInput(d[k]) : normName(d[k]);
+      if (v !== was[k]) fields[k] = ['rent', 'deposit', 'price'].includes(k) ? v.replace(/,/g, '') : v;
+    }
+    if ('supplier' in fields) fields.supplierCode = options.supplierCode[fields.supplier] ?? '';
+    if ('channel' in fields) fields.channelCode = options.channelCode[fields.channel] ?? '';
+    if ('agent' in fields) fields.agentCode = options.agentCode[fields.agent] ?? '';
+    if (Object.keys(fields).length === 1) { setEditing(false); return; }
+    setErr('');
+    if (await run(`${r.plate || r.customer} 접수 내용`, factsAction, fields)) setEditing(false);
+    else setErr('저장하지 못했습니다 — 위 안내를 확인해 주세요');
+  }
+
+  if (!editing) {
+    return (
+      <div className="section">
+        <h4>접수 내용 {canWrite && !r.cancelled && <button type="button" className="small-btn ldesk-h4-btn" onClick={start}>고치기</button>}</h4>
+        <dl className="product-facts compact">
+          <Fact k="접수일" v={r.receivedAt} /><Fact k="상품구분" v={r.product} />
+          <Fact k="공급사" v={r.supplier} /><Fact k="모델" v={r.model} />
+          <Fact k="계약기간" v={r.term ? `${r.term}개월` : ''} /><Fact k="렌탈료(월)" v={won(r.rent)} />
+          <Fact k="보증금" v={won(r.deposit)} /><Fact k="차량가액" v={won(r.price)} />
+          <Fact k="분납" v={r.payKind} /><Fact k="영업채널" v={r.channel} />
+          <Fact k="담당자" v={r.agent} /><Fact k="메모" v={r.note} wide />
+        </dl>
+      </div>
+    );
+  }
+  const text = (k: keyof Draft, label: string, list?: string) => (
+    <label>{label}<input value={d[k]} list={list} onChange={(e) => set(k)(e.target.value)} onBlur={(e) => set(k)(normName(e.target.value))} /></label>
+  );
+  const money = (k: keyof Draft, label: string) => (
+    <label>{label}<input className="ldesk-num" inputMode="numeric" value={d[k]} onChange={(e) => set(k)(e.target.value)} onBlur={(e) => set(k)(formatWonInput(e.target.value))} placeholder="원" /></label>
+  );
+  return (
+    <div className="section ldesk-edit">
+      <h4>접수 내용 고치기 <span className="dz-sec-note">접수일은 고칠 수 없습니다</span></h4>
+      <datalist id="ldesk-e-suppliers">{options.suppliers.map((s) => <option key={s} value={s} />)}</datalist>
+      <datalist id="ldesk-e-channels">{options.channels.map((s) => <option key={s} value={s} />)}</datalist>
+      <datalist id="ldesk-e-agents">{options.agents.map((s) => <option key={s} value={s} />)}</datalist>
+      <div className="form">
+        {text('customer', '고객명')}
+        {text('model', '모델명')}
+        {text('supplier', '공급사', 'ldesk-e-suppliers')}
+        <label>상품구분<select value={d.product} onChange={(e) => set('product')(e.target.value)}>
+          <option value="">선택</option>{[...new Set([...LEDGER_PRODUCTS, d.product].filter(Boolean))].map((p) => <option key={p}>{p}</option>)}
+        </select></label>
+        <label>계약기간<input className="ldesk-num" inputMode="numeric" value={d.term} onChange={(e) => set('term')(e.target.value)} onBlur={(e) => set('term')(formatTermInput(e.target.value))} placeholder="개월" /></label>
+        {money('rent', '렌탈료(월)')}
+        {money('deposit', '보증금')}
+        {money('price', '차량가액')}
+        <label>분납<select value={d.payKind} onChange={(e) => set('payKind')(e.target.value)}>
+          {[...new Set(['일시납', '2회분납', '3회분납', d.payKind].filter(Boolean))].map((p) => <option key={p}>{p}</option>)}
+        </select></label>
+        {text('agent', '담당자', 'ldesk-e-agents')}
+        {text('channel', '영업채널', 'ldesk-e-channels')}
+        {text('note', '메모')}
+      </div>
+      {err && <p className="pb-errs" role="alert">{status?.kind === 'err' ? status.text : err}</p>}
+      <div className="ldesk-edit-actions">
+        <button type="button" className="small-btn" onClick={() => setEditing(false)}>그만두기</button>
+        <button type="button" className="primary" disabled={!canWrite} onClick={() => void save()}>저장</button>
+      </div>
+    </div>
   );
 }
 

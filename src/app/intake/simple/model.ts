@@ -36,6 +36,11 @@ export const extraFields = [
   ['history', '처리 이력(수기)', 'text'],
 ] as const;
 const allFields = [...fields, ...extraFields];
+// F04 접수 A:O 중 직원 입력. 진행/청구/수수료는 접수 후 관리한다.
+export const intakeKeys = ['plate', 'receiptDate', 'supplier', 'model', 'channel', 'agent', 'customer', 'memo', 'product', 'term', 'rent', 'deposit', 'vehiclePrice', 'installment'] as const;
+export const intakeFields = intakeKeys.map(key => allFields.find(field => field[0] === key)!);
+export const followupFields = ['deliveryDate', 'billingMonth'].map(key => allFields.find(field => field[0] === key)!);
+export const feeFields = fields.filter(([key]) => key === 'claim' || key === 'pay');
 export const checks = [['contract', '계약서'], ['documents', '서류'], ['balance', '잔금'],
   ['delivered', '인도'], ['claimed', '청구'], ['collected', '수금'], ['paid', '지급'], ['cancelled', '취소']] as const;
 export type Field = typeof allFields[number][0];

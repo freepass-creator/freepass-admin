@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blankRow, normalizeRow, savedSchema, validateRow } from './model';
+import { blankRow, normalizeRow, savedSchema, validateRow, intakeFields, followupFields, feeFields } from './model';
+test('intake only has employee inputs; fee and follow-up fields are separate', () => {
+  assert.equal(intakeFields.length, 14);
+  assert.deepEqual(intakeFields.slice(0,6).map(([key]) => key), ['plate','receiptDate','supplier','model','channel','agent']);
+  assert.ok(intakeFields.some(([key]) => key === 'vehiclePrice'));
+  assert.ok(intakeFields.some(([key]) => key === 'installment'));
+  assert.ok(!intakeFields.some(([key]) => ['claim','pay','billingMonth','deliveryDate','supplierRate'].includes(key)));
+  assert.deepEqual(followupFields.map(([key]) => key), ['deliveryDate','billingMonth']);
+  assert.deepEqual(feeFields.map(([key]) => key), ['claim','pay']);
+});
 test('same plate stays separate by stable row id; blank money is not zero', () => {
   const a = { ...blankRow('a', '2026-10-02'), plate: '테스트차량' };
   const b = { ...a, id: 'b' };

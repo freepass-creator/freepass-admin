@@ -1,5 +1,8 @@
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
+- 2026-10-03 入力/후속 분리 / 대상7e5f377: F04 접수 gid406613808 A2:BS2, 매뉴얼A1:D30, 최근484:486 validation 실조회. 직원입력 A:O에서 영업자연락처 제외14개를 intakeFields로 분리(차번 우선). 수수료2개, 인도일/청구월+진행체크는 저장된행에서만 수정. 추가 계약/가감/증빙값은 기존 상세에 보존. 분납 후보 일시납/2회/3회는 실제validation 사용. 매뉴얼의 인도후 행이동·계약서자동체크·청구월자동지정은 최신결정과 불일치하여 적용하지 않음.
+- 검증: typecheck/단위7건/Next build PASS. 브라우저 신규입력14개·체크0개, 저장후 인도일2026-10-03/계약서체크 수정→저장→새로고침 유지. 수수료 자동조회는 미연결: 기존 previewFeeAction/feeOf REUSE_WITH_ADAPTER 후보 확인했으나 최신 F04→ERP5 rules parity 및 오공/픽업 갈래 검증 없이 연결하지 않는다. 빈금액은 확인필요이지0이 아님. Claude검토 대기(PASS 아님). next_start_here: 실제규칙version/시트수수료표 대조 후 기존미리보기 연결. 운영시트수정/DBwrite/배포 없음.
+
 - 2026-10-03 최신 결정 / 대상 11eb8cb 같은 작업선: `/intake/simple` 맨 위 신규 입력행 고정. 차번→접수일→시트 기반 기본/추가 항목 Tab 입력, 기존 입력 후보 datalist(자유입력 유지), 상품/기간 후보, 진행 체크. 접수하기는 성공 readback 뒤에만 초기화하고 차번 포커스 복귀. 신규 행 prepend, 기존 행 수정은 순서 유지(접수일 정렬 폐기). 원본 헤더 매핑 재사용, 시트/DB 연결 없음.
 - 검증: 타입검사/단위6건/Next build PASS. 실제 브라우저 A→B 연속 접수 후 입력행 아래 B/A 순서, 새로고침 유지, 빈 입력칸+차번 포커스, Tab으로 접수일 이동, 콤마 금액 정규화 확인. console error 0. 화면 Temp/freepass-intake-top-entry.jpg. Claude 읽기전용 검토 대기이며 PASS 아님. 남음/next_start_here: 운영 공유저장 연결 결정 및 Claude 응답 회수. 브라우저 localStorage 초안만 변경; 운영 배포/시트 수정/청구발행/송금 없음.
 

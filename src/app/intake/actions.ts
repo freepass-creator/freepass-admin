@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productByIdFresh } from '../../server/freepass-data';
+import { productByIdFresh, productList } from '../../server/freepass-data';
+import { plateOffers, type PlateOffer } from '../ledger/model';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
@@ -44,6 +45,23 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
    *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
    */
   redirect(savedIntakeHref(S(f, 'returnContext'), r.code, r.created));
+}
+
+/**
+ * 접수 관리(/ledger) — 차량번호로 프리패스 상품 조건을 찾는다. 읽기만 한다.
+ * 기존 계약접수(/intake)와 같은 상품 출입구(productList)를 쓴다 — 다른 저장소·fallback 을 새로 만들지 않는다.
+ * 고른 조건은 저장 때 createIntakeFrom 이 상품을 다시 읽어 봉인(snapshot)한다.
+ */
+export async function ledgerPlateLookupAction(plate: string): Promise<{ offers: PlateOffer[]; message: string }> {
+  const denied = await requireAdmin();
+  if (denied) return { offers: [], message: denied };
+  if (typeof plate !== 'string' || !plate.trim() || plate.length > 30) return { offers: [], message: '차량번호를 확인해 주세요' };
+  try {
+    const offers = plateOffers((await productList()).rows, plate);
+    return { offers, message: offers.length ? `${offers.length}개 조건이 있습니다 — 고르면 조건이 채워집니다` : '프리패스 상품에 없는 차량입니다 — 직접 입력합니다' };
+  } catch {
+    return { offers: [], message: '프리패스 상품을 읽지 못했습니다 — 조건을 추측하지 않고 직접 입력합니다' };
+  }
 }
 
 /** 접수표(/ledger) — 같은 저장 규칙, 화면을 옮기지 않고 결과만 돌려준다. */

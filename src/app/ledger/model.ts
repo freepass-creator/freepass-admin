@@ -9,6 +9,8 @@
 import { adminBlockLabel, blockOf, intakeTaskOf, type IntakeTask, type SettlementRow } from '../../domain/settlement/types';
 import { billingMonth } from '../../domain/settlement/stage';
 import { intakeAgeDays } from '../../domain/settlement/intake-list';
+import { ledgerKindOf } from '../../domain/settlement/product-kind';
+import type { CanonicalProduct } from '../../domain/product/types';
 
 export interface LedgerRow {
   code: string;
@@ -192,6 +194,37 @@ export function toneOf(r: LedgerRow): Tone {
 /** 원 단위 표시. 모르면 빈칸(0 이 아니다). */
 export function won(n: number | null): string {
   return n === null ? '' : n.toLocaleString('ko-KR');
+}
+
+/* ── 차량번호로 프리패스 상품 조건 찾기 (Codex codex/intake-ledger-lifecycle 의 plateChoices 를 옮김) ── */
+
+/** 고를 수 있는 조건 한 묶음 = 상품 하나의 Offer 하나. 고르면 «상품 접수» 로 저장된다(snapshot 봉인). */
+export interface PlateOffer {
+  key: string;
+  productId: string; offerId: string; version: number; snapshot: string;
+  supplier: string; model: string; product: string; term: number | null; rent: number | null; deposit: number | null; price: number | null;
+}
+
+/** 차량번호 비교 — 공백·하이픈 무시 */
+export const plateKey = (s: string) => s.replace(/[\s-]/g, '').toUpperCase();
+
+export function plateOffers(products: CanonicalProduct[], plate: string): PlateOffer[] {
+  const target = plateKey(plate);
+  if (!target) return [];
+  return products
+    .filter((p) => plateKey(p.registration?.vehicleNumber ?? '') === target)
+    .flatMap((p) => p.offers.map((o) => ({
+      key: `${p.id}|${o.id}`,
+      productId: p.id, offerId: o.id, version: p.version, snapshot: p.sourceSnapshotId,
+      supplier: o.supplierName ?? p.supplierName ?? '',
+      /* 저장(createIntakeFrom)과 같은 모델 표기 */
+      model: [p.vehicle.modelId, p.vehicle.subModelId].filter(Boolean).join(' '),
+      product: ledgerKindOf(p.productKind)?.product ?? '',
+      term: Number.isFinite(o.termMonths) ? o.termMonths : null,
+      rent: Number.isFinite(o.monthlyRent) ? o.monthlyRent : null,
+      deposit: o.deposit ?? null,
+      price: p.consumerPrice ?? null,
+    })));
 }
 
 /* ── 입력 공통 규격 — 화면이 저장 전에 같은 꼴로 맞춘다(서버도 같은 규칙으로 다시 읽는다) ── */

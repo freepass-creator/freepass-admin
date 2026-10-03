@@ -180,12 +180,13 @@ function FactsSection({ row: r, options, canWrite, run, status }: { row: LedgerR
       <div className="section">
         <h4>접수 내용 {canWrite && !r.cancelled && <button type="button" className="small-btn ldesk-h4-btn" onClick={start}>고치기</button>}</h4>
         <dl className="product-facts compact">
-          <Fact k="접수일" v={r.receivedAt} /><Fact k="상품구분" v={r.product} />
-          <Fact k="공급사" v={r.supplier} /><Fact k="모델" v={r.model} />
-          <Fact k="계약기간" v={r.term ? `${r.term}개월` : ''} /><Fact k="렌탈료(월)" v={won(r.rent)} />
-          <Fact k="보증금" v={won(r.deposit)} /><Fact k="차량가액" v={won(r.price)} />
-          <Fact k="분납" v={r.payKind} /><Fact k="영업채널" v={r.channel} />
-          <Fact k="담당자" v={r.agent} /><Fact k="메모" v={r.note} wide />
+          {/* 차량 정보 → 영업 정보 → 대여 조건 (새 접수와 같은 차례) */}
+          <Fact k="접수일" v={r.receivedAt} /><Fact k="공급사" v={r.supplier} />
+          <Fact k="모델" v={r.model} /><Fact k="차량가액" v={won(r.price)} />
+          <Fact k="담당자" v={r.agent} /><Fact k="영업채널" v={r.channel} />
+          <Fact k="상품구분" v={r.product} /><Fact k="계약기간" v={r.term ? `${r.term}개월` : ''} />
+          <Fact k="렌탈료(월)" v={won(r.rent)} /><Fact k="보증금" v={won(r.deposit)} />
+          <Fact k="분납" v={r.payKind} /><Fact k="메모" v={r.note} wide />
         </dl>
       </div>
     );
@@ -203,22 +204,23 @@ function FactsSection({ row: r, options, canWrite, run, status }: { row: LedgerR
       <datalist id="ldesk-e-channels">{options.channels.map((s) => <option key={s} value={s} />)}</datalist>
       <datalist id="ldesk-e-agents">{options.agents.map((s) => <option key={s} value={s} />)}</datalist>
       <div className="form">
-        {text('customer', '고객명')}
-        {text('model', '모델명')}
+        {/* 차량 정보 → 영업 정보 → 대여 조건 (새 접수와 같은 차례) */}
         {text('supplier', '공급사', 'ldesk-e-suppliers')}
+        {text('model', '모델명')}
+        {money('price', '차량가액')}
+        {text('agent', '담당자', 'ldesk-e-agents')}
+        {text('channel', '영업채널', 'ldesk-e-channels')}
+        {text('customer', '고객명')}
+        {text('note', '메모')}
         <label>상품구분<select value={d.product} onChange={(e) => set('product')(e.target.value)}>
           <option value="">선택</option>{[...new Set([...LEDGER_PRODUCTS, d.product].filter(Boolean))].map((p) => <option key={p}>{p}</option>)}
         </select></label>
         <label>계약기간<input className="ldesk-num" inputMode="numeric" value={d.term} onChange={(e) => set('term')(e.target.value)} onBlur={(e) => set('term')(formatTermInput(e.target.value))} placeholder="개월" /></label>
         {money('rent', '렌탈료(월)')}
         {money('deposit', '보증금')}
-        {money('price', '차량가액')}
         <label>분납<select value={d.payKind} onChange={(e) => set('payKind')(e.target.value)}>
           {[...new Set(['일시납', '2회분납', '3회분납', d.payKind].filter(Boolean))].map((p) => <option key={p}>{p}</option>)}
         </select></label>
-        {text('agent', '담당자', 'ldesk-e-agents')}
-        {text('channel', '영업채널', 'ldesk-e-channels')}
-        {text('note', '메모')}
       </div>
       {err && <p className="pb-errs" role="alert">{status?.kind === 'err' ? status.text : err}</p>}
       <div className="ldesk-edit-actions">

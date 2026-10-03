@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { SettlementRow } from '../../domain/settlement/types';
+import type { CanonicalProduct } from '../../domain/product/types';
 import {
-  billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, normName, normPlate, parseWon, sortLedger, stepsOf, toLedgerRow,
+  billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, normName, normPlate, parseWon, plateOffers, sortLedger, stepsOf, toLedgerRow,
   toneOf, totalsOf, won, type LedgerRow,
 } from './model';
 
@@ -84,6 +85,23 @@ test('input formats: money commas, months, plate and names', () => {
   assert.equal(formatTermInput('x'), 'x');
   assert.equal(normPlate(' 12가 3456 '), '12가3456');
   assert.equal(normName('  홍  길동 '), '홍 길동');
+});
+
+test('plateOffers: one choice per offer, plate spacing ignored, ledger product kind, unknown stays null', () => {
+  const products = [{
+    id: 'p1', version: 3, sourceSnapshotId: 'snap1', productKind: '중고렌트', supplierName: '손오공', consumerPrice: null,
+    registration: { vehicleNumber: '12가 3456' }, vehicle: { modelId: '쏘렌토', subModelId: 'MQ4' },
+    offers: [
+      { id: 'o36', termMonths: 36, monthlyRent: 500000, deposit: null, supplierName: undefined },
+      { id: 'o48', termMonths: 48, monthlyRent: 450000, deposit: 1000000, supplierName: '손오공렌트' },
+    ],
+  }, { id: 'p2', registration: { vehicleNumber: '99하9999' }, vehicle: {}, offers: [{ id: 'x' }] }] as unknown as CanonicalProduct[];
+  const r = plateOffers(products, '12가3456');
+  assert.equal(r.length, 2);
+  assert.deepEqual(r[0], { key: 'p1|o36', productId: 'p1', offerId: 'o36', version: 3, snapshot: 'snap1', supplier: '손오공', model: '쏘렌토 MQ4', product: '장기렌트', term: 36, rent: 500000, deposit: null, price: null });
+  assert.equal(r[1].supplier, '손오공렌트');
+  assert.deepEqual(plateOffers(products, ''), []);
+  assert.deepEqual(plateOffers(products, '00가0000'), []);
 });
 
 test('won and parseWon', () => {

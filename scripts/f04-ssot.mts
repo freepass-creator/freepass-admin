@@ -1,7 +1,8 @@
 /**
  * F04 정산원장 시트 «전체» 를 읽어 SSOT 스냅샷을 만든다. ★아무것도 안 쓴다.
  *
- *   npx tsx scripts/f04-ssot.mts
+ *   npx tsx scripts/f04-ssot.mts               ← 키 파일이 있으면 서비스계정, 없으면 gws 로그인으로 읽는다
+ *   npx tsx scripts/f04-ssot.mts --auth gws    ← gws(pyh@teamjpk.com) 로그인으로 읽는다
  *
  * ★대표 2026-09-17 「시트에 있는 모든 내용을 일단 SSOT화 하자」
  *
@@ -10,8 +11,9 @@
  *
  * 갈래와 까닭 : docs/dev/F04-SSOT.md
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { JWT } from 'google-auth-library';
 import {
   billMonthOf, cellDate, findHeader, methodOf, picker, feeValueOf, cellCheck, cellNumber, cellText,
@@ -24,28 +26,72 @@ const SA = arg('--sa', 'C:/dev/freepasserp4/tmp/firebase-auth/sa.json');
 const OUT = arg('--out', 'docs/ui/mockups/f04.ssot.js');
 const REPORT = arg('--report', 'docs/dev/evidence/F04-SSOT-READ.md');
 
-const sa = JSON.parse(readFileSync(SA, 'utf8'));
-const jwt = new JWT({
-  email: sa.client_email, key: sa.private_key, subject: 'pyh@teamjpk.com',
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],   /* ★읽기만 한다 */
-});
-const api = async (u: string) => {
-  const t = (await jwt.getAccessToken()).token;
-  const r = await fetch(u, { headers: { Authorization: 'Bearer ' + t } });
-  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 160)}`);
-  return r.json() as Promise<any>;
-};
-const range = (tab: string, a1 = 'A1:CZ2000') =>
-  encodeURIComponent(`'${tab.replace(/'/g, "''")}'!${a1}`);
-const values = async (tab: string) =>
-  ((await api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}/values/${range(tab)}?valueRenderOption=UNFORMATTED_VALUE`)).values ?? []) as unknown[][];
+/*
+ * ★읽는 길 둘 — 둘 다 «읽기만» 한다.
+ *   sa  : 서비스계정 키 파일(--sa) + 도메인 위임(pyh@teamjpk.com). 키 파일이 있을 때만.
+ *   gws : Google Workspace CLI(gws) 의 로그인(pyh@teamjpk.com, spreadsheets·drive 범위 — 2026-10-03 부여).
+ *         2026-10-02 우리캐피탈 정산서가 키 파일 없음·403 으로 멈췄다 → 키 파일이 없으면 gws 로 읽는다.
+ *   고르는 법: --auth sa|gws. 안 주면 키 파일이 있으면 sa, 없으면 gws.
+ * 값은 두 길 모두 UNFORMATTED_VALUE — 날짜가 구글 serial 숫자로 오고 sheet.ts 가 되돌린다.
+ */
+const AUTH = arg('--auth', existsSync(SA) ? 'sa' : 'gws');
+if (AUTH !== 'sa' && AUTH !== 'gws') throw new Error(`--auth 는 sa 또는 gws: ${AUTH}`);
 
+const a1 = (tab: string, cells = 'A1:CZ2000') => `'${tab.replace(/'/g, "''")}'!${cells}`;
+
+let readMeta: () => Promise<any>;
+let values: (tab: string) => Promise<unknown[][]>;
+
+if (AUTH === 'sa') {
+  const sa = JSON.parse(readFileSync(SA, 'utf8'));
+  const jwt = new JWT({
+    email: sa.client_email, key: sa.private_key, subject: 'pyh@teamjpk.com',
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],   /* ★읽기만 한다 */
+  });
+  const api = async (u: string) => {
+    const t = (await jwt.getAccessToken()).token;
+    const r = await fetch(u, { headers: { Authorization: 'Bearer ' + t } });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 160)}`);
+    return r.json() as Promise<any>;
+  };
+  readMeta = () => api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}?fields=properties.title,sheets.properties.title`);
+  values = async (tab) =>
+    ((await api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}/values/${encodeURIComponent(a1(tab))}?valueRenderOption=UNFORMATTED_VALUE`)).values ?? []) as unknown[][];
+} else {
+  const bin = gwsBinary();
+  const gws = (args: string[]) => {
+    const r = spawnSync(bin, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+    if (r.error) throw new Error(`gws 를 실행하지 못했다(${bin}) — ${r.error.message}. GWS_BIN 으로 경로를 알려 준다`);
+    const out = String(r.stdout ?? '');
+    const at = out.indexOf('{');
+    if (r.status !== 0 || at < 0) throw new Error(`gws 읽기 실패(${r.status}) — ${(String(r.stderr ?? '') + out).trim().slice(0, 240)}`);
+    return JSON.parse(out.slice(at));
+  };
+  readMeta = async () => gws(['sheets', 'spreadsheets', 'get', '--params',
+    JSON.stringify({ spreadsheetId: LEDGER, fields: 'properties.title,sheets.properties.title' })]);
+  values = async (tab) => (gws(['sheets', 'spreadsheets', 'values', 'get', '--params',
+    JSON.stringify({ spreadsheetId: LEDGER, range: a1(tab), valueRenderOption: 'UNFORMATTED_VALUE' })]).values ?? []) as unknown[][];
+}
+
+/**
+ * gws 실행 파일 — GWS_BIN 이 있으면 그것. 없으면 Windows npm 전역 실행기(gws.ps1)가 가리키는 gws.exe, 그도 없으면 PATH 의 gws.
+ * (gws.ps1 · gws.cmd 는 shell 없이 띄울 수 없어 실제 exe 를 찾는다 — JSON 인자를 shell 따옴표로 깨뜨리지 않으려고)
+ */
+function gwsBinary(): string {
+  if (process.env.GWS_BIN) return process.env.GWS_BIN;
+  const ps1 = process.env.APPDATA ? join(process.env.APPDATA, 'npm', 'gws.ps1') : '';
+  if (ps1 && existsSync(ps1)) {
+    const m = /'([^']+gws\.exe)'/i.exec(readFileSync(ps1, 'utf8'));
+    if (m && existsSync(m[1])) return m[1];
+  }
+  return 'gws';
+}
 const log: string[] = [];
 const say = (s: string) => { console.error(s); log.push(s); };
 
-const meta = await api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}?fields=properties.title,sheets.properties.title`);
+const meta = await readMeta();
 const tabs: string[] = meta.sheets.map((s: any) => s.properties.title);
-say(`■ ${meta.properties.title}`);
+say(`■ ${meta.properties.title}  (읽은 길: ${AUTH})`);
 say(`  탭 ${tabs.length}개`);
 
 /* ══ ① 수수료표 — ★셈법의 정본 ════════════════════════════ */

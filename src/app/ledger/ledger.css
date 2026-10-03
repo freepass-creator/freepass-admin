@@ -54,23 +54,40 @@
 .pb.ldesk .ldesk-tile.tone-green { color:var(--good); }
 .pb.ldesk .ldesk-tile.tone-gray { color:var(--muted); }
 
-.pb.ldesk .ldesk-fields { min-width:0; align-self:center; display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px 16px; }
-.pb.ldesk .ldesk-fields .f { min-width:0; display:flex; flex-direction:column; gap:2px; line-height:1.4; overflow-wrap:anywhere; }
+.pb.ldesk .ldesk-fields { min-width:0; display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px 16px; }
+/* 한 칸 = 위 이름표(작게) + 아래 값. 접수 내용 전부를 줄에 띄운다(사용자 2026-10-03). */
+.pb.ldesk .ldesk-fields .f { min-width:0; display:flex; flex-direction:column; gap:1px; line-height:1.4; overflow-wrap:anywhere; }
+.pb.ldesk .ldesk-fields .f > small { color:var(--muted); font-size:var(--meta); font-weight:500; white-space:nowrap; }
 .pb.ldesk .ldesk-fields .f > span { color:var(--ink); font-size:var(--body); }
-.pb.ldesk .ldesk-fields .f > span > b, .pb.ldesk .ldesk-fields .f.who > b { font-weight:600; }
-.pb.ldesk .ldesk-fields .f.who > b { color:var(--ink); font-size:var(--title); }
-.pb.ldesk .ldesk-fields .f > small { color:var(--muted); font-size:var(--support); }
-/* 넓을 때 한 줄에 같은 자리로 서도록 항목마다 기본 폭을 준다(줄이 같아지면 표처럼 맞는다) */
-.pb.ldesk .f.who   { flex:1 1 104px; }
-.pb.ldesk .f.car   { flex:1.4 1 150px; }
-.pb.ldesk .f.deal  { flex:1.1 1 128px; }
-.pb.ldesk .f.sales { flex:1 1 116px; }
-.pb.ldesk .f.flow  { flex:1.6 1 196px; }
-.pb.ldesk .f.day   { flex:.8 1 88px; }
-.pb.ldesk .f.money { flex:1 1 124px; text-align:right; font-variant-numeric:tabular-nums; }
-.pb.ldesk .f.month { flex:.8 1 88px; }
-.pb.ldesk .f .tag { font-size:var(--support); }
-.pb.ldesk .ldesk-row.is-cancelled .ldesk-fields { color:var(--muted); text-decoration:line-through; }
+.pb.ldesk .ldesk-fields .f > span.fk-none { color:#c0c6cf; }
+.pb.ldesk .ldesk-fields .f.strong > span { font-weight:600; }
+.pb.ldesk .ldesk-fields .f.num > span { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pb.ldesk .ldesk-fields .f em { font-style:normal; color:var(--muted); font-size:var(--support); }
+.pb.ldesk .ldesk-fields .f.fk-check { cursor:default; }
+.pb.ldesk .ldesk-fields .f.fk-check input { width:18px; height:18px; margin:2px 0 0; cursor:pointer; }
+.pb.ldesk .ldesk-fields .f.fk-check > span { display:flex; align-items:center; gap:6px; }
+.pb.ldesk .ldesk-fields .f.fk-check i { font-style:normal; color:var(--sub); font-size:var(--support); }
+/* 칸마다 기본 폭 — 넓으면 같은 자리에 서고, 좁아지면 같은 차례로 아래 줄에 흐른다 */
+.pb.ldesk .f.fk-day      { flex:0 1 112px; }
+.pb.ldesk .f.fk-plate    { flex:0 1 92px; }
+.pb.ldesk .f.fk-supplier { flex:1 1 96px; }
+.pb.ldesk .f.fk-model    { flex:2 1 150px; }
+.pb.ldesk .f.fk-price    { flex:0 1 96px; }
+.pb.ldesk .f.fk-channel  { flex:1 1 110px; }
+.pb.ldesk .f.fk-agent    { flex:0 1 72px; }
+.pb.ldesk .f.fk-customer { flex:0 1 72px; }
+.pb.ldesk .f.fk-product  { flex:0 1 72px; }
+.pb.ldesk .f.fk-term     { flex:0 1 56px; }
+.pb.ldesk .f.fk-rent     { flex:0 1 84px; }
+.pb.ldesk .f.fk-deposit  { flex:0 1 92px; }
+.pb.ldesk .f.fk-pay-kind { flex:0 1 60px; }
+.pb.ldesk .f.fk-check    { flex:0 0 44px; }
+.pb.ldesk .f.fk-check.fk-delivered { flex:0 0 96px; }
+.pb.ldesk .f.fk-month    { flex:0 1 84px; }
+.pb.ldesk .f.fk-claim, .pb.ldesk .f.fk-paid { flex:0 1 96px; }
+.pb.ldesk .f.fk-flow     { flex:1 1 220px; }
+.pb.ldesk .f.fk-memo     { flex:3 1 100%; }
+.pb.ldesk .f .tag { font-size:var(--support); }.pb.ldesk .ldesk-row.is-cancelled .ldesk-fields { color:var(--muted); text-decoration:line-through; }
 .pb.ldesk .ldesk-row.is-cancelled .ldesk-fields .f > span { color:var(--muted); }
 
 /* 진행 체크라인 — 지금 단계만 진하게 */
@@ -95,6 +112,8 @@
 .pb.ldesk .ldesk-hint { margin:8px 0 0; color:var(--muted); font-size:var(--support); }
 .pb.ldesk .ldesk-cancel { padding:12px; border-radius:var(--r-card); background:#fef3f2; }
 .pb.ldesk .ldesk-cancel h4 { color:var(--bad); }
+.pb.ldesk .ldesk-next { margin:0 0 4px; }
+.pb.ldesk .ldesk-next b { color:var(--warn); }
 .pb.ldesk .ldesk-first { margin-top:0; }
 .pb.ldesk .notice + .ldesk-first, .pb.ldesk .pb-errs + .ldesk-first { margin-top:12px; }
 .pb.ldesk label.ldesk-keep { margin-top:16px; display:flex; align-items:center; gap:8px; color:var(--sub); font-size:var(--support); cursor:pointer; }
@@ -139,5 +158,4 @@
   .pb.ldesk .row.ldesk-row { grid-template-columns:56px minmax(0,1fr); }
   .pb.ldesk .statusbar .ldesk-new { height:36px; }
   .pb.ldesk .statusbar .panel-close { border:0; background:transparent; font-size:26px; line-height:1; color:var(--sub); cursor:pointer; }
-  .pb.ldesk .f.money { text-align:left; }
 }

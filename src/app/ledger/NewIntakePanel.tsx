@@ -244,7 +244,7 @@ function clearUncontrolled(form: HTMLFormElement) {
   }
 }
 
-function Field({ label, req, children }: { label: string; req?: boolean; children: ReactNode }) {
+export function Field({ label, req, children }: { label: string; req?: boolean; children: ReactNode }) {
   return (
     <label>
       <span>{label}{req && <b className="required-mark"> *</b>}</span>

@@ -12,12 +12,14 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FormState } from '../intake/actions';
+import type { ReactNode } from 'react';
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import {
   billMonthsOf, countBy, filterLedger, inChip, inTab, LEDGER_CHIPS, LEDGER_TABS, sortLedger, STEPS, stepsOf,
-  toneOf, totalsOf, won, type LedgerChip, type LedgerRow, type LedgerTab, type Tone,
+  toneOf, totalsOf, won, type LedgerChip, type LedgerRow, type LedgerTab,
 } from './model';
-import { DetailPanel } from './DetailPanel';
+import { EditIntakePanel } from './EditIntakePanel';
+import { progressAction } from '../intake/actions';
 import { NewIntakePanel } from './NewIntakePanel';
 
 export type Status = { kind: 'ok' | 'err'; text: string } | null;
@@ -28,7 +30,6 @@ export type Run = (label: string, action: (s: FormState, f: FormData) => Promise
 const shortDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(2).replaceAll('-', '.') : d);
 /** 상태 칸 글 — 지금 단계 한 단어 */
 const TILE: Record<LedgerRow['task'], string> = { 계약: '계약서', 차량: '차번', 인도: '인도', 정산: '정산', 완료: '완료', 취소: '취소' };
-const TAG: Record<Tone, string> = { red: 'bad', yellow: 'warn', green: 'good', gray: '' };
 
 export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRow[]; options: IntakeOptions; canWrite: boolean; today: string }) {
   const router = useRouter();
@@ -118,6 +119,8 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
             </div>
           </div>
 
+          {/* 줄 안에서 바로 체크한 결과 — 오른쪽 판이 닫혀 있을 때 여기 보인다 */}
+          {status && !open && <p className={status.kind === 'ok' ? 'notice ok' : 'pb-errs'} role={status.kind === 'ok' ? 'status' : 'alert'}>{status.text}</p>}
           <div className="web-scroll">
             <div className="list" role="list">
               {shown.map((r) => {
@@ -126,43 +129,71 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                 const cls = ['row', 'ldesk-row', r.code === open ? 'selected' : '', r.code === justSaved ? 'just-selected' : '', r.cancelled ? 'is-cancelled' : ''].filter(Boolean).join(' ');
                 return (
                   <div key={r.code} role="listitem" className={cls} tabIndex={0} aria-current={r.code === open || undefined}
-                    onClick={() => show(r.code)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(r.code); } }}>
+                    onClick={() => show(r.code)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); show(r.code); } }}>
                     <span className={`ldesk-tile tone-${tone}`}><b>{TILE[r.task]}</b>{r.task !== '완료' && r.task !== '취소' && <small>{r.task === '정산' ? '대기' : '할 일'}</small>}</span>
+                    {/* ★접수 내용을 줄에 다 띄운다(사용자 2026-10-03) — 새 접수와 같은 차례: 차량 → 영업 → 대여 조건 → 진행 → 금액 → 메모 */}
                     <span className="ldesk-fields">
-                      <span className="f who"><b>{r.customer || '고객 미정'}</b><small>{r.plate || '차번 미정'}</small></span>
-                      <span className="f car"><span>{r.model || '모델 미정'}</span><small>{r.supplier}</small></span>
-                      <span className="f deal"><span>{r.product || '상품구분 없음'}</span><small>{[r.term ? `${r.term}개월` : '', r.rent !== null ? `월 ${won(r.rent)}` : ''].filter(Boolean).join(' · ')}</small></span>
-                      <span className="f sales"><span>{r.channel}</span><small>{r.agent}</small></span>
-                      <span className="f flow">
+                      <F k="day" l="접수일" v={shortDay(r.receivedAt)} sub={!r.delivered && !r.cancelled && r.ageDays !== null ? <em className={late ? 'tag bad' : undefined}>{r.ageDays}일째</em> : null} />
+                      <F k="plate" l="차량번호" v={r.plate || '미정'} strong />
+                      <F k="supplier" l="공급사" v={r.supplier} />
+                      <F k="model" l="모델" v={r.model} />
+                      <F k="price" l="차량가액" v={won(r.price)} num />
+                      <F k="channel" l="영업채널" v={r.channel} />
+                      <F k="agent" l="담당자" v={r.agent} />
+                      <F k="customer" l="고객명" v={r.customer} strong />
+                      <F k="product" l="상품구분" v={r.product} />
+                      <F k="term" l="기간" v={r.term ? `${r.term}개월` : ''} />
+                      <F k="rent" l="렌탈료" v={won(r.rent)} num />
+                      <F k="deposit" l="보증금" v={won(r.deposit)} num />
+                      <F k="pay-kind" l="분납" v={r.payKind} />
+                      <span className="f fk-check" onClick={(e) => e.stopPropagation()}>
+                        <small>계약서</small>
+                        <input type="checkbox" checked={r.paper} disabled={!canWrite || busy || r.cancelled} aria-label={`${r.plate || r.customer} 계약서`}
+                          onChange={(e) => void run(`${r.plate || r.customer} 계약서`, progressAction, { code: r.code, kind: 'paper', on: e.target.checked ? '1' : '0' })} />
+                      </span>
+                      <span className="f fk-check fk-delivered" onClick={(e) => e.stopPropagation()}>
+                        <small>인도</small>
+                        <span><input type="checkbox" checked={r.delivered} disabled={!canWrite || busy || r.cancelled} aria-label={`${r.plate || r.customer} 인도`}
+                          onChange={(e) => void run(`${r.plate || r.customer} 인도`, progressAction, { code: r.code, kind: 'delivered', on: e.target.checked ? '1' : '0', deliveredAt: r.deliveredAt || today })} />
+                          {r.deliveredAt && <i>{shortDay(r.deliveredAt)}</i>}</span>
+                      </span>
+                      <F k="month" l={r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'} v={r.billMonth || r.expectedMonth || '미정'} />
+                      <F k="claim" l="청구액" v={r.claim === null ? <b className="tag warn">미확정</b> : won(r.claim)} num strong />
+                      <F k="paid" l="지급액" v={r.pay === null ? <b className="tag warn">미확정</b> : won(r.pay)} num strong />
+                      <span className="f fk-flow">
+                        <small>진행</small>
                         <span className="ldesk-steps" aria-label={`진행 ${TILE[r.task]}`}>{stepsOf(r).map((s, i) => <i key={i} className={s}>{STEPS[i]}</i>)}</span>
-                        <small className={`tag ${TAG[tone]}`}>{r.cancelled ? '취소된 접수' : r.block ? `다음: ${r.block}` : '완료'}</small>
                       </span>
-                      <span className="f day"><span>{shortDay(r.receivedAt)} 접수</span>
-                        <small className={late ? 'tag bad' : undefined}>{!r.delivered && !r.cancelled && r.ageDays !== null ? `${r.ageDays}일째` : r.deliveredAt ? `${shortDay(r.deliveredAt)} 인도` : ''}</small></span>
-                      <span className="f money">
-                        <span>청구 <b className={r.claim === null ? 'tag warn' : undefined}>{r.claim === null ? '미확정' : won(r.claim)}</b></span>
-                        <small>지급 <b className={r.pay === null ? 'tag warn' : undefined}>{r.pay === null ? '미확정' : won(r.pay)}</b></small>
-                      </span>
-                      <span className="f month"><span>{r.billMonth || r.expectedMonth || '미정'}</span><small>{r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'}</small></span>
+                      {r.note && <F k="memo" l="메모" v={r.note} />}
                     </span>
                   </div>
                 );
               })}
-            </div>
-            {shown.length === 0 && <p className="empty">{chip || tab === '처리 필요' ? '지금 손댈 접수가 없습니다.' : '조건에 맞는 접수가 없습니다.'}</p>}
+            </div>            {shown.length === 0 && <p className="empty">{chip || tab === '처리 필요' ? '지금 손댈 접수가 없습니다.' : '조건에 맞는 접수가 없습니다.'}</p>}
           </div>
         </section>
 
         {open && (
           <section className="web-panel pb-work" aria-label={current ? '접수 처리' : '새 접수'}>
             {current
-              ? <DetailPanel key={current.code} row={current} options={options} canWrite={canWrite && !busy} today={today} run={run} status={status}
-                  onClose={() => show(null)} onNew={() => show('new')} />
+              ? <EditIntakePanel key={current.code} row={current} options={options} canWrite={canWrite} today={today} status={status}
+                  onClose={() => show(null)} onNew={() => show('new')} onDone={(s) => { setStatus(s); router.refresh(); }} />
               : <NewIntakePanel options={options} canWrite={canWrite} today={today} status={status}
                   onClose={() => show(null)} onSaved={onSaved} />}
           </section>
         )}
       </div>
     </div>
+  );
+}
+
+/** 줄의 한 칸 — 위 이름표 · 아래 값. 빈 값은 「—」. 칸마다 기본 폭이 있어 좁아지면 순서대로 아래 줄로 흐른다. */
+function F({ k, l, v, sub, num, strong }: { k: string; l: string; v: ReactNode; sub?: ReactNode; num?: boolean; strong?: boolean }) {
+  const empty = v === '' || v === null || v === undefined;
+  return (
+    <span className={['f', `fk-${k}`, num ? 'num' : '', strong ? 'strong' : ''].filter(Boolean).join(' ')}>
+      <small>{l}</small>
+      <span className={empty ? 'fk-none' : undefined}>{empty ? '—' : v}{sub ? <> {sub}</> : null}</span>
+    </span>
   );
 }

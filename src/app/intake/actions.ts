@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { productByIdFresh } from '../../server/freepass-data';
+import { FreePassDataAdminCatalogClient } from '../../adapters/freepass-data/admin-catalog-client';
+import { plateChoices, type CatalogChoice } from './simple/model';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
@@ -34,6 +36,21 @@ const N = (f: FormData, k: string) => {
   const n = Number(t);
   return Number.isFinite(n) ? n : NaN;
 };
+
+/** 읽기 전용: FreePass Data ACTIVE만 사용. 구 DB/데모 fallback 없음. */
+export async function simplePlateLookupAction(plate: string): Promise<{ choices: CatalogChoice[]; release: string; message: string }> {
+  const denied = await requireAdmin();
+  if (denied) return { choices: [], release: '', message: '관리자 인증을 확인해 주세요.' };
+  if (typeof plate !== 'string' || !plate.trim() || plate.length > 30) return { choices: [], release: '', message: '차량번호를 확인해 주세요.' };
+  try {
+    const { rows, meta } = await new FreePassDataAdminCatalogClient().list();
+    if (meta.policyParity !== 'COMPLETE' || meta.commercialCoverage !== 'COMPLETE') return { choices: [], release: '', message: '프리패스 데이터 조건 검증이 불완전하여 가져오기를 보류했습니다.' };
+    const choices = plateChoices(rows, plate);
+    return { choices, release:meta.releaseId, message:choices.length ? `${choices.length}개 조건이 있습니다. 같은 조건 묶음을 선택해 주세요.` : '조회된 차량 조건이 없습니다. 직접 입력할 수 있습니다.' };
+  } catch {
+    return { choices: [], release: '', message:'프리패스 데이터 연결을 확인할 수 없습니다. 값을 추측하지 않고 직접 입력을 유지합니다.' };
+  }
+}
 
 export async function createIntakeAction(_: FormState, f: FormData): Promise<FormState> {
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }

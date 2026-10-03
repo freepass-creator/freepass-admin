@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CanonicalProduct } from '../../../domain/product/types';
 
 export const fields = [
   ['receiptDate', '접수일', 'date'], ['plate', '차량번호', 'text'],
@@ -37,7 +38,7 @@ export const extraFields = [
 ] as const;
 const allFields = [...fields, ...extraFields];
 // F04 접수 A:O 중 직원 입력. 진행/청구/수수료는 접수 후 관리한다.
-export const intakeKeys = ['plate', 'receiptDate', 'supplier', 'model', 'channel', 'agent', 'customer', 'memo', 'product', 'term', 'rent', 'deposit', 'vehiclePrice', 'installment'] as const;
+export const intakeKeys = ['receiptDate', 'plate', 'supplier', 'model', 'channel', 'agent', 'customer', 'memo', 'product', 'term', 'rent', 'deposit', 'vehiclePrice', 'installment'] as const;
 export const intakeFields = intakeKeys.map(key => allFields.find(field => field[0] === key)!);
 export const followupFields = ['deliveryDate', 'billingMonth'].map(key => allFields.find(field => field[0] === key)!);
 export const feeFields = fields.filter(([key]) => key === 'claim' || key === 'pay');
@@ -49,6 +50,22 @@ const texts = Object.fromEntries(allFields.map(([key]) => [key, z.string().max(5
 const flags = Object.fromEntries(checks.map(([key]) => [key, z.boolean()])) as Record<Check, z.ZodBoolean>;
 export const rowSchema = z.object({ id: z.string().min(1), ...texts, plate: z.string().max(5000), receiptDate: z.string().max(5000), ...flags, refunded: z.boolean().default(false) });
 export type Row = z.infer<typeof rowSchema>;
+export type CatalogChoice = {
+  key: string; productId: string; offerId: string; version: number; snapshot: string;
+  supplier: string; model: string; product: string; term: string; rent: string; deposit: string; vehiclePrice: string;
+};
+export const normalizedPlate = (value: string) => value.replace(/\s|-/g, '').toUpperCase();
+export function plateChoices(products: CanonicalProduct[], plate: string): CatalogChoice[] {
+  const target = normalizedPlate(plate);
+  if (!target) return [];
+  return products.filter(p => normalizedPlate(p.registration?.vehicleNumber ?? '') === target).flatMap(p => p.offers.map(o => ({
+    key: JSON.stringify([p.id, o.id]), productId:p.id, offerId:o.id, version:p.version, snapshot:p.sourceSnapshotId,
+    supplier:o.supplierName ?? p.supplierName ?? '', model:p.vehicle.subModelId || p.vehicle.modelId || '',
+    product:p.productKind ?? '', term:Number.isFinite(o.termMonths) ? String(o.termMonths) : '',
+    rent:Number.isFinite(o.monthlyRent) ? String(o.monthlyRent) : '', deposit:o.deposit == null ? '' : String(o.deposit),
+    vehiclePrice:p.consumerPrice == null ? '' : String(p.consumerPrice),
+  })));
+}
 export const savedSchema = z.object({ version: z.union([z.literal(1), z.literal(2)]), rows: z.array(rowSchema) });
 export function normalizeRow(row: Row): Row {
   return { ...row, ...Object.fromEntries(allFields.filter(([, , type]) => type === 'number').map(([key]) => [key, row[key].replaceAll(',', '').trim()])) };

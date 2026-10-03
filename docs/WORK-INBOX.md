@@ -1,5 +1,8 @@
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
+- 2026-10-03 / 기준849470d: 접수일 첫칸(오늘 기본), 상품/분납 native select, 기간/월대여료/보증금 직접입력 유지. 차량번호 조회는 기존 FreePassDataAdminCatalogClient REUSE_WITH_ADAPTER로 actions.ts에 읽기전용 확장. requireAdmin, ACTIVE 스키마 및 policyParity/commercialCoverage COMPLETE 요구, 구DB/demo fallback 없음. 정확 차번에 대한 Offer별 공급사·차종·상품·기간·요금·보증금 묶음만 선택하며 별도 조건을 자동 혼합하지 않음. source release/product/offer/version/snapshot과 조회당시 값을 history에 보존(수기수정 가능한 기준값임을 명시). seq/현재차번 검사로 늦은응답 차단, 차번변경시 후보폐기, 저장후 조회상태초기화.
+- 검증: 타입검사/단위8건/Next build PASS. 브라우저 접수일2026-10-03 첫칸·상품/분납 select 선택 확인. 실번호조회는 개발환경 연결 실패를 반환하여 LIVE DATA READ HOLD; 후보선택 autofill의 실제 원천 roundtrip는 미검증(단위 Offer36/48 가격묶음, 보증0/UNKNOWN 분리 확인). 화면 Temp/freepass-intake-date-dropdown.jpg. Claude검토 응답대기(PASS 아님). next_start_here: 승인된 FreePass Data catalog 연결설정 확인 후 live조회/선택/저장 검증. 접수 저장은 여전히 브라우저 초안, 운영write/배포 없음.
+
 - 2026-10-03 최신 표시결정 / 기준39e7477: 가로 스크롤 표 폐기. 같은 simple 화면을 접수항목 auto-fit grid와 접수건별 동일 줄바꿈 영역으로 변경. 화면폭 부족하면 항목이 다음줄로 이동, 신규14개 및 진행/수수료 구분 유지. label/fieldset/legend/article 사용. 저장모델과 원문필드는 그대로.
 - 검증: 타입검사/단위7건/Next build PASS. 기본921px 4열(내용739px scroll739px), 390px 화면 1열(내용272px scroll272px), body 가로넘침0 확인. 신규접수→계약서체크→저장→새로고침 유지와 입력초기화 확인. 화면 Temp/freepass-intake-wrapped.jpg. low-risk 표시변경이며 수수료엔진/운영저장/배포 미연결 상태 유지. next_start_here: 이 줄바꿈 화면을 기준으로 운영 연결 및 수수료 정합성 작업.
 

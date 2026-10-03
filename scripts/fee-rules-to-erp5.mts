@@ -22,13 +22,14 @@ import { FEE_RULES, FEE_TIMING, SUPPLIER_ALIAS, EV_MODEL } from 'file:///C:/dev/
 import { erp5 } from '../src/adapters/erp5/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement';
 import { feeOf, headOf, type FeeRule, type FeeRuleSet, type KindRule } from '../src/domain/settlement/fee';
+import { F04_EXTRA_ALIASES, F04_EXTRA_RULES } from '../src/domain/settlement/fee-rules-f04-extra';
 import { settlementRatioOf } from '../src/domain/settlement/money';
 import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval';
 
 const APPLY = process.argv.includes('--apply');
 assertErp5MaintenanceWrite(process.env, APPLY, 'fee-rules-to-erp5');
-const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) — 박태윤 매니저 표';
-const VERSION = 'fee-2026-09-08';
+const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) — 박태윤 매니저 표 + F04 「수수료표」 탭 추가 줄(src/domain/settlement/fee-rules-f04-extra.ts · 2026-10-03)';
+const VERSION = 'fee-2026-09-08+f04-2026-10-03';
 /**
  * ★이 표는 «지금» 규칙이다 — 검산(2026-09-18): 지난 달 줄은 그때 요율로 적혀 있다
  *   (1월 오플 전기차 100만 = 프로모션 전 · 오플 구독 73.2만 = 옛 요율 · 분납이 부러진 줄은 받은 회차만큼).
@@ -56,8 +57,10 @@ const idOf = (r: { supplier: string; kind: string; form: string; term: number })
  *   ERP5 는 문서를 id 순(가나다)으로 돌려줘 「매칭출고」 가 「선출고」 보다 앞에 선다.
  *   실측 2026-09-18: 차례 없이 읽으니 6줄이 다른 규칙으로 셈해졌다. 읽는 쪽은 seq 로 다시 줄 세운다.
  */
-const rules: (FeeRule & { seq: number })[] = (FEE_RULES as Omit<FeeRule, 'id'>[]).map((r, seq) => ({ id: idOf(r), seq, ...r }));
-const set: FeeRuleSet = { rules, aliases: SUPPLIER_ALIAS, evModel: EV_MODEL.source, kindRules: KIND_RULES, version: VERSION };
+/* F04 탭에만 있는 줄은 erp4 규칙 «뒤에» 붙인다 — 처음 맞는 것을 고르므로 기존 규칙의 뜻을 바꾸지 않는다 */
+const rules: (FeeRule & { seq: number })[] = [...(FEE_RULES as Omit<FeeRule, 'id'>[]), ...F04_EXTRA_RULES].map((r, seq) => ({ id: idOf(r), seq, ...r }));
+const ALIASES: Record<string, string> = { ...SUPPLIER_ALIAS, ...F04_EXTRA_ALIASES };
+const set: FeeRuleSet = { rules, aliases: ALIASES, evModel: EV_MODEL.source, kindRules: KIND_RULES, version: VERSION };
 
 /* ── 검산 — 이 규칙으로 원장을 다시 세면 적힌 금액과 맞나 (erp4 check-fee-consistency 와 같은 잣대) ── */
 const db = erp5();
@@ -98,7 +101,7 @@ const p = (s = '') => L.push(s);
 p(`■ 수수료 규칙 → ERP5 ${APPLY ? '★실제로 씀' : '— 헛돌기(아무것도 안 씀)'}`);
 p(`  출처 ${SOURCE}`);
 p(`  규칙 ${rules.length}줄 · 공급사 ${new Set(rules.map((r) => r.supplier)).size}곳 · 기계가 셈 ${rules.filter((r) => r.auto).length} · 사람이 정함 ${rules.filter((r) => !r.auto).length}`);
-p(`  갈래 가르기 ${KIND_RULES.length}줄 · 이름 별칭 ${Object.keys(SUPPLIER_ALIAS).length} · 시점 규칙 ${FEE_TIMING.length}`);
+p(`  갈래 가르기 ${KIND_RULES.length}줄 · 이름 별칭 ${Object.keys(ALIASES).length} · 시점 규칙 ${FEE_TIMING.length}`);
 p('');
 p('── 검산: 이 규칙으로 원장(취소 뺌)을 다시 세면 — 표대로 / 표와 다름 / 사람이 정함 / 표에 없음 / 밑값 없음');
 const tot: Tally = { ok: 0, diff: 0, manual: 0, none: 0, nobase: 0 };
@@ -124,7 +127,7 @@ if (APPLY) {
     version: VERSION, source: SOURCE, effective: EFFECTIVE, updatedAt: now,
     ruleCount: rules.length,
     kindRules: KIND_RULES,
-    aliases: SUPPLIER_ALIAS,
+    aliases: ALIASES,
     evModel: EV_MODEL.source,
     timing: FEE_TIMING,
     /** 사람이 읽는 규칙 — 셈은 코드가 하지만 «무엇을 셈하나» 는 여기 적힌다 */

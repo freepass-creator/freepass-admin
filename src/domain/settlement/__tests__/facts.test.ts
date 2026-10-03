@@ -67,6 +67,27 @@ test('catalog-sealed intakes cannot change offer-bound terms', () => {
   assert.equal(factPatch(sealed, { customer: '홍길순' }).ok, true);
 });
 
+test('a party code cannot change without its name (Codex review)', () => {
+  assert.equal(factPatch(base(), { supplierCode: 'S2' }).ok, false);
+  assert.equal(factPatch(base(), { channelCode: 'C2' }).ok, false);
+  assert.equal(factPatch(base(), { agentCode: 'A2' }).ok, false);
+  assert.equal(factPatch(base(), { supplierCode: 'S1' }).ok, true, 'same code is no change');
+  const r = factPatch(base(), { supplier: '아이카', supplierCode: '' });
+  assert.equal(r.ok, true);
+  if (r.ok) assert.deepEqual(r.patch, { supplier: '아이카', supplierCode: '' });
+});
+
+test('money already moved or dated documents lock like checks do (Codex review)', () => {
+  assert.equal(factPatch(base({ collectedAmt: 1000 }), { supplier: '아이카' }).ok, false);
+  assert.equal(factPatch(base({ collectedAmt: 1000 }), { term: 48 }).ok, false);
+  assert.equal(factPatch(base({ paidAmt: 1000 }), { agent: '박영업' }).ok, false);
+  assert.equal(factPatch(base({ invoiceAt: '2026-10-05' }), { customer: '홍길순' }).ok, false);
+  assert.equal(factPatch(base({ billedAt: '2026-10-05' }), { supplier: '아이카' }).ok, false);
+  assert.equal(factPatch(base({ paidAt: '2026-10-05' }), { channel: '다른채널' }).ok, false);
+  assert.equal(settlementStartedOf(base({ paidAmt: 1 })), true);
+  assert.equal(settlementStartedOf(base({ collectedAmt: 0, paidAmt: 0 })), false);
+});
+
 test('settlementStartedOf is shared with progressPatch', () => {
   assert.equal(settlementStartedOf(base()), false);
   assert.equal(settlementStartedOf(base({ invoiceNoS: 'S-1' })), true);

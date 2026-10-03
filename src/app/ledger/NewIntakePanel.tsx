@@ -18,12 +18,16 @@ const fixTerm = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.va
 const fixName = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.value = normName(e.currentTarget.value); };
 
 /** 보내기 직전에도 같은 규격으로 — 칸을 떠나지 않고 바로 저장(Ctrl+Enter)해도 「36개월」·「500000원」·「12가 3456」이 그대로 가지 않게 */
-function normalized(fd: FormData): FormData {
+function normalized(fd: FormData, options: IntakeOptions): FormData {
   const get = (k: string) => String(fd.get(k) ?? '');
   for (const k of ['rent', 'deposit', 'price', 'feeClaim', 'feePay']) fd.set(k, formatWonInput(get(k)));
   fd.set('term', formatTermInput(get('term')));
   fd.set('plate', normPlate(get('plate')));
   for (const k of ['customer', 'model', 'supplier', 'channel', 'agent', 'note']) fd.set(k, normName(get(k)));
+  /* 코드는 «정규화된» 이름으로 다시 찾는다 — 칸을 떠나지 않고 저장해도 이름과 코드가 같은 기준이 되게 */
+  fd.set('supplierCode', options.supplierCode[get('supplier')] ?? '');
+  fd.set('channelCode', options.channelCode[get('channel')] ?? '');
+  fd.set('agentCode', options.agentCode[get('agent')] ?? '');
   return fd;
 }
 
@@ -66,7 +70,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
   return (
     /* 판 머리 · 구르는 칸 · 바닥 단추를 한 폼으로 — `.pb-work-form` 은 display:contents (기존 판과 같은 틀) */
     <form ref={formRef} className="pb-work-form" aria-label="새 접수"
-      onSubmit={(e) => { e.preventDefault(); const fd = normalized(new FormData(e.currentTarget)); startTransition(() => act(fd)); }}
+      onSubmit={(e) => { e.preventDefault(); const fd = normalized(new FormData(e.currentTarget), options); startTransition(() => act(fd)); }}
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); formRef.current?.requestSubmit(); } }}>
       <header className="web-panel-head">
         <h2>새 접수</h2><small><b className="required-mark">*</b> 표시만 넣으면 접수됩니다</small>

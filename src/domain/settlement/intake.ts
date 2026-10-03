@@ -203,7 +203,9 @@ export function settlementStartedOf(cur: Record<string, unknown>): boolean {
   return truthy(cur.billed) || truthy(cur.invoiceIssued) || truthy(cur.collected) || truthy(cur.paid)
     || truthy(cur.supplierOk) || truthy(cur.channelOk) || truthy(cur.supplierFix) || truthy(cur.channelFix)
     || truthy(cur.settledAlready) || datedOrNumbered || legacyFinancialStage
-    || claimStage !== '접수' || payStage !== '접수';
+    || claimStage !== '접수' || payStage !== '접수'
+    /* 이관·불완전 줄은 체크 없이 금액만 남아 있을 수 있다 — 받은/준 돈이 있으면 시작된 것이다 */
+    || Number(cur.collectedAmt ?? 0) > 0 || Number(cur.paidAmt ?? 0) > 0;
 }
 
 /* ── 진행 체크 — 계약서 · 인도 · 취소 ─────────────────────────── */
@@ -464,14 +466,21 @@ export function factPatch(
   if (!events.length) return { ok: true, patch: {}, events: [] };
 
   const keys = Object.keys(patch) as FactKey[];
+  /* 코드는 이름을 따라간다 — 이름은 그대로인데 코드만 바뀌면 거래처 식별(party code)과 화면 이름이 갈린다 */
+  for (const [codeKey, nameKey] of [['supplierCode', 'supplier'], ['channelCode', 'channel'], ['agentCode', 'agent']] as const) {
+    if (codeKey in patch && !(nameKey in patch)) return { ok: false, error: `만 따로 바꿀 수 없습니다 — 을(를) 바꿀 때 함께 맞춰집니다` };
+  }
   const groups = new Set(keys.map((k) => FACT_GROUP[k]));
   const payStage = str(cur.payStage) || '접수';
   const claimStage = str(cur.claimStage) || '접수';
-  const docIssued = truthy(cur.billed) || payStage !== '접수' || truthy(cur.paid) || !!str(cur.invoiceNoS) || !!str(cur.invoiceNoP);
+  const collectedAmt = Number(cur.collectedAmt ?? 0) > 0, paidAmt = Number(cur.paidAmt ?? 0) > 0;
+  const docIssued = truthy(cur.billed) || truthy(cur.invoiceIssued) || !!str(cur.billedAt) || !!str(cur.invoiceAt)
+    || payStage !== '접수' || truthy(cur.paid) || !!str(cur.invoiceNoS) || !!str(cur.invoiceNoP) || collectedAmt || paidAmt;
   const claimStarted = truthy(cur.billed) || truthy(cur.invoiceIssued) || truthy(cur.collected) || truthy(cur.supplierOk)
-    || truthy(cur.supplierFix) || claimStage !== '접수' || !!str(cur.invoiceNoS) || truthy(cur.settledAlready);
+    || truthy(cur.supplierFix) || claimStage !== '접수' || !!str(cur.invoiceNoS) || truthy(cur.settledAlready)
+    || !!str(cur.billedAt) || !!str(cur.invoiceAt) || !!str(cur.collectedAt) || collectedAmt;
   const payStarted = payStage !== '접수' || truthy(cur.paid) || truthy(cur.channelOk) || truthy(cur.channelFix)
-    || !!str(cur.invoiceNoP) || truthy(cur.settledAlready);
+    || !!str(cur.invoiceNoP) || truthy(cur.settledAlready) || !!str(cur.paidAt) || paidAmt;
 
   if (groups.has('doc') && docIssued) return { ok: false, error: '청구서 또는 지급명세가 나간 건입니다 — 고객·모델·메모는 나간 문서와 맞춰 두어야 해서 고칠 수 없습니다' };
   if (groups.has('claim') && claimStarted) return { ok: false, error: '공급사 청구가 시작된 건입니다 — 공급사는 바꿀 수 없습니다' };

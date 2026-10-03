@@ -41,6 +41,8 @@ export interface LedgerRow {
   note: string;
   /** 표시 전용 — 업무 단계와 mutation 가능 여부에는 영향을 주지 않는다. */
   payoutWarning: ReturnType<typeof mewcarPayoutWarning>;
+  /** 표시 전용 — 대표 10-04 「적게 받아서 많이 주는 경우는 없다」: 줄 것 > 받을 것 이면 그 줄은 틀린 것. 저장·진행은 막지 않는다 */
+  marginWarning: string | null;
   /** 업무 단계 — intakeTaskOf 그대로 */
   task: IntakeTask;
   /** 지금 막힌 것(사람용 문구) — blockOf → adminBlockLabel. 없으면 '' */
@@ -78,6 +80,7 @@ export function toLedgerRow(r: SettlementRow, today: string, now = new Date()): 
     cancelled: !!r.progress.cancelled,
     note: t(r.note),
     payoutWarning: mewcarPayoutWarning({ supplier: r.supplier, note: r.note, term: r.term, payWritten: r.money.pay }),
+    marginWarning: marginWarningOf(r.money.claim ?? null, r.money.pay ?? null),
     task: intakeTaskOf(r),
     block: block ? adminBlockLabel(block) : '',
     ageDays: intakeAgeDays(r, today),
@@ -275,4 +278,13 @@ export function parseWon(s: string): number | null {
   if (!v) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : NaN;
+}
+
+/**
+ * 줄 것(영업 지급) > 받을 것(공급사 청구) 이면 경고 — 받을 걸 덜 잡았거나 줄 걸 더 잡은 것(대표 10-04).
+ * ★모르는 금액(null)은 판정하지 않는다. 분납 선지급처럼 이 줄 청구가 계약 일부일 때도 뜰 수 있다 — 그래서 막지 않고 표시만.
+ */
+export function marginWarningOf(claim: number | null, pay: number | null): string | null {
+  if (claim === null || pay === null || pay <= claim) return null;
+  return `줄 것 ${won(pay)} > 받을 것 ${won(claim)} — 받을 걸 덜 잡았거나 줄 걸 더 잡았는지 확인`;
 }

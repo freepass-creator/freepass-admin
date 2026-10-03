@@ -12,7 +12,7 @@ import { ledgerCreateAction, ledgerPlateLookupAction, type LedgerCreateState } f
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
 import type { Status } from './LedgerBoard';
-import { formatTermInput, formatWonInput, normName, normPlate, won, type PlateOffer } from './model';
+import { formatTermInput, formatWonInput, normName, normPlate, plateKey, won, type PlateOffer } from './model';
 
 /* 칸을 떠날 때 공통 규격으로 — 금액 콤마 · 개월 숫자 · 이름 공백 정리 */
 const fixWon = (e: { currentTarget: HTMLInputElement }) => { e.currentTarget.value = formatWonInput(e.currentTarget.value); };
@@ -73,8 +73,10 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
     if (ch && !channel) setChannel(ch);
   }
 
+  const currentPlate = () => { const el = formRef.current?.elements.namedItem('plate'); return el instanceof HTMLInputElement ? el.value : ''; };
+
   async function lookup() {
-    const plate = normPlate(String(formRef.current?.elements.namedItem('plate') instanceof HTMLInputElement ? (formRef.current.elements.namedItem('plate') as HTMLInputElement).value : ''));
+    const plate = normPlate(currentPlate());
     if (!plate) { setLookupMsg('차량번호를 먼저 넣어 주세요'); return; }
     setLooking(true); setPick(null);
     try {
@@ -88,6 +90,8 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
 
   /** 조건 고르기 — 화면 칸을 Offer 값으로 채운다(저장 때 서버가 상품을 다시 읽어 같은 값인지 확인한다) */
   function choose(o: PlateOffer) {
+    /* 조회한 뒤 차번을 바꿨다면 그 조건은 다른 차의 것이다 — 고르지 않는다(Codex 검토) */
+    if (plateKey(currentPlate()) !== o.plate) { setPick(null); setOffers([]); setLookupMsg('차량번호가 조회한 차와 다릅니다 — 다시 조회해 주세요'); return; }
     setPick(o);
     setSupplier(o.supplier);
     const form = formRef.current;
@@ -105,7 +109,12 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
   return (
     /* 판 머리 · 구르는 칸 · 바닥 단추를 한 폼으로 — `.pb-work-form` 은 display:contents (기존 판과 같은 틀) */
     <form ref={formRef} className="pb-work-form" aria-label="새 접수"
-      onSubmit={(e) => { e.preventDefault(); const fd = normalized(new FormData(e.currentTarget), options); startTransition(() => act(fd)); }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = normalized(new FormData(e.currentTarget), options);
+        if (pick && plateKey(String(fd.get('plate') ?? '')) !== pick.plate) { onSaved({ kind: 'err', text: '차량번호가 고른 상품 조건의 차와 다릅니다 — 다시 조회해 주세요' }); return; }
+        startTransition(() => act(fd));
+      }}
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); formRef.current?.requestSubmit(); } }}>
       <header className="web-panel-head">
         <h2>새 접수</h2><small><b className="required-mark">*</b> 표시만 넣으면 접수됩니다</small>
@@ -118,6 +127,8 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         <input type="hidden" name="intakeRequestId" value={requestId} />
         <input type="hidden" name="feeReason" value="접수 화면 직접 입력" />
         {pick && <>
+          {/* 상품구분 칸은 잠겨(disabled) 보내지지 않으므로 같은 값을 숨은 칸으로 보낸다 */}
+          <input type="hidden" name="product" value={pick.product} />
           <input type="hidden" name="sourceProductId" value={pick.productId} />
           <input type="hidden" name="sourceOfferId" value={pick.offerId} />
           <input type="hidden" name="sourceProductVersion" value={String(pick.version)} />
@@ -135,7 +146,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
               <span>차량번호</span>
               <input name="plate" autoFocus disabled={pending} placeholder="없으면 비워 두기" aria-label="차량번호"
                 onBlur={(e) => { e.currentTarget.value = normPlate(e.currentTarget.value); }}
-                onChange={() => { if (pick) { setPick(null); setLookupMsg('차량번호가 바뀌어 고른 조건을 풀었습니다 — 다시 조회합니다'); } }}
+                onChange={() => { if (pick || offers.length) { setPick(null); setOffers([]); setLookupMsg('차량번호가 바뀌었습니다 — 조건을 다시 조회해 주세요'); } }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); void lookup(); } }} />
               {/* 조회는 읽기만 한다 — 저장이 꺼져 있어도 조건을 볼 수 있다 */}
               <button type="button" className="small-btn" disabled={pending || looking} onClick={() => void lookup()}>{looking ? '조회 중' : '조회'}</button>
@@ -151,11 +162,11 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
                 {pick && <button type="button" className="chip" onClick={() => setPick(null)}>직접 입력으로</button>}
               </div>
             )}
-            {pick && <p className="notice ok">상품 조건으로 접수합니다 — 저장할 때 상품을 다시 확인하고 조건을 봉인합니다.</p>}
+            {pick && <p className="notice ok">상품 조건으로 접수합니다 — 공급사·모델·조건 칸은 상품 값으로 잠깁니다. 고치려면 「직접 입력으로」를 누르세요.</p>}
             <Field label="공급사" req><input name="supplier" list="ldesk-suppliers" required disabled={off}
-              value={supplier} onChange={(e) => setSupplier(e.target.value)} onBlur={(e) => setSupplier(normName(e.target.value))} placeholder="입력하면 목록이 나옵니다" /></Field>
-            <Field label="모델명"><input name="model" onBlur={fixName} disabled={off} placeholder="쏘렌토 MQ4" /></Field>
-            <Field label="차량가액"><input className="ldesk-num" name="price" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
+              value={supplier} readOnly={!!pick} onChange={(e) => setSupplier(e.target.value)} onBlur={(e) => setSupplier(normName(e.target.value))} placeholder="입력하면 목록이 나옵니다" /></Field>
+            <Field label="모델명"><input name="model" onBlur={fixName} readOnly={!!pick} disabled={off} placeholder="쏘렌토 MQ4" /></Field>
+            <Field label="차량가액"><input className="ldesk-num" name="price" onBlur={fixWon} readOnly={!!pick} inputMode="numeric" disabled={off} placeholder="원" /></Field>
           </div>
         </div>
 
@@ -174,12 +185,12 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         <div className="section">
           <h4>대여 조건</h4>
           <div className="form">
-            <Field label="상품구분"><select name="product" disabled={off} defaultValue="">
+            <Field label="상품구분"><select name="product" disabled={off || !!pick} defaultValue="">
               <option value="">선택</option>{LEDGER_PRODUCTS.map((p) => <option key={p}>{p}</option>)}
             </select></Field>
-            <Field label="계약기간"><input className="ldesk-num" name="term" onBlur={fixTerm} inputMode="numeric" disabled={off} placeholder="개월" /></Field>
-            <Field label="렌탈료(월)"><input className="ldesk-num" name="rent" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
-            <Field label="보증금"><input className="ldesk-num" name="deposit" onBlur={fixWon} inputMode="numeric" disabled={off} placeholder="원" /></Field>
+            <Field label="계약기간"><input className="ldesk-num" name="term" onBlur={fixTerm} readOnly={!!pick} inputMode="numeric" disabled={off} placeholder="개월" /></Field>
+            <Field label="렌탈료(월)"><input className="ldesk-num" name="rent" onBlur={fixWon} readOnly={!!pick} inputMode="numeric" disabled={off} placeholder="원" /></Field>
+            <Field label="보증금"><input className="ldesk-num" name="deposit" onBlur={fixWon} readOnly={!!pick} inputMode="numeric" disabled={off} placeholder="원" /></Field>
             <Field label="분납" req><select name="payKind" required disabled={off} defaultValue="일시납">
               {options.payKinds.slice(0, 3).map((p) => <option key={p}>{p}</option>)}
             </select></Field>

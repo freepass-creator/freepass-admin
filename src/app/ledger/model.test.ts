@@ -95,10 +95,11 @@ test('plateOffers: one choice per offer, plate spacing ignored, ledger product k
       { id: 'o36', termMonths: 36, monthlyRent: 500000, deposit: null, supplierName: undefined },
       { id: 'o48', termMonths: 48, monthlyRent: 450000, deposit: 1000000, supplierName: '손오공렌트' },
     ],
-  }, { id: 'p2', registration: { vehicleNumber: '99하9999' }, vehicle: {}, offers: [{ id: 'x' }] }] as unknown as CanonicalProduct[];
+  }, { id: 'p2', registration: { vehicleNumber: '99하9999' }, vehicle: {}, offers: [{ id: 'x' }] },
+  { id: 'p3', productKind: '단기렌트', registration: { vehicleNumber: '12가3456' }, vehicle: {}, offers: [{ id: 'y', termMonths: 1, monthlyRent: 1 }] }] as unknown as CanonicalProduct[];
   const r = plateOffers(products, '12가3456');
   assert.equal(r.length, 2);
-  assert.deepEqual(r[0], { key: 'p1|o36', productId: 'p1', offerId: 'o36', version: 3, snapshot: 'snap1', supplier: '손오공', model: '쏘렌토 MQ4', product: '장기렌트', term: 36, rent: 500000, deposit: null, price: null });
+  assert.deepEqual(r[0], { key: 'p1|o36', plate: '12가3456', productId: 'p1', offerId: 'o36', version: 3, snapshot: 'snap1', supplier: '손오공', model: '쏘렌토 MQ4', product: '장기렌트', term: 36, rent: 500000, deposit: null, price: null });
   assert.equal(r[1].supplier, '손오공렌트');
   assert.deepEqual(plateOffers(products, ''), []);
   assert.deepEqual(plateOffers(products, '00가0000'), []);

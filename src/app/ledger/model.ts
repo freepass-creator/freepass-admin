@@ -201,6 +201,8 @@ export function won(n: number | null): string {
 /** 고를 수 있는 조건 한 묶음 = 상품 하나의 Offer 하나. 고르면 «상품 접수» 로 저장된다(snapshot 봉인). */
 export interface PlateOffer {
   key: string;
+  /** 이 조건이 붙은 차량번호(공백 없이) — 화면 차번이 바뀌면 이 조건은 못 쓴다 */
+  plate: string;
   productId: string; offerId: string; version: number; snapshot: string;
   supplier: string; model: string; product: string; term: number | null; rent: number | null; deposit: number | null; price: number | null;
 }
@@ -213,8 +215,11 @@ export function plateOffers(products: CanonicalProduct[], plate: string): PlateO
   if (!target) return [];
   return products
     .filter((p) => plateKey(p.registration?.vehicleNumber ?? '') === target)
+    /* 원장 상품구분으로 못 옮기는 상품은 조건으로 내놓지 않는다 — 고르면 상품구분이 빈 채로 저장된다(Codex 검토) */
+    .filter((p) => ledgerKindOf(p.productKind) !== null)
     .flatMap((p) => p.offers.map((o) => ({
       key: `${p.id}|${o.id}`,
+      plate: target,
       productId: p.id, offerId: o.id, version: p.version, snapshot: p.sourceSnapshotId,
       supplier: o.supplierName ?? p.supplierName ?? '',
       /* 저장(createIntakeFrom)과 같은 모델 표기 */

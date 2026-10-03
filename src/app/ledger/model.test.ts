@@ -145,4 +145,6 @@ test('margin warning: pay above claim is flagged, unknown amounts are not judged
   assert.match(String(marginWarningOf(1_097_550, 1_416_000)), /줄 것 1,416,000 > 받을 것 1,097,550/);
   assert.equal(marginWarningOf(null, 1_416_000), null);
   assert.equal(marginWarningOf(1_097_550, null), null);
+  assert.match(String(marginWarningOf(1_097_550, 1_416_000, '하허호 F80 2026-09 정정 반영(2026-10-02)')), /^이번 달 예외\(합의 금액\)/);
+  assert.doesNotMatch(String(marginWarningOf(1_097_550, 1_416_000, '')), /이번 달 예외/);
 });

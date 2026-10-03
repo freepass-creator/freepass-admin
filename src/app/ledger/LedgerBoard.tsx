@@ -206,7 +206,7 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
                       </span>                      <F k="month" l={r.billMonth || !r.expectedMonth ? '청구월' : '청구월(예정)'} v={r.billMonth || r.expectedMonth || '미정'} />
                       <F k="claim" l="청구액" v={r.claim === null ? <b className="tag warn">미확정</b> : won(r.claim)} num strong />
                       <F k="paid" l="지급액" v={r.pay === null ? <b className="tag warn">미확정</b> : won(r.pay)} num strong
-                        sub={<>{r.payoutWarning ? <span className="tag warn" title={r.payoutWarning.detail} aria-label={`${r.payoutWarning.label}: ${r.payoutWarning.detail}`}>{r.payoutWarning.label}</span> : null}{r.marginWarning ? <span className="tag bad" title={r.marginWarning} aria-label={r.marginWarning}>마진 음수</span> : null}</>} />
+                        sub={<>{r.payoutWarning ? <span className="tag warn" title={r.payoutWarning.detail} aria-label={`${r.payoutWarning.label}: ${r.payoutWarning.detail}`}>{r.payoutWarning.label}</span> : null}{r.marginWarning ? <span className={r.marginWarning.startsWith('이번 달 예외') ? 'tag warn' : 'tag bad'} title={r.marginWarning} aria-label={r.marginWarning}>{r.marginWarning.startsWith('이번 달 예외') ? '마진 음수 · 이번 달 합의' : '마진 음수'}</span> : null}</>} />
                       <span className="f fk-flow">
                         <small>진행</small>
                         <span className="ldesk-steps" aria-label={`진행 ${TILE[r.task]}`}>{stepsOf(r).map((s, i) => <i key={i} className={s}>{STEPS[i]}</i>)}</span>

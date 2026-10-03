@@ -1,6 +1,6 @@
 {
   "schema": "freepass-admin-active-work/v1",
-  "updated_at": "2026-09-29",
+  "updated_at": "2026-10-03",
   "authority": "docs/BRANCH-WORKFLOW.md",
   "main": {
     "branch": "main",
@@ -10,7 +10,12 @@
     "mode": "UNIFIED_MAIN_SINGLE_WRITER",
     "user_decision": "자 메인으로 병합하고 이제 하나로 합치자",
     "max_concurrent_writers": 1,
-    "review_axes": ["U", "F", "E", "I"],
+    "review_axes": [
+      "U",
+      "F",
+      "E",
+      "I"
+    ],
     "permanent_lane_branches": false,
     "other_sessions": "REVIEW_AUDIT_HANDOFF_ONLY_UNLESS_ASSIGNED_WRITER",
     "work_order_required_before_next_code_change": true,
@@ -18,7 +23,13 @@
   },
   "consolidation": {
     "status": "CODE_MERGED",
-    "merged_prs_in_order": [128, 129, 130, 127, 133],
+    "merged_prs_in_order": [
+      128,
+      129,
+      130,
+      127,
+      133
+    ],
     "last_function_merge_commit": "e72fee1d17ac07d99f6d7d587ae89d153058a270",
     "last_verified_pr_head": "c36f5cf599750d17c5d39555cde908dbf49d2d37",
     "checks": {
@@ -47,30 +58,13 @@
   },
   "active": [
     {
-      "work_order": "intake-controls-20260930",
-      "objective": "Replace the former UI appearance with the latest three-state web/mobile proposal through actual runtime code renders and an executable implementation contract, preserving data and business functions.",
-      "branch": "work/freepass-admin/intake-controls-20260930",
-      "writer": "Codex",
-      "reviewer": "Claude Code (read-only)",
-      "phase": "CODE_RENDER_FIRST_STATE_VERIFIED_REMAINING_STATES_PENDING",
-      "production_cutover_authorized": false
-    },
-    {
-      "work_order": "login-repair-20260930",
-      "objective": "Repair missing production identity configuration, restore the approved Admin name, and block recurrence at build time.",
-      "branch": "work/freepass-admin/login-repair-20260930",
-      "writer": "Codex",
-      "reviewer": "Claude Code (read-only)",
-      "phase": "FIX_VALIDATION",
-      "production_cutover_authorized": false
-    },
-    {
-      "work_order": "catalog-observe-parity-20260929",
-      "objective": "Verify Catalog OBSERVE parity and define the fail-closed promotion evidence without changing the production read authority.",
-      "branch": "work/freepass-admin/catalog-observe-parity-20260929",
-      "writer": "Codex",
-      "reviewer": "Claude Code (read-only)",
-      "phase": "RUNTIME_EVIDENCE_CODED",
+      "work_order": "intake-sheet-20261003",
+      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as a simple ERP intake desk — list for viewing (attention chips, task tabs, one row per intake, progress checkline) and a right panel for work (new intake, selected intake progress/amounts), no horizontal scroll reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
+      "branch": "work/freepass-admin/intake-sheet-20261003",
+      "writer": "Claude Code",
+      "reviewer": "Codex (read-only)",
+      "supersedes": "codex/intake-ledger-lifecycle simple intake (browser-only storage); Codex stops writing per user decision",
+      "phase": "CODING",
       "production_cutover_authorized": false
     }
   ],
@@ -104,12 +98,31 @@
       "branch": "work/freepass-admin/f01-workflow-followup",
       "status": "MERGED_PR_133",
       "note": "Verified head c36f5cf599750d17c5d39555cde908dbf49d2d37 merged to main. Re-read the remote ref before any cleanup; later commits are not covered by this receipt."
+    },
+    {
+      "branch": "work/freepass-admin/intake-controls-20260930",
+      "status": "MERGED_PR_162_163",
+      "note": "Merged to main; branch deleted 2026-10-03 during branch cleanup."
+    },
+    {
+      "branch": "work/freepass-admin/login-repair-20260930",
+      "status": "MERGED_PR_159_160",
+      "note": "Merged to main; branch deleted 2026-10-03 during branch cleanup."
+    },
+    {
+      "branch": "work/freepass-admin/catalog-observe-parity-20260929",
+      "status": "MERGED_PR_154_155_156",
+      "note": "Merged to main; branch deleted 2026-10-03 during branch cleanup."
     }
   ],
   "branch_creation": {
     "default": "REQUIRES_SINGLE_WORK_ORDER_AND_WRITER",
     "rule": "Do not recreate permanent U/F/E/I lanes. A subsequent approved code change may use at most one temporary branch from current main; register its work order and writer first, validate, merge, and retire it.",
-    "forbidden_name_patterns": ["*/v2", "*/final", "*/latest"],
+    "forbidden_name_patterns": [
+      "*/v2",
+      "*/final",
+      "*/latest"
+    ],
     "ai_named_branches": "ALLOWED (user 2026-09-26: AI 이름 브랜치 금지 해제); naming does not authorize a separate writer"
   },
   "ui_authority": {

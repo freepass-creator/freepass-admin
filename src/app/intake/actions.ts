@@ -2,11 +2,12 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { productByIdFresh } from '../../server/freepass-data';
+import { freepassDataProducts, productByIdFresh } from '../../server/freepass-data';
+import { catalogLookupHold, plateOffers, type PlateOffer } from '../ledger/model';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
 import { feeOf } from '../../domain/settlement/fee';
-import { validateIntake, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { FACT_LABEL, validateIntake, type FactChange, type FactKey, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
 import { buildIntakeCatalogSnapshot } from '../../domain/settlement/catalog-snapshot';
@@ -36,6 +37,48 @@ const N = (f: FormData, k: string) => {
 };
 
 export async function createIntakeAction(_: FormState, f: FormData): Promise<FormState> {
+  const r = await createIntakeFrom(f);
+  if ('errors' in r) return r;
+  /*
+   * ★이미 있던 줄이면 새로 안 만들고 그 줄로 보낸다 (대표 「있으면 안 올리면 되잖아」)
+   * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
+   *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
+   */
+  redirect(savedIntakeHref(S(f, 'returnContext'), r.code, r.created));
+}
+
+/**
+ * 접수 관리(/ledger) — 차량번호로 프리패스 상품 조건을 찾는다. 읽기만 한다.
+ * ★FreePass Data ACTIVE 정본만 쓰고, policyParity·commercialCoverage 가 COMPLETE 가 아니면 «보류» 한다
+ *   (총괄·Codex 결정 2026-10-03 — 원장은 봉인 저장까지 가므로 정본 없는 값을 불러오지 않는다. 구 DB/데모 fallback 없음).
+ *   연결 실패도 보류다 — 값을 추측하지 않고 직접 입력을 유지한다.
+ * 고른 조건은 저장 때 createIntakeFrom 이 상품을 다시 읽어 확인·봉인한다(다르면 저장을 막는다).
+ */
+export async function ledgerPlateLookupAction(plate: string): Promise<{ offers: PlateOffer[]; message: string; held?: boolean }> {
+  const denied = await requireAdmin();
+  if (denied) return { offers: [], message: denied };
+  if (typeof plate !== 'string' || !plate.trim() || plate.length > 30) return { offers: [], message: '차량번호를 확인해 주세요' };
+  let catalog: Awaited<ReturnType<typeof freepassDataProducts.list>>;
+  try {
+    catalog = await freepassDataProducts.list();
+  } catch {
+    return { offers: [], held: true, message: catalogLookupHold(null)! };
+  }
+  const hold = catalogLookupHold(catalog.meta);
+  if (hold) return { offers: [], held: true, message: hold };
+  const offers = plateOffers(catalog.rows, plate);
+  return { offers, message: offers.length ? `${offers.length}개 조건이 있습니다 — 고르면 조건이 채워집니다` : '프리패스 상품에 없는 차량입니다 — 직접 입력합니다' };
+}
+/** 접수표(/ledger) — 같은 저장 규칙, 화면을 옮기지 않고 결과만 돌려준다. */
+export type LedgerCreateState = FormState & { code?: string; created?: boolean };
+export async function ledgerCreateAction(_: LedgerCreateState, f: FormData): Promise<LedgerCreateState> {
+  const r = await createIntakeFrom(f);
+  if ('errors' in r) return r;
+  revalidatePath('/ledger');
+  return { errors: [], code: r.code, created: r.created };
+}
+
+async function createIntakeFrom(f: FormData): Promise<FormState | { code: string; created: boolean }> {
   { const g = await requireAdmin(); if (g) return { errors: [g] }; }
   let input: IntakeInput = {
     receivedAt: S(f, 'receivedAt'), plate: S(f, 'plate'), model: S(f, 'model'),
@@ -115,12 +158,7 @@ export async function createIntakeAction(_: FormState, f: FormData): Promise<For
     return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
-  /*
-   * ★이미 있던 줄이면 새로 안 만들고 그 줄로 보낸다 (대표 「있으면 안 올리면 되잖아」)
-   * ★계약접수 쪽을 떠나지 않는다 — 대표 «절대 법칙» 「상단 메뉴를 누르지 않는 이상 다른 페이지로 가지 않는다」.
-   *   가운데는 방금 만든 접수 상세, 오른쪽은 접수 목록을 유지한다. 검색/상품/Offer 문맥도 보존한다.
-   */
-  redirect(savedIntakeHref(S(f, 'returnContext'), res.code, res.created));
+  return res;
 }
 
 export async function progressAction(_: FormState, f: FormData): Promise<FormState> {
@@ -276,6 +314,26 @@ export async function feeAction(_: FormState, f: FormData): Promise<FormState> {
     return { errors: [writeError('저장하지 못했습니다', e)] };
   }
   revalidatePath('/intake');
+  revalidatePath('/settlement');
+  return { errors: [] };
+}
+
+/**
+ * 접수 뒤 기본 사실 고치기. 폼 칸: code + 바꿀 칸만(FACT_LABEL 의 키 — customer · model · supplier · supplierCode …).
+ * ★보낸 칸만 견준다 · 접수일과 수수료 금액은 여기서 못 바꾼다 · 막을 때는 도메인 factPatch 가 정한다.
+ */
+export async function factsAction(_: FormState, f: FormData): Promise<FormState> {
+  { const g = await requireAdmin(); if (g) return { errors: [g] }; }
+  const change: FactChange = {};
+  for (const k of Object.keys(FACT_LABEL) as FactKey[]) if (f.has(k)) change[k] = S(f, k);
+  try {
+    const r = await settlements.setFacts(S(f, 'code'), change, await currentActor());
+    if (!r.ok) return { errors: [r.error] };
+  } catch (e) {
+    return { errors: [writeError('저장하지 못했습니다', e)] };
+  }
+  revalidatePath('/intake');
+  revalidatePath('/ledger');
   revalidatePath('/settlement');
   return { errors: [] };
 }

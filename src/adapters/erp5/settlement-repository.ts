@@ -5,7 +5,7 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
-import { feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { factPatch, feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
@@ -687,6 +687,11 @@ export class Erp5SettlementRepository {
   /** 접수 뒤 수수료 고치기 (domain/settlement/adjust.ts feeFixPatch) */
   async setFee(code: string, claim: number | null, pay: number | null, reason: string, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
     return this.mutateRow(code, (cur) => feeFixPatch(cur, claim, pay, reason), by);
+  }
+
+  /** 접수 뒤 기본 사실(고객·모델·거래처·계약 조건·메모) 고치기 — 막을 때는 factPatch 가 정한다. 바뀐 칸만 쓰고 칸마다 이력을 남긴다. */
+  async setFacts(code: string, change: FactChange, by: string = BY): Promise<{ ok: true; changed: number } | { ok: false; error: string }> {
+    return this.mutateRow(code, (cur) => factPatch(cur, change), by);
   }
 
   /** 한 줄의 이력 — 최신이 앞. */

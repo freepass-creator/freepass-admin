@@ -184,6 +184,30 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
   };
 }
 
+const truthy = (v: unknown) => v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
+const str = (v: unknown) => String(v ?? '').trim();
+
+/**
+ * 정산이 «시작됐나» — 청구·계산서·수금·지급·확정 흔적이 하나라도 있으면 그렇다.
+ * progressPatch(차량번호·인도·취소)와 factPatch(계약 조건)가 같은 판정을 쓴다.
+ */
+export function settlementStartedOf(cur: Record<string, unknown>): boolean {
+  const claimStage = str(cur.claimStage) || '접수';
+  const payStage = str(cur.payStage) || '접수';
+  const legacyStage = str(cur.stage);
+  const legacyFinancialStage = ['청구', '통보', '정정', '확인', '수금', '지급', '정산', '정산완료', '마감'].includes(legacyStage);
+  const datedOrNumbered = [
+    cur.billMonth, cur.billedAt, cur.invoiceAt, cur.collectedAt, cur.paidAt,
+    cur.invoiceNoS, cur.invoiceNoP,
+  ].some((v) => !!str(v));
+  return truthy(cur.billed) || truthy(cur.invoiceIssued) || truthy(cur.collected) || truthy(cur.paid)
+    || truthy(cur.supplierOk) || truthy(cur.channelOk) || truthy(cur.supplierFix) || truthy(cur.channelFix)
+    || truthy(cur.settledAlready) || datedOrNumbered || legacyFinancialStage
+    || claimStage !== '접수' || payStage !== '접수'
+    /* 이관·불완전 줄은 체크 없이 금액만 남아 있을 수 있다 — 받은/준 돈이 있으면 시작된 것이다 */
+    || Number(cur.collectedAmt ?? 0) > 0 || Number(cur.paidAmt ?? 0) > 0;
+}
+
 /* ── 진행 체크 — 계약서 · 인도 · 취소 ─────────────────────────── */
 
 export type ProgressChange =
@@ -204,20 +228,7 @@ export function progressPatch(
 ): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
   const B = (v: unknown) => v === true || v === 'TRUE' || v === 'true' || v === '참' || v === 'Y' || v === 1;
   const S = (v: unknown) => String(v ?? '').trim();
-  const settlementStarted = () => {
-    const claimStage = S(cur.claimStage) || '접수';
-    const payStage = S(cur.payStage) || '접수';
-    const legacyStage = S(cur.stage);
-    const legacyFinancialStage = ['청구', '통보', '정정', '확인', '수금', '지급', '정산', '정산완료', '마감'].includes(legacyStage);
-    const datedOrNumbered = [
-      cur.billMonth, cur.billedAt, cur.invoiceAt, cur.collectedAt, cur.paidAt,
-      cur.invoiceNoS, cur.invoiceNoP,
-    ].some((v) => !!S(v));
-    return B(cur.billed) || B(cur.invoiceIssued) || B(cur.collected) || B(cur.paid)
-      || B(cur.supplierOk) || B(cur.channelOk) || B(cur.supplierFix) || B(cur.channelFix)
-      || B(cur.settledAlready) || datedOrNumbered || legacyFinancialStage
-      || claimStage !== '접수' || payStage !== '접수';
-  };
+  const settlementStarted = () => settlementStartedOf(cur);
   if (B(cur.cancelled) && c.kind === 'cancelled' && !c.on && Number(cur.contractCancelledAt ?? 0) > 0) {
     return { ok: false, error: '계약취소된 건은 접수취소 풀기로 되돌릴 수 없습니다 — 계약취소 기록을 확인해 주세요' };
   }
@@ -382,4 +393,103 @@ export function feeCompletenessErrors(x: IntakeInput, fee: FeeResult): string[] 
     return [`자동 수수료 기준값(${basis})이 없습니다 — 기준값을 입력하거나 청구·지급 수수료를 직접 입력해 주세요`];
   }
   return [`${fee.why} — 청구·지급 수수료를 직접 입력해 주세요`];
+}
+
+
+/* ── 접수 뒤 기본 사실 고치기 — 고객 · 모델 · 거래처 · 계약 조건 · 메모 ─────────── */
+
+/**
+ * 고칠 수 있는 칸과 이력 이름(시트 열 이름 그대로).
+ * ★접수일은 여기 없다 — 문서 id · 중복 열쇠 · 이력 id 가 모두 접수일을 품고 있어 일반 수정으로 바꾸면 갈라진다.
+ * ★수수료(claimWritten/payWritten)는 건드리지 않는다 — 금액은 feeFixPatch(사유 필수)로 사람이 고친다.
+ */
+export const FACT_LABEL = {
+  customer: '고객명', model: '모델명', contractType: '계약형태', note: '메모',
+  supplier: '공급사', supplierCode: '공급사코드',
+  channel: '영업채널', channelCode: '영업채널코드', agent: '영업담당자', agentCode: '영업자코드',
+  product: '상품구분', rentKind: '렌트구분', term: '계약기간', rent: '렌탈료', deposit: '보증금', price: '차량가액', payKind: '분납여부',
+} as const;
+export type FactKey = keyof typeof FACT_LABEL;
+export type FactChange = Partial<Record<FactKey, string | number | null>>;
+
+const FACT_GROUP: Record<FactKey, 'doc' | 'claim' | 'pay' | 'terms'> = {
+  customer: 'doc', model: 'doc', contractType: 'doc', note: 'doc',
+  supplier: 'claim', supplierCode: 'claim',
+  channel: 'pay', channelCode: 'pay', agent: 'pay', agentCode: 'pay',
+  product: 'terms', rentKind: 'terms', term: 'terms', rent: 'terms', deposit: 'terms', price: 'terms', payKind: 'terms',
+};
+const NUMERIC: ReadonlySet<FactKey> = new Set(['term', 'rent', 'deposit', 'price']);
+const REQUIRED: ReadonlySet<FactKey> = new Set(['customer', 'supplier', 'channel', 'agent', 'payKind']);
+/** 상품에서 접수한 건(sealed snapshot)은 이 조건들이 Offer 와 묶여 있다 */
+const SNAPSHOT_BOUND: ReadonlySet<FactKey> = new Set(['supplier', 'supplierCode', 'product', 'term', 'rent', 'deposit', 'price']);
+export const PAY_KINDS = ['일시납', '2회분납', '3회분납'] as const;
+
+/**
+ * 바뀐 칸만 고르고, 축별로 막을 때를 판정해 {patch, events} 를 낸다.
+ *   공통: 취소 · 계약해지 건은 못 고친다.
+ *   고객·모델·메모: 청구서/지급명세가 나간 뒤에는 못 고친다(나간 문서와 갈린다).
+ *   공급사: 공급사 청구 축이 시작되면 못 고친다. 영업채널·담당자: 지급 축이 시작되면 못 고친다.
+ *   상품구분·기간·렌탈료·보증금·차량가액·분납: 인도 전 · 정산 전에만. 상품 접수(sealed)면 조건은 못 고친다.
+ */
+export function factPatch(
+  cur: Record<string, unknown>, change: FactChange,
+): { ok: true; patch: Record<string, unknown>; events: ProgressEvent[] } | { ok: false; error: string } {
+  if (truthy(cur.cancelled)) return { ok: false, error: '취소된 줄입니다 — 취소를 먼저 풀어야 고칠 수 있습니다' };
+  if (Number(cur.contractTerminatedAt ?? 0) > 0) return { ok: false, error: '계약해지된 건은 접수 내용을 고칠 수 없습니다' };
+
+  const patch: Record<string, unknown> = {};
+  const events: ProgressEvent[] = [];
+  for (const [k, raw] of Object.entries(change) as [FactKey, string | number | null | undefined][]) {
+    if (!(k in FACT_LABEL) || raw === undefined) continue;
+    let next: string | number | null;
+    if (NUMERIC.has(k)) {
+      const t = typeof raw === 'number' ? raw : str(raw).replace(/[,\s원]/g, '');
+      if (t === '' || t === null) next = null;
+      else {
+        const n = Number(t);
+        if (!Number.isFinite(n) || n < 0) return { ok: false, error: `${FACT_LABEL[k]}은(는) 0 이상의 숫자로 넣습니다` };
+        next = n;
+      }
+    } else {
+      next = str(raw);
+      if (REQUIRED.has(k) && !next) return { ok: false, error: `${FACT_LABEL[k]}은(는) 비울 수 없습니다` };
+      if (k === 'payKind' && !(PAY_KINDS as readonly string[]).includes(next)) return { ok: false, error: '분납은 일시납 · 2회분납 · 3회분납 중에서 고릅니다' };
+    }
+    const before = cur[k];
+    const same = NUMERIC.has(k)
+      ? (before === null || before === undefined || before === '' ? null : Number(before)) === next
+      : str(before) === next;
+    if (same) continue;
+    patch[k] = next;
+    events.push({ field: FACT_LABEL[k], from: before === null || before === undefined ? '' : String(before), to: next === null ? '' : String(next) });
+  }
+  if (!events.length) return { ok: true, patch: {}, events: [] };
+
+  const keys = Object.keys(patch) as FactKey[];
+  /* 코드는 이름을 따라간다 — 이름은 그대로인데 코드만 바뀌면 거래처 식별(party code)과 화면 이름이 갈린다 */
+  for (const [codeKey, nameKey] of [['supplierCode', 'supplier'], ['channelCode', 'channel'], ['agentCode', 'agent']] as const) {
+    if (codeKey in patch && !(nameKey in patch)) return { ok: false, error: `만 따로 바꿀 수 없습니다 — 을(를) 바꿀 때 함께 맞춰집니다` };
+  }
+  const groups = new Set(keys.map((k) => FACT_GROUP[k]));
+  const payStage = str(cur.payStage) || '접수';
+  const claimStage = str(cur.claimStage) || '접수';
+  const collectedAmt = Number(cur.collectedAmt ?? 0) > 0, paidAmt = Number(cur.paidAmt ?? 0) > 0;
+  const docIssued = truthy(cur.billed) || truthy(cur.invoiceIssued) || !!str(cur.billedAt) || !!str(cur.invoiceAt)
+    || payStage !== '접수' || truthy(cur.paid) || !!str(cur.invoiceNoS) || !!str(cur.invoiceNoP) || collectedAmt || paidAmt;
+  const claimStarted = truthy(cur.billed) || truthy(cur.invoiceIssued) || truthy(cur.collected) || truthy(cur.supplierOk)
+    || truthy(cur.supplierFix) || claimStage !== '접수' || !!str(cur.invoiceNoS) || truthy(cur.settledAlready)
+    || !!str(cur.billedAt) || !!str(cur.invoiceAt) || !!str(cur.collectedAt) || collectedAmt;
+  const payStarted = payStage !== '접수' || truthy(cur.paid) || truthy(cur.channelOk) || truthy(cur.channelFix)
+    || !!str(cur.invoiceNoP) || truthy(cur.settledAlready) || !!str(cur.paidAt) || paidAmt;
+
+  if (groups.has('doc') && docIssued) return { ok: false, error: '청구서 또는 지급명세가 나간 건입니다 — 고객·모델·메모는 나간 문서와 맞춰 두어야 해서 고칠 수 없습니다' };
+  if (groups.has('claim') && claimStarted) return { ok: false, error: '공급사 청구가 시작된 건입니다 — 공급사는 바꿀 수 없습니다' };
+  if (groups.has('pay') && payStarted) return { ok: false, error: '영업채널 지급이 시작된 건입니다 — 영업채널·담당자는 바꿀 수 없습니다' };
+  if (groups.has('terms') && (truthy(cur.delivered) || settlementStartedOf(cur))) {
+    return { ok: false, error: '인도 또는 정산이 시작된 건입니다 — 상품구분·기간·금액 조건·분납은 바꿀 수 없습니다' };
+  }
+  if (str(cur.catalogSnapshotDigest) && keys.some((k) => SNAPSHOT_BOUND.has(k))) {
+    return { ok: false, error: '상품에서 접수한 건은 공급사·상품·기간·금액 조건이 상품 Offer 에 묶여 있습니다 — 조건이 틀렸다면 취소 후 새로 접수합니다' };
+  }
+  return { ok: true, patch, events };
 }

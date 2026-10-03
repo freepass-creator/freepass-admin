@@ -1,17 +1,10 @@
 name: admin-core-domain
 
 on:
+  # core-domain 은 main 보호 규칙의 «필수 검사» 다. 경로 필터를 걸면 필터 밖 파일만 바꾼 PR(예: .ai-core/ 키트 갱신)에서
+  # 이 검사가 아예 돌지 않아 «결과 없음» 으로 머지가 막힌다(2026-10-03 #161). 그래서 모든 PR 에서 돈다.
+  # 몇 분짜리 단위 테스트라 늘 돌려도 비용이 작다.
   pull_request:
-    paths:
-      - "src/domain/search/**"
-      - "src/domain/settlement/**"
-      - "src/app/**"
-      - "src/server/**"
-      - "src/services/**"
-      - "docs/WORK-INBOX.md"
-      - "docs/DECISIONS.md"
-      - "docs/reviews/PRODUCT-FINDER-PARITY-2026-09-25.md"
-      - ".github/workflows/admin-core-domain.yml"
   workflow_dispatch:
 
 permissions:

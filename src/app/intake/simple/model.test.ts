@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blankRow, normalizeRow, savedSchema, validateRow, intakeFields, followupFields, feeFields, plateChoices } from './model';
+import { blankRow, normalizeRow, savedSchema, validateRow, intakeFields, intakeGroups, followupFields, feeFields, plateChoices } from './model';
 import type { CanonicalProduct } from '../../../domain/product/types';
 test('intake only has employee inputs; fee and follow-up fields are separate', () => {
   assert.equal(intakeFields.length, 14);
@@ -10,6 +10,13 @@ test('intake only has employee inputs; fee and follow-up fields are separate', (
   assert.ok(!intakeFields.some(([key]) => ['claim','pay','billingMonth','deliveryDate','supplierRate'].includes(key)));
   assert.deepEqual(followupFields.map(([key]) => key), ['deliveryDate','billingMonth']);
   assert.deepEqual(feeFields.map(([key]) => key), ['claim','pay']);
+});
+test('three input groups cover all intake fields once; installments follow deposit', () => {
+  assert.deepEqual(intakeGroups.map(g=>g.title),['차량 정보','영업 정보','대여 조건 정보']);
+  const keys=intakeGroups.flatMap(g=>g.fields.map(([key])=>key));
+  assert.equal(new Set(keys).size,14);
+  assert.deepEqual([...keys].sort(),intakeFields.map(([key])=>key).sort());
+  assert.deepEqual(intakeGroups[2].fields.slice(-2).map(([key])=>key),['deposit','installment']);
 });
 test('plate lookup keeps each offer together and unknown deposit separate from zero', () => {
   const product = {id:'p',version:1,sourceSnapshotId:'s',registration:{vehicleNumber:'123하4567'},supplierName:'A',vehicle:{modelId:'차종'},productKind:'중고렌트',offers:[{id:'a',supplierName:'B',termMonths:36,monthlyRent:500000,deposit:0},{id:'b',termMonths:48,monthlyRent:450000}]} as CanonicalProduct;

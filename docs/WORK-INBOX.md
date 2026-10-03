@@ -1,5 +1,8 @@
 ## 0-INTAKE-LEDGER. 2026-10-02 — 접수 누적원장 기준 청구
 
+- 2026-10-03 / 대상25f5f27: 최신 사용자 결정에 따라 신규/저장접수 기본14항목을 차량 정보, 영업 정보, 대여 조건 정보로 그룹화. 분납여부는 보증금 바로 아래 배치. 접수일 입력은 그룹 전체 너비로 날짜 잘림 방지. 저장접수는 청구월·청구액·지급액·환수사유/일/금액과 정산체크를 수수료/청구/지급/환수 정보로, 계약/인도 진행을 별도 묶음으로 표시. 기존 저장모델/추가 상세 원문 보존.
+- 검증: 단위9건, 타입검사, Next build PASS. 실제 기본 화면 3그룹/보증금 아래 분납 및 온전한 날짜 확인. 390px 반응형에서 document clientWidth/scrollWidth 모두380px로 가로 넘침 없음, 임시 viewport 복원. 화면 Temp/freepass-intake-group-sections.jpg. 운영저장/배포/수수료 자동산출은 이번 범위 아님; FreePass Data live 조회 연결 HOLD 유지. next_start_here: 이 그룹 UI 기준으로 원천 연결 및 수수료 규칙 검증을 이어간다.
+
 - 2026-10-03 / 기준849470d: 접수일 첫칸(오늘 기본), 상품/분납 native select, 기간/월대여료/보증금 직접입력 유지. 차량번호 조회는 기존 FreePassDataAdminCatalogClient REUSE_WITH_ADAPTER로 actions.ts에 읽기전용 확장. requireAdmin, ACTIVE 스키마 및 policyParity/commercialCoverage COMPLETE 요구, 구DB/demo fallback 없음. 정확 차번에 대한 Offer별 공급사·차종·상품·기간·요금·보증금 묶음만 선택하며 별도 조건을 자동 혼합하지 않음. source release/product/offer/version/snapshot과 조회당시 값을 history에 보존(수기수정 가능한 기준값임을 명시). seq/현재차번 검사로 늦은응답 차단, 차번변경시 후보폐기, 저장후 조회상태초기화.
 - 검증: 타입검사/단위8건/Next build PASS. 브라우저 접수일2026-10-03 첫칸·상품/분납 select 선택 확인. 실번호조회는 개발환경 연결 실패를 반환하여 LIVE DATA READ HOLD; 후보선택 autofill의 실제 원천 roundtrip는 미검증(단위 Offer36/48 가격묶음, 보증0/UNKNOWN 분리 확인). 화면 Temp/freepass-intake-date-dropdown.jpg. Claude검토 응답대기(PASS 아님). next_start_here: 승인된 FreePass Data catalog 연결설정 확인 후 live조회/선택/저장 검증. 접수 저장은 여전히 브라우저 초안, 운영write/배포 없음.
 

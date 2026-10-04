@@ -1,5 +1,5 @@
 /**
- * F04 정산원장 시트 «전체» 를 읽어 SSOT 스냅샷을 만든다. ★아무것도 안 쓴다.
+ * F04 정산원장 시트 «전체» 를 읽어 사본(투영)을 만든다 — 정본은 프리패스 데이터, F04 는 9월 이전분 옮기기 전 임시 원천. ★아무것도 안 쓴다.
  *
  *   npx tsx scripts/f04-ssot.mts               ← 키 파일이 있으면 서비스계정, 없으면 gws 로그인으로 읽는다
  *   npx tsx scripts/f04-ssot.mts --auth gws    ← gws(pyh@teamjpk.com) 로그인으로 읽는다

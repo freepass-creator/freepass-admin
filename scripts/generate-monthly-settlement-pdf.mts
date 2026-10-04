@@ -23,6 +23,8 @@ if (!Array.isArray(f04.rows)) throw new Error('F04 rows가 없습니다');
 if (f04.report?.title !== '[F04 사용중] 프리패스 정산원장') throw new Error('정산 시트 정본 제목이 일치하지 않습니다');
 /* 회차청구를 검증해 담은 사본이거나 «회차 없음»을 명시한 사본만 — 옛 사본으로 회차를 빼먹고 발행하지 않는다 */
 if (!Array.isArray(f04.installments) || (typeof f04.report?.installments !== 'number' && f04.report?.noInstallments !== true)) throw new Error('F04 사본에 회차청구 검증 결과가 없다 — scripts/f04-ssot.mts 로 다시 읽은 뒤 발행하세요(회차가 정말 없으면 --회차없음)');
+/* 사본의 회차 배열이 잘리거나 바뀌면 멈춘다 — 판독 때 센 수와 같아야 한다(«회차 없음»이면 0) */
+if (f04.installments.length !== (f04.report?.noInstallments === true && typeof f04.report?.installments !== 'number' ? 0 : f04.report?.installments)) throw new Error(`F04 사본의 회차청구 ${f04.installments.length}줄이 판독 기록 ${f04.report?.installments ?? 0}줄과 다르다 — 다시 읽은 뒤 발행하세요`);
 if (f04.report?.balanced !== true) throw new Error('F04 읽은 줄 = 실은 줄 + 보류한 줄 검증이 통과하지 않았습니다');
 const readAt = Date.parse(f04.report.readAt ?? '');
 if (!Number.isFinite(readAt)) throw new Error('F04 스냅샷 읽은 시각이 없습니다');

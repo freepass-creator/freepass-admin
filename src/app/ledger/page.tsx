@@ -1,4 +1,4 @@
-import { settlements, today, writeEnabled } from '../../server/freepass-data';
+import { mewcarGaTableOrNull, settlements, today, writeEnabled } from '../../server/freepass-data';
 import { buildIntakeOptions } from '../intake/intake-options';
 import { LedgerBoard } from './LedgerBoard';
 import { toLedgerRow } from './model';
@@ -25,9 +25,11 @@ export default async function LedgerPage() {
       </section></div></div>
     );
   }
+  /* 뮤카 지급표 — 프리패스 데이터 수수료 규칙. 못 읽으면 null(«뮤카 금액 모름»), 목록은 그대로 */
+  const mewcarTable = await mewcarGaTableOrNull();
   return (
     <LedgerBoard
-      rows={raw.map((r) => toLedgerRow(r, day))}
+      rows={raw.map((r) => toLedgerRow(r, day, undefined, mewcarTable))}
       options={buildIntakeOptions(raw)}
       canWrite={writeEnabled()}
       today={day}

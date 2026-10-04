@@ -250,6 +250,13 @@ if (tabs.includes('회차청구')) {
       note: `${round}회차 청구 — ${p.text(r, '근거') ?? ''}`.trim(),
     });
   });
+  /* 회차 건너뜀 금지 — 원 줄이 1회차이므로 같은 계약의 회차는 2부터 빠짐없이 이어져야 한다(2회차 없이 3회차면 멈춤) */
+  const roundsOf = new Map<number, number[]>();
+  for (const x of installments) roundsOf.set(x.installmentOf, [...(roundsOf.get(x.installmentOf) ?? []), x.installmentRound]);
+  for (const [src, rs] of roundsOf) {
+    const sorted = [...rs].sort((a, b) => a - b);
+    sorted.forEach((r, i) => { if (r !== i + 2) throw new Error(`회차청구: 접수 ${src}행 회차가 이어지지 않는다(${sorted.join('·')}) — ${i + 2}회차가 빠졌다`); });
+  }
   say(`\n■ 회차청구 ${installments.length}줄 — 청구 ${Math.round(installments.reduce((n, x) => n + x.claim, 0)).toLocaleString('ko-KR')}`);
 }
 

@@ -16,6 +16,7 @@ import { directIntakeAllowsMissingPlate, directIntakeRentKind } from './product-
 import { contractPaymentStateOf } from '../contracts/payment';
 import { isCalendarDay, koreaDay } from './calendar';
 import { roundsOf } from './stage';
+import { isMewcar, mewcarBasisFromNote } from './fee-rules-f04-extra';
 
 export interface IntakeInput {
   receivedAt: string;   // YYYY-MM-DD
@@ -69,6 +70,9 @@ const INTAKE_PAY_KINDS = new Set(['일시납', '2회분납', '3회분납']);
  */
 export function validateIntake(x: IntakeInput, today: string): string[] {
   const e: string[] = [];
+  if (isMewcar(x.supplier) && mewcarBasisFromNote(x.note).status === 'UNKNOWN') {
+    e.push('뮤카 접수는 비고에 «선납/분납»과 «추가보증금 N원(없으면 없음)»을 적어야 합니다');
+  }
   if (!x.plate.trim() && !x.sourceProductId?.trim()) {
     if (!directIntakeAllowsMissingPlate(x.product)) e.push('차량번호가 없습니다');
     else if (!x.intakeRequestId?.trim()) e.push('차량번호 없는 직접접수의 요청 ID가 없습니다');

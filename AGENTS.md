@@ -1,5 +1,7 @@
 # freepass-admin — AI/Developer Rules
 
+> **★★차종·제원(제조사·모델·세부모델·세부트림·연료·배기량·구동)을 채우거나 고치거나 판단하는 모든 AI·로직은 ai-ops `docs/차종-기준-한장.md`(https://github.com/freepass-creator/ai-ops/blob/master/docs/차종-기준-한장.md) 한 장만 따른다 — 대표 2026-10-04 「어떤 AI가 오든 어떤 로직이 오든 흔들리지 않게」. 그 장은 대표만 바꾼다. 더 나은 규칙이 보이면 코드·문서를 먼저 바꾸지 말고 AI 상황실에 `결정필요:`.**
+
 ## -2. FUNCTION AUTHORITY — 2026-09-26
 
 기능 작업의 단일 진입점은 `docs/FUNCTION-AUTHORITY.md`다. **기능 런타임 정본은 `main` 한 곳**이며 과거 브랜치/PR/모델별 작업 가지를 정본으로 해석하지 않는다.

@@ -228,7 +228,7 @@ if (tabs.includes('회차청구')) {
     }
     const srcRow = p.num(r, '원 접수행'); const round = p.num(r, '회차'); const amount = p.num(r, '금액(공급가)');
     const month = billMonthOf(p.raw(r, '청구년'), p.raw(r, '청구월'));
-    if (!srcRow || !round || round < 2 || !Number.isInteger(round) || !month || amount === null || !(amount > 0)) throw new Error(`회차청구 row ${at}: 원 접수행·회차(2 이상)·청구년월·금액을 확인한다`);
+    if (!srcRow || !Number.isInteger(srcRow) || !round || round < 2 || !Number.isInteger(round) || !month || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || amount === null || !(amount > 0)) throw new Error(`회차청구 row ${at}: 원 접수행·회차(2 이상)·청구년월·금액을 확인한다`);
     const key = `${srcRow}|${round}`;
     if (seen.has(key)) throw new Error(`회차청구 중복: row ${at} (접수 ${srcRow}행 ${round}회차)`);
     seen.add(key);
@@ -320,7 +320,7 @@ const report = {
   feeTable: feeTable.length, timingRules: timingRules.length, byMethod,
   byMachine: feeTable.filter((f) => f.byMachine).length,
   progress: progress.length, vehicles: vehicles.length, goods: goods.length,
-  derived, byMonth, missingCols, installments: installments.length,
+  derived, byMonth, missingCols, installments: installments.length, noInstallments: NO_INSTALLMENTS,
 };
 
 mkdirSync(dirname(OUT), { recursive: true });

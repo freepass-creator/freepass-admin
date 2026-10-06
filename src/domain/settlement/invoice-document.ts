@@ -1,4 +1,4 @@
-export type SheetSettlementRow = { plate?:string|null; receivedAt?:string|null; supplier?:string|null; customer?:string|null; model?:string|null; product?:string|null; rentKind?:string|null; term?:number|null; rent?:number|null; price?:number|null; supplierRate?:number|null; claim?:number|null; claimVat?:number|null; claimTotal?:number|null; billMonth?:string|null; delivered?:boolean; cancelled?:boolean; settleExclude?:boolean; billHold?:boolean };
+export type SheetSettlementRow = { plate?:string|null; receivedAt?:string|null; supplier?:string|null; customer?:string|null; model?:string|null; product?:string|null; rentKind?:string|null; term?:number|null; rent?:number|null; price?:number|null; supplierRate?:number|null; claim?:number|null; claimVat?:number|null; claimTotal?:number|null; billMonth?:string|null; delivered?:boolean; cancelled?:boolean; settleExclude?:boolean; billHold?:boolean; billed?:boolean; billState?:string|null; moneyConflicts?:string[] };
 export type SheetClawbackRow = { plate?:string|null; supplier?:string|null; product?:string|null; month?:string|null; supplierAmt?:number|null; reason?:string|null; at?:string|null };
 export type InvoiceParty = { name:string; bizNo:string; ceo?:string; address?:string };
 export type InvoiceIssuer = InvoiceParty & { bank:string; account:string; holder:string; manager:string; phone:string; email:string; fax?:string };
@@ -35,7 +35,8 @@ function formulaOf(row:SheetSettlementRow, supply:number) {
 }
 
 export function buildMonthlyInvoice(input:{ month:string; supplier:string; rows:SheetSettlementRow[]; clawbacks?:SheetClawbackRow[]; issuer:InvoiceIssuer; receiver:InvoiceParty }):MonthlyInvoice {
-  const selected = input.rows.filter((row) => row.billMonth === input.month && row.supplier === input.supplier && row.delivered && !row.cancelled && !row.settleExclude && !row.billHold);
+  const selected = input.rows.filter((row) => row.billMonth === input.month && row.supplier === input.supplier && row.delivered && !row.cancelled && !row.settleExclude && !row.billHold && !row.billed && !/기청구|재청구금지|환수전용/.test(row.billState ?? ''));
+  for (const row of selected) if (row.moneyConflicts?.length) throw new Error(`${row.plate ?? '차량번호 없음'}: 접수 금액 불일치`);
   for (const row of selected) if (!row.plate || !row.receivedAt) throw new Error('차량번호 또는 접수일이 없는 행은 발행할 수 없습니다');
   const claimLines:InvoiceLine[] = selected.map((row) => { const money=moneyOf(row); return { kind:'CLAIM', product:row.product?.trim() || '기타', plate:row.plate!, receivedAt:row.receivedAt!, description:[row.model,masked(row.customer ?? ''),row.term ? `${row.term}개월` : ''].filter(Boolean).join(' · '), formula:formulaOf(row,money.supply), ...money } });
   const clawbackLines:InvoiceLine[] = (input.clawbacks ?? []).filter((row) => row.month === input.month && row.supplier === input.supplier).map((row) => {

@@ -1,5 +1,12 @@
 ## 0-F04-READ-GWS. 2026-10-03 — F04 읽기를 gws 로그인으로 (우리캐피탈 정산서 403 해소)
 
+## 0-F04-RESTORE. 2026-10-06 — 두 탭 운영 복구 (최신 직접 결정)
+
+- 수수료표·접수만 운영한다. 청구년·청구월 필터가 해당 월 모든 채널 청구·지급 대상이며 행 이동과 보관 회차 재합산을 금지한다.
+- 이전 별도 회차청구 필수 규칙을 DEC-2026-10-06-01로 대체한다. 이번 잔여는 접수에서 관리하며 과거 발행 사실은 처리 이력 보존.
+- 코드 baseline origin/main dd065349. 앞쪽 금액과 미확정/0 구분, 상태열 누락 시 중단, 기청구 재발행 차단, 옛 사본 차단을 회귀검증했다. F04·정산 321 tests 및 typecheck/build PASS. 전체 npm test는 Windows에서 e-sign Chromium 실행파일 ENOENT로 실패했으며 전체 PASS로 세지 않는다.
+- 운영 Sheet 복구와 DB 동기화·앱 배포·실제 청구 발송은 다른 상태다. 이번에는 DB/발송을 실행하지 않는다.
+
 - 목적: 2026-10-02 우리캐피탈 정산서(#165)가 서비스계정 키 파일 없음·Sheets 403 으로 멈춤. 10-03 부터 gws(pyh@teamjpk.com)에 spreadsheets·drive 범위가 생겨 그 로그인으로 읽는다(총괄 지시).
 - 대상 revision: main `1f6f98b`, 작업선 `work/freepass-admin/f04-read-gws` (PR #169 — canon guard 가 WORK-INBOX 를 PR 하나만 쥐게 해 이 기록은 #167 에 둔다).
 - 변경: `scripts/f04-ssot.mts` 에 `--auth sa|gws`. 안 주면 키 파일이 있으면 sa, 없으면 gws. gws 는 `spreadsheets.get`/`values.get`(UNFORMATTED_VALUE) 를 실행 파일로 직접 불러 JSON 인자를 shell 따옴표로 깨뜨리지 않는다(GWS_BIN 또는 npm 전역 gws.ps1 이 가리키는 gws.exe). 읽기만 한다.

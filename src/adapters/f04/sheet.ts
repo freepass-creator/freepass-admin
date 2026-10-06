@@ -100,6 +100,44 @@ export function findHeader(rows: unknown[][], key = '차량번호'): number {
 /** 2026-10-02: 접수는 누적 원장. 실적/취소 탭은 보관본이며 다시 합산하지 않는다. */
 export const F04_LEDGER_TABS = ['접수'] as const;
 
+export const F04_LEDGER_MODE = 'INTAKE_ONLY_TWO_TABS' as const;
+
+export function assertIntakeHeaders(head: string[]) {
+  const missing = picker(head).missing(['차량번호', '접수일', '공급사', '청구년', '청구월', '청구액', '지급액', '청구', '청구상태']);
+  if (missing.length) throw new Error(`접수 필수 열 없음: ${missing.join(', ')}`);
+}
+
+/** 접수 입력칸이 있으면 빈칸도 미확정이다. 과거 계산칸으로 되채우지 않는다. */
+export function intakeMoney(head: string[], row: unknown[]) {
+  const p = picker(head);
+  const claim = p.num(row, p.has('청구액') ? '청구액' : '판매수수료');
+  const pay = p.num(row, p.has('청구액') && p.has('지급액') ? '지급액' : '출고수수료');
+  const conflicts: string[] = [];
+  for (const [name, legacy, value] of [['청구액', '판매수수료', claim], ['지급액', '출고수수료', pay]] as const) {
+    const old = p.num(row, legacy);
+    if (p.has(name) && value !== null && old !== null && old !== value) conflicts.push(`${name}/${legacy} 불일치`);
+  }
+  return {
+    claim, pay, conflicts,
+    claimVat: claim === null ? null : p.num(row, '공급사부가세'),
+    claimTotal: claim === null ? null : p.num(row, '청구금액'),
+    payVat: pay === null ? null : p.num(row, '에이전시부가세'),
+    payTotal: pay === null ? null : p.has('지급합계(부가세포함)') ? p.num(row, '지급합계(부가세포함)')
+      : p.has('청구액') ? null : p.num(row, '지급액'),
+  };
+}
+
+/** 회차가 이미 접수행에 통합된 뒤에는 옛 회차 사본을 다시 합산하지 않는다. */
+export function assertIntakeOnlySnapshot(snapshot: {
+  report?: { ledgerMode?: string; installments?: number };
+  installments?: unknown[];
+}) {
+  if (snapshot.report?.ledgerMode !== F04_LEDGER_MODE || snapshot.report.installments !== 0 ||
+      !Array.isArray(snapshot.installments) || snapshot.installments.length !== 0) {
+    throw new Error('접수 단일원장 사본이 아니다 — 수수료표·접수만 다시 읽은 뒤 발행한다');
+  }
+}
+
 /** 기존 34열 월별 청구표에 누적 접수를 직접 연결한다. 발행/수금 상태를 생성하지 않는다. */
 export function intakeBillingFormula(head: string[], month: string, previews: readonly {
   plate: string; receivedAt: number | string; ruleRow: number; basis: '정액' | '차량가액' | '대여료×기간';

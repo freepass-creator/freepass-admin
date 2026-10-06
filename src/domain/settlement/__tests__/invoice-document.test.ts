@@ -10,6 +10,24 @@ test('다음 달 10일을 입금 요청일로 만든다', () => {
   assert.equal(dueDateOf('2026-12'), '2027-01-10');
 });
 
+test('같은 9월 필터 안에서도 과거 기청구·환수전용은 재청구하지 않고 이번 잔여만 발행한다', () => {
+  const base = { supplier:'검증공급사', receivedAt:'2026-08-01', billMonth:'2026-09', delivered:true, cancelled:false };
+  const invoice = buildMonthlyInvoice({ month:'2026-09', supplier:'검증공급사', issuer, receiver, rows:[
+    { ...base, plate:'기청구', claim:1000, billed:true },
+    { ...base, plate:'과거이력', claim:1000, billState:'기청구·재청구금지' },
+    { ...base, plate:'환수', claim:1000, billState:'환수전용·재청구금지' },
+    { ...base, plate:'이번잔여', claim:300, claimVat:30, claimTotal:330, billed:false, billState:'잔여청구대상·미발행' },
+  ] });
+  assert.deepEqual(invoice.lines.map(r => r.plate), ['이번잔여']);
+  assert.equal(invoice.total, 330);
+});
+
+test('접수 앞뒤 기재액 충돌은 청구서로 조용히 넘어가지 않는다', () => {
+  assert.throws(() => buildMonthlyInvoice({ month:'2026-09', supplier:'검증공급사', issuer, receiver, rows:[
+    { supplier:'검증공급사', plate:'충돌행', receivedAt:'2026-09-01', billMonth:'2026-09', delivered:true, claim:100, moneyConflicts:['청구액/판매수수료 불일치'] },
+  ] }), /접수 금액 불일치/);
+});
+
 test('F04 월·공급사·인도완료 행만 청구서로 묶고 차량가액 산출식을 남긴다', () => {
   const invoice = buildMonthlyInvoice({ month:'2026-09', supplier:'우리캐피탈', issuer, receiver, rows:[
     { plate:'133하4554', receivedAt:'2026-08-11', supplier:'우리캐피탈', customer:'박시은', model:'그랜저', product:'선출고', term:60, price:52_550_000, supplierRate:.035, claim:1_839_250, claimVat:183_925, claimTotal:2_023_175, billMonth:'2026-09', delivered:true, cancelled:false },

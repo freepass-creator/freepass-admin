@@ -35,7 +35,7 @@ function formulaOf(row:SheetSettlementRow, supply:number) {
 }
 
 export function buildMonthlyInvoice(input:{ month:string; supplier:string; rows:SheetSettlementRow[]; clawbacks?:SheetClawbackRow[]; issuer:InvoiceIssuer; receiver:InvoiceParty }):MonthlyInvoice {
-  const selected = input.rows.filter((row) => row.billMonth === input.month && row.supplier === input.supplier && row.delivered && !row.cancelled && !row.settleExclude && !row.billHold && !row.billed && !/기청구|재청구금지|환수전용/.test(row.billState ?? ''));
+  const selected = input.rows.filter((row) => row.billMonth === input.month && row.supplier === input.supplier && row.delivered && !row.cancelled && !row.settleExclude && !row.billHold && !row.billed && !/기청구|재청구금지|환수전용|미확정|검증보류|원본충돌|정산불가/.test(row.billState ?? ''));
   for (const row of selected) if (row.moneyConflicts?.length) throw new Error(`${row.plate ?? '차량번호 없음'}: 접수 금액 불일치`);
   for (const row of selected) if (!row.plate || !row.receivedAt) throw new Error('차량번호 또는 접수일이 없는 행은 발행할 수 없습니다');
   const claimLines:InvoiceLine[] = selected.map((row) => { const money=moneyOf(row); return { kind:'CLAIM', product:row.product?.trim() || '기타', plate:row.plate!, receivedAt:row.receivedAt!, description:[row.model,masked(row.customer ?? ''),row.term ? `${row.term}개월` : ''].filter(Boolean).join(' · '), formula:formulaOf(row,money.supply), ...money } });

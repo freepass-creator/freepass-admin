@@ -194,7 +194,7 @@ for (const tab of PERF_TABS) {
       payTotal: money.payTotal, moneyConflicts: money.conflicts,
       billState: p.text(r, '청구상태'), payState: p.text(r, '지급상태'),
       history: p.text(r, '처리 이력'),
-      calculationBasis: p.text(r, '산출근거'),
+      calculationBasis: typeof p.raw(r, '산출근거') === 'string' ? p.raw(r, '산출근거') : null,
       claimAdjust: p.num(r, '청구가감'), payAdjust: p.num(r, '지급가감'),
       adjustReason: p.text(r, '가감사유'),
       /* 글 */

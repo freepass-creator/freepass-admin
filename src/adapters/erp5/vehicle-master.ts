@@ -15,7 +15,8 @@ export function nodeFromErp5(id: string, d: Record<string, unknown>): VehicleMas
   const yr = (v: unknown) => { const n = Number(String(v ?? '').slice(0, 4)); return Number.isFinite(n) && n > 1900 ? n : null; };
   return {
     id, maker: S(d.maker), model: S(d.model), subModel: S(d.sub_model),
-    aliases: arr(d.aliases).map(S).filter(Boolean),
+    aliases: [...new Set([...arr(d.aliases), ...arr(d.sub_model_aliases)].map(S).filter(Boolean))],
+    retired: d.retired === true,
     trims: [...trims],
     yearStart: yr(d.year_start), yearEnd: yr(d.year_end),
   };

@@ -1,5 +1,14 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 차종마스터 단일화 — 기존 Admin reader 의존
+
+- 동일 통합 Task/PR #171의 소비자 의존 요청: `01a11481-ba1e-7cd2-9639-5ecbf88dbb60`. 시작 소비처 revision `681549cc59292afd1f9983459c81f0db24dced50`, academy READY 확인. 기존 reader/index/시험을 실제 검색해 `COMPOSE_OR_EXTEND`했고 새 파일·작업선은 만들지 않았다.
+- 정본: 기준 한 장 v1과 freepasserp5 `vehicle_master`/`vehicle_trim_master`/별칭. Data의 기존 repair 구현에서 `retired === true` boolean 규약을 확인했다. 이름/ID 임의 보정, F03 조회, 운영 write/배포는 없다.
+- 변경: `nodeFromErp5`는 `aliases`와 `sub_model_aliases`의 배열/JSON 배열을 함께 읽어 정확히 같은 별칭만 중복 제거한다. 기존 `indexMaster`는 mapper가 전달한 retired boolean을 확인해 폐기 노드를 제외한다. `loadMasterIndex`도 동일 인덱스를 사용하므로 폐기 문서가 매칭 후보를 늘리지 않는다.
+- 검증: 기존 master-match 시험에 retired+active 별칭 충돌, retired-only, 배열/JSON 별칭, 이름/ID 보존, 잘못된 별칭 입력 비추정 회귀검증을 추가했다. 관련 9 tests와 typecheck/diff check PASS.
+- 남음: 새 head 전체 CI/실제 소비처 배포·runtime 검증은 별도. 기존 5분 프로세스 cache와 저장된 과거 상품 매칭은 이 코드 수정으로 재작성하지 않는다. Claude 독립 검토 FAILED/GHD 단독 merge_owner는 유지한다.
+- next_start_here: PR #171 새 head CI → 요청 담당에 exact revision/검증 인계 → GHD 검토·반영 → 별도 승인된 소비처 runtime 확인. 운영 마스터/상품/별칭 정정은 원천 담당만 수행한다.
+
 ## 2026-10-07 공통 재사용 규칙 적용 증거
 
 - 같은 Task: `ledger-commission-read-20261003` / PR #171. 시작 revision `497718c89cf08c47d165a6c262128c88ab22cee7`, 원격 main `dd065349`. 새 개발선이나 문서를 만들지 않는다.

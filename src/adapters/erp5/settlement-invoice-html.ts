@@ -535,6 +535,10 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
   const page0 = true;   // 첫 칸은 1쪽에만 선다 — 아래 map 에서 갈린다
   const plus = inv.lines.filter((l) => !l.minus);
   const pages = paginate(inv.lines);
+  const evidence=inv.lines.filter(l=>l.calculationEvidence);
+  const basisPages:Array<typeof evidence>=[];
+  for(let i=0;i<evidence.length;i+=8)basisPages.push(evidence.slice(i,i+8));
+  const totalPages=pages.length+basisPages.length;
 
   /**
    * 한글을 «낱자»로 쪼갠다 — flex 가 고르게 나눠 준다.
@@ -612,7 +616,7 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
     <div class="site">
       <span class="u">${esc(CORP.web)}</span>
       <span class="u">${esc(CORP.erp)}${
-    pages.length > 1 ? `<span class="pg">${page + 1} / ${pages.length}</span>` : ''
+    totalPages > 1 ? `<span class="pg">${page + 1} / ${totalPages}</span>` : ''
   }</span>
     </div>
   </div>`;
@@ -808,7 +812,7 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
   ${last ? note : ''}
   ${foot(page)}
 </div>`;
-  }).join('');
+  }).join('') + basisPages.map((chunk,i)=>`<div class="doc">${head(pages.length+i)}<div class="pad"></div><div class="sec"><div class="sec-h sub">산출근거 대조<span class="muted">기재금액 보존 · 요율 역산 없음</span></div><table class="ctab"><colgroup><col style="width:20%"><col><col style="width:20%"></colgroup><thead><tr><th>차량번호</th><th>확인 근거</th><th class="n">기재 공급가액</th></tr></thead><tbody>${chunk.map(l=>`<tr><th class="rl">${esc(l.plate)}</th><td class="l" style="white-space:normal;overflow-wrap:anywhere;padding:10px">${esc(l.calculationEvidence)}</td><td class="n">${num(l.amount)}</td></tr>`).join('')}</tbody></table></div>${foot(pages.length+i)}</div>`).join('');
 }
 
 /** 문서 여러 장을 한 파일로. 인쇄하면 그대로 A4 다. */

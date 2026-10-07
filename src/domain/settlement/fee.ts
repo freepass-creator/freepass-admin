@@ -14,6 +14,31 @@
 import type { Maybe } from './types';
 import type { TermEconomicAmount } from '../product/types';
 
+/** Display evidence only: never changes booked amounts or infers a rate from them. */
+export function verifiedReceiptBasis(input: {amount: unknown; rate: unknown; rent: unknown; term: unknown; price: unknown}, rule: {basis: string; rate: unknown; auto: boolean; source: string} | undefined): string {
+  if (typeof input.amount !== 'number' || !Number.isSafeInteger(input.amount)) return '미확정';
+  const money = (n:number) => n.toLocaleString('ko-KR');
+  const unknown = `직접입력액 ${money(input.amount)}원 · 산식근거 미기록`;
+  if (!rule?.auto || !rule.source || typeof rule.rate !== 'number' || !Number.isFinite(rule.rate) || input.rate !== rule.rate) return unknown;
+  let factors:number[];
+  if (rule.basis === '정액' && Number.isSafeInteger(rule.rate) && rule.rate>=0) factors=[rule.rate];
+  else if (rule.basis === '대여료×기간' && typeof input.rent === 'number' && input.rent > 0 && typeof input.term === 'number' && Number.isInteger(input.term) && input.term > 0) factors=[input.rent,input.term,rule.rate];
+  else if (rule.basis === '차량가액' && typeof input.price === 'number' && input.price > 0) factors=[input.price,rule.rate];
+  else return unknown;
+  if (rule.basis !== '정액' && (rule.rate < 0 || rule.rate > 1)) return unknown;
+  if (factors.reduce((a,b)=>a*b,1) !== input.amount) return `검증보류 · 기재 ${money(input.amount)}원 · 원본 산식 불일치`;
+  const expression=factors.map((n,i)=>rule.basis!=='정액' && i===factors.length-1?`${Number((n*100).toFixed(6))}%`:money(n)).join(' × ');
+  return `${expression} = ${money(input.amount)}원 · ${rule.source}`;
+}
+
+export function receiptRowBasis(row:Record<string,unknown>, rules:FeeRule[]):{claim:string;pay:string} {
+  const raw=Array.isArray(row.sourceReceiptRaw)?row.sourceReceiptRaw:[];
+  const matches=rules.filter(r=>r.supplier===raw[2] && r.kind===raw[28] && (r.term===raw[10] || r.term===0));
+  const rule=matches.length===1 && !matches[0].form?matches[0]:undefined;
+  const one=(axis:'claim'|'pay')=>verifiedReceiptBasis({amount:row[axis==='claim'?'sourceReceiptClaim':'sourceReceiptPay'],rate:raw[axis==='claim'?29:34],rent:raw[11],term:raw[10],price:raw[13]},rule?{basis:rule.basis,rate:rule[axis],auto:rule.auto,source:`수수료 정본 ${rule.id} · 접수 ${axis==='claim'?'AD':'AI'}`}:undefined);
+  return {claim:one('claim'),pay:one('pay')};
+}
+
 /** Data 값 읽기 전용. calculation을 실행하거나 미확정을 0으로 채우지 않는다. */
 export function dataFeeAmount(fee: TermEconomicAmount | undefined): number | null {
   return fee?.state === 'ZERO' ? 0 : fee?.state === 'KNOWN' ? fee.amount?.amount ?? null : null;

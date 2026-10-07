@@ -102,6 +102,8 @@ export async function generateReceiptDocuments(repo:ReceiptDocumentRepository,mo
   const first=await repo.listWithPublishedReceipts();
   if(first.published.status!=='READY'||!first.published.months[month]||!first.digest)throw new Error('월별 접수 게시 원장이 최신인지 확인할 수 없습니다');
   const documents=buildReceiptDocuments({month,rows:first.all.map(x=>x.raw),summary:first.published.months[month],config});
+  const basisDigest=(read:typeof first)=>hash(JSON.stringify(read.all.map(x=>x.raw.displayReceiptBasis)));
+  const initialBasisDigest=basisDigest(first);
   if(documents.length>60)throw new Error('한 번에 생성할 거래처가 너무 많습니다');
   const key=hash(JSON.stringify({version:VERSION,month,digest:first.digest,config,documents}));
   const token=await driveDocumentToken();
@@ -139,7 +141,7 @@ export async function generateReceiptDocuments(repo:ReceiptDocumentRepository,mo
     const deadline=Date.now()+240000;
     // Revalidate before the first external artifact write. Keep immutable input for all documents.
     const live=await repo.listWithPublishedReceipts();
-    if(live.published.status!=='READY'||live.digest!==first.digest)throw new Error('생성 중 원장이 바뀌었습니다 — 다시 실행하세요');
+    if(live.published.status!=='READY'||live.digest!==first.digest||basisDigest(live)!==initialBasisDigest)throw new Error('생성 중 원장 또는 산식근거가 바뀌었습니다 — 다시 실행하세요');
     for(let i=0;i<documents.length;i++){
       if(Date.now()>deadline)throw new Error('정산서 생성 제한 시간 — 같은 입력으로 다시 실행하면 저장된 파일을 재사용합니다');
       const d=documents[i],page=await browser.newPage();
@@ -164,7 +166,7 @@ export async function generateReceiptDocuments(repo:ReceiptDocumentRepository,mo
       }finally{await page.close();}
     }
     const final=await repo.listWithPublishedReceipts();
-    if(final.published.status!=='READY'||final.digest!==first.digest)throw new Error('생성 도중 원장이 변경됐습니다 — 부분 생성 문서를 확정으로 표시하지 않습니다');
+    if(final.published.status!=='READY'||final.digest!==first.digest||basisDigest(final)!==initialBasisDigest)throw new Error('생성 도중 원장이 변경됐거나 산식근거가 바뀌었습니다 — 부분 생성 문서를 확정으로 표시하지 않습니다');
     assertUniqueDocumentIds(files.map(f=>f.id),documents.length);
     for(const f of files){
       const r=await drive(token,`drive/v3/files/${encodeURIComponent(f.id)}?supportsAllDrives=true&fields=id,name,parents,trashed,md5Checksum,appProperties,owners`);

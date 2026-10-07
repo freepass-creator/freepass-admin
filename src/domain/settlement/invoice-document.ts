@@ -65,7 +65,7 @@ export function monthlyInvoiceHtml(invoice:MonthlyInvoice) {
 
 /** Published receipt documents are projections, never lifecycle issuance or money movements. */
 export type DocumentParty = { name:string; bizNo:string; ceo:string; address:string; phone:string; bank:string; account:string; holder:string };
-export type ReceiptDocumentLine = { receivedAt:string; plate:string; model:string; customer:string; product:string; term:number; base:string; amount:number; vat:number; total:number; minus?:boolean; reason?:string };
+export type ReceiptDocumentLine = { receivedAt:string; plate:string; model:string; customer:string; product:string; term:number; base:string; calculationEvidence?:string; amount:number; vat:number; total:number; minus?:boolean; reason?:string };
 export type ReceiptDocument = { axis:'공급사'|'영업채널'; kind:'청구서'|'정산서'; month:string; party:string; issuer:DocumentParty; receiver:DocumentParty; lines:ReceiptDocumentLine[]; supply:number; vat:number; total:number; clawback:number; missing:string[]; heldCount:number };
 export type ReceiptDocumentConfig = {
   issuer:DocumentParty;
@@ -110,6 +110,7 @@ export function buildReceiptDocuments(input:{ month:string; rows:Record<string,u
         const supply=amount(r,axis==='공급사'?'sourceReceiptClaim':'sourceReceiptPay');
         const vat=receiptVat(supply);
         return {receivedAt:String(r.receivedAt??''),plate:String(r.plate??''),model:String(r.model??''),customer:String(r.customer??''),product:String(r.product??''),term:typeof r.term==='number'?r.term:0,
+          calculationEvidence:typeof r.displayReceiptBasis==='object' && r.displayReceiptBasis!==null?String((r.displayReceiptBasis as Record<string,unknown>)[axis==='공급사'?'claim':'pay']??''):undefined,
           base:[r.billHold===true?'보류 · 확정 별도 확인':'',String(r.settleNote??r.note??'')].filter(Boolean).join(' · '),amount:supply,vat,total:supply+vat,
           ...(supply<0?{minus:true,reason:String(r.adjustReason??'과지급 정정')}:{}),
         };

@@ -10,7 +10,7 @@ import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
-import { feeOf } from '../../domain/settlement/fee';
+import { feeOf, receiptRowBasis } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
@@ -203,6 +203,13 @@ export class Erp5SettlementRepository {
       });
       digest = (snap as typeof snap & { digest?: string }).digest ?? '';
       return { digest, rows: snap.size };
+    });
+    let rules: Awaited<ReturnType<typeof loadFeeRuleSet>>['rules'] = [];
+    if(all.some(x=>Array.isArray(x.raw.sourceReceiptRaw)))try { rules=(await loadFeeRuleSet(0)).rules; } catch { /* Missing evidence stays explicitly unknown. */ }
+    all=all.map(({row,raw,warnings})=>{
+      if(!Array.isArray(raw.sourceReceiptRaw))return {row,raw,warnings};
+      const basis=receiptRowBasis(raw,rules);
+      return {row:{...row,settleNote:[row.settleNote,`공급사: ${basis.claim}\n영업자: ${basis.pay}`].filter(Boolean).join('\n')},raw:{...raw,displayReceiptBasis:basis},warnings};
     });
     return { all, published, digest };
   }

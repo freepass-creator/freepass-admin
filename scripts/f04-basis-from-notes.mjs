@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { tsImport } from 'tsx/esm/api';
+const { verifiedReceiptBasis } = await tsImport('../src/domain/settlement/fee.ts', import.meta.url);
 
 const ID = '1BjGBqAjRLEb9ZMKarpQsMF-q_UjdgmEqBAl1uVk8SR4';
 // Representative 2026-10-07: preserve Kang Jisu's employee entries verbatim.
@@ -22,7 +24,7 @@ export function sideBasis(cell = {}) {
     const nums = parts.map(s => Number(s.replace(/개월|%|,/g, '')) / (s.includes('%') ? 100 : 1));
     const computed = nums.reduce((a, b) => a * b, 1);
     const declared = Number(m[2].replaceAll(',', ''));
-    if (nums.some(n => !Number.isFinite(n)) || Math.abs(computed - declared) > 1 || Math.abs(declared - amount) > 1) {
+    if (nums.some(n => !Number.isFinite(n)) || computed !== declared || declared !== amount) {
       return '검증보류(메모·금액 불일치)';
     }
     if (parts.length === 1) return `정액 ${money(amount)}원`;
@@ -32,12 +34,30 @@ export function sideBasis(cell = {}) {
     return `${rate || '산식 확인'} · ${money(amount)}원`;
   }
   if (/HOLD|검증보류|개별.*확인.*필요/.test(note)) return `검증보류 · 기재 ${money(amount)}원`;
-  return `기재 ${money(amount)}원 · 요율 미확인`;
+  return `직접입력액 ${money(amount)}원 · 산식근거 미기록`;
 }
 
 export function makeBasis(claim, pay) {
-  const compact = s => s.includes('요율 미확인') ? '요율 미확인' : s.startsWith('검증보류') ? '검증보류' : s;
+  const compact = s => s;
   return `공급사: ${compact(sideBasis(claim))}\n영업자: ${compact(sideBasis(pay))}`;
+}
+
+/** Exact source-table match only. Multiple/special/manual rules never fall back to a guessed rate. */
+export function sourceRowBasis(values, headers, feeRows) {
+  const raw = c => c?.effectiveValue?.numberValue ?? c?.effectiveValue?.stringValue ?? c?.userEnteredValue?.numberValue ?? c?.userEnteredValue?.stringValue;
+  const get = name => raw(values[headers.indexOf(name)]);
+  const kind = get('렌트구분');
+  const supplier = get('공급사');
+  const term = get('계약기간');
+  const candidates = feeRows.slice(2).map((r,i)=>({v:(r.values??[]).map(raw),row:i+3})).filter(({v})=>v[0]===supplier && v[1]===kind && (v[3]===term || v[3]==='기간 무관'));
+  // Source intake has no reliable 선출고/발주 discriminator; preserve those as unknown.
+  const picked = candidates.length===1 && !candidates[0].v[2] ? candidates[0] : undefined;
+  return ['공급사','영업자'].map((label,i)=>{
+    const cell=values[headers.indexOf(i?'지급액':'청구액')]??{};
+    const noteBasis=sideBasis(cell);
+    const result=verifiedReceiptBasis({amount:raw(cell),rate:get(i?'에이전시수수료율':'공급사수수료율'),rent:get('렌탈료'),term,price:get('차량가액')},picked?{basis:picked.v[4],rate:picked.v[i?6:5],auto:picked.v[7]==='예' && picked.v[12]==='탭 기준 확정',source:`수수료표 ${picked.row}행 · 접수 ${i?'AI':'AD'}`} : undefined);
+    return `${label}: ${result.includes('산식근거 미기록') && !noteBasis.includes('산식근거 미기록') ? noteBasis : result}`;
+  }).join('\n');
 }
 
 function selfTest() {
@@ -45,12 +65,12 @@ function selfTest() {
   assert.match(sideBasis(c(2418, '기준료 74400 × 0.0325 = 2418원')), /^3.25%/);
   assert.match(sideBasis(c(675, '산출식 500 × 36개월 × 3.75% = 675원')), /^3.75%/);
   assert.match(sideBasis(c(100, '산출식: 100 = 100원')), /^정액/);
-  assert.match(sideBasis(c(101, '산출식: 100 = 100원')), /^정액/); // one-won rounding
+  assert.match(sideBasis(c(101, '산출식: 100 = 100원')), /^검증보류/); // no undeclared rounding allowance
   assert.match(sideBasis(c(105, '산출식: 100 = 100원')), /^검증보류/);
   assert.match(sideBasis(c(100, '基準100 × 0.5 = 100원')), /^검증보류/);
   assert.equal(sideBasis({}), '미확정');
-  assert.match(sideBasis(c(0, '기재0원')), /기재 0원/);
-  assert.match(sideBasis(c(100, '부가세 포함합계110 - 부가세10 = 공급가100. 신규 요율 계산 아님')), /요율 미확인/);
+  assert.match(sideBasis(c(0, '기재0원')), /직접입력액 0원/);
+  assert.match(sideBasis(c(100, '부가세 포함합계110 - 부가세10 = 공급가100. 신규 요율 계산 아님')), /산식근거 미기록/);
   assert.match(sideBasis(c(100, 'HOLD: 원본 대조 필요')), /검증보류/);
   assert.match(makeBasis(c(100, '100 = 100원'), {}), /영업자: 미확정/);
   console.log('basis regression: 11 PASS');
@@ -88,8 +108,8 @@ export async function main(argv = process.argv.slice(2)) {
     const meta = fixer.call(['sheets', 'spreadsheets', 'get'], { spreadsheetId: ID, fields: 'sheets.properties' });
     const sheet = meta.sheets.find(s => s.properties.title === '접수');
     if (!sheet || sheet.properties.sheetId !== 406613808) throw new Error('F04_INTAKE_ID_CHANGED');
-    const { rowCount, columnCount } = sheet.properties.gridProperties;
-    if (rowCount * columnCount > 60000) throw new Error('F04_SCAN_LIMIT');
+    const rowCount = Math.min(sheet.properties.gridProperties.rowCount,1000);
+    const columnCount = Math.min(sheet.properties.gridProperties.columnCount,72);
     const snapshot = fixer.call(['sheets', 'spreadsheets', 'get'], {
       spreadsheetId: ID, ranges: [`'접수'!A1:${col(columnCount - 1)}${rowCount}`], includeGridData: true,
       fields: 'sheets(data(rowData(values(userEnteredValue,effectiveValue,formattedValue,note))))',
@@ -118,6 +138,8 @@ export async function main(argv = process.argv.slice(2)) {
     return { column: header[column - 1], plate: value(line[header.indexOf('차량번호')]), company: value(line[header.indexOf('공급사')]) };
   };
   const rows = read();
+  const feeSnapshot=fixer.call(['sheets','spreadsheets','get'],{spreadsheetId:ID,ranges:["'수수료표'!A1:M1000"],includeGridData:true,fields:'sheets(data(rowData(values(userEnteredValue,effectiveValue,formattedValue,note))))'});
+  const feeRows=feeSnapshot.sheets[0].data[0].rowData;
   const h = rows[1].values.map(c => c.formattedValue || '');
   const names = ['차량번호', '접수일', '청구액', '지급액', '산출근거'];
   const ix = Object.fromEntries(names.map(n => {
@@ -133,7 +155,7 @@ export async function main(argv = process.argv.slice(2)) {
     if (HANDS_OFF_PLATES.has(v[ix.차량번호].formattedValue)) { held.push(i + 1); continue; }
     const claim = v[ix.청구액] || {}, pay = v[ix.지급액] || {}, old = v[ix.산출근거] || {};
     if (claim.userEnteredValue?.numberValue === undefined && pay.userEnteredValue?.numberValue === undefined) continue;
-    const text = makeBasis(claim, pay);
+    const text = sourceRowBasis(v,h,feeRows);
     if (old.userEnteredValue?.stringValue === text) { same++; displayRows.push(i); continue; }
     // Never rewrite existing employee text, formula, or a previously generated snapshot.
     if (old.userEnteredValue) { held.push(i + 1); continue; }

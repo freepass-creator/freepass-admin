@@ -119,3 +119,5 @@ UI 변경은 위 actual route 계보 안에서만 수행한다.
 
 ### 2026-10-07 monthly receipt document action
 User directed one month action reuses the settlement actual route. `MonthlyDocumentsForm` sits after the published receipt summary within the existing PanelBody (PC and mobile); SearchBar/QuickFilter/three panels stay in the same positions. Button: 이 달 청구·지급 PDF 생성. Pending disables repeat click, errors remain visible, verified Drive links appear on completion. This is document projection, not financial issuance or cash/payment; partial generation is explicitly incomplete. Machine contract: `settlementMonthlyDocuments`.
+
+2026-10-07 동일 정산 Task: 기존 금액 타일의 산출근거 disclosure와 원본 PDF 산출근거 부록은 기재액 보존·원본 요율 대조 표시다. 기존 청구 내역표 디자인을 유지한다.

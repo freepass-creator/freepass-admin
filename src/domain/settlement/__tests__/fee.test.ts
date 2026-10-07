@@ -1,9 +1,27 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { feeOf, type FeeRuleSet } from '../fee.js';
+import { feeOf, receiptRowBasis, verifiedReceiptBasis, type FeeRuleSet } from '../fee.js';
 import { intakeRecord } from '../intake.js';
 
 const W = '보증금·대여료 회차 완납';
+it('receipt evidence verifies original rate and exact booked amount without changing inputs or reverse inference',()=>{
+  const input={amount:1357200,rate:.0325,rent:870000,term:48,price:null};
+  const rule={basis:'대여료×기간',rate:.0325,auto:true,source:'수수료표 20행'};
+  assert.match(verifiedReceiptBasis(input,rule),/870,000 × 48 × 3.25% = 1,357,200원/);
+  assert.match(verifiedReceiptBasis({...input,amount:1357201},rule),/^검증보류/);
+  assert.match(verifiedReceiptBasis({...input,rate:null},rule),/산식근거 미기록/);
+  assert.match(verifiedReceiptBasis({...input,amount:0},undefined),/직접입력액 0원/);
+  assert.equal(verifiedReceiptBasis({...input,amount:null},rule),'미확정');
+  assert.equal(input.amount,1357200);
+});
+it('receipt rule evidence fails closed on ambiguous forms and does not infer a missing kind',()=>{
+  const raw:Array<unknown>=[];raw[2]='검증공급사';raw[28]='재렌트';raw[10]=48;raw[11]=870000;raw[29]=.0325;raw[34]=.025;
+  const r={sourceReceiptRaw:raw,sourceReceiptClaim:1357200,sourceReceiptPay:1044000};
+  const rule={id:'source20',supplier:'검증공급사',kind:'재렌트' as const,form:'',term:48,basis:'대여료×기간' as const,claim:.0325,pay:.025,auto:true,when:''};
+  assert.match(receiptRowBasis(r,[rule]).pay,/2.5% = 1,044,000원/);
+  assert.match(receiptRowBasis(r,[rule,{...rule,id:'special',form:'개별'}]).claim,/산식근거 미기록/);
+  raw[28]=null;assert.match(receiptRowBasis(r,[rule]).claim,/산식근거 미기록/);
+});
 const set: FeeRuleSet = {
   version: 'test',
   aliases: { 엘씨렌트: '빌린카' },

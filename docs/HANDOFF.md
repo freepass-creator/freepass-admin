@@ -1,5 +1,18 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 ADMIN main 통합 — 원격 반영 전 검증
+
+- 목적: 대표 지시로 갈라진 ADMIN 개발선을 main 하나로 회수한다. 기준 원격 main은 `dd0653491361f54c14fc4ee4cdd9a28b9a7a4bd6`.
+- 로컬 main에 PR #171 `18e2800d`, #179 `203e6ef2`, #180 `c4963f33`, #181 `3b60b100`을 순서대로 병합했다. 원격 main 병합/운영 배포/시트·DB 쓰기는 아직 실행하지 않았다.
+- 충돌 해결: Data 기간별 수수료와 뮤카 경고 테스트 모두 보존; PDF는 접수만 집계하며 비공개 issuer 설정을 유지; 별도 보관 회차 재합산과 공개 issuer 정보 복구를 막았다.
+- 의존성: sharp 0.35.5와 source-map-js 1.2.2로 lockfile 패치. 기존 감사 예외는 확대하지 않았다. production audit gate PASS(high/critical 0, 기존 검토된 moderate 2).
+- 보존: 기본 폴더 `.claude/launch.json` 변경은 stash `recovery-before-admin-main-consolidation-20261007`에 보존했다. 다른 dirty worktree, 출력물, ignored 파일과 기존 작업 브랜치는 삭제하지 않았다.
+- 검증: typecheck/UI SSOT/live-data wiring PASS. 전체 Windows 테스트 874 중 864 PASS/10 FAIL(서버용 Chromium ENOENT). 설치된 Chrome 대체 실행도 template-script timeout이 발생해 테스트 변경은 되돌렸다. 전체 테스트 PASS로 세지 않는다.
+- 독립 검토: Claude gate status RESET_REACHED였으나 실제 호출은 조직의 Claude subscription access 차단으로 FAILED(exit 1). ANSWERED가 아니며 필수 독립 검토 미충족.
+- 개발선: 기존 가장 먼저 열린 PR #171을 통합 검증 경로로 재사용한다. #179/#180/#181은 코드가 통합 원격 main에 포함되고 재조회된 뒤 종료한다. 단일 active_owner는 이 ADMIN 지휘 통합 작업이며 다른 시트 담당의 입력을 다시 실행하지 않는다.
+- 잔여: 오래된 esign-contract-audit 2커밋은 계약 문안/조건 변경이라 별도 검토 필요. intake-ledger-lifecycle은 registry에서 새 ledger에 의해 대체된 작업이다. archive/legacy/dirty 개발선을 통째로 병합하지 않는다.
+- next_start_here: PR #171의 정확한 통합 head와 CI 결과 → 독립 검토 차단 해소 → 원격 main 포함 확인 → 겹친 PR 종료 → exact-SHA 보존 후 오래된 로컬 ref 정리. main 원격 반영은 전체 필수 검증 전에 실행하지 않는다.
+
 ## 2026-10-07 상품·신규접수 준비방 통합 인계
 
 - 원문 Task/출처: `01a11440-e4fd-7fc2-b247-8e6ee83b015a` `[B3Q] FREEPASS-ADMIN · 상품·접수`. 원 담당은 상품 검색·상세·신규접수 준비, 실행 변경 없이 읽기 전용 확인만 완료했다. 대표가 중복방 보관을 직접 요청한 turn `01a1146b-4839-7d23-9482-c9db5a465793`을 보존한다.

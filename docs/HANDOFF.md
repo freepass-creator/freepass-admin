@@ -1,5 +1,14 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 공통 재사용 규칙 적용 증거
+
+- 같은 Task: `ledger-commission-read-20261003` / PR #171. 시작 revision `497718c89cf08c47d165a6c262128c88ab22cee7`, 원격 main `dd065349`. 새 개발선이나 문서를 만들지 않는다.
+- 실제 검색: AI Core `reuse:check`(capability registry·파일명 429·내용 200 검색), 대상 `AGENTS.md`, `docs/BRANCH-WORKFLOW.md`, `docs/HANDOFF.md`, `registry/active-work.json`, AI Core `AI_WORKING_STANDARD.md`, 현재 열린 PR #171/#179/#180/#181. 규칙과 담당/재개점이 이미 있으므로 판정 `COMPOSE_OR_EXTEND`: 기존 AGENTS 진입절과 이 인계만 보강한다.
+- academy: 로컬 main이 원격 main보다 앞서 `LOCAL_BRANCH_NOT_CURRENT` HOLD였다. 새 branch 생성 없이 기존 PR #171 소유 branch를 같은 통합 revision으로 fast-forward한 뒤 재실행해 blockers 0 / READY를 확인했다. 다른 dirty 작업과 직원 입력은 그대로 보존한다.
+- 같은 목적의 Data 금액 동기화 연결은 정산 담당 보고를 읽고 B3Q 상위에 기존 수집 담당의 의존으로 전달했다. 신규 Task·writer·예약·상주 프로세스·운영 데이터 쓰기는 없다. 담당 수령과 실제 자동 실행은 아직 미확인이다.
+- Claude 독립 검토 FAILED와 GHD 단독 merge_owner는 유지한다. 이 규칙 보강은 검토 면제·운영 삭제·자동화 기동 승인으로 해석하지 않는다.
+- next_start_here: AGENTS -3 → 기존 active-work 단일 owner/PR #171 exact head → CI 재조회 → GHD 반영 패킷. 최신 main/head가 바뀌면 다시 대조하고 과거 PASS를 새 revision의 PASS로 사용하지 않는다.
+
 ## 2026-10-07 ADMIN main 통합 — 원격 반영 전 검증
 
 - 목적: 대표 지시로 갈라진 ADMIN 개발선을 main 하나로 회수한다. 기준 원격 main은 `dd0653491361f54c14fc4ee4cdd9a28b9a7a4bd6`.

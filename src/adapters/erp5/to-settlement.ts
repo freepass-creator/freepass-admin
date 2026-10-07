@@ -58,6 +58,11 @@ function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   const v = n(d.claimWritten);
   if (v === null) return { claim: null, why: '청구금액 칸이 비어 있다' };
   if (v !== 0) return { claim: v, why: null };
+  const offer = catalogSnapshotOf(d.catalogSnapshot)?.offer;
+  // Data 봉인 접수의 명시적 0(또는 사유 있는 수동 0)은 미입력 0과 다르다.
+  if (s(d.sourceProductId) && offer && (offer.supplierBillingFee !== undefined || offer.channelPayoutFee !== undefined)) {
+    return { claim: 0, why: null };
+  }
   /* 지급 축이 통보를 지났다(통보·확인·지급) + 청구서가 나갔다 = 끝난 줄 */
   const done = ['통보', '확인', '지급'].includes(String(d.payStage ?? '')) && b(d.billed);
   if (done) return { claim: 0, why: null };                    /* 끝난 줄의 0 — 사실이다 */

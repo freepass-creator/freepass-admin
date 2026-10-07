@@ -313,3 +313,77 @@ it('수수료 직접수정과 환수는 소수 원 금액을 받지 않는다', 
     CLAW_NOW,
   ).ok, false);
 });
+
+describe('Data 기간별 수수료 읽기', () => {
+  const economic = (state: 'KNOWN' | 'ZERO' | 'UNKNOWN' | 'NOT_APPLICABLE', value = 123000) => ({
+    state, amount: state === 'KNOWN' || state === 'ZERO' ? { amount: state === 'ZERO' ? 0 : value, currency: 'KRW' as const } : null,
+    sourceRefs: ['source'], ruleId: 'r-data', policyId: 'p-data', reasonCode: state === 'UNKNOWN' ? 'NO_MATCH' : null,
+  });
+  const dataInput = (claim: ReturnType<typeof economic> | undefined, pay: ReturnType<typeof economic> | undefined): IntakeInput => ({
+    ...base, sourceProductId: 'p1', catalogSnapshot: {
+      capturedAt: 'now', product: {} as NonNullable<IntakeInput['catalogSnapshot']>['product'],
+      offer: { id: 'o1', termMonths: 36, monthlyRent: 900000, deposit: null, prepayment: null, annualMileageKm: null, policyValues: [],
+        ...(claim ? { supplierBillingFee: claim } : {}), ...(pay ? { channelPayoutFee: pay } : {}) },
+    },
+  });
+  it('KNOWN/ZERO override the local table and survive settlement readback', () => {
+    for (const [claim, pay] of [[economic('KNOWN'), economic('ZERO')], [economic('ZERO'), economic('KNOWN')]]) {
+      const input = dataInput(claim, pay);
+      assert.deepEqual(feeCompletenessErrors(input, noRule), []);
+      const r = intakeRecord(input, 0, autoRule);
+      assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [claim.amount!.amount, pay.amount!.amount, 0, 0]);
+      assert.equal(r.vatIncluded, false);
+      assert.match(String(r.settleNote), /Data 기간별 수수료 · p-data · r-data/);
+      const read = toSettlementRow(r, 'id').row;
+      assert.deepEqual([read.money.claim, read.money.pay], [claim.amount!.amount, pay.amount!.amount]);
+    }
+  });
+  it('UNKNOWN/NOT_APPLICABLE and partial publication stay null, never zero or local calculation', () => {
+    for (const state of ['UNKNOWN', 'NOT_APPLICABLE'] as const) {
+      const x = dataInput(economic(state), economic('KNOWN'));
+      assert.deepEqual(feeCompletenessErrors(x, autoRule), []);
+      const r = intakeRecord(x, 0, autoRule);
+      assert.equal(r.claimWritten, null);
+      assert.equal(r.payWritten, 123000);
+      assert.equal(toSettlementRow(r, 'id').row.money.claim, null);
+      if (state === 'UNKNOWN') assert.match(String(r.settleNote), /NO_MATCH/);
+      const reverse = intakeRecord(dataInput(economic('KNOWN'), economic(state)), 0, autoRule);
+      assert.equal(reverse.payWritten, null);
+    }
+    assert.equal(intakeRecord(dataInput(undefined, economic('ZERO')), 0, autoRule).claimWritten, null);
+  });
+  it('product intake without published fields stays 미확정 — never sealed with a local-table amount', () => {
+    const x = dataInput(undefined, undefined);
+    assert.deepEqual(feeCompletenessErrors(x, autoRule), []);
+    const r = intakeRecord(x, 0, autoRule);
+    assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [null, null, 0, 0]);
+    assert.match(String(r.settleNote), /미발행/);
+    const read = toSettlementRow(r, 'id').row;
+    assert.deepEqual([read.money.claim, read.money.pay], [null, null]);
+  });
+  it('direct intake preserves local table behavior', () => {
+    for (const input of [base, { ...dataInput(economic('KNOWN'), economic('ZERO')), sourceProductId: undefined }]) {
+      const r = intakeRecord(input, 0, autoRule);
+      assert.deepEqual([r.claimWritten, r.payWritten], [autoRule.claim, autoRule.pay]);
+      assert.equal(feeCompletenessErrors(input, noRule).length, 1);
+    }
+  });
+  it('manual overrides require a reason for Data differences and unresolved amounts', () => {
+    for (const fee of [economic('KNOWN'), economic('ZERO'), economic('UNKNOWN'), economic('NOT_APPLICABLE')]) {
+      const x = { ...dataInput(fee, economic('ZERO')), feeManual: { claim: 900, pay: null, reason: '' } };
+      assert.equal(feeManualErrors(x, autoRule).length, 1);
+      x.feeManual.reason = '공급사 확인';
+      assert.deepEqual(feeManualErrors(x, noRule), []);
+      const r = intakeRecord(x, 0, autoRule);
+      assert.equal(r.claimWritten, 900);
+      assert.equal(r.payWritten, 0);
+      assert.match(String(r.settleNote), /공급사 확인/);
+      assert.match(String(r.settleNote), /Data 기간별 수수료/);
+    }
+    const same = { ...dataInput(economic('KNOWN'), economic('ZERO')), feeManual: { claim: 123000, pay: 0, reason: '' } };
+    assert.deepEqual(feeManualErrors(same, autoRule), []);
+    const zero = { ...dataInput(economic('UNKNOWN'), economic('UNKNOWN')), feeManual: { claim: 0, pay: null, reason: '무상 확인' } };
+    const read = toSettlementRow(intakeRecord(zero, 0, autoRule), 'id').row;
+    assert.deepEqual([read.money.claim, read.money.pay], [0, null]);
+  });
+});

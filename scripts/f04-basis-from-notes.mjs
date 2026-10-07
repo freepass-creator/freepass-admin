@@ -56,7 +56,7 @@ export function sourceRowBasis(values, headers, feeRows) {
     const cell=values[headers.indexOf(i?'지급액':'청구액')]??{};
     const noteBasis=sideBasis(cell);
     const result=verifiedReceiptBasis({amount:raw(cell),rate:get(i?'에이전시수수료율':'공급사수수료율'),rent:get('렌탈료'),term,price:get('차량가액')},picked?{basis:picked.v[4],rate:picked.v[i?6:5],auto:picked.v[7]==='예' && picked.v[12]==='탭 기준 확정',source:`수수료표 ${picked.row}행 · 접수 ${i?'AI':'AD'}`} : undefined);
-    return `${label}: ${result.includes('산식근거 미기록') && !noteBasis.includes('산식근거 미기록') ? noteBasis : result}`;
+    return `${label}: ${result.includes('산식근거 미기록') && noteBasis!=='미확정' && !noteBasis.includes('산식근거 미기록') ? noteBasis : result}`;
   }).join('\n');
 }
 

@@ -87,5 +87,661 @@
       "mode": "merged",
       "reason": "PR #135 is superseded only to comply with work/<project-id>/<work-id> naming. Its entire commit is preserved as an ancestor of the replacement workline; do not delete unless merged."
     }
-  ]
+  ],
+  "audit_20261007": {
+    "observed_at": "2026-10-07T04:00:10.382Z",
+    "remote_main": "dd0653491361f54c14fc4ee4cdd9a28b9a7a4bd6",
+    "local_integration": "f985fde93e101019c9b2d6593b9f36c24e030841",
+    "merge_owner": "GHD 01a10ed9-d0c8-79c1-926c-fc694ace1e1c",
+    "local_branch_count": 39,
+    "remote_heads": [
+      {
+        "sha": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c",
+        "ref": "refs/heads/codex/f04-two-tab-restore"
+      },
+      {
+        "sha": "dd0653491361f54c14fc4ee4cdd9a28b9a7a4bd6",
+        "ref": "refs/heads/main"
+      },
+      {
+        "sha": "368c87125552b612133cb8f8c155ff218438d77d",
+        "ref": "refs/heads/work/freepass-admin/ledger-commission-read-20261003"
+      },
+      {
+        "sha": "203e6ef25eecb992d0441286623896951fc92b37",
+        "ref": "refs/heads/work/freepass-admin/mewcar-fee-rule-v4-20261005"
+      },
+      {
+        "sha": "c4963f330910638bdb0fc8870b1a88f2b173e303",
+        "ref": "refs/heads/work/freepass-admin/settlement-issuer-private-20261005"
+      }
+    ],
+    "rows": [
+      {
+        "branch": "archive/codex/admin-functional-v1",
+        "sha": "cc21cfe80869352e49be434478f53a5c22d1fd09",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 100
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 100
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/admin-mobile-five-functions-ai-core",
+        "sha": "44a070d9bacc40c479edae841306d53485df8ccf",
+        "remoteMain": {
+          "behind": 1661,
+          "ahead": 36
+        },
+        "localIntegration": {
+          "behind": 1682,
+          "ahead": 36
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/admin-mobile-five-functions-mockup",
+        "sha": "025064c56876fbbba76ee408292396bd70d5cd11",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 261
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 261
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/ai-core-starter-kit-20260922",
+        "sha": "d95aeb40bb9f8a9da3b7b5ec9bc2559e5652610a",
+        "remoteMain": {
+          "behind": 1681,
+          "ahead": 2
+        },
+        "localIntegration": {
+          "behind": 1702,
+          "ahead": 2
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/ai-core-starter-kit-20260922-v2",
+        "sha": "5b4ff75b5ee4413e3ce8ff291364b07aa9cd47f1",
+        "remoteMain": {
+          "behind": 1642,
+          "ahead": 7
+        },
+        "localIntegration": {
+          "behind": 1663,
+          "ahead": 7
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/fix-pr47-selected-comments",
+        "sha": "0b31212cb8e25edcd9ddc0b416ff0bcf886ccfd3",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 266
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 266
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/recovery-admin-878646",
+        "sha": "878646bb0459acf0007e0f7f36dfe0c2900c6e6a",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 98
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 98
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/review-gpt-handoff-audit",
+        "sha": "b1c1b558cb63db5105dff725a7804db5de025368",
+        "remoteMain": {
+          "behind": 1662,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 1683,
+          "ahead": 1
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/codex/vehicle-history-provenance",
+        "sha": "843267f402a668997a95fddc6dbd1cd20e1c5514",
+        "remoteMain": {
+          "behind": 179,
+          "ahead": 3
+        },
+        "localIntegration": {
+          "behind": 200,
+          "ahead": 3
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/review-pr13",
+        "sha": "26b1692b688f7205a01bfeec3f1540bc4410694e",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 305
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 305
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/review-pr39",
+        "sha": "31abfe23aca3d37068ec98d23af70bf2bd04736e",
+        "remoteMain": {
+          "behind": 1684,
+          "ahead": 313
+        },
+        "localIntegration": {
+          "behind": 1705,
+          "ahead": 313
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/review-pr40",
+        "sha": "9d527251af74cd2ce9a38714d331867eba2acbbe",
+        "remoteMain": {
+          "behind": 1684,
+          "ahead": 326
+        },
+        "localIntegration": {
+          "behind": 1705,
+          "ahead": 326
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/review-pr46",
+        "sha": "a13bfe2f656c4c70ca8ef81bef21bf8a646da47d",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 259
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 259
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/review-pr47",
+        "sha": "21ec55eb579ab6bc08e8f9c92cf7589d2b50940f",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 265
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 265
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/work/claude/esign-center-v1",
+        "sha": "878646bb0459acf0007e0f7f36dfe0c2900c6e6a",
+        "remoteMain": {
+          "behind": 1756,
+          "ahead": 98
+        },
+        "localIntegration": {
+          "behind": 1777,
+          "ahead": 98
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/work/freepass-admin/AI-CORE-KIT-20260930",
+        "sha": "fec4e0e6bb2f2eb67788b9981ea7f1439f1c05ea",
+        "remoteMain": {
+          "behind": 70,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 91,
+          "ahead": 1
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "archive/work/ops/login-google-only",
+        "sha": "1b4b5540215953cc880de1f66d4c79cbe31c5c85",
+        "remoteMain": {
+          "behind": 183,
+          "ahead": 11
+        },
+        "localIntegration": {
+          "behind": 204,
+          "ahead": 11
+        },
+        "patchCounts": null,
+        "verdict": "HISTORICAL_PRESERVE"
+      },
+      {
+        "branch": "codex/esign-contract-audit",
+        "sha": "23a35542f29bdafa22cc488b033d9402422a7a5e",
+        "remoteMain": {
+          "behind": 46,
+          "ahead": 2
+        },
+        "localIntegration": {
+          "behind": 67,
+          "ahead": 2
+        },
+        "patchCounts": {
+          "unique": 2,
+          "equivalent": 0
+        },
+        "verdict": "CONTRACT_CHANGE_REVIEW_HOLD"
+      },
+      {
+        "branch": "codex/f04-two-tab-restore",
+        "sha": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c",
+        "remoteMain": {
+          "behind": 0,
+          "ahead": 9
+        },
+        "localIntegration": {
+          "behind": 12,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "codex/intake-ledger-lifecycle",
+        "sha": "f38dbce7bf1930fda4264d5c172491af5c9d3d28",
+        "remoteMain": {
+          "behind": 30,
+          "ahead": 12
+        },
+        "localIntegration": {
+          "behind": 51,
+          "ahead": 12
+        },
+        "patchCounts": {
+          "unique": 12,
+          "equivalent": 0
+        },
+        "verdict": "SUPERSEDED_BY_CURRENT_LEDGER"
+      },
+      {
+        "branch": "main",
+        "sha": "f985fde93e101019c9b2d6593b9f36c24e030841",
+        "remoteMain": {
+          "behind": 0,
+          "ahead": 19
+        },
+        "localIntegration": {
+          "behind": 0,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "LOCAL_INTEGRATION_PENDING_REMOTE"
+      },
+      {
+        "branch": "pr-167b",
+        "sha": "5f9d48b7cc2e90cdfab977e637fc8f57efe6782e",
+        "remoteMain": {
+          "behind": 9,
+          "ahead": 0
+        },
+        "localIntegration": {
+          "behind": 30,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "pr-168",
+        "sha": "e25af13a51c016f2859ad0605ee36fc773669b81",
+        "remoteMain": {
+          "behind": 30,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 51,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "pr-169",
+        "sha": "bc2f2b639874bd601e61e67f6addded0d16fe3ad",
+        "remoteMain": {
+          "behind": 29,
+          "ahead": 0
+        },
+        "localIntegration": {
+          "behind": 50,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "pr-169b",
+        "sha": "0479123c891457e3c124f1a35e972ac672f3567e",
+        "remoteMain": {
+          "behind": 21,
+          "ahead": 0
+        },
+        "localIntegration": {
+          "behind": 42,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "pr-171",
+        "sha": "18e2800d25213970772de464e2ecc45400211a16",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 3
+        },
+        "localIntegration": {
+          "behind": 20,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "pr-172",
+        "sha": "ffe7416994129f1e964fabb19ab1daedcc62d8eb",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 23,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "pr-173",
+        "sha": "376357051aba7d77817a12accd6fd217454b3a2e",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 3
+        },
+        "localIntegration": {
+          "behind": 23,
+          "ahead": 3
+        },
+        "patchCounts": {
+          "unique": 3,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "pr-176",
+        "sha": "ae6a161fe9dd0842f646a38e20f72d67b49b7b72",
+        "remoteMain": {
+          "behind": 1,
+          "ahead": 2
+        },
+        "localIntegration": {
+          "behind": 22,
+          "ahead": 2
+        },
+        "patchCounts": {
+          "unique": 2,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "pr-177",
+        "sha": "b4d25cf6769b1277ad2600cfad2e7df045943335",
+        "remoteMain": {
+          "behind": 1,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 22,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "work/freepass-admin/AI-CORE-KIT-V2-20260930",
+        "sha": "ee3f290cf60fb9bc41034e1266de977e03daa727",
+        "remoteMain": {
+          "behind": 62,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 83,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "OLD_GENERATED_KIT_PRESERVE"
+      },
+      {
+        "branch": "work/freepass-admin/installment-claims-20261004",
+        "sha": "376357051aba7d77817a12accd6fd217454b3a2e",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 3
+        },
+        "localIntegration": {
+          "behind": 23,
+          "ahead": 3
+        },
+        "patchCounts": {
+          "unique": 3,
+          "equivalent": 0
+        },
+        "verdict": "UNIQUE_PATCH_REVIEW_REQUIRED"
+      },
+      {
+        "branch": "work/freepass-admin/intake-sheet-20261003",
+        "sha": "e1b94330954d6425fd662363b58390eeaf7dc740",
+        "remoteMain": {
+          "behind": 8,
+          "ahead": 0
+        },
+        "localIntegration": {
+          "behind": 29,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "work/freepass-admin/ledger-commission-read-20261003",
+        "sha": "18e2800d25213970772de464e2ecc45400211a16",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 3
+        },
+        "localIntegration": {
+          "behind": 20,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "work/freepass-admin/mewcar-fee-rule-20261003",
+        "sha": "cceeaaf387ad19170ed5a6abdfe4d0630673461c",
+        "remoteMain": {
+          "behind": 2,
+          "ahead": 5
+        },
+        "localIntegration": {
+          "behind": 23,
+          "ahead": 5
+        },
+        "patchCounts": {
+          "unique": 5,
+          "equivalent": 0
+        },
+        "verdict": "SUPERSEDED_VARIANT_PRESERVE"
+      },
+      {
+        "branch": "work/freepass-admin/mewcar-fee-rule-v2-20261005",
+        "sha": "b4d25cf6769b1277ad2600cfad2e7df045943335",
+        "remoteMain": {
+          "behind": 1,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 22,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "SUPERSEDED_VARIANT_PRESERVE"
+      },
+      {
+        "branch": "work/freepass-admin/mewcar-fee-rule-v3-20261005",
+        "sha": "f019f3e581a0023e6882d588df7b9449bb1ce1f3",
+        "remoteMain": {
+          "behind": 1,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 22,
+          "ahead": 1
+        },
+        "patchCounts": {
+          "unique": 1,
+          "equivalent": 0
+        },
+        "verdict": "SUPERSEDED_VARIANT_PRESERVE"
+      },
+      {
+        "branch": "work/freepass-admin/mewcar-fee-rule-v4-20261005",
+        "sha": "203e6ef25eecb992d0441286623896951fc92b37",
+        "remoteMain": {
+          "behind": 0,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 20,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      },
+      {
+        "branch": "work/freepass-admin/settlement-issuer-private-20261005",
+        "sha": "c4963f330910638bdb0fc8870b1a88f2b173e303",
+        "remoteMain": {
+          "behind": 0,
+          "ahead": 1
+        },
+        "localIntegration": {
+          "behind": 20,
+          "ahead": 0
+        },
+        "patchCounts": {
+          "unique": 0,
+          "equivalent": 0
+        },
+        "verdict": "IN_LOCAL_INTEGRATION_NOT_YET_REMOTE"
+      }
+    ],
+    "executed_deletions": 0,
+    "old_candidates_are_not_new_authorization": true,
+    "worktrees_and_ignored_assets": "PRESERVED_WITHOUT_DELETE_OR_MOVE",
+    "windows_pdf_tests": "874 total / 864 PASS / 10 FAIL bundled Chromium ENOENT",
+    "linux_ci": {
+      "head": "368c87125552b612133cb8f8c155ff218438d77d",
+      "checks": "ALL_SUCCESS: CI,Canon Guard,Branch Hygiene,Dependency audit,core-domain,backend,freepass-data persistence,Next runtime,Visual QA"
+    },
+    "independent_review": {
+      "status": "FAILED",
+      "reason": "Claude organization subscription access disabled",
+      "merge_gate": "HOLD_FOR_REQUIRED_REVIEW"
+    }
+  }
 }

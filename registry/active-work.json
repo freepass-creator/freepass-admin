@@ -71,7 +71,7 @@
       "absorbed_pr_heads": {
         "179": "203e6ef25eecb992d0441286623896951fc92b37",
         "180": "c4963f330910638bdb0fc8870b1a88f2b173e303",
-        "181": "3b60b100f91697c280156ea63b5ae56376bb1fed"
+        "181": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c"
       },
       "production_cutover_authorized": false,
       "next_start_here": "통합 PR171 exact head CI 확인 → 필수 독립 검토 차단 해결 → GHD 단독 main 반영 → 원격 readback → 중복 PR/보존 ref 정리"

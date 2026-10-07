@@ -70,3 +70,37 @@ test('하허호 방식으로 확정 출고만 남기고 지급환수는 별도 �
   for (const expected of ['3건 (출고 2건 + 지급환수 1건)','프리패스 <small>2건 (출고 1 + 지급환수 1)','오플 <small>1건','지급환수 · 계약 해지','지급환수 소계','-100,000','총합계']) assert.ok(html.includes(expected));
   for (const excluded of ['취소행','지급제외행','보류행','ROUND','HOLD','지급 제외']) assert.ok(!html.includes(excluded));
 });
+
+
+import {buildReceiptDocuments,receiptVat,type ReceiptDocumentConfig} from '../invoice-document';
+import {invoiceDocHtml,invoicePageHtml,type DocumentBranding} from '../../../adapters/erp5/settlement-invoice-html';
+const documentParty={name:'검증',bizNo:'1234567890',ceo:'',address:'',phone:'',bank:'',account:'',holder:''};
+const documentConfig:ReceiptDocumentConfig={issuer:documentParty,parties:{공급:{...documentParty,name:'공급 법인'},유니오토모빌:{...documentParty,name:'유니 법인'}}};
+const booked=(claim:number,pay:number,extra:Record<string,unknown>={})=>({sourceReceiptRaw:Array.from({length:20},(_,i)=>i===18?'2026':i===19?'09':null),sourceReceiptClaim:claim,sourceReceiptPay:pay,supplier:'공급',channel:'유니오토',plate:'검증차량',receivedAt:'2026-09-01',...extra});
+test('one month documents use signed row VAT, same-entity channel and legal receiver; original amounts remain unchanged',()=>{
+  const rows=[booked(15,15),booked(0,-5,{channel:'유니오토모빌',receivedAt:'',settlementEntryKind:'OVERPAYMENT_CORRECTION'}),booked(999,999,{cancelled:true})];
+  const original=JSON.stringify(rows);
+  const docs=buildReceiptDocuments({month:'2026-09',rows,summary:{count:2,claimAmount:15,payAmount:10},config:documentConfig});
+  assert.equal(docs.length,2);assert.equal(docs[1].party,'유니오토모빌');assert.equal(docs[1].receiver.name,'유니 법인');
+  assert.deepEqual([docs[0].supply,docs[0].vat,docs[1].supply,docs[1].vat],[15,2,10,1]);
+  assert.equal(receiptVat(-5),-1);assert.equal(receiptVat(0),0);assert.equal(JSON.stringify(rows),original);
+  assert.ok(docs[1].missing.includes('접수일 미기재 건 포함'));
+});
+test('published counts, missing supply, legacy amounts and sums cannot silently create documents',()=>{
+  for(const [rows,summary] of [
+    [[booked(100,80)],{count:2,claimAmount:100,payAmount:80}],
+    [[booked(100,80,{sourceReceiptClaim:null,claimWritten:100})],{count:1,claimAmount:100,payAmount:80}],
+    [[booked(100,80)],{count:1,claimAmount:101,payAmount:80}],
+  ] as [Record<string,unknown>[],{count:number;claimAmount:number;payAmount:number}][]){
+    assert.throws(()=>buildReceiptDocuments({month:'2026-09',rows,summary,config:documentConfig}));
+  }
+});
+test('unknown/held flags stay visible in printable document and original pagination retains all 24 lines',()=>{
+  const rows=Array.from({length:24},(_,i)=>booked(100,80,{plate:String(i),billHold:i===0,customer:'<script>bad</script>'}));
+  const d=buildReceiptDocuments({month:'2026-09',rows,summary:{count:24,claimAmount:2400,payAmount:1920},config:documentConfig})[0];
+  const branding={name:'검증',markMain:'freepass',markSub:'mobility',erpMain:'freepass',erpSub:'erp',tagline:'검증'} as DocumentBranding;
+  const html=invoicePageHtml('검증',invoiceDocHtml(d,{branding,issuedAt:1}));
+  assert.equal((html.match(/class="doc"/g)??[]).length,2);
+  assert.ok(html.includes('공급사 확정 별도 확인'));assert.ok(html.includes('일정 확인 필요'));
+  assert.ok(!html.includes('class="warn noprint"'));assert.ok(!html.includes('<script>bad</script>'));
+});

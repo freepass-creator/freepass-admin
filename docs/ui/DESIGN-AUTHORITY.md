@@ -115,3 +115,7 @@ UI 변경은 한 변경에서 다음을 같이 갱신한다.
 5. 이 authority 문서
 
 UI 변경은 위 actual route 계보 안에서만 수행한다.
+
+
+### 2026-10-07 monthly receipt document action
+User directed one month action reuses the settlement actual route. `MonthlyDocumentsForm` sits after the published receipt summary within the existing PanelBody (PC and mobile); SearchBar/QuickFilter/three panels stay in the same positions. Button: 이 달 청구·지급 PDF 생성. Pending disables repeat click, errors remain visible, verified Drive links appear on completion. This is document projection, not financial issuance or cash/payment; partial generation is explicitly incomplete. Machine contract: `settlementMonthlyDocuments`.

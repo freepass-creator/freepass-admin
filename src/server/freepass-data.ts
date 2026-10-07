@@ -231,3 +231,9 @@ export const today = () => {
   const d = new Date(Date.now() + 9 * 3600_000);
   return d.toISOString().slice(0, 10);
 };
+
+/** Same gateway, same settlement repository; document projections do not issue invoices. */
+export async function generateMonthlyReceiptDocuments(month:string,actor:string){
+  const {generateReceiptDocuments}=await import('../adapters/erp5/settlement-documents');
+  return generateReceiptDocuments(settlements,month,actor);
+}

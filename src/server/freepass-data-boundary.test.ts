@@ -241,3 +241,70 @@ test('operator parity audit is read-only, bounded and fail-closed', async () => 
   });
   assert.equal(missing.readiness, 'NOT_CONFIGURED');
 });
+
+
+import {saveReceiptPdf,assertUniqueDocumentIds,verifyReceiptDocumentRun} from '../adapters/erp5/settlement-documents';
+import {createHash} from 'node:crypto';
+test('Drive PDF retries verify exact owner, folder and bytes instead of duplicating or overwriting a changed same-input artifact',async()=>{
+  const saved=globalThis.fetch;const bytes=new Uint8Array(Buffer.from('test-pdf-bytes'));
+  const md5=createHash('md5').update(bytes).digest('hex'),sha256=createHash('sha256').update(bytes).digest('hex');
+  let writes=0,changed=false;
+  try{
+    globalThis.fetch=async(_url,init)=>{
+      if(init?.method==='POST'||init?.method==='PATCH')writes++;
+      return Response.json({id:'existing',name:'existing.pdf',mimeType:'application/pdf',parents:['folder'],owners:[{emailAddress:'pyh@teamjpk.com'}],trashed:false,md5Checksum:changed?'changed':md5,webViewLink:'https://drive.google.com/file/d/existing/view',appProperties:{receiptRun:'run',sha256}});
+    };
+    const result=await saveReceiptPdf({mode:'oauth',token:'test-only'},'folder','existing','existing.pdf','run',bytes,true);
+    assert.equal(result.md5,md5);assert.equal(writes,0);
+    changed=true;await assert.rejects(()=>saveReceiptPdf({mode:'oauth',token:'test-only'},'folder','existing','existing.pdf','run',bytes,true),/동일 입력 PDF/);
+    assert.equal(writes,0);
+  }finally{globalThis.fetch=saved;}
+});
+
+test('document ID reservations cannot alias two parties onto one Drive file',()=>{
+  for(const ids of [['abcdefghij','abcdefghij'],['','klmnopqrst'],['abcdefghij'],['abcdefghij',12]])assert.throws(()=>assertUniqueDocumentIds(ids,2));
+  assert.doesNotThrow(()=>assertUniqueDocumentIds(['abcdefghij','klmnopqrst'],2));
+});
+
+import puppeteer from 'puppeteer-core';
+import {generateReceiptDocuments,type ReceiptDocumentRepository} from '../adapters/erp5/settlement-documents';
+test('a live ledger change during batch rendering cannot be marked READY; missing existing targets never write',async()=>{
+  const env={...process.env},savedFetch=globalThis.fetch,savedLaunch=puppeteer.launch;
+  let reads=0,completed=false;
+  const files=new Map<string,Record<string,unknown>>();
+  const row={sourceReceiptRaw:Array.from({length:20},(_,i)=>i===18?2026:i===19?9:null),sourceReceiptClaim:100,sourceReceiptPay:80,supplier:'공급',channel:'채널',plate:'검증',receivedAt:'2026-09-01'};
+  const party={name:'검증',bizNo:'1234567890',ceo:'',address:'',phone:'',bank:'',account:'',holder:''};
+  const config={issuer:party,parties:{공급:party,채널:party},branding:{name:'검증',markMain:'freepass',markSub:'mobility',erpMain:'freepass',erpSub:'erp',tagline:'검증',bizNo:'1234567890',ceo:'',addr:'',web:'',erp:'',staff:'',staffPhone:'',phone:'',email:'',fax:''},folderId:'folder123456',existingFiles:{'2026-09|공급사|공급':{id:'supplier123456',name:'공급.pdf'},'2026-09|영업채널|채널':{id:'channel123456',name:'채널.pdf'}}};
+  const repo={
+    receiptDocumentPolicy:async()=>({}),receiptDocumentRun:async()=>null,
+    listWithPublishedReceipts:async()=>({all:[{raw:row}],published:{status:'READY',months:{'2026-09':{count:1,claimAmount:100,payAmount:80}}},digest:++reads>=3?'changed':'same'}),
+    beginReceiptDocumentRun:async(_key:string,month:string,fileIds:string[])=>({key:_key,month,fileIds,status:'RUNNING',createdAt:1791330000000,files:[]}),
+    finishReceiptDocumentRun:async(_run:unknown,_files:unknown,complete:boolean)=>{completed=complete;},
+  } as unknown as ReceiptDocumentRepository;
+  const pdf=Buffer.from('%PDF-1.4\n/CreationDate (D:20260925083100+00\'00\')\n/ModDate (D:20260925083100+00\'00\')\n'+'x'.repeat(1200)+'\n%%EOF');
+  try{
+    Object.assign(process.env,{VERCEL:'1',SETTLEMENT_DRIVE_CLIENT_ID:'test',SETTLEMENT_DRIVE_CLIENT_SECRET:'test',SETTLEMENT_DRIVE_REFRESH_TOKEN:'test',SETTLEMENT_DOCUMENT_CONFIG_JSON:JSON.stringify(config),SETTLEMENT_CHROMIUM_EXECUTABLE_PATH:'test'});delete process.env.SETTLEMENT_DOCUMENT_CONFIG_FILE;
+    for(const target of Object.values(config.existingFiles))files.set(target.id,{id:target.id,name:target.name,mimeType:'application/pdf',parents:[config.folderId],owners:[{emailAddress:'pyh@teamjpk.com'}],md5Checksum:'old',webViewLink:'https://drive.google.com/file/d/'+target.id+'/view'});
+    globalThis.fetch=async(url,init)=>{
+      const u=new URL(String(url));if(u.hostname==='oauth2.googleapis.com')return Response.json({access_token:'test'});
+      const id=u.pathname.split('/').at(-1)!;if(id===config.folderId)return Response.json({mimeType:'application/vnd.google-apps.folder',capabilities:{canAddChildren:true},owners:[{emailAddress:'pyh@teamjpk.com'}]});
+      const f=files.get(id);assert.ok(f);
+      if(init?.method==='PATCH'){
+        const blob=Buffer.from(await (init.body as Blob).arrayBuffer()),text=blob.toString('latin1');const start=text.indexOf('{'),end=text.indexOf('\r\n--',start);const metadata=JSON.parse(blob.subarray(start,end).toString('utf8'));
+        const bstart=text.indexOf('%PDF-'),bend=text.indexOf('\r\n--',bstart);const bytes=blob.subarray(bstart,bend);Object.assign(f,metadata,{md5Checksum:createHash('md5').update(bytes).digest('hex')});
+      }
+      return Response.json(f);
+    };
+    puppeteer.launch=(async()=>({newPage:async()=>({setJavaScriptEnabled:async()=>{},setRequestInterception:async()=>{},on:()=>{},setContent:async()=>{},evaluate:async()=>({fonts:true,images:true,pages:1,overflow:false}),emulateMediaType:async()=>{},pdf:async()=>pdf,close:async()=>{}}),close:async()=>{}})) as unknown as typeof puppeteer.launch;
+    await assert.rejects(()=>generateReceiptDocuments(repo,'2026-09','tester'),/원장이 변경/);assert.equal(completed,false);
+    reads=0;process.env.SETTLEMENT_DOCUMENT_CONFIG_JSON=JSON.stringify({...config,existingFiles:{}});
+    await assert.rejects(()=>generateReceiptDocuments(repo,'2026-09','tester'),/기존 문서 연결/);assert.equal(completed,false);
+  }finally{puppeteer.launch=savedLaunch;globalThis.fetch=savedFetch;for(const k of Object.keys(process.env))if(!(k in env))delete process.env[k];Object.assign(process.env,env);}
+});
+
+test('a commit response alone never proves the READY run persisted with the intended artifacts',()=>{
+  const files=[{id:'abcdefghij',name:'검증.pdf',url:'https://drive.google.com/file/d/abcdefghij/view',md5:'md5',sha256:'sha'}];
+  const run={key:'k',month:'2026-09',status:'READY' as const,fileIds:['abcdefghij'],files,createdAt:1,leaseUntil:0,actor:'tester',attempt:'a'};
+  for(const bad of [null,{...run,status:'RETRY' as const},{...run,files:[{...files[0],md5:'wrong'}]},{...run,fileIds:['wrong']}])assert.throws(()=>verifyReceiptDocumentRun(bad,'k','2026-09',files));
+  assert.deepEqual(verifyReceiptDocumentRun(run,'k','2026-09',files),files);
+});

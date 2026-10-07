@@ -519,3 +519,9 @@ Domain/core suite after snapshot hardening:
 - Intake/Performance/Settlement/Clawback including snapshot tests: 115/115 PASS
 
 Production Firestore security rules/IAM remain a separate deployment verification item; the emulator currently uses permissive rules.
+
+
+## 2026-10-07 same Task: monthly Drive documents
+Purpose: one existing settlement button generates both party axes from Firestore booked receipts, without issuing/reissuing financial records. Baseline 5a4afa44, PR171 single writer unchanged. academy READY after switching existing Work branch; untracked user output/pdf preserved and locally excluded, no deletion. reuse:check COMPOSE_OR_EXTEND PASS: existing invoice-document / IssueForm / gateway / Chromium and user-named ERP4 pure HTML. CREATE_NEW_JUSTIFIED: Admin has no party-axis original-template adapter or Drive PDF persistence boundary; a narrow adapter ports the explicit original template (not a new calculation engine), receives private issuer configuration, and preserves existing invoices. No new Task, collection, process or scheduler. Production authentication/configuration and merge ownership still require live evidence.
+
+Validation: related 24/24 tests, typecheck, production build, UI SSOT and data wiring PASS. Independent read-only Codex CLI returned code PASS with exit 0; Claude subscription remains FAILED, not PASS. Actual local Firestore gateway/Chrome/gws generated all 16 existing September Drive IDs and verified metadata/checksums/READY readback; same-input retry reused the same IDs with unchanged ledger digest. Private operational receipt engineRuntime retains latest artifact evidence. Authentication stays ON; actual browser button click is LOGIN_PENDING. Other months without an approved existing target mapping fail closed; no auto-create authorization inferred. Remote main merge/deployment remain pending designated GHD ownership handoff. Originals and other worktrees preserved.

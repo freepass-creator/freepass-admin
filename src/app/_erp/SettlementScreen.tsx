@@ -19,7 +19,7 @@ import {
   type Clawback, type LedgerGroup, type LedgerGroupFilter,
 } from '../../domain/settlement/ledgers';
 import { sp, txt } from '../_fn/fmt';
-import { IssueForm } from '../settlement/LifeForms';
+import { IssueForm, MonthlyDocumentsForm } from '../settlement/LifeForms';
 import {
   hrefWith, Panel, PanelBody, PanelFoot, PanelHead, PanelState, QuickFilter, RowCard, RowCards, Screen, SearchBar, won0, type Facet, type Tone,
 } from './parts';
@@ -163,7 +163,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
         ]} />
         <PanelBody><p role="status">{published
           ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
-          : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
+          : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p><MonthlyDocumentsForm month={month} disabled={!published}/>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 
       <Panel kind="detail">

@@ -5,7 +5,7 @@
  *   ⚠ 운영 원장(ERP5)에 바로 쓴다. 모양 확인 때 누르지 않는다.
  */
 import { startTransition, useActionState, useState } from 'react';
-import { createClaimLinkAction, issueInvoiceAction, lifecycleAction, revokeClaimLinkAction, type FormState } from '../intake/actions';
+import { createClaimLinkAction, generateMonthlyDocumentsAction, issueInvoiceAction, lifecycleAction, revokeClaimLinkAction, type FormState } from '../intake/actions';
 import { Notice } from '../_design/Primitives';
 
 const 보냄 = (act: (f: FormData) => void) => (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,4 +132,15 @@ export function ClaimLink({ month, axis, party, live, openCount, openedAt, failC
       {오류(made)}{오류(gone)}
     </div>
   );
+}
+
+/** Whole month, both axes, one explicit action. Server enforces source and Drive guards. */
+export function MonthlyDocumentsForm({month,disabled=false}:{month:string;disabled?:boolean}){
+  const [state,action,pending]=useActionState<FormState & {files?:{url:string;name:string}[];partial?:boolean},FormData>(generateMonthlyDocumentsAction,{errors:[]});
+  return <form onSubmit={보냄(action)} aria-busy={pending}>
+    <input type="hidden" name="month" value={month}/>
+    <button type="submit" className="primary" disabled={disabled||pending}>{pending?'정산서 생성 중…':'이 달 청구·지급 PDF 생성'}</button>
+    {오류(state)}
+    {state.files && <div role="status">{state.partial?'부분 생성 · 전체 검증 미완료 · ':''}{state.files.length}개 저장 확인<ul>{state.files.map(f=><li key={f.url}><a href={f.url} target="_blank" rel="noopener noreferrer">{f.name}</a></li>)}</ul></div>}
+  </form>;
 }

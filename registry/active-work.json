@@ -60,13 +60,13 @@
   "active": [
     {
       "work_order": "ledger-commission-read-20261003",
-      "objective": "대표 2026-10-07 ADMIN 분산 개발선의 단일 main 통합. 기존 PR171에서 PR179/180/181 변경과 의존성 패치를 함께 검증한다.",
+      "objective": "대표 2026-10-07 ADMIN 분산 개발선의 단일 main 통합. 기존 PR171에서 PR179/180/181 변경과 의존성 패치를 함께 검증한다. 기존 월별 정산 버튼에 기록액 기반 공급사·채널 PDF 투영을 같은 Task로 확장한다.",
       "branch": "work/freepass-admin/ledger-commission-read-20261003",
       "writer": "ADMIN 지휘 Codex / 01a11440-b664-7360-abdc-21a1b0dd9c3b",
       "active_owner": "01a11440-b664-7360-abdc-21a1b0dd9c3b",
       "merge_owner": "GHD 01a10ed9-d0c8-79c1-926c-fc694ace1e1c",
-      "reviewer": "Claude 독립 검토 FAILED: organization subscription access disabled; required review remains unresolved",
-      "phase": "INTEGRATION_VERIFICATION",
+      "reviewer": "Claude subscription FAILED 유지; 독립 Codex CLI read-only 코드 검토 PASS(exit 0, critical/high 0). 실제 로그인 UI/merge 별도.",
+      "phase": "PR_VERIFICATION_LOCAL_ENGINE_VERIFIED_UI_LOGIN_PENDING",
       "integration_pr": 171,
       "absorbed_pr_heads": {
         "179": "203e6ef25eecb992d0441286623896951fc92b37",
@@ -74,7 +74,7 @@
         "181": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c"
       },
       "production_cutover_authorized": false,
-      "next_start_here": "통합 PR171 exact head CI 확인 → 필수 독립 검토 차단 해결 → GHD 단독 main 반영 → 원격 readback → 중복 PR/보존 ref 정리"
+      "next_start_here": "PR171 exact head CI → 기존 로그인 후 월별 버튼 확인 → GHD merge_owner 인계 확인 → 단독 main 병합/원격 readback. 신규 월은 승인된 기존 Drive 대상 매핑이 없으면 HOLD."
     }
   ],
   "archived": [

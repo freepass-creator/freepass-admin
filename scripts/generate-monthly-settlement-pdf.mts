@@ -2,7 +2,7 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
-import { buildMonthlyInvoice, monthlyInvoiceHtml, type SheetClawbackRow, type SheetSettlementRow } from '../src/domain/settlement/invoice-document';
+import { buildMonthlyInvoice, monthlyInvoiceHtml, type InvoiceIssuer, type SheetClawbackRow, type SheetSettlementRow } from '../src/domain/settlement/invoice-document';
 
 const arg = (name: string, fallback = '') => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] ?? fallback : fallback; };
 const month = arg('--month');
@@ -31,10 +31,20 @@ if (!Number.isFinite(readAt)) throw new Error('F04 스냅샷 읽은 시각이 �
 const ageHours = (Date.now() - readAt) / 3_600_000;
 if (ageHours < -1 || ageHours > 24) throw new Error(`F04 스냅샷이 최신이 아닙니다(${ageHours.toFixed(1)}시간) — 시트를 다시 읽은 뒤 발행하세요`);
 
+/* ★발행자(우리 회사) 정보 — 대표 실명·계좌·연락처는 공개 저장소에 두지 않는다(AI 상황실 10-05).
+   비공개 설정 파일(--issuer <json> 또는 SETTLEMENT_ISSUER_FILE)에서 읽는다. 없거나 칸이 빠지면 발행하지 않는다. */
+const issuerPath = arg('--issuer', process.env.SETTLEMENT_ISSUER_FILE ?? '');
+if (!issuerPath) throw new Error('발행자 정보 파일이 없습니다 — --issuer <json> 또는 SETTLEMENT_ISSUER_FILE 로 비공개 설정 파일을 알려 주세요');
+const issuer = JSON.parse(readFileSync(resolve(issuerPath), 'utf8')) as InvoiceIssuer & Record<string, string>;
+for (const k of ['name', 'bizNo', 'bank', 'account', 'holder', 'manager', 'phone', 'email']) {
+  if (typeof issuer[k] !== 'string' || !issuer[k].trim()) throw new Error(`발행자 정보 「${k}」 칸이 비었습니다 — ${issuerPath}`);
+}
+if (!/^\d{3}-?\d{2}-?\d{5}$/.test(issuer.bizNo)) throw new Error('발행자 사업자등록번호 형식이 아닙니다');
+
 const invoice = buildMonthlyInvoice({
   /* 회차청구 탭(같은 계약의 2회차 이후 청구)도 같은 달이면 함께 — f04-ssot 가 원 줄·중복을 검사해 담았다 */
   month, supplier, rows:[...f04.rows, ...f04.installments], clawbacks:f04.clawbacks,
-  issuer:{ name:'프리패스모빌리티 주식회사', bizNo:'528-88-02988', ceo:'박영협', address:'서울시 강서구 양천로 53길 30, 서서울모터리움 1004호', bank:'신한은행', account:'140-014-462206', holder:'프리패스모빌리티 주식회사', manager:'프리패스 매니저', phone:'010-6393-0926', email:'pyh@teamjpk.com', fax:'0504-202-0926' },
+  issuer,
   receiver:{ name:receiverName, bizNo:receiverBizNo },
 });
 

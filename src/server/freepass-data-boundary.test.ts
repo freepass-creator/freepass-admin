@@ -25,6 +25,7 @@ test('screen receipt validation reuses the UI ledger snapshot and preserves rows
   const savedEnv = { ...process.env };
   const calls: string[] = [];
   let ruleFails = false;
+  let saturated = false;
   try {
     process.env.FREEPASS_DATA_BASE_URL = 'https://data.example.test';
     process.env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN = 'test-only-consumer-token-00000000000000';
@@ -38,7 +39,9 @@ test('screen receipt validation reuses the UI ledger snapshot and preserves rows
       calls.push(spec.resource);
       if (spec.resource === 'settlementRows') {
         assert.equal(spec.limit, 5000);
-        return Response.json({ schema: 'freepass-data.admin-workflow-read/v1', digest: 'live', docs: [{ id: 'r', data: { code: 'r' } }] });
+        return Response.json({ schema: 'freepass-data.admin-workflow-read/v1', digest: 'live', docs: saturated
+          ? Array.from({ length: 5000 }, (_, i) => ({ id: String(i), data: {} }))
+          : [{ id: 'r', data: { code: 'r' } }] });
       }
       assert.equal(spec.resource, 'settlementRules');
       if (ruleFails) return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
@@ -59,6 +62,8 @@ test('screen receipt validation reuses the UI ledger snapshot and preserves rows
     assert.equal(held.published.status, 'HOLD');
     assert.equal(held.all.length, 1);
     assert.deepEqual(calls, ['settlementRules', 'settlementRows']);
+    saturated = true;
+    await assert.rejects(() => gateway.settlements.listWithPublishedReceipts(), /전체 목록을 확인할 수 없습니다/);
   } finally {
     globalThis.fetch = savedFetch;
     for (const key of Object.keys(process.env)) if (!(key in savedEnv)) delete process.env[key];

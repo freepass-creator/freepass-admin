@@ -194,6 +194,7 @@ export class Erp5SettlementRepository {
     let all: RowWithRaw[] = [];
     const published = await readPublishedReceipts(async () => {
       const snap = await erp5().collection(ROWS).limit(5000).get();
+      if (snap.size >= 5000) throw new Error('접수 원장 조회 범위 초과 — 전체 목록을 확인할 수 없습니다');
       all = snap.docs.map(d => {
         const raw = d.data();
         const { row, warnings } = toSettlementRow(raw, d.id);

@@ -4,6 +4,7 @@
 
 - 운영반영 승인: 정산방 직접 userMessage `01a114c6-e7c2-7010-89ab-a3fe33d5b10f`의 `ㅇㅇ 처리해`를 read_thread로 확인. 과거 Claude 대체 승인 `call_2qDkvEXWKnF74RddwzrwTFb8`는 접수 금액/청구월 복구 범위이며 전체 PR 운영검토 승인으로 확대하지 않는다. Claude 조직차단 FAILED와 별개로 기존 read-only Codex CLI 독립 검토를 실행해 exit0/실제 답변 확보.
 - 독립 검토 지적 반영: digest만 얻기 위한 추가 full-ledger 조회 및 PC/mobile 중복 조회를 제거. 기존 화면용 원장 snapshot의 digest를 보존하여 같은 조회 영수증으로 검증하고, React request-scoped cache로 PC/mobile이 한 결과를 공유한다. rule 실패 시 목록은 유지하면서 요약만 HOLD. 모의 gateway 시험은 원장 query 1회와 rule 실패 시 목록 보존을 검증한다.
+- 재검토에서 한도 포화 시 부분 목록 표시 위험을 추가 발견해 snap.size >= 5000이면 전체 screen read를 오류로 닫는다. 포화 모의 응답 시험 포함. CI wiring의 과거 settlements.list() 고정 검사는 공용 screen snapshot → 같은 repository → 원장 읽기 및 부분 목록 거절을 요구하도록 새 경로를 검증하며 검사를 삭제하거나 조건을 완화하지 않는다.
 - Data 담당 확인(main72d486d): live F04 원본 digest 검증 계약은 없음. 화면에 `게시된 접수원장 기록액 / 원본 최신성 미검증`을 명시하며 완전 fresh를 주장하지 않는다. 자동 원본 freshness는 기존 Data owner 의존이다.
 - 운영준비: rollback baseline `dpl_6xKAKrAjCFXSQw1YCfMCwq4F6uDY` production READY/alias freepass-admin.vercel.app 확인. 로컬 Vercel env pull은 sensitive값을 placeholder로 내려 로컬 production preflight가 성립하지 않으며, 실제 설정오류로 단정하지 않는다. 임시 env 파일 삭제, 운영 환경 수정 없음. IAB 운영 settlement는 로그인폼으로 전환돼 기존 세션 없이 readback 불가. GHD durable 연결 실패/교대 미확인으로 중복 merge하지 않는다.
 

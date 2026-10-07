@@ -1,5 +1,13 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 상품·신규접수 준비방 통합 인계
+
+- 원문 Task/출처: `01a11440-e4fd-7fc2-b247-8e6ee83b015a` `[B3Q] FREEPASS-ADMIN · 상품·접수`. 원 담당은 상품 검색·상세·신규접수 준비, 실행 변경 없이 읽기 전용 확인만 완료했다. 대표가 중복방 보관을 직접 요청한 turn `01a1146b-4839-7d23-9482-c9db5a465793`을 보존한다.
+- 통합 담당/active_owner: 접수현황 `01a11116-563b-7fa1-a345-20dc4613f771`의 Codex. 접수·상품업무에서 Canonical Product → Search/Filter → Detail → Application을 함께 다룬다. Claude/Codex 동시 쓰기 금지. 계약·인도는 별도 담당을 유지한다. 원방은 복구 가능한 보관 대상으로 원문 삭제 금지.
+- 검증 근거: 원방 완료 turn `01a11440-e758-7ae1-8a0e-c103cc5bddcf`는 지정 문서 읽기 전용 확인, 코드/운영 변경 0. 당시 archive 브랜치 `5b4ff75b`였으므로 현재 운영 검증으로 세지 않는다. 이번 인계 기록 대상 revision `cdc855e1`.
+- 보존 규격: 검색에서 신규접수까지 동일 Offer·상품 version·접수 Snapshot 유지, 공급사 RAW 및 직원 입력 보존. 강지수 팀장 작성·전달 내용과 68로3249/375어8059 원문복구본은 AI 수정·삭제·자동보정·재계산 금지.
+- 남음/next_start_here: 총괄의 작업 소유권 확인 → 최신 main 실제 revision 재조회 → academy READY → 동일 Offer/version이 상세와 신규접수 Snapshot까지 유지되는지 읽기 전용 대조. archive 브랜치 수정 금지. 기존 접수나 동일 변경을 다시 실행하지 않는다. 구현·운영 변경은 본래 사용자 오더와 정본 범위에서만 진행한다.
+
 기준일: 2026-09-19  
 범위: Backend / Domain / Adapter / Persistence
 

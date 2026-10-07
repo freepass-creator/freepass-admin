@@ -20,6 +20,52 @@ test('monthly receipts use published source amounts and hold stale, partial or u
   }
 });
 
+test('screen receipt validation reuses the UI ledger snapshot and preserves rows on rule failure', async () => {
+  const savedFetch = globalThis.fetch;
+  const savedEnv = { ...process.env };
+  const calls: string[] = [];
+  let ruleFails = false;
+  try {
+    process.env.FREEPASS_DATA_BASE_URL = 'https://data.example.test';
+    process.env.FREEPASS_DATA_ADMIN_CATALOG_TOKEN = 'test-only-consumer-token-00000000000000';
+    delete process.env.FPA_DEMO;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+    delete process.env.FREEPASS_DATA_GCP_WIF_AUDIENCE;
+    delete process.env.FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL;
+    delete process.env.VERCEL_OIDC_TOKEN;
+    globalThis.fetch = async (_url, init) => {
+      const spec = JSON.parse(String(init?.body));
+      calls.push(spec.resource);
+      if (spec.resource === 'settlementRows') {
+        assert.equal(spec.limit, 5000);
+        return Response.json({ schema: 'freepass-data.admin-workflow-read/v1', digest: 'live', docs: [{ id: 'r', data: { code: 'r' } }] });
+      }
+      assert.equal(spec.resource, 'settlementRules');
+      if (ruleFails) return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
+      return Response.json({ schema: 'freepass-data.admin-workflow-read/v1', digest: 'rule', docs: [{ id: spec.id, data: {
+        monthlySummaryLedgerDigest: 'live', monthlyReceiptSummaries: { '2026-09': {
+          month: '2026-09', count: 1, claimAmount: 12.5, payAmount: 10, heldCount: 0,
+          verification: 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED',
+        } },
+      } }] });
+    };
+    const ready = await gateway.settlements.listWithPublishedReceipts();
+    assert.equal(ready.published.status, 'READY');
+    assert.equal(ready.all.length, 1);
+    assert.deepEqual(calls, ['settlementRules', 'settlementRows', 'settlementRules']);
+    ruleFails = true;
+    calls.length = 0;
+    const held = await gateway.settlements.listWithPublishedReceipts();
+    assert.equal(held.published.status, 'HOLD');
+    assert.equal(held.all.length, 1);
+    assert.deepEqual(calls, ['settlementRules', 'settlementRows']);
+  } finally {
+    globalThis.fetch = savedFetch;
+    for (const key of Object.keys(process.env)) if (!(key in savedEnv)) delete process.env[key];
+    Object.assign(process.env, savedEnv);
+  }
+});
+
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name).replaceAll('\\', '/');

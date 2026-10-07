@@ -17,6 +17,7 @@ import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
+import { readPublishedReceipts } from '../freepass-data/admin-workflow-firestore';
 import { planContractPayment, planContractPaymentDisposition, type ContractPaymentDispositionFact, type ContractPaymentDispositionInput, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
 
 /**
@@ -186,6 +187,21 @@ export class Erp5SettlementRepository {
       const { row, warnings } = toSettlementRow(raw, d.id);
       return { row, raw, warnings };
     });
+  }
+
+  /** Reuse the list snapshot for published-summary validation; operating amounts remain untouched. */
+  async listWithPublishedReceipts() {
+    let all: RowWithRaw[] = [];
+    const published = await readPublishedReceipts(async () => {
+      const snap = await erp5().collection(ROWS).limit(5000).get();
+      all = snap.docs.map(d => {
+        const raw = d.data();
+        const { row, warnings } = toSettlementRow(raw, d.id);
+        return { row, raw, warnings };
+      });
+      return { digest: (snap as typeof snap & { digest?: string }).digest ?? '', rows: snap.size };
+    });
+    return { all, published };
   }
 
   /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */

@@ -118,7 +118,7 @@ export function LedgerBoard({ rows, options, canWrite, today, publishedReceipts 
             {open !== 'new' && <button type="button" className="ldesk-new" onClick={() => show('new')}>+ 새 접수</button>}
           </header>
           {month && <p role="status">{published
-            ? `${month} 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건`
+            ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
             : `${month} 월별 청구 확인 HOLD · ${publishedReceipts?.status === 'HOLD' ? publishedReceipts.reason : '해당 월 게시 합계 없음'}`}</p>}
 
           {/*

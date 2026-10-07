@@ -2,6 +2,11 @@
 
 ## 2026-10-07 월별 정산 소비자 조회 계약 — 동일 PR171 의존
 
+- 운영반영 승인: 정산방 직접 userMessage `01a114c6-e7c2-7010-89ab-a3fe33d5b10f`의 `ㅇㅇ 처리해`를 read_thread로 확인. 과거 Claude 대체 승인 `call_2qDkvEXWKnF74RddwzrwTFb8`는 접수 금액/청구월 복구 범위이며 전체 PR 운영검토 승인으로 확대하지 않는다. Claude 조직차단 FAILED와 별개로 기존 read-only Codex CLI 독립 검토를 실행해 exit0/실제 답변 확보.
+- 독립 검토 지적 반영: digest만 얻기 위한 추가 full-ledger 조회 및 PC/mobile 중복 조회를 제거. 기존 화면용 원장 snapshot의 digest를 보존하여 같은 조회 영수증으로 검증하고, React request-scoped cache로 PC/mobile이 한 결과를 공유한다. rule 실패 시 목록은 유지하면서 요약만 HOLD. 모의 gateway 시험은 원장 query 1회와 rule 실패 시 목록 보존을 검증한다.
+- Data 담당 확인(main72d486d): live F04 원본 digest 검증 계약은 없음. 화면에 `게시된 접수원장 기록액 / 원본 최신성 미검증`을 명시하며 완전 fresh를 주장하지 않는다. 자동 원본 freshness는 기존 Data owner 의존이다.
+- 운영준비: rollback baseline `dpl_6xKAKrAjCFXSQw1YCfMCwq4F6uDY` production READY/alias freepass-admin.vercel.app 확인. 로컬 Vercel env pull은 sensitive값을 placeholder로 내려 로컬 production preflight가 성립하지 않으며, 실제 설정오류로 단정하지 않는다. 임시 env 파일 삭제, 운영 환경 수정 없음. IAB 운영 settlement는 로그인폼으로 전환돼 기존 세션 없이 readback 불가. GHD durable 연결 실패/교대 미확인으로 중복 merge하지 않는다.
+
 - 목적: 옛 claimWritten 목록 합계가 9월 접수원장 기록액으로 답변되는 혼동 제거. 시작 revision 0a300d6f, 기존 Task/PR171과 gateway/server/화면/시험을 COMPOSE_OR_EXTEND, academy READY. 새 파일·Task·엔진·예약·운영 writer 없음.
 - 변경: 기존 FreePass Data admin-workflow reader로 settlementRules/f04-confirmed-receipt-sync의 monthlyReceiptSummaries를 읽는다. monthlySummaryLedgerDigest와 live settlementRows limit5000 digest 대조, 조회 전후 rule digest 대조. 누락·불일치·조회 한도·잘못된 값은 HOLD, old sum fallback 없음. 금액은 원문 number 보존(다른 월의 소수 공급가액을 반올림하지 않음).
 - 소비처: /ledger 월별 접수원장 기록액 및 목록 기록액 구분, /settlement 데스크톱·모바일 월별 접수원장 기록액 표시. 공급사 확정 별도 확인과 heldCount 명시. 기존 거래처별 청구 후보/발행 흐름은 재계산하거나 운영 데이터로 덮지 않는다.

@@ -18,7 +18,7 @@ import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
-export { readPublishedReceipts } from '../adapters/freepass-data/admin-workflow-firestore';
+import { cache } from 'react';
 
 const g = globalThis as unknown as {
   __fpaCatalog?: {
@@ -214,6 +214,8 @@ export function adminCatalogStatus() {
 
 /** Shared persistence ports; business commands and transitions remain in Admin Services. */
 export const settlements = new Erp5SettlementRepository();
+/** React cache is scoped to one server render, never a cross-request operational cache. */
+export const readSettlementScreen = cache(() => settlements.listWithPublishedReceipts());
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';

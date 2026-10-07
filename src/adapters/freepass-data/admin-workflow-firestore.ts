@@ -210,6 +210,7 @@ export class RemoteQuery {
         true,
         doc.data,
       )),
+      result.digest,
     );
   }
 
@@ -236,7 +237,7 @@ export class RemoteCollectionReference extends RemoteQuery {
 export class RemoteQuerySnapshot {
   readonly size: number;
   readonly empty: boolean;
-  constructor(readonly docs: RemoteDocumentSnapshot[]) {
+  constructor(readonly docs: RemoteDocumentSnapshot[], readonly digest?: string) {
     this.size = docs.length;
     this.empty = docs.length === 0;
   }
@@ -346,15 +347,18 @@ export function validatePublishedReceipts(rule: Record<string, unknown> | undefi
   return { status: 'READY', months };
 }
 
-export async function readPublishedReceipts(): Promise<PublishedReceiptRead> {
+/** The UI's existing ledger read supplies its receipt; no extra full-ledger query for a summary. */
+export async function readPublishedReceipts(readLedger: () => Promise<{ digest: string; rows: number }>): Promise<PublishedReceiptRead> {
+  const db = freepassDataWorkflowFirestore();
+  const ref = db.collection('settlement_rules').doc('f04-confirmed-receipt-sync');
+  const before = await ref._read().catch(() => null);
+  // Preserve the normal ledger error boundary even if the published rule is unavailable.
+  const ledger = await readLedger();
+  if (!before) return { status: 'HOLD', reason: '정본 월별 합계를 읽지 못함' };
   try {
-    const db = freepassDataWorkflowFirestore();
-    const ref = db.collection('settlement_rules').doc('f04-confirmed-receipt-sync');
-    const before = await ref._read();
-    const ledger = await db.collection('settlement_rows').limit(5000)._read();
     const after = await ref._read();
     if (before.result.digest !== after.result.digest) return { status: 'HOLD', reason: '조회 중 게시 합계 변경' };
-    return validatePublishedReceipts(after.snapshot.data(), ledger.result.digest, ledger.result.docs.length);
+    return validatePublishedReceipts(after.snapshot.data(), ledger.digest, ledger.rows);
   } catch {
     return { status: 'HOLD', reason: '정본 월별 합계를 읽지 못함' };
   }

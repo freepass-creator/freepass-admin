@@ -1,4 +1,4 @@
-import { mewcarGaTableOrNull, settlements, today, writeEnabled, readPublishedReceipts } from '../../server/freepass-data';
+import { mewcarGaTableOrNull, today, writeEnabled, readSettlementScreen } from '../../server/freepass-data';
 import { buildIntakeOptions } from '../intake/intake-options';
 import { LedgerBoard } from './LedgerBoard';
 import { toLedgerRow } from './model';
@@ -15,8 +15,11 @@ export const dynamic = 'force-dynamic';
 export default async function LedgerPage() {
   const day = today();
   let raw;
+  let published;
   try {
-    raw = (await settlements.list()).map((x) => x.row);
+    const read = await readSettlementScreen();
+    raw = read.all.map((x) => x.row);
+    published = read.published;
   } catch (e) {
     return (
       <div className="pb ldesk"><div className="web-workspace"><section className="web-panel pb-list">
@@ -33,7 +36,7 @@ export default async function LedgerPage() {
       options={buildIntakeOptions(raw)}
       canWrite={writeEnabled()}
       today={day}
-      publishedReceipts={await readPublishedReceipts()}
+      publishedReceipts={published}
     />
   );
 }

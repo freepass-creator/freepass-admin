@@ -11,7 +11,8 @@
  */
 import type { ReactNode } from 'react';
 import { settlements, today } from '../../server/erp5';
-import { readPublishedReceipts } from '../../server/freepass-data';
+import { readSettlementScreen } from '../../server/freepass-data';
+import type { PublishedReceiptRead } from '../../adapters/freepass-data/admin-workflow-firestore';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
   claimLedger, ledgerGroupAttention, ledgerMonths, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger,
@@ -47,7 +48,8 @@ function SignalIcon({ signal }: { signal: SettlementSignal }) {
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
   let rows: SettlementRow[]; let cb: Clawback[];
-  try { const [all, c] = await Promise.all([settlements.list(), settlements.clawbacks()]); rows = all.map((x) => x.row); cb = c; }
+  let publishedRead: PublishedReceiptRead;
+  try { const [read, c] = await Promise.all([readSettlementScreen(), settlements.clawbacks()]); rows = read.all.map((x) => x.row); cb = c; publishedRead = read.published; }
   catch {
     return (
       <Screen name="settlement-workspace">
@@ -73,7 +75,6 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const 달들 = months.filter((m) => m !== NO_MONTH);
   const month = focus?.month || sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
-  const publishedRead = await readPublishedReceipts();
   const published = publishedRead.status === 'READY' ? publishedRead.months[month] : null;
 
   /*
@@ -161,7 +162,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
         ]} />
         <PanelBody><p role="status">{published
-          ? `${month} 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건`
+          ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
           : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 

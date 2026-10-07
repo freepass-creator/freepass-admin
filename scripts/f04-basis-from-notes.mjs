@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
 const ID = '1BjGBqAjRLEb9ZMKarpQsMF-q_UjdgmEqBAl1uVk8SR4';
+// Representative 2026-10-07: preserve Kang Jisu's employee entries verbatim.
+const HANDS_OFF_PLATES = new Set(['68로3249', '375어8059']);
 const money = n => Number(n).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
 
 export function sideBasis(cell = {}) {
@@ -127,6 +129,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (let i = 2; i < rows.length; i++) {
     const v = rows[i].values || [];
     if (!v[ix.차량번호]?.formattedValue) continue;
+    if (HANDS_OFF_PLATES.has(v[ix.차량번호].formattedValue)) { held.push(i + 1); continue; }
     const claim = v[ix.청구액] || {}, pay = v[ix.지급액] || {}, old = v[ix.산출근거] || {};
     if (claim.userEnteredValue?.numberValue === undefined && pay.userEnteredValue?.numberValue === undefined) continue;
     const text = makeBasis(claim, pay);
@@ -142,9 +145,9 @@ export async function main(argv = process.argv.slice(2)) {
     }
   }
   function formatBasis() {
-    const requests = [{ repeatCell: { range: { sheetId: 406613808, startRowIndex: 2, startColumnIndex: ix.산출근거, endColumnIndex: ix.산출근거 + 1 },
+    const requests = displayRows.map(row => ({ repeatCell: { range: { sheetId: 406613808, startRowIndex: row, endRowIndex: row + 1, startColumnIndex: ix.산출근거, endColumnIndex: ix.산출근거 + 1 },
       cell: { userEnteredFormat: { wrapStrategy: 'WRAP', horizontalAlignment: 'LEFT', verticalAlignment: 'MIDDLE' } },
-      fields: 'userEnteredFormat.wrapStrategy,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment' } }];
+      fields: 'userEnteredFormat.wrapStrategy,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment' } }));
     for (const row of displayRows) requests.push({ updateDimensionProperties: { range: { sheetId: 406613808, dimension: 'ROWS', startIndex: row, endIndex: row + 1 }, properties: { pixelSize: 48 }, fields: 'pixelSize' } });
     for (let start = 0; start < requests.length; start += 40) {
       fixer.call(['sheets', 'spreadsheets', 'batchUpdate'], { spreadsheetId: ID }, { requests: requests.slice(start, start + 40) });

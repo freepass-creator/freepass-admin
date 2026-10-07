@@ -5,7 +5,7 @@
  *   규칙의 정본은 이제 ERP5 `settlement_fee_rules`(한 규칙 = 한 문서) · `settlement_rules/current`(갈래·별칭·시점)다.
  *   이 파일은 규칙을 «모른다» — 받은 규칙으로 셀 뿐이다. 규칙이 바뀌면 ERP5 문서만 고친다.
  *
- * ★셈법·찾는 차례는 erp4 `lib/domain/settlement-fee-table.ts`(박태윤 매니저가 정한 표) ·
+ * ★셈법·찾는 차례는 erp4 `lib/domain/settlement-fee-table.ts`(erp4 수수료표) ·
  *   `scripts/check-fee-consistency.mts` 와 «같다». 옮기면서 바꾼 것은 없다.
  *
  * ★★`auto: false` 규칙은 기계가 금액을 내지 «않는다» — 「건별 책정」·「최대 9%」 는 사람이 정한다.

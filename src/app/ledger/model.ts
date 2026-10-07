@@ -10,6 +10,7 @@ import { adminBlockLabel, blockOf, intakeTaskOf, type IntakeTask, type Settlemen
 import { billingMonth } from '../../domain/settlement/stage';
 import { intakeAgeDays } from '../../domain/settlement/intake-list';
 import { ledgerKindOf } from '../../domain/settlement/product-kind';
+import { mewcarPayoutWarning, type MewcarGaTable } from '../../domain/settlement/fee-rules-f04-extra';
 import type { CanonicalProduct } from '../../domain/product/types';
 
 export interface LedgerRow {
@@ -38,6 +39,10 @@ export interface LedgerRow {
   pay: number | null;
   cancelled: boolean;
   note: string;
+  /** 표시 전용 — 업무 단계와 mutation 가능 여부에는 영향을 주지 않는다. */
+  payoutWarning: ReturnType<typeof mewcarPayoutWarning>;
+  /** 표시 전용 — 대표 10-04 「적게 받아서 많이 주는 경우는 없다」: 줄 것 > 받을 것 이면 그 줄은 틀린 것. 저장·진행은 막지 않는다 */
+  marginWarning: string | null;
   /** 업무 단계 — intakeTaskOf 그대로 */
   task: IntakeTask;
   /** 지금 막힌 것(사람용 문구) — blockOf → adminBlockLabel. 없으면 '' */
@@ -48,7 +53,7 @@ export interface LedgerRow {
 
 const t = (v: unknown) => (v === null || v === undefined ? '' : String(v));
 
-export function toLedgerRow(r: SettlementRow, today: string, now = new Date()): LedgerRow {
+export function toLedgerRow(r: SettlementRow, today: string, now = new Date(), mewcarTable: MewcarGaTable | null = null): LedgerRow {
   const block = blockOf(r);
   return {
     code: r.id,
@@ -74,6 +79,8 @@ export function toLedgerRow(r: SettlementRow, today: string, now = new Date()): 
     pay: r.money.pay ?? null,
     cancelled: !!r.progress.cancelled,
     note: t(r.note),
+    payoutWarning: mewcarPayoutWarning({ supplier: r.supplier, note: r.note, term: r.term, payWritten: r.money.pay }, mewcarTable),
+    marginWarning: marginWarningOf(r.money.claim ?? null, r.money.pay ?? null, t(r.note)),
     task: intakeTaskOf(r),
     block: block ? adminBlockLabel(block) : '',
     ageDays: intakeAgeDays(r, today),
@@ -276,3 +283,16 @@ export function parseWon(s: string): number | null {
   const n = Number(v);
   return Number.isFinite(n) ? n : NaN;
 }
+
+/**
+ * 줄 것(영업 지급) > 받을 것(공급사 청구) 이면 경고 — 받을 걸 덜 잡았거나 줄 걸 더 잡은 것(대표 10-04).
+ * ★모르는 금액(null)은 판정하지 않는다. 분납 선지급처럼 이 줄 청구가 계약 일부일 때도 뜰 수 있다 — 그래서 막지 않고 표시만.
+ */
+export function marginWarningOf(claim: number | null, pay: number | null, note = ''): string | null {
+  if (claim === null || pay === null || pay <= claim) return null;
+  /* 대표 10-04: 이미 영업채널과 맞춘 금액은 이번 달 그대로 지급(뒤집지 않음) — 경고는 두되 «이번 달 예외»로 구분 */
+  const agreed = AGREED_NOTE.test(note);
+  return `${agreed ? '이번 달 예외(합의 금액) — ' : ''}줄 것 ${won(pay)} > 받을 것 ${won(claim)} — ${agreed ? '다음부터 수수료표 기준 안내 대상' : '받을 걸 덜 잡았거나 줄 걸 더 잡았는지 확인'}`;
+}
+/** 영업채널 정산서로 맞춘 금액이라는 비고(F04 접수 비고 관례: 「F80 … 정정 반영」·「정산서 확정」·「확인금액 반영」·「합의」) */
+const AGREED_NOTE = /정정 반영|정산서 확정|확인금액 반영|합의/;

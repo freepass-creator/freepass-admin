@@ -19,6 +19,29 @@ const base: IntakeInput = {
   paper: false, delivered: false, deliveredAt: '', note: '',
 };
 
+describe('뮤카 신규 접수 비고 근거 안전장치', () => {
+  it('뮤카·무카는 누락/상충한 근거로 저장할 수 없다', () => {
+    for (const supplier of ['뮤카', '무카', '주식회사 무카', '뮤카(주)']) {
+      for (const note of ['', '선납', '추가보증금 없음', '선납/분납 추가보증금 0']) {
+        assert.deepEqual(validateIntake({ ...base, supplier, note }, '2026-09-18'), [
+          '뮤카 접수는 비고에 «선납/분납»과 «추가보증금 N원(없으면 없음)»을 적어야 합니다',
+        ]);
+      }
+    }
+  });
+  it('근거가 있으면 직접 입력액이 달라도 이 검증에서 막지 않는다', () => {
+    assert.deepEqual(validateIntake({ ...base, supplier: '뮤카', note: '분납 추가보증금 없음',
+      feeManual: { claim: 400_000, pay: 123_456, reason: '개별 합의' } }, '2026-09-18'), []);
+    assert.deepEqual(validateIntake(base, '2026-09-18'), []);
+  });
+  it('근거 없는 기존 줄의 읽기와 진행 경로를 막지 않는다', () => {
+    const legacy = { ...intakeRecord({ ...base, supplier: '무카' }, 0), payWritten: 800_000 };
+    const read = toSettlementRow(legacy, 'legacy');
+    assert.equal(read.row.supplier, '무카');
+    assert.equal(progressPatch(legacy, { kind: 'paper', on: true }).ok, true);
+  });
+});
+
 describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은 코드 (병행 입력에서 두 줄이 안 선다)', () => {
   it('10월 운영 전환 전은 시트 이력, 10월부터는 Admin 접수 정본이다', () => {
     assert.equal(ADMIN_INTAKE_CUTOVER_DATE, '2026-10-01');

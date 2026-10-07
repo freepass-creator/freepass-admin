@@ -5,13 +5,32 @@ import type { CanonicalProduct } from '../../domain/product/types';
 import {
   billMonthsOf, countBy, filterLedger, formatTermInput, formatWonInput, inChip, LEDGER_TABS, inTab, catalogLookupHold, normName, normPlate, parseWon, plateOffers, sortLedger, stepsOf, toLedgerRow,
   toneOf, totalsOf, won, type LedgerRow,
+  marginWarningOf,
 } from './model';
+import { mewcarGaTableOrNull, parseMewcarGaTable, type MewcarGaTable } from '../../domain/settlement/fee-rules-f04-extra';
 
 const row = (over: Partial<LedgerRow>): LedgerRow => ({
   code: 'stl_a', receivedAt: '2026-10-01', plate: '12가3456', supplier: '손오공', model: '쏘렌토', channel: '프리패스',
   agent: '김영업', customer: '홍길동', product: '장기렌트', term: 36, rent: 500000, deposit: null, price: null,
   payKind: '일시납', paper: false, delivered: false, deliveredAt: '', billMonth: '', expectedMonth: '', claim: null, pay: null,
-  cancelled: false, note: '', task: '계약', block: '계약서', ageDays: 2, ...over,
+  cancelled: false, note: '', payoutWarning: null, marginWarning: null, task: '계약', block: '계약서', ageDays: 2, ...over,
+});
+
+test('ledger shows Mewcar warnings from payWritten without changing task/block or adding adjustments/tax', () => {
+  // SettlementRow.money.pay is the gateway's payWritten projection, before adjustments/tax.
+  const raw = { id: 'mewcar', supplier: '무카', receivedAt: '2026-10-01', plate: '12가3456',
+    term: 12, note: '선납 추가보증금 1,000,000원', settleTarget: '양쪽',
+    progress: { paper: false, delivered: false, cancelled: false },
+    money: { claim: 400_000, pay: 1_100_000, payAdjust: 100_000, payIncentive: 200_000, vatIncluded: false } };
+  const mapped = (over: Record<string, unknown>) => toLedgerRow({ ...raw, ...over } as unknown as SettlementRow, '2026-10-03');
+  const valid = mapped({});
+  // 프리패스 데이터에 뮤카 수수료 규칙이 아직 없다 — 대조하지 않고 «금액 모름»만(공개 코드에 금액 없음)
+  assert.equal(valid.payoutWarning?.label, '뮤카 금액 모름');
+  const mismatch = mapped({ money: { ...raw.money, pay: 1_000_000 } });
+  assert.equal(mismatch.payoutWarning?.label, '뮤카 금액 모름');
+  assert.equal(mismatch.task, valid.task);
+  assert.equal(mismatch.block, valid.block);
+  assert.equal(mapped({ note: '' }).payoutWarning?.label, '뮤카 근거 없음');
 });
 
 test('toLedgerRow takes task and blocker from the domain and keeps unknown money null', () => {
@@ -138,4 +157,36 @@ test('plateOffers retains each term fee state and amount without calculating or 
   assert.equal(r[1].supplierBillingFee?.amount, null);
   assert.equal(r[1].channelPayoutFee?.state, 'NOT_APPLICABLE');
   assert.equal(r[2].supplierBillingFee, undefined);
+});
+
+test('margin warning: pay above claim is flagged, unknown amounts are not judged', () => {
+  assert.equal(marginWarningOf(1_000_000, 800_000), null);
+  assert.equal(marginWarningOf(1_000_000, 1_000_000), null);
+  assert.match(String(marginWarningOf(500_000, 600_000)), /줄 것 600,000 > 받을 것 500,000/);
+  assert.equal(marginWarningOf(null, 600_000), null);
+  assert.equal(marginWarningOf(500_000, null), null);
+  assert.match(String(marginWarningOf(500_000, 600_000, '채널 정산서 정정 반영')), /^이번 달 예외\(합의 금액\)/);
+  assert.doesNotMatch(String(marginWarningOf(500_000, 600_000, '')), /이번 달 예외/);
+});
+
+test('Mewcar GA table from Free Pass Data: computes when present, unknown when absent, other suppliers untouched', async () => {
+  const T: MewcarGaTable = { prepaid: { 12: 111_000 }, installment: { 12: 77_000 }, extraRate: 0.05, extraCap: 30_000 };
+  const raw = { id: 'm1', supplier: '뮤카', receivedAt: '2026-10-01', plate: '12가3456', term: 12, note: '선납 추가보증금 없음',
+    progress: { paper: false, delivered: false, cancelled: false }, money: { claim: 200_000, pay: 111_000, vatIncluded: false } };
+  const at = (o: Record<string, unknown>, t: MewcarGaTable | null) => toLedgerRow({ ...raw, ...o } as unknown as SettlementRow, '2026-10-03', undefined, t);
+  assert.equal(at({}, T).payoutWarning, null);
+  assert.equal(at({ money: { ...raw.money, pay: 100_000 } }, T).payoutWarning?.label, '뮤카 지급액 확인');
+  assert.equal(at({}, null).payoutWarning?.label, '뮤카 금액 모름');
+  assert.equal(at({ supplier: '손오공' }, null).payoutWarning, null);
+  // 표 읽기가 실패해도 null 로 끝나고 던지지 않는다 — 목록·다른 공급사·저장은 그대로
+  assert.equal(await mewcarGaTableOrNull(async () => { throw new Error('읽기 실패'); }), null);
+  assert.deepEqual(await mewcarGaTableOrNull(async () => T), T);
+  assert.equal(at({ supplier: '손오공' }, await mewcarGaTableOrNull(async () => { throw new Error('x'); })).payoutWarning, null);
+});
+
+test('parseMewcarGaTable is strict — any malformed piece means unknown', () => {
+  assert.deepEqual(parseMewcarGaTable({ prepaid: { 12: 1 }, installment: { 24: 2 }, extraRate: 0.1, extraCap: 3 }), { prepaid: { 12: 1 }, installment: { 24: 2 }, extraRate: 0.1, extraCap: 3 });
+  for (const bad of [null, {}, { prepaid: {}, installment: { 12: 1 }, extraRate: 0.1, extraCap: 1 }, { prepaid: { 12: -1 }, installment: { 12: 1 }, extraRate: 0.1, extraCap: 1 },
+    { prepaid: { x: 1 }, installment: { 12: 1 }, extraRate: 0.1, extraCap: 1 }, { prepaid: { 12: 1 }, installment: { 12: 1 }, extraRate: 2, extraCap: 1 }, { prepaid: { 12: 1 }, installment: { 12: 1 }, extraRate: 0.1, extraCap: 1.5 }])
+    assert.equal(parseMewcarGaTable(bad), null, JSON.stringify(bad));
 });

@@ -1,13 +1,13 @@
 /**
- * F04 정산원장 시트 «전체» 를 읽어 사본(투영)을 만든다 — 정본은 프리패스 데이터, F04 는 9월 이전분 옮기기 전 임시 원천. ★아무것도 안 쓴다.
+ * F04 수수료표·접수 두 탭을 읽어 임시 원천의 투영을 만든다 — 정본은 프리패스 데이터. ★아무것도 안 쓴다.
  *
  *   npx tsx scripts/f04-ssot.mts               ← 키 파일이 있으면 서비스계정, 없으면 gws 로그인으로 읽는다
  *   npx tsx scripts/f04-ssot.mts --auth gws    ← gws(pyh@teamjpk.com) 로그인으로 읽는다
  *
  * ★대표 2026-09-17 「시트에 있는 모든 내용을 일단 SSOT화 하자」
  *
- * 담는 것(원자 — 사람이 적는 것) : 수수료표 · 접수 누적원장 · 정산 진행 · 차량대장 · _상품
- * 안 담는 것(파생 — 기계가 찍는 것) : 월 탭 · 요약 · 구버전  → ★대조에만 쓴다
+ * 담는 것 : 수수료표 · 접수 누적원장 (2026-10-06 대표 직접 복구 결정)
+ * 안 읽는 것 : 월 탭 · 별도 회차 · 요약 · 보관본 — 접수의 과거 이력으로 통합
  *
  * 갈래와 까닭 : docs/dev/F04-SSOT.md
  */
@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { JWT } from 'google-auth-library';
 import {
   billMonthOf, cellDate, findHeader, methodOf, picker, feeValueOf, cellCheck, cellNumber, cellText,
-  F04_LEDGER_TABS, intakeSourceRows,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, intakeMoney, assertIntakeHeaders,
 } from '../src/adapters/f04/sheet.ts';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -142,8 +142,9 @@ for (const tab of PERF_TABS) {
   const hi = findHeader(raw, '차량번호');
   if (hi < 0) { say(`  ★「${tab}」 머리글을 못 찾았다 — 건너뛰지 않고 멈춘다`); throw new Error(`머리글 없음: ${tab}`); }
   const head = raw[hi].map((x) => String(x ?? '').trim());
+  assertIntakeHeaders(head);
   const p = picker(head);
-  const miss = p.missing(['차량번호', '접수일', '공급사', '청구년', '청구월', '판매수수료', '출고수수료']);
+  const miss = p.missing(['차량번호', '접수일', '공급사', '청구년', '청구월', '청구액', '지급액']);
   if (miss.length) missingCols[tab] = miss;
   const body = intakeSourceRows(raw, hi);
   readCount[tab] = body.length;
@@ -153,6 +154,7 @@ for (const tab of PERF_TABS) {
     const receivedAt = p.date(r, '접수일');
     /* ★버리지 않는다 — 열쇠가 없으면 보류함에 «까닭과 함께» */
     if (!plate) { held.push({ tab, row: sourceRow, why: '차량번호 없음' }); return; }
+    const money = intakeMoney(head, r);
     rows.push({
       /* 열쇠 */
       plate, receivedAt, fromTab: tab,
@@ -184,12 +186,15 @@ for (const tab of PERF_TABS) {
       nextRoundAt: p.date(r, '다음회차일'),
       /* 돈 */
       supplierRate: p.num(r, '공급사수수료율'), agentRate: p.num(r, '에이전시수수료율'),
-      claim: p.num(r, '판매수수료'), claimIncentive: p.num(r, '공급사인센티브'),
-      claimVat: p.num(r, '공급사부가세'), claimTotal: p.num(r, '청구금액'),
-      pay: p.num(r, '출고수수료'), payIncentive: p.num(r, '에이전시인센티브'),
-      paperFee: p.num(r, '계약서대행료'), payVat: p.num(r, '에이전시부가세'),
+      claim: money.claim, claimIncentive: p.num(r, '공급사인센티브'),
+      claimVat: money.claimVat, claimTotal: money.claimTotal,
+      pay: money.pay, payIncentive: p.num(r, '에이전시인센티브'),
+      paperFee: p.num(r, '계약서대행료'), payVat: money.payVat,
       // 신규 지급액은 공급가 입력칸이다. VAT 포함 합계와 혼동하지 않는다.
-      payTotal: p.num(r, p.has('지급합계(부가세포함)') ? '지급합계(부가세포함)' : '지급액'),
+      payTotal: money.payTotal, moneyConflicts: money.conflicts,
+      billState: p.text(r, '청구상태'), payState: p.text(r, '지급상태'),
+      history: p.text(r, '처리 이력'),
+      calculationBasis: typeof p.raw(r, '산출근거') === 'string' ? p.raw(r, '산출근거') : null,
       claimAdjust: p.num(r, '청구가감'), payAdjust: p.num(r, '지급가감'),
       adjustReason: p.text(r, '가감사유'),
       /* 글 */
@@ -205,105 +210,13 @@ say(`\n■ 실적 — ${PERF_TABS.map((t) => `${t} ${readCount[t]}`).join(' · '
 say(`  읽은 줄 ${totalRead} = 실은 줄 ${rows.length} + 보류 ${held.length}  → ${balanced ? '맞는다 ✓' : '★안 맞는다'}`);
 if (Object.keys(missingCols).length) for (const [t, m] of Object.entries(missingCols)) say(`  ⚠ 「${t}」에 없는 열: ${m.join(' · ')}`);
 
-/* ══ ②-1 회차청구 — 접수 «한 계약 = 한 줄»은 그대로, 같은 계약의 회차 청구만 따로 (AI 상황실 10-04) ══
-   ★rows 에 섞지 않는다 — 접수 원장 중복 검사·월별 합계는 그대로 두고, 청구서만 installments 를 더해 읽는다.
-   같은 계약(원 접수행)·같은 회차가 두 번이면 멈춘다. 원 줄이 없거나 차량번호가 다르면 멈춘다. */
+/* 2026-10-06 대표 복구 지시: 수수료표·접수 두 탭만 읽는다.
+ * 회차·과거 발행 사실은 접수 처리 이력에 통합했다. 숨긴 보관본 재합산 금지. */
 const installments: any[] = [];
-/* ★탭이 없거나 이름이 바뀌면 조용히 건너뛰지 않는다 — 청구서에서 회차가 통째로 빠진다(10-05 접수 관문).
-   정말 회차청구가 없는 원장을 읽을 때만 --회차없음 으로 명시한다. */
-const NO_INSTALLMENTS = process.argv.includes('--회차없음');
-if (!tabs.includes('회차청구') && !NO_INSTALLMENTS) throw new Error('★「회차청구」 탭이 없다 — 이름이 바뀌었으면 고치고, 정말 없으면 --회차없음 으로 명시한다');
-if (tabs.includes('회차청구')) {
-  const raw = await values('회차청구');
-  const hi = findHeader(raw, '차량번호');
-  if (hi < 0) throw new Error('★「회차청구」 머리글을 못 찾았다 — 말없이 넘어가지 않는다');
-  const p = picker(raw[hi].map((x) => String(x ?? '').trim()));
-  const seen = new Set<string>();
-  raw.slice(hi + 1).forEach((r, i) => {
-    const at = hi + 2 + i;
-    const plate = p.text(r, '차량번호')?.replace(/\s/g, '');
-    if (!plate) {
-      if (Array.isArray(r) && r.some((c) => String(c ?? '').trim())) throw new Error(`회차청구 row ${at}: 차량번호 없이 내용이 있다 — 말없이 빼지 않는다`);
-      return;
-    }
-    const srcRow = p.num(r, '원 접수행'); const round = p.num(r, '회차'); const amount = p.num(r, '금액(공급가)');
-    const month = billMonthOf(p.raw(r, '청구년'), p.raw(r, '청구월'));
-    if (!srcRow || !Number.isInteger(srcRow) || !round || round < 2 || !Number.isInteger(round) || !month || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || amount === null || !(amount > 0)) throw new Error(`회차청구 row ${at}: 원 접수행·회차(2 이상)·청구년월·금액을 확인한다`);
-    const key = `${srcRow}|${round}`;
-    if (seen.has(key)) throw new Error(`회차청구 중복: row ${at} (접수 ${srcRow}행 ${round}회차)`);
-    seen.add(key);
-    const base = rows.find((x) => x.fromTab === '접수' && x.sourceRow === srcRow);
-    if (!base || String(base.plate).replace(/\s/g, '') !== plate) throw new Error(`회차청구 row ${at}: 접수 ${srcRow}행이 ${plate} 가 아니다`);
-    /* 같은 차의 다른 계약을 가리키지 않게 접수일까지 맞춘다 */
-    if (!p.date(r, '접수일') || !base.receivedAt || p.date(r, '접수일') !== base.receivedAt) throw new Error(`회차청구 row ${at}: 접수일 ${p.date(r, '접수일')} ≠ 접수 ${srcRow}행 ${base.receivedAt}`);
-    /* 원 줄과 같은 달(또는 앞 달)이면 같은 청구서에 두 번 들어가거나 거꾸로 된 회차다 — 멈춘다 */
-    if (!base.billMonth || month <= base.billMonth) throw new Error(`회차청구 row ${at}: 청구월 ${month} 는 원 줄 청구월 ${base.billMonth ?? '(빈칸)'} 보다 뒤여야 한다`);
-    installments.push({
-      ...base,
-      fromTab: '회차청구', sourceTab: '회차청구', sourceRow: at, installmentOf: srcRow, installmentRound: round,
-      model: `${base.model ?? ''} (${round}회차)`.trim(),
-      billMonth: month, billYearRaw: p.raw(r, '청구년') ?? null, billMonthRaw: p.raw(r, '청구월') ?? null,
-      billed: p.check(r, '청구'), collected: false,
-      /* 돈 — 이 회차의 청구만. 지급은 원 줄에서 한다 */
-      supplierRate: null, claim: amount, claimIncentive: null, claimVat: null, claimTotal: null, claimAdjust: null,
-      pay: null, payIncentive: null, paperFee: null, payVat: null, payTotal: null, payAdjust: null,
-      note: `${round}회차 청구 — ${p.text(r, '근거') ?? ''}`.trim(),
-    });
-  });
-  /* 회차 건너뜀 금지 — 원 줄이 1회차이므로 같은 계약의 회차는 2부터 빠짐없이 이어져야 한다(2회차 없이 3회차면 멈춤) */
-  const roundsOf = new Map<number, number[]>();
-  for (const x of installments) roundsOf.set(x.installmentOf, [...(roundsOf.get(x.installmentOf) ?? []), x.installmentRound]);
-  for (const [src, rs] of roundsOf) {
-    const sorted = [...rs].sort((a, b) => a - b);
-    sorted.forEach((r, i) => { if (r !== i + 2) throw new Error(`회차청구: 접수 ${src}행 회차가 이어지지 않는다(${sorted.join('·')}) — ${i + 2}회차가 빠졌다`); });
-  }
-  say(`\n■ 회차청구 ${installments.length}줄 — 청구 ${Math.round(installments.reduce((n, x) => n + x.claim, 0)).toLocaleString('ko-KR')}`);
-}
-
-/* ══ ③ 곁 원자 ═══════════════════════════════════════════ */
-const side = async (tab: string, key: string, map: (p: ReturnType<typeof picker>, r: unknown[]) => any) => {
-  const raw = await values(tab);
-  const hi = findHeader(raw, key);
-  if (hi < 0) { say(`  ★「${tab}」 머리글 없음`); return []; }
-  const p = picker(raw[hi].map((x) => String(x ?? '').trim()));
-  return raw.slice(hi + 1).filter((r) => Array.isArray(r) && cellText(r[raw[hi].indexOf(key)])).map((r) => map(p, r));
-};
-
-const progress = await side('정산 진행', '차량번호', (p, r) => ({
-  plate: p.text(r, '차량번호'), receivedAt: p.date(r, '접수일'),
-  customer: p.text(r, '고객명'), supplier: p.text(r, '공급사'), channel: p.text(r, '영업채널'),
-  agent: p.text(r, '영업담당자'), product: p.text(r, '상품구분'),
-  paper: p.check(r, '계약서'), delivered: p.check(r, '인도완료'), deliveredAt: p.date(r, '인도일'),
-  cancelled: p.check(r, '계약취소'), clawback: p.check(r, '환수'),
-  billState: p.text(r, '청구상태'),
-  billMonth: (() => { const d = p.date(r, '청구월'); return d ? d.slice(0, 7) : p.text(r, '청구월'); })(),
-  paidAt: p.date(r, '입금일'), note: p.text(r, '비고'),
-  fixedAt: p.date(r, '고친날'), fixedBy: p.text(r, '고친사람'), code: p.text(r, '정산코드'),
-}));
-const vehicles = await side('차량대장', '차량번호', (p, r) => ({
-  plate: p.text(r, '차량번호'), model: p.text(r, '모델'), subModel: p.text(r, '세부모델'),
-  trim: p.text(r, '세부트림'), supplier: p.text(r, '공급사'),
-  firstSeen: p.date(r, '처음 본 날'), lastSeen: p.date(r, '마지막 본 날'),
-}));
-const goods = await side('_상품', '차량번호', (p, r) => ({
-  plate: p.text(r, '차량번호'), supplier: p.text(r, '공급사'), model: p.text(r, '모델명'),
-  kind: p.text(r, '구분'), price: p.num(r, '차량가액'),
-  m24: p.num(r, '24개월'), m36: p.num(r, '36개월'), m48: p.num(r, '48개월'), m60: p.num(r, '60개월'),
-}));
-say(`\n■ 곁 원자 — 정산 진행 ${progress.length} · 차량대장 ${vehicles.length} · _상품 ${goods.length}`);
-say(`  ★「고친사람」이 적힌 줄 ${progress.filter((x) => x.fixedBy).length} / ${progress.length}`);
-
-/* ══ ④ 파생 탭 — 담지 않고 «세기만» 한다 (대조용) ═════════ */
-const DERIVED = tabs.filter((t) => /^\d{2}년\d{2}월$/.test(t) || t === '청구월미정' || t === '청구요약' || t === '월별 요약' || t === '수수료표 구버전');
+const progress: any[] = [];
+const vehicles: any[] = [];
+const goods: any[] = [];
 const derived: Record<string, number> = {};
-for (const t of DERIVED) {
-  const raw = await values(t);
-  const hi = findHeader(raw, '차량 번호') >= 0 ? findHeader(raw, '차량 번호') : findHeader(raw, '차량번호');
-  derived[t] = hi < 0 ? 0 : raw.slice(hi + 1).filter((r) => Array.isArray(r) && r.some((c) => String(c ?? '').trim())).length;
-}
-say(`\n■ 파생 탭 — ★담지 않는다. 대조에만 쓴다`);
-say(`  ${Object.entries(derived).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
-
 /* ══ 셈 ═══════════════════════════════════════════════════ */
 const live = rows.filter((r) => !r.cancelled);
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
@@ -327,7 +240,7 @@ const report = {
   feeTable: feeTable.length, timingRules: timingRules.length, byMethod,
   byMachine: feeTable.filter((f) => f.byMachine).length,
   progress: progress.length, vehicles: vehicles.length, goods: goods.length,
-  derived, byMonth, missingCols, installments: installments.length, noInstallments: NO_INSTALLMENTS,
+  derived, byMonth, missingCols, ledgerMode: F04_LEDGER_MODE, installments: 0, noInstallments: true,
 };
 
 mkdirSync(dirname(OUT), { recursive: true });

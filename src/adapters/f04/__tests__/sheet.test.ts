@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, feeValueOf, findHeader, methodOf, picker, serialToDate,
-  F04_LEDGER_TABS, intakeSourceRows, intakeBillingFormula,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, intakeBillingFormula, intakeMoney, assertIntakeOnlySnapshot, assertIntakeHeaders,
 } from '../sheet.js';
 
 /* 값은 F04 시트 실측(2026-09-17)에서 그대로 딴 것이다. */
@@ -51,6 +51,42 @@ describe('누적 접수 원장', () => {
     const preview = intakeBillingFormula(names, '2026-09', [{ plate: '12가3456', receivedAt: 46266, ruleRow: 123, basis: '정액' }]);
     assert.match(preview, /'수수료표'!F123/);
     assert.match(preview, /HOLD — 공급사 청구액 미확정/); // 예상 표시가 원장 확정액을 대체하지 않는다.
+  });
+});
+
+describe('수수료표·접수 두 탭 운영', () => {
+  const head = ['청구액', '지급액', '판매수수료', '출고수수료', '공급사부가세', '청구금액', '에이전시부가세', '지급합계(부가세포함)'];
+  it('앞쪽 미확정 금액을 과거 계산값으로 되채우지 않는다', () => {
+    const money = intakeMoney(head, ['', '', 1000, 800, 100, 1100, 80, 880]);
+    assert.equal(money.claim, null);
+    assert.equal(money.pay, null);
+    assert.equal(money.claimTotal, null);
+    assert.equal(money.payTotal, null);
+  });
+  it('명시적 0을 보존하고 서로 다른 기재액의 충돌을 노출한다', () => {
+    const money = intakeMoney(head, [0, 900, 1000, 800]);
+    assert.equal(money.claim, 0);
+    assert.equal(money.pay, 900);
+    assert.deepEqual(money.conflicts, ['청구액/판매수수료 불일치', '지급액/출고수수료 불일치']);
+  });
+  it('열 재배치와 옛 헤더를 구분한다', () => {
+    assert.equal(intakeMoney(['지급합계(부가세포함)', '출고수수료', '지급액', '청구액'], [880, 800, 800, 1000]).pay, 800);
+    assert.equal(intakeMoney(['판매수수료', '출고수수료', '지급액'], [1000, 800, 880]).pay, 800);
+    assert.equal(intakeMoney(['청구액', '지급액', '출고수수료'], [1000, 900, 800]).pay, 900);
+    assert.equal(intakeMoney(['청구액', '지급액', '출고수수료'], [1000, '', 800]).pay, null);
+    assert.equal(intakeMoney(['청구액', '지급액', '에이전시부가세'], [1200, 1000, 100]).payTotal, null);
+    assert.equal(intakeMoney(['판매수수료', '출고수수료', '지급액'], [1200, 1000, 1100]).payTotal, 1100);
+  });
+  it('기청구 상태 열이 없어지면 미발행으로 추정하지 않고 멈춘다', () => {
+    const headers = ['차량번호', '접수일', '공급사', '청구년', '청구월', '청구액', '지급액', '청구', '청구상태'];
+    assert.doesNotThrow(() => assertIntakeHeaders(headers));
+    assert.throws(() => assertIntakeHeaders(headers.filter(h => h !== '청구')), /필수 열 없음: 청구/);
+    assert.throws(() => assertIntakeHeaders(headers.filter(h => h !== '청구상태')), /필수 열 없음: 청구상태/);
+  });
+  it('회차를 포함한 옛 사본은 재발행 전에 거부한다', () => {
+    assert.throws(() => assertIntakeOnlySnapshot({ report: { installments: 3 }, installments: [{}, {}, {}] }), /단일원장/);
+    assert.throws(() => assertIntakeOnlySnapshot({ report: { ledgerMode: F04_LEDGER_MODE, installments: 0 }, installments: [{}] }), /단일원장/);
+    assert.doesNotThrow(() => assertIntakeOnlySnapshot({ report: { ledgerMode: F04_LEDGER_MODE, installments: 0 }, installments: [] }));
   });
 });
 

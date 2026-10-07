@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "f04:basis": "node scripts/f04-basis-from-notes.mjs",
+    "f04:basis:test": "node scripts/f04-basis-from-notes.mjs --self-test",
+    "f04:refresh": "npm run f04:basis -- --apply && tsx scripts/f04-ssot.mts --auth gws",
     "dev": "next dev",
     "build": "node --import tsx scripts/check-deploy-env.mts --vercel-build && next build",
     "start": "next start",

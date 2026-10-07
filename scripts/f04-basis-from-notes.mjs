@@ -36,7 +36,8 @@ export function sideBasis(cell = {}) {
 }
 
 export function makeBasis(claim, pay) {
-  return `공급사 청구: ${sideBasis(claim)}\n영업자 지급: ${sideBasis(pay)}`;
+  const compact = s => s.includes('요율 미확인') ? '요율 미확인' : s.startsWith('검증보류') ? '검증보류' : s;
+  return `공급사: ${compact(sideBasis(claim))}\n영업자: ${compact(sideBasis(pay))}`;
 }
 
 function selfTest() {
@@ -51,7 +52,7 @@ function selfTest() {
   assert.match(sideBasis(c(0, '기재0원')), /기재 0원/);
   assert.match(sideBasis(c(100, '부가세 포함합계110 - 부가세10 = 공급가100. 신규 요율 계산 아님')), /요율 미확인/);
   assert.match(sideBasis(c(100, 'HOLD: 원본 대조 필요')), /검증보류/);
-  assert.match(makeBasis(c(100, '100 = 100원'), {}), /영업자 지급: 미확정/);
+  assert.match(makeBasis(c(100, '100 = 100원'), {}), /영업자: 미확정/);
   console.log('basis regression: 11 PASS');
 }
 
@@ -148,7 +149,16 @@ export async function main(argv = process.argv.slice(2)) {
     const requests = displayRows.map(row => ({ repeatCell: { range: { sheetId: 406613808, startRowIndex: row, endRowIndex: row + 1, startColumnIndex: ix.산출근거, endColumnIndex: ix.산출근거 + 1 },
       cell: { userEnteredFormat: { wrapStrategy: 'WRAP', horizontalAlignment: 'LEFT', verticalAlignment: 'MIDDLE' } },
       fields: 'userEnteredFormat.wrapStrategy,userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment' } }));
-    for (const row of displayRows) requests.push({ updateDimensionProperties: { range: { sheetId: 406613808, dimension: 'ROWS', startIndex: row, endIndex: row + 1 }, properties: { pixelSize: 48 }, fields: 'pixelSize' } });
+    // Preserve the user's daily layout on already-filled rows; size new basis
+    // rows for their actual text instead of resetting all rows to 48px.
+    for (const change of cells) {
+      const row = Number(change.범위.match(/\d+$/)[0]) - 1;
+      const lines = change.후.split('\n').reduce((n, line) => {
+        const width = [...line].reduce((px, ch) => px + (/[\u1100-\uffff]/.test(ch) ? 13 : 7), 0);
+        return n + Math.max(1, Math.ceil(width / 268));
+      }, 0);
+      requests.push({ updateDimensionProperties: { range: { sheetId: 406613808, dimension: 'ROWS', startIndex: row, endIndex: row + 1 }, properties: { pixelSize: Math.max(28, lines * 16 + 6) }, fields: 'pixelSize' } });
+    }
     for (let start = 0; start < requests.length; start += 40) {
       fixer.call(['sheets', 'spreadsheets', 'batchUpdate'], { spreadsheetId: ID }, { requests: requests.slice(start, start + 40) });
     }

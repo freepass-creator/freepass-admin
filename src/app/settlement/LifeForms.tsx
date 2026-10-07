@@ -139,7 +139,7 @@ export function MonthlyDocumentsForm({month,disabled=false}:{month:string;disabl
   const [state,action,pending]=useActionState<FormState & {files?:{url:string;name:string}[];partial?:boolean},FormData>(generateMonthlyDocumentsAction,{errors:[]});
   return <form onSubmit={보냄(action)} aria-busy={pending}>
     <input type="hidden" name="month" value={month}/>
-    <button type="submit" className="primary erp-btn erp-btn--primary" disabled={disabled||pending}>{pending?'정산서 생성 중…':'이 달 청구·지급 PDF 생성'}</button>
+    <button type="submit" className={disabled||pending?'erp-btn':'primary erp-btn erp-btn--primary'} disabled={disabled||pending}>{pending?'정산서 생성 중…':'이 달 청구·지급 PDF 생성'}</button>
     {오류(state)}
     {state.files && <div role="status">{state.partial?'부분 생성 · 전체 검증 미완료 · ':''}{state.files.length}개 저장 확인<ul>{state.files.map(f=><li key={f.url}><a href={f.url} target="_blank" rel="noopener noreferrer">{f.name}</a></li>)}</ul></div>}
   </form>;

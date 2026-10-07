@@ -4,6 +4,21 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as gateway from './freepass-data';
 import * as compatibility from './erp5';
+import { validatePublishedReceipts } from '../adapters/freepass-data/admin-workflow-firestore';
+
+test('monthly receipts use published source amounts and hold stale, partial or untyped reads', () => {
+  const summary = { month: '2026-09', count: 34, claimAmount: 36582600, payAmount: 29322051,
+    heldCount: 9, verification: 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED' };
+  const rule = { monthlySummaryLedgerDigest: 'live', monthlyReceiptSummaries: { '2026-09': summary } };
+  assert.deepEqual(validatePublishedReceipts(rule, 'live', 489), { status: 'READY', months: { '2026-09': summary } });
+  assert.equal(validatePublishedReceipts({ ...rule, monthlyReceiptSummaries: { '2026-09': { ...summary, claimAmount: 12.5 } } }, 'live', 489).status, 'READY');
+  for (const result of [validatePublishedReceipts(rule, 'stale', 489), validatePublishedReceipts(rule, 'live', 5000),
+    validatePublishedReceipts(undefined, 'live', 489),
+    validatePublishedReceipts({ ...rule, monthlyReceiptSummaries: { '2026-09': { ...summary, claimAmount: '36582600' } } }, 'live', 489),
+    validatePublishedReceipts({ ...rule, monthlyReceiptSummaries: { '2026-09': { ...summary, verification: 'CONFIRMED' } } }, 'live', 489)]) {
+    assert.equal(result.status, 'HOLD');
+  }
+});
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

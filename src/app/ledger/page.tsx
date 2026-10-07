@@ -1,4 +1,4 @@
-import { mewcarGaTableOrNull, settlements, today, writeEnabled } from '../../server/freepass-data';
+import { mewcarGaTableOrNull, settlements, today, writeEnabled, readPublishedReceipts } from '../../server/freepass-data';
 import { buildIntakeOptions } from '../intake/intake-options';
 import { LedgerBoard } from './LedgerBoard';
 import { toLedgerRow } from './model';
@@ -33,6 +33,7 @@ export default async function LedgerPage() {
       options={buildIntakeOptions(raw)}
       canWrite={writeEnabled()}
       today={day}
+      publishedReceipts={await readPublishedReceipts()}
     />
   );
 }

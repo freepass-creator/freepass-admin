@@ -21,6 +21,7 @@ import {
 import { EditIntakePanel } from './EditIntakePanel';
 import { progressAction } from '../intake/actions';
 import { NewIntakePanel } from './NewIntakePanel';
+import type { PublishedReceiptRead } from '../../adapters/freepass-data/admin-workflow-firestore';
 
 export type Status = { kind: 'ok' | 'err'; text: string } | null;
 /** 기존 서버 액션 하나를 부르고 결과를 알린다. 성공이면 true. */
@@ -31,7 +32,7 @@ const shortDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(2).repl
 /** 상태 칸 글 — 지금 단계 한 단어 */
 const TILE: Record<LedgerRow['task'], string> = { 계약: '계약서', 차량: '차번', 인도: '인도', 정산: '정산', 완료: '완료', 취소: '취소' };
 
-export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRow[]; options: IntakeOptions; canWrite: boolean; today: string }) {
+export function LedgerBoard({ rows, options, canWrite, today, publishedReceipts }: { rows: LedgerRow[]; options: IntakeOptions; canWrite: boolean; today: string; publishedReceipts?: PublishedReceiptRead }) {
   const router = useRouter();
   const [tab, setTab] = useState<LedgerTab>('처리 필요');
   const [chip, setChip] = useState<LedgerChip | null>(null);
@@ -48,6 +49,7 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
   const months = useMemo(() => billMonthsOf(rows), [rows]);
   const shown = useMemo(() => sortLedger(filterLedger(rows, { tab, chip, q, month }), tab, chip), [rows, tab, chip, q, month]);
   const totals = useMemo(() => totalsOf(shown), [shown]);
+  const published = publishedReceipts?.status === 'READY' && month ? publishedReceipts.months[month] : null;
   const current = open && open !== 'new' ? rows.find((r) => r.code === open) ?? null : null;
 
   const run: Run = useCallback(async (label, action, fields) => {
@@ -102,7 +104,7 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
       {/* 폰 상태표시줄 — 기존 판과 같은 자리 */}
       <header className="statusbar">
         <div><h1>{open ? (current ? current.customer || '접수' : '새 접수') : '접수 관리'}{!open && <span>{tabCounts[tab]}</span>}</h1>
-          <small>{open ? (current ? [current.plate, current.model].filter(Boolean).join(' · ') : '* 표시만 넣으면 접수됩니다') : `${chip ?? tab} · 청구액 ${won(totals.claim)}`}</small></div>
+          <small>{open ? (current ? [current.plate, current.model].filter(Boolean).join(' · ') : '* 표시만 넣으면 접수됩니다') : `${chip ?? tab} · 목록 기록액 ${won(totals.claim)}`}</small></div>
         {open
           ? <button type="button" className="panel-close" onClick={() => show(null)} aria-label="닫기">×</button>
           : <button type="button" className="ldesk-new" onClick={() => show('new')}>+ 새 접수</button>}
@@ -112,9 +114,12 @@ export function LedgerBoard({ rows, options, canWrite, today }: { rows: LedgerRo
         <section className="web-panel pb-list" aria-label="접수 목록">
           <header className="web-panel-head">
             <h2>접수 관리</h2><span>{shown.length}</span>
-            <small>청구액 <b>{won(totals.claim)}</b>{totals.claimUnknown > 0 && <em> · 미확정 {totals.claimUnknown}</em>} · 지급액 <b>{won(totals.pay)}</b></small>
+            <small>현재 목록 기록액 · 청구 <b>{won(totals.claim)}</b>{totals.claimUnknown > 0 && <em> · 미확정 {totals.claimUnknown}</em>} · 지급 <b>{won(totals.pay)}</b></small>
             {open !== 'new' && <button type="button" className="ldesk-new" onClick={() => show('new')}>+ 새 접수</button>}
           </header>
+          {month && <p role="status">{published
+            ? `${month} 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건`
+            : `${month} 월별 청구 확인 HOLD · ${publishedReceipts?.status === 'HOLD' ? publishedReceipts.reason : '해당 월 게시 합계 없음'}`}</p>}
 
           {/*
             ★입력판은 목록 «위»에 연다(사용자 2026-10-03 「목록은 가로로 길게, 접수하기 누르면 그 위에 · 목록은 아래로」).

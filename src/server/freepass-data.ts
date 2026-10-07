@@ -18,6 +18,7 @@ import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
+export { readPublishedReceipts } from '../adapters/freepass-data/admin-workflow-firestore';
 
 const g = globalThis as unknown as {
   __fpaCatalog?: {

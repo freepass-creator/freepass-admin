@@ -1,5 +1,14 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 월별 정산 소비자 조회 계약 — 동일 PR171 의존
+
+- 목적: 옛 claimWritten 목록 합계가 9월 접수원장 기록액으로 답변되는 혼동 제거. 시작 revision 0a300d6f, 기존 Task/PR171과 gateway/server/화면/시험을 COMPOSE_OR_EXTEND, academy READY. 새 파일·Task·엔진·예약·운영 writer 없음.
+- 변경: 기존 FreePass Data admin-workflow reader로 settlementRules/f04-confirmed-receipt-sync의 monthlyReceiptSummaries를 읽는다. monthlySummaryLedgerDigest와 live settlementRows limit5000 digest 대조, 조회 전후 rule digest 대조. 누락·불일치·조회 한도·잘못된 값은 HOLD, old sum fallback 없음. 금액은 원문 number 보존(다른 월의 소수 공급가액을 반올림하지 않음).
+- 소비처: /ledger 월별 접수원장 기록액 및 목록 기록액 구분, /settlement 데스크톱·모바일 월별 접수원장 기록액 표시. 공급사 확정 별도 확인과 heldCount 명시. 기존 거래처별 청구 후보/발행 흐름은 재계산하거나 운영 데이터로 덮지 않는다.
+- 실제 readback: canon-numbers 최신 명령 및 기존 Data createFirestoreAdminWorkflowStore로 2026-09 재조회. 원본 F04 values digest와 원장 digest PASS, 34건/청구36582600/지급29322051/held9/BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED. 새 Admin validator에 같은 live rule/digest를 전달해 READY와 동일 금액 재확인. B3Q local Admin HTTP 자격증명 없음은 HOLD로 실제 확인, 인증 fallback 추가 안 함.
+- 남음: 운영 HTTP reader·렌더 결과 및 자동 원본 최신화는 미검증. Admin runtime은 원장 digest 검증까지이며 F04 원본 digest freshness는 Data publisher 의존. 공급사 확인/과거 후보 4건은 정산 담당 소유. state/handoffs/프리패스정산-규칙수령-20261006.txt는 B3Q에 없음; 정산 담당도 writer/PC 불명확이라 총괄에 실제 경로 확인 요청, 내용을 추정하지 않음.
+- next_start_here: 최신 PR171 CI → GHD의 기존 독립 검토 HOLD 해결 및 단독 main 반영 → 운영 gateway/render readback. 모든 조회 통일 완료로 표현하지 않는다.
+
 ## 2026-10-07 차종마스터 단일화 — 기존 Admin reader 의존
 
 - 동일 통합 Task/PR #171의 소비자 의존 요청: `01a11481-ba1e-7cd2-9639-5ecbf88dbb60`. 시작 소비처 revision `681549cc59292afd1f9983459c81f0db24dced50`, academy READY 확인. 기존 reader/index/시험을 실제 검색해 `COMPOSE_OR_EXTEND`했고 새 파일·작업선은 만들지 않았다.

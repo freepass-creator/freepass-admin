@@ -319,4 +319,45 @@ export function adminWorkflowTransportReady(env: Record<string, string | undefin
   try { config(env); return true; } catch { return false; }
 }
 
+export type PublishedReceiptMonth = {
+  month: string; count: number; claimAmount: number; payAmount: number;
+  heldCount: number; verification: 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED';
+};
+export type PublishedReceiptRead = { status: 'READY'; months: Record<string, PublishedReceiptMonth> }
+  | { status: 'HOLD'; reason: string };
+
+/** Monthly source-booked amounts are not supplier-confirmed receivables. Never sum legacy rows as fallback. */
+export function validatePublishedReceipts(rule: Record<string, unknown> | undefined, digest: string, rows: number): PublishedReceiptRead {
+  if (rows >= 5000) return { status: 'HOLD', reason: '접수 원장 조회 범위 초과' };
+  if (!digest || rule?.monthlySummaryLedgerDigest !== digest) return { status: 'HOLD', reason: '게시 합계와 현재 원장 버전 불일치' };
+  const raw = rule?.monthlyReceiptSummaries;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { status: 'HOLD', reason: '월별 게시 합계 없음' };
+  const months: Record<string, PublishedReceiptMonth> = {};
+  for (const [month, value] of Object.entries(raw)) {
+    const s = value as PublishedReceiptMonth;
+    if (!s || !/^\d{4}-\d{2}$/.test(month) || s.month !== month
+      || ![s.count, s.heldCount].every(Number.isSafeInteger)
+      || ![s.claimAmount, s.payAmount].every(n => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= Number.MAX_SAFE_INTEGER)
+      || s.count < 0 || s.heldCount < 0 || s.verification !== 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED') {
+      return { status: 'HOLD', reason: '월별 게시 합계 계약 불일치' };
+    }
+    months[month] = { month, count: s.count, claimAmount: s.claimAmount, payAmount: s.payAmount, heldCount: s.heldCount, verification: s.verification };
+  }
+  return { status: 'READY', months };
+}
+
+export async function readPublishedReceipts(): Promise<PublishedReceiptRead> {
+  try {
+    const db = freepassDataWorkflowFirestore();
+    const ref = db.collection('settlement_rules').doc('f04-confirmed-receipt-sync');
+    const before = await ref._read();
+    const ledger = await db.collection('settlement_rows').limit(5000)._read();
+    const after = await ref._read();
+    if (before.result.digest !== after.result.digest) return { status: 'HOLD', reason: '조회 중 게시 합계 변경' };
+    return validatePublishedReceipts(after.snapshot.data(), ledger.result.digest, ledger.result.docs.length);
+  } catch {
+    return { status: 'HOLD', reason: '정본 월별 합계를 읽지 못함' };
+  }
+}
+
 export const __test = { config, COLLECTION_RESOURCE };

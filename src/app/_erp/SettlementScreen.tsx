@@ -154,16 +154,15 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
     <div className="erp-workspace">
       <Panel kind="list" compact>
         <PanelHead kind="목록" title="청구목록" count={`${claimG.length}곳`} />
-        <PanelBody><p role="status">{published
-          ? `${month} 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건`
-          : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p></PanelBody>
         <SearchBar base={base} q={q} name="cq" placeholder="공급사 이름" facets={[claimKindFacet]} keep={['month', 'cgs']} />
         {/* 상태 QuickFilter 업무 항목은 미확정. 정산월 + 전체/미처리 예시만 유지한다. */}
         <QuickFilter label="정산 상태" dropdown={<AutoSelect name="month" value={month} label="정산월" options={months.map((m) => [m, m])} />} items={[
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
         ]} />
-        <PanelBody>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
+        <PanelBody><p role="status">{published
+          ? `${month} 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건`
+          : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 
       <Panel kind="detail">

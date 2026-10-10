@@ -606,3 +606,17 @@ Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee
 - 지운 것: 중복 게시 합계 안내 두 곳. 파일 삭제 없음. 임시 런타임 코드/빈 가격행 검증 열/임시 어댑터 없음(제거일 해당 없음).
 - 누더기 검사(이번 변경 범위): 새 중복·남은 옛 게시 합계 표시 0. 발행 실적 집계는 목적이 다른 기존 업무로 유지한다.
 - next_start_here: 정상 브라우저/tsx 환경에서 `/settlement/table`의 1440/390 화면과 월 선택·CSV를 확인하고, 위 미완료 검증을 채운다. 승인받은 후속 담당자가 diff를 검토하며 이번 오더에서는 커밋·push하지 않는다.
+
+## 2026-10-10 정산표 가격행 검증 — 파일 변경만
+
+- 목적/대상 revision: 사용자 지정 PR #189 기반 `work/freepass-admin/settlement-link-column-20261010`, `8545f478a8d9a23f5eb0c79c8402d5777c1e6a07`. 이 작업의 writer는 현재 Codex이며 커밋·push·실제 Data 호출·운영 쓰기는 하지 않았다. 과거 registry의 담당/PR 관측을 이번 배정으로 간주하지 않는다.
+- 사전점검: academy:start READY, reuse:check CREATE_NEW_JUSTIFIED. 기존 admin-catalog 클라이언트는 상품 조회만 제공해 접수 줄 제외·500건 분할·실패 격리 책임을 맡길 곳이 없다. 전용 읽기 어댑터 1개만 추가하고, 요청 설정·인증·타임아웃은 기존 클라이언트의 공통 request로 추출했다. 새 환경변수·API route·저장소는 없다.
+- 만든 파일: `src/adapters/freepass-data/contract-fee-links.ts`.
+- 바꾼 파일: `src/ports/admin-catalog-reader.ts`, `src/adapters/freepass-data/admin-catalog-client.ts`, `src/domain/settlement/summary.ts`, `src/server/freepass-data.ts`, `src/app/settlement/table/page.tsx`, `src/app/settlement/table/csv/route.ts`, `src/domain/settlement/__tests__/summary.test.ts`, `src/adapters/freepass-data/__tests__/admin-catalog-client.test.ts`, `docs/ui/DESIGN-AUTHORITY.md`, `docs/ui/ADMIN-UI-UX-SSOT.md`, `docs/ui/admin-ui-ux-ssot.json`, 이 인계 문서. 지운 파일 없음.
+- 재사용/통합: config·Cloud Run/Bearer 인증·no-store·타임아웃은 admin-catalog-client.request 한 곳. 화면/CSV는 readSettlementTable 한 곳. 대상 월/취소·제외 규칙은 summaryEntries로 공유. 금액은 기존 invoiceMoneyOf/truncWon과 공급사 합계를 그대로 사용한다. 이전 list 내부 전용 fetch 블록과 화면/CSV 각각의 조회·집계 조합은 공통 경로로 교체했다.
+- 동작: 표시 월만 최대 500건씩 순차 읽기. 차량번호 공백 제거, 자리표시·공급사 코드 누락·잘못된 조건·중복 key는 로컬 확인 필요로 제외. 보증금 null은 생략하고 0은 유지한다. 응답 버전/상태와 배치 key 누락·중복·요청 외 결과를 검사한다. 실패 시 부분 성공을 완전 성공으로 표시하지 않고 가격행 검증 불가와 안전한 코드만 화면/CSV에 남긴다.
+- 비교 의미: LINKED만 확정 수수료를 접수의 공급가와 줄별 원 단위로 비교한다. 양쪽을 비교할 수 있어야 일치이며, 한쪽이라도 확인된 차이가 있으면 차이로 센다. 차이·미확정은 확인 필요에도 포함하므로 이어 붙음과 확인 필요는 겹칠 수 있다. CONDITION_MISMATCH에 딸린 금액은 일치/차이로 세지 않는다. 접수 원문과 청구·지급 합계는 변경하지 않는다. 실패 detail·차량/상품 식별자·가격행 금액은 화면/CSV에 전달하지 않는다.
+- 검증: `npx tsc --noEmit` PASS. 요청한 `npx tsx --test` 2개 파일, `npx tsx scripts/check-ui-ssot.mts`, 전체 `npm test`는 모두 tsx 시작 단계의 Windows `uv_os_get_passwd ENOMEM`으로 실행 불가. 동일 시험 원본을 저장소 밖 임시 폴더에 strict TypeScript 컴파일 후 Node로 실행하여 52/52 PASS(신규 28 + 기존 24), 실패 0. UI 검사 원본은 `node --experimental-strip-types scripts/check-ui-ssot.mts`로 실행하여 PASS(화면 10, 내부 guard 15). 시험 완화·node_modules 수정 없음.
+- 남음: 지정 tsx 실행 경로 및 전체 시험은 환경 복구 후 재실행 필요. 실제 브라우저 Visual QA는 미실행이며 UI SSOT의 PENDING을 유지한다. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE, 통과로 세지 않았다. 사용자 지시에 따라 실제 API 호출 시험은 하지 않는다.
+- 임시로 남긴 제품 코드/자리표시 없음. 저장소 밖 `%TEMP%/fa-link-verification`에 시험 컴파일 JS 20개가 남았다. 해당 폴더로 범위를 제한한 삭제 명령이 자동 승인 검토에서 `blocked by policy`로 거부됐으며 상세 사유는 제공되지 않았다. 삭제 조건: 정상 실행 권한을 가진 후속 작업에서 이 시험 출력 폴더임을 확인한 뒤 정리. 누더기 검사(이번 변경 범위): 새 중복·남은 옛것 0.
+- next_start_here: 위 13개 파일 diff와 가짜 클라이언트 시험을 확인한다. 정상 tsx 환경에서 지정 시험/UI 검사/전체 시험을 재실행하고, 가상 데이터로 데스크톱·모바일 화면을 확인한다. 이번 오더에서는 계속 커밋·push하지 않는다.

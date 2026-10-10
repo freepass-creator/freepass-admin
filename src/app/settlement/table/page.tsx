@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { readSettlementScreen } from '../../../server/freepass-data';
+import { readSettlementTable } from '../../../server/freepass-data';
 import { requireAdmin } from '../../../server/require-admin';
-import { settlementSummary, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS } from '../../../domain/settlement/summary';
+import { feeLinkText, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS } from '../../../domain/settlement/summary';
 import { sp, won } from '../../_fn/fmt';
 import '../../products/board.css';
 import './table.css';
@@ -16,8 +16,7 @@ export default async function SettlementTablePage({ searchParams }: {
   const q = await searchParams;
   let summary;
   try {
-    const read = await readSettlementScreen();
-    summary = settlementSummary(read.all.map(x => x.row), sp(q.month));
+    summary = await readSettlementTable(sp(q.month));
   } catch {
     return <div className="pb settlement-table"><div className="web-workspace"><section className="web-panel">
       <header className="web-panel-head"><h2>정산표</h2></header>
@@ -39,6 +38,11 @@ export default async function SettlementTablePage({ searchParams }: {
     {summary.reasons.length > 0 && <ul className="settlement-reasons" aria-label="확인 필요 이유">
       {summary.reasons.map(r => <li key={r.label}>{r.label} {r.count}건</li>)}
     </ul>}
+    <p className="settlement-note" role="status"><strong>가격행 검증</strong> · {feeLinkText(summary.total.feeLinks)}</p>
+    {summary.feeLinkReasons.length > 0 && <ul className="settlement-reasons" aria-label="가격행 확인 필요 이유">
+      {summary.feeLinkReasons.map(r => <li key={r.label}>{r.label} {r.count}건</li>)}
+    </ul>}
+    <p className="settlement-note">이어 붙은 가격행의 확정 수수료만 접수 공급가와 원 단위로 비교합니다. 양쪽 모두 확인되어야 일치입니다. 차이·미확정이 있으면 이어 붙음과 확인 필요는 겹치며 이유도 중복될 수 있습니다. 계약 조건이 다르면 참고용으로만 취급합니다. 가격행 금액은 합계에 넣거나 접수에 덮어쓰지 않습니다.</p>
     <form className="settlement-controls" action="/settlement/table">
       <label htmlFor="settlement-month">청구월</label>
       <select id="settlement-month" name="month" defaultValue={summary.month}>

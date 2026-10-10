@@ -1,6 +1,43 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { __test } from '../admin-catalog-client';
+import { __test, ContractFeeLinkItemSchema } from '../admin-catalog-client';
+
+test('가격행 계약 파서는 버전·실패 상태를 확인하고 화면에 불필요한 원문은 버린다', () => {
+  const envelope = { contract: 'contract-fee-links/v1', results: [
+    { key: 'example', status: 'FAILED', failure: 'CONDITION_MISMATCH', detail: 'example-private-detail',
+      assetId: 'example-asset', priceTerm: { termKey: 'example-term' } },
+  ] };
+  assert.deepEqual(__test.ContractFeeLinksResponse.parse(envelope), {
+    contract: 'contract-fee-links/v1', results: [{ key: 'example', status: 'FAILED', failure: 'CONDITION_MISMATCH' }],
+  });
+  assert.equal(__test.ContractFeeLinksResponse.safeParse({ ...envelope, contract: 'other' }).success, false);
+  for (const result of [
+    { key: 'example', status: 'FAILED' },
+    { key: 'example', status: 'FAILED', failure: 'UNKNOWN_FAILURE' },
+    { key: 'example', status: 'LINKED', failure: 'CONDITION_MISMATCH' },
+  ]) assert.equal(__test.ContractFeeLinksResponse.safeParse({ ...envelope, results: [result] }).success, false);
+});
+
+test('가격행 요청 계약은 key·공급사 코드·기간 경계·유한 금액을 검증한다', () => {
+  const item = { key: 'example', plate: 'EXAMPLE', supplierId: 'EXAMPLE-A', termMonths: 1, monthlyRent: 17 };
+  assert.equal(ContractFeeLinkItemSchema.safeParse(item).success, true);
+  assert.equal(ContractFeeLinkItemSchema.safeParse({ ...item, key: 'x'.repeat(120), termMonths: 120, deposit: 0 }).success, true);
+  for (const patch of [{ key: '' }, { key: 'x'.repeat(121) }, { supplierId: '예시공급사A' },
+    { termMonths: 0 }, { termMonths: 121 }, { termMonths: 1.5 }, { monthlyRent: NaN }, { deposit: -1 }])
+    assert.equal(ContractFeeLinkItemSchema.safeParse({ ...item, ...patch }).success, false);
+});
+
+test('가격행 응답은 확정·미확정 수수료와 0을 구분하고 비정상 금액은 거부한다', () => {
+  const result = { key: 'example', status: 'FEE_UNCONFIRMED', fees: {
+    termKey: 'example-term', termMonths: 12,
+    supplierBillingFee: { status: 'CONFIRMED', state: 'ZERO', amount: { amount: 0 } },
+    channelPayoutFee: { status: 'UNCONFIRMED', state: 'UNKNOWN', amount: null },
+  } };
+  const envelope = { contract: 'contract-fee-links/v1', results: [result] };
+  assert.equal(__test.ContractFeeLinksResponse.safeParse(envelope).success, true);
+  result.fees.supplierBillingFee.amount.amount = Infinity;
+  assert.equal(__test.ContractFeeLinksResponse.safeParse(envelope).success, false);
+});
 
 const base = {
   productId: 'P-1',

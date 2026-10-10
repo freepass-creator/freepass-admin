@@ -1,6 +1,6 @@
 import { requireAdmin } from '../../../../server/require-admin';
-import { readSettlementScreen } from '../../../../server/freepass-data';
-import { settlementSummary, settlementSummaryCsv } from '../../../../domain/settlement/summary';
+import { readSettlementTable } from '../../../../server/freepass-data';
+import { settlementSummaryCsv } from '../../../../domain/settlement/summary';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +10,7 @@ export async function GET(request: Request) {
   const denied = await requireAdmin();
   if (denied) return new Response(denied, { status: 401, headers });
   try {
-    const read = await readSettlementScreen();
-    const summary = settlementSummary(read.all.map(x => x.row), new URL(request.url).searchParams.get('month') ?? '');
+    const summary = await readSettlementTable(new URL(request.url).searchParams.get('month') ?? '');
     const month = /^\d{4}-\d{2}$/.test(summary.month) ? summary.month : 'unassigned';
     return new Response(settlementSummaryCsv(summary), { headers: {
       ...headers, 'Content-Type': 'text/csv; charset=utf-8',

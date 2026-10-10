@@ -3,8 +3,8 @@
   "settlementTable": {
     "route": "/settlement/table",
     "exportRoute": "/settlement/table/csv",
-    "source": "settlement_rows via readSettlementScreen",
-    "style": "shared .pb panel and tokens; seven supplier aggregate columns; two-column values on mobile",
+    "source": "settlement_rows via readSettlementTable; contract-fee-links read-only comparison",
+    "style": "shared .pb panel and tokens; eight supplier aggregate columns including fee-link counts; two-column values on mobile",
     "amountBasis": "stored amounts, VAT-exclusive supply; unknown is not zero",
     "verification": "CODED_VISUAL_QA_PENDING"
   },

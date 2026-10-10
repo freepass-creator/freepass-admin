@@ -19,6 +19,8 @@ import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
 import { cache } from 'react';
+import { readContractFeeLinks } from '../adapters/freepass-data/contract-fee-links';
+import { settlementSummary, settlementSummaryRows } from '../domain/settlement/summary';
 
 const g = globalThis as unknown as {
   __fpaCatalog?: {
@@ -216,6 +218,16 @@ export function adminCatalogStatus() {
 export const settlements = new Erp5SettlementRepository();
 /** React cache is scoped to one server render, never a cross-request operational cache. */
 export const readSettlementScreen = cache(() => settlements.listWithPublishedReceipts());
+
+/** 화면과 CSV가 같은 대상 월·가격행 검증·집계 경로를 사용한다. */
+export async function readSettlementTable(month = '') {
+  const read = await readSettlementScreen();
+  const rows = read.all.map(x => x.row);
+  const now = new Date();
+  const selected = settlementSummary(rows, month, now);
+  const links = await readContractFeeLinks(settlementSummaryRows(rows, selected.month, now));
+  return settlementSummary(rows, selected.month, now, links);
+}
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';

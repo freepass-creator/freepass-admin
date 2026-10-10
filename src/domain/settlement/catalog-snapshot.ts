@@ -64,6 +64,7 @@ export function buildIntakeCatalogSnapshot(
       policyValues:product.productPolicies.map(clonePolicy),
     },
     offer:{
+      ...(offer.termKey !== undefined ? { termKey: offer.termKey } : {}),
       ...(offer.supplierBillingFee !== undefined ? { supplierBillingFee: structuredClone(offer.supplierBillingFee) } : {}),
       ...(offer.channelPayoutFee !== undefined ? { channelPayoutFee: structuredClone(offer.channelPayoutFee) } : {}),
       id:offer.id,

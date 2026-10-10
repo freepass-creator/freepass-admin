@@ -1,3 +1,4 @@
+import { truncWon } from './money';
 /**
  * **F04 「수수료표」 탭에만 있는 규칙 — erp4 표에 없는 줄.**
  *
@@ -63,7 +64,7 @@ export function mewcarGaPayout({ prepaid, term, extraDeposit }: {
     return { status: 'UNKNOWN', why: '추가보증금은 0 이상의 안전한 정수 금액이어야 합니다' };
   }
   if (!(table.extraRate >= 0) || !Number.isSafeInteger(table.extraCap) || table.extraCap < 0) return { status: 'UNKNOWN', why: '추가보증금 가산 규칙이 비정상' };
-  const extra = Math.round(extraDeposit * table.extraRate);
+  const extra = truncWon(extraDeposit * table.extraRate);
   return base + Math.min(extra, table.extraCap);
 }
 

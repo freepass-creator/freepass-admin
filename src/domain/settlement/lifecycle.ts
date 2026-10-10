@@ -1,3 +1,4 @@
+import { truncWon } from './money';
 /**
  * **정산 생애주기 — 청구서 발행부터 «돈 받은 것» 까지.**  화면을 모른다. 무엇을 어떻게 바꾸는지만.
  *
@@ -43,8 +44,10 @@ export function lifeStageOf(claim: string, pay: string, off?: '보류' | '취소
 
 /* ── 부가세 — 줄마다 가르고 그 다음에 더한다(총액에 곱하면 1원씩 어긋난다 · erp4 2026-09-09) ── */
 export function invoiceMoneyOf(amount: number, vatIncluded: boolean): { net: number; vat: number; total: number } {
-  const net = vatIncluded ? Math.round(amount / (1 + VAT)) : amount;
-  const vat = vatIncluded ? amount - net : Math.round(net * VAT);
+  amount = truncWon(amount);
+  // 고정 VAT 10% 역산: 1.1 부동소수 나눗셈으로 정수 경계에서 1원이 더 버려지는 것을 피한다.
+  const net = vatIncluded ? truncWon(amount * 10 / 11) : amount;
+  const vat = vatIncluded ? amount - net : truncWon(net * VAT);
   return { net, vat, total: net + vat };
 }
 
@@ -123,7 +126,7 @@ export function planInvoice(
     if (c.month !== month) continue;
     const amt = axis === '공급사' ? (c.supplier === party ? c.supplierAmt : 0) : (c.channel === party ? c.agentAmt : 0);
     if (!amt) continue;
-    clawback += amt; supply -= amt; vat -= Math.round(amt * VAT);
+    clawback += amt; supply -= amt; vat -= truncWon(amt * VAT);
   }
   const day = issueDay;
   const invoice: IssuedInvoice = {

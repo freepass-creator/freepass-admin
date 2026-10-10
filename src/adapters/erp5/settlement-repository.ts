@@ -1,3 +1,4 @@
+import { truncWon } from '../../domain/settlement/money';
 import { erp5 } from './firestore';
 import { demoMode } from './demo';
 import { freepassDataWriteGate } from '../../shared/erp5-write-approval';
@@ -5,13 +6,12 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
-import { factPatch, feeCompletenessErrors, feeManualErrors, intakeDataFees, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { factPatch, feeManualErrors, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
-import { feeOf, receiptRowBasis } from '../../domain/settlement/fee';
-import { loadFeeRuleSet } from './fee-rules';
+import { receiptRowBasis } from '../../domain/settlement/fee';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
@@ -135,7 +135,7 @@ export class Erp5SettlementRepository {
           const samePayload = String(prior.code ?? '') === code
             && String(prior.axis ?? '') === cash.axis
             && String(prior.kind ?? '') === cash.kind
-            && Number(prior.amount) === Math.round(cash.amount)
+            && Number(prior.amount) === truncWon(cash.amount)
             && String(prior.day ?? '') === cash.day;
           if (!samePayload) {
             return { ok: false as const, error: '같은 요청 식별자가 다른 수금·지급 내용에 재사용됐습니다 — 화면을 새로 열어 다시 처리합니다' };
@@ -169,7 +169,7 @@ export class Erp5SettlementRepository {
         const invoiceNo = S(cashInvoice?.invoiceNo);
         tx.create(cashRef, {
           operationId, code, axis: cash.axis, kind: cash.kind,
-          amount: Math.round(cash.amount), day: cash.day,
+          amount: truncWon(cash.amount), day: cash.day,
           billMonth: row.progress.billMonth ?? null,
           party: party ?? null,
           ...(invoiceNo ? { invoiceNo } : {}),
@@ -204,11 +204,9 @@ export class Erp5SettlementRepository {
       digest = (snap as typeof snap & { digest?: string }).digest ?? '';
       return { digest, rows: snap.size };
     });
-    let rules: Awaited<ReturnType<typeof loadFeeRuleSet>>['rules'] = [];
-    if(all.some(x=>Array.isArray(x.raw.sourceReceiptRaw)))try { rules=(await loadFeeRuleSet(0)).rules; } catch { /* Missing evidence stays explicitly unknown. */ }
     all=all.map(({row,raw,warnings})=>{
       if(!Array.isArray(raw.sourceReceiptRaw))return {row,raw,warnings};
-      const basis=receiptRowBasis(raw,rules);
+      const basis=receiptRowBasis(raw);
       return {row:{...row,settleNote:[row.settleNote,`공급사: ${basis.claim}\n영업자: ${basis.pay}`].filter(Boolean).join('\n')},raw:{...raw,displayReceiptBasis:basis},warnings};
     });
     return { all, published, digest };
@@ -323,13 +321,9 @@ export class Erp5SettlementRepository {
       }
     }
     const db = erp5();
-    // 상품 접수는 Data 발행 값만 쓴다(없으면 미확정). 로컬 수수료표는 직접 접수에만 쓴다.
-    const rules = intakeDataFees(input) ? null : await loadFeeRuleSet();
-    const fee = rules ? feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price })
-      : { status: 'NO_RULE' as const, why: 'Data 기간별 수수료 사용' };
-    const feeErr = [...feeCompletenessErrors(input, fee), ...feeManualErrors(input, fee)];
+    const feeErr = feeManualErrors(input);
     if (feeErr.length) throw new Error(feeErr.join(' · '));
-    const rec = intakeRecord(input, Date.now(), fee, rules?.version);
+    const rec = intakeRecord(input, Date.now());
     const code = String(rec.code);
     const plate = String(rec.plate ?? '');
     const key = intakeKey(plate, input.sourceProductId, input.receivedAt, input.intakeRequestId);

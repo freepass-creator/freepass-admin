@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { claimAmountOf, marginOf, payAmountOf, settlementRatioOf } from '../money';
+import { truncWon, claimAmountOf, marginOf, payAmountOf, settlementRatioOf } from '../money';
 import type { SettlementRow } from '../types';
 
 const row = (o: {
@@ -99,4 +99,21 @@ test('깨진 납입회차가 있으면 청구·지급 금액을 추정하지 않
   assert.equal(claimAmountOf(r), null);
   assert.equal(payAmountOf(r), null);
   assert.equal(marginOf(r), null);
+});
+
+// 실제 거래와 무관한 경계값으로 원 미만 버림을 검증한다.
+test('버림은 양수·음수에 대칭이고 음의 0을 남기지 않는다', () => {
+  for (const value of [0.9, 1.9, 7.7]) {
+    assert.equal(truncWon(value), Math.trunc(value));
+    assert.equal(truncWon(-value), -Math.trunc(value) || 0);
+    assert.equal(truncWon(value) + truncWon(-value), 0);
+  }
+  assert.equal(Object.is(truncWon(-0.9), -0), false);
+});
+test('청구·지급 정산비율 적용 후 소수 원을 버린다', () => {
+  const r = row({ claim: 7, pay: 7, settleRatio: 0.5 });
+  assert.equal(claimAmountOf(r), 3);
+  assert.equal(payAmountOf(r), 3);
+  r.money.claimAdjust = -1;
+  assert.equal(claimAmountOf(r), 2);
 });

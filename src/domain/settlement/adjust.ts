@@ -1,3 +1,4 @@
+import { truncWon } from './money';
 /**
  * **프로모션 · 가감** — 수수료표 셈 «위에» 사람이 얹는 두 가지.
  *
@@ -34,7 +35,7 @@ const money = (raw: unknown): number | null => {
   const t = String(raw ?? '').replace(/[,\s원]/g, '');
   if (!t) return 0;
   const n = Number(t);
-  return Number.isFinite(n) ? Math.round(n) : null;
+  return Number.isFinite(n) ? truncWon(n) : null;
 };
 
 /** 가감 읽기 — ★금액이 있으면 사유가 있어야 한다. 사유 없는 돈은 다음 달에 아무도 못 읽는다 */

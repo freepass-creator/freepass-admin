@@ -225,8 +225,6 @@ export function demoCollections(nowMs: number = Date.now()): DemoCollections {
     const ledgerProduct = p.kind === '중고렌트' ? '장기렌트' : p.kind === '신차렌트' ? '선출고' : '구독';
     const rentKind = p.kind === '중고렌트' ? '재렌트' : p.kind === '신차렌트' ? '신차렌트' : '구독';
     const { rent, deposit } = cell;
-    const claim = ledgerProduct === '선출고' ? Math.round(p.consumer * 0.04) : ledgerProduct === '구독' ? 600000 : Math.round(rent * o.term * 0.035);
-    const pay = ledgerProduct === '선출고' ? Math.round(p.consumer * 0.025) : ledgerProduct === '구독' ? 400000 : Math.round(rent * o.term * 0.02);
     const code = `stl_demo_${String(++rowN).padStart(3, '0')}`;
     const created = Date.parse(`${o.receivedAt}T10:00:00+09:00`);
     return {
@@ -237,10 +235,9 @@ export function demoCollections(nowMs: number = Date.now()): DemoCollections {
       price: ledgerProduct === '선출고' ? p.consumer : 0,
       payKind: o.payKind ?? '일시납', ...(o.paidRounds ? { paidRounds: o.paidRounds } : {}),
       sourceProductId: p.code, sourceOfferId: `${p.code}#${o.term}`,
-      supplierRate: ledgerProduct === '장기렌트' ? 0.035 : ledgerProduct === '선출고' ? 0.04 : 600000,
-      agentRate: ledgerProduct === '장기렌트' ? 0.02 : ledgerProduct === '선출고' ? 0.025 : 400000,
-      claimWritten: o.claimWritten === undefined ? claim : o.claimWritten,
-      payWritten: o.payWritten === undefined ? pay : o.payWritten,
+      supplierRate: null, agentRate: null,
+      claimWritten: o.claimWritten ?? null,
+      payWritten: o.payWritten ?? null,
       paper: false, delivered: false, cancelled: false, billed: false, invoiceIssued: false,
       collected: false, paid: false, supplierOk: false, channelOk: false, billHold: false, settleExclude: false,
       claimStage: '접수', payStage: '접수', settleTarget: '양쪽', settleRatio: 1,

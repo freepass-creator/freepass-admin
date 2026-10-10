@@ -8,8 +8,7 @@
  * ★칸 이름은 ERP5 원자 그대로다 (실측 461줄 · 70칸). 새 이름을 만들지 않는다.
  */
 import { intakeCode } from './code';
-import type { FeeResult } from './fee';
-import { dataFeeAmount } from './fee';
+import { readDataFee } from './fee';
 import { promotionPatch } from './adjust';
 import type { Promotion } from './promotion';
 import type { IntakeCatalogSnapshot } from './types';
@@ -53,12 +52,7 @@ export interface IntakeInput {
   note: string;
   /** 프로모션 — 대표 2026-09-17 「접수할때 프로모션 업셀링 금액을 넣어야함」 · 영업자 몫 기본 100% */
   promotion?: Promotion;
-  /**
-   * 수수료 직접 입력 — 대표 2026-09-18 「차 골라서 접수하거나 아니면 직접접수하는 방식으로」.
-   * 표가 못 내는 건(신차발주 「주는 대로」 · 표에 없는 공급사)은 사람이 넣는다.
-   * ★넣은 값이 이긴다(erp4 「적힌 값이 이긴다」). 표가 낸 값과 «다르게» 넣으면 사유가 있어야 한다.
-   * null 이면 그쪽은 표대로.
-   */
+  /** 기존 폼 입력과 저장값의 불일치를 검증한다. 저장 수수료를 덮어쓰지 않는다. */
   feeManual?: { claim: number | null; pay: number | null; reason: string };
 }
 
@@ -113,37 +107,24 @@ export function validateIntake(x: IntakeInput, today: string): string[] {
   return e;
 }
 
-/**
- * 상품 접수의 수수료는 «Data 가 발행한 값만» 쓴다(합의 계약: KNOWN/ZERO 만 쓰고 나머지는 미확정).
- * ★필드가 없어도 로컬 표로 채우지 않는다 — 「재계산 전 옛 상품」과 「Data 발행 실패」를 가를 수 없어서,
- *   로컬 금액으로 봉인하면 Data 미확정이 확정 금액처럼 굳는다(#171 접수 관문 지적). 없으면 미확정(null)이다.
- * 직접 접수(상품 없음)만 기존 수수료표를 쓴다.
- */
+/** 상품/직접 접수 모두 Data 저장 수수료만 읽는다. 없는 기간은 미확정이다. */
 export function intakeDataFees(x: Pick<IntakeInput, 'sourceProductId' | 'catalogSnapshot'>) {
   const o = x.sourceProductId?.trim() ? x.catalogSnapshot?.offer : undefined;
-  if (!o) return null;
-  return { claim: dataFeeAmount(o.supplierBillingFee), pay: dataFeeAmount(o.channelPayoutFee),
-    note: [o.supplierBillingFee, o.channelPayoutFee].map((f, i) =>
-      `${i === 0 ? '청구' : '지급'} Data 기간별 수수료 · ${f?.policyId ?? 'policyId 없음'} · ${f?.ruleId ?? 'ruleId 없음'} · ${f?.state ?? '미발행'}${f?.reasonCode ? ` · ${f.reasonCode}` : ''}`).join(' / ') };
+  const supplierBillingFee = readDataFee(o?.supplierBillingFee);
+  const channelPayoutFee = readDataFee(o?.channelPayoutFee);
+  return { claim: supplierBillingFee.amount, pay: channelPayoutFee.amount,
+    termKey: o?.termKey ?? null, supplierBillingFee, channelPayoutFee,
+    note: [supplierBillingFee, channelPayoutFee].map((f, i) =>
+      `${i === 0 ? '청구' : '지급'} Data 기간별 수수료 · ${o?.termKey ?? '기간 미확인'} · ${f.status} · ${f.state} · ${f.policyId ?? 'policyId 없음'} · ${f.ruleId ?? 'ruleId 없음'}${f.reasonCode ? ` · ${f.reasonCode}` : ''}`).join(' / ') };
 }
 
-/** ERP5 원자 한 줄. Data 봉인 수수료를 우선하며 미확정은 null, 직접/옛 상품은 기존 표 동작을 유지한다. */
-export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, feeVersion?: string): Record<string, unknown> {
+/** 접수 당시 저장값을 봉인한다. 요율 계산이나 직접 입력 fallback은 없다. */
+export function intakeRecord(x: IntakeInput, nowMs: number): Record<string, unknown> {
   const identityMode = x.sourceProductId?.trim() ? 'product' : x.plate.trim() ? 'plate' : 'request';
   const code = intakeCode(x.plate, x.sourceProductId, x.receivedAt, x.intakeRequestId, identityMode);
   const iso = new Date(nowMs).toISOString();
   const data = intakeDataFees(x);
-  const auto = !data && fee?.status === 'AUTO' ? fee : null;
-  const m = x.feeManual;
-  const mClaim = m?.claim ?? null, mPay = m?.pay ?? null;
-  const tableNote = data ? data.note : !fee ? '수수료: 셈 안 함'
-    : fee.status === 'AUTO' ? `수수료표 ${feeVersion ?? ''} · ${fee.rule.id}`.trim()
-      : `수수료: ${fee.why}`;
-  const manualUsed = data
-    ? (mClaim !== null && mClaim !== data.claim) || (mPay !== null && mPay !== data.pay)
-    : mClaim !== null || mPay !== null;
-  const feeNote = !manualUsed ? tableNote
-    : [`수수료 직접 입력${m?.reason ? ` — ${m.reason}` : ''}`, auto ? `(표 ${auto.claim.toLocaleString()}/${auto.pay.toLocaleString()})` : `(${tableNote})`].join(' ');
+  const feeNote = data.note;
   return {
     code,
     plate: x.plate.replace(/\s/g, ''), receivedAt: x.receivedAt,
@@ -165,10 +146,8 @@ export function intakeRecord(x: IntakeInput, nowMs: number, fee?: FeeResult, fee
     sourceSnapshotId: x.sourceSnapshotId?.trim() || null,
     catalogSnapshotDigest: x.catalogSnapshotDigest?.trim() || null,
     catalogSnapshot: x.catalogSnapshot ?? null,
-    /* ★요율은 표가 낸 것만 적는다 — 사람이 금액으로 넣은 쪽은 요율을 지어내지 않는다 */
-    supplierRate: auto && mClaim === null ? auto.rule.claim : 0, agentRate: auto && mPay === null ? auto.rule.pay : 0,
-    claimWritten: mClaim ?? (data ? data.claim : auto ? auto.claim : 0),
-    payWritten: mPay ?? (data ? data.pay : auto ? auto.pay : 0),
+    supplierRate: null, agentRate: null,
+    claimWritten: data.claim, payWritten: data.pay,
     ...(x.promotion?.amount ? promotionPatch(x.promotion) : { claimIncentive: 0, payIncentive: 0 }),
     claimAdjust: 0, payAdjust: 0, adjustReason: '',
     paper: x.paper, delivered: x.delivered, deliveredAt: x.delivered ? x.deliveredAt : '',
@@ -383,42 +362,14 @@ export function progressPatch(
   };
 }
 
-/**
- * 표가 낸 값과 «다르게» 직접 넣었으면 사유가 있어야 한다 — 저장 직전에 표를 셈한 뒤 부른다.
- * ★표가 못 내는 건(MANUAL·NO_RULE·NO_BASE)은 사유 없이 넣어도 된다 — 그게 «주는 대로» 다.
- */
-export function feeManualErrors(x: IntakeInput, fee: FeeResult): string[] {
+/** 저장 수수료를 입력값으로 바꾸지 않는다. 미확정은 금액 입력 없이 접수 가능하다. */
+export function feeManualErrors(x: IntakeInput): string[] {
   const m = x.feeManual;
   const data = intakeDataFees(x);
-  if (data) {
-    if (!m || m.reason.trim()) return [];
-    const differs = (m.claim !== null && m.claim !== data.claim) || (m.pay !== null && m.pay !== data.pay);
-    return differs ? ['Data 기간별 수수료와 다르거나 미확정인 금액을 직접 넣으려면 사유를 적어야 합니다'] : [];
-  }
-  if (!m || fee.status !== 'AUTO' || m.reason.trim()) return [];
-  const differs = (m.claim !== null && m.claim !== fee.claim) || (m.pay !== null && m.pay !== fee.pay);
-  return differs ? [`수수료표는 ${fee.claim.toLocaleString()}/${fee.pay.toLocaleString()} 입니다 — 다르게 넣으려면 사유를 적어야 합니다`] : [];
+  if (!m) return [];
+  const differs = (m.claim !== null && m.claim !== data.claim) || (m.pay !== null && m.pay !== data.pay);
+  return differs ? ['수수료는 프리패스 데이터 저장값만 사용합니다 — 원천 확인 후 다시 접수해 주세요'] : [];
 }
-
-/**
- * 자동 수수료가 성립하지 않으면 0원으로 조용히 접수하지 않는다.
- * - AUTO: 표대로 저장 가능. 한쪽만 직접 덮어쓰는 것도 기존대로 허용.
- * - MANUAL / NO_RULE / NO_BASE: 자동으로 채울 값이 없으므로 청구·지급을 둘 다 직접 넣어야 한다.
- *   NO_BASE는 기준값(차량가액 또는 대여료·기간)을 채우면 AUTO로 돌아갈 수 있다.
- */
-export function feeCompletenessErrors(x: IntakeInput, fee: FeeResult): string[] {
-  if (intakeDataFees(x)) return []; // Data 미확정은 null로 접수 가능. 금액 입력을 강제하지 않는다.
-  if (fee.status === 'AUTO') return [];
-  const m = x.feeManual;
-  if (m?.claim !== null && m?.claim !== undefined && m?.pay !== null && m?.pay !== undefined) return [];
-
-  if (fee.status === 'NO_BASE') {
-    const basis = fee.rule.basis === '차량가액' ? '차량가액' : '대여료·계약기간';
-    return [`자동 수수료 기준값(${basis})이 없습니다 — 기준값을 입력하거나 청구·지급 수수료를 직접 입력해 주세요`];
-  }
-  return [`${fee.why} — 청구·지급 수수료를 직접 입력해 주세요`];
-}
-
 
 /* ── 접수 뒤 기본 사실 고치기 — 고객 · 모델 · 거래처 · 계약 조건 · 메모 ─────────── */
 

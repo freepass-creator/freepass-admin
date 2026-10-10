@@ -1,3 +1,4 @@
+import { dataFeeAmount } from '../../domain/settlement/fee';
 /**
  * ERP5 `settlement_rows` 한 문서 → 우리 실적 한 줄.
  *
@@ -18,12 +19,6 @@ function catalogSnapshotOf(v: unknown): IntakeCatalogSnapshot | null {
   const d = v as Record<string, unknown>;
   if (!d.product || typeof d.product !== 'object' || !d.offer || typeof d.offer !== 'object') return null;
   return v as IntakeCatalogSnapshot;
-}
-
-function dataFeeState(v: unknown): string | null {
-  return v && typeof v === 'object' && !Array.isArray(v) && typeof (v as { state?: unknown }).state === 'string'
-    ? (v as { state: string }).state
-    : null;
 }
 
 /**
@@ -65,8 +60,8 @@ function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   if (v === null) return { claim: null, why: '청구금액 칸이 비어 있다' };
   if (v !== 0) return { claim: v, why: null };
   const offer = catalogSnapshotOf(d.catalogSnapshot)?.offer;
-  // Data 봉인 접수라도 명시적 ZERO만 0 확정이다. UNKNOWN/미발행 0은 미확정으로 남긴다.
-  if (s(d.sourceProductId) && dataFeeState(offer?.supplierBillingFee) === 'ZERO') {
+  // Data가 확정한 KNOWN/ZERO의 0만 보존한다. UNKNOWN/미발행 0은 미확정이다.
+  if (s(d.sourceProductId) && dataFeeAmount(offer?.supplierBillingFee) === 0) {
     return { claim: 0, why: null };
   }
   /* 지급 축이 통보를 지났다(통보·확인·지급) + 청구서가 나갔다 = 끝난 줄 */

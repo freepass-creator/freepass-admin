@@ -1,3 +1,58 @@
+## 2026-10-10 저장 수수료 읽기 일원화 — 파일 변경만
+
+- 목적/정본: 사용자 지정 작업선, 기준 revision `e0e02b465f3be36761ad5e88f1fc5f79a566cd96`. 새 저장소/API 없이 기존 Admin Catalog의 기간별 TermEconomicAmount를 사용한다. 커밋/push/배포/운영 쓰기는 실행하지 않았다.
+- 사전점검: academy:start READY. reuse:check 후보 확인 후 **REUSE_EXTEND**: 기존 `money.ts`를 확장해 truncWon을 둔다. 새 모듈/파일을 만들 이유가 없어 만들지 않았다.
+- 변경: KNOWN/ZERO=CONFIRMED 금액, NOT_APPLICABLE=CONFIRMED 해당 없음(null), UNKNOWN/누락=UNCONFIRMED(null, reasonCode 또는 REASON_NOT_RECORDED). termKey와 ruleId/policyId/sourceRefs는 기존 catalogSnapshot으로 보존한다. 직접접수도 Data가 없으면 미확정이며 폼 입력으로 수수료를 덮어쓰지 않는다. 기존 관리자 미리보기도 같은 저장값 읽기로 전환했다.
+- 버림: `money.ts:truncWon`의 Math.trunc를 청구/지급, GA 추가보증금, 프로모션, 부가세/포함가 역산, 입금 정수화, 가감에 사용한다. 환수는 원금의 반대 부호이므로 0 방향 버림이 합계 대칭을 보존한다. 표시 포맷은 유지했다.
+- 삭제 파일: `scripts/fee-rules-to-erp5.mts` 158줄, `scripts/fee-fill-erp5.mts` 103줄.
+- 삭제 함수(기준 revision의 함수 본문 줄수, 주석 제외): feeOf 42, feeKindOf 10, feeRuleFor 15, verifiedReceiptBasis 15, loadFeeRuleSet 31, feeCompletenessErrors 12, intakeMoney 18, intakeBillingFormula 51, methodOf 4, feeValueOf 6. AUTO 결과 타입/분기, 서버 re-export, 시트 요율/금액 읽기·합산·주입과 데모 요율 계산도 제거했다.
+- 보존: fee-rules.ts는 loadMewcarGaTable 때문에 남긴다. fee.ts의 FeeRule/headOf는 보존 요청된 GA 설명/공급사 판별이 사용한다. to-settlement.ts의 동명 feeOf는 옛 필드의 비율/정액 분류일 뿐 계산기가 아니며 기존 이력 조회가 사용한다. 분납·정산비율·가감과 F04의 비수수료 사실/시점 설명은 유지했다.
+- 별도 작업 경계: MonthlyDocumentsForm, generateMonthlyDocumentsAction 본문, settlement-documents.ts, invoice-document.ts 및 전자계약 렌더러는 미수정. invoice-document.ts의 기존 반올림/산식 대조는 월 PDF 담당이 해당 경로를 교체하는 변경에서 제거/통일해야 한다. 새 F04 snapshot은 수수료·청구·지급 금액을 공급하지 않으므로 PDF 담당은 시트 금액을 재연결하면 안 된다. receiptRowBasis는 기존 기재액 설명만 유지하며 현재 요율로 산식을 재구성하지 않는다.
+- 임시 추가: 없음. 기존 역사 필드 분류기를 지울 조건은 과거 원장까지 typed 저장값으로 전환하고 해당 소비자의 재조회가 검증되는 때다. 월 PDF 잔여는 월 PDF 작업 완료 시 함께 정리한다.
+- 검증: npx tsc --noEmit PASS. tsx --test는 uv_os_get_passwd ENOMEM으로 시작 실패. TypeScript transpileModule의 메모리 내 CommonJS 변환 + Node 내장 node:test로 정산 도메인 전체, F04, 원장 projection/데모, ledger model, Admin Catalog client 합계 385 tests PASS / 0 FAIL. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE이며 PASS로 세지 않는다. 실제 로그인 UI/Firestore 쓰기/외부 발행은 검증하거나 실행하지 않았다. 최종 diff 검사 PASS, 제외 파일 변경 0, generateMonthlyDocumentsAction 본문 동일, 수정 .mts 구문 진단 0, 추가 줄의 연락처/차량번호/사업자번호/Google 문서 링크 패턴 탐지 0.
+- 누더기 검사: 담당 범위 새 중복 0, 옛 요율 계산/시트 금액 주입 경로 0. 위 월 PDF 잔여는 별도 작업 범위로 명시했다.
+- next_start_here: 이 diff와 월 PDF 작업의 결합점을 검토하고 정상 tsx 환경에서 같은 시험을 재실행한다. 파일 변경 상태 그대로 인계하며 커밋/push는 하지 않는다.
+변경 파일 전체(34개 수정, 2개 삭제):
+
+- `docs/HANDOFF.md`
+- `scripts/f04-fill-erp5.mts`
+- `scripts/f04-ssot.mts`
+- `scripts/fee-fill-erp5.mts` (삭제)
+- `scripts/fee-rules-to-erp5.mts` (삭제)
+- `src/adapters/erp5/demo-fixtures.ts`
+- `src/adapters/erp5/fee-rules.ts`
+- `src/adapters/erp5/settlement-repository.ts`
+- `src/adapters/erp5/to-settlement.ts`
+- `src/adapters/f04/__tests__/sheet.test.ts`
+- `src/adapters/f04/sheet.ts`
+- `src/app/intake/NewIntakePanel.tsx`
+- `src/app/intake/actions.ts`
+- `src/app/intake/new/IntakeForm.tsx`
+- `src/app/ledger/NewIntakePanel.tsx`
+- `src/app/products/BoardIntakeForm.tsx`
+- `src/app/products/board.tsx`
+- `src/domain/settlement/__tests__/adjust.test.ts`
+- `src/domain/settlement/__tests__/catalog-snapshot.test.ts`
+- `src/domain/settlement/__tests__/fee-manual-claw.test.ts`
+- `src/domain/settlement/__tests__/fee-rules-f04-extra.test.ts`
+- `src/domain/settlement/__tests__/fee.test.ts`
+- `src/domain/settlement/__tests__/lifecycle.test.ts`
+- `src/domain/settlement/__tests__/money.test.ts`
+- `src/domain/settlement/__tests__/product-kind.test.ts`
+- `src/domain/settlement/adjust.ts`
+- `src/domain/settlement/catalog-snapshot.ts`
+- `src/domain/settlement/claim-link.ts`
+- `src/domain/settlement/fee-rules-f04-extra.ts`
+- `src/domain/settlement/fee.ts`
+- `src/domain/settlement/intake.ts`
+- `src/domain/settlement/lifecycle.ts`
+- `src/domain/settlement/money.ts`
+- `src/domain/settlement/promotion.ts`
+- `src/domain/settlement/types.ts`
+- `src/server/freepass-data.ts`
+
+
+
 # FreePass Admin Handoff
 
 ## 2026-10-07 월별 정산 소비자 조회 계약 — 동일 PR171 의존

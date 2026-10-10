@@ -1,49 +1,42 @@
-/**
- * **수수료 셈 — 규칙은 «데이터» 로 받는다.**
- *
- * ★대표 2026-09-18 「수수료 계산하는 방식이랑 이런것들 다 학습해서 원자로 갖고와 … ssot에 반영되어야할거」
- *   규칙의 정본은 이제 ERP5 `settlement_fee_rules`(한 규칙 = 한 문서) · `settlement_rules/current`(갈래·별칭·시점)다.
- *   이 파일은 규칙을 «모른다» — 받은 규칙으로 셀 뿐이다. 규칙이 바뀌면 ERP5 문서만 고친다.
- *
- * ★셈법·찾는 차례는 erp4 `lib/domain/settlement-fee-table.ts`(erp4 수수료표) ·
- *   `scripts/check-fee-consistency.mts` 와 «같다». 옮기면서 바꾼 것은 없다.
- *
- * ★★`auto: false` 규칙은 기계가 금액을 내지 «않는다» — 「건별 책정」·「최대 9%」 는 사람이 정한다.
- *   가장 비슷한 규칙에 끼워 넣어 세면 조용한 오답이 된다(erp4 2026-09-08 신차발주 사고).
- */
-import type { Maybe } from './types';
 import type { TermEconomicAmount } from '../product/types';
 
-/** Display evidence only: never changes booked amounts or infers a rate from them. */
-export function verifiedReceiptBasis(input: {amount: unknown; rate: unknown; rent: unknown; term: unknown; price: unknown}, rule: {basis: string; rate: unknown; auto: boolean; source: string} | undefined): string {
-  if (typeof input.amount !== 'number' || !Number.isSafeInteger(input.amount)) return '미확정';
-  const money = (n:number) => n.toLocaleString('ko-KR');
-  const unknown = `직접입력액 ${money(input.amount)}원 · 산식근거 미기록`;
-  if (!rule?.auto || !rule.source || typeof rule.rate !== 'number' || !Number.isFinite(rule.rate) || input.rate !== rule.rate) return unknown;
-  let factors:number[];
-  if (rule.basis === '정액' && Number.isSafeInteger(rule.rate) && rule.rate>=0) factors=[rule.rate];
-  else if (rule.basis === '대여료×기간' && typeof input.rent === 'number' && input.rent > 0 && typeof input.term === 'number' && Number.isInteger(input.term) && input.term > 0) factors=[input.rent,input.term,rule.rate];
-  else if (rule.basis === '차량가액' && typeof input.price === 'number' && input.price > 0) factors=[input.price,rule.rate];
-  else return unknown;
-  if (rule.basis !== '정액' && (rule.rate < 0 || rule.rate > 1)) return unknown;
-  if (Math.round(factors.reduce((a,b)=>a*b,1)) !== input.amount) return `검증보류 · 기재 ${money(input.amount)}원 · 원본 산식 불일치`;
-  const expression=factors.map((n,i)=>rule.basis!=='정액' && i===factors.length-1?`${Number((n*100).toFixed(6))}%`:money(n)).join(' × ');
-  return `${expression} = ${money(input.amount)}원 · ${rule.source}`;
+/** 내부 수수료 조회 v1. 저장값만 읽으며 calculation은 실행하지 않는다. */
+export type DataFee = {
+  ruleId: string | null; policyId: string | null; sourceRefs: string[];
+} & (
+  | { status: 'CONFIRMED'; state: 'KNOWN' | 'ZERO'; amount: number; reasonCode: null }
+  | { status: 'CONFIRMED'; state: 'NOT_APPLICABLE'; amount: null; reasonCode: null }
+  | { status: 'UNCONFIRMED'; state: 'UNKNOWN'; amount: null; reasonCode: string }
+);
+
+export function readDataFee(fee: TermEconomicAmount | undefined): DataFee {
+  const provenance = { ruleId: fee?.ruleId ?? null, policyId: fee?.policyId ?? null, sourceRefs: [...(fee?.sourceRefs ?? [])] };
+  if (fee?.state === 'NOT_APPLICABLE') return { ...provenance, status: 'CONFIRMED', state: 'NOT_APPLICABLE', amount: null, reasonCode: null };
+  if (fee?.state === 'ZERO') return { ...provenance, status: 'CONFIRMED', state: 'ZERO', amount: 0, reasonCode: null };
+  if (fee?.state === 'KNOWN' && fee.amount?.currency === 'KRW' && typeof fee.amount.amount === 'number' && Number.isFinite(fee.amount.amount) && fee.amount.amount >= 0) {
+    return { ...provenance, status: 'CONFIRMED', state: 'KNOWN', amount: fee.amount.amount, reasonCode: null };
+  }
+  return { ...provenance, status: 'UNCONFIRMED', state: 'UNKNOWN', amount: null, reasonCode: fee?.reasonCode?.trim() ? fee.reasonCode : 'REASON_NOT_RECORDED' };
 }
 
-export function receiptRowBasis(row:Record<string,unknown>, rules:FeeRule[]):{claim:string;pay:string} {
-  const raw=Array.isArray(row.sourceReceiptRaw)?row.sourceReceiptRaw:[];
-  const matches=rules.filter(r=>r.supplier===raw[2] && r.kind===raw[28] && (r.term===raw[10] || r.term===0));
-  const rule=matches.length===1 && !matches[0].form?matches[0]:undefined;
-  const one=(axis:'claim'|'pay')=>verifiedReceiptBasis({amount:row[axis==='claim'?'sourceReceiptClaim':'sourceReceiptPay'],rate:raw[axis==='claim'?29:34],rent:raw[11],term:raw[10],price:raw[13]},rule?{basis:rule.basis,rate:rule[axis],auto:rule.auto,source:`수수료 정본 ${rule.id} · 접수 ${axis==='claim'?'AD':'AI'}`}:undefined);
-  return {claim:one('claim'),pay:one('pay')};
-}
-
-/** Data 값 읽기 전용. calculation을 실행하거나 미확정을 0으로 채우지 않는다. */
 export function dataFeeAmount(fee: TermEconomicAmount | undefined): number | null {
-  return fee?.state === 'ZERO' ? 0 : fee?.state === 'KNOWN' ? fee.amount?.amount ?? null : null;
+  return readDataFee(fee).amount;
 }
 
+export function dataFeeLabel(fee: TermEconomicAmount | DataFee | undefined): string {
+  const value = fee && 'status' in fee ? fee : readDataFee(fee);
+  return value.state === 'NOT_APPLICABLE' ? '해당 없음' : value.status === 'UNCONFIRMED'
+    ? `미확정 · ${value.reasonCode}` : `${value.amount.toLocaleString('ko-KR')}원`;
+}
+
+/** 과거 접수 표시: 기재 금액만 읽고 현재 요율로 과거 산식을 재구성하지 않는다. */
+export function receiptRowBasis(row: Record<string, unknown>): { claim: string; pay: string } {
+  const label = (value: unknown) => typeof value === 'number' && Number.isFinite(value)
+    ? `기재액 ${value.toLocaleString('ko-KR')}원 · 산식근거 미기록` : '미확정';
+  return { claim: label(row.sourceReceiptClaim), pay: label(row.sourceReceiptPay) };
+}
+
+// GA 표의 비계산 설명 메타데이터에 사용하는 타입과 이름 정규화.
 export type FeeBasis = '차량가액' | '대여료×기간' | '정액' | '한달렌탈료' | '구독료+정액' | '범위' | '조건분기';
 export type FeeKind = '신차' | '재렌트' | '구독' | '전기차';
 
@@ -54,107 +47,11 @@ export interface FeeRule {
   form: string;        // 선출고 · 선발주 · 발주 · 매칭출고 · 인수형 · 인수,반납형 · ''
   term: number;        // 0 = 기간 무관
   basis: FeeBasis;
-  claim: number | string;   // 숫자면 율(0.035) 또는 정액(600000) · 글이면 사람이 정한다
+  claim: number | string;   // GA 표 설명 메타데이터. 이 타입으로 금액을 계산하지 않는다
   pay: number | string;
   when: string;
   auto: boolean;
   note?: string;
 }
 
-/** 갈래 가르기 한 줄 — 위에서부터 처음 맞는 것. `evKind` 가 있으면 전기차일 때 그리로 */
-export interface KindRule { match: string; kind: FeeKind; form?: string; evKind?: FeeKind; evFallback?: FeeKind }
-
-export interface FeeRuleSet {
-  rules: FeeRule[];
-  aliases: Record<string, string>;
-  evModel: string;        // 정규식 글자
-  kindRules: KindRule[];
-  version: string;
-}
-
-/** 이름 앞머리 — 원장은 줄여 적고 표는 정식 상호다 (erp4 HEAD 와 같음) */
 export const headOf = (s: string) => s.replace(/\s|주식회사|㈜|렌터카|렌트카|모빌리티|\(.*\)/g, '');
-
-export function feeKindOf(set: FeeRuleSet, product: string, model: string): { kind: FeeKind; form?: string; fallback?: FeeKind } {
-  const ev = new RegExp(set.evModel, 'i').test(model);
-  for (const k of set.kindRules) {
-    if (!new RegExp(k.match).test(product)) continue;
-    if (ev && k.evKind) return { kind: k.evKind, fallback: k.evFallback };
-    return { kind: k.kind, ...(k.form ? { form: k.form } : {}) };
-  }
-  /* 어느 말에도 안 걸리면 재렌트 (erp4 마지막 줄) */
-  return ev ? { kind: '전기차', fallback: '재렌트' } : { kind: '재렌트' };
-}
-
-/**
- * 규칙 찾기 — ① 공급사+형태+기간 ② 기간무관 ③ 형태 무시 ④ 전기차 특약이 없으면 일반 갈래로.
- * ★특약이 없으면 «없는 것» 이 아니라 «일반 규칙» 이다 (erp4 2026-09-01 모델Y 사고).
- */
-export function feeRuleFor(set: FeeRuleSet, supplier: string, kind: FeeKind, term: number, form?: string, fallback?: FeeKind): FeeRule | undefined {
-  const s = headOf(supplier);
-  if (!s) return undefined;
-  const names = [s, set.aliases[supplier] ? headOf(set.aliases[supplier]) : ''].filter(Boolean);
-  const mine = set.rules.filter((r) => { const t = headOf(r.supplier); return t && names.some((n) => n.startsWith(t) || t.startsWith(n)); });
-  if (!mine.length) return undefined;
-  const pick = (k: FeeKind) => {
-    const byForm = form ? mine.filter((r) => r.form === form) : mine;
-    return byForm.find((r) => r.kind === k && r.term === term)
-      || byForm.find((r) => r.kind === k && r.term === 0)
-      || mine.find((r) => r.kind === k && r.term === term)
-      || mine.find((r) => r.kind === k && r.term === 0);
-  };
-  return pick(kind) || (fallback ? pick(fallback) : undefined);
-}
-
-export type FeeResult =
-  | { status: 'AUTO'; rule: FeeRule; claim: number; pay: number }
-  | { status: 'MANUAL'; rule: FeeRule; why: string }        // 사람이 정하는 규칙
-  | { status: 'NO_RULE'; why: string }                      // 표에 그 공급사·갈래가 없다
-  | { status: 'NO_BASE'; rule: FeeRule; why: string };      // 셀 밑값(대여료·기간·차량가액)이 없다
-
-/**
- * 한 계약의 수수료 — 비율(settleRatio)·정산대상은 여기서 안 본다. 그건 청구목록 셈(ledgers.ts)의 몫이다.
- * ★밑값이 없으면 0 으로 세지 않는다 — NO_BASE 로 돌려 「모름」 이 되게 한다.
- */
-export function feeOf(
-  set: FeeRuleSet,
-  c: { supplier: Maybe<string>; product: Maybe<string>; model: Maybe<string>; term: Maybe<number>; rent: Maybe<number>; price: Maybe<number> },
-): FeeResult {
-  let kindInfo: ReturnType<typeof feeKindOf>;
-  try {
-    kindInfo = feeKindOf(set, c.product ?? '', c.model ?? '');
-  } catch {
-    return { status: 'NO_RULE', why: '수수료 갈래 규칙을 읽지 못했습니다 — SSOT 정규식을 확인합니다' };
-  }
-  const { kind, form, fallback } = kindInfo;
-  const term = c.term ?? 0;
-  const rule = feeRuleFor(set, c.supplier ?? '', kind, term, form, fallback);
-  if (!rule) return { status: 'NO_RULE', why: `표에 「${c.supplier ?? '(공급사 없음)'} · ${kind}${form ? ` ${form}` : ''}${term ? ` ${term}개월` : ''}」 가 없다` };
-  if (!rule.auto || typeof rule.claim !== 'number' || typeof rule.pay !== 'number') {
-    return { status: 'MANUAL', rule, why: `표가 「${rule.claim}」 — 사람이 정한다` };
-  }
-
-  const supportedAuto = rule.basis === '정액' || rule.basis === '차량가액' || rule.basis === '대여료×기간';
-  if (!supportedAuto) {
-    return { status: 'MANUAL', rule, why: `자동 셈으로 지원하지 않는 「${rule.basis}」 규칙입니다 — 사람이 확인합니다` };
-  }
-
-  if (rule.basis === '정액') {
-    if (![rule.claim, rule.pay].every((v) => Number.isFinite(v) && v >= 0)) {
-      return { status: 'MANUAL', rule, why: '정액 수수료 규칙 값이 비정상입니다 — 사람이 확인합니다' };
-    }
-    return { status: 'AUTO', rule, claim: Math.round(rule.claim), pay: Math.round(rule.pay) };
-  }
-
-  if (![rule.claim, rule.pay].every((v) => Number.isFinite(v) && v >= 0 && v <= 1)) {
-    return { status: 'MANUAL', rule, why: '비율 수수료 규칙은 0~100% 범위여야 합니다 — 사람이 확인합니다' };
-  }
-
-  const base = rule.basis === '차량가액'
-    ? c.price
-    : (c.rent !== null && c.term !== null ? c.rent * c.term : null);
-  if (base === null || !Number.isFinite(base) || base <= 0) {
-    return { status: 'NO_BASE', rule, why: rule.basis === '차량가액' ? '차량가액이 없다' : '대여료·계약기간이 없다' };
-  }
-  return { status: 'AUTO', rule, claim: Math.round(base * rule.claim), pay: Math.round(base * rule.pay) };
-}

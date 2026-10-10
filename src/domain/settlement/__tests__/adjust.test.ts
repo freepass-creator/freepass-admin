@@ -94,3 +94,10 @@ describe('접수에 프로모션이 실린다', () => {
     assert.deepEqual([r.claimIncentive, r.payIncentive, r.promoShare, r.claimAdjust, r.payAdjust], [300_000, 300_000, 1, 0, 0]);
   });
 });
+
+it('가감 정규화와 프로모션 몫은 소수 원을 버린다', () => {
+  const result = adjustmentFromInput('-7.9', '3.9', '예시 가감');
+  assert.ok(result.ok);
+  assert.deepEqual(result.ok && adjustPatch(result.adjust), { claimAdjust: -7, payAdjust: 3, adjustReason: '예시 가감' });
+  assert.equal(promotionPatch(promotionFromInput(7, 50, '예시 프로모션')).payIncentive, 3);
+});

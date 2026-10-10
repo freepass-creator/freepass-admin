@@ -244,3 +244,11 @@ it('실제 수금·지급 입력은 1원 단위 정수만 받는다', () => {
   const paid = lifePatchAt(channel, { kind: 'paid', amount: 100.5, day: '2026-09-30' });
   assert.equal(paid.ok, false);
 });
+
+it('부가세·포함가 역산은 원 미만 버림이며 환수 부호에 대칭이다', () => {
+  assert.deepEqual(invoiceMoneyOf(19, false), { net: 19, vat: 1, total: 20 });
+  assert.deepEqual(invoiceMoneyOf(-19, false), { net: -19, vat: -1, total: -20 });
+  assert.deepEqual(invoiceMoneyOf(17, true), { net: 15, vat: 2, total: 17 });
+  assert.deepEqual(invoiceMoneyOf(-17, true), { net: -15, vat: -2, total: -17 });
+  assert.deepEqual(invoiceMoneyOf(33, true), { net: 30, vat: 3, total: 33 });
+});

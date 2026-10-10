@@ -219,7 +219,6 @@ export const readSettlementScreen = cache(() => settlements.listWithPublishedRec
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
-export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
 import { loadMewcarGaTable } from '../adapters/erp5/fee-rules';
 import { mewcarGaTableOrNull as orNull } from '../domain/settlement/fee-rules-f04-extra';
 /** 예시공급사D 지급표(프리패스 데이터 수수료 규칙) — 실패해도 null. 저장(접수)은 이 표를 읽지 않는다. */

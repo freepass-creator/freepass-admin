@@ -1,137 +1,84 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { feeOf, receiptRowBasis, verifiedReceiptBasis, type FeeRuleSet } from '../fee.js';
-import { intakeRecord } from '../intake.js';
+import { dataFeeAmount, dataFeeLabel, readDataFee, receiptRowBasis } from '../fee.js';
+import { intakeDataFees, intakeRecord, feeManualErrors, type IntakeInput } from '../intake.js';
+import type { TermEconomicAmount } from '../../product/types.js';
+import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
-const W = '보증금·대여료 회차 완납';
-it('receipt evidence verifies original rate and exact booked amount without changing inputs or reverse inference',()=>{
-  const input={amount:1357200,rate:.0325,rent:870000,term:48,price:null};
-  const rule={basis:'대여료×기간',rate:.0325,auto:true,source:'수수료표 20행'};
-  assert.match(verifiedReceiptBasis(input,rule),/870,000 × 48 × 3.25% = 1,357,200원/);
-  assert.match(verifiedReceiptBasis({...input,amount:1357201},rule),/^검증보류/);
-  assert.match(verifiedReceiptBasis({...input,rate:null},rule),/산식근거 미기록/);
-  assert.match(verifiedReceiptBasis({...input,amount:0},undefined),/직접입력액 0원/);
-  assert.equal(verifiedReceiptBasis({...input,amount:null},rule),'미확정');
-  assert.equal(input.amount,1357200);
+// 모든 금액·식별자는 실제 거래와 무관한 시험값이다.
+const economic = (state: TermEconomicAmount['state'], amount: number | null = null): TermEconomicAmount => ({
+  state, amount: amount === null ? null : { amount, currency: 'KRW' },
+  sourceRefs: ['synthetic-source'], ruleId: 'synthetic-rule', policyId: 'synthetic-policy',
+  calculation: { kind: 'RATE', base: 'VEHICLE_PRICE', rate: 0.19 },
 });
-it('receipt rule evidence fails closed on ambiguous forms and does not infer a missing kind',()=>{
-  const raw:Array<unknown>=[];raw[2]='검증공급사';raw[28]='재렌트';raw[10]=48;raw[11]=870000;raw[29]=.0325;raw[34]=.025;
-  const r={sourceReceiptRaw:raw,sourceReceiptClaim:1357200,sourceReceiptPay:1044000};
-  const rule={id:'source20',supplier:'검증공급사',kind:'재렌트' as const,form:'',term:48,basis:'대여료×기간' as const,claim:.0325,pay:.025,auto:true,when:''};
-  assert.match(receiptRowBasis(r,[rule]).pay,/2.5% = 1,044,000원/);
-  assert.match(receiptRowBasis(r,[rule,{...rule,id:'special',form:'개별'}]).claim,/산식근거 미기록/);
-  raw[28]=null;assert.match(receiptRowBasis(r,[rule]).claim,/산식근거 미기록/);
-});
-const set: FeeRuleSet = {
-  version: 'test',
-  aliases: { 엘씨렌트: '빌린카' },
-  evModel: '\\bEV\\d?\\b|아이오닉\\s*[56]',
-  kindRules: [
-    { match: '견적출고|매칭출고', kind: '신차', form: '매칭출고' },
-    { match: '신차발주', kind: '신차', form: '발주' },
-    { match: '선출고', kind: '신차', form: '선출고', evKind: '전기차', evFallback: '신차' },
-    { match: '구독', kind: '구독', evKind: '전기차', evFallback: '구독' },
-  ],
-  rules: [
-    { id: 'a', supplier: '예시공급사A', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: W, auto: true },
-    { id: 'b', supplier: '예시공급사A', kind: '신차', form: '발주', term: 0, basis: '범위', claim: '건별 책정', pay: '건별 책정', when: W, auto: false },
-    { id: 'c', supplier: '예시공급사A', kind: '재렌트', form: '', term: 12, basis: '정액', claim: 600_000, pay: 500_000, when: W, auto: true },
-    { id: 'd', supplier: '예시공급사A', kind: '재렌트', form: '', term: 48, basis: '대여료×기간', claim: 0.0325, pay: 0.025, when: W, auto: true },
-    { id: 'e', supplier: '예시공급사B', kind: '구독', form: '', term: 0, basis: '정액', claim: 1_000_000, pay: 800_000, when: W, auto: true },
-    { id: 'f', supplier: '예시공급사B', kind: '전기차', form: '', term: 0, basis: '정액', claim: 1_500_000, pay: 1_300_000, when: W, auto: true },
-    { id: 'g', supplier: '빌린카', kind: '구독', form: '', term: 60, basis: '대여료×기간', claim: 0.0275, pay: 0.02, when: W, auto: true },
-  ],
+const base: IntakeInput = {
+  receivedAt: '2026-10-10', plate: '', intakeRequestId: 'synthetic-request', model: '예시모델',
+  supplier: '예시공급사A', supplierCode: '', customer: '예시고객', channel: '예시채널', channelCode: '',
+  agent: '예시담당', agentCode: '', product: '신차발주', rentKind: '신차렌트', contractType: '',
+  term: 1, rent: 7, deposit: null, price: 9, payKind: '일시납', paper: false, delivered: false, deliveredAt: '', note: '',
 };
-const c = (o: Partial<{ supplier: string; product: string; model: string; term: number; rent: number; price: number }>) =>
-  ({ supplier: null, product: null, model: null, term: null, rent: null, price: null, ...o });
-
-describe('feeOf — 규칙은 데이터 (ERP5 settlement_fee_rules)', () => {
-  it('재렌트 48개월 = 대여료 × 48 × 3.25% (전례 PLATE_RATE_SAMPLE 사다리)', () => {
-    const f = feeOf(set, c({ supplier: '예시공급사A', product: '장기렌트', term: 48, rent: 700_000 }));
-    assert.deepEqual(f.status === 'AUTO' && [f.claim, f.pay], [1_092_000, 840_000]);
-  });
-  it('12개월은 정액 · 이름 꼬리(주)는 안 가린다', () => {
-    const f = feeOf(set, c({ supplier: '예시공급사A(주)', product: '장기렌트', term: 12, rent: 500_000 }));
-    assert.deepEqual(f.status === 'AUTO' && [f.claim, f.pay], [600_000, 500_000]);
-  });
-  it('★오플 전기차 프로모션 — HEV 는 전기차가 아니다', () => {
-    const ev = feeOf(set, c({ supplier: '예시공급사B', product: '오플구독', model: 'EV6' }));
-    assert.equal(ev.status === 'AUTO' && ev.claim, 1_500_000);
-    const hev = feeOf(set, c({ supplier: '예시공급사B', product: '오플구독', model: 'K5 HEV' }));
-    assert.equal(hev.status === 'AUTO' && hev.claim, 1_000_000);
-  });
-  it('★신차발주는 «주는 대로» — 선출고로 세지 않는다', () =>
-    assert.equal(feeOf(set, c({ supplier: '예시공급사A', product: '신차발주', price: 50_000_000 })).status, 'MANUAL'));
-  it('별칭으로 붙는다 (엘씨렌트 = 빌린카)', () =>
-    assert.equal(feeOf(set, c({ supplier: '엘씨렌트', product: '구독', term: 60, rent: 400_000 })).status, 'AUTO'));
-  it('표에 없으면 NO_RULE · 밑값 없으면 NO_BASE — 0 으로 세지 않는다', () => {
-    assert.equal(feeOf(set, c({ supplier: 'JPK', product: '장기렌트', term: 48, rent: 1 })).status, 'NO_RULE');
-    assert.equal(feeOf(set, c({ supplier: '예시공급사A', product: '장기렌트', term: 48 })).status, 'NO_BASE');
-  });
+const input = (claim?: TermEconomicAmount, pay?: TermEconomicAmount): IntakeInput => ({
+  ...base, sourceProductId: 'synthetic-product', catalogSnapshot: {
+    capturedAt: '2026-10-10T00:00:00Z', product: {} as NonNullable<IntakeInput['catalogSnapshot']>['product'],
+    offer: { id: 'synthetic-offer#term-a', termKey: 'term-a', termMonths: 1, monthlyRent: 7,
+      deposit: null, prepayment: null, annualMileageKm: null, policyValues: [],
+      supplierBillingFee: claim, channelPayoutFee: pay },
+  },
 });
 
-describe('접수에 수수료가 선다', () => {
-  const x = {
-    receivedAt: '2026-09-18', plate: 'PLATEA', model: 'K8', supplier: '예시공급사A', supplierCode: '', customer: '고객 A',
-    channel: '하허호', channelCode: '', agent: '김', agentCode: '', product: '장기렌트', rentKind: '', contractType: '',
-    term: 48, rent: 700_000, deposit: 0, price: null, payKind: '일시납', paper: false, delivered: false, deliveredAt: '', note: '',
-  };
-  it('AUTO 면 요율·금액과 근거(규칙 id)를 박는다', () => {
-    const r = intakeRecord(x, 0, feeOf(set, x), 'fee-test');
-    assert.deepEqual([r.supplierRate, r.agentRate, r.claimWritten, r.payWritten], [0.0325, 0.025, 1_092_000, 840_000]);
-    assert.match(String(r.settleNote), /fee-test · d/);
+describe('Data 내부 수수료 저장값 읽기', () => {
+  it('KNOWN 값은 소수도 그대로 읽고 calculation을 실행하지 않는다', () => {
+    const fee = economic('KNOWN', 7.9);
+    assert.equal(dataFeeAmount(fee), 7.9);
+    assert.deepEqual(readDataFee(fee), { status: 'CONFIRMED', state: 'KNOWN', amount: 7.9, reasonCode: null,
+      ruleId: fee.ruleId, policyId: fee.policyId, sourceRefs: fee.sourceRefs });
   });
-  it('사람이 정하는 규칙이면 0 으로 두고 까닭을 남긴다', () => {
-    const y = { ...x, product: '신차발주' };
-    const r = intakeRecord(y, 0, feeOf(set, y), 'fee-test');
-    assert.equal(r.claimWritten, 0);
-    assert.match(String(r.settleNote), /사람이 정한다/);
+  it('ZERO와 NOT_APPLICABLE과 UNKNOWN을 구분한다', () => {
+    assert.equal(dataFeeAmount(economic('ZERO', 0)), 0);
+    const na = readDataFee(economic('NOT_APPLICABLE'));
+    assert.equal(na.status, 'CONFIRMED'); assert.equal(na.amount, null);
+    assert.equal(dataFeeLabel(economic('NOT_APPLICABLE')), '해당 없음');
+    const unknown = readDataFee({ ...economic('UNKNOWN'), reasonCode: 'SYNTHETIC_REASON' });
+    assert.equal(unknown.status, 'UNCONFIRMED'); assert.equal(unknown.amount, null);
+    assert.equal(unknown.reasonCode, 'SYNTHETIC_REASON');
+    assert.deepEqual(unknown.sourceRefs, ['synthetic-source']);
   });
-});
-
-
-describe('feeOf — 깨진 자동 규칙은 조용히 금액을 만들지 않는다', () => {
-  const contract = c({ supplier: '예시공급사A', product: '장기렌트', term: 48, rent: 700_000 });
-
-  it('비율형 자동 규칙의 음수/100% 초과를 수동확인으로 내린다', () => {
-    const badNeg: FeeRuleSet = { ...set, rules: [{ ...set.rules[3], claim: -0.1 }] };
-    assert.equal(feeOf(badNeg, contract).status, 'MANUAL');
-
-    const badOver: FeeRuleSet = { ...set, rules: [{ ...set.rules[3], pay: 1.2 }] };
-    assert.equal(feeOf(badOver, contract).status, 'MANUAL');
+  it('누락·잘못된 KNOWN은 이유 없는 0으로 바꾸지 않는다', () => {
+    for (const fee of [undefined, economic('UNKNOWN'), economic('KNOWN'), economic('KNOWN', NaN), economic('KNOWN', Infinity), economic('KNOWN', -1)]) {
+      assert.equal(readDataFee(fee).reasonCode, 'REASON_NOT_RECORDED');
+      assert.equal(dataFeeAmount(fee), null);
+    }
+    assert.notEqual(readDataFee(economic('KNOWN', 0)).status, 'UNCONFIRMED');
+    assert.equal(toSettlementRow(intakeRecord(input(economic('KNOWN', 0)), 0), 'synthetic-row').row.money.claim, 0);
   });
-
-  it('정액 자동 규칙의 음수 금액을 수동확인으로 내린다', () => {
-    const bad: FeeRuleSet = { ...set, rules: [{ ...set.rules[2], claim: -1 }] };
-    assert.equal(feeOf(bad, c({ supplier: '예시공급사A', product: '장기렌트', term: 12, rent: 500_000 })).status, 'MANUAL');
+  it('기간과 양쪽 provenance를 보존하고 원장 재읽기에서도 0을 지킨다', () => {
+    const x = input(economic('ZERO', 0), economic('KNOWN', 7));
+    const data = intakeDataFees(x);
+    assert.equal(data.termKey, 'term-a');
+    assert.equal(data.supplierBillingFee.ruleId, 'synthetic-rule');
+    assert.deepEqual(data.channelPayoutFee.sourceRefs, ['synthetic-source']);
+    const record = intakeRecord(x, 0), row = toSettlementRow(record, 'synthetic-row').row;
+    assert.deepEqual([record.claimWritten, record.payWritten, row.money.claim, row.money.pay], [0, 7, 0, 7]);
+    assert.deepEqual(record.catalogSnapshot, x.catalogSnapshot);
   });
-
-  it('지원하지 않는 basis가 실수로 auto=true여도 임의 계산하지 않는다', () => {
-    const bad: FeeRuleSet = { ...set, rules: [{
-      ...set.rules[3], basis: '한달렌탈료', claim: 0.5, pay: 0.4, auto: true,
-    }] };
-    assert.equal(feeOf(bad, contract).status, 'MANUAL');
+  it('부분 미확정·직접접수·상품 snapshot 누락은 요율 fallback 없이 null로 저장한다', () => {
+    for (const x of [base, { ...base, sourceProductId: 'synthetic-product' }, input()]) {
+      const record = intakeRecord(x, 0);
+      assert.deepEqual([record.claimWritten, record.payWritten, record.supplierRate, record.agentRate], [null, null, null, null]);
+      assert.match(String(record.settleNote), /REASON_NOT_RECORDED/);
+    }
+    const record = intakeRecord(input(economic('UNKNOWN'), economic('ZERO', 0)), 0);
+    assert.deepEqual([record.claimWritten, record.payWritten], [null, 0]);
+    assert.match(String(intakeRecord(input(economic('NOT_APPLICABLE')), 0).settleNote), /CONFIRMED · NOT_APPLICABLE/);
   });
-
-  it('음수/0 기준값은 자동 계산하지 않는다', () => {
-    assert.equal(feeOf(set, c({ supplier: '예시공급사A', product: '장기렌트', term: 48, rent: -1 })).status, 'NO_BASE');
-    assert.equal(feeOf(set, c({ supplier: '예시공급사A', product: '장기렌트', term: 48, rent: 0 })).status, 'NO_BASE');
+  it('사유 있는 폼 입력도 저장값을 덮어쓰지 않는다', () => {
+    const x = { ...input(economic('UNKNOWN'), economic('KNOWN', 7)), feeManual: { claim: 0, pay: 9, reason: '예시 사유' } };
+    assert.equal(feeManualErrors(x).length, 1);
+    assert.deepEqual([intakeRecord(x, 0).claimWritten, intakeRecord(x, 0).payWritten], [null, 7]);
+    assert.deepEqual(feeManualErrors({ ...input(economic('KNOWN', 7), economic('ZERO', 0)), feeManual: { claim: 7, pay: 0, reason: '' } }), []);
   });
-});
-
-
-describe('feeOf — 깨진 SSOT 정규식은 접수 전체를 죽이지 않는다', () => {
-  it('전기차 정규식이 깨지면 NO_RULE로 내려 사람 확인을 요구한다', () => {
-    const bad: FeeRuleSet = { ...set, evModel: '[' };
-    const result = feeOf(bad, c({ supplier: '예시공급사A', product: '장기렌트', model: 'EV6', term: 48, rent: 700_000 }));
-    assert.equal(result.status, 'NO_RULE');
-    assert.match(result.why, /SSOT 정규식/);
-  });
-
-  it('갈래 match 정규식이 깨져도 NO_RULE로 내려간다', () => {
-    const bad: FeeRuleSet = { ...set, kindRules: [{ match: '[', kind: '재렌트' }] };
-    const result = feeOf(bad, c({ supplier: '예시공급사A', product: '장기렌트', model: 'K8', term: 48, rent: 700_000 }));
-    assert.equal(result.status, 'NO_RULE');
-    assert.match(result.why, /SSOT 정규식/);
+  it('과거 금액 표시는 현재 요율로 재계산하지 않는다', () => {
+    assert.match(receiptRowBasis({ sourceReceiptClaim: 7, sourceReceiptPay: null }).claim, /기재액 7원/);
+    assert.equal(receiptRowBasis({ sourceReceiptPay: null }).pay, '미확정');
   });
 });

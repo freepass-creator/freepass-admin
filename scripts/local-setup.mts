@@ -28,7 +28,7 @@ const throwaway = () => {
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
   return JSON.stringify({
     project_id: 'freepasserp5',
-    client_email: 'EMAIL_REDACTED',
+    client_email: 'sim@freepasserp5.iam.gserviceaccount.com',
     private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }) as string,
   }).replace(/\n/g, '\\n');
 };

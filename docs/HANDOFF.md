@@ -592,3 +592,17 @@ Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee
 - 검증: `npx tsc --noEmit` PASS; Node 직접 실행 data wiring/UI SSOT 검사 PASS; `git diff --check` PASS. `tsx --test src/server/freepass-data-boundary.test.ts`는 시작 단계의 `uv_os_get_passwd ENOMEM`으로 실행 불가. Claude 검토는 실행 프로브 EPERM으로 UNAVAILABLE이며 PASS로 세지 않는다.
 - 남음 / next_start_here: 정상 시험 환경에서 보존한 게시 월 합계·gateway 경계 시험을 재실행하고 이 diff를 검토한다. 파일 수정만 수행했으며 커밋·push·운영 쓰기 없음. 임시 구현 없음.
 - 누더기 검사(새 중복·남은 옛것 0): 월 PDF 생성 런타임 참조와 전용 타입·저장 경로 제거 확인. 과거 인계 이력은 실행 권한이 아니다.
+# 2026-10-10 정산표 조회·내부 CSV — 파일 변경 인계
+
+- 목적/담당: 사용자가 지정한 `work/freepass-admin/settlement-table-20261010`에서 Codex 단독 파일 수정. 기준 revision `6dbfcf7b96386383fa045d242a0031bc777380dd`. 커밋·push·배포·운영 데이터 쓰기 없음.
+- 사전점검: AI Core 헌법/최소 독서 경로 확인, `academy:start` READY. `reuse:check` 후 CREATE_NEW_JUSTIFIED: 기존 `ledgers`는 발행 업무용 실적 집계여서 인도 전·미확정 접수의 저장액 집계를 대신할 수 없다. 내부 공급사 집계 CSV도 없었다. 새 집계 함수와 CSV 직렬화는 한 모듈에 두고 화면/다운로드가 공유한다. 새 데이터 API·저장소·필드·요율 계산은 만들지 않았다.
+- 변경: `src/domain/settlement/summary.ts`, `src/domain/settlement/__tests__/summary.test.ts`, `src/app/settlement/table/page.tsx`, `src/app/settlement/table/csv/route.ts`, `src/app/settlement/table/table.css` 추가. 기존 정산 화면 `src/app/settlement/page.tsx`와 `src/app/_erp/SettlementScreen.tsx`의 게시 합계 안내 두 곳은 정산표 링크로 교체. UI 문서 3종과 `scripts/check-ui-ssot.mts`에 새 화면을 포함했다.
+- 재사용: `readSettlementScreen`, `requireAdmin`, `intakeTaskOf`, `blockOf`, `adminBlockLabel`, `billingMonth`, `isCalendarMonth`, `NO_MONTH`, `invoiceMoneyOf`(내부 `truncWon`), `.pb` 판/토큰. 기존 개별 접수·청구서 업무는 `/settlement` 링크로 이어진다.
+- 집계 의미: 취소·계약취소·정산 제외를 제외한다. 저장 청구월 우선, 없으면 기존 `billingMonth`, 유효하지 않거나 없으면 청구월 미정. 가장 최근 월 기본 선택. 청구·지급 저장액을 줄마다 공급가로 환산하며 비율·가감·프로모션을 재계산하지 않는다. 인도 전·보류 기록액도 포함하고 상태를 함께 표시한다. 금액 확정은 양쪽 금액이 있는 건수이므로 확인 필요와 겹칠 수 있고, 이유별 건수도 중복될 수 있음을 화면에 명시했다. 미확정은 합산하지 않고 별도 건수로 표시하며, 확정분이 전혀 없는 합계는 화면 — / CSV 빈 셀로 둔다.
+- 출력: `/settlement/table/csv?month=YYYY-MM`, GET만 제공. 기존 관리자 인증·권한, UTF-8 BOM, 한국어 7열, 쉼표 없는 숫자, 공급사별 집계/합계만 출력. 문자열 수식 주입 방지, `private, no-store`, 오류 상세 비노출. 공개 공급사용 청구서 경로와 분리했다.
+- 검증: `npx tsc --noEmit` PASS. 신규 순수 함수/CSV 시험 14/14 PASS, 관련 정산 도메인·접수 모델·원장 매핑 회귀시험 합계 357/357 PASS(신규 포함), 실패 0. 지정 `npx tsx --test`와 `npx tsx scripts/check-ui-ssot.mts`, 전체 시험은 실행기 `uv_os_get_passwd ENOMEM`으로 시작 실패. 원본을 TypeScript `--strict`로 임시 폴더에 컴파일하고 Node로 실행했다. 동일 UI checker PASS(화면 10개, 내부 guard 15개). 시험/규칙 완화나 node_modules 수정은 하지 않았다.
+- 런타임 검증: 로컬 Next 실제 경로에서 가상 데이터 화면/빈 월/CSV 200, CSV BOM·다운로드 헤더·캐시 금지 확인. 인증 켠 상태에서 무쿠키 307 로그인 이동, 위조 쿠키 401 및 집계 비노출. 읽기 연결을 끈 상태에서 화면 오류 안내/다운로드 미표시, CSV 503 및 `no-store` 확인. 로컬 서버 종료.
+- 남음: 실제 데스크톱/모바일 Visual QA는 브라우저 도구 초기화 실패와 로컬 Chrome 시작 시간초과로 UNAVAILABLE. 로컬 폰트 외부 다운로드도 네트워크 제한으로 fallback이었다. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE이며 통과로 세지 않는다. `npm run build`도 사전점검의 tsx 실행기가 같은 ENOMEM으로 종료되어 프로덕션 빌드 미완료. 실제 로그인 성공/운영 데이터/전체 시험/배포 검증은 하지 않았다.
+- 지운 것: 중복 게시 합계 안내 두 곳. 파일 삭제 없음. 임시 런타임 코드/빈 가격행 검증 열/임시 어댑터 없음(제거일 해당 없음).
+- 누더기 검사(이번 변경 범위): 새 중복·남은 옛 게시 합계 표시 0. 발행 실적 집계는 목적이 다른 기존 업무로 유지한다.
+- next_start_here: 정상 브라우저/tsx 환경에서 `/settlement/table`의 1440/390 화면과 월 선택·CSV를 확인하고, 위 미완료 검증을 채운다. 승인받은 후속 담당자가 diff를 검토하며 이번 오더에서는 커밋·push하지 않는다.

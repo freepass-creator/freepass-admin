@@ -1,5 +1,13 @@
 {
   "version": "2026-09-30",
+  "settlementTable": {
+    "route": "/settlement/table",
+    "exportRoute": "/settlement/table/csv",
+    "source": "settlement_rows via readSettlementScreen",
+    "style": "shared .pb panel and tokens; seven supplier aggregate columns; two-column values on mobile",
+    "amountBasis": "stored amounts, VAT-exclusive supply; unknown is not zero",
+    "verification": "CODED_VISUAL_QA_PENDING"
+  },
   "productDetailFacts": {
     "media": { "desktopPhotoHeight": 120, "mobilePhotoHeight": 128, "photoSummaryGap": 12, "summaryOfferGap": 16, "placeholderIcon": 48 },
     "sectionIcons": { "vehicle": "car", "offers": "wallet", "size": 16, "gap": 8 },

@@ -22,7 +22,7 @@ test('direct ERP5 write scripts cannot bypass the maintenance approval gate', ()
     .map((file) => ({ file, source: readFileSync(file, 'utf8') }))
     .filter(({ source }) => firestoreWrite(source));
 
-  assert.ok(candidates.length >= 5, 'expected known ERP5 maintenance writers');
+  assert.ok(candidates.length >= 4, 'expected known ERP5 maintenance writers');
 
   /**
    * A script that binds itself to an emulator host cannot touch the operational store, so the

@@ -6,13 +6,13 @@ const panel = readFileSync(new URL('./IntakeDetailPanel.tsx', import.meta.url), 
 const main = readFileSync(new URL('./IntakeSide.tsx', import.meta.url), 'utf8');
 const draft = readFileSync(new URL('../products/BoardIntakeForm.tsx', import.meta.url), 'utf8');
 
-test('접수 초안은 기본 확인창 없이 이탈을 안내하고 미리보기 디바운스가 수동 입력을 초기화하지 않는다', () => {
+test('접수 초안은 기본 확인창 없이 이탈을 안내하고 수수료 미리보기는 저장값만 보여 준다', () => {
   assert.doesNotMatch(draft, /window\.confirm/);
   assert.ok(draft.includes('leaveNotice.current?.scrollIntoView'));
   assert.ok(draft.includes('!pending && state.errors.length'));
-  const debounce = draft.slice(draft.indexOf('const 첫판'), draft.indexOf('const 직접'));
-  assert.doesNotMatch(debounce, /set미리\(fee\)/);
-  assert.ok(debounce.includes('if (active) set미리(result)'));
+  // 수수료 미리보기는 Data 저장값(fee 속성)을 그대로 보여 줄 뿐, 입력마다 서버 계산을 다시 부르지 않는다(옛 계산 길 삭제)
+  assert.ok(draft.includes('const 미리 = fee'));
+  assert.doesNotMatch(draft, /previewFeeAction|setTimeout/);
   assert.ok(draft.includes('useRef(defaults.intakeRequestId)'));
 });
 

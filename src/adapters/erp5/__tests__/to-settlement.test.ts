@@ -47,6 +47,37 @@ describe('청구금액 0 을 어떻게 읽나', () => {
   });
 });
 
+describe('저장된 수수료 상태 — «해당 없음»과 «모름»을 다시 읽을 때 구분한다', () => {
+  const base = { code: 'stl_x', plate: 'PLATE_BASE', supplier: '예시공급사B', receivedAt: '2026-10-01', sourceProductId: 'prd_x' };
+  const snapshot = (billing: unknown, payout: unknown) => ({
+    product: {}, offer: { id: 'off_x', termMonths: 12, monthlyRent: 1_000_000, deposit: null, prepayment: null,
+      supplierBillingFee: billing, channelPayoutFee: payout },
+  });
+  const notApplicable = { state: 'NOT_APPLICABLE', sourceRefs: [] };
+  const unknown = { state: 'UNKNOWN', reasonCode: 'NO_EVIDENCE', sourceRefs: [] };
+
+  it('금액 칸이 비어 있어도 저장된 상태가 «해당 없음»이면 확정이다(청구·지급 0, 미확정 경고 없음)', () => {
+    const { row, warnings } = toSettlementRow(
+      { ...base, claimWritten: null, payWritten: null, catalogSnapshot: snapshot(notApplicable, notApplicable) }, 'd');
+    assert.equal(row.money.claim, 0);
+    assert.equal(row.money.pay, 0);
+    assert.equal(warnings.filter((w) => w.includes('청구금액 칸이 비어 있다')).length, 0);
+  });
+  it('저장된 상태가 «모름»이면 금액 칸이 비어 있는 그대로 미확정이다(경고 있음)', () => {
+    const { row, warnings } = toSettlementRow(
+      { ...base, claimWritten: null, payWritten: null, catalogSnapshot: snapshot(unknown, unknown) }, 'd');
+    assert.equal(row.money.claim, null);
+    assert.equal(row.money.pay, null);
+    assert.ok(warnings.some((w) => w.includes('청구금액 칸이 비어 있다')));
+  });
+  it('상품 없이 직접 접수한 줄은 스냅샷이 있어도 «해당 없음»으로 읽지 않는다', () => {
+    const { row } = toSettlementRow(
+      { ...base, sourceProductId: '', claimWritten: null, payWritten: null, catalogSnapshot: snapshot(notApplicable, notApplicable) }, 'd');
+    assert.equal(row.money.claim, null);
+    assert.equal(row.money.pay, null);
+  });
+});
+
 describe('★빈칸을 0 으로 만들지 않는다', () => {
   it('차량가액 0 은 «0원짜리 차» 가 아니다 — 신차만 값이 있다', () => {
     const { row } = toSettlementRow({ code: 'c', price: 0 }, 'd');

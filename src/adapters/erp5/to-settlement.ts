@@ -1,4 +1,4 @@
-import { dataFeeAmount } from '../../domain/settlement/fee';
+import { dataFeeAmount, readDataFee } from '../../domain/settlement/fee';
 /**
  * ERP5 `settlement_rows` 한 문서 → 우리 실적 한 줄.
  *
@@ -57,7 +57,11 @@ const pick = <T extends string>(v: unknown, all: T[], dflt: T): T => {
  */
 function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   const v = n(d.claimWritten);
-  if (v === null) return { claim: null, why: '청구금액 칸이 비어 있다' };
+  if (v === null) {
+    // 접수 때 봉인한 Data 스냅샷이 «해당 없음»을 확정한 줄은 금액 칸이 비어 있어도 미확정이 아니다(청구할 것이 없다).
+    if (storedFeeState(d, 'supplierBillingFee') === 'NOT_APPLICABLE') return { claim: 0, why: null };
+    return { claim: null, why: '청구금액 칸이 비어 있다' };
+  }
   if (v !== 0) return { claim: v, why: null };
   const offer = catalogSnapshotOf(d.catalogSnapshot)?.offer;
   // Data가 확정한 KNOWN/ZERO의 0만 보존한다. UNKNOWN/미발행 0은 미확정이다.
@@ -68,6 +72,20 @@ function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   const done = ['통보', '확인', '지급'].includes(String(d.payStage ?? '')) && b(d.billed);
   if (done) return { claim: 0, why: null };                    /* 끝난 줄의 0 — 사실이다 */
   return { claim: null, why: '청구금액이 0 인데 아직 «안 끝난» 줄이다 — 모른다로 둔다' };
+}
+
+/** 접수 때 봉인한 Data 스냅샷에 저장된 수수료 상태. 금액 칸이 null 인 줄에서 «해당 없음»과 «모름»을 가른다. */
+function storedFeeState(d: Erp5Row, which: 'supplierBillingFee' | 'channelPayoutFee') {
+  if (!s(d.sourceProductId)) return null;
+  const fee = catalogSnapshotOf(d.catalogSnapshot)?.offer?.[which];
+  return fee ? readDataFee(fee).state : null;
+}
+
+/** 지급 금액 — 청구와 같은 규칙: 칸이 비었어도 저장된 상태가 «해당 없음»이면 확정(0)이다. */
+function payOf(d: Erp5Row): Maybe<number> {
+  const v = n(d.payWritten);
+  if (v === null && storedFeeState(d, 'channelPayoutFee') === 'NOT_APPLICABLE') return 0;
+  return v;
 }
 
 export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow; warnings: string[] } {
@@ -155,7 +173,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
     payStage: pick(d.payStage, PAY_STAGES, '접수'),
     supplierFee, channelFee,
     money: {
-      claim, pay: n(d.payWritten),
+      claim, pay: payOf(d),
       claimIncentive: n(d.claimIncentive) || null,
       payIncentive: n(d.payIncentive) || null,
       /* ★가감은 전용 원자. supplierFixAmt(정정금액)를 더하면 두 배가 된다 — 실측 정정금액 = 청구액 */

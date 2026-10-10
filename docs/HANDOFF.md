@@ -528,3 +528,12 @@ Validation: related 24/24 tests, typecheck, production build, UI SSOT and data w
 
 ## Same Task: receipt basis evidence correction (2026-10-07)
 Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee.ts display verifier and f04 basis adapter reuse explicit source AD/AI rates plus unique source rule and exact booked amount equality; never reverse-infer rates. Unknown basis is direct input/no formula evidence. Existing note arithmetic now requires exact equality, no undeclared one-won allowance. Query projection keeps original raw/money and adds separate displayReceiptBasis; existing detail disclosure and PDF evidence appendix display it. Before/after rendering evidence digest guards drift. Source BT/formulas and protected employee rows stay untouched: current compact BT does not exactly match the historical automatic-write receipts, so source rewrite remains HOLD. Actual canonical reader validates recorded rates; source sourceReceiptRaw/calculationBasis remain unmodified. Related40/type/build/ui/data and 16 original-template A4 dry renders PASS; independent read-only CLI code review PASS exit0. Actual updated Drive readback, exact-head CI and authenticated UI click tracked separately in the existing private operational receipt. No new Task/engine/DB collection. next_start_here: final exact-head CI/runtime evidence → same approved output IDs generation+retry → designated merge-owner handoff; BT write only after exact oldText+immutable-key allowlist evidence.
+
+
+## 2026-10-10 월 PDF 생성 제거
+- 목적 / 기준 revision: `e0e02b46`에서 이관 대기 월 PDF 생성 경로를 제거한다. 앞서 기록된 월 PDF 생성·Drive 실행 안내는 현재 실행 지침이 아니다. 현재 소유권은 `docs/FREEPASS-DATA-SETTLEMENT-DOCUMENT-MIGRATION.md`를 따른다.
+- 변경: 비활성 폼, 서버 액션·gateway 명령, PDF/Drive 어댑터·템플릿·CLI·전용 도메인·시험, PDF 실행 저장소 메서드·타입과 UI 생성 규격을 함께 제거했다.
+- 보존: `listWithPublishedReceipts`와 게시 월 합계 조회 시험, 기존 청구·지급 업무. 수수료 계산·fee-rules·f04 스크립트·전자계약은 변경하지 않았다.
+- 검증: `npx tsc --noEmit` PASS; Node 직접 실행 data wiring/UI SSOT 검사 PASS; `git diff --check` PASS. `tsx --test src/server/freepass-data-boundary.test.ts`는 시작 단계의 `uv_os_get_passwd ENOMEM`으로 실행 불가. Claude 검토는 실행 프로브 EPERM으로 UNAVAILABLE이며 PASS로 세지 않는다.
+- 남음 / next_start_here: 정상 시험 환경에서 보존한 게시 월 합계·gateway 경계 시험을 재실행하고 이 diff를 검토한다. 파일 수정만 수행했으며 커밋·push·운영 쓰기 없음. 임시 구현 없음.
+- 누더기 검사(새 중복·남은 옛것 0): 월 PDF 생성 런타임 참조와 전용 타입·저장 경로 제거 확인. 과거 인계 이력은 실행 권한이 아니다.

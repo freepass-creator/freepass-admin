@@ -7,7 +7,7 @@ import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
-import { ClaimLink, IssueForm, MonthlyDocumentsForm } from './LifeForms';
+import { ClaimLink, IssueForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { SettlementScreen } from '../_erp/SettlementScreen';
 import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal } from './group-signal';
@@ -154,7 +154,6 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
             <p role="status">{published
               ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
               : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>
-            <MonthlyDocumentsForm month={month} disabled={!published}/>
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />
               <div className="searchbox dz-searchbox">

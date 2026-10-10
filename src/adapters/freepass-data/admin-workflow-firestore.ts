@@ -210,6 +210,7 @@ export class RemoteQuery {
         true,
         doc.data,
       )),
+      result.digest,
     );
   }
 
@@ -236,7 +237,7 @@ export class RemoteCollectionReference extends RemoteQuery {
 export class RemoteQuerySnapshot {
   readonly size: number;
   readonly empty: boolean;
-  constructor(readonly docs: RemoteDocumentSnapshot[]) {
+  constructor(readonly docs: RemoteDocumentSnapshot[], readonly digest?: string) {
     this.size = docs.length;
     this.empty = docs.length === 0;
   }
@@ -317,6 +318,49 @@ export function freepassDataWorkflowFirestore() {
 
 export function adminWorkflowTransportReady(env: Record<string, string | undefined> = process.env) {
   try { config(env); return true; } catch { return false; }
+}
+
+export type PublishedReceiptMonth = {
+  month: string; count: number; claimAmount: number; payAmount: number;
+  heldCount: number; verification: 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED';
+};
+export type PublishedReceiptRead = { status: 'READY'; months: Record<string, PublishedReceiptMonth> }
+  | { status: 'HOLD'; reason: string };
+
+/** Monthly source-booked amounts are not supplier-confirmed receivables. Never sum legacy rows as fallback. */
+export function validatePublishedReceipts(rule: Record<string, unknown> | undefined, digest: string, rows: number): PublishedReceiptRead {
+  if (rows >= 5000) return { status: 'HOLD', reason: '접수 원장 조회 범위 초과' };
+  if (!digest || rule?.monthlySummaryLedgerDigest !== digest) return { status: 'HOLD', reason: '게시 합계와 현재 원장 버전 불일치' };
+  const raw = rule?.monthlyReceiptSummaries;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { status: 'HOLD', reason: '월별 게시 합계 없음' };
+  const months: Record<string, PublishedReceiptMonth> = {};
+  for (const [month, value] of Object.entries(raw)) {
+    const s = value as PublishedReceiptMonth;
+    if (!s || !/^\d{4}-\d{2}$/.test(month) || s.month !== month
+      || ![s.count, s.heldCount, s.claimAmount, s.payAmount].every(Number.isSafeInteger)
+      || s.count < 0 || s.heldCount < 0 || s.verification !== 'BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED') {
+      return { status: 'HOLD', reason: '월별 게시 합계 계약 불일치' };
+    }
+    months[month] = { month, count: s.count, claimAmount: s.claimAmount, payAmount: s.payAmount, heldCount: s.heldCount, verification: s.verification };
+  }
+  return { status: 'READY', months };
+}
+
+/** The UI's existing ledger read supplies its receipt; no extra full-ledger query for a summary. */
+export async function readPublishedReceipts(readLedger: () => Promise<{ digest: string; rows: number }>): Promise<PublishedReceiptRead> {
+  const db = freepassDataWorkflowFirestore();
+  const ref = db.collection('settlement_rules').doc('f04-confirmed-receipt-sync');
+  const before = await ref._read().catch(() => null);
+  // Preserve the normal ledger error boundary even if the published rule is unavailable.
+  const ledger = await readLedger();
+  if (!before) return { status: 'HOLD', reason: '정본 월별 합계를 읽지 못함' };
+  try {
+    const after = await ref._read();
+    if (before.result.digest !== after.result.digest) return { status: 'HOLD', reason: '조회 중 게시 합계 변경' };
+    return validatePublishedReceipts(after.snapshot.data(), ledger.digest, ledger.rows);
+  } catch {
+    return { status: 'HOLD', reason: '정본 월별 합계를 읽지 못함' };
+  }
 }
 
 export const __test = { config, COLLECTION_RESOURCE };

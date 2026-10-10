@@ -34,7 +34,17 @@ const product=(id:string):CanonicalProduct=>({
 const offer=(id:string,rent:number):Offer=>({
   id,termMonths:36,monthlyRent:rent,deposit:1_000_000,annualMileageKm:20_000,
   policyValues:[{policyId:'min-age',type:'NUMBER',value:21}],
+  // 상품 접수 금액은 Data 발행 값만 쓴다(없으면 미확정) — 청구·수금 흐름을 타려면 확정 수수료가 있어야 한다
+  supplierBillingFee:dataFee(1_000),
+  channelPayoutFee:dataFee(800),
 });
+function dataFee(amount:number):NonNullable<Offer['supplierBillingFee']>{
+  return {
+    state:'KNOWN',amount:{amount,currency:'KRW'},
+    calculation:{kind:'FIXED',amount:{amount,currency:'KRW'}},
+    sourceRefs:['emulator-fixture'],ruleId:'emu-flat',policyId:'sales-commission-emu',
+  };
+}
 
 async function seedFeeRules(){
   const db=erp5();

@@ -1,6 +1,32 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { indexMaster, matchToMaster, type VehicleMasterNode } from '../master-match.js';
+import { nodeFromErp5 } from '../../../adapters/erp5/vehicle-master';
+
+describe('ERP5 canonical master projection', () => {
+  it('retired aliases cannot create ambiguity or resurrect an old master ID', () => {
+    const active = nodeFromErp5('active-id', { maker: '기아', model: 'K8', sub_model: '더 뉴 K8', sub_model_aliases: ['K8 구표기'], trims: ['노블레스'] });
+    const retired = nodeFromErp5('retired-id', { maker: '기아', model: 'K8', sub_model: 'K8 구표기', retired: true, trims: ['노블레스'] });
+    const index = indexMaster([retired, active]);
+    assert.deepEqual(index.get('기아|k8')?.map(n => n.id), ['active-id']);
+    assert.deepEqual(matchToMaster({ maker: '기아', model: 'K8', subModel: 'K8 구표기', trim: '노블레스' }, index), { level: 'TRIM', nodeId: 'active-id', why: null });
+    assert.equal(matchToMaster({ maker: '기아', model: 'K8' }, indexMaster([retired])).level, 'UNMATCHED');
+  });
+  it('reads canonical aliases in array and JSON formats, keeping legacy aliases and exact names', () => {
+    for (const aliases of [['구 세부모델', '공통'], '["구 세부모델","공통"]']) {
+      const n = nodeFromErp5('immutable-id', { maker: '현대', model: '그랜저', sub_model: '디 올 뉴 그랜저', aliases: ['기존 별칭', '공통'], sub_model_aliases: aliases });
+      assert.equal(n.id, 'immutable-id');
+      assert.equal(n.subModel, '디 올 뉴 그랜저');
+      assert.deepEqual(n.aliases, ['기존 별칭', '공통', '구 세부모델']);
+      assert.equal(matchToMaster({ maker: '현대', model: '그랜저', subModel: '구 세부모델' }, indexMaster([n])).nodeId, 'immutable-id');
+    }
+  });
+  it('absent retired markers stay active; malformed canonical aliases are not guessed', () => {
+    const n = nodeFromErp5('active-id', { maker: '기아', model: 'K8', sub_model: 'K8', sub_model_aliases: '[broken' });
+    assert.equal(indexMaster([n]).size, 1);
+    assert.deepEqual(n.aliases, []);
+  });
+});
 
 const node = (o: Partial<VehicleMasterNode>): VehicleMasterNode => ({
   id: 'n', maker: '기아', model: 'K8', subModel: 'K8', aliases: [], trims: [], yearStart: null, yearEnd: null, ...o,

@@ -413,7 +413,7 @@ export const SETTLEMENT_FIELDS = [
     "label": "넘길 청구액",
     "group": "이월",
     "type": "number",
-    "note": "다음 달에 «더» 청구할 몫 (손오공 잔여 회차 등)"
+    "note": "다음 달에 «더» 청구할 몫 (예시공급사A 잔여 회차 등)"
   },
   {
     "key": "carryPay",

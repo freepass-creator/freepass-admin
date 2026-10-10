@@ -5,7 +5,7 @@ import type { SettlementRow } from './types';
 import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode } from './performance-filter';
 
 const row = (o: Partial<SettlementRow> = {}): SettlementRow => ({
-  id:'r1', plate:'12가3456', receivedAt:'2026-09-01', customer:'홍길동',
+  id:'r1', plate:'PLATE-EXAMPLE', receivedAt:'2026-09-01', customer:'고객A',
   supplier:'공급A', supplierCode:null, channel:'채널A', channelCode:null, agent:'김영업', agentCode:null, model:'싼타페',
   product:'장기렌트', rentKind:'재렌트', contractType:null, term:36, rent:700000, deposit:0, price:null, payKind:'일시납', paidRounds:null,
   progress:{
@@ -72,8 +72,8 @@ test('pay axis does not treat supplier bill hold as a pay issue',()=>{
 
 test('performance search spans customer plate model parties agent and id',()=>{
   const lines=[line(row())];
-  assert.equal(filterPerformanceLines(lines,'공급사','all','홍길동').length,1);
-  assert.equal(filterPerformanceLines(lines,'공급사','all','12가3456').length,1);
+  assert.equal(filterPerformanceLines(lines,'공급사','all','고객A').length,1);
+  assert.equal(filterPerformanceLines(lines,'공급사','all','PLATE-EXAMPLE').length,1);
   assert.equal(filterPerformanceLines(lines,'공급사','all','김영업').length,1);
   assert.equal(filterPerformanceLines(lines,'공급사','all','없는값').length,0);
 });

@@ -71,7 +71,7 @@ describe('splitPromotion — 대표 「추가 50인데 50 다 줄거면 100%」'
     assert.equal(s.pay, 0);
     assert.equal(s.ours, 0);   /* ★우리 몫을 50만으로 세지 않는다 — 아직 모른다 */
   });
-  it('★F04 실측 17하3915 — 30만 · 100%', () => {
+  it('★F04 실측 PLATE-EXAMPLE — 30만 · 100%', () => {
     const s = splitPromotion({ amount: 300_000, agentShare: 1 });
     assert.equal(s.pay, 300_000);
     assert.equal(s.ours, 0);

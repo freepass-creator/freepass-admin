@@ -140,6 +140,7 @@ export async function SettlementDetail({ cur, base, q, now, life }: {
                   <div className="erp-tile-row"><b>청구월</b><strong>{p.billMonth ?? '—'}</strong></div>
                   <div className="erp-tile-row"><b>남는 것</b><strong>{won0(margin)}원</strong></div>
                 </div>
+                {cur.settleNote && <details><summary>산출근거</summary><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{cur.settleNote}</p></details>}
               </div>
               <div className="erp-info-card erp-tile" data-detail-priority="identity">
                 <h3 className="erp-tile-title">고객 · 차량</h3>

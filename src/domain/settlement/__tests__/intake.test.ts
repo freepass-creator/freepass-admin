@@ -12,12 +12,35 @@ import { blockOf, intakeTaskOf } from '../types.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
-  receivedAt: '2026-09-18', plate: '12가 3456', model: '싼타페', supplier: '손오공', supplierCode: 'RP001',
-  customer: '홍길동', channel: '프리패스', channelCode: 'SP001', agent: '김영업', agentCode: 'A01',
+  receivedAt: '2026-09-18', plate: 'PLATE A', model: '싼타페', supplier: '예시공급사A', supplierCode: 'RP001',
+  customer: '고객A', channel: '프리패스', channelCode: 'SP001', agent: '김영업', agentCode: 'A01',
   product: '장기렌트', rentKind: '재렌트', contractType: '전자약정',
   term: 36, rent: 700000, deposit: 0, price: null, payKind: '일시납',
   paper: false, delivered: false, deliveredAt: '', note: '',
 };
+
+describe('예시공급사D 신규 접수 비고 근거 안전장치', () => {
+  it('예시공급사D·예시공급사D는 누락/상충한 근거로 저장할 수 없다', () => {
+    for (const supplier of ['예시공급사D', '예시공급사D', '주식회사 예시공급사D', '예시공급사D(주)']) {
+      for (const note of ['', '선납', '추가보증금 없음', '선납/분납 추가보증금 0']) {
+        assert.deepEqual(validateIntake({ ...base, supplier, note }, '2026-09-18'), [
+          '예시공급사D 접수는 비고에 «선납/분납»과 «추가보증금 N원(없으면 없음)»을 적어야 합니다',
+        ]);
+      }
+    }
+  });
+  it('근거가 있으면 직접 입력액이 달라도 이 검증에서 막지 않는다', () => {
+    assert.deepEqual(validateIntake({ ...base, supplier: '예시공급사D', note: '분납 추가보증금 없음',
+      feeManual: { claim: 400_000, pay: 123_456, reason: '개별 합의' } }, '2026-09-18'), []);
+    assert.deepEqual(validateIntake(base, '2026-09-18'), []);
+  });
+  it('근거 없는 기존 줄의 읽기와 진행 경로를 막지 않는다', () => {
+    const legacy = { ...intakeRecord({ ...base, supplier: '예시공급사D' }, 0), payWritten: 800_000 };
+    const read = toSettlementRow(legacy, 'legacy');
+    assert.equal(read.row.supplier, '예시공급사D');
+    assert.equal(progressPatch(legacy, { kind: 'paper', on: true }).ok, true);
+  });
+});
 
 describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은 코드 (병행 입력에서 두 줄이 안 선다)', () => {
   it('10월 운영 전환 전은 시트 이력, 10월부터는 Admin 접수 정본이다', () => {
@@ -27,12 +50,12 @@ describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은
     assert.equal(intakeAuthorityForDate(''), 'HOLD');
   });
   it('띄어쓰기가 달라도 같은 열쇠 · 같은 코드', () => {
-    assert.equal(settlementKey('12가 3456', '2026-09-18'), settlementKey('12가3456', '2026-09-18'));
-    assert.equal(settlementCode('12가 3456', '2026-09-18'), settlementCode('12가3456', '2026-09-18'));
+    assert.equal(settlementKey('PLATE A', '2026-09-18'), settlementKey('PLATEA', '2026-09-18'));
+    assert.equal(settlementCode('PLATE A', '2026-09-18'), settlementCode('PLATEA', '2026-09-18'));
   });
-  it('ERP5 규격 stl_ + 10자', () => assert.match(settlementCode('12가3456', '2026-09-18'), /^stl_[2-9a-hj-km-np-z]{10}$/));
+  it('ERP5 규격 stl_ + 10자', () => assert.match(settlementCode('PLATEA', '2026-09-18'), /^stl_[2-9a-hj-km-np-z]{10}$/));
   it('차량번호 접수는 새 intakeCode도 기존 settlementCode와 같다', () =>
-    assert.equal(intakeCode('12가3456', '', '2026-09-18'), settlementCode('12가3456', '2026-09-18')));
+    assert.equal(intakeCode('PLATEA', '', '2026-09-18'), settlementCode('PLATEA', '2026-09-18')));
   it('차량번호 없는 상품접수는 Product ID + 접수일로 안정적인 코드를 만든다', () => {
     assert.equal(intakeCode('', 'P-1', '2026-09-18'), intakeCode('', 'P-1', '2026-09-18'));
     assert.notEqual(intakeCode('', 'P-1', '2026-09-18'), intakeCode('', 'P-2', '2026-09-18'));
@@ -49,11 +72,11 @@ describe('★코드 — 같은 차번+접수일이면 어디서 만들든 같은
   it('request identity는 나중에 차량번호가 생겨도 같은 identity를 유지한다', () => {
     assert.equal(
       intakeKey('', '', '2026-09-18', 'req-a', 'request'),
-      intakeKey('12가3456', '', '2026-09-18', 'req-a', 'request'),
+      intakeKey('PLATEA', '', '2026-09-18', 'req-a', 'request'),
     );
   });
   it('접수일이 다르면 다른 줄 (재계약)', () =>
-    assert.notEqual(settlementCode('316라1593', '2026-08-06'), settlementCode('316라1593', '2026-08-13')));
+    assert.notEqual(settlementCode('PLATE_SAMPLE_D', '2026-08-06'), settlementCode('PLATE_SAMPLE_D', '2026-08-13')));
   it('이력 문서 id 는 ERP5 실측 꼴 — 차번_접수일', () => assert.equal(eventDocId('99시험0001', '2026-08-26'), '99시험0001_2026-08-26'));
 });
 
@@ -134,8 +157,8 @@ describe('intakeRecord — 기존 461줄과 같은 꼴', () => {
     assert.equal(intakeRecord({ ...base, payKind: '3회분납', delivered: false, deliveredAt: '' }, 1_790_000_000_000).paidRounds, null);
   });
   it('code == 문서 id 규칙 · 차번은 띄어쓰기 없이', () => {
-    assert.equal(r.code, settlementCode('12가3456', '2026-09-18'));
-    assert.equal(r.plate, '12가3456');
+    assert.equal(r.code, settlementCode('PLATEA', '2026-09-18'));
+    assert.equal(r.plate, 'PLATEA');
   });
   it('단계는 접수에서 시작 · 청구/지급 0 은 「모름」 으로 읽힌다', () => {
     assert.equal(r.claimStage, '접수'); assert.equal(r.payStage, '접수');
@@ -232,9 +255,9 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.match(String((r as { error?: string }).error), /전자계약 연결 건/);
   });
   it('차량번호를 나중에 배정할 수 있다', () => {
-    const r = progressPatch({ plate: '', cancelled: false }, { kind: 'plate', plate: '12가 3456' });
+    const r = progressPatch({ plate: '', cancelled: false }, { kind: 'plate', plate: 'PLATE A' });
     assert.ok(r.ok);
-    assert.deepEqual(r.ok && r.patch, { plate: '12가3456' });
+    assert.deepEqual(r.ok && r.patch, { plate: 'PLATEA' });
     assert.equal(r.ok && r.events[0]?.field, '차량번호');
   });
   it('이미 그 값이면 안 쓴다', () => {
@@ -242,22 +265,22 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.ok(r.ok && r.events.length === 0);
   });
   it('계약서가 없어도 실제 인도 사실은 기록한다', () => {
-    const r = progressPatch({ paper: false, plate: '12가3456', delivered: false }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
+    const r = progressPatch({ paper: false, plate: 'PLATEA', delivered: false }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.patch, { delivered: true, deliveredAt: '2026-09-18' });
   });
   it('차량번호 없으면 인도 완료를 막는다', () =>
     assert.match(String((progressPatch({ paper: true, plate: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' }) as { error?: string }).error), /차량번호/));
-  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true }).ok, false));
+  it('인도는 날짜 없이 못 켠다', () => assert.equal(progressPatch({ paper: true, plate: 'PLATEA' }, { kind: 'delivered', on: true }).ok, false));
   it('존재하지 않는 인도일은 진행 사실로 기록하지 않는다', () => {
-    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-02-30' }).ok, false);
-    assert.equal(progressPatch({ paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2024-02-29' }).ok, true);
+    assert.equal(progressPatch({ paper: true, plate: 'PLATEA' }, { kind: 'delivered', on: true, deliveredAt: '2026-02-30' }).ok, false);
+    assert.equal(progressPatch({ paper: true, plate: 'PLATEA' }, { kind: 'delivered', on: true, deliveredAt: '2024-02-29' }).ok, true);
   });
   it('미래 인도일이나 접수일보다 빠른 인도일로 실적을 열지 않는다', () => {
     const now = Date.parse('2026-09-18T00:00:00+09:00');
     assert.equal(
       progressPatch(
-        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { paper: true, plate: 'PLATEA', receivedAt: '2026-09-18' },
         { kind: 'delivered', on: true, deliveredAt: '2026-09-19' },
         now,
       ).ok,
@@ -265,7 +288,7 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     );
     assert.equal(
       progressPatch(
-        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { paper: true, plate: 'PLATEA', receivedAt: '2026-09-18' },
         { kind: 'delivered', on: true, deliveredAt: '2026-09-17' },
         now,
       ).ok,
@@ -273,7 +296,7 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     );
     assert.equal(
       progressPatch(
-        { paper: true, plate: '12가3456', receivedAt: '2026-09-18' },
+        { paper: true, plate: 'PLATEA', receivedAt: '2026-09-18' },
         { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
         now,
       ).ok,
@@ -281,13 +304,13 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     );
   });
   it('인도 → 인도완료·인도일 이력 (erp4 이력과 같은 칸 이름)', () => {
-    const r = progressPatch({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
+    const r = progressPatch({ paper: true, plate: 'PLATEA', delivered: false, deliveredAt: '' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-18' });
     assert.ok(r.ok);
     assert.deepEqual(r.ok && r.events.map((e) => e.field), ['인도완료', '인도일']);
   });
   it('분납 인도완료는 최초 1회차를 실제 원장 사실로 함께 세운다', () => {
     const r = progressPatch(
-      { paper: true, plate: '12가3456', payKind: '3회분납', delivered: false, deliveredAt: '', paidRounds: null },
+      { paper: true, plate: 'PLATEA', payKind: '3회분납', delivered: false, deliveredAt: '', paidRounds: null },
       { kind: 'delivered', on: true, deliveredAt: '2026-09-18' },
       Date.parse('2026-09-18T12:00:00+09:00'),
     );
@@ -336,11 +359,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
       paper: true,
       delivered: true,
       deliveredAt: '2026-09-18',
-      plate: '12가3456',
+      plate: 'PLATEA',
       claimStage: '접수',
       payStage: '접수',
     };
-    assert.equal(progressPatch(cur, { kind: 'plate', plate: '34나5678' }).ok, false);
+    assert.equal(progressPatch(cur, { kind: 'plate', plate: 'PLATE_B' }).ok, false);
     assert.equal(progressPatch(cur, { kind: 'paper', on: false }).ok, false);
     assert.equal(progressPatch(cur, { kind: 'cancelled', on: true, reason: '잘못된 취소' }).ok, false);
   });
@@ -350,7 +373,7 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
       contractTerminatedAt: Date.now(),
       delivered: true,
       deliveredAt: '2026-09-18',
-      plate: '12가3456',
+      plate: 'PLATEA',
       claimStage: '접수',
       payStage: '접수',
     };
@@ -363,11 +386,11 @@ describe('progressPatch — 계약서 · 인도 · 취소', () => {
     assert.deepEqual(r.ok && r.patch, { delivered: false });
   });
   it('인도/정산 시작 뒤 차량번호·계약서·인도일·인도완료 핵심 사실을 되돌리지 않는다', () => {
-    assert.equal(progressPatch({ delivered: true, plate: '12가3456' }, { kind: 'plate', plate: '34나5678' }).ok, false);
+    assert.equal(progressPatch({ delivered: true, plate: 'PLATEA' }, { kind: 'plate', plate: 'PLATE_B' }).ok, false);
     const paperCorrection = progressPatch({ delivered: true, paper: true, claimStage: '접수', payStage: '접수' }, { kind: 'paper', on: false });
     assert.ok(paperCorrection.ok);
     assert.equal(progressPatch({ delivered: true, paper: true, billed: true, claimStage: '청구' }, { kind: 'paper', on: false }).ok, false);
-    assert.equal(progressPatch({ delivered: true, deliveredAt: '2026-09-01', billed: true, claimStage: '청구', payStage: '통보', paper: true, plate: '12가3456' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-02' }).ok, false);
+    assert.equal(progressPatch({ delivered: true, deliveredAt: '2026-09-01', billed: true, claimStage: '청구', payStage: '통보', paper: true, plate: 'PLATEA' }, { kind: 'delivered', on: true, deliveredAt: '2026-09-02' }).ok, false);
     assert.equal(progressPatch({ delivered: true, billed: true, claimStage: '청구', payStage: '통보' }, { kind: 'delivered', on: false }).ok, false);
   });
   it('취소는 사유가 있어야 · 사유는 메모에 덧붙인다', () => {
@@ -413,7 +436,7 @@ describe('다음 할 일 — 계약 → 차량 → 인도 순서', () => {
   });
   it('계약 확인 뒤 차번, 차번 뒤 인도 순서다', () => {
     assert.equal(blockOf(row({ paper: true, plate: '', delivered: false, deliveredAt: '' })), '차량번호 없음');
-    assert.equal(blockOf(row({ paper: true, plate: '12가3456', delivered: false, deliveredAt: '' })), '인도');
+    assert.equal(blockOf(row({ paper: true, plate: 'PLATEA', delivered: false, deliveredAt: '' })), '인도');
   });
 });
 
@@ -449,9 +472,9 @@ describe('접수 업무 필터 — blockOf와 같은 정본을 쓴다', () => {
   it('계약/차량/인도/정산/완료/취소를 한 번씩 분류한다', () => {
     assert.equal(intakeTaskOf(row({ paper: false, plate: '', delivered: false })), '계약');
     assert.equal(intakeTaskOf(row({ paper: true, plate: '', delivered: false })), '차량');
-    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: false })), '인도');
-    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: true, claimWritten: 1_000_000, billed: false })), '정산');
-    assert.equal(intakeTaskOf(row({ paper: true, plate: '12가3456', delivered: true, billed: true, invoiceIssued: true, collected: true, paid: true })), '완료');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: 'PLATEA', delivered: false })), '인도');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: 'PLATEA', delivered: true, claimWritten: 1_000_000, billed: false })), '정산');
+    assert.equal(intakeTaskOf(row({ paper: true, plate: 'PLATEA', delivered: true, billed: true, invoiceIssued: true, collected: true, paid: true })), '완료');
     assert.equal(intakeTaskOf(row({ cancelled: true })), '취소');
   });
 });
@@ -494,16 +517,16 @@ describe('★완납·인도 기준 — 대표 「접수 -> 분납실적/완납�
 
 describe('★분납이 끊기면 — 받은 회차는 사람이 적는다', () => {
   const broken = { payKind: '2회분납', deliveredAt: '2026-07-01', paidRounds: 1 };
-  it('적힌 회차가 있어야 끊겼다고 말한다 — 받은 만큼 비례 (133호1997 1,688,750 × 1/2)', () => {
+  it('적힌 회차가 있어야 끊겼다고 말한다 — 받은 만큼 비례 (PLATE_SAMPLE_C 1,688,750 × 1/2)', () => {
     const r = row({ ...broken, claimWritten: 1_688_750 });
     assert.equal(billingMonth(r, NOW), '2026-07');          // 받은 1회차의 달
     assert.equal(claimAmountOf(r, NOW), 844_375);
   });
   it('안 적혔으면 기간 비례라 「받은 것」 — 전액', () =>
     assert.equal(claimAmountOf(row({ ...broken, paidRounds: null }), NOW), 1_000_000));
-  it('★스타·아이카는 끊기면 지급 0', () => {
-    assert.equal(payAmountOf(row({ ...broken, supplier: '아이카' }), NOW), 0);
-    assert.equal(payAmountOf(row({ ...broken, supplier: '손오공' }), NOW), 400_000);
+  it('★스타·예시공급사C는 끊기면 지급 0', () => {
+    assert.equal(payAmountOf(row({ ...broken, supplier: '예시공급사C' }), NOW), 0);
+    assert.equal(payAmountOf(row({ ...broken, supplier: '예시공급사A' }), NOW), 400_000);
   });
 });
 

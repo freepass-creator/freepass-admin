@@ -18,7 +18,7 @@ it('formats known numeric units without mutating values or guessing unknown fiel
 });
 
 const p: CanonicalProduct = {
-  id: 'P1', version: 1, supplierId: 'RP001', supplierName: '손오공', supplierProductKey: '12가3456',
+  id: 'P1', version: 1, supplierId: 'RP001', supplierName: '예시공급사A', supplierProductKey: 'PLATE-EXAMPLE',
   vehicle: { nodeId: 'n', originId: '', manufacturerId: '기아', modelId: 'K8', subModelId: 'K8', trimId: '트렌디', matchLevel: 'TRIM' },
   specs: { modelYear: 2024 }, offers: [], sourceSnapshotId: 's', updatedAt: '',
   productPolicies: [

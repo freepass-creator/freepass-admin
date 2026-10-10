@@ -11,7 +11,7 @@
     "branch": "kit-redeploy/freepass-admin",
     "revision": "4664bdeaae849da6f75a1a5ec3cf492d5e215131",
     "registry_revision": "1f6f98bbc2f7efe52784ff25c034d7e23b92a927",
-    "root": "C:\\Users\\admin\\AppData\\Local\\Temp\\claude\\C--dev-ai-core--claude-worktrees-enhancement-4d2083\\fa50ef09-deef-43ab-a59f-0be5a6f9de7f\\scratchpad\\kits\\freepass-admin",
+    "root": "LOCAL_KIT_PATH_REDACTED",
     "display_name": "freepass-admin"
   },
   "files": [

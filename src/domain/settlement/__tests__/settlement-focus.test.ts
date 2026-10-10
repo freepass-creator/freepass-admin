@@ -5,9 +5,9 @@ import type { SettlementRow } from '../types';
 
 const row = (o: Partial<SettlementRow> = {}): SettlementRow => ({
   id: 'stl_focus',
-  plate: '12가3456',
+  plate: 'PLATE-EXAMPLE',
   receivedAt: '2026-09-01',
-  customer: '홍길동',
+  customer: '고객A',
   supplier: '공급사A',
   supplierCode: null,
   channel: '영업채널A',

@@ -71,7 +71,7 @@ export function IntakeWork({ code, next, plate, paper, delivered, deliveredAt, c
         {(next.kind === 'paper' || next.kind === 'plate' || next.kind === 'delivered') && (
           <form id="pb-next" className="form" onSubmit={send} aria-busy={pending}>
             {숨은(next.kind)}
-            {next.kind === 'plate' && <label>차량번호<input name="plate" defaultValue={plate} required placeholder="예: 12가3456" autoComplete="off" /></label>}
+            {next.kind === 'plate' && <label>차량번호<input name="plate" defaultValue={plate} required placeholder="예: PLATE-EXAMPLE" autoComplete="off" /></label>}
             {next.kind === 'delivered' && <label>인도일<input type="date" name="deliveredAt" defaultValue={deliveredAt || today} required /></label>}
           </form>
         )}

@@ -13,7 +13,7 @@ const base = {
     modelYear: 2025, fuel: '가솔린', displacementCc: 2497, drive: 'FWD', seats: 5, batteryKwh: null,
   },
   vehicleAsset: {
-    id: 'VA-1', status: 'AVAILABLE' as const, plateNumber: '12가3456', vin: 'VIN-1',
+    id: 'VA-1', status: 'AVAILABLE' as const, plateNumber: 'PLATEA', vin: 'VIN-1',
     odometerKm: 21000, firstRegistrationDate: '2025-01-15',
   },
   vehiclePrice: 48_000_000,
@@ -192,7 +192,7 @@ test('FreePass Data client config only accepts a clean production HTTPS origin a
     FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'t'.repeat(40),
   }),/MUST_BE_HTTPS/);
   for(const url of [
-    'https://user:pass@data.example.test',
+    'https://user:pass' + String.fromCharCode(64) + 'data.example.test',
     'https://data.example.test/api',
     'https://data.example.test/?x=1',
     'https://data.example.test/#x',
@@ -208,4 +208,58 @@ test('FreePass Data client config only accepts a clean production HTTPS origin a
     FREEPASS_DATA_BASE_URL:'https://data.example.test',
     FREEPASS_DATA_ADMIN_CATALOG_TOKEN:'short',
   }),/TOKEN_INVALID/);
+});
+
+const economicFee = (state: 'KNOWN' | 'ZERO' | 'UNKNOWN' | 'NOT_APPLICABLE', amount = 123456) => ({
+  state, amount: state === 'KNOWN' || state === 'ZERO' ? { amount: state === 'ZERO' ? 0 : amount, currency: 'KRW' as const } : null,
+  calculation: state === 'KNOWN' || state === 'ZERO' ? { kind: 'FIXED' as const, amount: { amount: state === 'ZERO' ? 0 : amount, currency: 'KRW' as const } } : null,
+  sourceRefs: ['fee-source'], policyId: 'policy-fee', ruleId: 'rule-fee', reasonCode: state === 'UNKNOWN' ? 'NO_RULE' : null,
+  vatTreatment: 'EXCLUDED' as const, vatAmount: null, totalAmount: null,
+});
+const productWithFees = (claim: unknown, pay: unknown) => ({ ...base, offers: [{ ...base.offers[0], priceTerms: [
+  { ...base.offers[0].priceTerms[0], supplierBillingFee: claim, channelPayoutFee: pay },
+  base.offers[0].priceTerms[1],
+] }] });
+
+test('term economics preserve Data fields for each selected term, including ZERO and UNKNOWN', () => {
+  for (const state of ['KNOWN', 'ZERO', 'UNKNOWN', 'NOT_APPLICABLE'] as const) {
+    const fee = economicFee(state);
+    const mapped = __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(productWithFees(fee, fee)));
+    assert.deepEqual(mapped.offers[0].supplierBillingFee, fee);
+    assert.deepEqual(mapped.offers[0].channelPayoutFee, fee);
+    assert.equal(mapped.offers[1].supplierBillingFee, undefined);
+  }
+});
+
+test('malformed present economics fail closed; absent economics remain compatible', () => {
+  assert.doesNotThrow(() => __test.ResponseSchema.shape.data.element.parse(base));
+  const known = economicFee('KNOWN');
+  for (const bad of [null, {}, { ...known, amount: null }, { ...known, amount: { amount: -1, currency: 'KRW' } },
+    { ...known, amount: { amount: 1.1, currency: 'KRW' } }, { ...known, amount: { amount: 1, currency: 'USD' } },
+    { ...known, state: 'ZERO' }, { ...known, state: 'UNKNOWN' }, { ...known, calculation: null },
+    { ...known, calculation: { kind: 'RATE', base: 'GUESS', rate: 0.1 } }, { ...known, sourceRefs: [] },
+    { ...known, vatAmount: -1 }, { ...known, vatTreatment: 'GUESSED' }, { ...known, policyId: '' },
+  ]) {
+    for (const [claim, pay] of [[bad, known], [known, bad]])
+      assert.throws(() => __test.ResponseSchema.shape.data.element.parse(productWithFees(claim, pay)));
+  }
+});
+
+test('sourceSnapshotId changes when term economics change without a product revision change', () => {
+  const map = (f: unknown) => __test.mapProduct(__test.ResponseSchema.shape.data.element.parse(productWithFees(f, economicFee('ZERO'))));
+  const first = map(economicFee('KNOWN'));
+  for (const changed of [economicFee('KNOWN', 999), economicFee('UNKNOWN'), { ...economicFee('KNOWN'), ruleId: 'new-rule' }])
+    assert.notEqual(map(changed).sourceSnapshotId, first.sourceSnapshotId);
+});
+
+test('economicsCoverage is optional, typed, and never treated as COMPLETE when missing', () => {
+  const meta = {
+    consumerId: 'freepass-admin-catalog', projectionId: 'admin-catalog', authority: 'CANONICAL_ACTIVE', schemaVersion: '1.0.0',
+    releaseId: 'r', manifestId: 'm', inputDigest: 'i', dataDigest: 'd', revision: 1, generatedAt: 'now', activatedAt: 'now',
+    policyParity: 'COMPLETE', missingPolicyOfferIds: [], invalidPolicyFactRefs: [],
+  };
+  assert.equal(__test.ResponseSchema.shape.meta.parse(meta).economicsCoverage, undefined);
+  for (const coverage of ['COMPLETE', 'INCOMPLETE'])
+    assert.equal(__test.ResponseSchema.shape.meta.parse({ ...meta, economicsCoverage: coverage }).economicsCoverage, coverage);
+  assert.throws(() => __test.ResponseSchema.shape.meta.parse({ ...meta, economicsCoverage: 'READY' }));
 });

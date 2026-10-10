@@ -1,7 +1,7 @@
 # EMAIL R&D INDEX — freepasserp.com / FreePass ERP
 
 작성일: 2026-09-13
-목적: `dudguq@gmail.com`으로 보낸 FreePass ERP / freepasserp.com 관련 메일을 Chat ↔ Work 공용 기억으로 추적한다.
+목적: `PERSONAL_GMAIL_REDACTED`으로 보낸 FreePass ERP / freepasserp.com 관련 메일을 Chat ↔ Work 공용 기억으로 추적한다.
 
 > 이 파일은 **출처 인덱스**다. 메일 제목이 ‘확정’이어도 현재 개발 기준보다 우선하지 않는다. 현행 결정은 `docs/WORK-INBOX.md`, `docs/MASTER-v1.md`, AI Core Gate를 따른다. 과거 메일은 결정 이력·사업 배경·반례를 복원하는 근거로 사용한다.
 

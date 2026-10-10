@@ -12,7 +12,7 @@ test('ERP5 product source revision is stable for the same source revisions', () 
 
 test('canonical product keeps the authoritative Firestore revision as version', () => {
   const source = {
-    car_number: '12가3456',
+    car_number: 'PLATE-EXAMPLE',
     product_code: 'P-1',
     provider_company_code: 'SUP-1',
     provider_name: '공급사 1',
@@ -25,7 +25,7 @@ test('canonical product keeps the authoritative Firestore revision as version', 
 
   const result = toCanonicalProduct(
     source,
-    '12가3456',
+    'PLATE-EXAMPLE',
     undefined,
     productSourceRevision(123456, 0),
     undefined,

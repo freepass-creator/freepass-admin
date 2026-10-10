@@ -87,5 +87,28 @@
       "mode": "merged",
       "reason": "PR #135 is superseded only to comply with work/<project-id>/<work-id> naming. Its entire commit is preserved as an ancestor of the replacement workline; do not delete unless merged."
     }
-  ]
+  ],
+  "audit_20261007": {
+    "observed_at": "2026-10-07T04:00:10.382Z",
+    "remote_main": "dd0653491361f54c14fc4ee4cdd9a28b9a7a4bd6",
+    "local_integration": "f985fde93e101019c9b2d6593b9f36c24e030841",
+    "rows_summary": {
+      "total": 39,
+      "historical_preserve": 17,
+      "review_required": 7,
+      "in_local_integration": 9
+    },
+    "executed_deletions": 0,
+    "old_candidates_are_not_new_authorization": true,
+    "worktrees_and_ignored_assets": "PRESERVED_WITHOUT_DELETE_OR_MOVE",
+    "windows_pdf_tests": "874 total / 864 PASS / 10 FAIL bundled Chromium ENOENT",
+    "linux_ci": {
+      "checks": "ALL_SUCCESS: CI,Canon Guard,Branch Hygiene,Dependency audit,core-domain,backend,freepass-data persistence,Next runtime,Visual QA"
+    },
+    "independent_review": {
+      "status": "FAILED",
+      "reason": "Claude organization subscription access disabled",
+      "merge_gate": "HOLD_FOR_REQUIRED_REVIEW"
+    }
+  }
 }

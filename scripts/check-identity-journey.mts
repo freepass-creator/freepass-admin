@@ -37,7 +37,7 @@ const app = getApps().find((a) => a.name === 'sim')
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const EMAIL = 'journey@teamjpk.com';
+const EMAIL = 'EMAIL_REDACTED';
 
 /** 에뮬레이터 REST 로 비밀번호 로그인 → ID 토큰. 브라우저가 하는 일과 같다 */
 async function idTokenOf(email: string, password: string): Promise<string> {

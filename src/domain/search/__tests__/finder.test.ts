@@ -54,13 +54,13 @@ test('Finder skip-axis supports cross facet counts without dropping other filter
 });
 
 test('Finder free text and internal supplier facet share one result pipeline',()=>{
-  const a=product({id:'a',supplierId:'SUP-A',supplierName:'오토플러스'});
-  const b=product({id:'b',supplierId:'SUP-B',supplierName:'손오공'});
+  const a=product({id:'a',supplierId:'SUP-A',supplierName:'예시공급사B'});
+  const b=product({id:'b',supplierId:'SUP-B',supplierName:'예시공급사A'});
   const selection=emptyFinderSelection();
-  selection.supplier=['오토플러스'];
+  selection.supplier=['예시공급사B'];
 
   assert.deepEqual(
-    findProducts([a,b],input({selection,text:'오토'})).map((x)=>x.product.id),
+    findProducts([a,b],input({selection,text:'예시공급사B'})).map((x)=>x.product.id),
     ['a'],
   );
 });

@@ -31,7 +31,7 @@ The versions are pinned to the same Chrome/Chromium major to avoid DevTools prot
 
 The template references supplier logos relative to its public URL (`assets/…`), from both markup and its own script. The final render runs on `about:blank` with the network blocked, so every referenced `assets/*.png|webp|jpg` that ships under `public/contract-template/assets/` is inlined as a data URL. A referenced asset that does not ship resolves to `''`, which makes the template take its documented no-logo path (logo hidden, company name shown) deterministically instead of racing its `onerror` handler.
 
-DECISION REQUIRED: `assets/logo-sonogong.webp` and `assets/logo-jpk.png` are referenced by the template but are not in the repository. Until those brand files are supplied, final PDFs for those suppliers show the company name instead of the logo.
+DECISION REQUIRED: `assets/logo-supplier-a.webp` and `assets/logo-jpk.png` are referenced by the template but are not in the repository. Until those example brand files are supplied, final PDFs for those suppliers show the company name instead of the logo.
 
 ## Overflow / truncation guard
 

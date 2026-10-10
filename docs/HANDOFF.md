@@ -1,5 +1,59 @@
 # FreePass Admin Handoff
 
+## 2026-10-07 월별 정산 소비자 조회 계약 — 동일 PR171 의존
+
+- 운영반영 승인: 정산방 직접 userMessage `THREAD_APPROVAL_REDACTED`의 `ㅇㅇ 처리해`를 read_thread로 확인. 과거 Claude 대체 승인 `CALL_REDACTED`는 접수 금액/청구월 복구 범위이며 전체 PR 운영검토 승인으로 확대하지 않는다. Claude 조직차단 FAILED와 별개로 기존 read-only Codex CLI 독립 검토를 실행해 exit0/실제 답변 확보.
+- 독립 검토 지적 반영: digest만 얻기 위한 추가 full-ledger 조회 및 PC/mobile 중복 조회를 제거. 기존 화면용 원장 snapshot의 digest를 보존하여 같은 조회 영수증으로 검증하고, React request-scoped cache로 PC/mobile이 한 결과를 공유한다. rule 실패 시 목록은 유지하면서 요약만 HOLD. 모의 gateway 시험은 원장 query 1회와 rule 실패 시 목록 보존을 검증한다.
+- 재검토에서 한도 포화 시 부분 목록 표시 위험을 추가 발견해 snap.size >= 5000이면 전체 screen read를 오류로 닫는다. 포화 모의 응답 시험 포함. CI wiring의 과거 settlements.list() 고정 검사는 공용 screen snapshot → 같은 repository → 원장 읽기 및 부분 목록 거절을 요구하도록 새 경로를 검증하며 검사를 삭제하거나 조건을 완화하지 않는다.
+- Data 담당 확인(main72d486d): live F04 원본 digest 검증 계약은 없음. 화면에 `게시된 접수원장 기록액 / 원본 최신성 미검증`을 명시하며 완전 fresh를 주장하지 않는다. 자동 원본 freshness는 기존 Data owner 의존이다.
+- 운영준비: rollback baseline `DEPLOYMENT_REDACTED` production READY/alias freepass-admin.vercel.app 확인. 로컬 Vercel env pull은 sensitive값을 placeholder로 내려 로컬 production preflight가 성립하지 않으며, 실제 설정오류로 단정하지 않는다. 임시 env 파일 삭제, 운영 환경 수정 없음. IAB 운영 settlement는 로그인폼으로 전환돼 기존 세션 없이 readback 불가. GHD durable 연결 실패/교대 미확인으로 중복 merge하지 않는다.
+
+- 목적: 옛 claimWritten 목록 합계가 9월 접수원장 기록액으로 답변되는 혼동 제거. 시작 revision 0a300d6f, 기존 Task/PR171과 gateway/server/화면/시험을 COMPOSE_OR_EXTEND, academy READY. 새 파일·Task·엔진·예약·운영 writer 없음.
+- 변경: 기존 FreePass Data admin-workflow reader로 settlementRules/f04-confirmed-receipt-sync의 monthlyReceiptSummaries를 읽는다. monthlySummaryLedgerDigest와 live settlementRows limit5000 digest 대조, 조회 전후 rule digest 대조. 누락·불일치·조회 한도·잘못된 값은 HOLD, old sum fallback 없음. 금액은 원문 number 보존(다른 월의 소수 공급가액을 반올림하지 않음).
+- 소비처: /ledger 월별 접수원장 기록액 및 목록 기록액 구분, /settlement 데스크톱·모바일 월별 접수원장 기록액 표시. 공급사 확정 별도 확인과 heldCount 명시. 기존 거래처별 청구 후보/발행 흐름은 재계산하거나 운영 데이터로 덮지 않는다.
+- 실제 readback: canon-numbers 최신 명령 및 기존 Data createFirestoreAdminWorkflowStore로 2026-09 재조회. 원본 F04 values digest와 원장 digest PASS, 34건/청구36582600/지급29322051/held9/BOOKED_SOURCE_AMOUNTS_NOT_ALL_SUPPLIER_CONFIRMED. 새 Admin validator에 같은 live rule/digest를 전달해 READY와 동일 금액 재확인. B3Q local Admin HTTP 자격증명 없음은 HOLD로 실제 확인, 인증 fallback 추가 안 함.
+- 남음: 운영 HTTP reader·렌더 결과 및 자동 원본 최신화는 미검증. Admin runtime은 원장 digest 검증까지이며 F04 원본 digest freshness는 Data publisher 의존. 공급사 확인/과거 후보 4건은 정산 담당 소유. state/handoffs/프리패스정산-규칙수령-20261006.txt는 B3Q에 없음; 정산 담당도 writer/PC 불명확이라 총괄에 실제 경로 확인 요청, 내용을 추정하지 않음.
+- next_start_here: 최신 PR171 CI → GHD의 기존 독립 검토 HOLD 해결 및 단독 main 반영 → 운영 gateway/render readback. 모든 조회 통일 완료로 표현하지 않는다.
+
+## 2026-10-07 차종마스터 단일화 — 기존 Admin reader 의존
+
+- 동일 통합 Task/PR #171의 소비자 의존 요청: `THREAD_DEPENDENCY_REDACTED`. 시작 소비처 revision `REVISION_REDACTED`, academy READY 확인. 기존 reader/index/시험을 실제 검색해 `COMPOSE_OR_EXTEND`했고 새 파일·작업선은 만들지 않았다.
+- 정본: 기준 한 장 v1과 freepasserp5 `vehicle_master`/`vehicle_trim_master`/별칭. Data의 기존 repair 구현에서 `retired === true` boolean 규약을 확인했다. 이름/ID 임의 보정, F03 조회, 운영 write/배포는 없다.
+- 변경: `nodeFromErp5`는 `aliases`와 `sub_model_aliases`의 배열/JSON 배열을 함께 읽어 정확히 같은 별칭만 중복 제거한다. 기존 `indexMaster`는 mapper가 전달한 retired boolean을 확인해 폐기 노드를 제외한다. `loadMasterIndex`도 동일 인덱스를 사용하므로 폐기 문서가 매칭 후보를 늘리지 않는다.
+- 검증: 기존 master-match 시험에 retired+active 별칭 충돌, retired-only, 배열/JSON 별칭, 이름/ID 보존, 잘못된 별칭 입력 비추정 회귀검증을 추가했다. 관련 9 tests와 typecheck/diff check PASS.
+- 남음: 새 head 전체 CI/실제 소비처 배포·runtime 검증은 별도. 기존 5분 프로세스 cache와 저장된 과거 상품 매칭은 이 코드 수정으로 재작성하지 않는다. Claude 독립 검토 FAILED/GHD 단독 merge_owner는 유지한다.
+- next_start_here: PR #171 새 head CI → 요청 담당에 exact revision/검증 인계 → GHD 검토·반영 → 별도 승인된 소비처 runtime 확인. 운영 마스터/상품/별칭 정정은 원천 담당만 수행한다.
+
+## 2026-10-07 공통 재사용 규칙 적용 증거
+
+- 같은 Task: `ledger-commission-read-20261003` / PR #171. 시작 revision `REVISION_REDACTED`, 원격 main `dd065349`. 새 개발선이나 문서를 만들지 않는다.
+- 실제 검색: AI Core `reuse:check`(capability registry·파일명 429·내용 200 검색), 대상 `AGENTS.md`, `docs/BRANCH-WORKFLOW.md`, `docs/HANDOFF.md`, `registry/active-work.json`, AI Core `AI_WORKING_STANDARD.md`, 현재 열린 PR #171/#179/#180/#181. 규칙과 담당/재개점이 이미 있으므로 판정 `COMPOSE_OR_EXTEND`: 기존 AGENTS 진입절과 이 인계만 보강한다.
+- academy: 로컬 main이 원격 main보다 앞서 `LOCAL_BRANCH_NOT_CURRENT` HOLD였다. 새 branch 생성 없이 기존 PR #171 소유 branch를 같은 통합 revision으로 fast-forward한 뒤 재실행해 blockers 0 / READY를 확인했다. 다른 dirty 작업과 직원 입력은 그대로 보존한다.
+- 같은 목적의 Data 금액 동기화 연결은 정산 담당 보고를 읽고 B3Q 상위에 기존 수집 담당의 의존으로 전달했다. 신규 Task·writer·예약·상주 프로세스·운영 데이터 쓰기는 없다. 담당 수령과 실제 자동 실행은 아직 미확인이다.
+- Claude 독립 검토 FAILED와 GHD 단독 merge_owner는 유지한다. 이 규칙 보강은 검토 면제·운영 삭제·자동화 기동 승인으로 해석하지 않는다.
+- next_start_here: AGENTS -3 → 기존 active-work 단일 owner/PR #171 exact head → CI 재조회 → GHD 반영 패킷. 최신 main/head가 바뀌면 다시 대조하고 과거 PASS를 새 revision의 PASS로 사용하지 않는다.
+
+## 2026-10-07 ADMIN main 통합 — 원격 반영 전 검증
+
+- 목적: 대표 지시로 갈라진 ADMIN 개발선을 main 하나로 회수한다. 기준 원격 main은 `REVISION_REDACTED`.
+- 로컬 main에 PR #171 `18e2800d`, #179 `203e6ef2`, #180 `c4963f33`, #181 `3b60b100`을 순서대로 병합했다. 원격 main 병합/운영 배포/시트·DB 쓰기는 아직 실행하지 않았다.
+- 충돌 해결: Data 기간별 수수료와 예시공급사D 경고 테스트 모두 보존; PDF는 접수만 집계하며 비공개 issuer 설정을 유지; 별도 보관 회차 재합산과 공개 issuer 정보 복구를 막았다.
+- 의존성: sharp 0.35.5와 source-map-js 1.2.2로 lockfile 패치. 기존 감사 예외는 확대하지 않았다. production audit gate PASS(high/critical 0, 기존 검토된 moderate 2).
+- 보존: 기본 폴더 `.claude/launch.json` 변경은 stash `recovery-before-admin-main-consolidation-20261007`에 보존했다. 다른 dirty worktree, 출력물, ignored 파일과 기존 작업 브랜치는 삭제하지 않았다.
+- 검증: typecheck/UI SSOT/live-data wiring PASS. 전체 Windows 테스트 874 중 864 PASS/10 FAIL(서버용 Chromium ENOENT). 설치된 Chrome 대체 실행도 template-script timeout이 발생해 테스트 변경은 되돌렸다. 전체 테스트 PASS로 세지 않는다.
+- 독립 검토: Claude gate status RESET_REACHED였으나 실제 호출은 조직의 Claude subscription access 차단으로 FAILED(exit 1). ANSWERED가 아니며 필수 독립 검토 미충족.
+- 개발선: 기존 가장 먼저 열린 PR #171을 통합 검증 경로로 재사용한다. #179/#180/#181은 코드가 통합 원격 main에 포함되고 재조회된 뒤 종료한다. 단일 active_owner는 이 ADMIN 지휘 통합 작업이며 다른 시트 담당의 입력을 다시 실행하지 않는다.
+- 잔여: 오래된 esign-contract-audit 2커밋은 계약 문안/조건 변경이라 별도 검토 필요. intake-ledger-lifecycle은 registry에서 새 ledger에 의해 대체된 작업이다. archive/legacy/dirty 개발선을 통째로 병합하지 않는다.
+- next_start_here: PR #171의 정확한 통합 head와 CI 결과 → 독립 검토 차단 해소 → 원격 main 포함 확인 → 겹친 PR 종료 → exact-SHA 보존 후 오래된 로컬 ref 정리. main 원격 반영은 전체 필수 검증 전에 실행하지 않는다.
+
+## 2026-10-07 상품·신규접수 준비방 통합 인계
+
+- 원문 Task/출처: `THREAD_SOURCE_REDACTED` `[B3Q] FREEPASS-ADMIN · 상품·접수`. 원 담당은 상품 검색·상세·신규접수 준비, 실행 변경 없이 읽기 전용 확인만 완료했다. 대표가 중복방 보관을 직접 요청한 turn `THREAD_KEEP_REDACTED`을 보존한다.
+- 통합 담당/active_owner: 접수현황 `THREAD_OWNER_REDACTED`의 Codex. 접수·상품업무에서 Canonical Product → Search/Filter → Detail → Application을 함께 다룬다. Claude/Codex 동시 쓰기 금지. 계약·인도는 별도 담당을 유지한다. 원방은 복구 가능한 보관 대상으로 원문 삭제 금지.
+- 검증 근거: 원방 완료 turn `THREAD_DONE_REDACTED`는 지정 문서 읽기 전용 확인, 코드/운영 변경 0. 당시 archive 브랜치 `5b4ff75b`였으므로 현재 운영 검증으로 세지 않는다. 이번 인계 기록 대상 revision `cdc855e1`.
+- 보존 규격: 검색에서 신규접수까지 동일 Offer·상품 version·접수 Snapshot 유지, 공급사 RAW 및 직원 입력 보존. 직원 A 작성·전달 내용과 PLATE_HELD_A/PLATE_HELD_B 원문복구본은 AI 수정·삭제·자동보정·재계산 금지.
+- 남음/next_start_here: 총괄의 작업 소유권 확인 → 최신 main 실제 revision 재조회 → academy READY → 동일 Offer/version이 상세와 신규접수 Snapshot까지 유지되는지 읽기 전용 대조. archive 브랜치 수정 금지. 기존 접수나 동일 변경을 다시 실행하지 않는다. 구현·운영 변경은 본래 사용자 오더와 정본 범위에서만 진행한다.
+
 기준일: 2026-09-19  
 범위: Backend / Domain / Adapter / Persistence
 
@@ -31,7 +85,7 @@ UI/UX는 AI Core/DevCenter 공통 규격 확정 전까지 HOLD다. 현재 기능
 - typed `AppError` code 도입 — Service가 문자열 message 비교로 분기하지 않음
 - Application mutation 불변식 추가 — id/applicationNumber/submissionId/createdAt/Snapshot 불변, history append-only
 - 불변식 회귀테스트 추가
-- revision `3f1812c6968f57494c1e8204e7a67d54e1c1f3ea`: npm ci / typecheck / test / build PASS (run 35437766677)
+- revision `REVISION_REDACTED`: npm ci / typecheck / test / build PASS (run 35437766677)
 
 ## Current gaps
 
@@ -93,7 +147,7 @@ npm run build
 
 # 2026-09-22 AI Core 재감사 — 상품 → 접수 → 계약 → 정산
 
-기준 revision 관측: `da5bf6fc552706bfbc6338f5fad85fbe61b29d5e` 이후 current main.  
+기준 revision 관측: `REVISION_REDACTED` 이후 current main.  
 목적: FreePass Admin이 실제 운영 범위인 **상품 찾기 → 접수 → 계약 → 정산**을 어디까지 커버하는지와 다음 Codex 작업 우선순위를 고정한다.
 
 > 이 절이 위 2026-09-19의 과거 gap 목록보다 최신 판정이다. 특히 당시 "Settlement domain 상당 부분 Mockup" 평가는 현재 main에서 더 이상 유효하지 않다.
@@ -465,3 +519,12 @@ Domain/core suite after snapshot hardening:
 - Intake/Performance/Settlement/Clawback including snapshot tests: 115/115 PASS
 
 Production Firestore security rules/IAM remain a separate deployment verification item; the emulator currently uses permissive rules.
+
+
+## 2026-10-07 same Task: monthly Drive documents
+Purpose: one existing settlement button generates both party axes from Firestore booked receipts, without issuing/reissuing financial records. Baseline 5a4afa44, PR171 single writer unchanged. academy READY after switching existing Work branch; untracked user output/pdf preserved and locally excluded, no deletion. reuse:check COMPOSE_OR_EXTEND PASS: existing invoice-document / IssueForm / gateway / Chromium and user-named ERP4 pure HTML. CREATE_NEW_JUSTIFIED: Admin has no party-axis original-template adapter or Drive PDF persistence boundary; a narrow adapter ports the explicit original template (not a new calculation engine), receives private issuer configuration, and preserves existing invoices. No new Task, collection, process or scheduler. Production authentication/configuration and merge ownership still require live evidence.
+
+Validation: related 24/24 tests, typecheck, production build, UI SSOT and data wiring PASS. Independent read-only Codex CLI returned code PASS with exit 0; Claude subscription remains FAILED, not PASS. Actual local Firestore gateway/Chrome/gws generated all 16 existing September Drive IDs and verified metadata/checksums/READY readback; same-input retry reused the same IDs with unchanged ledger digest. Private operational receipt engineRuntime retains latest artifact evidence. Authentication stays ON; actual browser button click is LOGIN_PENDING. Other months without an approved existing target mapping fail closed; no auto-create authorization inferred. Remote main merge/deployment remain pending designated GHD ownership handoff. Originals and other worktrees preserved.
+
+## Same Task: receipt basis evidence correction (2026-10-07)
+Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee.ts display verifier and f04 basis adapter reuse explicit source AD/AI rates plus unique source rule and exact booked amount equality; never reverse-infer rates. Unknown basis is direct input/no formula evidence. Existing note arithmetic now requires exact equality, no undeclared one-won allowance. Query projection keeps original raw/money and adds separate displayReceiptBasis; existing detail disclosure and PDF evidence appendix display it. Before/after rendering evidence digest guards drift. Source BT/formulas and protected employee rows stay untouched: current compact BT does not exactly match the historical automatic-write receipts, so source rewrite remains HOLD. Actual canonical reader validates recorded rates; source sourceReceiptRaw/calculationBasis remain unmodified. Related40/type/build/ui/data and 16 original-template A4 dry renders PASS; independent read-only CLI code review PASS exit0. Actual updated Drive readback, exact-head CI and authenticated UI click tracked separately in the existing private operational receipt. No new Task/engine/DB collection. next_start_here: final exact-head CI/runtime evidence → same approved output IDs generation+retry → designated merge-owner handoff; BT write only after exact oldText+immutable-key allowlist evidence.

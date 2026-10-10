@@ -790,7 +790,7 @@
         "파일삭제"
       ],
       "result_contract": "ai-core-work-result/v1",
-      "hold_reason": "REFERENCE — Capability Engine 이 실행하지 않는다. 각 AI 세션이 이 PC 의 gws CLI 로 직접 쓴다(다른 AI·대표를 거치지 않는다). 절차는 memory/TOOL_CONNECTIONS.md «Google Workspace direct use». 시트 쓰기는 쓰기 전 같은 범위 읽기 → 쓰기 → 다시 읽어 확인. 메일 발송·공유/권한 변경·삭제는 대표 지시가 있을 때만. 2026-10-03 대표: 「왜 구글 시트를 직접 못 만지고 코덱스를 통해서 만지냐 … 세션마다 노하우를 모르고 헤맨다」. B3Q 시험: gws(pyh@teamjpk.com)로 시트 읽기 성공, 범위 drive·spreadsheets·gmail(readonly·compose·send) 확인."
+      "hold_reason": "REFERENCE — Capability Engine 이 실행하지 않는다. 각 AI 세션이 이 PC 의 gws CLI 로 직접 쓴다(다른 AI·대표를 거치지 않는다). 절차는 memory/TOOL_CONNECTIONS.md «Google Workspace direct use». 시트 쓰기는 쓰기 전 같은 범위 읽기 → 쓰기 → 다시 읽어 확인. 메일 발송·공유/권한 변경·삭제는 대표 지시가 있을 때만. 2026-10-03 대표: 「왜 구글 시트를 직접 못 만지고 코덱스를 통해서 만지냐 … 세션마다 노하우를 모르고 헤맨다」. B3Q 시험: gws(WORKSPACE_ACCOUNT_REDACTED)로 시트 읽기 성공, 범위 drive·spreadsheets·gmail(readonly·compose·send) 확인."
     }
   ]
 }

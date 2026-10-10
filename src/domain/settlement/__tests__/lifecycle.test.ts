@@ -134,15 +134,15 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifePatchAt(supplierNoInvoice, { kind: 'collected', amount: 1_100_000, day: '2026-09-30' }).ok, false);
 
     assert.equal(lifePatchAt(billed, { kind: 'invoice', on: true, day: '2026-09-30' }).ok, false);
-    assert.equal(lifePatchAt(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123-45-67890' }).ok, true);
+    assert.equal(lifePatchAt(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '999-99-99999' }).ok, true);
 
     const channelConfirmed = mk({ billed: true, claimStage: '청구', payStage: '확인' });
     const paid = lifePatchAt(channelConfirmed, { kind: 'paid', amount: 880_000, day: '2026-09-30' });
     assert.equal(paid.ok && paid.patch.payStage, '지급');
 
     assert.equal(lifePatchAt(mk({}), { kind: 'invoice', on: true }).ok, false);
-    const invoice = lifePatchAt(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123-45-67890' });
-    assert.equal(invoice.ok && invoice.patch.invoiceBiz, '1234567890');
+    const invoice = lifePatchAt(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '999-99-99999' });
+    assert.equal(invoice.ok && invoice.patch.invoiceBiz, '9999999999');
     assert.equal(lifePatchAt(mk({ billed: true, claimStage: '확인' }), { kind: 'invoice', on: true, day: '2026-09-30', biz: '123' }).ok, false);
   });
   it('금전 사실 날짜는 실제 달력 날짜이고 미래일 수 없다', () => {
@@ -155,7 +155,7 @@ describe('한 줄의 다음 걸음 — 두 축', () => {
     assert.equal(lifePatchAt(confirmed, { kind: 'collected', amount: 1, day: '2026-09-19' }).ok, false);
     assert.equal(lifePatchAt(
       mk({ billed: true, billedAt: '2026-09-10', claimStage: '확인' }),
-      { kind: 'invoice', on: true, day: '2026-10-01', biz: '123-45-67890' },
+      { kind: 'invoice', on: true, day: '2026-10-01', biz: '999-99-99999' },
     ).ok, false);
   });
 

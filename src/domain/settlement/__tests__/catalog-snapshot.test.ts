@@ -31,7 +31,7 @@ const product=(partial:Partial<CanonicalProduct>={}):CanonicalProduct=>({
     subModelId:'GN7',trimId:'캘리그래피',matchLevel:'TRIM',
   },
   specs:{modelYear:2024,mileageKm:32_000,fuel:'가솔린',seats:5},
-  registration:{vehicleNumber:'12가3456',vin:'VIN1',firstRegistrationDate:'2024-01-02'},
+  registration:{vehicleNumber:'PLATEA',vin:'VIN1',firstRegistrationDate:'2024-01-02'},
   offers:[offer()],
   productPolicies:[
     {policyId:'min-age',type:'NUMBER',value:26},
@@ -152,4 +152,22 @@ test('catalog snapshot digest changes when selected Offer supplier changes', () 
   const a = buildIntakeCatalogSnapshot(p, left, '2026-09-26T00:00:00.000Z');
   const b = buildIntakeCatalogSnapshot(p, right, '2026-09-26T00:00:00.000Z');
   assert.notEqual(a.digest, b.digest);
+});
+
+test('snapshot seals economics and digest independently of later catalog mutation', () => {
+  const f = { state: 'KNOWN' as const, amount: { amount: 100, currency: 'KRW' as const }, sourceRefs: ['raw'], ruleId: 'r', policyId: 'p', reasonCode: null };
+  const o = offer({ supplierBillingFee: f, channelPayoutFee: { ...f, state: 'UNKNOWN', amount: null, reasonCode: 'NO_RULE' } });
+  const s = buildIntakeCatalogSnapshot(product(), o, 'now');
+  assert.deepEqual(s.offer.supplierBillingFee, f);
+  assert.equal(s.offer.channelPayoutFee?.reasonCode, 'NO_RULE');
+  for (const patch of [{ amount: { amount: 200, currency: 'KRW' as const } }, { ruleId: 'r2' }, { policyId: 'p2' }, { reasonCode: 'CHANGED' }, { state: 'UNKNOWN' as const, amount: null }]) {
+    const next = buildIntakeCatalogSnapshot(product(), { ...o, supplierBillingFee: { ...f, ...patch } }, 'now');
+    assert.notEqual(next.digest, s.digest);
+  }
+  f.amount.amount = 999;
+  f.sourceRefs.push('later');
+  assert.equal(s.offer.supplierBillingFee?.amount?.amount, 100);
+  assert.deepEqual(s.offer.supplierBillingFee?.sourceRefs, ['raw']);
+  assert.equal(intakeCatalogSnapshotDigest(s), s.digest);
+  assert.equal(buildIntakeCatalogSnapshot(product(), offer(), 'now').offer.supplierBillingFee, undefined);
 });

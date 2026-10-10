@@ -4,6 +4,31 @@ import { z } from 'zod';
 import type { CanonicalProduct, Offer, PolicyValue } from '../../domain/product/types';
 
 const Money = z.object({ amount: z.number().int().nonnegative(), currency: z.literal('KRW') });
+const TermAmountCalculation = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('FIXED'), amount: Money.strict() }).strict(),
+  z.object({ kind: z.literal('MULTIPLY'), base: z.literal('MONTHLY_RENT'), multiplier: z.number().nonnegative() }).strict(),
+  z.object({ kind: z.literal('RATE'), base: z.enum(['MONTHLY_RENT_X_TERM', 'VEHICLE_PRICE']), rate: z.number().nonnegative() }).strict(),
+]);
+// origin/main termEconomicAmount 계약: ruleId/policyId는 원본 스키마에서도 optional이다.
+const TermEconomicAmount = z.object({
+  state: z.enum(['KNOWN', 'ZERO', 'UNKNOWN', 'NOT_APPLICABLE']),
+  amount: Money.strict().nullable(),
+  calculation: TermAmountCalculation.nullish(),
+  sourceRefs: z.array(z.string().min(1)).min(1),
+  ruleId: z.string().nullish(),
+  policyId: z.string().min(1).optional(),
+  reasonCode: z.string().nullish(),
+  vatTreatment: z.enum(['EXCLUDED', 'INCLUDED', 'UNKNOWN']).optional(),
+  vatAmount: z.number().int().nonnegative().nullish(),
+  totalAmount: z.number().int().nonnegative().nullish(),
+}).strict().superRefine((v, ctx) => {
+  if (v.state === 'KNOWN' || v.state === 'ZERO') {
+    if (!v.amount || (v.state === 'ZERO' ? v.amount.amount !== 0 : v.amount.amount < 1) || !v.calculation)
+      ctx.addIssue({ code: 'custom', message: 'Known economics require matching amount and calculation' });
+  } else if (v.amount !== null || v.calculation != null) {
+    ctx.addIssue({ code: 'custom', message: 'Unknown economics cannot carry amount/calculation' });
+  }
+});
 const PolicyValueSchema = z.discriminatedUnion('type', [
   z.object({ policyId: z.string().min(1), type: z.literal('BOOLEAN'), value: z.boolean() }),
   z.object({ policyId: z.string().min(1), type: z.literal('NUMBER'), value: z.number() }),
@@ -15,6 +40,8 @@ const PolicyValueSchema = z.discriminatedUnion('type', [
   z.object({ policyId: z.string().min(1), type: z.literal('DATE'), value: z.string() }),
 ]);
 const PriceTerm = z.object({
+  supplierBillingFee: TermEconomicAmount.optional(),
+  channelPayoutFee: TermEconomicAmount.optional(),
   termKey: z.string().min(1),
   termMonths: z.number().int().positive(),
   monthlyRent: Money,
@@ -168,6 +195,7 @@ const ResponseSchema = z.object({
     missingPolicyOfferIds: z.array(z.string()),
     invalidPolicyFactRefs: z.array(z.string()),
     commercialCoverage: z.enum(['COMPLETE','INCOMPLETE']).optional(),
+    economicsCoverage: z.enum(['COMPLETE','INCOMPLETE']).optional(),
     commercialMissingOfferIds: z.array(z.string()).optional(),
   }).passthrough(),
 }).passthrough();
@@ -212,6 +240,9 @@ function sourceSnapshotDigest(source: z.infer<typeof DataProduct>): string {
       commercial: offer.commercial ?? null,
       priceTerms: offer.priceTerms.map((term) => ({
         termKey: term.termKey,
+        // 수수료 변경도 접수 조건 변경이다. 같은 revision이라도 stale 선택을 거부한다.
+        ...(term.supplierBillingFee !== undefined ? { supplierBillingFee: term.supplierBillingFee } : {}),
+        ...(term.channelPayoutFee !== undefined ? { channelPayoutFee: term.channelPayoutFee } : {}),
         termMonths: term.termMonths,
         monthlyRent: term.monthlyRent,
         deposit: term.deposit ?? null,
@@ -243,6 +274,8 @@ function mapProduct(source: z.infer<typeof DataProduct>): CanonicalProduct {
       offerRevision: offer.offerRevision,
       policyState: offer.policyState,
       termKey: term.termKey,
+      ...(term.supplierBillingFee !== undefined ? { supplierBillingFee: term.supplierBillingFee } : {}),
+      ...(term.channelPayoutFee !== undefined ? { channelPayoutFee: term.channelPayoutFee } : {}),
       supplierId: offer.supplierId,
       termMonths: term.termMonths,
       monthlyRent: term.monthlyRent.amount,

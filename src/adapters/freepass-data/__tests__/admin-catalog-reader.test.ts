@@ -45,7 +45,7 @@ test('SHADOW_READ returns legacy rows but records HOLD when Data reader is not c
 const shadowProduct = {
   id: 'P-1', version: 1, supplierId: 'SUP-1', supplierProductKey: 'P-1',
   vehicle: { nodeId: 'VM-1', originId: '', manufacturerId: '현대', modelId: '그랜저', matchLevel: 'MODEL' },
-  specs: {}, registration: { vehicleNumber: '12가3456' },
+  specs: {}, registration: { vehicleNumber: 'PLATE-EXAMPLE' },
   offers: [{
     id: 'O-1#36', supplierId: 'SUP-1', termMonths: 36, monthlyRent: 690000,
     deposit: 0, annualMileageKm: 20000, policyValues: [],

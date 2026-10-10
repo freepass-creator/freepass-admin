@@ -90,7 +90,7 @@ class LocalRemoteTests(unittest.TestCase):
         self.run_git('init', '--bare', str(self.remote))
         self.run_git('init', '-b', 'main')
         self.run_git('config', 'user.name', 'Test')
-        self.run_git('config', 'user.email', 'test@example.invalid')
+        self.run_git('config', 'user.email', 'EMAIL_REDACTED')
         self.run_git('commit', '--allow-empty', '-m', 'base')
         self.sha = self.run_git('rev-parse', 'HEAD')
         self.run_git('remote', 'add', 'origin', str(self.remote))

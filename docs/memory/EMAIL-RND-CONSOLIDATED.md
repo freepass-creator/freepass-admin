@@ -1,7 +1,7 @@
 # EMAIL R&D CONSOLIDATED MEMORY — freepasserp.com v1
 
 작성일: 2026-09-13
-출처: `dudguq@gmail.com`으로 발송된 FreePass ERP / freepasserp.com 관련 메일 35개 + 주요 첨부 기준서
+출처: `PERSONAL_GMAIL_REDACTED`으로 발송된 FreePass ERP / freepasserp.com 관련 메일 35개 + 주요 첨부 기준서
 상태: Work/Chat 공용 기억. **현행 구현 기준은 `docs/WORK-INBOX.md`와 `docs/MASTER-v1.md`가 우선**이며, 이 문서는 메일에서 나온 배경·결정·폐기 이력을 잃지 않기 위한 장기 기억이다.
 
 ---

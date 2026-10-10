@@ -7,13 +7,13 @@ import type { FeeResult } from '../fee.js';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement.js';
 
 const base: IntakeInput = {
-  receivedAt: '2026-09-18', plate: '12가3456', model: 'G80', supplier: '손오공', supplierCode: '', customer: '홍길동',
+  receivedAt: '2026-09-18', plate: 'PLATEA', model: 'G80', supplier: '예시공급사A', supplierCode: '', customer: '고객 A',
   channel: '하허호', channelCode: '', agent: '김', agentCode: '', product: '신차발주', rentKind: '', contractType: '',
   term: 60, rent: 900_000, deposit: 0, price: 60_000_000, payKind: '일시납', paper: false, delivered: false, deliveredAt: '', note: '',
 };
-const manualRule: FeeResult = { status: 'MANUAL', rule: { id: 'm', supplier: '손오공', kind: '신차', form: '발주', term: 0, basis: '범위', claim: '건별 책정', pay: '건별 책정', when: '', auto: false }, why: '표가 「건별 책정」 — 사람이 정한다' };
-const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '손오공', kind: '재렌트', form: '', term: 48, basis: '대여료×기간', claim: 0.0325, pay: 0.025, when: '', auto: true }, claim: 1_092_000, pay: 840_000 };
-const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '손오공', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
+const manualRule: FeeResult = { status: 'MANUAL', rule: { id: 'm', supplier: '예시공급사A', kind: '신차', form: '발주', term: 0, basis: '범위', claim: '건별 책정', pay: '건별 책정', when: '', auto: false }, why: '표가 「건별 책정」 — 사람이 정한다' };
+const autoRule: FeeResult = { status: 'AUTO', rule: { id: 'a', supplier: '예시공급사A', kind: '재렌트', form: '', term: 48, basis: '대여료×기간', claim: 0.0325, pay: 0.025, when: '', auto: true }, claim: 1_092_000, pay: 840_000 };
+const noBaseRule: FeeResult = { status: 'NO_BASE', rule: { id: 'n', supplier: '예시공급사A', kind: '신차', form: '선출고', term: 0, basis: '차량가액', claim: 0.035, pay: 0.03, when: '', auto: true }, why: '차량가액이 없다' };
 const noRule: FeeResult = { status: 'NO_RULE', why: '표에 「새공급사 · 재렌트 48개월」 가 없다' };
 const CLAW_NOW = Date.parse('2026-09-30T12:00:00+09:00');
 const REVIEW_NOW = Date.parse('2026-09-26T12:00:00+09:00');
@@ -76,12 +76,12 @@ describe('수수료 고침 — 레거시 완료표시도 잠근다', () => {
 });
 
 describe('환수 — 열어 둔다', () => {
-  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
+  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: 'PLATE-EXAMPLE', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '예시공급사B', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   it('신규 환수 id는 계약줄까지 포함해 같은 차·같은 달 재계약 충돌을 막는다', () => {
     const r = clawbackRecord(row({ collected: true, paid: true, claimStage: '수금', payStage: '지급' }), { at: '2026-09-10', supplierAmt: 1_000_000, agentAmt: 800_000, reason: '3개월 내 해지' }, 't', CLAW_NOW);
     assert.ok(r.ok);
-    assert.equal(r.ok && r.id, clawbackId('12가 3456', '2026-09', 'stl_x'));
-    assert.notEqual(clawbackId('12가 3456', '2026-09', 'stl_x'), clawbackId('12가 3456', '2026-09', 'stl_y'));
+    assert.equal(r.ok && r.id, clawbackId('PLATE-EXAMPLE', '2026-09', 'stl_x'));
+    assert.notEqual(clawbackId('PLATE-EXAMPLE', '2026-09', 'stl_x'), clawbackId('PLATE-EXAMPLE', '2026-09', 'stl_y'));
     assert.equal(r.ok && r.doc.month, '2026-09');
     assert.equal(r.ok && r.doc.code, 'stl_x');
   });
@@ -113,7 +113,7 @@ describe('환수 — 열어 둔다', () => {
 
 
 it('계약해지 후 사람이 환수를 세우면 해지 provenance를 함께 보존한다', () => {
-  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: '12가 3456', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '오토플러스', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
+  const row = (o: Record<string, unknown>) => toSettlementRow({ code: 'stl_x', plate: 'PLATE-EXAMPLE', receivedAt: '2026-06-01', delivered: true, deliveredAt: '2026-06-05', supplier: '예시공급사B', channel: '하허호', model: 'EV6', ...o }, 'stl_x').row;
   const terminated = {
     ...row({ collected:true, paid:true, claimStage:'수금', payStage:'지급' }),
     contractTerminationContractId:'ctr_term_1',
@@ -302,7 +302,7 @@ describe('계약해지 → 환수 검토대상', () => {
 it('수수료 직접수정과 환수는 소수 원 금액을 받지 않는다', () => {
   assert.equal(feeFixPatch({ claimWritten: 100 }, 100.4, null, '소수 입력').ok, false);
   const settled = toSettlementRow({
-    code: 'stl_fraction', plate: '12가3456', receivedAt: '2026-06-01',
+    code: 'stl_fraction', plate: 'PLATEA', receivedAt: '2026-06-01',
     delivered: true, deliveredAt: '2026-06-05', supplier: 'A', channel: 'B',
     collected: true, paid: true, claimStage: '수금', payStage: '지급',
   }, 'stl_fraction').row;
@@ -312,4 +312,78 @@ it('수수료 직접수정과 환수는 소수 원 금액을 받지 않는다', 
     'tester',
     CLAW_NOW,
   ).ok, false);
+});
+
+describe('Data 기간별 수수료 읽기', () => {
+  const economic = (state: 'KNOWN' | 'ZERO' | 'UNKNOWN' | 'NOT_APPLICABLE', value = 123000) => ({
+    state, amount: state === 'KNOWN' || state === 'ZERO' ? { amount: state === 'ZERO' ? 0 : value, currency: 'KRW' as const } : null,
+    sourceRefs: ['source'], ruleId: 'r-data', policyId: 'p-data', reasonCode: state === 'UNKNOWN' ? 'NO_MATCH' : null,
+  });
+  const dataInput = (claim: ReturnType<typeof economic> | undefined, pay: ReturnType<typeof economic> | undefined): IntakeInput => ({
+    ...base, sourceProductId: 'p1', catalogSnapshot: {
+      capturedAt: 'now', product: {} as NonNullable<IntakeInput['catalogSnapshot']>['product'],
+      offer: { id: 'o1', termMonths: 36, monthlyRent: 900000, deposit: null, prepayment: null, annualMileageKm: null, policyValues: [],
+        ...(claim ? { supplierBillingFee: claim } : {}), ...(pay ? { channelPayoutFee: pay } : {}) },
+    },
+  });
+  it('KNOWN/ZERO override the local table and survive settlement readback', () => {
+    for (const [claim, pay] of [[economic('KNOWN'), economic('ZERO')], [economic('ZERO'), economic('KNOWN')]]) {
+      const input = dataInput(claim, pay);
+      assert.deepEqual(feeCompletenessErrors(input, noRule), []);
+      const r = intakeRecord(input, 0, autoRule);
+      assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [claim.amount!.amount, pay.amount!.amount, 0, 0]);
+      assert.equal(r.vatIncluded, false);
+      assert.match(String(r.settleNote), /Data 기간별 수수료 · p-data · r-data/);
+      const read = toSettlementRow(r, 'id').row;
+      assert.deepEqual([read.money.claim, read.money.pay], [claim.amount!.amount, pay.amount!.amount]);
+    }
+  });
+  it('UNKNOWN/NOT_APPLICABLE and partial publication stay null, never zero or local calculation', () => {
+    for (const state of ['UNKNOWN', 'NOT_APPLICABLE'] as const) {
+      const x = dataInput(economic(state), economic('KNOWN'));
+      assert.deepEqual(feeCompletenessErrors(x, autoRule), []);
+      const r = intakeRecord(x, 0, autoRule);
+      assert.equal(r.claimWritten, null);
+      assert.equal(r.payWritten, 123000);
+      assert.equal(toSettlementRow(r, 'id').row.money.claim, null);
+      if (state === 'UNKNOWN') assert.match(String(r.settleNote), /NO_MATCH/);
+      const reverse = intakeRecord(dataInput(economic('KNOWN'), economic(state)), 0, autoRule);
+      assert.equal(reverse.payWritten, null);
+    }
+    assert.equal(intakeRecord(dataInput(undefined, economic('ZERO')), 0, autoRule).claimWritten, null);
+  });
+  it('product intake without published fields stays 미확정 — never sealed with a local-table amount', () => {
+    const x = dataInput(undefined, undefined);
+    assert.deepEqual(feeCompletenessErrors(x, autoRule), []);
+    const r = intakeRecord(x, 0, autoRule);
+    assert.deepEqual([r.claimWritten, r.payWritten, r.supplierRate, r.agentRate], [null, null, 0, 0]);
+    assert.match(String(r.settleNote), /미발행/);
+    const read = toSettlementRow(r, 'id').row;
+    assert.deepEqual([read.money.claim, read.money.pay], [null, null]);
+  });
+  it('direct intake preserves local table behavior', () => {
+    for (const input of [base, { ...dataInput(economic('KNOWN'), economic('ZERO')), sourceProductId: undefined }]) {
+      const r = intakeRecord(input, 0, autoRule);
+      assert.deepEqual([r.claimWritten, r.payWritten], [autoRule.claim, autoRule.pay]);
+      assert.equal(feeCompletenessErrors(input, noRule).length, 1);
+    }
+  });
+  it('manual overrides require a reason for Data differences and unresolved amounts', () => {
+    for (const fee of [economic('KNOWN'), economic('ZERO'), economic('UNKNOWN'), economic('NOT_APPLICABLE')]) {
+      const x = { ...dataInput(fee, economic('ZERO')), feeManual: { claim: 900, pay: null, reason: '' } };
+      assert.equal(feeManualErrors(x, autoRule).length, 1);
+      x.feeManual.reason = '공급사 확인';
+      assert.deepEqual(feeManualErrors(x, noRule), []);
+      const r = intakeRecord(x, 0, autoRule);
+      assert.equal(r.claimWritten, 900);
+      assert.equal(r.payWritten, 0);
+      assert.match(String(r.settleNote), /공급사 확인/);
+      assert.match(String(r.settleNote), /Data 기간별 수수료/);
+    }
+    const same = { ...dataInput(economic('KNOWN'), economic('ZERO')), feeManual: { claim: 123000, pay: 0, reason: '' } };
+    assert.deepEqual(feeManualErrors(same, autoRule), []);
+    const zero = { ...dataInput(economic('UNKNOWN'), economic('UNKNOWN')), feeManual: { claim: 0, pay: null, reason: '무상 확인' } };
+    const read = toSettlementRow(intakeRecord(zero, 0, autoRule), 'id').row;
+    assert.deepEqual([read.money.claim, read.money.pay], [null, null]);
+  });
 });

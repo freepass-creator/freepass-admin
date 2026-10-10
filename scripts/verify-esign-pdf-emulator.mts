@@ -37,8 +37,8 @@ const svc = new EsignService(esignRepository, esignAssets, esignFinalDocumentRen
 const runId = Date.now().toString(36);
 const contractId = 'c-e2e-' + runId;
 await erp5().collection('contract').doc(contractId).set({
-  contract_code: 'FP-E2E-' + runId, contract_status: '계약대기', customer_name: '홍길동', customer_phone: '01012345678', customer_type: '개인',
-  vehicle_name_snapshot: '제네시스 GV70', car_number_snapshot: '12가3456', provider_company_code: 'SONO', provider_company_name_snapshot: '손오공렌터카',
+  contract_code: 'FP-E2E-' + runId, contract_status: '계약대기', customer_name: '고객A', customer_phone: '01000000000', customer_type: '개인',
+  vehicle_name_snapshot: '제네시스 GV70', car_number_snapshot: 'PLATE-EXAMPLE', provider_company_code: 'SONO', provider_company_name_snapshot: '예시공급사A렌터카',
   rent_amount_snapshot: 690000, rent_month_snapshot: 36, deposit_amount_snapshot: 0, contract_date: '2026-09-25',
   esign_contract_kind: 'rent_return', esign_insurance_side: '회사포함', screening_criteria: '무심사', gps_installed: '미장착', payment_method: '계좌이체',
 });
@@ -54,9 +54,9 @@ for (const d of session.snapshot.requiredDocuments.filter(d => d.required)) {
 }
 const submittedAt = Date.parse('2026-09-25T05:30:00.000Z');
 await esignRepository.putPrivate(session.id, {
-  sessionId: session.id, contractId, customerName: '홍길동', customerPhone: '01012345678', customerBirth: '1983-09-26',
-  customerAddress: '서울특별시 강남구 테헤란로 1, 101동 1001호', driverLicenseNo: '11-11-111111-11',
-  emergencyRelation: '가족', emergencyName: '김가족', emergencyPhone: '01099998888',
+  sessionId: session.id, contractId, customerName: '고객A', customerPhone: '01000000000', customerBirth: '1983-09-26',
+  customerAddress: '예시시 예시구 예시로 1, 예시동 예시호', driverLicenseNo: 'LICENSE-EXAMPLE',
+  emergencyRelation: '가족', emergencyName: '비상연락인A', emergencyPhone: '01000000000',
   consents: [...session.snapshot.consentProfile.requiredKeys], consentTimes: {}, sectionConfirmations: {},
   summaryConfirmedAt: submittedAt, agreementReadAt: submittedAt, signaturePath: sig.path, signatureSha256: sig.sha256,
   supportingDocuments: docs, submittedAt,
@@ -143,8 +143,8 @@ assert.equal(sha(rerender.bytes), stored?.documentSha256);
     rdocs.push({ key: d.key, path: a.path, sha256: a.sha256, label: d.label });
   }
   await esignRepository.putPrivate(rs.id, {
-    sessionId: rs.id, contractId: raceId, customerName: '홍길동', customerPhone: '01012345678', customerAddress: '서울',
-    emergencyRelation: '가족', emergencyName: '김가족', emergencyPhone: '01099998888',
+    sessionId: rs.id, contractId: raceId, customerName: '고객A', customerPhone: '01000000000', customerAddress: '서울',
+    emergencyRelation: '가족', emergencyName: '비상연락인A', emergencyPhone: '01000000000',
     consents: [...rs.snapshot.consentProfile.requiredKeys], consentTimes: {}, sectionConfirmations: {},
     summaryConfirmedAt: submittedAt, agreementReadAt: submittedAt, signaturePath: rsig.path, signatureSha256: rsig.sha256,
     supportingDocuments: rdocs, submittedAt,

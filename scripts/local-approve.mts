@@ -1,7 +1,7 @@
 /**
  * **로컬에서 나를 승인한다** — 에뮬레이터 전용.
  *
- *   npm run local:approve -- name@teamjpk.com
+ *   npm run local:approve -- EMAIL_REDACTED
  *
  * 로컬에는 메일이 오지 않고 마스터 승인 화면도 없다(승인은 프리패스 데이터가 한다).
  * 그래서 로컬에서 로그인까지 걸어 보려면 둘을 손으로 해줘야 한다 — 이 스크립트가 그 둘이다.
@@ -14,7 +14,7 @@ import { generateKeyPairSync } from 'node:crypto';
 
 const email = (process.argv[2] ?? '').trim().toLowerCase();
 if (!email.includes('@')) {
-  console.error('쓰는 법: npm run local:approve -- name@teamjpk.com');
+  console.error('쓰는 법: npm run local:approve -- EMAIL_REDACTED');
   process.exit(1);
 }
 

@@ -27,7 +27,7 @@ describe('feeOf — ★한 칸에 비율과 정액이 섞여 있었다', () => {
 });
 
 describe('청구금액 0 을 어떻게 읽나', () => {
-  const base = { code: 'stl_x', plate: '175수1279', supplier: '오토플러스', receivedAt: '2026-08-01' };
+  const base = { code: 'stl_x', plate: 'PLATE_BASE', supplier: '예시공급사B', receivedAt: '2026-08-01' };
 
   it('★끝난 줄의 0 은 «사실» 이다 — 대표 「5월은 이미 다 한거고」', () => {
     const { row, warnings } = toSettlementRow(
@@ -60,11 +60,11 @@ describe('★빈칸을 0 으로 만들지 않는다', () => {
 
 describe('열쇠가 없으면 말한다', () => {
   it('차량번호가 없으면 경고한다 — 정산에서 못 붙는다', () => {
-    const { warnings } = toSettlementRow({ code: 'c', supplier: '손오공' }, 'd');
+    const { warnings } = toSettlementRow({ code: 'c', supplier: '예시공급사A' }, 'd');
     assert.ok(warnings.some((w) => w.includes('차량번호가 없다')));
   });
   it('공급사가 없으면 청구할 곳이 없다', () => {
-    const { warnings } = toSettlementRow({ code: 'c', plate: '11가1111' }, 'd');
+    const { warnings } = toSettlementRow({ code: 'c', plate: 'PLATE_ROW' }, 'd');
     assert.ok(warnings.some((w) => w.includes('공급사가 없다')));
   });
   it('정산비율이 1 이 아닌데 까닭이 없으면 말한다', () => {
@@ -75,7 +75,7 @@ describe('열쇠가 없으면 말한다', () => {
 
 describe('실적이냐 접수냐', () => {
   const mk = (o: Record<string, unknown>) =>
-    toSettlementRow({ code: 'c', plate: '11가1111', supplier: '손오공', ...o }, 'd').row;
+    toSettlementRow({ code: 'c', plate: 'PLATE_ROW', supplier: '예시공급사A', ...o }, 'd').row;
 
   it('인도가 찍혀야 실적이다', () => {
     assert.equal(isPerformance(mk({ delivered: true })), true);
@@ -105,7 +105,7 @@ describe('margin — ★청구를 «모르면» 마진도 모른다', () => {
 
 describe('blockOf — ★「무엇이 있나」가 아니라 「무엇을 하나」', () => {
   const mk = (o: Record<string, unknown>) =>
-    toSettlementRow({ code: 'c', plate: '11가1111', supplier: '손오공', channel: '영업사', ...o }, 'd').row;
+    toSettlementRow({ code: 'c', plate: 'PLATE_ROW', supplier: '예시공급사A', channel: '영업사', ...o }, 'd').row;
 
   it('계약 → 차량번호 → 상대 정보 순서로 막는다', () => {
     assert.equal(blockOf(toSettlementRow({ code: 'c' }, 'd').row), '계약서');
@@ -172,8 +172,8 @@ describe('계약금 수납 projection', () => {
   it('완전한 계약금 수납 사실은 보증금/선납과 별도로 읽는다', () => {
     const { row, warnings } = toSettlementRow({
       code: 'c',
-      plate: '11가1111',
-      supplier: '손오공',
+      plate: 'PLATE_ROW',
+      supplier: '예시공급사A',
       deposit: 0,
       prepaid: 300000,
       contractPaymentAmount: 500000,
@@ -192,8 +192,8 @@ describe('계약금 수납 projection', () => {
   it('부분 계약금 기록은 계약금 없음으로 숨기지 않고 경고한다', () => {
     const { row, warnings } = toSettlementRow({
       code: 'c',
-      plate: '11가1111',
-      supplier: '손오공',
+      plate: 'PLATE_ROW',
+      supplier: '예시공급사A',
       contractPaymentAmount: 500000,
     }, 'd');
     assert.equal(row.contractPayment, null);
@@ -207,7 +207,7 @@ describe('F04 legacy installment round compatibility', () => {
   it('legacy rounds field is restored as paidRounds', () => {
     const { row } = toSettlementRow({
       code: 'stl_legacy_rounds',
-      plate: '11가1111',
+      plate: 'PLATE_ROW',
       supplier: '공급사',
       payKind: '3회분납',
       rounds: 2,
@@ -218,7 +218,7 @@ describe('F04 legacy installment round compatibility', () => {
   it('current paidRounds wins over legacy rounds when both exist', () => {
     const { row } = toSettlementRow({
       code: 'stl_current_rounds',
-      plate: '11가1111',
+      plate: 'PLATE_ROW',
       supplier: '공급사',
       payKind: '3회분납',
       paidRounds: 3,
@@ -229,19 +229,19 @@ describe('F04 legacy installment round compatibility', () => {
 
   it('keeps F04 import provenance after migration', () => {
     const { row } = toSettlementRow({
-      code: 'stl_source', plate: '12가3456', receivedAt: '2026-09-21',
+      code: 'stl_source', plate: 'PLATE_A', receivedAt: '2026-09-21',
       fromSheet: 'F04 연동', _f04: { tab: '접수', row: 67, run: 'f04fill-20260928', at: '2026-09-28T03:00:00.000Z' },
     }, 'stl_source');
     assert.deepEqual(row.source, {
       sheet: 'F04 연동', tab: '접수', rowNo: 67,
       importRun: 'f04fill-20260928', importedAt: '2026-09-28T03:00:00.000Z',
-      originalPlate: '12가3456',
+      originalPlate: 'PLATE_A',
     });
   });
 
   it('derives current state from facts instead of the source tab', () => {
     const cancelled = toSettlementRow({
-      code: 'stl_cancelled', plate: '12가3456', receivedAt: '2026-09-21',
+      code: 'stl_cancelled', plate: 'PLATE_A', receivedAt: '2026-09-21',
       sourceTab: '접수', delivered: true, payKind: '2회분납', cancelled: true,
     }, 'stl_cancelled').row;
     assert.deepEqual(stageEvidenceOf(cancelled), {
@@ -249,7 +249,7 @@ describe('F04 legacy installment round compatibility', () => {
     });
 
     const installment = toSettlementRow({
-      code: 'stl_installment', plate: '34나5678', receivedAt: '2026-09-22',
+      code: 'stl_installment', plate: 'PLATE_B', receivedAt: '2026-09-22',
       sourceTab: '접수', delivered: true, deliveredAt: '2026-09-22', payKind: '2회분납', paidRounds: 1,
     }, 'stl_installment').row;
     assert.deepEqual(stageEvidenceOf(installment, new Date('2026-09-28T00:00:00Z')), {
@@ -257,7 +257,7 @@ describe('F04 legacy installment round compatibility', () => {
     });
 
     const unknownPayKind = toSettlementRow({
-      code: 'stl_unknown_pay', plate: '56다7890', receivedAt: '2026-09-23',
+      code: 'stl_unknown_pay', plate: 'PLATE_C', receivedAt: '2026-09-23',
       sourceTab: '완납실적', delivered: true,
     }, 'stl_unknown_pay').row;
     assert.deepEqual(stageEvidenceOf(unknownPayKind), {

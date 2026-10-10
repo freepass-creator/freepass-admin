@@ -50,15 +50,15 @@
 
 ── 새로 세울 줄
    stl_bdn5w9q4q4   조○○ · 리더스 · G80
-   stl_sfrgwa6knu   정○○ · 손오공 · GV70 기본형
-   stl_yrhzk38yr3   김○○ · 오토플러스 · GV70 기본형
-   stl_avkynmkggh   배○○ · 아이카 · 베뉴
-   stl_qwze2nfyvn   이○○ · 아이카 · 베뉴
-   stl_xd68yg4cuf   김○○ · 아이카 · 베뉴
+   stl_sfrgwa6knu   정○○ · 예시공급사A · GV70 기본형
+   stl_yrhzk38yr3   김○○ · 예시공급사B · GV70 기본형
+   stl_avkynmkggh   배○○ · 예시공급사C · 베뉴
+   stl_qwze2nfyvn   이○○ · 예시공급사C · 베뉴
+   stl_xd68yg4cuf   김○○ · 예시공급사C · 베뉴
    stl_wh796jxazr   조○○ · 빌린카 · 더 뉴 스파크 기본형
-   stl_q3gdar4t2n   정○○ · 오토플러스 · 더 뉴 K9 RJ 베스트 셀렉션 I
-   stl_shunjk25cr   이○○ · 아이카 · E클래스
-   stl_adra2jhzc7   임○○ · 손오공 · K7
+   stl_q3gdar4t2n   정○○ · 예시공급사B · 더 뉴 K9 RJ 베스트 셀렉션 I
+   stl_shunjk25cr   이○○ · 예시공급사C · E클래스
+   stl_adra2jhzc7   임○○ · 예시공급사A · K7
 
 ★헛돌기다 — 아무것도 안 썼다. 쓰려면 --apply (대표 확인 뒤).
 ```

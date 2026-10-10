@@ -206,8 +206,8 @@ function signature(){
 }
 
 const contract = () => ({
-  contract_code:'FP-1',contract_status:'계약대기',customer_name:'홍길동',customer_phone:'01012345678',customer_type:'개인',
-  vehicle_name_snapshot:'GV70',car_number_snapshot:'12가3456',provider_company_code:'SONO',provider_company_name_snapshot:'손오공',
+  contract_code:'FP-1',contract_status:'계약대기',customer_name:'고객A',customer_phone:'01000000000',customer_type:'개인',
+  vehicle_name_snapshot:'GV70',car_number_snapshot:'PLATE-EXAMPLE',provider_company_code:'SONO',provider_company_name_snapshot:'예시공급사A',
   rent_amount_snapshot:690000,rent_month_snapshot:36,deposit_amount_snapshot:0,contract_date:'2026-09-22',
   esign_contract_kind:'rent_return',esign_insurance_side:'회사포함',screening_criteria:'무심사',gps_installed:'미장착',payment_method:'계좌이체',
 });
@@ -250,8 +250,8 @@ async function seedPendingReview(
   if(options.missingRequiredDocument)assert.ok(required.length>0);
 
   repo.priv.set(session!.id,{
-    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
-    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    sessionId:session!.id,contractId:'c1',customerName:'고객A',customerPhone:'01000000000',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'비상연락인A',emergencyPhone:'01000000000',
     consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
     signaturePath,signatureSha256,supportingDocuments,submittedAt:Date.now(),
@@ -281,8 +281,8 @@ test('esign runtime: issue -> open -> assets -> submit -> review -> reject -> re
 
   const required=issued.session.snapshot.consentProfile.requiredKeys;
   await svc.submit(token,{
-    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
-    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    customer_name:'고객A',customer_phone:'01000000000',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'비상연락인A',emergency_phone:'01000000000',
     signature:signature(),consents:required,summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
   });
 
@@ -292,7 +292,7 @@ test('esign runtime: issue -> open -> assets -> submit -> review -> reject -> re
   const state=await svc.adminState('c1');
   assert.equal(state.stage,'검토 대기');
   assert.equal(state.attention.includes('승인 필요'),true);
-  assert.equal(state.review?.customerName,'홍길동');
+  assert.equal(state.review?.customerName,'고객A');
 
   await svc.reject('c1','면허증 다시 제출',['id_card'],'tester');
   assert.equal((await repo.getCurrentSession('c1'))?.status,'rejected');
@@ -318,14 +318,14 @@ test('esign issue fails closed before creating a session when public base is mis
 test('intake contract handoff is immutable and idempotent', async () => {
   const repo=new Repo(), assets=new Assets(), svc=new EsignService(repo,assets);
   repo.intakes.set('stl_1',{
-    intakeId:'stl_1',sourceDigest:'digest-v1',customerName:'홍길동',vehicleName:'GV70',plate:'12가3456',
-    supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,
+    intakeId:'stl_1',sourceDigest:'digest-v1',customerName:'고객A',vehicleName:'GV70',plate:'PLATE-EXAMPLE',
+    supplierCode:'SONO',supplierName:'예시공급사A',rent:690000,termMonths:36,deposit:0,
     sourceProductId:'prd_1',sourceProductVersion:7,sourceOfferId:'off_36',sourceSnapshotId:'snap_1',
     catalogSnapshot:{capturedAt:'2026-09-22T00:00:00.000Z'},
   });
 
   const input={
-    intakeId:'stl_1',customerPhone:'01012345678',customerType:'개인' as const,
+    intakeId:'stl_1',customerPhone:'01000000000',customerType:'개인' as const,
     contractDate:'2026-09-25',contractKind:'rent_return',insuranceSide:'회사포함' as const,
   };
   const first=await svc.createContractFromIntake(input,'tester');
@@ -371,8 +371,8 @@ test('esign finalization claims once, seals immutable PDF, and is idempotent', a
     requiredDocs.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
   }
   repo.priv.set(current!.id,{
-    sessionId:current!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
-    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    sessionId:current!.id,contractId:'c1',customerName:'고객A',customerPhone:'01000000000',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'비상연락인A',emergencyPhone:'01000000000',
     consents:[...snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
     signaturePath:signatureAsset.path,signatureSha256:signatureAsset.sha256,
@@ -441,8 +441,8 @@ test('esign finalization does not sign when stored PDF read-back fails', async (
     requiredDocs.push({key:d.key,path:a.path,sha256:a.sha256,label:d.label});
   }
   repo.priv.set(session!.id,{
-    sessionId:session!.id,contractId:'c1',customerName:'홍길동',customerPhone:'01012345678',
-    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'김가족',emergencyPhone:'01099998888',
+    sessionId:session!.id,contractId:'c1',customerName:'고객A',customerPhone:'01000000000',
+    customerAddress:'서울시',emergencyRelation:'가족',emergencyName:'비상연락인A',emergencyPhone:'01000000000',
     consents:[...issued.session.snapshot.consentProfile.requiredKeys],consentTimes:{},sectionConfirmations:{},
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),
     signaturePath:signatureAsset.path,signatureSha256:signatureAsset.sha256,
@@ -463,14 +463,14 @@ test('admin journey: intake -> contract -> esign submit -> approve -> signed', a
   process.env.PUBLIC_BASE_URL='https://admin.example.test';
   const repo=new Repo(), assets=new Assets(), renderer=new Renderer(), svc=new EsignService(repo,assets,renderer);
   repo.intakes.set('stl_e2e',{
-    intakeId:'stl_e2e',sourceDigest:'digest-e2e',customerName:'홍길동',vehicleName:'GV70',plate:'12가3456',
-    supplierCode:'SONO',supplierName:'손오공',rent:690000,termMonths:36,deposit:0,
+    intakeId:'stl_e2e',sourceDigest:'digest-e2e',customerName:'고객A',vehicleName:'GV70',plate:'PLATE-EXAMPLE',
+    supplierCode:'SONO',supplierName:'예시공급사A',rent:690000,termMonths:36,deposit:0,
     sourceProductId:'prd_e2e',sourceProductVersion:9,sourceOfferId:'off_e2e',sourceSnapshotId:'snap_e2e',
     catalogSnapshot:{capturedAt:'2026-09-25T00:00:00.000Z'},
   });
 
   const created=await svc.createContractFromIntake({
-    intakeId:'stl_e2e',customerPhone:'01012345678',customerType:'개인',
+    intakeId:'stl_e2e',customerPhone:'01000000000',customerType:'개인',
     contractDate:'2026-09-25',contractKind:'rent_return',insuranceSide:'회사포함',
   },'tester');
   assert.equal(created.created,true);
@@ -489,8 +489,8 @@ test('admin journey: intake -> contract -> esign submit -> approve -> signed', a
   }
 
   await svc.submit(token,{
-    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
-    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    customer_name:'고객A',customer_phone:'01000000000',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'비상연락인A',emergency_phone:'01000000000',
     signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
   });
@@ -821,13 +821,13 @@ test('CMS auto-debit account survives submission into the sealed snapshot, and t
   await svc.upload(token,'selfie','me.jpg','image/jpeg',new Uint8Array([0xff,0xd8,0xff,0xd9]));
   const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
   for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
-  await svc.saveDraft(token,{customer_address:'서울시 비밀로 1',cms_account_no:'110123456789'});
+  await svc.saveDraft(token,{customer_address:'서울시 비밀로 1',cms_account_no:'000000000000'});
 
   await svc.submit(token,{
-    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시 비밀로 1',
-    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
-    cms_holder_name:'홍길동',cms_holder_relation:'본인',cms_holder_phone:'01012345678',cms_bank:'신한은행',
-    cms_account_no:'110-123-456789',cms_holder_identifier:'830926',
+    customer_name:'고객A',customer_phone:'01000000000',customer_birth:'1983-09-26',customer_address:'서울시 비밀로 1',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'비상연락인A',emergency_phone:'01000000000',
+    cms_holder_name:'고객A',cms_holder_relation:'본인',cms_holder_phone:'01000000000',cms_bank:'신한은행',
+    cms_account_no:'000-000-000000',cms_holder_identifier:'830926',
     uploaded_documents:required,
     signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
@@ -835,23 +835,23 @@ test('CMS auto-debit account survives submission into the sealed snapshot, and t
   const session=(await repo.getCurrentSession('c1'))!;
   assert.equal(session.status,'pending_review');
   const priv=repo.priv.get(session.id) as unknown as EsignPrivateSubmission;
-  assert.equal(priv.cms?.accountNo,'110123456789');
+  assert.equal(priv.cms?.accountNo,'000000000000');
   assert.equal(priv.cms?.bank,'신한은행');
 
   // After submission the link returns only what the waiting/done screens need.
   const view=await svc.publicView(token);
   const exposed=JSON.stringify(view);
-  for(const secret of ['110123456789','서울시 비밀로 1','830926','11-11-111111-11','1983-09-26'])assert.equal(exposed.includes(secret),false,secret);
+  for(const secret of ['000000000000','서울시 비밀로 1','830926','11-11-111111-11','1983-09-26'])assert.equal(exposed.includes(secret),false,secret);
   assert.equal(view.draft,null);
   assert.equal(view.session.snapshot.contractCode,issued.session.snapshot.contractCode);
 
   const approved=await svc.approve('c1','finalize_cms_1234567890abc','tester');
   assert.equal(approved.session.status,'signed');
   const sealed=(repo.sessions.get(session.id)!.signedSnapshot as {templateFields:Record<string,string>}).templateFields;
-  assert.equal(sealed.cms_account_no,'110123456789');
+  assert.equal(sealed.cms_account_no,'000000000000');
   assert.equal(sealed.cms_bank,'신한은행');
   assert.equal(sealed.cms_holder_identifier,'830926');
-  assert.equal(JSON.stringify(await svc.publicView(token)).includes('110123456789'),false);
+  assert.equal(JSON.stringify(await svc.publicView(token)).includes('000000000000'),false);
 });
 
 test('approve refuses to seal a contract cancelled after the customer submitted', async () => {
@@ -943,8 +943,8 @@ test('identity photos are frozen at submission: a photo swapped afterwards is ne
   const required=issued.session.snapshot.requiredDocuments.filter(d=>d.required).map(d=>d.key);
   for(const key of required)await svc.upload(token,'support:'+key,key+'.pdf','application/pdf',new Uint8Array(Buffer.from('%PDF-1.4\n'+key)));
   await svc.submit(token,{
-    customer_name:'홍길동',customer_phone:'01012345678',customer_birth:'1983-09-26',customer_address:'서울시',
-    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'김가족',emergency_phone:'01099998888',
+    customer_name:'고객A',customer_phone:'01000000000',customer_birth:'1983-09-26',customer_address:'서울시',
+    driver_license_no:'11-11-111111-11',emergency_relation:'가족',emergency_name:'비상연락인A',emergency_phone:'01000000000',
     uploaded_documents:required,signature:signature(),consents:issued.session.snapshot.consentProfile.requiredKeys,
     summaryConfirmedAt:Date.now(),agreementReadAt:Date.now(),sectionConfirmations:{agreement:Date.now()},
   });

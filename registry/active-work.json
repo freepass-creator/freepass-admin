@@ -1,6 +1,6 @@
 {
   "schema": "freepass-admin-active-work/v1",
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-07",
   "authority": "docs/BRANCH-WORKFLOW.md",
   "main": {
     "branch": "main",
@@ -19,7 +19,8 @@
     "permanent_lane_branches": false,
     "other_sessions": "REVIEW_AUDIT_HANDOFF_ONLY_UNLESS_ASSIGNED_WRITER",
     "work_order_required_before_next_code_change": true,
-    "stale_active_branch_lists": "SUPERSEDED_BY_THIS_REGISTRY_AND_BRANCH_WORKFLOW"
+    "stale_active_branch_lists": "SUPERSEDED_BY_THIS_REGISTRY_AND_BRANCH_WORKFLOW",
+    "final_github_merge_owner": "GHD"
   },
   "consolidation": {
     "status": "CODE_MERGED",
@@ -58,14 +59,22 @@
   },
   "active": [
     {
-      "work_order": "intake-sheet-20261003",
-      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as a simple ERP intake desk — list for viewing (attention chips, task tabs, one row per intake, progress checkline) and a right panel for work (new intake, selected intake progress/amounts), no horizontal scroll reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
-      "branch": "work/freepass-admin/intake-sheet-20261003",
-      "writer": "Claude Code",
-      "reviewer": "Codex (read-only)",
-      "supersedes": "codex/intake-ledger-lifecycle simple intake (browser-only storage); Codex stops writing per user decision",
-      "phase": "CODING",
-      "production_cutover_authorized": false
+      "work_order": "ledger-commission-read-20261003",
+      "objective": "대표 2026-10-07 ADMIN 분산 개발선의 단일 main 통합. 기존 PR171에서 PR179/180/181 변경과 의존성 패치를 함께 검증한다. 기존 월별 정산 버튼에 기록액 기반 공급사·채널 PDF 투영을 같은 Task로 확장한다.",
+      "branch": "work/freepass-admin/ledger-commission-read-20261003",
+      "writer": "ADMIN 지휘 Codex",
+      "active_owner": "ADMIN 지휘 Codex",
+      "merge_owner": "GHD",
+      "reviewer": "Claude subscription FAILED 유지; 독립 Codex CLI read-only 코드 검토 PASS(exit 0, critical/high 0). 실제 로그인 UI/merge 별도.",
+      "phase": "PR_VERIFICATION_LOCAL_ENGINE_VERIFIED_UI_LOGIN_PENDING",
+      "integration_pr": 171,
+      "absorbed_pr_heads": {
+        "179": "203e6ef25eecb992d0441286623896951fc92b37",
+        "180": "c4963f330910638bdb0fc8870b1a88f2b173e303",
+        "181": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c"
+      },
+      "production_cutover_authorized": false,
+      "next_start_here": "PR171 exact head CI → 기존 로그인 후 월별 버튼 확인 → GHD merge_owner 인계 확인 → 단독 main 병합/원격 readback. 신규 월은 승인된 기존 Drive 대상 매핑이 없으면 HOLD."
     }
   ],
   "archived": [
@@ -113,6 +122,18 @@
       "branch": "work/freepass-admin/catalog-observe-parity-20260929",
       "status": "MERGED_PR_154_155_156",
       "note": "Merged to main; branch deleted 2026-10-03 during branch cleanup."
+    },
+    {
+      "work_order": "intake-sheet-20261003",
+      "objective": "User decision 2026-10-03: assume no prior UI/UX and rebuild intake as a simple ERP intake desk — list for viewing (attention chips, task tabs, one row per intake, progress checkline) and a right panel for work (new intake, selected intake progress/amounts), no horizontal scroll reading/writing existing settlement_rows through existing intake actions. Existing ProductsBoard routes are kept; new route /ledger.",
+      "branch": "work/freepass-admin/intake-sheet-20261003",
+      "writer": "Claude Code",
+      "reviewer": "Codex (read-only)",
+      "supersedes": "codex/intake-ledger-lifecycle simple intake (browser-only storage); Codex stops writing per user decision",
+      "phase": "MERGED",
+      "production_cutover_authorized": false,
+      "status": "MERGED_PR_167",
+      "note": "PR167 merged 2026-10-03 verified before recovery; stale CODING registry corrected."
     }
   ],
   "branch_creation": {

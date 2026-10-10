@@ -18,6 +18,7 @@ import { Erp5SettlementRepository } from '../adapters/erp5/settlement-repository
 import { Erp5ContractRepository } from '../adapters/erp5/contract-repository';
 import type { CanonicalProduct } from '../domain/product/types';
 import type { AdminCatalogReceipt, AdminCatalogReadMode } from '../ports/admin-catalog-reader';
+import { cache } from 'react';
 
 const g = globalThis as unknown as {
   __fpaCatalog?: {
@@ -213,10 +214,16 @@ export function adminCatalogStatus() {
 
 /** Shared persistence ports; business commands and transitions remain in Admin Services. */
 export const settlements = new Erp5SettlementRepository();
+/** React cache is scoped to one server render, never a cross-request operational cache. */
+export const readSettlementScreen = cache(() => settlements.listWithPublishedReceipts());
 export const contracts = new Erp5ContractRepository();
 export { esignAssets, esignRepository } from '../adapters/erp5/esign-repository';
 export { writeEnabled, writeGate, WriteDisabledError, type ClaimView } from '../adapters/erp5/settlement-repository';
 export { loadFeeRuleSet as feeRuleSet } from '../adapters/erp5/fee-rules';
+import { loadMewcarGaTable } from '../adapters/erp5/fee-rules';
+import { mewcarGaTableOrNull as orNull } from '../domain/settlement/fee-rules-f04-extra';
+/** 예시공급사D 지급표(프리패스 데이터 수수료 규칙) — 실패해도 null. 저장(접수)은 이 표를 읽지 않는다. */
+export const mewcarGaTableOrNull = () => orNull(loadMewcarGaTable);
 export { ERP5_PROJECT_ID, erp5Ready } from '../adapters/erp5/firestore';
 export { demoMode };
 
@@ -224,3 +231,9 @@ export const today = () => {
   const d = new Date(Date.now() + 9 * 3600_000);
   return d.toISOString().slice(0, 10);
 };
+
+/** Same gateway, same settlement repository; document projections do not issue invoices. */
+export async function generateMonthlyReceiptDocuments(month:string,actor:string){
+  const {generateReceiptDocuments}=await import('../adapters/erp5/settlement-documents');
+  return generateReceiptDocuments(settlements,month,actor);
+}

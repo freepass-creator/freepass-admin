@@ -7,7 +7,7 @@
  * ★대표 2026-09-18 「수수료 계산하는 방식이랑 이런것들 다 학습해서 원자로 갖고와 … ssot에 반영되어야할거」
  *
  * ── 어디서 오나
- *   erp4 `lib/domain/settlement-fee-table.ts` — 수수료표 «정본»(박태윤 매니저가 정한 표 · 시트 「수수료표」 탭은 그 사본).
+ *   erp4 `lib/domain/settlement-fee-table.ts` — 수수료표(지금은 프리패스 데이터로 옮기기 전 임시 원천 · 시트 「수수료표」 탭과 같은 내용).
  *   ★손으로 옮겨 적지 않고 그 파일을 «그대로 읽는다». 사본을 두 번 만들면 둘이 갈린다.
  *
  * ── 어디로 가나 (ERP5 · 새 컬렉션 · 덧칠만)
@@ -22,13 +22,14 @@ import { FEE_RULES, FEE_TIMING, SUPPLIER_ALIAS, EV_MODEL } from 'file:///C:/dev/
 import { erp5 } from '../src/adapters/erp5/firestore';
 import { toSettlementRow } from '../src/adapters/erp5/to-settlement';
 import { feeOf, headOf, type FeeRule, type FeeRuleSet, type KindRule } from '../src/domain/settlement/fee';
+import { F04_EXTRA_ALIASES, F04_EXTRA_RULES } from '../src/domain/settlement/fee-rules-f04-extra';
 import { settlementRatioOf } from '../src/domain/settlement/money';
 import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval';
 
 const APPLY = process.argv.includes('--apply');
 assertErp5MaintenanceWrite(process.env, APPLY, 'fee-rules-to-erp5');
-const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) — 박태윤 매니저 표';
-const VERSION = 'fee-2026-09-08';
+const SOURCE = 'erp4 lib/domain/settlement-fee-table.ts (bf471b86 · 2026-09-08) + F04 「수수료표」 탭 추가 줄(src/domain/settlement/fee-rules-f04-extra.ts · 2026-10-03)';
+const VERSION = 'fee-2026-09-08+f04-2026-10-03';
 /**
  * ★이 표는 «지금» 규칙이다 — 검산(2026-09-18): 지난 달 줄은 그때 요율로 적혀 있다
  *   (1월 오플 전기차 100만 = 프로모션 전 · 오플 구독 73.2만 = 옛 요율 · 분납이 부러진 줄은 받은 회차만큼).
@@ -38,7 +39,7 @@ const EFFECTIVE = '2026-09-08 기준 현행 — 새 접수에 쓴다. 지난 달
 
 /**
  * 갈래 가르기 — erp4 `feeKindOf` 의 차례를 «데이터» 로 편 것. 위에서부터 처음 맞는 줄.
- * ★차례가 뜻이다: 「매칭출고」 가 먼저, 「신차발주」 는 선출고로 안 보낸다(사장님 2026-09-08 「신차발주는 주는 대로」).
+ * ★차례가 뜻이다: 「매칭출고」 가 먼저, 「신차발주」 는 선출고로 안 보낸다(대표 2026-09-08 「신차발주는 주는 대로」).
  */
 const KIND_RULES: KindRule[] = [
   { match: '견적출고|매칭출고', kind: '신차', form: '매칭출고' },
@@ -56,8 +57,10 @@ const idOf = (r: { supplier: string; kind: string; form: string; term: number })
  *   ERP5 는 문서를 id 순(가나다)으로 돌려줘 「매칭출고」 가 「선출고」 보다 앞에 선다.
  *   실측 2026-09-18: 차례 없이 읽으니 6줄이 다른 규칙으로 셈해졌다. 읽는 쪽은 seq 로 다시 줄 세운다.
  */
-const rules: (FeeRule & { seq: number })[] = (FEE_RULES as Omit<FeeRule, 'id'>[]).map((r, seq) => ({ id: idOf(r), seq, ...r }));
-const set: FeeRuleSet = { rules, aliases: SUPPLIER_ALIAS, evModel: EV_MODEL.source, kindRules: KIND_RULES, version: VERSION };
+/* F04 탭에만 있는 줄은 erp4 규칙 «뒤에» 붙인다 — 처음 맞는 것을 고르므로 기존 규칙의 뜻을 바꾸지 않는다 */
+const rules: (FeeRule & { seq: number })[] = [...(FEE_RULES as Omit<FeeRule, 'id'>[]), ...F04_EXTRA_RULES].map((r, seq) => ({ id: idOf(r), seq, ...r }));
+const ALIASES: Record<string, string> = { ...SUPPLIER_ALIAS, ...F04_EXTRA_ALIASES };
+const set: FeeRuleSet = { rules, aliases: ALIASES, evModel: EV_MODEL.source, kindRules: KIND_RULES, version: VERSION };
 
 /* ── 검산 — 이 규칙으로 원장을 다시 세면 적힌 금액과 맞나 (erp4 check-fee-consistency 와 같은 잣대) ── */
 const db = erp5();
@@ -98,7 +101,7 @@ const p = (s = '') => L.push(s);
 p(`■ 수수료 규칙 → ERP5 ${APPLY ? '★실제로 씀' : '— 헛돌기(아무것도 안 씀)'}`);
 p(`  출처 ${SOURCE}`);
 p(`  규칙 ${rules.length}줄 · 공급사 ${new Set(rules.map((r) => r.supplier)).size}곳 · 기계가 셈 ${rules.filter((r) => r.auto).length} · 사람이 정함 ${rules.filter((r) => !r.auto).length}`);
-p(`  갈래 가르기 ${KIND_RULES.length}줄 · 이름 별칭 ${Object.keys(SUPPLIER_ALIAS).length} · 시점 규칙 ${FEE_TIMING.length}`);
+p(`  갈래 가르기 ${KIND_RULES.length}줄 · 이름 별칭 ${Object.keys(ALIASES).length} · 시점 규칙 ${FEE_TIMING.length}`);
 p('');
 p('── 검산: 이 규칙으로 원장(취소 뺌)을 다시 세면 — 표대로 / 표와 다름 / 사람이 정함 / 표에 없음 / 밑값 없음');
 const tot: Tally = { ok: 0, diff: 0, manual: 0, none: 0, nobase: 0 };
@@ -124,7 +127,7 @@ if (APPLY) {
     version: VERSION, source: SOURCE, effective: EFFECTIVE, updatedAt: now,
     ruleCount: rules.length,
     kindRules: KIND_RULES,
-    aliases: SUPPLIER_ALIAS,
+    aliases: ALIASES,
     evModel: EV_MODEL.source,
     timing: FEE_TIMING,
     /** 사람이 읽는 규칙 — 셈은 코드가 하지만 «무엇을 셈하나» 는 여기 적힌다 */
@@ -133,7 +136,7 @@ if (APPLY) {
       stage: '접수(인도 전 · 당월 접수) → 분납실적(인도됨 · 인도일+회차개월 전) → 완납실적 · 취소 — 사람이 보는 칸: 당월접수 · 미완료(지난달 이전 접수 · 인도 전) · 분납실적 · 완납실적 · 취소',
       lifecycle: '두 축 — 청구(공급사) 접수→청구→확인→수금 · 지급(영업채널) 접수→통보→확인→지급 · 곁길 정정·보류·취소. 수금·지급은 사람이 찍는다(안 찍혔으면 「아직」) — erp4 settlement-atom',
       invoice: '발행 = 한 달·한 축·한 상대 한 장(settlement_invoices) · 번호 FP-S(공급사)/FP-P(영업채널)-YYYYMM-NNN 그 달 순번 · 발행 때 붙고 안 바뀜(다시 발행 = 같은 번호) · 발행하면 줄의 청구월을 박아 달을 닫음 · 금액 모름·정정 중·청구월 미정이면 안 냄 · 환수를 빼고 부가세는 줄마다 · 발행 뒤 원장이 바뀌면 driftOf 로 알림',
-      broken: '분납 끊김은 사람이 받은 회차(paidRounds)를 적어야 성립 — 받은 몫 = 받은 회차/전체 회차로 청구·지급 · 스타·아이카는 끊기면 지급 0',
+      broken: '분납 끊김은 사람이 받은 회차(paidRounds)를 적어야 성립 — 받은 몫 = 받은 회차/전체 회차로 청구·지급 · 스타·예시공급사C는 끊기면 지급 0',
       money: '청구 = (claimWritten + claimIncentive) × settleRatio + claimAdjust · 정산대상 「영업」·정산제외·청구보류면 0 / 지급 = (payWritten + payIncentive) × settleRatio + payAdjust · 「공급」·제외면 0 — erp4 claimOf/payOf + 가감(대표 2026-09-18)',
       promotion: '프로모션 = 공급사가 더 주는 돈(claimIncentive) + 그중 영업자 몫(payIncentive = 금액 × promoShare · 기본 100% · 대표 2026-09-17) · 사유 promoReason',
       adjust: '가감 = 이 건만 ±(claimAdjust · payAdjust) · 사유 adjustReason 필수 · 비율 안 곱함 · 청구서 나간 줄/지급 끝난 줄은 못 바꿈(다음 달 이월). supplierFixAmt(정정금액)는 가감이 아니다',

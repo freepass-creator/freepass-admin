@@ -2,6 +2,32 @@ import { createHash } from 'node:crypto';
 import { freepassDataCloudRunHeaders } from './cloud-run-auth';
 import { z } from 'zod';
 import type { CanonicalProduct, Offer, PolicyValue } from '../../domain/product/types';
+import { CONTRACT_FEE_LINK_FAILURES, type ContractFeeLinkItem, type ContractFeeLinkResult } from '../../ports/admin-catalog-reader';
+
+export const ContractFeeLinkItemSchema = z.object({
+  key: z.string().min(1).max(120), plate: z.string().min(1),
+  supplierId: z.string().regex(/^[A-Za-z0-9._:-]+$/),
+  termMonths: z.number().int().min(1).max(120), monthlyRent: z.number().finite().nonnegative(),
+  deposit: z.number().finite().nonnegative().optional(),
+});
+const LinkedFee = z.object({
+  status: z.enum(['CONFIRMED', 'UNCONFIRMED']), state: z.string(),
+  amount: z.object({ amount: z.number().finite() }).nullable(),
+});
+const ContractFeeLinksResponse = z.object({
+  contract: z.literal('contract-fee-links/v1'),
+  results: z.array(z.object({
+    key: z.string().min(1).max(120), status: z.enum(['LINKED', 'FEE_UNCONFIRMED', 'FAILED']),
+    failure: z.enum(CONTRACT_FEE_LINK_FAILURES).optional(),
+    fees: z.object({
+      termKey: z.string().min(1), termMonths: z.number().int().min(1).max(120),
+      supplierBillingFee: LinkedFee, channelPayoutFee: LinkedFee,
+    }).optional(),
+  }).superRefine((value, ctx) => {
+    if ((value.status === 'FAILED') !== (value.failure !== undefined))
+      ctx.addIssue({ code: 'custom', message: 'Failure status/code mismatch' });
+  })),
+});
 
 const Money = z.object({ amount: z.number().int().nonnegative(), currency: z.literal('KRW') });
 const TermAmountCalculation = z.discriminatedUnion('kind', [
@@ -373,16 +399,30 @@ export class FreePassDataAdminCatalogClient {
   private lastMeta: FreePassDataAdminCatalogMeta | null = null;
   meta() { return this.lastMeta; }
 
-  async list(): Promise<{ rows: CanonicalProduct[]; meta: FreePassDataAdminCatalogMeta }> {
+  private async request(path: 'catalog' | 'contract-fee-links', items?: readonly ContractFeeLinkItem[]): Promise<unknown> {
     const { base, token } = config();
-    const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/catalog`, {
-      method: 'GET',
-      headers: { ...(await freepassDataCloudRunHeaders(base)), authorization: `Bearer ${token}`, accept: 'application/json' },
+    const response = await fetch(`${base}/v1/consumers/freepass-admin-catalog/${path}`, {
+      method: items ? 'POST' : 'GET',
+      headers: { ...(await freepassDataCloudRunHeaders(base)), authorization: `Bearer ${token}`, accept: 'application/json',
+        ...(items ? { 'content-type': 'application/json' } : {}) },
+      ...(items ? { body: JSON.stringify({ items }) } : {}),
       cache: 'no-store',
       signal: AbortSignal.timeout(5_000),
     });
     if (!response.ok) throw new Error(`FREEPASS_DATA_HTTP_${response.status}`);
-    const parsed = ResponseSchema.parse(await response.json());
+    return response.json();
+  }
+
+  async contractFeeLinks(items: readonly ContractFeeLinkItem[]): Promise<ContractFeeLinkResult[]> {
+    const request = z.array(ContractFeeLinkItemSchema).min(1).max(500).parse(items);
+    const keys = new Set(request.map(item => item.key));
+    if (keys.size !== request.length) throw new Error('CONTRACT_FEE_LINKS_INVALID_KEYS');
+    const parsed = ContractFeeLinksResponse.parse(await this.request('contract-fee-links', request));
+    return parsed.results;
+  }
+
+  async list(): Promise<{ rows: CanonicalProduct[]; meta: FreePassDataAdminCatalogMeta }> {
+    const parsed = ResponseSchema.parse(await this.request('catalog'));
     this.lastMeta = parsed.meta;
     return { rows: parsed.data.map(mapProduct), meta: parsed.meta };
   }
@@ -393,4 +433,4 @@ export class FreePassDataAdminCatalogClient {
   }
 }
 
-export const __test = { ResponseSchema, mapProduct, config };
+export const __test = { ResponseSchema, mapProduct, config, ContractFeeLinksResponse };

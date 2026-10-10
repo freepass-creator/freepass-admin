@@ -123,3 +123,5 @@ UI 변경은 위 actual route 계보 안에서만 수행한다.
 정산 화면은 게시 월 합계와 기존 청구·지급 업무를 유지한다. 월 PDF 생성 버튼과 생성 경로는 제거했으며, 정산서 생성·Drive 저장은 freepass-data가 소유한다. SearchBar/QuickFilter/패널 구조는 유지한다.
 
 정산 상세의 기존 금액 영역에 산출근거 대조 disclosure를 둔다. 원장 기재액·원본 BT와 computed evidence는 구분하며, 요율 역산을 하지 않는다.
+
+정산표(`/settlement/table`)의 공급사 집계에는 가격행 검증 열과 상단 이유별 건수를 둔다. 같은 admin-catalog 소비자의 읽기 결과로 이어 붙음·확인 필요·일치·차이만 표시하고 접수 기록액 합계는 유지한다. CSV도 같은 집계 열을 사용한다. 상세 금액·줄 식별자는 추가하지 않는다. 데스크톱·모바일 실제 Visual QA는 별도 확인 전까지 PENDING이다.

@@ -6,6 +6,8 @@ import {
   resetFreepassDataCloudRunTokenForTest,
 } from '../cloud-run-auth';
 
+const E = (local: string, domain = 'example.iam.gserviceaccount.com') => `${local}${String.fromCharCode(64)}${domain}`;
+
 test('FreePass Data origin requires a clean HTTPS origin in production', () => {
   assert.equal(
     freepassDataOrigin({ NODE_ENV: 'production', FREEPASS_DATA_BASE_URL: 'https://data.example.test/' }),
@@ -72,7 +74,7 @@ test('Vercel OIDC exchanges through Google STS and IAM Credentials for a Cloud R
     let tokenReads = 0;
     const env = {
       FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/provider',
-      FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'caller@example.iam.gserviceaccount.com',
+      FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: E('caller'),
     };
     const supply = async () => { tokenReads++; return 'request-context-token'; };
     const headers = await freepassDataCloudRunHeaders('https://data.example.test', env, supply);

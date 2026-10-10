@@ -18,6 +18,8 @@ import type { VehicleMatchLevel } from './types';
 
 export interface VehicleMasterNode {
   id: string;
+  /** Retired documents remain in the source ledger but cannot participate in matching. */
+  retired?: boolean;
   maker: string;
   model: string;
   subModel: string;
@@ -42,6 +44,7 @@ export type MasterIndex = Map<string, VehicleMasterNode[]>;   // key = norm(make
 export function indexMaster(nodes: readonly VehicleMasterNode[]): MasterIndex {
   const m: MasterIndex = new Map();
   for (const n of nodes) {
+    if (n.retired === true) continue;
     const k = `${norm(n.maker)}|${norm(n.model)}`;
     m.set(k, [...(m.get(k) ?? []), n]);
   }

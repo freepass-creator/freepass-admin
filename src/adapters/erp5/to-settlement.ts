@@ -20,6 +20,12 @@ function catalogSnapshotOf(v: unknown): IntakeCatalogSnapshot | null {
   return v as IntakeCatalogSnapshot;
 }
 
+function dataFeeState(v: unknown): string | null {
+  return v && typeof v === 'object' && !Array.isArray(v) && typeof (v as { state?: unknown }).state === 'string'
+    ? (v as { state: string }).state
+    : null;
+}
+
 /**
  * ★요율이냐 정액이냐 — **1 이 가른다.**
  *   수수료율이 100% 를 넘는 일은 없고, 정액이 1원인 일도 없다.
@@ -58,6 +64,11 @@ function claimOf(d: Erp5Row): { claim: Maybe<number>; why: Maybe<string> } {
   const v = n(d.claimWritten);
   if (v === null) return { claim: null, why: '청구금액 칸이 비어 있다' };
   if (v !== 0) return { claim: v, why: null };
+  const offer = catalogSnapshotOf(d.catalogSnapshot)?.offer;
+  // Data 봉인 접수라도 명시적 ZERO만 0 확정이다. UNKNOWN/미발행 0은 미확정으로 남긴다.
+  if (s(d.sourceProductId) && dataFeeState(offer?.supplierBillingFee) === 'ZERO') {
+    return { claim: 0, why: null };
+  }
   /* 지급 축이 통보를 지났다(통보·확인·지급) + 청구서가 나갔다 = 끝난 줄 */
   const done = ['통보', '확인', '지급'].includes(String(d.payStage ?? '')) && b(d.billed);
   if (done) return { claim: 0, why: null };                    /* 끝난 줄의 0 — 사실이다 */

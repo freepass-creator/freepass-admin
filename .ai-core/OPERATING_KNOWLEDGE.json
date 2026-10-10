@@ -214,8 +214,8 @@
         "docs/intake/MAIL_CONNECTION_REUSE.md"
       ],
       "procedure": [
-        "Sheets/Drive/Gmail work is done by the session itself with the gws CLI on this PC (pyh@teamjpk.com). Do not route it through another AI (Codex) or ask the user to do it. Read: `gws sheets +read --spreadsheet <ID> --range \"<tab>!A1:D10\"`. Write: `gws sheets spreadsheets values update|batchUpdate|append` after reading the same range, then read it back. Drive: `gws drive files list --params ...` (prefer Bash for JSON quoting). Find sheet IDs in C:/dev/ai-ops/docs/지도/SHEET_MAP.md first.",
-        "Use pyh@teamjpk.com and the profile matching the service.",
+        "Sheets/Drive/Gmail work is done by the session itself with the gws CLI on this PC (WORKSPACE_ACCOUNT_REDACTED). Do not route it through another AI (Codex) or ask the user to do it. Read: `gws sheets +read --spreadsheet <ID> --range \"<tab>!A1:D10\"`. Write: `gws sheets spreadsheets values update|batchUpdate|append` after reading the same range, then read it back. Drive: `gws drive files list --params ...` (prefer Bash for JSON quoting). Find sheet IDs in C:/dev/ai-ops/docs/지도/SHEET_MAP.md first.",
+        "Use WORKSPACE_ACCOUNT_REDACTED and the profile matching the service.",
         "Read the native file as SSOT and pin file ID, tab/range, revision or modified time.",
         "Limit reads to the requested scope; after authorized edits, re-read the exact range or document.",
         "Keep send, sharing, deletion, permission changes, and cross-tenant transfer behind their explicit execution boundary."
@@ -238,7 +238,7 @@
       ],
       "verified": {
         "observed_at": "2026-10-03",
-        "account": "pyh@teamjpk.com",
+        "account": "WORKSPACE_ACCOUNT_REDACTED",
         "scopes": [
           "drive",
           "spreadsheets",
@@ -303,7 +303,7 @@
         "docs/intake/MAIL_ORDER_HANDOFF.md"
       ],
       "connection": {
-        "workspace_account": "pyh@teamjpk.com",
+        "workspace_account": "WORKSPACE_ACCOUNT_REDACTED",
         "profile": "gws",
         "mode": "reuse-encrypted-oauth",
         "default_sender": null
@@ -316,7 +316,7 @@
         "Send once, then read back the provider message identifier and Sent copy; unknown outcome is HOLD and must not be blindly retried."
       ],
       "do_not_ask": [
-        "Which Google Workspace account to inspect: use pyh@teamjpk.com through gws.",
+        "Which Google Workspace account to inspect: use WORKSPACE_ACCOUNT_REDACTED through gws.",
         "Whether to install or reconnect tools when the existing profile is healthy.",
         "Whether to use Cursor or Claude account email as the sender: those login identities are not mail sender evidence.",
         "Questions already answered in the current request, attached source, or confirmed decision registry."

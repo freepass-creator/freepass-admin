@@ -17,11 +17,11 @@ const png = new Uint8Array(Buffer.from(
 const snapshot: EsignSnapshot = {
   contractId: 'c-render',
   contractCode: 'FP-PDF-TEST',
-  customerName: '홍길동',
-  customerPhone: '01012345678',
+  customerName: '고객A',
+  customerPhone: '01000000000',
   customerType: '개인',
   vehicleName: '제네시스 GV70',
-  plate: '12가3456',
+  plate: 'PLATE-EXAMPLE',
   supplierCode: 'TEST',
   supplierName: '프리패스 테스트',
   contractKind: 'rent_return',
@@ -39,10 +39,10 @@ const snapshot: EsignSnapshot = {
     company_phone: '02-0000-0000',
     contract_code: 'FP-PDF-TEST',
     contract_date: '2026. 09. 25.',
-    customer_name: '홍길동',
-    customer_phone: '010-1234-5678',
+    customer_name: '고객A',
+    customer_phone: '010-0000-0000',
     car_model: '제네시스 GV70',
-    car_number: '12가3456',
+    car_number: 'PLATE-EXAMPLE',
     rent_amount: '690,000',
     rent_month: '36개월',
     deposit_amount: '0',
@@ -62,14 +62,14 @@ const snapshot: EsignSnapshot = {
 const submission: EsignPrivateSubmission = {
   sessionId: 'sess-render',
   contractId: 'c-render',
-  customerName: '홍길동',
-  customerPhone: '01012345678',
+  customerName: '고객A',
+  customerPhone: '01000000000',
   customerBirth: '1983-09-26',
   customerAddress: '서울특별시 테스트로 1',
   driverLicenseNo: '11-11-111111-11',
   emergencyRelation: '가족',
-  emergencyName: '김가족',
-  emergencyPhone: '01099998888',
+  emergencyName: '비상연락인A',
+  emergencyPhone: '01000000000',
   consents: ['privacy'],
   consentTimes: { privacy: 1 },
   sectionConfirmations: { agreement: 1 },
@@ -185,18 +185,19 @@ test('template-relative logo assets are inlined wherever the template references
   });
 });
 
-const sonogong: EsignSnapshot = {
+const supplierA: EsignSnapshot = {
   ...snapshot,
-  supplierName: '주식회사 손오공렌터카',
-  templateFields: { ...snapshot.templateFields, company_name: '주식회사 손오공렌터카' },
+  supplierName: '예시렌트카 주식회사',
+  templateFields: { ...snapshot.templateFields, company_name: '예시렌트카 주식회사' },
+  templateState: { ...snapshot.templateState, co: 'supplierA' },
 };
 
 test('production renderer deterministically takes the no-logo path when a supplier logo does not ship', { timeout: 120_000 }, async () => {
   await withTemplateAssetDir({}, async (dir) => {
     const renderer = new PuppeteerEsignFinalDocumentRenderer({ templateAssetDir: dir });
-    const input = { snapshot: sonogong, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
+    const input = { snapshot: supplierA, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
     const html = await prepareFinalContractHtml(input, { templateAssetDir: dir });
-    assert.equal(html.includes('assets/logo-sonogong.webp'), false);
+    assert.equal(html.includes('assets/logo-supplier-a.webp'), false);
     const first = await renderer.render(input);
     const second = await renderer.render(input);
     assert.equal(createHash('sha256').update(first.bytes).digest('hex'), createHash('sha256').update(second.bytes).digest('hex'));
@@ -204,8 +205,8 @@ test('production renderer deterministically takes the no-logo path when a suppli
 });
 
 test('production renderer embeds a shipped supplier logo without network access', { timeout: 120_000 }, async () => {
-  await withTemplateAssetDir({ 'logo-sonogong.webp': png }, async (dir) => {
-    const input = { snapshot: sonogong, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
+  await withTemplateAssetDir({ 'logo-supplier-a.webp': png }, async (dir) => {
+    const input = { snapshot: supplierA, submission, signatureBytes: png, sealHash: 'c'.repeat(64) };
     const withLogo = await new PuppeteerEsignFinalDocumentRenderer({ templateAssetDir: dir }).render(input);
     assert.equal(Buffer.from(withLogo.bytes).subarray(0, 5).toString('ascii'), '%PDF-');
     await withTemplateAssetDir({}, async (emptyDir) => {

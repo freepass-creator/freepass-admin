@@ -138,7 +138,7 @@ export function mount(root, options) {
     };
 
     if (mode === 'login') {
-      const email = input('email', 'name@company.com', 'username');
+      const email = input('email', 'EMAIL_REDACTED', 'username');
       const password = input('password', '비밀번호 입력', 'current-password');
       card.append(
         el('header', { class: 'fpl-head' }, [
@@ -160,7 +160,7 @@ export function mount(root, options) {
         event.preventDefault();
         if (busy) return;
         const address = normalizedEmail(email.value);
-        if (!hasEmailShape(address)) return tell('이메일 형식을 확인해주세요. 예: name@company.com', 'err');
+        if (!hasEmailShape(address)) return tell('이메일 형식을 확인해주세요. 예: EMAIL_REDACTED', 'err');
         if (!password.value) return tell('비밀번호를 입력해주세요.', 'err');
         setBusy(true);
         tell('');
@@ -176,10 +176,10 @@ export function mount(root, options) {
     }
 
     if (mode === 'signup') {
-      const email = input('email', 'name@company.com', 'username');
+      const email = input('email', 'EMAIL_REDACTED', 'username');
       const password = input('password', '6자 이상', 'new-password');
       const confirm = input('password', '비밀번호 재입력', 'new-password');
-      const name = input('text', '홍길동', 'name');
+      const name = input('text', '고객A', 'name');
       const mismatch = el('p', { class: 'fpl-hint is-miss', text: '비밀번호가 일치하지 않습니다', style: 'display:none' });
       confirm.addEventListener('input', () => {
         mismatch.style.display = confirm.value && confirm.value !== password.value ? '' : 'none';
@@ -288,7 +288,7 @@ export function mount(root, options) {
     }
 
     if (mode === 'reset') {
-      const email = input('email', 'name@company.com', 'username');
+      const email = input('email', 'EMAIL_REDACTED', 'username');
       card.append(
         el('header', { class: 'fpl-head' }, [
           el('h2', { class: 'fpl-title', text: '비밀번호 재설정' }),
@@ -305,7 +305,7 @@ export function mount(root, options) {
         event.preventDefault();
         if (busy) return;
         const address = normalizedEmail(email.value);
-        if (!hasEmailShape(address)) return tell('이메일 형식을 확인해주세요. 예: name@company.com', 'err');
+        if (!hasEmailShape(address)) return tell('이메일 형식을 확인해주세요. 예: EMAIL_REDACTED', 'err');
         setBusy(true);
         tell('전송 중…');
         try {

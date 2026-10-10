@@ -5,19 +5,21 @@ import { toSettlementRow } from './to-settlement';
 import type { SettlementRow } from '../../domain/settlement/types';
 import type { Clawback } from '../../domain/settlement/ledgers';
 import { intakeEventDocId, intakeKey } from '../../domain/settlement/code';
-import { factPatch, feeCompletenessErrors, feeManualErrors, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
+import { factPatch, feeCompletenessErrors, feeManualErrors, intakeDataFees, intakeRecord, progressPatch, type FactChange, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import { catalogRetryConflict } from '../../domain/settlement/catalog-snapshot';
 import { feeFixPatch, moneyEditPatch } from '../../domain/settlement/adjust';
 import { clawbackId, clawbackRecord, planTerminationClawbackReview, type ClawbackInput, type TerminationClawbackReviewInput } from '../../domain/settlement/clawback';
 import { bizChecksumOk, bizDigits, checkOpen, failPatch, newToken, planClaimResponse, snapshotOf, tokenHash, type ClaimResponse } from '../../domain/settlement/claim-link';
-import { feeOf } from '../../domain/settlement/fee';
+import { feeOf, receiptRowBasis } from '../../domain/settlement/fee';
 import { loadFeeRuleSet } from './fee-rules';
 import { claimLedger, payLedger } from '../../domain/settlement/ledgers';
 import { invoiceKey, lifePatch, planInvoice, type Axis, type IssuedInvoice, type LifeChange } from '../../domain/settlement/lifecycle';
 import { createHash } from 'node:crypto';
 import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
+import { readPublishedReceipts } from '../freepass-data/admin-workflow-firestore';
 import { planContractPayment, planContractPaymentDisposition, type ContractPaymentDispositionFact, type ContractPaymentDispositionInput, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
+import { assertReceiptDocumentsEnabled } from './settlement-documents';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -188,6 +190,68 @@ export class Erp5SettlementRepository {
     });
   }
 
+  /** Reuse the list snapshot for published-summary validation; operating amounts remain untouched. */
+  async listWithPublishedReceipts() {
+    let all: RowWithRaw[] = [];
+    let digest = '';
+    const published = await readPublishedReceipts(async () => {
+      const snap = await erp5().collection(ROWS).limit(5000).get();
+      if (snap.size >= 5000) throw new Error('접수 원장 조회 범위 초과 — 전체 목록을 확인할 수 없습니다');
+      all = snap.docs.map(d => {
+        const raw = d.data();
+        const { row, warnings } = toSettlementRow(raw, d.id);
+        return { row, raw, warnings };
+      });
+      digest = (snap as typeof snap & { digest?: string }).digest ?? '';
+      return { digest, rows: snap.size };
+    });
+    let rules: Awaited<ReturnType<typeof loadFeeRuleSet>>['rules'] = [];
+    if(all.some(x=>Array.isArray(x.raw.sourceReceiptRaw)))try { rules=(await loadFeeRuleSet(0)).rules; } catch { /* Missing evidence stays explicitly unknown. */ }
+    all=all.map(({row,raw,warnings})=>{
+      if(!Array.isArray(raw.sourceReceiptRaw))return {row,raw,warnings};
+      const basis=receiptRowBasis(raw,rules);
+      return {row:{...row,settleNote:[row.settleNote,`공급사: ${basis.claim}\n영업자: ${basis.pay}`].filter(Boolean).join('\n')},raw:{...raw,displayReceiptBasis:basis},warnings};
+    });
+    return { all, published, digest };
+  }
+
+  /** PDF projection metadata in the existing rules resource; never changes invoice/row/cash facts. */
+  async receiptDocumentPolicy(){ const doc=await erp5().collection('settlement_rules').doc('f04-confirmed-receipt-sync').get();return doc.data() as {partyNameNormalization?:{supplierAliases?:Record<string,string>;channelAliases?:Record<string,string>}}; }
+  async receiptDocumentRun(key:string) {
+    const snap=await erp5().collection('settlement_rules').doc(`pdf_${key}`).get();
+    return snap.exists?snap.data() as ReceiptDocumentRun:null;
+  }
+  async beginReceiptDocumentRun(key:string, month:string, fileIds:string[], by:string):Promise<ReceiptDocumentRun> {
+    assertReceiptDocumentsEnabled();
+    mustWrite();
+    const db=erp5(),ref=db.collection('settlement_rules').doc(`pdf_${key}`),lockRef=db.collection('settlement_rules').doc(`pdf_lock_${month}`);
+    return db.runTransaction(async tx=>{
+      const snap=await tx.get(ref),old=snap.exists?snap.data() as ReceiptDocumentRun:null;
+      if(old?.status==='READY') return old;
+      const lock=await tx.get(lockRef);
+      if(lock.exists&&Number(lock.data()?.leaseUntil)>Date.now())throw new Error('이 달 문서 생성이 이미 진행 중입니다');
+      if(old && old.leaseUntil>Date.now()) throw new Error('같은 정산서가 생성 중입니다 — 완료 후 다시 확인하세요');
+      const run:ReceiptDocumentRun={key,month,status:'RUNNING',fileIds:old?.fileIds??fileIds,createdAt:old?.createdAt??Date.now(),leaseUntil:Date.now()+600000,actor:by,attempt:Date.now().toString()+Math.random().toString(36).slice(2),files:old?.files??[]};
+      if(run.fileIds.length!==fileIds.length) throw new Error('문서 실행 파일 개수가 달라졌습니다');
+      tx.set(ref,run); tx.set(lockRef,{key,attempt:run.attempt,leaseUntil:run.leaseUntil}); return run;
+    });
+  }
+  async finishReceiptDocumentRun(run:ReceiptDocumentRun,files:ReceiptDocumentFile[],complete:boolean,expectedLedgerDigest?:string){
+    assertReceiptDocumentsEnabled();
+    mustWrite(); const db=erp5(),ref=db.collection('settlement_rules').doc(`pdf_${run.key}`),lockRef=db.collection('settlement_rules').doc(`pdf_lock_${run.month}`);
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref),current=snap.data() as ReceiptDocumentRun;
+      if(complete){
+        const [rows,rule]=await Promise.all([tx.get(db.collection(ROWS).limit(5000)),tx.get(db.collection('settlement_rules').doc('f04-confirmed-receipt-sync'))]);
+        if(!expectedLedgerDigest||rows.size>=5000||(rows as typeof rows & {digest?:string}).digest!==expectedLedgerDigest||rule.data()?.monthlySummaryLedgerDigest!==expectedLedgerDigest)throw new Error('최종 저장 직전 원장이 바뀌었습니다');
+      }
+      const lock=await tx.get(lockRef);
+      if(current.attempt!==run.attempt||current.status!=='RUNNING'||lock.data()?.attempt!==run.attempt||Number(lock.data()?.leaseUntil)<Date.now()) throw new Error('문서 실행 담당이 변경됐습니다');
+      tx.set(ref,{...current,files,status:complete?'READY':'RETRY',leaseUntil:0,updatedAt:Date.now()});
+      tx.set(lockRef,{key:run.key,attempt:run.attempt,leaseUntil:0});
+    });
+  }
+
   /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */
   async clawbacks(): Promise<Clawback[]> {
     const snap = await erp5().collection('settlement_clawbacks').get();
@@ -297,12 +361,13 @@ export class Erp5SettlementRepository {
       }
     }
     const db = erp5();
-    /* ★수수료는 ERP5 의 수수료표(settlement_fee_rules)로 센다 — 코드에 규칙 사본이 없다 */
-    const rules = await loadFeeRuleSet();
-    const fee = feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price });
+    // 상품 접수는 Data 발행 값만 쓴다(없으면 미확정). 로컬 수수료표는 직접 접수에만 쓴다.
+    const rules = intakeDataFees(input) ? null : await loadFeeRuleSet();
+    const fee = rules ? feeOf(rules, { supplier: input.supplier, product: input.product, model: input.model, term: input.term, rent: input.rent, price: input.price })
+      : { status: 'NO_RULE' as const, why: 'Data 기간별 수수료 사용' };
     const feeErr = [...feeCompletenessErrors(input, fee), ...feeManualErrors(input, fee)];
     if (feeErr.length) throw new Error(feeErr.join(' · '));
-    const rec = intakeRecord(input, Date.now(), fee, rules.version);
+    const rec = intakeRecord(input, Date.now(), fee, rules?.version);
     const code = String(rec.code);
     const plate = String(rec.plate ?? '');
     const key = intakeKey(plate, input.sourceProductId, input.receivedAt, input.intakeRequestId);
@@ -314,7 +379,7 @@ export class Erp5SettlementRepository {
     return db.runTransaction(async (tx) => {
       /*
        * ★같은 날 접수를 다 읽어 «열쇠» 로 견준다. 차번으로 찾으면 안 된다 —
-       *   원장에 띄어쓰기가 든 차번이 있다(실측 6줄: 「12가 3456」). 그대로 찾으면 못 알아보고 두 줄이 선다.
+       *   원장에 띄어쓰기가 든 차번이 있다(실측 6줄: 「PLATE-EXAMPLE」). 그대로 찾으면 못 알아보고 두 줄이 선다.
        *   접수일은 461줄 모두 YYYY-MM-DD 한 꼴이다(실측).
        */
       const same = await tx.get(db.collection(ROWS).where('receivedAt', '==', input.receivedAt));
@@ -723,3 +788,6 @@ export class Erp5SettlementRepository {
       .sort((a, b) => b.at - a.at);
   }
 }
+
+export type ReceiptDocumentFile={id:string;url:string;name:string;sha256:string;md5:string};
+export type ReceiptDocumentRun={key:string;month:string;status:'RUNNING'|'READY'|'RETRY';fileIds:string[];createdAt:number;leaseUntil:number;actor:string;attempt:string;files:ReceiptDocumentFile[]};

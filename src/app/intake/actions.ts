@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { freepassDataProducts, productByIdFresh } from '../../server/freepass-data';
+import { freepassDataProducts, productByIdFresh, generateMonthlyReceiptDocuments } from '../../server/freepass-data';
 import { catalogLookupHold, plateOffers, type PlateOffer } from '../ledger/model';
 import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
@@ -426,4 +426,12 @@ export async function revokeClaimLinkAction(_: FormState, f: FormData): Promise<
   }
   revalidatePath('/settlement');
   return { errors: [] };
+}
+
+/** Explicit user click creates PDF projections only; never lifecycle reissue or payment. */
+export async function generateMonthlyDocumentsAction(_:FormState,f:FormData):Promise<FormState & {files?:{url:string;name:string}[];partial?:boolean}>{
+  const gate=await requireAdmin(); if(gate)return{errors:[gate]};
+  if(process.env.ADMIN_RECEIPT_DOCUMENTS_ENABLED!=='on')return{errors:['정산서 PDF/Drive 저장은 freepass-data 이관 대상이라 현재 Admin 화면에서는 꺼져 있습니다']};
+  try{const result=await generateMonthlyReceiptDocuments(S(f,'month'),await currentActor());return{errors:[],files:result.files.map(({url,name})=>({url,name}))};}
+  catch(e){const partial=(e as {partialFiles?:{url:string;name:string}[]}).partialFiles;return{errors:[writeError('정산서 생성 실패 — 같은 입력으로 재시도할 수 있습니다',e)],...(partial?.length?{files:partial.map(({url,name})=>({url,name})),partial:true}:{})};}
 }

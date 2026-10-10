@@ -84,7 +84,7 @@ describe('금액 식 — (수수료 + 프로모션) × 비율 + 가감', () => {
 
 describe('접수에 프로모션이 실린다', () => {
   const x = {
-    receivedAt: '2026-09-18', plate: '12가3456', model: 'EV6', supplier: '오토플러스', supplierCode: '', customer: '홍길동',
+    receivedAt: '2026-09-18', plate: 'PLATE-EXAMPLE', model: 'EV6', supplier: '예시공급사B', supplierCode: '', customer: '고객A',
     channel: '하허호', channelCode: '', agent: '김', agentCode: '', product: '오플구독', rentKind: '', contractType: '',
     term: 24, rent: 800_000, deposit: 0, price: null, payKind: '일시납', paper: false, delivered: false, deliveredAt: '', note: '',
     promotion: promotionFromInput(300_000, '', '9월 프로모션'),

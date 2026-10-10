@@ -4,7 +4,7 @@
  * ★대표 2026-09-18 「접수 -> 분납실적/완납실적 -> 완납인도기준으로 청구 및 지급」
  *                  「인도는 사람이 찍어 줄거야... 그러면 너는 완납여부를 따져서 청구할수 있는거지」
  *
- * 규칙은 erp4 `lib/domain/settlement-stage.ts` 를 «그대로» 옮겼다 (사장님 2026-08-25 · 08-26 · 09-01 결정이 거기 박혀 있다).
+ * 규칙은 erp4 `lib/domain/settlement-stage.ts` 를 «그대로» 옮겼다 (대표 2026-08-25 · 08-26 · 09-01 결정이 거기 박혀 있다).
  *   ⚠ erp4 에는 청구월 규칙이 하나 더 있었다(settlement-billing-month.ts — 인도 전 «예정» · 분납을 접수일부터).
  *     대표 2026-09-18 흐름과 맞는 것은 이쪽이다. 그쪽(month.ts)은 더 쓰지 않는다.
  *
@@ -12,7 +12,7 @@
  *   사람   인도(인도완료 + 인도일) · 받은 회차(분납이 «끊겼을 때» 멈춘 회차)
  *   기계   완납인가 · 끊겼나 · 어느 달에 청구·지급하나 · 얼마를(끊기면 받은 만큼)
  *
- * ── 분납 (사장님 2026-08-25 「1회차는 인도 때 낸다」)
+ * ── 분납 (대표 2026-08-25 「1회차는 인도 때 낸다」)
  *   k회차 예정일 = 인도일 + (k−1)개월 · 마지막 납입 = 인도일 + (회차−1)개월 · 완료 판정 = 인도일 + 회차개월(한 달 여유)
  *   받은 회차 — ★적혀 있으면 그 값 · 없으면 기간 비례(예정일이 지났으면 받은 것)
  *   끊김     — ★받은 회차가 «적혀» 있어야 말할 수 있다. 안 적혔으면 기간 비례라 늘 「받은 것」 이다
@@ -141,8 +141,8 @@ export function brokenOf(r: R, now = new Date()): boolean {
 export const paidRatioOf = (r: R, now = new Date()) =>
   (roundsOf(r.payKind) < 2 || invalidPaidRounds(r) || !brokenOf(r, now) ? 1 : paidRoundsOf(r, now) / roundsOf(r.payKind));
 
-/** 스타·아이카는 분납이 끊기면 지급이 «아예» 없다 (사장님 2026-08-25) */
-export const NO_PAY_IF_BROKEN = [/스타/, /아이카/];
+/** 스타·예시공급사C는 분납이 끊기면 지급이 «아예» 없다 (대표 2026-08-25) */
+export const NO_PAY_IF_BROKEN = [/스타/, /예시공급사C/];
 export const noPayIfBroken = (r: Pick<SettlementRow, 'supplier'>) => NO_PAY_IF_BROKEN.some((re) => re.test(r.supplier ?? ''));
 
 /** 2026-09-01 부터 모든 분납은 완납 시점 청구 — 인도월 기준 시행 */
@@ -249,7 +249,7 @@ export function stageEvidenceOf(r: R, now = new Date()): { state: Stage; reason:
 }
 
 /**
- * 사람이 보는 칸 — 접수를 둘로 가른다 (사장님 2026-08-26 「당월접수탭 있고 미완료탭 있어서」)
+ * 사람이 보는 칸 — 접수를 둘로 가른다 (대표 2026-08-26 「당월접수탭 있고 미완료탭 있어서」)
  *   당월접수  이번 달에 받은 계약 — 인도됐든 아니든 이 달 실적
  *   미완료    지난달 이전에 받았는데 아직 차가 안 나간 것 — ★위에 오래 있을수록 위험하다
  */

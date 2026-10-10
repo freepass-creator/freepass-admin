@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { signabilityProblem } from './signability';
 
-const snapshot = { rent: 690000, termMonths: 36, deposit: 0, plate: '12가3456', supplierCode: 'SONO' };
+const snapshot = { rent: 690000, termMonths: 36, deposit: 0, plate: 'PLATE-EXAMPLE', supplierCode: 'SONO' };
 const contract = {
   contract_status: '계약대기', rent_amount_snapshot: 690000, rent_month_snapshot: 36, deposit_amount_snapshot: 0,
-  car_number_snapshot: '12가3456', provider_company_code: 'SONO',
+  car_number_snapshot: 'PLATE-EXAMPLE', provider_company_code: 'SONO',
 };
 
 test('unchanged, live contract is signable', () => {
@@ -30,7 +30,7 @@ test('a cancelled source intake blocks signing, including legacy truthy shapes',
 
 test('term drift after issue names every changed field', () => {
   const problem = signabilityProblem(
-    { ...contract, rent_amount_snapshot: 700000, deposit_amount_snapshot: 1000000, car_number_snapshot: '34나5678' },
+    { ...contract, rent_amount_snapshot: 700000, deposit_amount_snapshot: 1000000, car_number_snapshot: 'PLATE-CHANGED' },
     snapshot,
   );
   assert.match(String(problem), /월 대여료 · 보증금 · 차량번호/);

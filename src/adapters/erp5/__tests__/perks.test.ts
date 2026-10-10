@@ -5,7 +5,7 @@ import { creditOf, perksOf, productKindOf } from '../perks.js';
 describe('상품구분 캐논 (erp4 와 같음)', () => {
   it('옛 말을 캐논으로 접는다', () => {
     assert.equal(productKindOf('재렌트'), '중고렌트');
-    assert.equal(productKindOf('손오공 구독'), '오공구독');
+    assert.equal(productKindOf('예시공급사A 구독'), '오공구독');
     assert.equal(productKindOf('신차 구독'), '신차구독');
   });
   it('시트 오류 글자는 비운다 · 없으면 빈 글자', () => {

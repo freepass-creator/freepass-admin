@@ -4,7 +4,7 @@ import { numOrNull, numOrUndef, numOrZero, positiveNumOrUndef, strOf, strOrUndef
 
 describe('strOf · strOrUndef', () => {
   it('공백만 벗긴다 · 없으면 빈 글자', () => {
-    assert.equal(strOf('  손오공  '), '손오공');
+    assert.equal(strOf('  예시공급사A  '), '예시공급사A');
     assert.equal(strOf(undefined), '');
     assert.equal(strOf(null), '');
   });

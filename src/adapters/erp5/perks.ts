@@ -17,7 +17,7 @@ type Rec = Record<string, unknown>;
 export const PRODUCT_KINDS = ['신차렌트', '중고렌트', '신차구독', '중고구독', '오플구독', '픽업구독', '오공구독'] as const;
 const KIND_LEGACY: Record<string, string> = {
   재렌트: '중고렌트', 중고렌트: '중고렌트', 재구독: '중고구독', 중고구독: '중고구독',
-  픽업구독: '픽업구독', 오플구독: '오플구독', 오공구독: '오공구독', 손오공구독: '오공구독',
+  픽업구독: '픽업구독', 오플구독: '오플구독', 오공구독: '오공구독', 예시공급사A구독: '오공구독',
   신차렌트: '신차렌트', 신차구독: '신차구독',
 };
 export function productKindOf(raw: unknown): string {
@@ -65,7 +65,7 @@ const shortExperience = (policy: Rec) => {
 };
 
 /**
- * 한 줄에 세울 조건 — ★차례가 뜻이다: 심사가 맨 앞(사장님 2026-08-28 「맨 앞에 심사조건」).
+ * 한 줄에 세울 조건 — ★차례가 뜻이다: 심사가 맨 앞(대표 2026-08-28 「맨 앞에 심사조건」).
  *   목록을 훑는 사람이 제일 먼저 거르는 값이 「이 손님이 탈 수 있나」 다.
  * @param deposits 유료 기간(대여료가 있는 Offer)의 보증금 — 모르면 undefined
  */

@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 /**
- * 바로 거르는 검색칸 — 한 글자부터 반응한다(대표 2026-09-22 「손오공이라고 치면 한 글자부터 · 타이핑 하나부터」).
+ * 바로 거르는 검색칸 — 한 글자부터 반응한다(대표 2026-09-22 「예시공급사A이라고 치면 한 글자부터 · 타이핑 하나부터」).
  *   치는 대로 0.15초 뒤 주소 칸(name)을 바꿔 판이 다시 거른다 — 한글 조합 중(ㅅ→소→손)에도 따라간다.
  *   ★거름은 서버가 한다(첫 화면과 같은 함수) — 여기는 «주소만» 바꾼다. Enter = 바로 반영, ✕ = 지우기.
  *   reset — 검색이 바뀌면 같이 지울 주소 칸(예: 고른 접수 ic).

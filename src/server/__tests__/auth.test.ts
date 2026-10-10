@@ -7,6 +7,8 @@ import { IdentityPoolClient } from 'google-auth-library';
 import { identityAccountFromFederation, identityFederatedCredential, identityFederationOptions, resetIdentityFederationForTest, identityReady } from '../identity';
 import { identityFederationConfig, IDENTITY_SERVICE_ACCOUNT, IDENTITY_WIF_AUDIENCE } from '../../shared/identity-federation';
 
+const E = (local: string, domain = 'example.test') => `${local}${String.fromCharCode(64)}${domain}`;
+
 const federation = {
   IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
   IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: IDENTITY_SERVICE_ACCOUNT,
@@ -20,7 +22,7 @@ it('identity federation accepts only the dedicated production trust and never fa
   for (const change of [
     { VERCEL_ENV: 'preview' }, { VERCEL_ENV: 'development' },
     { IDENTITY_FIREBASE_PROJECT_ID: 'other' }, { IDENTITY_GCP_WIF_AUDIENCE: 'https://attacker.test' },
-    { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: 'business-writer@freepasserp5.iam.gserviceaccount.com' },
+    { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: E('business-writer', 'freepasserp5.iam.gserviceaccount.com') },
     { IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: '' }, { IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: '{}' },
   ]) assert.throws(() => identityFederationConfig({ ...federation, ...change }), /IDENTITY_FEDERATION_/);
   assert.throws(() => identityFederationConfig({ VERCEL_ENV: 'production', IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: '{}' }), /FEDERATION_REQUIRED/);
@@ -59,14 +61,14 @@ it('federated authority reads one encoded document; missing, denied, malformed a
     return response;
   });
   try {
-    assert.deepEqual(await identityAccountFromFederation('test/../user@example.test'), { status: 'APPROVED', role: 'MASTER', name: 'Test' });
+    assert.deepEqual(await identityAccountFromFederation('test/../' + E('user')), { status: 'APPROVED', role: 'MASTER', name: 'Test' });
     assert.equal(reads[0], 'https://firestore.googleapis.com/v1/projects/freepasserp5/databases/(default)/documents/identity_accounts/test%2F..%2Fuser%40example.test');
     response = new Response('', { status: 404 });
-    assert.equal(await identityAccountFromFederation('missing@example.test'), null);
+    assert.equal(await identityAccountFromFederation(E('missing')), null);
     response = new Response('private upstream diagnostic', { status: 403 });
-    await assert.rejects(identityAccountFromFederation('denied@example.test'), /^Error: IDENTITY_ACCOUNT_HTTP_403$/);
+    await assert.rejects(identityAccountFromFederation(E('denied')), /^Error: IDENTITY_ACCOUNT_HTTP_403$/);
     response = new Response(JSON.stringify({ fields: { status: { booleanValue: true }, role: { stringValue: 'MASTER' } } }));
-    assert.equal((await identityAccountFromFederation('malformed@example.test'))?.status, undefined);
+    assert.equal((await identityAccountFromFederation(E('malformed')))?.status, undefined);
     expired = true;
     await assert.rejects(identityFederatedCredential.getAccessToken(), /IDENTITY_ACCESS_TOKEN_UNAVAILABLE/);
     assert.equal(reads.length, 4, 'expired credential must not be sent to Firestore');

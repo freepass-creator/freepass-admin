@@ -3308,3 +3308,9 @@ Mobile:
 
 목표:
 > 상세는 풍부하지만 좌우 기준선은 하나여야 한다.
+
+
+### 2026-10-07 monthly receipt document action
+User directed one month action reuses the settlement actual route. `MonthlyDocumentsForm` sits after the published receipt summary within the existing PanelBody (PC and mobile); SearchBar/QuickFilter/three panels stay in the same positions. Button: 이 달 청구·지급 PDF 생성. Pending disables repeat click, errors remain visible, verified Drive links appear on completion. This is document projection, not financial issuance or cash/payment; partial generation is explicitly incomplete. Machine contract: `settlementMonthlyDocuments`.
+
+정산 상세의 기존 금액 영역에 산출근거 대조 disclosure를 둔다. 원장 기재액·원본 BT와 computed evidence는 구분하며, 요율 역산을 하지 않는다. 동일 근거는 기존 정산 PDF의 산출근거 대조 부록에 표시한다.

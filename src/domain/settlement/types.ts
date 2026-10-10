@@ -1,11 +1,11 @@
-import type { PolicyValue } from '../product/types';
+import type { PolicyValue, TermEconomicAmount } from '../product/types';
 import type { ContractPaymentDispositionState, ContractPaymentFact } from '../contracts/payment';
 
 /**
  * 실적 한 줄 — ERP5 `settlement_rows` 461줄을 실측해 세운 꼴.
  *
  * ★열쇠는 «차량번호 + 접수일» 이다.
- *   같은 차가 재계약되면 접수일이 가른다(F04 실측 — `316라1593` 8/6 vs 8/13).
+ *   같은 차가 재계약되면 접수일이 가른다(F04 실측 — `PLATE_RECONTRACT` 8/6 vs 8/13).
  *   차량번호만으로 묶으면 서로 다른 계약이 한 건으로 접힌다.
  *
  * 무엇을 넣고 무엇을 뺐는지와 그 까닭 : docs/dev/LEDGER-ITEMS.md
@@ -18,8 +18,8 @@ export type Maybe<T> = T | null;
  * ★수수료가 «비율» 인지 «정액» 인지.
  *
  *   ERP5 `supplierRate` 461줄 중 — 비율 299 · **정액 131** · 0 이 31.
- *   한 칸에 뜻이 둘이었다. 오토플러스는 `supplierRate = 1,000,000` 인데
- *   이걸 비율로 읽으면 20조원이 나온다(실측 175수1279).
+ *   한 칸에 뜻이 둘이었다. 예시공급사B는 `supplierRate = 1,000,000` 인데
+ *   이걸 비율로 읽으면 20조원이 나온다(실측 PLATE_MIXED_FEE).
  *
  *   그래서 갈라 담고, 무엇을 보고 그렇게 판정했는지 `note` 에 남긴다.
  */
@@ -133,6 +133,8 @@ export interface IntakeCatalogSnapshot {
     policyValues?: PolicyValue[];
   };
   offer: {
+    supplierBillingFee?: TermEconomicAmount;
+    channelPayoutFee?: TermEconomicAmount;
     id: string;
     sourceOfferId?: Maybe<string>;
     policyId?: Maybe<string>;

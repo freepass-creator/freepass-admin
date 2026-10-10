@@ -2,6 +2,15 @@
 
 > **★★차종·제원(제조사·모델·세부모델·세부트림·연료·배기량·구동)을 채우거나 고치거나 판단하는 모든 AI·로직은 ai-ops `docs/차종-기준-한장.md`(https://github.com/freepass-creator/ai-ops/blob/master/docs/차종-기준-한장.md) 한 장만 따른다 — 대표 2026-10-04 「어떤 AI가 오든 어떤 로직이 오든 흔들리지 않게」. 그 장은 대표만 바꾼다. 더 나은 규칙이 보이면 코드·문서를 먼저 바꾸지 말고 AI 상황실에 `결정필요:`.**
 
+## -3. Reuse first — 2026-10-07 공통 진입 규칙
+
+- Claude·Codex·새 세션 모두 변경 전에 현행 AI Core 헌법/업무 최소 독서 경로와 `academy:start`의 READY receipt를 확인한다. HOLD면 blocker를 먼저 해소한다.
+- 코드·기능·모듈·도구·문서·브랜치·채팅·예약·프로세스·DB 생성 전에 이 저장소, AI Core/AI-OPS 공통 자산, 기존 업무원장/HANDOFF, 담당과 열린 PR/작업선을 실제 검색한다. 후보가 있으면 같은 Task에서 재사용·보강한다.
+- 신규 자산이 필요한 경우 AI Core `reuse:check -- "<목적>" --root <대상 경로>`를 실행하고 기준 revision·후보·재사용 판정과 기존 후보로 목적을 달성할 수 없는 구체적 이유를 기존 인계/원장에 남긴다. 검색이나 이유 없이 새로 만들지 않는다.
+- 같은 목적의 담당이 있으면 동일 Task의 의존요청으로 연결하고 active_owner 한 명을 유지한다. AI별 정본·중복 원장·개발선·예약·프로세스를 만들지 않는다.
+- 사용자 정본·직원 입력·미커밋 변경을 보존한다. 중복 구조 통합은 운영 데이터 삭제나 자동화 기동 승인이 아니다.
+- ADMIN 통합 재개점은 `docs/HANDOFF.md`, `registry/active-work.json`, 기존 PR #171이다. 원격 main만 코드 정본이며 로컬 통합·CI·GHD 수령·원격 main 반영·운영 배포를 구분한다. 최종 머지 담당은 registry의 merge_owner를 재확인한다.
+
 ## -2. FUNCTION AUTHORITY — 2026-09-26
 
 기능 작업의 단일 진입점은 `docs/FUNCTION-AUTHORITY.md`다. **기능 런타임 정본은 `main` 한 곳**이며 과거 브랜치/PR/모델별 작업 가지를 정본으로 해석하지 않는다.

@@ -8,7 +8,7 @@
 대상: Vercel `freepass-projects/freepass-admin`, Production, `freepass-admin.vercel.app`.
 관측 deployment: `dpl_7KJ1oaWynX5wba7v2JhccoDE9GqE`, source `932dd42`.
 
-1. 전용 계정 `freepass-admin-identity@freepasserp5.iam.gserviceaccount.com`과 custom role `freepassAdminIdentityRuntime`은 생성·조회 확인했다. 사용자 승인 뒤 장기 키 생성/저장을 시도했으나 도구 정책이 실행 전 거절했다. 생성된 사용자 관리 키는 0개다. 이 명령을 재시도하거나 기존 관리자 키로 대체하지 않는다.
+1. 전용 계정 `EMAIL_REDACTED`과 custom role `freepassAdminIdentityRuntime`은 생성·조회 확인했다. 사용자 승인 뒤 장기 키 생성/저장을 시도했으나 도구 정책이 실행 전 거절했다. 생성된 사용자 관리 키는 0개다. 이 명령을 재시도하거나 기존 관리자 키로 대체하지 않는다.
 2. 승인된 역할은 `firebaseauth.users.createSession`, `firebaseauth.users.get`, `firebaseauth.users.update`(기존 세션 취소), `datastore.entities.get`(승인문서 조회) 네 가지다. Owner/Editor/Firebase Admin/Firestore 쓰기 권한을 묶어 부여하지 않는다. Firestore IAM 문서 조회 권한은 collection 전용 격리와 다르며 이 범위는 사용자에게 설명하고 승인받았다.
 3. 안전한 대안은 장기 키가 없는 Vercel OIDC → GCP WIF → 전용 identity 계정이다. 기존 `vercel` pool을 재사용하되 provider `freepass-admin-identity-prod`에는 issuer `https://oidc.vercel.com/freepass-projects`, audience `https://vercel.com/freepass-projects`, subject `owner:freepass-projects:project:freepass-admin:environment:production`을 제한한다. 해당 단일 principal에만 이 계정의 `roles/iam.workloadIdentityUser`를 준다. Preview/Development나 업무 계정의 권한을 넓히지 않는다.
    Production 환경값은 비밀이 아닌 `IDENTITY_GCP_WIF_AUDIENCE`와 `IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL` 두 개다. 장기 키 설정과 혼용하지 않는다. 먼저 trust/환경값을 확인하고 build guard를 통과한 코드만 병합/배포한다.

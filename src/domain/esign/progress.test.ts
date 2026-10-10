@@ -7,8 +7,8 @@ const base = (): EsignSession => ({
   id:'s1',contractId:'c1',contractCode:'C1',tokenHash:'h',status:'sent',revision:1,
   issuedAt:1,issuedBy:'admin',expiresAt:Date.now()+100000,progress:{},
   snapshot:{
-    contractId:'c1',contractCode:'C1',customerName:'홍길동',customerPhone:'01012345678',customerType:'개인',
-    vehicleName:'GV70',plate:'12가3456',supplierCode:'S1',supplierName:'손오공',contractKind:'rent_return',insuranceSide:'회사포함',
+    contractId:'c1',contractCode:'C1',customerName:'고객A',customerPhone:'01000000000',customerType:'개인',
+    vehicleName:'GV70',plate:'PLATE-EXAMPLE',supplierCode:'S1',supplierName:'예시공급사A',contractKind:'rent_return',insuranceSide:'회사포함',
     rent:500000,termMonths:36,deposit:0,contractDate:'2026-09-18',templateVersion:'v1',agreementVersion:'a1',
     templateState:{co:'auto',pd:'렌트선택형',ins:'포함',ct:'개인',car:'등록완료',tax:'개인'},
     templateFields:{},requiredDocuments:[],consentProfile:{version:'v',requiredKeys:['rental_terms','privacy'],atoms:[],gpsInstalled:'미장착',paymentMethod:'계좌이체',screeningCriteria:'무심사',cmsRequiredBeforeHandover:false},

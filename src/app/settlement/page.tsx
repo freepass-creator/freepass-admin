@@ -1,18 +1,20 @@
 import Link from 'next/link';
 import { ListRow, StatusTile, type RowStatus } from '../_design/ListRow';
 import { settlements, today } from '../../server/erp5';
+import { readSettlementScreen } from '../../server/freepass-data';
 import { claimLedger, filterLedgerGroups, ledgerGroupAttention, ledgerMonths, ledgerTotals, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger, type LedgerGroupFilter } from '../../domain/settlement/ledgers';
 import { sp, txt, won } from '../_fn/fmt';
 import { IntakeDetailPanel } from '../intake/panels';
 import { driftOf, planInvoice, type Axis } from '../../domain/settlement/lifecycle';
 import { filterPerformanceLines, nextActionablePerformanceCode, performanceMatchesMode, type PerformanceFilterMode } from '../../domain/settlement/performance-filter';
-import { ClaimLink, IssueForm } from './LifeForms';
+import { ClaimLink, IssueForm, MonthlyDocumentsForm } from './LifeForms';
 import { ActionBar, EmptyState, Notice, PanelHeader, SearchField, SummaryGrid, SummaryItem } from '../_design/Primitives';
 import { SettlementScreen } from '../_erp/SettlementScreen';
 import { settlementGroupSignal, settlementGroupSupport, settlementLineSignal, type SettlementSignal } from './group-signal';
 import { pendingTerminationClawbackRows, terminationClawbackReview } from '../../domain/settlement/clawback';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 /**
  * ★★★**정산관리 — 판 셋: 묶음 | 실적 줄 | 접수 상세** (대표 2026-09-18 · WORK-INBOX §14-0 「화면 = 같은 판의 배열」)
@@ -40,8 +42,8 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const q = await searchParams;
   const requestedTab = sp(q.tab) === 'pay' ? 'pay' : 'claim';
 
-  const [all, cb] = await Promise.all([settlements.list(), settlements.clawbacks()]);
-  const rows = all.map((x) => x.row);
+  const [read, cb] = await Promise.all([readSettlementScreen(), settlements.clawbacks()]);
+  const rows = read.all.map((x) => x.row);
   const terminationQueue = pendingTerminationClawbackRows(rows, cb);
   const terminationMode = sp(q.followup) === 'clawback';
   const focusCode = sp(q.focus).trim();
@@ -59,6 +61,8 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const 공급사축완료 = tab === 'claim' && groups.every((g) => ledgerGroupAttention(g) === 'done');
   const 다음지급거래처 = 공급사축완료 ? nextActionableLedgerParty(지급묶음, '') : null;
   const t = ledgerTotals(groups);
+  const publishedRead = read.published;
+  const published = publishedRead.status === 'READY' ? publishedRead.months[month] : null;
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 미정 = months.includes(NO_MONTH) ? (tab === 'claim' ? claimLedger(rows, NO_MONTH, cb) : payLedger(rows, NO_MONTH, cb)) : [];
   const 미정수 = 미정.reduce((n, g) => n + g.lines.length, 0);
@@ -147,6 +151,10 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               </Notice>
             )}
             <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
+            <p role="status">{published
+              ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
+              : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>
+            <MonthlyDocumentsForm month={month} disabled={!published}/>
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />
               <div className="searchbox dz-searchbox">

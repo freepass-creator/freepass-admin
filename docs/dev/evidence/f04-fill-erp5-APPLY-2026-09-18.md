@@ -49,16 +49,16 @@
    upsell               1       0
 
 ── 새로 세울 줄
-   stl_dwynzn6puj   유○○ · 웰릭스(발주건) · 싼타페
-   stl_e7j2ttu384   이○○ · 손오공 · 레이
-   stl_5qne4ds5q8   이○○ · 오토플러스 · GV70 기본형
-   stl_4hy753g5aq   우○○ · 오토플러스 · G80 RG3 FL
-   stl_x9gsyndf24   박○○ · 손오공 · 5시리즈 G30 520i
-   stl_q92sb5n8ru   이○○ · 아이카 · 싼타페 MX5 익스클루시브
-   stl_yvrrvmh5hp   전○○ · 경진카 · 더 뉴 아반떼 CN7 스마트
+   stl_dwynzn6puj   유○○ · 예시공급사E(발주건) · 싼타페
+   stl_e7j2ttu384   이○○ · 예시공급사A · 레이
+   stl_5qne4ds5q8   이○○ · 예시공급사B · GV70 기본형
+   stl_4hy753g5aq   우○○ · 예시공급사B · G80 RG3 FL
+   stl_x9gsyndf24   박○○ · 예시공급사A · 5시리즈 G30 520i
+   stl_q92sb5n8ru   이○○ · 예시공급사C · 싼타페 MX5 익스클루시브
+   stl_yvrrvmh5hp   전○○ · 예시공급사 · 더 뉴 아반떼 CN7 스마트
    stl_ugdp6zpbqd   윤○○ · 빌린카 · SM3 Z.E. RE
    stl_u47n7ftygk   배○○ · 빌린카 · 쏘나타 디 엣지 DN8 비즈니스
-   stl_p7qm9gjvgk   이○○ · 손오공 · G80
+   stl_p7qm9gjvgk   이○○ · 예시공급사A · G80
 
 ★썼다.
    문서 111개를 썼다.

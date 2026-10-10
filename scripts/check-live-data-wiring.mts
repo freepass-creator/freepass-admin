@@ -37,7 +37,10 @@ must(intakeListPage.includes("redirect(`/intake?${u}`)"),'legacy /intake/list ro
 must(/from ['"]\.\.\/\.\.\/server\/freepass-data['"]/.test(product),'products workspace must enter through FreePass Data catalog boundary');
 must(/productList\(\)/.test(product),'products workspace must read productList()');
 must(/settlements\.list\(\)/.test(product),'intake workspace must read settlements.list()');
-must(/settlements\.list\(\)/.test(settlement),'settlement route must read settlements.list()');
+must(/readSettlementScreen\(\)/.test(settlement) && /from ['"]\.\.\/\.\.\/server\/freepass-data['"]/.test(settlement), 'settlement route must read the shared FreePass Data screen snapshot');
+must(/readSettlementScreen\s*=\s*cache\(\(\)\s*=>\s*settlements\.listWithPublishedReceipts\(\)\)/.test(server), 'settlement screen snapshot must share one repository read per server render');
+must(/async listWithPublishedReceipts\(\)/.test(settlementRepo) && /collection\(ROWS\)\.limit\(5000\)\.get\(\)/.test(settlementRepo)
+  && /if \(snap\.size >= 5000\) throw/.test(settlementRepo), 'settlement screen snapshot must use the operational repository and reject partial ledger lists');
 must(/settlements\.clawbacks\(\)/.test(settlement),'settlement route must read clawbacks');
 must(/settlements\.invoices\(/.test(settlement),'settlement route must read issued invoices');
 must(/contracts\.list\(\)/.test(esign),'esign route must read contracts.list()');

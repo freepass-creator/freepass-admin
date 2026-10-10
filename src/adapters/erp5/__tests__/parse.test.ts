@@ -165,7 +165,7 @@ describe('policyValuesOf — ★못 읽은 칸을 버리지 않는다', () => {
 
 describe('toCanonicalProduct — ★버린 까닭을 반드시 돌려준다', () => {
   const base = {
-    car_number: '02하9092', provider_company_code: 'RP006', maker: '기아', model: 'EV6',
+    car_number: 'PLATE-EXAMPLE', provider_company_code: 'RP006', maker: '기아', model: 'EV6',
     sub_model: 'EV6', trim_name: '어스', year: 2022, price: { '36': { rent: 1_090_000, deposit: 0 } },
   };
   it('멀쩡한 줄을 옮긴다', () => {
@@ -173,7 +173,7 @@ describe('toCanonicalProduct — ★버린 까닭을 반드시 돌려준다', ()
     assert.equal(r.ok, true);
     if (!r.ok) return;
     assert.equal(r.product.supplierId, 'RP006');
-    assert.equal(r.product.supplierProductKey, '02하9092');
+    assert.equal(r.product.supplierProductKey, 'PLATE-EXAMPLE');
     assert.equal(r.product.offers.length, 1);
     assert.equal(r.product.vehicle.matchLevel, 'TRIM');
   });
@@ -182,7 +182,7 @@ describe('toCanonicalProduct — ★버린 까닭을 반드시 돌려준다', ()
     assert.equal(r.ok, false);
     if (r.ok) return;
     assert.equal(r.reason, 'NOT_LISTABLE');
-    assert.equal(r.key, '02하9092');
+    assert.equal(r.key, 'PLATE-EXAMPLE');
   });
   it('차량번호가 없으면 열쇠가 없다', () => {
     const r = toCanonicalProduct({ ...base, car_number: '' }, 'doc1', undefined, 's');

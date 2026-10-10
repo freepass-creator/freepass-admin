@@ -20,7 +20,7 @@ test('actual production build command stops when identity configuration is missi
 
 const identitySa = JSON.stringify({
   project_id: 'freepasserp5',
-  client_email: 'identity@freepasserp5.iam.gserviceaccount.com',
+  client_email: 'EMAIL_REDACTED',
   private_key: 'k',
 });
 const dataToken = 'd'.repeat(40);
@@ -46,7 +46,7 @@ test('production keyless identity requires exact complete trust; preview, mixed 
     IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
     IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: IDENTITY_SERVICE_ACCOUNT,
     FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/provider',
-    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'caller@project.iam.gserviceaccount.com',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'EMAIL_REDACTED',
   };
   assert.deepEqual(errors(keyless), []);
   assert.ok(errors({ ...good, VERCEL_ENV: 'production' }).includes('IDENTITY_GCP_WIF_AUDIENCE'), 'production never accepts a persistent key instead of federation');
@@ -94,7 +94,7 @@ test('retired Google OAuth settings are leftovers, not login configuration', () 
 test('identity credential must match the configured identity Firebase project', () => {
   const other = JSON.stringify({
     project_id: 'freepasserp3',
-    client_email: 'identity@freepasserp3.iam.gserviceaccount.com',
+    client_email: 'EMAIL_REDACTED',
     private_key: 'k',
   });
   assert.ok(errors({ ...good, IDENTITY_FIREBASE_SERVICE_ACCOUNT_JSON: other })
@@ -106,7 +106,7 @@ test('identity credential must match the configured identity Firebase project', 
 test('Admin production rejects Firebase business-data credentials', () => {
   const serviceAccount = JSON.stringify({
     project_id: 'freepasserp5',
-    client_email: 'x@freepasserp5.iam.gserviceaccount.com',
+    client_email: 'EMAIL_REDACTED',
     private_key: 'k',
   });
   assert.ok(errors({ ...good, ERP5_FIREBASE_SERVICE_ACCOUNT_JSON: serviceAccount })
@@ -204,7 +204,7 @@ test('Vercel production requires private FreePass Data Cloud Run WIF caller sett
     IDENTITY_GCP_WIF_AUDIENCE: IDENTITY_WIF_AUDIENCE,
     IDENTITY_GCP_SERVICE_ACCOUNT_EMAIL: IDENTITY_SERVICE_ACCOUNT,
     FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/vercel',
-    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'freepass-admin-caller@freepasserp5.iam.gserviceaccount.com',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'EMAIL_REDACTED',
   });
   assert.deepEqual(configured.filter((x) => x.level === 'error'), []);
 });
@@ -214,7 +214,7 @@ test('static Cloud Run ID token is diagnostic-only in Vercel production', () => 
     ...good,
     VERCEL_ENV: 'production',
     FREEPASS_DATA_GCP_WIF_AUDIENCE: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/pool/providers/vercel',
-    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'freepass-admin-caller@freepasserp5.iam.gserviceaccount.com',
+    FREEPASS_DATA_GCP_CALLER_SERVICE_ACCOUNT_EMAIL: 'EMAIL_REDACTED',
     FREEPASS_DATA_CLOUD_RUN_ID_TOKEN: 'diagnostic',
   });
   assert.ok(findings.some((x) => x.key === 'FREEPASS_DATA_CLOUD_RUN_ID_TOKEN' && x.level === 'warn'));

@@ -37,11 +37,11 @@ function snapshot(over:Partial<EsignSnapshot>={}):EsignSnapshot{
   return {
     contractId:'c1',
     contractCode:'FP-1',
-    customerName:'홍길동',
-    customerPhone:'01012345678',
+    customerName:'고객A',
+    customerPhone:'01000000000',
     customerType:'개인',
     vehicleName:'GV70',
-    plate:'12가3456',
+    plate:'PLATE-EXAMPLE',
     supplierCode:'S1',
     supplierName:'공급사',
     contractKind:'rent_return',
@@ -68,14 +68,14 @@ function snapshot(over:Partial<EsignSnapshot>={}):EsignSnapshot{
 
 function payload(s:EsignSnapshot){
   return {
-    customer_name:'홍길동',
-    customer_phone:'010-1234-5678',
+    customer_name:'고객A',
+    customer_phone:'010-0000-0000',
     customer_birth:'1983-09-26',
     customer_address:'서울시',
     driver_license_no:'11-11-111111-11',
     emergency_relation:'가족',
-    emergency_name:'김가족',
-    emergency_phone:'010-9999-8888',
+    emergency_name:'비상연락인A',
+    emergency_phone:'010-0000-0000',
     signature:meaningfulSignature(),
     consents:[...s.consentProfile.requiredKeys],
     summaryConfirmedAt:1,
@@ -87,8 +87,8 @@ function payload(s:EsignSnapshot){
 test('valid personal submission passes with exact required consents and documents',()=>{
   const s=snapshot();
   const result=validateSubmission(payload(s),s);
-  assert.equal(result.name,'홍길동');
-  assert.equal(result.phone,'01012345678');
+  assert.equal(result.name,'고객A');
+  assert.equal(result.phone,'01000000000');
 });
 
 test('missing consent fails closed',()=>{

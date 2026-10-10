@@ -7,7 +7,7 @@ import { clawbackRecord } from '../clawback.js';
 
 const row = (o: Record<string, unknown> = {}) => toSettlementRow({
   code: String(o.code ?? 'stl_consistency'),
-  plate: '12가3456',
+  plate: 'PLATE-EXAMPLE',
   receivedAt: '2026-09-01',
   supplier: '공급사A',
   channel: '채널A',

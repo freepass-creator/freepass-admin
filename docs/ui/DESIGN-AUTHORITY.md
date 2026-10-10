@@ -18,7 +18,7 @@
 
 웹 접수목록에서 건을 선택하면 가운데 **상세 패널**이 접수상세로 바뀌고 오른쪽 **접수목록은 유지**한다. 선택 신호와 검색·필터·상품/Offer 문맥을 보존하며 같은 목록에서 다음 건을 선택한다. 상품을 다시 선택하면 접수상세 선택을 해제하고 상품상세로 돌아간다. 모바일은 공간상 접수상세 한 장으로 전환하되 목록 복귀 URL은 기존 목록 조건을 보존한다. 이 최신 동선은 앞서 이미지의 「오른쪽 목록 → 오른쪽 상세」보다 우선한다.
 
-- 기준 원본: 마지막 3장 `exec-084a6166-2033-4e5f-8286-1bf741e9d9b5.png` (작성), `exec-36d9f176-bbe4-44a3-9d3b-88bf7db301af.png` (목록), `exec-fc747e30-cf14-4fbd-a853-e9805c67763a.png` (상세). 원본 위치: `C:/Users/admin/.codex/generated_images/01a0e3d8-73bf-7ab1-90a4-bac2a882f585/`.
+- 기준 원본: 마지막 3장 `IMAGE_ID_REDACTED 작성`, `IMAGE_ID_REDACTED 목록`, `IMAGE_ID_REDACTED 상세`. 원본 위치: `LOCAL_GENERATED_IMAGE_PATH_REDACTED`.
 - 이후 시안 이미지는 실제 `/intake` 코드를 브라우저에서 캡처한다. 생성 이미지·별도 시안 HTML·다른 저장 엔진으로 대체하지 않는다.
 - shell: `AdminChrome` + `SideMenu`; 네이비 152px sidebar, 흰색 56px header, 접기 64px. 전역 검색은 계약접수에서 반복하지 않고 현재 업무 제목만 표시한다. 데모 데이터 표지는 운영 오인 방지를 위해 유지한다.
 - composition: `ProductsBoard`의 3개 동일 폭 패널, 10px gutter, 흰색 panel, 16px 내부 padding, 8px radius. 각 패널 독립 scroll와 고정 footer. Mobile ≤900은 같은 DOM을 `v=list/detail/work`로 한 장씩 표시한다.
@@ -115,3 +115,9 @@ UI 변경은 한 변경에서 다음을 같이 갱신한다.
 5. 이 authority 문서
 
 UI 변경은 위 actual route 계보 안에서만 수행한다.
+
+
+### 2026-10-07 monthly receipt document action
+User directed one month action reuses the settlement actual route. `MonthlyDocumentsForm` sits after the published receipt summary within the existing PanelBody (PC and mobile); SearchBar/QuickFilter/three panels stay in the same positions. Button: 이 달 청구·지급 PDF 생성. Pending disables repeat click, errors remain visible, verified Drive links appear on completion. This is document projection, not financial issuance or cash/payment; partial generation is explicitly incomplete. Machine contract: `settlementMonthlyDocuments`.
+
+2026-10-07 동일 정산 Task: 기존 금액 타일의 산출근거 disclosure와 원본 PDF 산출근거 부록은 기재액 보존·원본 요율 대조 표시다. 기존 청구 내역표 디자인을 유지한다.

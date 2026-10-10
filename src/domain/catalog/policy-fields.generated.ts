@@ -230,7 +230,7 @@ export const POLICY_FIELDS = [
     "layer": "sales",
     "exposure": "internal",
     "decides": "계약 승인 여부",
-    "why": "⚠ **계약서에는 안 실린다**(exposure=internal 이 그걸 지킨다). 손님 «화면»에는 2026-09-05 부터 실린다 — 사장님 「심사 조건은 계속 띄워요」. 단 원문이 아니라 creditDisplay 가 셋(무심사/신용조회/소득확인)으로 접은 값이다"
+    "why": "⚠ **계약서에는 안 실린다**(exposure=internal 이 그걸 지킨다). 손님 «화면»에는 2026-09-05 부터 실린다 — 대표 「심사 조건은 계속 띄워요」. 단 원문이 아니라 creditDisplay 가 셋(무심사/신용조회/소득확인)으로 접은 값이다"
   },
   {
     "key": "disqualification_conditions",
@@ -254,7 +254,7 @@ export const POLICY_FIELDS = [
     "layer": "contract",
     "exposure": "contract",
     "decides": "계약서 특약",
-    "why": "표에 없는 계약조건 — 계약서 특약 칸에 그대로 실린다(사장님 2026-08-20). 손님이 서명 전에 읽는 글이다"
+    "why": "표에 없는 계약조건 — 계약서 특약 칸에 그대로 실린다(대표 2026-08-20). 손님이 서명 전에 읽는 글이다"
   },
   {
     "key": "credit_grade",

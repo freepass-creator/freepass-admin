@@ -11,7 +11,7 @@ import { startTransition, useActionState, useEffect, useRef, useState, type Reac
 import { ledgerCreateAction, ledgerPlateLookupAction, type LedgerCreateState } from '../intake/actions';
 import type { IntakeOptions } from '../intake/new/IntakeForm';
 import { LEDGER_PRODUCTS } from '../../domain/settlement/product-kind';
-import { dataFeeAmount } from '../../domain/settlement/fee';
+import { dataFeeLabel } from '../../domain/settlement/fee';
 import type { Status } from './LedgerBoard';
 import { formatTermInput, formatWonInput, normName, normPlate, plateKey, won, type PlateOffer } from './model';
 
@@ -114,10 +114,6 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
     put('rent', won(o.rent));
     put('deposit', won(o.deposit));
     put('price', won(o.price));
-    put('feeClaim', dataFeeAmount(o.supplierBillingFee) === null ? '' : won(dataFeeAmount(o.supplierBillingFee)));
-    put('feePay', dataFeeAmount(o.channelPayoutFee) === null ? '' : won(dataFeeAmount(o.channelPayoutFee)));
-    const reason = form.elements.namedItem('feeReason');
-    if (reason instanceof HTMLInputElement && reason.type !== 'hidden') reason.value = '';
   }
 
   const off = !canWrite || pending;
@@ -173,7 +169,7 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
                   <button key={o.key} type="button" className={pick?.key === o.key ? 'chip on' : 'chip'} aria-pressed={pick?.key === o.key} onClick={() => choose(o)}>
                     {[o.supplier, o.term ? `${o.term}개월` : '', o.rent !== null ? `월 ${won(o.rent)}` : '', o.deposit ? `보증금 ${won(o.deposit)}` : ''].filter(Boolean).join(' · ')}
                     {/* Data 가 발행하지 않은 금액은 저장도 「미확정」이다 — 화면도 같게 보인다 */}
-                    {` · 청구 ${dataFeeAmount(o.supplierBillingFee) === null ? '미확정' : `${won(dataFeeAmount(o.supplierBillingFee))}원`} · 지급 ${dataFeeAmount(o.channelPayoutFee) === null ? '미확정' : `${won(dataFeeAmount(o.channelPayoutFee))}원`}`}
+                    {` · 청구 ${dataFeeLabel(o.supplierBillingFee)} · 지급 ${dataFeeLabel(o.channelPayoutFee)}`}
                   </button>
                 ))}
                 {pick && <button type="button" className="chip" onClick={clearFeeSelection}>직접 입력으로</button>}
@@ -215,11 +211,10 @@ export function NewIntakePanel({ options, canWrite, today, status, onClose, onSa
         </div>
 
         <div className="section">
-          <h4>금액 <span className="dz-sec-note">공급가액 · 모르면 비워 두기</span></h4>
+          <h4>금액 <span className="dz-sec-note">저장 수수료 · 미확정은 원천 확인</span></h4>
           <div className="form">
-            <Field label="청구액"><input className="ldesk-num" name="feeClaim" onBlur={fixWon} readOnly={dataFeeAmount(pick?.supplierBillingFee) !== null} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
-            <Field label="지급액"><input className="ldesk-num" name="feePay" onBlur={fixWon} readOnly={dataFeeAmount(pick?.channelPayoutFee) !== null} inputMode="numeric" disabled={off} placeholder="미확정" /></Field>
-            {(pick?.supplierBillingFee || pick?.channelPayoutFee) && <Field label="수수료 사유"><input name="feeReason" disabled={off} placeholder="미확정 금액 직접 입력 시 필수" /></Field>}
+            <Field label="청구액"><input className="ldesk-num" readOnly disabled={off} value={dataFeeLabel(pick?.supplierBillingFee)} /></Field>
+            <Field label="지급액"><input className="ldesk-num" readOnly disabled={off} value={dataFeeLabel(pick?.channelPayoutFee)} /></Field>
           </div>
         </div>
 

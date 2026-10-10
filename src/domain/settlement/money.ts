@@ -16,6 +16,12 @@
 import { invalidPaidRounds, noPayIfBroken, paidRatioOf, roundsOf } from './stage';
 import type { Maybe, SettlementRow } from './types';
 
+/** 원 미만은 부호와 무관하게 0 방향으로 버린다. 환수와 원금의 대칭을 보존한다. */
+export function truncWon(value: number): number {
+  const won = Math.trunc(value);
+  return Object.is(won, -0) ? 0 : won;
+}
+
 /** 정산비율 — 0은 유효한 사실, 음수/비정상 숫자는 조용히 돈으로 만들지 않는다. */
 export function settlementRatioOf(r: Pick<SettlementRow, 'settleRatio'>): Maybe<number> {
   const v = Number(r.settleRatio);
@@ -31,7 +37,7 @@ export function claimAmountOf(r: SettlementRow, now = new Date()): Maybe<number>
   const settleRatio = settlementRatioOf(r);
   if (settleRatio === null) return null;
   const k = paidRatioOf(r, now) * settleRatio;
-  const amount = Math.round((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
+  const amount = truncWon((r.money.claim + (r.money.claimIncentive ?? 0)) * k) + (r.money.claimAdjust ?? 0);
   return nonNegativeMoney(amount);
 }
 
@@ -42,7 +48,7 @@ export function payAmountOf(r: SettlementRow, now = new Date()): Maybe<number> {
   if (settleRatio === null) return null;
   const ratio = paidRatioOf(r, now);
   if (ratio < 1 && noPayIfBroken(r)) return nonNegativeMoney(r.money.payAdjust ?? 0);
-  const amount = Math.round((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
+  const amount = truncWon((r.money.pay + (r.money.payIncentive ?? 0)) * ratio * settleRatio) + (r.money.payAdjust ?? 0);
   return nonNegativeMoney(amount);
 }
 

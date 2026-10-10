@@ -91,7 +91,9 @@ const F04 = eval(`${readFileSync(SNAPSHOT, 'utf8')};F04`);
  *   값이 0줄인 칸 — 시트에 칸만 있고 값이 없다. 빈 칸을 만들 뿐이다.
  */
 const 안옮김 = new Set([
-  'claim', 'pay',
+  'claim', 'pay', 'claimWritten', 'payWritten', 'supplierRate', 'agentRate',
+  'claimVat', 'payVat', 'claimTotal', 'payTotal', 'feeTable', 'calculationBasis', 'moneyConflicts',
+  'supplierBillingFee', 'channelPayoutFee', 'catalogSnapshot', 'sourceReceiptRaw', 'sourceReceiptClaim', 'sourceReceiptPay',
   /**
    * ★★clawback — 옮기지 «않는다». 이 집 규칙이다(docs/ui/mockups/admin-shell.data.js PERFS 머리):
    *   「★★환수를 «접수의 체크» 로 달지 않는다. 체크로 달면 이미 선 실적을 나중에 손대게 되고,
@@ -188,14 +190,11 @@ for (const f of F04.rows as Record<string, unknown>[]) {
       channel: '', channelCode: '', agent: '', agentCode: '', product: '', rentKind: '', contractType: '', term: null, rent: null,
       deposit: null, price: null, payKind: '', paper: false, delivered: false, deliveredAt: '', note: '',
     }, Date.now());
-    const data: Record<string, unknown> = { ...base, settleNote: '', fromSheet: 'F04 연동' };
+    const data: Record<string, unknown> = { ...base, fromSheet: 'F04 연동' };
     for (const [c, v] of Object.entries(f)) {
       if (빈(v) || 안옮김.has(c)) continue;
       data[f04SettlementField(c)] = v;
     }
-    /** 청구·지급은 ERP5 이름으로 둔다 — 한 원장에 두 이름이 서면 안 된다 */
-    if (!빈(f.claim)) data.claimWritten = f.claim;
-    if (!빈(f.pay)) data.payWritten = f.pay;
     const id = settlementCode(data.plate, data.receivedAt);
     const auditEventId = intakeEventDocId(
       data.plate, data.sourceProductId, data.receivedAt, data.intakeRequestId, data.intakeIdentityMode,

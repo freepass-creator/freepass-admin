@@ -16,8 +16,8 @@ import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { JWT } from 'google-auth-library';
 import {
-  billMonthOf, cellDate, findHeader, methodOf, picker, feeValueOf, cellCheck, cellNumber, cellText,
-  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, intakeMoney, assertIntakeHeaders,
+  billMonthOf, cellDate, findHeader, picker, cellCheck, cellNumber, cellText,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeHeaders,
 } from '../src/adapters/f04/sheet.ts';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -94,44 +94,23 @@ const tabs: string[] = meta.sheets.map((s: any) => s.properties.title);
 say(`■ ${meta.properties.title}  (읽은 길: ${AUTH})`);
 say(`  탭 ${tabs.length}개`);
 
-/* ══ ① 수수료표 — 셈법(정본은 프리패스 데이터, 옮기기 전까지 이 탭이 임시 원천) ═══ */
+/* 청구·지급 시점 설명만 보존한다. 요율표를 해석하거나 금액을 옮기지 않는다. */
 const feeRows = await values('수수료표');
 const fh = findHeader(feeRows, '공급사');
 if (fh < 0) throw new Error('★수수료표 머리글을 못 찾았다 — 말없이 넘어가지 않는다');
-const fp = picker(feeRows[fh].map(String));
 /* ★같은 탭에 표가 «둘» 있다 — 요율표 아래에 「청구·지급 시점」 규칙표가 붙어 있다.
    두 번째 머리글은 「누가 · 어떤 건 · 어떻게」 다. 거기서 끊는다. */
 const secondHead = feeRows.findIndex((r, i) => i > fh && String(r?.[0] ?? '').trim() === '누가');
-const feeBody = feeRows.slice(fh + 1, secondHead > 0 ? secondHead - 1 : undefined);
 const timingRules = secondHead > 0
   ? feeRows.slice(secondHead + 1).filter((r) => cellText(r?.[0]))
       .map((r) => ({ who: cellText(r[0]), what: cellText(r[1]), how: cellText(r[2]) }))
   : [];
-const feeTable = feeBody.filter((r) => cellText(r?.[0]))
-  .map((r) => {
-    const method = methodOf(fp.raw(r, '셈법'));
-    return {
-      supplier: fp.text(r, '공급사'), kind: fp.text(r, '갈래'), form: fp.text(r, '형태'),
-      term: fp.text(r, '계약기간'), method,
-      claimRaw: fp.text(r, '공급사에서 받을 것'), payRaw: fp.text(r, '영업채널에 줄 것'),
-      claimRate: feeValueOf(fp.raw(r, '공급사에서 받을 것'), method),
-      payRate: feeValueOf(fp.raw(r, '영업채널에 줄 것'), method),
-      byMachine: String(fp.raw(r, '기계가 낼 수 있나') ?? '').trim() === '예',
-      billWhen: fp.text(r, '청구 시점'), note: fp.text(r, '비고'),
-    };
-  });
-const byMethod: Record<string, number> = {};
-for (const f of feeTable) byMethod[f.method] = (byMethod[f.method] ?? 0) + 1;
-say(`\n■ 수수료표 ${feeTable.length}줄 · 공급사 ${new Set(feeTable.map((f) => f.supplier)).size}곳`);
-say(`  셈법 — ${Object.entries(byMethod).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
-say(`  ★기계가 낸다 ${feeTable.filter((f) => f.byMachine).length} · 사람이 정한다 ${feeTable.filter((f) => !f.byMachine).length}`);
 say(`
 ■ ★청구·지급 «시점» 규칙 ${timingRules.length}줄 — 요율과 «따로» 도는 규칙이다`);
 for (const t of timingRules) say(`  ${(t.who ?? '').padEnd(12)} ${(t.what ?? '').padEnd(10)} ${t.how ?? ''}`);
 
 /* ══ ② 실적 네 탭 — 54열이 «같은 규격» 이라 한 벌로 합친다 ══ */
 const PERF_TABS = F04_LEDGER_TABS;
-const NEED = ['차량번호', '접수일', '공급사', '영업채널', '청구년', '청구월', '판매수료'];
 const rows: any[] = [];
 const held: { tab: string; row: number; why: string }[] = [];
 const readCount: Record<string, number> = {};
@@ -154,7 +133,6 @@ for (const tab of PERF_TABS) {
     const receivedAt = p.date(r, '접수일');
     /* ★버리지 않는다 — 열쇠가 없으면 보류함에 «까닭과 함께» */
     if (!plate) { held.push({ tab, row: sourceRow, why: '차량번호 없음' }); return; }
-    const money = intakeMoney(head, r);
     rows.push({
       /* 열쇠 */
       plate, receivedAt, fromTab: tab,
@@ -185,16 +163,10 @@ for (const tab of PERF_TABS) {
       billYearRaw: p.raw(r, '청구년') ?? null, billMonthRaw: p.raw(r, '청구월') ?? null,
       nextRoundAt: p.date(r, '다음회차일'),
       /* 돈 */
-      supplierRate: p.num(r, '공급사수수료율'), agentRate: p.num(r, '에이전시수수료율'),
-      claim: money.claim, claimIncentive: p.num(r, '공급사인센티브'),
-      claimVat: money.claimVat, claimTotal: money.claimTotal,
-      pay: money.pay, payIncentive: p.num(r, '에이전시인센티브'),
-      paperFee: p.num(r, '계약서대행료'), payVat: money.payVat,
-      // 신규 지급액은 공급가 입력칸이다. VAT 포함 합계와 혼동하지 않는다.
-      payTotal: money.payTotal, moneyConflicts: money.conflicts,
+      claimIncentive: p.num(r, '공급사인센티브'), payIncentive: p.num(r, '에이전시인센티브'),
+      paperFee: p.num(r, '계약서대행료'),
       billState: p.text(r, '청구상태'), payState: p.text(r, '지급상태'),
       history: p.text(r, '처리 이력'),
-      calculationBasis: typeof p.raw(r, '산출근거') === 'string' ? p.raw(r, '산출근거') : null,
       claimAdjust: p.num(r, '청구가감'), payAdjust: p.num(r, '지급가감'),
       adjustReason: p.text(r, '가감사유'),
       /* 글 */
@@ -219,26 +191,19 @@ const goods: any[] = [];
 const derived: Record<string, number> = {};
 /* ══ 셈 ═══════════════════════════════════════════════════ */
 const live = rows.filter((r) => !r.cancelled);
-const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
-const sum = (a: any[], f: string) => a.reduce((n, r) => n + (r[f] ?? 0), 0);
-const byMonth: Record<string, { n: number; c: number; p: number }> = {};
+const byMonth: Record<string, { n: number }> = {};
 for (const r of live) {
   const k = r.billMonth ?? '(빈칸)';
-  byMonth[k] = byMonth[k] ?? { n: 0, c: 0, p: 0 };
-  byMonth[k].n++; byMonth[k].c += r.claim ?? 0; byMonth[k].p += r.pay ?? 0;
+  byMonth[k] = byMonth[k] ?? { n: 0 };
+  byMonth[k].n++;
 }
-say(`\n■ 청구월별 (취소 뺀 ${live.length}줄)`);
-for (const [k, v] of Object.entries(byMonth).sort())
-  say(`  ${k.padEnd(10)} ${String(v.n).padStart(3)}줄  청구 ${won(v.c).padStart(12)}  지급 ${won(v.p).padStart(12)}  남는 것 ${won(v.c - v.p).padStart(11)}`);
-say(`  ${'합'.padEnd(10)} ${String(live.length).padStart(3)}줄  청구 ${won(sum(live, 'claim')).padStart(12)}  지급 ${won(sum(live, 'pay')).padStart(12)}  남는 것 ${won(sum(live, 'claim') - sum(live, 'pay')).padStart(11)}`);
 say(`\n■ 청구월이 «빈칸» 인 줄 ${live.filter((r) => !r.billMonth).length} — ★0 이 아니라 「모른다」다`);
 
 const report = {
   readAt: new Date().toISOString(), ledger: LEDGER, title: meta.properties.title,
   tabs: tabs.length, balanced,
   perf: { read: totalRead, loaded: rows.length, held: held.length, byTab: readCount },
-  feeTable: feeTable.length, timingRules: timingRules.length, byMethod,
-  byMachine: feeTable.filter((f) => f.byMachine).length,
+  timingRules: timingRules.length,
   progress: progress.length, vehicles: vehicles.length, goods: goods.length,
   derived, byMonth, missingCols, ledgerMode: F04_LEDGER_MODE, installments: 0, noInstallments: true,
 };
@@ -246,10 +211,10 @@ const report = {
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT,
   `/* ★F04 정산원장 시트 «전체»를 읽은 사본. 손으로 고치지 마라.\n`
-  + `   정본은 프리패스 데이터이고 F04 는 투영이다(수수료 규칙은 프리패스 데이터로 옮기기 전까지 F04 「수수료표」가 임시 원천 — DEC-2026-10-04-01).\n`
+  + `   수수료·청구액·지급액·요율은 읽거나 저장하지 않는다. 금액 정본은 프리패스 데이터다.\n`
   + `   만든 때 ${report.readAt}\n   다시 만들기: npx tsx scripts/f04-ssot.mts\n`
   + `   읽은 줄 ${totalRead} = 실은 줄 ${rows.length} + 보류 ${held.length} */\n`
-  + `const F04 = ${JSON.stringify({ report, feeTable, timingRules, rows, installments, progress, vehicles, goods, held }, null, 1)};\n`, 'utf8');
+  + `const F04 = ${JSON.stringify({ report, timingRules, rows, installments, progress, vehicles, goods, held }, null, 1)};\n`, 'utf8');
 mkdirSync(dirname(REPORT), { recursive: true });
 writeFileSync(REPORT, `# F04 시트 전체 읽기\n\n\`\`\`\n${log.join('\n')}\n\`\`\`\n`, 'utf8');
 say(`\n■ 냈다 → ${OUT}`);

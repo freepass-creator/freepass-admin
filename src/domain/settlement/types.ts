@@ -133,6 +133,7 @@ export interface IntakeCatalogSnapshot {
     policyValues?: PolicyValue[];
   };
   offer: {
+    termKey?: string;
     supplierBillingFee?: TermEconomicAmount;
     channelPayoutFee?: TermEconomicAmount;
     id: string;

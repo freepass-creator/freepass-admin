@@ -1,3 +1,4 @@
+import { truncWon } from './money';
 /**
  * **청구 링크 — PDF 대신 링크를 보낸다. 사업자등록번호를 넣으면 보인다.**
  *
@@ -81,7 +82,7 @@ export function snapshotOf(axis: Axis, party: string, month: string, lines: read
     }),
     clawbacks: claws
       .filter((c) => c.month === month && (axis === '공급사' ? c.supplier === party && c.supplierAmt : c.channel === party && c.agentAmt))
-      .map((c) => { const amt = axis === '공급사' ? c.supplierAmt : c.agentAmt; return { plate: c.plate, at: c.at, reason: c.reason, net: amt, vat: Math.round(amt * 0.1) }; }),
+      .map((c) => { const amt = axis === '공급사' ? c.supplierAmt : c.agentAmt; return { plate: c.plate, at: c.at, reason: c.reason, net: amt, vat: truncWon(amt * 0.1) }; }),
   };
 }
 

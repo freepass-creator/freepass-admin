@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { freepassDataProducts, productByIdFresh } from '../../server/freepass-data';
 import { catalogLookupHold, plateOffers, type PlateOffer } from '../ledger/model';
-import { feeRuleSet, settlements, today, WriteDisabledError } from '../../server/erp5';
+import { settlements, today, WriteDisabledError } from '../../server/erp5';
 import { currentActor, requireAdmin } from '../../server/require-admin';
-import { feeOf } from '../../domain/settlement/fee';
+import { readDataFee, type DataFee } from '../../domain/settlement/fee';
 import { FACT_LABEL, validateIntake, type FactChange, type FactKey, type IntakeInput, type ProgressChange } from '../../domain/settlement/intake';
 import type { Axis, LifeChange } from '../../domain/settlement/lifecycle';
 import { adjustPatch, adjustmentFromInput, promotionFromInput, promotionPatch } from '../../domain/settlement/adjust';
@@ -98,7 +98,7 @@ async function createIntakeFrom(f: FormData): Promise<FormState | { code: string
     note: S(f, 'note'),
     /* 프로모션 — 금액 · 영업자 몫(%) · 사유. ★몫을 비우면 100% (대표 「기본 100%」) */
     promotion: promotionFromInput(f.get('promoAmount'), f.get('promoSharePct'), S(f, 'promoReason')),
-    /* 수수료 직접 입력 — 비우면 표대로 */
+    /* 폼 입력은 저장값과 대조할 뿐 수수료를 덮어쓰지 않는다. */
     ...((S(f, 'feeClaim') || S(f, 'feePay')) ? { feeManual: { claim: N(f, 'feeClaim'), pay: N(f, 'feePay'), reason: S(f, 'feeReason') } } : {}),
   };
   if (!input.sourceProductId && !input.sourceOfferId) {
@@ -278,29 +278,22 @@ export async function lifecycleAction(_: FormState, f: FormData): Promise<FormSt
   return { errors: [] };
 }
 
-/**
- * **수수료 미리보기** — 저장하지 않는다. 폼 칸: supplier · product · model · term · rent · price
- * ★저장할 때와 «같은 셈» (ERP5 수수료표). 화면은 이걸로 「표대로면 얼마」 를 보여 주고, 직접 입력 칸의 기본값으로 쓴다.
- */
+/** 관리자 전용 미리보기: 선택 Offer/기간의 저장값을 기존 Catalog에서 읽는다. */
 export type FeePreview =
-  | { status: 'AUTO'; claim: number; pay: number; ruleId: string; basis: string; version: string }
-  | { status: 'MANUAL' | 'NO_RULE' | 'NO_BASE'; why: string; ruleId?: string; basis?: string; version: string }
+  | { status: 'READ'; termKey: string | null; supplierBillingFee: DataFee; channelPayoutFee: DataFee }
   | { status: 'ERROR'; why: string };
 export async function previewFeeAction(f: FormData): Promise<FeePreview> {
   { const g = await requireAdmin(); if (g) return { status: 'ERROR', why: g }; }
   try {
-    const set = await feeRuleSet();
-    const num = (k: string) => { const n = N(f, k); return n === null || Number.isNaN(n) ? null : n; };
-    const r = feeOf(set, { supplier: S(f, 'supplier'), product: S(f, 'product'), model: S(f, 'model'), term: num('term'), rent: num('rent'), price: num('price') });
-    if (r.status === 'AUTO') return { status: 'AUTO', claim: r.claim, pay: r.pay, ruleId: r.rule.id, basis: r.rule.basis, version: set.version };
-    return {
-      status: r.status,
-      why: r.why,
-      ...('rule' in r ? { ruleId: r.rule.id, basis: r.rule.basis } : {}),
-      version: set.version,
-    };
-  } catch (e) {
-    return { status: 'ERROR', why: (e as Error).message };
+    const productId = S(f, 'sourceProductId'), offerId = S(f, 'sourceOfferId');
+    if (!productId || !offerId) return { status: 'READ', termKey: null, supplierBillingFee: readDataFee(undefined), channelPayoutFee: readDataFee(undefined) };
+    const product = await productByIdFresh(productId);
+    const offer = product?.offers.find((o) => o.id === offerId);
+    if (!offer) return { status: 'ERROR', why: '선택한 상품 조건을 다시 확인해 주세요' };
+    return { status: 'READ', termKey: offer.termKey ?? null,
+      supplierBillingFee: readDataFee(offer.supplierBillingFee), channelPayoutFee: readDataFee(offer.channelPayoutFee) };
+  } catch {
+    return { status: 'ERROR', why: '프리패스 데이터 저장 수수료를 읽지 못했습니다' };
   }
 }
 

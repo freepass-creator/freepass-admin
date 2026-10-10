@@ -1,7 +1,9 @@
 'use client';
 
-import { startTransition, useActionState, useRef, useState, type ReactNode } from 'react';
-import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../actions';
+import { dataFeeLabel } from '../../../domain/settlement/fee';
+
+import { startTransition, useActionState, useState, type ReactNode } from 'react';
+import { createIntakeAction, type FeePreview, type FormState } from '../actions';
 import { directIntakeAllowsMissingPlate, directIntakeRentKind } from '../../../domain/settlement/product-kind';
 
 export type IntakeDefaults = {
@@ -34,7 +36,7 @@ export type IntakeOptions = {
  */
 export default function IntakeForm({ defaults, options, cancelHref, picked, fee, productChoices, ledgerProducts, disabled = false }: {
   defaults: IntakeDefaults; options: IntakeOptions; cancelHref?: string; picked?: boolean;
-  /** 차 골라 접수 — 서버가 미리 센 수수료(previewFeeAction 과 같은 셈) */
+  /** 차 골라 접수 — 선택 기간의 Data 저장 수수료 */
   fee?: FeePreview | null;
   /**
    * 차 골라 접수에서 상품구분을 «사람이 고를» 말들 — 비었으면 짝이 하나로 떨어진 것(숨은 칸으로 간다).
@@ -55,38 +57,10 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
   const [supplierCode, setSupplierCode] = useState(defaults.supplierCode);
   const [directProduct, setDirectProduct] = useState(defaults.product ?? '');
   const [delivered, setDelivered] = useState(false);
-  /*
-   * ★수수료 미리보기 — 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」(대표 2026-09-18)
-   *   직접 접수는 차 · 상품구분 · 기간 · 대여료 · 차량가가 바뀔 때마다 기능 쪽 previewFeeAction(저장 때와 같은 셈)을 부른다.
-   */
-  const [미리, set미리] = useState<FeePreview | null>(fee ?? null);
-  const 기다림 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const 다시셈 = (form: HTMLFormElement) => {
-    if (기다림.current) clearTimeout(기다림.current);
-    기다림.current = setTimeout(async () => {
-      const all = new FormData(form);
-      const fd = new FormData();
-      for (const k of ['supplier', 'product', 'model', 'term', 'rent', 'price']) fd.set(k, String(all.get(k) ?? ''));
-      if (!String(all.get('supplier') ?? '').trim()) { set미리(null); return; }
-      set미리(await previewFeeAction(fd));
-    }, 400);
-  };
-  const 표값 = 미리?.status === 'AUTO' ? 미리 : null;
-  /* 수수료 칸 셋 — 비우면 표대로. 표와 다르게 넣으면 사유가 필수(저장 때 도메인이 막는다 — 오류 글 그대로) */
-  const 수수료칸 = (
-    <>
-      <label>청구 수수료<input name="feeClaim" inputMode="numeric" placeholder={표값 ? `표대로 ${표값.claim.toLocaleString('ko-KR')}` : '직접 넣으세요'} /></label>
-      <label>지급 수수료<input name="feePay" inputMode="numeric" placeholder={표값 ? `표대로 ${표값.pay.toLocaleString('ko-KR')}` : '직접 넣으세요'} /></label>
-      <label className="wide">수수료 사유<input name="feeReason" placeholder={표값 ? '표와 다르게 넣을 때만' : '어떻게 정했는지'} /></label>
-    </>
-  );
-  const 미리글 = !미리 ? <p className="dz-fee-line dz-muted">공급사 · 상품구분과 수수료 기준값을 넣으면 자동 계산합니다.</p>
-    : 미리.status === 'AUTO' ? <p className="dz-fee-line">표대로 청구 <b>{미리.claim.toLocaleString('ko-KR')}원</b> · 지급 <b>{미리.pay.toLocaleString('ko-KR')}원</b> <small>기준 {미리.basis} · 비우면 이 값</small></p>
-      : <p className="dz-fee-line warn">{미리.why} — 기준값을 채우거나 청구·지급 수수료를 직접 넣으세요.</p>;
-  /* 표가 못 내면 수수료 칸이 앞에 선다(접혀 있으면 빠뜨린다) */
-  const 직접 = !!미리 && 미리.status !== 'AUTO';
-  /** 상품 신차의 차량가가 SSOT에 없을 때만 접수자가 자동 수수료 기준값을 보충할 수 있다. */
-  const 차량가기준보충 = !!picked && !defaults.price && fee?.status === 'NO_BASE' && fee.basis === '차량가액';
+  const 미리 = fee;
+  const 미리글 = !미리 ? <p className="dz-fee-line dz-muted">저장 수수료 미확정</p>
+    : 미리.status === 'READ' ? <p className="dz-fee-line">청구 <b>{dataFeeLabel(미리.supplierBillingFee)}</b> · 지급 <b>{dataFeeLabel(미리.channelPayoutFee)}</b></p>
+      : <p className="dz-fee-line warn">{미리.why}</p>;
 
   const sel = (name: string, list: string[], label: string, value = '', required = false) => (
     <label>{label}{required ? ' *' : ''}
@@ -151,7 +125,6 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
         {sel('contractType', options.contractTypes, '계약형태')}
         {!picked && <label>공급사코드<input name="supplierCode" value={supplierCode} onChange={(e) => setSupplierCode(e.target.value)} /></label>}
         {코드}
-        {picked && !직접 && 수수료칸}
         {/* 프로모션 — 공급사가 더 주는 돈 · 영업자 몫은 비우면 100% */}
         <label>프로모션 금액<input name="promoAmount" inputMode="numeric" placeholder="공급사가 더 주는 돈" /></label>
         <label>프로모션 영업자 몫 %<input name="promoSharePct" inputMode="numeric" placeholder="100" /></label>
@@ -168,7 +141,6 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
     /* ★`action=` 로 넘기면 React 19 가 제출 뒤 입력칸을 비운다 — 틀려서 되돌아와도 쓴 것이 다 날아간다.
          그래서 손으로 넘긴다. */
     <form className="dz-intake-form" aria-busy={pending}
-      onChange={(e) => { if (['supplier', 'product', 'model', 'term', 'rent', 'price'].includes((e.target as unknown as HTMLInputElement).name)) 다시셈(e.currentTarget); }}
       onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => action(fd)); }}>
       <datalist id="dl-supplier">{options.suppliers.map((v) => <option key={v} value={v} />)}</datalist>
 
@@ -180,9 +152,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
           {(['plate', 'model', 'supplier', 'term', 'rent', 'deposit'] as const).map((k) => (
             <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
           ))}
-          {차량가기준보충
-            ? <label className="dz-fee-basis">차량가액 <small>자동 수수료 기준</small><input name="price" inputMode="numeric" placeholder="차량가액을 넣거나 수수료를 직접 입력" /></label>
-            : <input type="hidden" name="price" value={defaults.price ?? ''} />}
+          <input type="hidden" name="price" value={defaults.price ?? ''} />
           <input type="hidden" name="supplierCode" value={supplierCode} />
           <input type="hidden" name="rentKind" value={defaults.rentKind ?? ''} />
           <input type="hidden" name="sourceProductId" value={defaults.sourceProductId ?? ''} />
@@ -198,9 +168,8 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
             ))
             : <input type="hidden" name="product" value={defaults.product ?? ''} />}
           {/* 고른 상품구분의 수수료 — 표가 내면 여기 한 줄, 못 내면 아래 「수수료 — 직접 넣으세요」가 선다(두 번 안 쓴다) */}
-          {productChoices?.length && !직접 ? 미리글 : null}
+          {미리글}
           {묶음('고객 · 영업', <div className="dz-form-grid">{사람}</div>)}
-          {직접 && 묶음('수수료 — 직접 넣으세요', <>{미리글}<div className="dz-form-grid">{수수료칸}</div></>)}
         </>
       ) : (
         <>
@@ -230,7 +199,7 @@ export default function IntakeForm({ defaults, options, cancelHref, picked, fee,
               <label>차량가액 <small>신차 자동수수료 기준</small><input name="price" inputMode="numeric" /></label>
             </div>
           ))}
-          {묶음('수수료', <>{미리글}<p className="dz-fee-line dz-muted">자동 수수료는 기본 대여료·기간 또는 차량가액 기준입니다. 연령 하향·추가운전자 요금은 별도 계약조건으로 봅니다.</p><div className="dz-form-grid">{수수료칸}</div></>)}
+          {묶음('수수료', 미리글)}
         </>
       )}
       {더}

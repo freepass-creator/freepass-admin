@@ -171,3 +171,10 @@ test('snapshot seals economics and digest independently of later catalog mutatio
   assert.equal(intakeCatalogSnapshotDigest(s), s.digest);
   assert.equal(buildIntakeCatalogSnapshot(product(), offer(), 'now').offer.supplierBillingFee, undefined);
 });
+
+test('선택한 termKey는 수수료와 함께 봉인하고 digest에 포함한다', () => {
+  const a = buildIntakeCatalogSnapshot(product(), offer({ termKey: 'synthetic-term-a' }), 'now');
+  const b = buildIntakeCatalogSnapshot(product(), offer({ termKey: 'synthetic-term-b' }), 'now');
+  assert.equal(a.offer.termKey, 'synthetic-term-a');
+  assert.notEqual(a.digest, b.digest);
+});

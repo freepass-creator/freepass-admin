@@ -102,10 +102,10 @@ export async function ProductsBoard({ q, mode = 'find' }: { q: Record<string, st
   let 수수료: FeePreview | null = null;
   if (접수중) {
     접수 = intakeDefaults(car, chosen.id, { customer: sp(q.customer), channel: sp(q.channel), agent: sp(q.agent) });
-    if (!접수.choices.length || 접수.choices.includes(접수.defaults.product ?? '')) {
+    {
       const f = new FormData();
       const d = 접수.defaults;
-      for (const [k, v] of Object.entries({ supplier: d.supplier, product: d.product ?? '', model: d.model, term: d.term, rent: d.rent, price: d.price ?? '' })) f.set(k, v);
+      for (const [k, v] of Object.entries({ sourceProductId: d.sourceProductId ?? '', sourceOfferId: d.sourceOfferId ?? '' })) f.set(k, v);
       수수료 = await previewFeeAction(f);
     }
     접수선택지 = buildIntakeOptions(원장);

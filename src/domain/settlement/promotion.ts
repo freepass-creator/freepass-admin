@@ -1,3 +1,4 @@
+import { truncWon } from './money';
 /**
  * 프로모션 — 접수할 때 넣는다.
  *
@@ -90,7 +91,7 @@ export function splitPromotion(p: Promotion): PromotionSplit {
   const amount = p.amount ?? 0;
   if (!amount) return { claim: 0, pay: 0, ours: 0, pending: false };
   if (p.agentShare === null) return { claim: amount, pay: 0, ours: 0, pending: true };
-  const pay = Math.round(amount * p.agentShare);
+  const pay = truncWon(amount * p.agentShare);
   return { claim: amount, pay, ours: amount - pay, pending: false };
 }
 

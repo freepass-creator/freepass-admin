@@ -1,9 +1,11 @@
 'use client';
 
+import { dataFeeLabel } from '../../domain/settlement/fee';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { startTransition, useActionState, useEffect, useRef, useState, type ReactNode } from 'react';
-import { createIntakeAction, previewFeeAction, type FeePreview, type FormState } from '../intake/actions';
+import { createIntakeAction, type FeePreview, type FormState } from '../intake/actions';
 import type { IntakeDefaults, IntakeOptions } from '../intake/new/IntakeForm';
 
 /**
@@ -13,7 +15,7 @@ import type { IntakeDefaults, IntakeOptions } from '../intake/new/IntakeForm';
  */
 export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, children, disabled = false }: {
   defaults: IntakeDefaults; options: IntakeOptions; choices: string[]; cancelHref: string;
-  /** 서버가 미리 센 수수료(저장 때와 같은 셈 · ERP5 수수료표). 상품구분을 고르면 다시 센다 */
+  /** 선택 기간의 Data 저장 수수료 */
   fee: FeePreview | null;
   /** 선택 상품 카드 — 칸 위에 선다 */
   children?: ReactNode;
@@ -53,33 +55,8 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
   useEffect(() => { if (!pending && state.errors.length) submitting.current = false; }, [pending, state]);
   const 채널코드 = options.channelCode[channel] ?? '';
   const 담당코드 = options.agentCode[agent] ?? '';
-  /* ★수수료 — 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」(대표 2026-09-18). 상품구분이 갈리면 고른 뒤 다시 센다 */
-  const [미리, set미리] = useState<FeePreview | null>(fee);
-  const previousFee = useRef(fee);
-  useEffect(() => { if (previousFee.current !== fee) { previousFee.current = fee; set미리(fee); } }, [fee]);
+  const 미리 = fee;
   const [구분, set구분] = useState(defaults.product ?? '');
-  /* 차량가액 — 신차(선출고 · 견적출고 · 신차발주)는 이 값이 수수료의 산출 근거다(대표 2026-09-23 「신차발주는 신차가격이 있어야지」).
-     ERP5 에 차량가가 있으면 그 값이 정본, 없을 때만 사람이 넣는다(#91). */
-  const [차량가, set차량가] = useState(defaults.price ?? '');
-  const 원장차량가 = !!defaults.price;
-  /* 상품구분 · 차량가액이 바뀌면 수수료를 다시 센다 — 치는 대로(0.4초 뒤). 저장 때와 같은 셈이다 */
-  const 첫판 = useRef(true);
-  useEffect(() => {
-    if (첫판.current) { 첫판.current = false; return; }
-    let active = true;
-    const t = setTimeout(async () => {
-      const fd = new FormData();
-      for (const [k, v] of Object.entries({ supplier: defaults.supplier, product: 구분, model: defaults.model, term: defaults.term, rent: defaults.rent, price: 차량가 })) fd.set(k, v);
-      const result = await previewFeeAction(fd);
-      if (active) set미리(result);
-    }, 400);
-    return () => { active = false; clearTimeout(t); };
-  }, [구분, 차량가, defaults.supplier, defaults.model, defaults.term, defaults.rent]);
-  const 직접 = !!미리 && 미리.status !== 'AUTO' && 미리.status !== 'ERROR';
-  /* 기준값(차량가액)이 없어서 못 세는 것이면 — 금액을 직접 넣기 전에 «차량가액 칸»을 먼저 준다 */
-  const 기준없음 = !!미리 && 미리.status === 'NO_BASE';
-  const 차량가로 = 기준없음 && 미리.basis === '차량가액';
-  const 원 = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
   return (
     /* ★`action=` 로 넘기면 React 19 가 제출 뒤 칸을 비운다 — 틀려서 되돌아와도 쓴 것이 남게 손으로 넘긴다 */
@@ -92,7 +69,7 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
         'sourceProductId', 'sourceProductVersion', 'sourceOfferId', 'sourceSnapshotId'] as const).map((k) => (
         <input key={k} type="hidden" name={k} value={defaults[k] ?? ''} />
       ))}
-      {(원장차량가 || !차량가로) && <input type="hidden" name="price" value={차량가} />}
+      <input type="hidden" name="price" value={defaults.price ?? ''} />
       {!choices.length && <input type="hidden" name="product" value={defaults.product ?? ''} />}
       <input type="hidden" name="channelCode" value={채널코드} />
       <input type="hidden" name="agentCode" value={담당코드} />
@@ -147,25 +124,12 @@ export function BoardIntakeForm({ defaults, options, choices, cancelHref, fee, c
           </select>
         </label>
         <details className="form-disclosure"><summary>메모 <small>(선택)</small></summary><label>메모<textarea name="note" rows={2} placeholder="필요한 내용만 입력하세요" /></label></details>
-        {차량가로 && !원장차량가 && (
-          <label>차량가액 <small className="pb-hint">수수료 산출 근거 — ERP5 에 없어 사람이 넣습니다</small>
-            <input name="price" value={차량가} inputMode="numeric" required placeholder="예: 32,000,000"
-              onChange={(e) => set차량가(e.target.value)} /></label>
-        )}
         <div className="pb-fee" aria-live="polite">
           <span>수수료</span>
-          {!미리 ? <b className="muted">{choices.length ? '상품구분을 고르면 나옵니다' : '—'}</b>
-            : 미리.status === 'AUTO' ? <b>청구 {원(미리.claim)} · 지급 {원(미리.pay)}<small className="pb-basis">기준 {미리.basis}</small></b>
-              : 미리.status === 'ERROR' ? <b className="muted">수수료표를 못 읽음 — 저장 뒤 접수 화면에서 확인</b>
-                : <b className="warn">직접 넣어야 함 — {미리.why}</b>}
+          {!미리 ? <b className="muted">미확정</b>
+            : 미리.status === 'READ' ? <b>청구 {dataFeeLabel(미리.supplierBillingFee)} · 지급 {dataFeeLabel(미리.channelPayoutFee)}</b>
+              : <b className="warn">{미리.why}</b>}
         </div>
-        {직접 && (
-          <>
-            <label>청구 수수료<input name="feeClaim" inputMode="numeric" required placeholder="원" /></label>
-            <label>지급 수수료<input name="feePay" inputMode="numeric" required placeholder="원" /></label>
-            <label>수수료 사유<input name="feeReason" required placeholder="어떻게 정했는지" /></label>
-          </>
-        )}
         {state.errors.length > 0 && (
           <ul className="pb-errs" role="alert">{state.errors.map((m) => <li key={m}>{m}</li>)}</ul>
         )}

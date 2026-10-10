@@ -1,3 +1,4 @@
+import { dataFeeLabel } from '../../domain/settlement/fee';
 import { randomUUID } from 'node:crypto';
 import { productById } from '../../server/freepass-data';
 import { today } from '../../server/erp5';
@@ -40,14 +41,11 @@ export async function NewIntakePanel({ rows, productId, offerId, back, hideHeade
     sourceOfferId: offer?.id ?? '',
     sourceSnapshotId: product?.sourceSnapshotId ?? '',
   };
-  /*
-   * ★수수료 — 기간이 정해지면 «접수할 때» 이미 안다(대표 2026-09-18 「이미 기간에 따라서 수수료는 접수할 때도 알아야 하고」).
-   *   기능 쪽 셈(feeOf · FreePass Data 수수료표) 그대로 — 저장할 때 원장에 서는 값과 같은 입력(공급사 · 상품구분 · 모델 · 기간 · 대여료 · 차량가)으로 센다.
-   */
-  const 수수료 = product && offer && 짝?.certain
+  // 선택 Offer/기간의 저장 수수료만 읽는다.
+  const 수수료 = product && offer
     ? await previewFeeAction((() => {
       const f = new FormData();
-      for (const [k, v] of Object.entries({ supplier: defaults.supplier, product: defaults.product ?? '', model: defaults.model, term: defaults.term, rent: defaults.rent, price: defaults.price ?? '' })) f.set(k, v);
+      for (const [k, v] of Object.entries({ sourceProductId: defaults.sourceProductId ?? '', sourceOfferId: defaults.sourceOfferId ?? '' })) f.set(k, v);
       return f;
     })())
     : null;
@@ -67,15 +65,13 @@ export async function NewIntakePanel({ rows, productId, offerId, back, hideHeade
                 <div><dt>월 대여료</dt><dd>{won(offer.monthlyRent)}원</dd></div>
                 <div><dt>보증금</dt><dd>{offer.deposit === undefined ? '미확인' : `${won(offer.deposit)}원`}</dd></div>
                 <div><dt>수수료</dt><dd>{
-                  고를말.length ? <span className="dz-muted">상품구분을 고르면 섭니다</span>
-                  : !수수료 ? '—'
-                    : 수수료.status === 'AUTO' ? <>청구 <b>{won(수수료.claim)}</b> · 지급 <b>{won(수수료.pay)}</b></>
-                      : <span className="dz-warn-txt">직접 넣어야 함</span>
+                  !수수료 ? '—'
+                    : 수수료.status === 'READ' ? <>청구 <b>{dataFeeLabel(수수료.supplierBillingFee)}</b> · 지급 <b>{dataFeeLabel(수수료.channelPayoutFee)}</b></>
+                      : <span className="dz-warn-txt">미확정</span>
                 }</dd></div>
               </dl>
             : <Notice tone="warn">요금을 못 찾았습니다 — 가운데 상세에서 기간을 다시 골라 주세요.</Notice>}
-          {!고를말.length && 수수료?.status === 'AUTO' && <small className="dz-picked-note">FreePass Data 수수료표 · 기준 {수수료.basis}{수수료.basis === '차량가액' && product.consumerPrice !== undefined ? ` ${won(product.consumerPrice)}원` : ''} · 다르게 하려면 「더 넣기」에서 고침(사유)</small>}
-          {!고를말.length && 수수료 && 수수료.status !== 'AUTO' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
+          {!고를말.length && 수수료 && 수수료.status === 'ERROR' && <small className="dz-picked-note dz-warn-txt">{수수료.why}</small>}
         </div>
       ) : selectedProductPath
         ? <Notice tone="warn">선택한 상품을 더 이상 찾을 수 없습니다 — 상품 목록에서 다시 골라 주세요.</Notice>

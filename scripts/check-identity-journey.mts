@@ -37,7 +37,8 @@ const app = getApps().find((a) => a.name === 'sim')
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const EMAIL = 'EMAIL_REDACTED';
+// 에뮬레이터 안에서만 쓰는 가짜 주소 — 올바른 이메일 꼴이어야 한다(예약 도메인 .test). 식별 정보 제거 때 문자열로 바뀌어 CI 가 깨졌던 자리
+const EMAIL = 'journey@example.test';
 
 /** 에뮬레이터 REST 로 비밀번호 로그인 → ID 토큰. 브라우저가 하는 일과 같다 */
 async function idTokenOf(email: string, password: string): Promise<string> {

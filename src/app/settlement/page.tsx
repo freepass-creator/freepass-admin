@@ -61,8 +61,6 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
   const 공급사축완료 = tab === 'claim' && groups.every((g) => ledgerGroupAttention(g) === 'done');
   const 다음지급거래처 = 공급사축완료 ? nextActionableLedgerParty(지급묶음, '') : null;
   const t = ledgerTotals(groups);
-  const publishedRead = read.published;
-  const published = publishedRead.status === 'READY' ? publishedRead.months[month] : null;
   const who = tab === 'claim' ? '공급사' : '영업채널';
   const 미정 = months.includes(NO_MONTH) ? (tab === 'claim' ? claimLedger(rows, NO_MONTH, cb) : payLedger(rows, NO_MONTH, cb)) : [];
   const 미정수 = 미정.reduce((n, g) => n + g.lines.length, 0);
@@ -151,9 +149,7 @@ async function SettlementBoards({ searchParams }: { searchParams: Promise<Record
               </Notice>
             )}
             <PanelHeader title={tab === 'claim' ? '청구목록' : '지급목록'} count={`${groups.length}곳 · ${t.rows}줄`} />
-            <p role="status">{published
-              ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won(published.claimAmount)} · 지급 ${won(published.payAmount)} · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
-              : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>
+            <Link href={`/settlement/table?${new URLSearchParams({ month })}`}>공급사별 정산표 · CSV</Link>
             <form className="dz-find" action="/settlement">
               <input type="hidden" name="tab" value={tab} /><input type="hidden" name="month" value={month} /><input type="hidden" name="gs" value={gs} />
               <div className="searchbox dz-searchbox">

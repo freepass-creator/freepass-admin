@@ -10,9 +10,9 @@
  *   발행은 기능 쪽 IssueForm 그대로 — ⚠ 운영 원장에 쓴다(쓰기 꺼짐 · 가상 데이터에서는 저장되지 않는다).
  */
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { settlements, today } from '../../server/erp5';
 import { readSettlementScreen } from '../../server/freepass-data';
-import type { PublishedReceiptRead } from '../../adapters/freepass-data/admin-workflow-firestore';
 import type { SettlementRow } from '../../domain/settlement/types';
 import {
   claimLedger, ledgerGroupAttention, ledgerMonths, locateSettlementFocus, nextActionableLedgerParty, NO_MONTH, payLedger,
@@ -48,8 +48,7 @@ function SignalIcon({ signal }: { signal: SettlementSignal }) {
 
 export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base?: string }) {
   let rows: SettlementRow[]; let cb: Clawback[];
-  let publishedRead: PublishedReceiptRead;
-  try { const [read, c] = await Promise.all([readSettlementScreen(), settlements.clawbacks()]); rows = read.all.map((x) => x.row); cb = c; publishedRead = read.published; }
+  try { const [read, c] = await Promise.all([readSettlementScreen(), settlements.clawbacks()]); rows = read.all.map((x) => x.row); cb = c; }
   catch {
     return (
       <Screen name="settlement-workspace">
@@ -75,7 +74,6 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
   const 달들 = months.filter((m) => m !== NO_MONTH);
   const month = focus?.month || sp(q.month) || 달들.find((m) => m <= nowMonth) || 달들[0] || NO_MONTH;
   const claimG = claimLedger(rows, month, cb), payG = payLedger(rows, month, cb);
-  const published = publishedRead.status === 'READY' ? publishedRead.months[month] : null;
 
   /*
    * 목록 판 규격 — 검색창(+필터 버튼) → 퀵 필터 → 목록, 예외 없이(대표 2026-09-24 「검색창 옆에 또
@@ -161,9 +159,7 @@ export async function SettlementScreen({ q, base = '/settlement' }: { q: Q; base
           { key: 'all', label: `전체 ${claimCount('all')}`, href: hrefWith(base, q, { cgs: null }), on: cgs === 'all' },
           { key: 'todo', label: `미처리 ${claimCount('todo')}`, href: hrefWith(base, q, { cgs: 'todo' }), on: cgs === 'todo' },
         ]} />
-        <PanelBody><p role="status">{published
-          ? `${month} 게시된 접수원장 기록액 · ${published.count}건 · 청구 ${won0(published.claimAmount)}원 · 지급 ${won0(published.payAmount)}원 · 공급사 확정 별도 확인 · 보류 ${published.heldCount}건 · 원본 최신성 미검증`
-          : `월별 청구 확인 HOLD · ${publishedRead.status === 'HOLD' ? publishedRead.reason : '해당 월 게시 합계 없음'}`}</p>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
+        <PanelBody><Link href={`/settlement/table?${new URLSearchParams({ month })}`}>공급사별 정산표 · CSV</Link>{list('청구', shownClaim, '청구서', 'claim')}</PanelBody>
       </Panel>
 
       <Panel kind="detail">

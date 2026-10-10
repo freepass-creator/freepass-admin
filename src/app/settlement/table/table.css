@@ -1,0 +1,30 @@
+/* 기존 .pb 판과 입력·버튼 토큰을 쓰는 공급사 집계표. */
+body:has(.pb.settlement-table) { min-width:0 !important; }
+.pb.settlement-table .web-panel { grid-column:1 / -1; min-width:0; overflow:auto; }
+.pb.settlement-table .settlement-summary,
+.pb.settlement-table .settlement-controls,
+.pb.settlement-table .settlement-reasons { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space); }
+.pb.settlement-table .settlement-controls { margin:var(--space) 0; }
+.pb.settlement-table .settlement-controls select { width:auto; max-width:100%; }
+.pb.settlement-table .small-btn { display:inline-flex; align-items:center; justify-content:center; }
+.pb.settlement-table .settlement-note { color:var(--muted); font-size:var(--support); margin:var(--space) 0; }
+.pb.settlement-table .settlement-reasons { list-style:none; padding:0; color:var(--warn); font-size:var(--support); }
+.pb.settlement-table .settlement-grid { width:100%; border-collapse:collapse; table-layout:fixed; font-size:var(--body); }
+.pb.settlement-table .settlement-grid th,
+.pb.settlement-table .settlement-grid td { padding:var(--space) var(--gap); border-bottom:1px solid var(--line); text-align:right; overflow-wrap:anywhere; }
+.pb.settlement-table .settlement-grid th:first-child { text-align:left; }
+.pb.settlement-table .settlement-grid thead { color:var(--sub); background:var(--box); }
+.pb.settlement-table .settlement-total { font-weight:600; background:var(--box); }
+@media (max-width:900px) {
+  .pb.settlement-table .web-panel-head { display:flex; flex-wrap:wrap; }
+  .pb.settlement-table .web-workspace { display:block; }
+  .pb.settlement-table .web-panel { display:block !important; }
+  .pb.settlement-table .settlement-grid,
+  .pb.settlement-table .settlement-grid tbody { display:block; }
+  .pb.settlement-table .settlement-grid thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .pb.settlement-table .settlement-grid tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:var(--space) 0; border-bottom:1px solid var(--line); }
+  .pb.settlement-table .settlement-grid th { grid-column:1 / -1; }
+  .pb.settlement-table .settlement-grid th,
+  .pb.settlement-table .settlement-grid td { border:0; text-align:left; }
+  .pb.settlement-table .settlement-grid td::before { content:attr(data-label); display:block; color:var(--muted); font-size:var(--meta); }
+}

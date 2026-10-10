@@ -9,6 +9,7 @@ const coreFiles = [
   'src/app/intake/NewIntakePanel.tsx',
   'src/app/intake/IntakeDetailPanel.tsx',
   'src/app/settlement/page.tsx',
+  'src/app/settlement/table/page.tsx',
   'src/app/esign/page.tsx',
   'src/app/_design/DetailTabs.tsx',
   'src/app/_design/OfferPicker.tsx',

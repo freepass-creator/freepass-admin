@@ -21,7 +21,7 @@
 - 변경: `scripts/f04-ssot.mts` 에 `--auth sa|gws`. 안 주면 키 파일이 있으면 sa, 없으면 gws. gws 는 `spreadsheets.get`/`values.get`(UNFORMATTED_VALUE) 를 실행 파일로 직접 불러 JSON 인자를 shell 따옴표로 깨뜨리지 않는다(GWS_BIN 또는 npm 전역 gws.ps1 이 가리키는 gws.exe). 읽기만 한다.
 - 검증: `npx tsx scripts/f04-ssot.mts --auth gws` → 탭 33 · 접수 485 = 실은 483 + 보류 2(균형 ✓), 스냅샷 생성. 그 스냅샷으로 `generate-monthly-settlement-pdf.mts --month 2026-09` (예시금융사) READY — 1건, 공급가 1,839,250 · 부가세 183,925 · 합계 2,023,175. 이 PC 는 번들 Chromium 이 없어 `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH` 로 설치된 Chrome 을 지정해야 렌더된다. 산출물은 저장소 밖에 두었고 발송·발행 없음. tsc PASS, F04·정산서 37 tests PASS.
 - 남음: 정산서 금액은 지금도 접수 AE `판매수수료`(row.claim)를 쓴다 — U `청구액`을 정산 금액으로 볼지(금액 의미 결정)는 대표 확인 대기. 키 파일 경로(sa)는 그대로 둔다.
-- next_start_here: 정산서 발행 전 `npx tsx scripts/f04-ssot.mts --auth gws` → `SETTLEMENT_CHROMIUM_EXECUTABLE_PATH=<chrome.exe> npx tsx scripts/generate-monthly-settlement-pdf.mts --month YYYY-MM --out <저장소 밖>`.
+- 현재 재개점(2026-10-10): Admin 월 PDF 생성 경로와 CLI는 제거됐다. 과거 생성·검증 기록은 이력이며 재실행 지침이 아니다. 정산서 생성 소유권은 `docs/FREEPASS-DATA-SETTLEMENT-DOCUMENT-MIGRATION.md`를 따른다.
 
 ## 0-INTAKE-DESK. 2026-10-03 — 접수 관리(/ledger): 접수하고 목록 보는 ERP 화면
 

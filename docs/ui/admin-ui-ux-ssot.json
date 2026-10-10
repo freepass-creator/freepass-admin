@@ -1676,18 +1676,6 @@
     ],
     "rule": "List cards never shift position on hover or selection."
   },
-  "settlementMonthlyDocuments": {
-    "decision": "USER_DIRECT_2026_10_07",
-    "route": "/settlement",
-    "placement": "existing receipt summary inside PanelBody; SearchBar and three-panel lineage preserved",
-    "label": "이 달 청구·지급 PDF 생성",
-    "input": "selected month; Firestore published receipts; existing private party/issuer configuration",
-    "result": "both axes; existing draft Drive IDs; readback-verified links",
-    "pending": "disabled button and aria-busy",
-    "failure": "visible error; partial artifacts labelled overall verification incomplete",
-    "authority": "does not issue/reissue invoices or record cash/payments",
-    "basisEvidence": "existing amount-detail disclosure and original-template appendix; recorded AD/AI plus unique fee rule and exact amount equality; source BT preserved; derived displayReceiptBasis is separate"
-  },
   "settlementListSignals": {
     "source": "shared presentation signal over ledger/lifecycle facts",
     "priority": [

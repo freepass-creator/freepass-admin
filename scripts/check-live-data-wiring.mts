@@ -24,6 +24,8 @@ const settlementRepo=await read('src/adapters/erp5/settlement-repository.ts');
 const firestoreTransport=await read('src/adapters/erp5/firestore.ts');
 const workflowTransport=await read('src/adapters/freepass-data/admin-workflow-firestore.ts');
 const intakeActions=await read('src/app/intake/actions.ts');
+const settlementForms=await read('src/app/settlement/LifeForms.tsx');
+const settlementScreen=await read('src/app/_erp/SettlementScreen.tsx');
 const status=await read('src/server/data-status.ts');
 
 const must=(ok:boolean,msg:string)=>{if(!ok)errors.push(msg)};
@@ -41,6 +43,8 @@ must(/readSettlementScreen\(\)/.test(settlement) && /from ['"]\.\.\/\.\.\/server
 must(/readSettlementScreen\s*=\s*cache\(\(\)\s*=>\s*settlements\.listWithPublishedReceipts\(\)\)/.test(server), 'settlement screen snapshot must share one repository read per server render');
 must(/async listWithPublishedReceipts\(\)/.test(settlementRepo) && /collection\(ROWS\)\.limit\(5000\)\.get\(\)/.test(settlementRepo)
   && /if \(snap\.size >= 5000\) throw/.test(settlementRepo), 'settlement screen snapshot must use the operational repository and reject partial ledger lists');
+must(!/MonthlyDocumentsForm|generateMonthlyDocumentsAction|generateMonthlyReceiptDocuments|ADMIN_RECEIPT_DOCUMENTS_ENABLED/.test(settlementForms + settlementScreen + settlement + intakeActions + server), 'Admin must not expose the retired monthly PDF generation path');
+must(!/ReceiptDocument|receiptDocument|pdf_lock_|pdf_\$\{/.test(settlementRepo), 'settlement repository must not own PDF run metadata or writes');
 must(/settlements\.clawbacks\(\)/.test(settlement),'settlement route must read clawbacks');
 must(/settlements\.invoices\(/.test(settlement),'settlement route must read issued invoices');
 must(/contracts\.list\(\)/.test(esign),'esign route must read contracts.list()');

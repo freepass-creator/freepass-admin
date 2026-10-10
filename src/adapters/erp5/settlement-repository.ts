@@ -19,7 +19,6 @@ import type { DocumentReference, Transaction } from 'firebase-admin/firestore';
 import { numOrZero as N, strOf as S } from './atom';
 import { readPublishedReceipts } from '../freepass-data/admin-workflow-firestore';
 import { planContractPayment, planContractPaymentDisposition, type ContractPaymentDispositionFact, type ContractPaymentDispositionInput, type ContractPaymentFact, type ContractPaymentInput } from '../../domain/contracts/payment';
-import { assertReceiptDocumentsEnabled } from './settlement-documents';
 
 /**
  * **정산 원장 문 뒤 — ERP5 `settlement_rows`.**
@@ -213,43 +212,6 @@ export class Erp5SettlementRepository {
       return {row:{...row,settleNote:[row.settleNote,`공급사: ${basis.claim}\n영업자: ${basis.pay}`].filter(Boolean).join('\n')},raw:{...raw,displayReceiptBasis:basis},warnings};
     });
     return { all, published, digest };
-  }
-
-  /** PDF projection metadata in the existing rules resource; never changes invoice/row/cash facts. */
-  async receiptDocumentPolicy(){ const doc=await erp5().collection('settlement_rules').doc('f04-confirmed-receipt-sync').get();return doc.data() as {partyNameNormalization?:{supplierAliases?:Record<string,string>;channelAliases?:Record<string,string>}}; }
-  async receiptDocumentRun(key:string) {
-    const snap=await erp5().collection('settlement_rules').doc(`pdf_${key}`).get();
-    return snap.exists?snap.data() as ReceiptDocumentRun:null;
-  }
-  async beginReceiptDocumentRun(key:string, month:string, fileIds:string[], by:string):Promise<ReceiptDocumentRun> {
-    assertReceiptDocumentsEnabled();
-    mustWrite();
-    const db=erp5(),ref=db.collection('settlement_rules').doc(`pdf_${key}`),lockRef=db.collection('settlement_rules').doc(`pdf_lock_${month}`);
-    return db.runTransaction(async tx=>{
-      const snap=await tx.get(ref),old=snap.exists?snap.data() as ReceiptDocumentRun:null;
-      if(old?.status==='READY') return old;
-      const lock=await tx.get(lockRef);
-      if(lock.exists&&Number(lock.data()?.leaseUntil)>Date.now())throw new Error('이 달 문서 생성이 이미 진행 중입니다');
-      if(old && old.leaseUntil>Date.now()) throw new Error('같은 정산서가 생성 중입니다 — 완료 후 다시 확인하세요');
-      const run:ReceiptDocumentRun={key,month,status:'RUNNING',fileIds:old?.fileIds??fileIds,createdAt:old?.createdAt??Date.now(),leaseUntil:Date.now()+600000,actor:by,attempt:Date.now().toString()+Math.random().toString(36).slice(2),files:old?.files??[]};
-      if(run.fileIds.length!==fileIds.length) throw new Error('문서 실행 파일 개수가 달라졌습니다');
-      tx.set(ref,run); tx.set(lockRef,{key,attempt:run.attempt,leaseUntil:run.leaseUntil}); return run;
-    });
-  }
-  async finishReceiptDocumentRun(run:ReceiptDocumentRun,files:ReceiptDocumentFile[],complete:boolean,expectedLedgerDigest?:string){
-    assertReceiptDocumentsEnabled();
-    mustWrite(); const db=erp5(),ref=db.collection('settlement_rules').doc(`pdf_${run.key}`),lockRef=db.collection('settlement_rules').doc(`pdf_lock_${run.month}`);
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(ref),current=snap.data() as ReceiptDocumentRun;
-      if(complete){
-        const [rows,rule]=await Promise.all([tx.get(db.collection(ROWS).limit(5000)),tx.get(db.collection('settlement_rules').doc('f04-confirmed-receipt-sync'))]);
-        if(!expectedLedgerDigest||rows.size>=5000||(rows as typeof rows & {digest?:string}).digest!==expectedLedgerDigest||rule.data()?.monthlySummaryLedgerDigest!==expectedLedgerDigest)throw new Error('최종 저장 직전 원장이 바뀌었습니다');
-      }
-      const lock=await tx.get(lockRef);
-      if(current.attempt!==run.attempt||current.status!=='RUNNING'||lock.data()?.attempt!==run.attempt||Number(lock.data()?.leaseUntil)<Date.now()) throw new Error('문서 실행 담당이 변경됐습니다');
-      tx.set(ref,{...current,files,status:complete?'READY':'RETRY',leaseUntil:0,updatedAt:Date.now()});
-      tx.set(lockRef,{key:run.key,attempt:run.attempt,leaseUntil:0});
-    });
   }
 
   /** 환수 — ERP5 `settlement_clawbacks` (23건 실측). ★환수는 접수 줄의 체크가 아니라 «반대 부호의 한 줄» 이다 */
@@ -788,6 +750,3 @@ export class Erp5SettlementRepository {
       .sort((a, b) => b.at - a.at);
   }
 }
-
-export type ReceiptDocumentFile={id:string;url:string;name:string;sha256:string;md5:string};
-export type ReceiptDocumentRun={key:string;month:string;status:'RUNNING'|'READY'|'RETRY';fileIds:string[];createdAt:number;leaseUntil:number;actor:string;attempt:string;files:ReceiptDocumentFile[]};

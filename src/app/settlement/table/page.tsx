@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { readSettlementScreen } from '../../../server/freepass-data';
+import { readSettlementTable } from '../../../server/freepass-data';
 import { requireAdmin } from '../../../server/require-admin';
-import { settlementSummary, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS } from '../../../domain/settlement/summary';
+import { feeLinkText, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS } from '../../../domain/settlement/summary';
 import { sp, won } from '../../_fn/fmt';
 import '../../products/board.css';
 import './table.css';
@@ -16,8 +16,7 @@ export default async function SettlementTablePage({ searchParams }: {
   const q = await searchParams;
   let summary;
   try {
-    const read = await readSettlementScreen();
-    summary = settlementSummary(read.all.map(x => x.row), sp(q.month));
+    summary = await readSettlementTable(sp(q.month));
   } catch {
     return <div className="pb settlement-table"><div className="web-workspace"><section className="web-panel">
       <header className="web-panel-head"><h2>정산표</h2></header>
@@ -35,10 +34,15 @@ export default async function SettlementTablePage({ searchParams }: {
       <span>금액 확정 {summary.amountConfirmed}건</span>
       <span>확인 필요 {summary.needsAttention}건</span>
     </div>
-    <p className="settlement-note">금액 확정은 청구·지급 모두 기록된 건수입니다. 인도 전·보류 등 확인 필요와 중복될 수 있으며, 이유도 중복 집계합니다.</p>
+    <p className="settlement-note">금액 확정은 청구·지급 모두 기록되고 근사·알 수 없는 수수료 상태가 아닌 건수입니다. 인도 전·보류 등 확인 필요와 중복될 수 있으며, 이유도 중복 집계합니다.</p>
     {summary.reasons.length > 0 && <ul className="settlement-reasons" aria-label="확인 필요 이유">
       {summary.reasons.map(r => <li key={r.label}>{r.label} {r.count}건</li>)}
     </ul>}
+    <p className="settlement-note" role="status"><strong>가격행 검증</strong> · {feeLinkText(summary.total.feeLinks)}</p>
+    {summary.feeLinkReasons.length > 0 && <ul className="settlement-reasons" aria-label="가격행 확인 필요 이유">
+      {summary.feeLinkReasons.map(r => <li key={r.label}>{r.label} {r.count}건</li>)}
+    </ul>}
+    <p className="settlement-note">가격행 수수료를 접수 공급가와 원 단위로 비교합니다. 근사는 금액이 같아도 일치로 세지 않으며, 금액이 다르면 차이에도 셉니다. 근사 건수는 별도로 표시하며 양쪽 근사도 가격행 검증에서는 한 건입니다. 계약 조건이 다르면 비교·근사 집계에서 제외합니다. 접수에 적힌 값은 덮어쓰지 않습니다.</p>
     <form className="settlement-controls" action="/settlement/table">
       <label htmlFor="settlement-month">청구월</label>
       <select id="settlement-month" name="month" defaultValue={summary.month}>
@@ -48,7 +52,7 @@ export default async function SettlementTablePage({ searchParams }: {
       <a className="small-btn" href={`/settlement/table/csv?${query}`}>CSV 내려받기</a>
       <Link className="small-btn" href={`/settlement?${query}`}>정산 업무</Link>
     </form>
-    <p className="settlement-note">접수 원장 저장액 기준이며 인도 전·보류의 기록액도 포함합니다. 취소·정산 제외는 집계에서 제외합니다. 미확정은 합산하지 않으며, 확정분이 없으면 —로 표시합니다. 우리 몫은 양쪽 금액이 확정된 접수만 계산합니다.</p>
+    <p className="settlement-note">확정 합계는 접수 원장 저장액 기준이며 인도 전·보류의 기록액도 포함합니다. 근사로 판정된 쪽과 알 수 없는 수수료 상태는 확정 합계·우리 몫에서 제외합니다. 근사 합계는 가격행에서 받은 근사 금액만 따로 합산합니다. 취소·정산 제외는 제외하며, 알려진 금액이 없으면 —로 표시합니다. 근사 미수신은 근사 없음의 증명이 아닙니다.</p>
     <table className="settlement-grid">
       <caption className="sr-only">{summary.month} 공급사별 정산표 · 부가세 별도 공급가</caption>
       <thead><tr>{SETTLEMENT_SUMMARY_HEADERS.map(h => <th scope="col" key={h}>{h}</th>)}</tr></thead>

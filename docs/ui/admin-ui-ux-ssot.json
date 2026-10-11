@@ -3,9 +3,9 @@
   "settlementTable": {
     "route": "/settlement/table",
     "exportRoute": "/settlement/table/csv",
-    "source": "settlement_rows via readSettlementScreen",
-    "style": "shared .pb panel and tokens; seven supplier aggregate columns; two-column values on mobile",
-    "amountBasis": "stored amounts, VAT-exclusive supply; unknown is not zero",
+    "source": "settlement_rows via readSettlementTable; contract-fee-links read-only comparison",
+    "style": "shared .pb panel and tokens; twelve supplier aggregate columns including fee-link counts and separate billing/payout approximate totals and counts; two-column values on mobile",
+    "amountBasis": "stored amounts, VAT-exclusive supply; received CALCULATED_APPROX and unrecognized fee states excluded from confirmed totals and margin; approximate amounts shown separately, never matched; unknown is not zero",
     "verification": "CODED_VISUAL_QA_PENDING"
   },
   "productDetailFacts": {

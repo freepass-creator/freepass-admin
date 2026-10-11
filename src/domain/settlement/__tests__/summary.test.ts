@@ -4,7 +4,7 @@ import { toSettlementRow } from '../../../adapters/erp5/to-settlement';
 import { NO_MONTH } from '../ledgers';
 import { settlementSummary, settlementSummaryCsv, settlementSummaryRows, feeLinkText,
   CONTRACT_FEE_REASON_LABELS, SETTLEMENT_SUMMARY_HEADERS, settlementAsOfText,
-  carryoverTitle, carryoverCells } from '../summary';
+  carryoverTitle, carryoverCells, carryoverCsvCells } from '../summary';
 import { adminBlockLabel, blockOf } from '../types';
 import { readContractFeeLinks } from '../../../adapters/freepass-data/contract-fee-links';
 import { __test } from '../../../adapters/freepass-data/admin-catalog-client';
@@ -536,7 +536,15 @@ test('전월 CSV는 화면과 같은 금액·상태·합계를 출력하고 모�
   assert.deepEqual(carryoverCells(s.carryover.items[0]).slice(2, 8), [123, 121, -2, 45, 45, 0]);
   assert.ok(csv.includes('"전월(2월) 가감","2030-02","부가세 별도 공급가 · 원","기준 시각 알 수 없음"'));
   assert.ok(csv.includes('"\'=예시공급사A","\'@예시건 · 2030-02-01",123,121,-2,45,45,0'));
-  assert.ok(csv.includes('"\'+기록,""\n다음 줄"'));
+  assert.ok(csv.includes('"근거 있음"') && !csv.includes('다음 줄')); // 사유 원문은 CSV 에 싣지 않는다
   assert.ok(csv.includes('"확정",1,-2,0,0,0\r\n'));
   assert.ok(csv.includes('"후보",1,,1,,1\r\n'));
+});
+
+test('CSV 는 가감 사유 원문을 싣지 않고 근거 있음/없음만 낸다', () => {
+  const base = { id: 'x', supplier: '예시공급사A', caseLabel: '라벨', original: { claim: 1, pay: 1 }, corrected: { claim: 1, pay: 1 },
+    difference: { claim: 0, pay: 0 }, reason: '청구·지급 가감', status: '후보' as const };
+  assert.equal(carryoverCsvCells({ ...base, evidence: '고객 홍길동 010-0000-0000 수수료 조정' })[9], '근거 있음');
+  assert.equal(carryoverCsvCells({ ...base, evidence: '근거 없음' })[9], '근거 없음');
+  assert.equal(carryoverCells({ ...base, evidence: '원문' })[9], '원문');
 });

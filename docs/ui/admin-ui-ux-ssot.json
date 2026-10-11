@@ -6,6 +6,8 @@
     "source": "settlement_rows via readSettlementTable; contract-fee-links read-only comparison",
     "style": "shared .pb panel and tokens; twelve supplier aggregate columns including fee-link counts and separate billing/payout approximate totals and counts; two-column values on mobile",
     "amountBasis": "stored amounts, VAT-exclusive supply; received CALCULATED_APPROX and unrecognized fee states excluded from confirmed totals and margin; approximate amounts shown separately, never matched; unknown is not zero",
+    "carryover": "전월 청구월이 명시된 가감·미확정·정정·환수 검토 내역 11열과 후보/확정 합계 6열. 기존 표와 모바일 2열 표시 재사용. 원본과 현재 월 합계는 보존",
+    "asOf": "현재 월과 전월 후보 원본 updatedAt의 최소/최대 한국 시각. 누락은 기준 시각 알 수 없음. 화면·CSV 공통 표시",
     "verification": "CODED_VISUAL_QA_PENDING"
   },
   "productDetailFacts": {

@@ -159,6 +159,8 @@ export interface IntakeCatalogSnapshot {
 export interface SettlementRow {
   /* ── 뼈대 — 이게 없으면 줄이 성립하지 않는다 ─────────────── */
   id: string;                    // ERP5 `code` — stl_16tsb6
+  /** 원본 updatedAt을 정규화한 갱신 시각. 조회 시각이나 최초 이관 시각으로 대체하지 않는다. */
+  updatedAt?: Maybe<string>;
   plate: Maybe<string>;          // ★열쇠 ①
   receivedAt: Maybe<string>;     // ★열쇠 ②
   customer: Maybe<string>;

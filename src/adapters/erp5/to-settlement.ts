@@ -14,6 +14,18 @@ import { contractPaymentDispositionStateOf, contractPaymentStateOf } from '../..
 
 export type Erp5Row = Record<string, unknown>;
 
+/** 원본 갱신 시각은 밀리초·시간대가 있는 문자열·Firestore 시각만 읽는다. */
+function updatedAtOf(value: unknown): string | null {
+  try {
+    const ms = typeof value === 'number' ? value
+      : typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? Date.parse(value)
+      : value instanceof Date ? value.getTime()
+      : value && typeof value === 'object' && 'toMillis' in value && typeof value.toMillis === 'function' ? value.toMillis()
+      : NaN;
+    return typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+  } catch { return null; }
+}
+
 function catalogSnapshotOf(v: unknown): IntakeCatalogSnapshot | null {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const d = v as Record<string, unknown>;
@@ -123,6 +135,7 @@ export function toSettlementRow(d: Erp5Row, docId: string): { row: SettlementRow
   const hasF04Source = Object.keys(f04).length > 0;
   const row: SettlementRow = {
     id: s(d.code) ?? docId,
+    updatedAt: updatedAtOf(d.updatedAt),
     plate, receivedAt, customer: s(d.customer),
     supplier, supplierCode: s(d.supplierCode),
     channel: s(d.channel), channelCode: s(d.channelCode),

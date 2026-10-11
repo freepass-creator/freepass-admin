@@ -15,6 +15,10 @@ body:has(.pb.settlement-table) { min-width:0 !important; }
 .pb.settlement-table .settlement-grid th:first-child { text-align:left; }
 .pb.settlement-table .settlement-grid thead { color:var(--sub); background:var(--box); }
 .pb.settlement-table .settlement-total { font-weight:600; background:var(--box); }
+.pb.settlement-table .settlement-basis { margin:var(--space) 0; font-size:var(--support); overflow-wrap:anywhere; }
+.pb.settlement-table .settlement-carryover { margin-top:calc(var(--space) * 2); }
+.pb.settlement-table .settlement-carryover-grid td:nth-child(2),
+.pb.settlement-table .settlement-carryover-grid td:nth-child(n+9) { text-align:left; }
 @media (max-width:900px) {
   .pb.settlement-table .web-panel-head { display:flex; flex-wrap:wrap; }
   .pb.settlement-table .web-workspace { display:block; }

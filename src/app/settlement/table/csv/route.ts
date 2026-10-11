@@ -4,7 +4,7 @@ import { settlementSummaryCsv } from '../../../../domain/settlement/summary';
 
 export const dynamic = 'force-dynamic';
 
-/** 관리자 집계 다운로드. 공급사 공개 청구서 경로와 분리한다. */
+/** 기준 시각·전월 가감을 포함한 관리자 집계 다운로드. 화면과 같은 직렬화를 사용한다. */
 export async function GET(request: Request) {
   const headers = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
   const denied = await requireAdmin();

@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { readSettlementTable } from '../../../server/freepass-data';
 import { requireAdmin } from '../../../server/require-admin';
-import { feeLinkText, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS } from '../../../domain/settlement/summary';
+import { feeLinkText, settlementSummaryCells, SETTLEMENT_SUMMARY_HEADERS,
+  settlementAsOfText, carryoverTitle, carryoverCells, carryoverTotalCells,
+  CARRYOVER_HEADERS, CARRYOVER_TOTAL_HEADERS } from '../../../domain/settlement/summary';
 import { sp, won } from '../../_fn/fmt';
 import '../../products/board.css';
 import './table.css';
@@ -29,6 +31,7 @@ export default async function SettlementTablePage({ searchParams }: {
   const tableRows = [...summary.suppliers, summary.total];
   return <div className="pb settlement-table"><div className="web-workspace"><section className="web-panel">
     <header className="web-panel-head"><h2>정산표</h2><small>부가세 별도 공급가 · 원</small></header>
+    <p className="settlement-basis" role="status">{settlementAsOfText(summary.asOf)}</p>
     <div className="settlement-summary" role="status">
       <strong>{summary.month} · 접수 {summary.total.count}건</strong>
       <span>금액 확정 {summary.amountConfirmed}건</span>
@@ -66,6 +69,30 @@ export default async function SettlementTablePage({ searchParams }: {
       })}</tbody>
     </table>
     {summary.total.count === 0 && <p className="empty">선택한 청구월의 접수가 없습니다.</p>}
+    <section className="settlement-carryover" aria-labelledby="carryover-title">
+      <h3 id="carryover-title">{carryoverTitle(summary.carryover)}</h3>
+      <p className="settlement-note">{summary.carryover.month ?? '전월 미정'} · {settlementAsOfText(summary.asOf)}</p>
+      <p className="settlement-note">전월 저장액과 가감의 비교이며 전월 원본·확정값과 이번 달 합계를 바꾸지 않습니다. 가감 사유가 기록되고 금액을 아는 가감만 확정으로 분리합니다. 미확정·정정·환수 검토·취소·정산 제외 건은 후보입니다. 차액 모름은 합계에서 제외하고 건수만 셉니다. 모든 금액은 부가세 별도 공급가입니다.</p>
+      <table className="settlement-grid settlement-carryover-grid">
+        <caption className="sr-only">{carryoverTitle(summary.carryover)} 내역</caption>
+        <thead><tr>{CARRYOVER_HEADERS.map(h => <th scope="col" key={h}>{h}</th>)}</tr></thead>
+        <tbody>{summary.carryover.items.map((item, i) => <tr key={`${item.id}-${i}`}>
+          {carryoverCells(item).map((value, c) => c === 0
+            ? <th scope="row" key={c}>{value}</th>
+            : <td key={c} data-label={CARRYOVER_HEADERS[c]}>{value === null ? '—' : typeof value === 'number' ? won(value) : value}</td>)}
+        </tr>)}</tbody>
+      </table>
+      {summary.carryover.items.length === 0 && <p className="empty">전월 가감 후보가 없습니다.</p>}
+      <table className="settlement-grid">
+        <caption className="sr-only">전월 가감 확정·후보 합계</caption>
+        <thead><tr>{CARRYOVER_TOTAL_HEADERS.map(h => <th scope="col" key={h}>{h}</th>)}</tr></thead>
+        <tbody>{carryoverTotalCells(summary.carryover).map((cells, i) => <tr className="settlement-total" key={i}>
+          {cells.map((value, c) => c === 0
+            ? <th scope="row" key={c}>{value}</th>
+            : <td key={c} data-label={CARRYOVER_TOTAL_HEADERS[c]}>{value === null ? '—' : typeof value === 'number' ? won(value) : value}</td>)}
+        </tr>)}</tbody>
+      </table>
+    </section>
     <p className="settlement-note">내부 조회·출력용입니다. 공급사용 청구서가 아니며 원천 최신성·공급사 확인·발행 가능 여부를 보증하지 않습니다.</p>
   </section></div></div>;
 }

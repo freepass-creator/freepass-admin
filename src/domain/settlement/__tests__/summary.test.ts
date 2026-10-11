@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { toSettlementRow } from '../../../adapters/erp5/to-settlement';
 import { NO_MONTH } from '../ledgers';
 import { settlementSummary, settlementSummaryCsv, settlementSummaryRows, feeLinkText,
-  CONTRACT_FEE_REASON_LABELS, SETTLEMENT_SUMMARY_HEADERS } from '../summary';
+  CONTRACT_FEE_REASON_LABELS, SETTLEMENT_SUMMARY_HEADERS, settlementAsOfText,
+  carryoverTitle, carryoverCells } from '../summary';
 import { adminBlockLabel, blockOf } from '../types';
 import { readContractFeeLinks } from '../../../adapters/freepass-data/contract-fee-links';
 import { __test } from '../../../adapters/freepass-data/admin-catalog-client';
@@ -51,7 +52,7 @@ test('원 미만은 합산 전에 각 줄에서 버리고 확정 0은 CSV 숫자
   const s = settlementSummary([row({ claimWritten: 1.9, payWritten: 0 }), row({ claimWritten: 1.9, payWritten: 0 })], '', NOW);
   assert.equal(s.total.claim, 2);
   assert.equal(s.total.pay, 0);
-  assert.ok(settlementSummaryCsv(s).endsWith('"합계",2,2,0,0,0,2,"가격행 검증 미실행",,0,,0\r\n'));
+  assert.ok(settlementSummaryCsv(s).includes('"합계",2,2,0,0,0,2,"가격행 검증 미실행",,0,,0\r\n'));
 });
 
 test('기존 adapter가 미확정으로 분류한 미발행 0을 다시 0원으로 만들지 않는다', () => {
@@ -137,15 +138,16 @@ test('유효하지 않은 저장 청구월은 도메인의 달력 검사로 미�
   assert.ok(s.reasons.some(r => r.label === NO_MONTH));
 });
 
-test('CSV는 UTF-8 BOM·한국어 12열·합계이며 쉼표 없는 숫자와 빈 금액을 보존한다', () => {
+test('CSV는 기준 시각·한국어 공급사 12열·합계를 포함하고 숫자와 빈 금액을 보존한다', () => {
   const s = settlementSummary([row({ claimWritten: 12345, payWritten: -23 }),
     row({ supplier: '예시공급사B', claimWritten: null, payWritten: null })], '', NOW);
   const csv = settlementSummaryCsv(s);
   assert.equal(Buffer.from(csv).subarray(0, 3).toString('hex'), 'efbbbf');
-  assert.equal(csv.slice(1).split('\r\n')[0], SETTLEMENT_SUMMARY_HEADERS.map(h => `"${h}"`).join(','));
+  assert.equal(csv.slice(1).split('\r\n')[0], '"기준 시각 알 수 없음"');
+  assert.equal(csv.slice(1).split('\r\n')[1], SETTLEMENT_SUMMARY_HEADERS.map(h => `"${h}"`).join(','));
   assert.ok(csv.includes('"예시공급사A",1,12345,0,-23,0,12368,"가격행 검증 미실행",,0,,0\r\n'));
   assert.ok(csv.includes('"예시공급사B",1,,1,,1,,"가격행 검증 미실행",,0,,0\r\n'));
-  assert.ok(csv.endsWith('"합계",2,12345,1,-23,1,12368,"가격행 검증 미실행",,0,,0\r\n'));
+  assert.ok(csv.includes('"합계",2,12345,1,-23,1,12368,"가격행 검증 미실행",,0,,0\r\n'));
   assert.ok(!/example-row|차량번호|고객명|시트|청구서/.test(csv));
 });
 
@@ -191,7 +193,7 @@ test('근사 청구·지급은 확정 합계·우리 몫·일치에서 제외하
   assert.deepEqual(rows, before);
   const csv = settlementSummaryCsv(s);
   assert.ok(csv.includes('"청구할 근사 합계(공급가)","청구할 근사 건수","지급할 근사 합계(공급가)","지급할 근사 건수"'));
-  assert.ok(csv.endsWith('근사 2",130,2,3,1\r\n'));
+  assert.ok(csv.includes('근사 2",130,2,3,1\r\n'));
   assert.ok(!/confirmed|same|different|example-term|CALCULATED_APPROX/.test(csv));
 });
 
@@ -399,4 +401,142 @@ test('CSV 문자열의 쉼표·줄바꿈·따옴표 및 수식 시작문자를 �
   assert.ok(settlementSummaryCsv(s).includes('"\'=예시공급사A,""\n"'));
   s.suppliers[0].supplier = '  @예시공급사B';
   assert.ok(settlementSummaryCsv(s).includes('"\'  @예시공급사B"'));
+});
+
+test('전월 가감·미확정·정정과 환수 검토를 모으고 현재 월과 전월 원본을 보존한다', () => {
+  const rows = [row({ billMonth: '2030-03' }),
+    linkRow('가감', { claimAdjust: 12, payAdjust: -5, adjustReason: '원본 가감 사유' }),
+    linkRow('미확정', { claimWritten: null }),
+    linkRow('정정', { claimStage: '정정' }),
+    linkRow('환수', { contractTerminatedAt: 1 }), row(),
+    row({ billMonth: '2030-01', claimAdjust: 99 }),
+  ];
+  const before = structuredClone(rows);
+  const s = settlementSummary(rows, '2030-03', NOW);
+  assert.equal(s.total.count, 1);
+  assert.equal(s.total.claim, 123);
+  assert.equal(s.carryover.month, '2030-02');
+  assert.deepEqual(s.carryover.items.map(i => i.id), ['가감', '미확정', '정정', '환수']);
+  assert.deepEqual(s.carryover.items[0].original, { claim: 123, pay: 45 });
+  assert.deepEqual(s.carryover.items[0].corrected, { claim: 135, pay: 40 });
+  assert.deepEqual(s.carryover.items[0].difference, { claim: 12, pay: -5 });
+  assert.equal(s.carryover.items[0].status, '확정');
+  for (const item of s.carryover.items.slice(1)) {
+    assert.equal(item.status, '후보');
+    assert.deepEqual(item.difference, { claim: null, pay: null });
+    assert.equal(item.evidence, '근거 없음');
+  }
+  assert.deepEqual(s.carryover.confirmed, { count: 1, claim: 12, pay: -5, claimUnknown: 0, payUnknown: 0 });
+  assert.deepEqual(s.carryover.candidate, { count: 3, claim: null, pay: null, claimUnknown: 3, payUnknown: 3 });
+  assert.deepEqual(rows, before);
+});
+
+test('근거 없는 가감은 후보에만 합산하고 미확정 차액은 근거가 있어도 금액에 넣지 않는다', () => {
+  const s = settlementSummary([
+    row({ claimAdjust: 10, adjustReason: '근거 있는 가감' }),
+    row({ claimAdjust: -7, payAdjust: 4, adjustReason: '  ', note: '일반 메모를 확정 근거로 쓰지 않음' }),
+    row({ claimWritten: null, claimAdjust: 999, adjustReason: '금액은 아직 모름' }),
+  ], '2030-03', NOW);
+  assert.deepEqual(s.carryover.confirmed, { count: 1, claim: 10, pay: 0, claimUnknown: 0, payUnknown: 0 });
+  assert.deepEqual(s.carryover.candidate, { count: 2, claim: -7, pay: 4, claimUnknown: 1, payUnknown: 1 });
+  assert.equal(s.carryover.items[1].evidence, '근거 없음');
+  assert.deepEqual(s.carryover.items[2].difference, { claim: null, pay: null });
+});
+
+test('정정·환수·취소·정산제외가 겹친 가감은 근거가 있어도 후보로 남긴다', () => {
+  const states = [{ payStage: '정정' }, { contractTerminatedAt: 1 }, { cancelled: true },
+    { contractCancelledAt: 1 }, { settleExclude: true }];
+  const s = settlementSummary(states.map(state => row({ claimAdjust: 10, adjustReason: '기록된 사유', ...state })), '2030-03', NOW);
+  assert.equal(s.carryover.confirmed.count, 0);
+  assert.equal(s.carryover.candidate.count, states.length);
+  assert.equal(s.carryover.candidate.claim, states.length * 10);
+});
+
+test('환수 없음이 확정된 해지는 다른 후보 조건이 없으면 전월 가감에서 제외한다', () => {
+  const s = settlementSummary([row({ contractTerminatedAt: 1, contractClawbackReviewDecision: 'NOT_REQUIRED',
+    contractClawbackReviewedAt: 2, contractClawbackReviewReason: '환수 없음',
+    contractClawbackReviewOperationId: 'example-operation' })], '2030-03', NOW);
+  assert.equal(s.carryover.items.length, 0);
+});
+
+test('전월은 연도 경계를 넘으며 미정 청구월과 예정월을 임의로 전월에 넣지 않는다', () => {
+  const s = settlementSummary([row({ billMonth: '2029-12', payWritten: null }),
+    row({ billMonth: '', deliveredAt: '2029-12-01', payWritten: null }),
+    row({ billMonth: '2029-11', payWritten: null })], '2030-01', NOW);
+  assert.equal(s.carryover.month, '2029-12');
+  assert.equal(s.carryover.items.length, 1);
+  assert.equal(carryoverTitle(s.carryover), '전월(12월) 가감');
+  for (const month of [NO_MONTH, '2030-13', ' 2030-03 ', '0001-01']) {
+    const empty = settlementSummary([row({ payWritten: null })], month, NOW);
+    assert.equal(empty.carryover.month, null);
+    assert.deepEqual(empty.carryover.items, []);
+  }
+});
+
+test('전월 금액도 기존 공급가 환산과 원 단위 절사를 쓰고 요율·분납을 다시 계산하지 않는다', () => {
+  const s = settlementSummary([
+    row({ claimWritten: 110.9, payWritten: 55.9, claimAdjust: 11.9, payAdjust: -11.9,
+      vatIncluded: true, settleRatio: 0, billHold: true, claimIncentive: 999, payIncentive: 999,
+      payKind: '2회분납', paidRounds: 0, adjustReason: '가감 기록' }),
+    row({ claimAdjust: 0.9, payAdjust: -0.9 }),
+  ], '2030-03', NOW);
+  assert.deepEqual(s.carryover.items[0].original, { claim: 100, pay: 50 });
+  assert.deepEqual(s.carryover.items[0].corrected, { claim: 110, pay: 40 });
+  assert.deepEqual(s.carryover.items[0].difference, { claim: 10, pay: -10 });
+  assert.deepEqual(s.carryover.items[1].difference, { claim: 0, pay: 0 });
+  assert.equal(Object.is(s.carryover.items[1].difference.pay, -0), false);
+});
+
+test('비정상 저장금액·가감은 알려진 차액이나 확정 합계로 승격하지 않는다', () => {
+  const r = row({ claimAdjust: 10, adjustReason: '기록' });
+  r.money.pay = Infinity;
+  const invalidAdjustment = row({ claimAdjust: 10, adjustReason: '기록' });
+  invalidAdjustment.money.payAdjust = NaN;
+  const s = settlementSummary([r, invalidAdjustment], '2030-03', NOW);
+  assert.equal(s.carryover.confirmed.count, 0);
+  assert.deepEqual(s.carryover.items[0].difference, { claim: null, pay: null });
+  assert.equal(s.carryover.items[1].difference.pay, null);
+});
+
+test('기준 시각은 현재 월과 전월 후보 원본 갱신 시각의 최솟값·최댓값이며 누락을 숨기지 않는다', () => {
+  const early = '2030-02-01T01:00:00.000Z';
+  const late = '2030-03-01T02:00:00.000Z';
+  const s = settlementSummary([
+    row({ billMonth: '2030-03', updatedAt: Date.parse(late) }),
+    row({ claimAdjust: 1, updatedAt: early }), row({ claimAdjust: 2 }),
+    row({ billMonth: '2030-01', claimAdjust: 1, updatedAt: '2030-01-01T00:00:00Z' }),
+    row({ updatedAt: '2030-04-01T00:00:00Z' }),
+  ], '2030-03', NOW);
+  assert.deepEqual(s.asOf, { earliest: early, latest: late, missing: 1 });
+  assert.match(settlementAsOfText(s.asOf), /한국 시각 · 원본 갱신 시각/);
+  assert.match(settlementAsOfText(s.asOf), /기준 시각 알 수 없음 1건/);
+});
+
+test('원본 시각이 없거나 잘못되면 조회·인도·최초 이관 시각으로 대신하지 않는다', () => {
+  const rows = [row({ updatedAt: '잘못된 시각' }), row({ updatedAt: '2030-02-01T09:00:00' }),
+    row({ _f04: { at: '2030-02-01T00:00:00Z' } }), row({ updatedAt: Infinity })];
+  const s = settlementSummary(rows, '2030-02', NOW);
+  assert.deepEqual(s.asOf, { earliest: null, latest: null, missing: 4 });
+  assert.equal(settlementAsOfText(s.asOf), '기준 시각 알 수 없음');
+  assert.equal(settlementAsOfText(settlementSummary([], '2030-03', NOW).asOf), '기준 시각 알 수 없음');
+});
+
+test('기존 원본 갱신 시각의 밀리초·시간대 문자열·Firestore 시각을 같은 시각으로 읽는다', () => {
+  const iso = '2030-02-01T00:00:00.000Z';
+  for (const updatedAt of [Date.parse(iso), '2030-02-01T09:00:00+09:00', new Date(iso), { toMillis: () => Date.parse(iso) }]) {
+    assert.equal(row({ updatedAt }).updatedAt, iso);
+  }
+  assert.equal(row({ updatedAt: { toMillis: () => { throw new Error('읽기 실패'); } } }).updatedAt, null);
+});
+
+test('전월 CSV는 화면과 같은 금액·상태·합계를 출력하고 모든 문자열 수식 주입을 막는다', () => {
+  const s = settlementSummary([row({ supplier: '=예시공급사A', plate: '@예시건', receivedAt: '2030-02-01',
+    claimAdjust: -2, adjustReason: '+기록,"\n다음 줄' }), row({ payWritten: null })], '2030-03', NOW);
+  const csv = settlementSummaryCsv(s);
+  assert.deepEqual(carryoverCells(s.carryover.items[0]).slice(2, 8), [123, 121, -2, 45, 45, 0]);
+  assert.ok(csv.includes('"전월(2월) 가감","2030-02","부가세 별도 공급가 · 원","기준 시각 알 수 없음"'));
+  assert.ok(csv.includes('"\'=예시공급사A","\'@예시건 · 2030-02-01",123,121,-2,45,45,0'));
+  assert.ok(csv.includes('"\'+기록,""\n다음 줄"'));
+  assert.ok(csv.includes('"확정",1,-2,0,0,0\r\n'));
+  assert.ok(csv.includes('"후보",1,,1,,1\r\n'));
 });

@@ -11,7 +11,7 @@ export const ContractFeeLinkItemSchema = z.object({
   deposit: z.number().finite().nonnegative().optional(),
 });
 const LinkedFee = z.object({
-  status: z.enum(['CONFIRMED', 'UNCONFIRMED']), state: z.string(),
+  status: z.string(), state: z.string(),
   amount: z.object({ amount: z.number().finite() }).nullable(),
 });
 const ContractFeeLinksResponse = z.object({

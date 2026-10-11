@@ -620,3 +620,16 @@ Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee
 - 남음: 지정 tsx 실행 경로 및 전체 시험은 환경 복구 후 재실행 필요. 실제 브라우저 Visual QA는 미실행이며 UI SSOT의 PENDING을 유지한다. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE, 통과로 세지 않았다. 사용자 지시에 따라 실제 API 호출 시험은 하지 않는다.
 - 임시로 남긴 제품 코드/자리표시 없음. 저장소 밖 `%TEMP%/fa-link-verification`에 시험 컴파일 JS 20개가 남았다. 해당 폴더로 범위를 제한한 삭제 명령이 자동 승인 검토에서 `blocked by policy`로 거부됐으며 상세 사유는 제공되지 않았다. 삭제 조건: 정상 실행 권한을 가진 후속 작업에서 이 시험 출력 폴더임을 확인한 뒤 정리. 누더기 검사(이번 변경 범위): 새 중복·남은 옛것 0.
 - next_start_here: 위 13개 파일 diff와 가짜 클라이언트 시험을 확인한다. 정상 tsx 환경에서 지정 시험/UI 검사/전체 시험을 재실행하고, 가상 데이터로 데스크톱·모바일 화면을 확인한다. 이번 오더에서는 계속 커밋·push하지 않는다.
+
+## 2026-10-11 정산표 근사 수수료 분리 — 파일 변경만
+
+- 목적/대상 revision: `11f02760bc2836ecbade2e98bb735a14ee615c29`, 사용자 지정 작업선 `work/freepass-admin/settlement-link-approx-20261011`. academy:start READY. 기존 수신 파서·summary 집계·화면/CSV 투영·시험을 확장했으며 새 자산 없음. 커밋·push·운영 쓰기 없음.
+- 데이터 근거: 지정 Data 작업 트리에 세 파일이 없어 로컬 `origin/main`의 고정 revision `10bc7e83a54136f44a6a35bc0158ecc15c0bdcac`를 `git show`로 읽었다. Data 파일·refs는 수정하지 않았고 원격 최신성·실서비스 응답은 검증하지 않았다.
+- 실제 근사 경로: `src/application/period-fee-ledger-plan.ts`의 `rows[].supplierBillingFee.state` / `rows[].channelPayoutFee.state`에 `CALCULATED_APPROX`, 행에 `vehicleValueEvidence{grade,source,amount,differenceAmount?}`, `summary.approxCount`에 청구·지급별 건수가 있다. 저장 경로 선언은 `period_fee_ledger`와 `period_fee_snapshot_runs`다.
+- 어드민 수신 경로: `readSettlementTable → readContractFeeLinks → POST /v1/consumers/freepass-admin-catalog/contract-fee-links → results[].fees`. 해당 계약·스키마·resolver는 아직 `Offer.internalEconomicsTerms → toInternalFeeLookup`만 읽으며 근사 원장을 연결하지 않는다. 응답의 수수료 status는 CONFIRMED/UNCONFIRMED, state는 KNOWN/ZERO/UNKNOWN/NOT_APPLICABLE다. 별도 원장 조회나 vehicleValueEvidence/approxCount 응답 필드를 추측해 추가하지 않았다.
+- 근사(CALCULATED_APPROX)는 확정이 아니라 별도로 표기하고 일치로 세지 않는다.
+- 변경: 기존 수수료 state로 근사가 수신되는 경우에만 청구·지급 각각 근사 합계·근사 건수를 화면/CSV 동일 이름으로 표시한다. 해당 쪽 저장액은 확정 합계·우리 몫·금액 확정 건수에서 제외하되 접수 원문은 수정하지 않는다. 동일 금액의 근사는 일치가 아니며 실제 차이만 차이 건수에도 센다. 양쪽 근사는 가격행 검증에서 한 건이다. 조건 불일치의 참고 금액은 비교·근사 집계에서 제외한다. 알 수 없는 수수료 status/state는 배치를 깨지 않고 미확정으로 취급한다.
+- 검증: `npx tsc --noEmit` PASS. 지정 `npx tsx --test` 두 파일과 `npx tsx scripts/check-ui-ssot.mts`는 실행기 초기화의 `uv_os_get_passwd ENOMEM`으로 실패했다. 같은 시험 원본을 TypeScript transpileModule로 메모리에서 변환하여 Node 시험 실행: 57/57 PASS(이번 추가 5), 실패 0. 동일 UI 검사 원본은 `node --experimental-strip-types scripts/check-ui-ssot.mts`로 PASS(화면 10, 내부 guard 15). `git diff --check` PASS. 시험·검사 완화 및 node_modules 수정 없음.
+- 남음: 현재 API에는 실제 근사 수신 경로가 없으므로 근사 미수신을 근사 없음으로 보증하지 않는다. 전체 시험·실서비스·실제 브라우저 Visual QA 미실행. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE이며 PASS가 아니다.
+- 임시: 이번 작업에서 생성한 파일·컴파일 산출물·제품 자리표시 없음. 기존 confirmedFee 전용 판정은 단일 feeValue 판정으로 교체했다. 누더기 검사(새 중복·남은 옛것 0).
+- next_start_here: Data가 같은 API에 근사를 전달하는 계약을 확정하면 그 응답으로 연결 검증한다. 정상 tsx 환경에서 지정 시험/UI 검사 및 가상 데이터 데스크톱·모바일 화면을 재확인한다. 이 작업의 커밋·push는 하지 않는다.

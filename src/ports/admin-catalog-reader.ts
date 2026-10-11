@@ -14,7 +14,8 @@ export interface ContractFeeLinkItem {
   deposit?: number;
 }
 export interface ContractFeeValue {
-  status: 'CONFIRMED' | 'UNCONFIRMED';
+  /** 외부의 새 상태도 보존한다. 확정 여부는 알려진 status/state 조합만 허용한다. */
+  status: string;
   state: string;
   amount: { amount: number } | null;
 }
@@ -34,7 +35,7 @@ export interface ContractFeeLinksClient {
   contractFeeLinks(items: readonly ContractFeeLinkItem[]): Promise<ContractFeeLinkResult[]>;
 }
 export type ContractFeeLinkReason = ContractFeeLinkFailure | 'NO_SUPPLIER_CODE' | 'INVALID_SUPPLIER_CODE'
-  | 'INVALID_KEY' | 'INVALID_TERM' | 'INVALID_CONDITION' | 'FEE_UNCONFIRMED' | 'RECORDED_FEE_UNCONFIRMED' | 'FEE_DIFFERENCE';
+  | 'INVALID_KEY' | 'INVALID_TERM' | 'INVALID_CONDITION' | 'FEE_UNCONFIRMED' | 'FEE_APPROX' | 'RECORDED_FEE_UNCONFIRMED' | 'FEE_DIFFERENCE';
 export type ContractFeeLinksRead =
   | { status: 'UNAVAILABLE'; code: string }
   | { status: 'READY'; results: ReadonlyMap<string, ContractFeeLinkResult>;

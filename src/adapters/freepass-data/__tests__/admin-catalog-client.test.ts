@@ -27,6 +27,22 @@ test('가격행 요청 계약은 key·공급사 코드·기간 경계·유한 �
     assert.equal(ContractFeeLinkItemSchema.safeParse({ ...item, ...patch }).success, false);
 });
 
+test('가격행 응답은 근사·새 상태를 보존하되 없는 원장 필드를 만들지 않는다', () => {
+  for (const fee of [
+    { status: 'UNCONFIRMED', state: 'CALCULATED_APPROX', amount: { amount: 7 } },
+    { status: 'FUTURE_STATUS', state: 'KNOWN', amount: { amount: 7 } },
+    { status: 'CONFIRMED', state: 'FUTURE_STATE', amount: { amount: 7 } },
+  ]) {
+    const parsed = __test.ContractFeeLinksResponse.parse({ contract: 'contract-fee-links/v1', results: [{
+      key: 'example', status: 'LINKED', fees: { termKey: 'example-term', termMonths: 12,
+        supplierBillingFee: fee, channelPayoutFee: fee },
+    }] });
+    assert.deepEqual(parsed.results[0].fees!.supplierBillingFee, fee);
+    assert.equal('vehicleValueEvidence' in parsed.results[0], false);
+    assert.equal('approxCount' in parsed, false);
+  }
+});
+
 test('가격행 응답은 확정·미확정 수수료와 0을 구분하고 비정상 금액은 거부한다', () => {
   const result = { key: 'example', status: 'FEE_UNCONFIRMED', fees: {
     termKey: 'example-term', termMonths: 12,

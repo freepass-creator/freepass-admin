@@ -6,6 +6,7 @@ import { settlementSummary, settlementSummaryCsv, settlementSummaryRows, feeLink
   CONTRACT_FEE_REASON_LABELS, SETTLEMENT_SUMMARY_HEADERS } from '../summary';
 import { adminBlockLabel, blockOf } from '../types';
 import { readContractFeeLinks } from '../../../adapters/freepass-data/contract-fee-links';
+import { __test } from '../../../adapters/freepass-data/admin-catalog-client';
 import { CONTRACT_FEE_LINK_FAILURES, type ContractFeeLinkResult,
   type ContractFeeLinkItem } from '../../../ports/admin-catalog-reader';
 
@@ -27,8 +28,8 @@ test('공급사별 확정/미확정, 실제 0과 모름, 총합과 양쪽 확정
     row({ supplier: '예시공급사B', claimWritten: 29, payWritten: null }),
     row({ supplier: '예시공급사C', claimWritten: null, payWritten: null }),
   ], '2030-02', NOW);
-  assert.deepEqual(s.suppliers[0], { supplier: '예시공급사A', count: 3, claim: 123, claimUnknown: 1, pay: 62, payUnknown: 0, margin: 78, feeLinks: null });
-  assert.deepEqual(s.total, { supplier: null, count: 5, claim: 152, claimUnknown: 2, pay: 62, payUnknown: 2, margin: 78, feeLinks: null });
+  assert.deepEqual(s.suppliers[0], { supplier: '예시공급사A', count: 3, claim: 123, claimUnknown: 1, pay: 62, payUnknown: 0, margin: 78, feeLinks: null, claimApprox: null, claimApproxCount: 0, payApprox: null, payApproxCount: 0 });
+  assert.deepEqual(s.total, { supplier: null, count: 5, claim: 152, claimUnknown: 2, pay: 62, payUnknown: 2, margin: 78, feeLinks: null, claimApprox: null, claimApproxCount: 0, payApprox: null, payApproxCount: 0 });
   assert.equal(s.amountConfirmed, 2);
   assert.equal(s.needsAttention, 3);
   assert.equal(s.suppliers[2].claim, null);
@@ -50,7 +51,7 @@ test('원 미만은 합산 전에 각 줄에서 버리고 확정 0은 CSV 숫자
   const s = settlementSummary([row({ claimWritten: 1.9, payWritten: 0 }), row({ claimWritten: 1.9, payWritten: 0 })], '', NOW);
   assert.equal(s.total.claim, 2);
   assert.equal(s.total.pay, 0);
-  assert.ok(settlementSummaryCsv(s).endsWith('"합계",2,2,0,0,0,2,"가격행 검증 미실행"\r\n'));
+  assert.ok(settlementSummaryCsv(s).endsWith('"합계",2,2,0,0,0,2,"가격행 검증 미실행",,0,,0\r\n'));
 });
 
 test('기존 adapter가 미확정으로 분류한 미발행 0을 다시 0원으로 만들지 않는다', () => {
@@ -136,15 +137,15 @@ test('유효하지 않은 저장 청구월은 도메인의 달력 검사로 미�
   assert.ok(s.reasons.some(r => r.label === NO_MONTH));
 });
 
-test('CSV는 UTF-8 BOM·한국어 8열·합계이며 쉼표 없는 숫자와 빈 금액을 보존한다', () => {
+test('CSV는 UTF-8 BOM·한국어 12열·합계이며 쉼표 없는 숫자와 빈 금액을 보존한다', () => {
   const s = settlementSummary([row({ claimWritten: 12345, payWritten: -23 }),
     row({ supplier: '예시공급사B', claimWritten: null, payWritten: null })], '', NOW);
   const csv = settlementSummaryCsv(s);
   assert.equal(Buffer.from(csv).subarray(0, 3).toString('hex'), 'efbbbf');
   assert.equal(csv.slice(1).split('\r\n')[0], SETTLEMENT_SUMMARY_HEADERS.map(h => `"${h}"`).join(','));
-  assert.ok(csv.includes('"예시공급사A",1,12345,0,-23,0,12368,"가격행 검증 미실행"\r\n'));
-  assert.ok(csv.includes('"예시공급사B",1,,1,,1,,"가격행 검증 미실행"\r\n'));
-  assert.ok(csv.endsWith('"합계",2,12345,1,-23,1,12368,"가격행 검증 미실행"\r\n'));
+  assert.ok(csv.includes('"예시공급사A",1,12345,0,-23,0,12368,"가격행 검증 미실행",,0,,0\r\n'));
+  assert.ok(csv.includes('"예시공급사B",1,,1,,1,,"가격행 검증 미실행",,0,,0\r\n'));
+  assert.ok(csv.endsWith('"합계",2,12345,1,-23,1,12368,"가격행 검증 미실행",,0,,0\r\n'));
   assert.ok(!/example-row|차량번호|고객명|시트|청구서/.test(csv));
 });
 
@@ -156,6 +157,104 @@ function linked(key: string, claim = 123, pay = 45): ContractFeeLinkResult {
   return { key, status: 'LINKED', fees: { termKey: 'example-term', termMonths: 12,
     supplierBillingFee: fee(claim), channelPayoutFee: fee(pay) } };
 }
+
+test('근사 청구·지급은 확정 합계·우리 몫·일치에서 제외하고 화면과 CSV에 별도 집계한다', async () => {
+  const rows = [linkRow('confirmed'), linkRow('same'), linkRow('different', { supplier: '예시공급사B' })];
+  const before = structuredClone(rows);
+  const same = linked('same');
+  same.fees!.supplierBillingFee.state = 'CALCULATED_APPROX';
+  const different = linked('different', 7, 3);
+  different.fees!.supplierBillingFee.state = 'CALCULATED_APPROX';
+  different.fees!.channelPayoutFee.state = 'CALCULATED_APPROX';
+  const read = await readContractFeeLinks(rows, { async contractFeeLinks() {
+    return __test.ContractFeeLinksResponse.parse({ contract: 'contract-fee-links/v1',
+      results: [linked('confirmed'), same, different] }).results;
+  } });
+  const s = settlementSummary(rows, '', NOW, read);
+  assert.equal(s.total.claim, 123);
+  assert.equal(s.total.pay, 90);
+  assert.equal(s.total.margin, 78);
+  assert.equal(s.amountConfirmed, 1);
+  assert.equal(s.total.claimApprox, 130);
+  assert.equal(s.total.payApprox, 3);
+  assert.equal(s.total.claimApproxCount, 2);
+  assert.equal(s.total.payApproxCount, 1);
+  assert.equal(s.total.claimUnknown, 0);
+  assert.equal(s.total.payUnknown, 0);
+  assert.deepEqual(s.total.feeLinks, { linked: 3, needsAttention: 2, matched: 1, different: 1, approx: 2 });
+  assert.equal(s.suppliers[0].claimApprox, 123);
+  assert.equal(s.suppliers[1].claim, null);
+  assert.equal(s.suppliers[1].pay, null);
+  assert.equal(s.suppliers[1].claimApprox, 7);
+  assert.equal(s.needsAttention, 2);
+  assert.equal(s.feeLinkReasons.find(r => r.label === '가격행 수수료 근사')?.count, 2);
+  assert.deepEqual(rows, before);
+  const csv = settlementSummaryCsv(s);
+  assert.ok(csv.includes('"청구할 근사 합계(공급가)","청구할 근사 건수","지급할 근사 합계(공급가)","지급할 근사 건수"'));
+  assert.ok(csv.endsWith('근사 2",130,2,3,1\r\n'));
+  assert.ok(!/confirmed|same|different|example-term|CALCULATED_APPROX/.test(csv));
+});
+
+test('FEE_UNCONFIRMED 안의 근사도 비교하고 근사 0·모름·음수는 구분한다', async () => {
+  const rows = [linkRow('zero', { claimWritten: 0 }), linkRow('missing'), linkRow('negative')];
+  const results = [linked('zero', 0), linked('missing'), linked('negative', -7)];
+  for (const result of results) {
+    result.status = 'FEE_UNCONFIRMED';
+    result.fees!.supplierBillingFee.status = 'UNCONFIRMED';
+    result.fees!.supplierBillingFee.state = 'CALCULATED_APPROX';
+  }
+  results[1].fees!.supplierBillingFee.amount = null;
+  const read = await readContractFeeLinks(rows, { async contractFeeLinks() { return results; } });
+  const s = settlementSummary(rows, '', NOW, read);
+  assert.equal(s.total.claim, null);
+  assert.equal(s.total.claimApprox, -7);
+  assert.equal(s.total.claimApproxCount, 3);
+  assert.equal(s.total.feeLinks?.approx, 3);
+  assert.equal(s.total.feeLinks?.matched, 0);
+  assert.equal(s.total.feeLinks?.different, 1);
+  assert.equal(settlementSummary([rows[0]], '', NOW, read).total.claimApprox, 0);
+  assert.equal(settlementSummary([rows[1]], '', NOW, read).total.claimApprox, null);
+  assert.equal(s.amountConfirmed, 0);
+});
+
+test('알 수 없는 수수료 status·state는 배치를 깨지 않고 확정·일치·근사로 세지 않는다', async () => {
+  const rows = [linkRow('status'), linkRow('state'), linkRow('valid')];
+  const status = linked('status');
+  status.fees!.supplierBillingFee.status = 'FUTURE_STATUS';
+  const state = linked('state');
+  state.fees!.channelPayoutFee.state = 'FUTURE_STATE';
+  const read = await readContractFeeLinks(rows, { async contractFeeLinks() {
+    return __test.ContractFeeLinksResponse.parse({ contract: 'contract-fee-links/v1',
+      results: [status, state, linked('valid')] }).results;
+  } });
+  assert.equal(read.status, 'READY');
+  const s = settlementSummary(rows, '', NOW, read);
+  assert.equal(s.total.feeLinks?.matched, 1);
+  assert.equal(s.total.feeLinks?.approx, 0);
+  assert.equal(s.total.feeLinks?.needsAttention, 2);
+  assert.equal(s.amountConfirmed, 1);
+  assert.equal(s.total.claim, 246);
+  assert.equal(s.total.pay, 90);
+  assert.equal(s.total.claimUnknown, 1);
+  assert.equal(s.total.payUnknown, 1);
+  assert.ok(!/FUTURE_STATUS|FUTURE_STATE/.test(settlementSummaryCsv(s)));
+});
+
+test('조건 불일치의 참고 근사는 비교·근사 합계에서 제외한다', async () => {
+  const rows = [linkRow('mismatch')];
+  const result = linked('mismatch', 7, 3);
+  result.status = 'FAILED';
+  result.failure = 'CONDITION_MISMATCH';
+  result.fees!.supplierBillingFee.state = 'CALCULATED_APPROX';
+  const read = await readContractFeeLinks(rows, { async contractFeeLinks() { return [result]; } });
+  const s = settlementSummary(rows, '', NOW, read);
+  assert.equal(s.total.claim, 123);
+  assert.equal(s.total.claimApprox, null);
+  assert.equal(s.total.claimApproxCount, 0);
+  assert.equal(s.total.feeLinks?.approx, 0);
+  assert.equal(s.total.feeLinks?.matched, 0);
+  assert.equal(s.total.feeLinks?.different, 0);
+});
 
 test('가격행 요청은 500건 분할, key=접수 code, 공백 제거·무보증 0·모르는 보증금 생략', async () => {
   const rows = Array.from({ length: 1001 }, (_, i) => linkRow(`example-${i}`));
@@ -215,7 +314,7 @@ test('LINKED 일치·차이와 원 미만 버림, 공급사별 건수만 집계�
     return [linked('d', 110.9, 50.9), linked('c', 0, 0), linked('b', 7, 45), linked('a', 123.9, 45.9)];
   } });
   const s = settlementSummary(rows, '', NOW, read);
-  assert.deepEqual(s.total.feeLinks, { linked: 4, needsAttention: 1, matched: 3, different: 1 });
+  assert.deepEqual(s.total.feeLinks, { linked: 4, needsAttention: 1, matched: 3, different: 1, approx: 0 });
   assert.equal(s.suppliers[0].feeLinks?.matched, 3);
   assert.equal(s.suppliers[1].feeLinks?.different, 1);
   const original = settlementSummary(rows, '', NOW);
@@ -233,7 +332,7 @@ for (const failure of CONTRACT_FEE_LINK_FAILURES) {
       return [{ ...linked('a'), status: 'FAILED', failure }];
     } });
     const s = settlementSummary(rows, '', NOW, read);
-    assert.deepEqual(s.total.feeLinks, { linked: 0, needsAttention: 1, matched: 0, different: 0 });
+    assert.deepEqual(s.total.feeLinks, { linked: 0, needsAttention: 1, matched: 0, different: 0, approx: 0 });
     assert.deepEqual(s.feeLinkReasons, [{ label: CONTRACT_FEE_REASON_LABELS[failure], count: 1 }]);
   });
 }
@@ -246,7 +345,7 @@ test('FEE_UNCONFIRMED와 미확정 금액은 일치로 추정하지 않는다', 
     return [{ ...linked('a'), status: 'FEE_UNCONFIRMED' }, b, linked('c'), { key: 'd', status: 'LINKED' }];
   } });
   const s = settlementSummary(rows, '', NOW, read);
-  assert.deepEqual(s.total.feeLinks, { linked: 3, needsAttention: 4, matched: 0, different: 0 });
+  assert.deepEqual(s.total.feeLinks, { linked: 3, needsAttention: 4, matched: 0, different: 0, approx: 0 });
   assert.equal(s.feeLinkReasons.find(r => r.label === '가격행 수수료 미확정')?.count, 3);
   assert.equal(s.feeLinkReasons.find(r => r.label === '접수 수수료 미확정')?.count, 1);
 });
@@ -290,7 +389,7 @@ test('누락·중복·요청 외 응답 key는 잘못된 일치로 집계하지 
 test('빈 월은 설정·토큰·실제 클라이언트 호출 없이 건수 0', async () => {
   const read = await readContractFeeLinks([], { async contractFeeLinks() { assert.fail('호출 금지'); } });
   const s = settlementSummary([], '', NOW, read);
-  assert.deepEqual(s.total.feeLinks, { linked: 0, needsAttention: 0, matched: 0, different: 0 });
+  assert.deepEqual(s.total.feeLinks, { linked: 0, needsAttention: 0, matched: 0, different: 0, approx: 0 });
   assert.deepEqual(s.feeLinkReasons, []);
 });
 

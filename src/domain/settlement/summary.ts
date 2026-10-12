@@ -319,6 +319,13 @@ export function carryoverCells(item: CarryoverItem): (string | number | null)[] 
     item.original.pay, item.corrected.pay, item.difference.pay, item.reason, item.evidence, item.status];
 }
 
+/** 내려받는 CSV 는 가감 사유 원문(자유 서술)을 싣지 않고 근거 있음/없음만 낸다. 화면은 원문을 그대로 보인다. */
+export function carryoverCsvCells(item: CarryoverItem): (string | number | null)[] {
+  const cells = carryoverCells(item);
+  cells[9] = item.evidence === '근거 없음' ? '근거 없음' : '근거 있음';
+  return cells;
+}
+
 export const CARRYOVER_TOTAL_HEADERS = ['상태', '건수', '청구 차액 합계', '청구 차액 모름', '지급 차액 합계', '지급 차액 모름'] as const;
 export function carryoverTotalCells(carryover: CarryoverSummary): (string | number | null)[][] {
   return ([['확정', carryover.confirmed], ['후보', carryover.candidate]] as const)
@@ -342,7 +349,7 @@ export function settlementSummaryCsv(summary: SettlementSummary): string {
     [],
     [carryoverTitle(summary.carryover), summary.carryover.month, '부가세 별도 공급가 · 원', settlementAsOfText(summary.asOf)],
     [...CARRYOVER_HEADERS],
-    ...summary.carryover.items.map(carryoverCells),
+    ...summary.carryover.items.map(carryoverCsvCells),
     [...CARRYOVER_TOTAL_HEADERS],
     ...carryoverTotalCells(summary.carryover),
   ].map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';

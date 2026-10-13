@@ -18,7 +18,7 @@
 | 8 | a3732b9 | fix: retain intake calculation evidence in F04 snapshots | 낡음 | `f04-ssot.mts` 의 산출근거 투영은 #187 에서 삭제(새 F04 snapshot 은 수수료·청구·지급 금액을 공급하지 않음) |
 | 9 | 6165ff0 | fix: keep calculation basis input text unchanged | 낡음 | 8번과 같은 줄 |
 | 10 | 0516c28 | feat(f04): persist supplier and agent basis from monetary notes | 이미 main 에 있음 + 금지 | `f04-basis-from-notes.mjs` 는 #182 에 dry-run·self-test 전용으로 있음. 옛 가지 버전은 시트 ID 원문과 `--apply` 쓰기 경로를 담고 있어 공개 저장소 규칙상 옮기지 않음 |
-| 11 | 4e87d5a | fix(f04): preserve Kang Jisu intake entries from automated edits | 이미 main 에 있음 + 금지 | main 은 환경변수 기반 보호 목록. 옛 가지는 차량번호 원문 하드코딩 |
+| 11 | 4e87d5a | fix(f04): preserve (직원 실명) intake entries from automated edits — 제목의 실명은 가림 | 이미 main 에 있음 + 금지 | main 은 환경변수 기반 보호 목록. 옛 가지는 차량번호 원문 하드코딩 |
 | 12 | cdc855e | docs(f04): preserve normal filtering without redundant warnings | 이미 main 에 있음 | F04-SSOT.md 변경이 #182 에 포함 |
 | 13 | 3b60b10 | docs(admin): consolidate product intake handoff into receipt work | 이미 main 에 있음 | HANDOFF.md 변경이 #182 에 포함 |
 | 14 | 0d91dc1 | fix(admin): patch vulnerable dependencies and record unified integration gates | 이미 main 에 있음 | lock 변경이 #182 에 동일 포함, 이후 #183 이 next 추가 패치 |
@@ -31,10 +31,10 @@
 | 21 | 0f0c44c | fix(settlement): preserve search alignment around monthly summary | 낡음 | `SettlementScreen` 의 월 합계 문구 — #189 가 화면을 정산표로 대체 |
 | 22 | ba83bfb | fix(settlement): reuse screen ledger receipt and disclose source freshness | 이미 main 에 있음 | 추가 66줄 중 58줄 그대로, 나머지는 21번과 같은 문구 |
 | 23 | 5a4afa4 | fix(settlement): reject partial ledger snapshots and verify shared wiring | 이미 main 에 있음 | 추가 8줄 전부 그대로 |
-| 24 | e2f5e6b | feat(admin): generate verified monthly receipt PDFs on existing Drive IDs | 낡음 | 월 PDF 생성 경로(`settlement-documents.ts`·서버 액션·버튼)는 #186 에서 대표 10-10 승인으로 제거. `settlement-invoice-html.ts` 만 시험 전용으로 main 에 남음 |
+| 24 | e2f5e6b | feat(admin): generate verified monthly receipt PDFs on existing Drive IDs | 낡음 | 월 PDF 생성 경로(`settlement-documents.ts`·서버 액션·버튼)는 #186 에서 대표 10-10 승인으로 제거. `settlement-invoice-html.ts` 와 `invoice-document.ts` 의 `buildReceiptDocuments` 는 시험만 부르는 상태로 main 에 남음(정리 후보, 이 작업 범위 밖) |
 | 25 | 4e770cd | fix(admin): apply shared desktop monthly document button style | 낡음 | 버튼 자체가 #186 에서 제거 |
 | 26 | 1a6da53 | fix(admin): use neutral styling while monthly documents are unavailable | 낡음 | 25번과 같음 |
-| 27 | a1c7788 | fix(admin): verify receipt basis against recorded rates and fee source | 낡음 | 요율로 산식을 재구성하는 `verifiedReceiptBasis` 는 #187 과 HANDOFF 「receiptRowBasis 는 기존 기재액 설명만 유지하며 현재 요율로 산식을 재구성하지 않는다」 에 반함. 기재액 설명 부분(36/80줄)은 main 에 있음 |
+| 27 | a1c7788 | fix(admin): verify receipt basis against recorded rates and fee source | 낡음 | 요율로 산식을 재구성하는 `verifiedReceiptBasis` 는 #187 과 HANDOFF 「receiptRowBasis 는 기존 기재액 설명만 유지하며 현재 요율로 산식을 재구성하지 않는다」 에 반함. 기재액 설명 부분(36/80줄)은 main 에 있음. 단 #187 이 함수를 지우면서 호출부 `scripts/f04-basis-from-notes.mjs` 를 안 고쳐 dry-run 이 TypeError 로 죽는 상태였음 → 아래 «발견한 결함» 에서 정책대로 정리 |
 | 28 | 3e76336 | fix(admin): retain known formula-cell amounts in basis evidence contract | 낡음 | UI SSOT json 의 월 PDF 항목은 #186 에서 제거 |
 | — | f985fde·10ad66f·a990ff1·65a6781·6d33c47 | Merge commit … | 내용 없음 | 병합 커밋 |
 
@@ -51,8 +51,13 @@
 | `@sparticuz/chromium` 가 Linux 전용 바이너리라 Windows 에서 `%TEMP%\chromium` 경로가 없음(ENOENT) | 10 | 환경. CI(ubuntu) 는 같은 커밋에서 통과(#194 체크 전부 SUCCESS) |
 | `public/fonts` 없음(`--ignore-scripts` 로 설치해 postinstall `install-fonts.mjs` 가 안 돈 것) | 2 | 환경. `node scripts/install-fonts.mjs` 뒤 통과 |
 
-- 로컬 Chrome 을 `ESIGN_CHROMIUM_EXECUTABLE_PATH` 로 지정해도 Linux 전용 실행 인자(`chromium.args`) 때문에 `template-script` 단계에서 시간초과한다. 시험 파일의 두 곳(281·306행)은 환경변수를 거치지 않고 `chromium.executablePath()` 를 직접 부른다 — 결함은 아니고 Windows 이식성 문제.
-- **코드 결함 0건.** 고칠 것 없음.
+- 로컬 Chrome 을 `ESIGN_CHROMIUM_EXECUTABLE_PATH` 로 지정해도 Linux 전용 실행 인자(`chromium.args`) 때문에 `template-script` 단계에서 시간초과한다(실행 로그: 8건 46초 TimeoutError). 시험 파일의 두 곳(270·321행)은 환경변수를 거치지 않고 `chromium.executablePath()` 를 직접 부른다 — 결함은 아니고 Windows 이식성 문제.
+- **이 실행(2026-10-13, Windows, node 24)에서 확인된 코드 결함 없음.** 12건 모두 환경 원인이고, 같은 커밋이 CI(ubuntu) 에서는 통과했다. `npm run typecheck` 도 통과.
+
+## 발견한 결함 1건 (`npm test` 밖, Codex 검토로 발견)
+
+- `scripts/f04-basis-from-notes.mjs` 가 `src/domain/settlement/fee.ts` 의 `verifiedReceiptBasis` 를 `tsImport` 로 가져와 `sourceRowBasis` 에서 호출했는데, 그 함수는 #187 에서 삭제됐다(HANDOFF 「삭제 함수 … verifiedReceiptBasis 15」). `--self-test` 는 `sourceRowBasis` 를 안 거쳐 통과했지만, 실제 `--dry-run` 은 금액 있는 첫 줄에서 `verifiedReceiptBasis is not a function` 으로 죽는다.
+- 고친 방법(정책 따름, 옛 계산 복원 아님): 수수료표 탭 읽기와 요율 재구성(`sourceRowBasis`) 을 걷어내고, 이미 있던 메모 기반 `makeBasis(claim, pay)` 만 쓴다(#187 「요율 계산 없이」·HANDOFF 「현재 요율로 산식을 재구성하지 않는다」). `tsx` 의존도 같이 빠짐. 자체 시험에 `makeBasis` 양쪽 출력 한 건 추가(12 PASS).
 
 ## PR #194 합침 가능 여부
 

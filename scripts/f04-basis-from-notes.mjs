@@ -4,8 +4,6 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { tsImport } from 'tsx/esm/api';
-const { verifiedReceiptBasis } = await tsImport('../src/domain/settlement/fee.ts', import.meta.url);
 
 const ID = process.env.F04_SPREADSHEET_ID;
 if (!ID && !process.argv.includes('--self-test')) throw new Error('F04_SPREADSHEET_ID is required');
@@ -43,24 +41,6 @@ export function makeBasis(claim, pay) {
   return `공급사: ${compact(sideBasis(claim))}\n영업자: ${compact(sideBasis(pay))}`;
 }
 
-/** Exact source-table match only. Multiple/special/manual rules never fall back to a guessed rate. */
-export function sourceRowBasis(values, headers, feeRows) {
-  const raw = c => c?.effectiveValue?.numberValue ?? c?.effectiveValue?.stringValue ?? c?.userEnteredValue?.numberValue ?? c?.userEnteredValue?.stringValue;
-  const get = name => raw(values[headers.indexOf(name)]);
-  const kind = get('렌트구분');
-  const supplier = get('공급사');
-  const term = get('계약기간');
-  const candidates = feeRows.slice(2).map((r,i)=>({v:(r.values??[]).map(raw),row:i+3})).filter(({v})=>v[0]===supplier && v[1]===kind && (v[3]===term || v[3]==='기간 무관'));
-  // Source intake has no reliable 선출고/발주 discriminator; preserve those as unknown.
-  const picked = candidates.length===1 && !candidates[0].v[2] ? candidates[0] : undefined;
-  return ['공급사','영업자'].map((label,i)=>{
-    const cell=values[headers.indexOf(i?'지급액':'청구액')]??{};
-    const noteBasis=sideBasis(cell);
-    const result=verifiedReceiptBasis({amount:raw(cell),rate:get(i?'에이전시수수료율':'공급사수수료율'),rent:get('렌탈료'),term,price:get('차량가액')},picked?{basis:picked.v[4],rate:picked.v[i?6:5],auto:picked.v[7]==='예' && picked.v[12]==='탭 기준 확정',source:`수수료표 ${picked.row}행 · 접수 ${i?'AI':'AD'}`} : undefined);
-    return `${label}: ${result.includes('산식근거 미기록') && noteBasis!=='미확정' && !noteBasis.includes('산식근거 미기록') ? noteBasis : result}`;
-  }).join('\n');
-}
-
 function selfTest() {
   const c = (amount, note) => ({ userEnteredValue: { numberValue: amount }, note });
   assert.match(sideBasis(c(2418, '기준료 74400 × 0.0325 = 2418원')), /^3.25%/);
@@ -74,7 +54,8 @@ function selfTest() {
   assert.match(sideBasis(c(100, '부가세 포함합계110 - 부가세10 = 공급가100. 신규 요율 계산 아님')), /산식근거 미기록/);
   assert.match(sideBasis(c(100, 'HOLD: 원본 대조 필요')), /검증보류/);
   assert.match(makeBasis(c(100, '100 = 100원'), {}), /영업자: 미확정/);
-  console.log('basis regression: 11 PASS');
+  assert.equal(makeBasis(c(2418, '기준료 74400 × 0.0325 = 2418원'), c(100, '')), '공급사: 3.25% · 2,418원\n영업자: 직접입력액 100원 · 산식근거 미기록');
+  console.log('basis regression: 12 PASS');
 }
 
 function col(index) {
@@ -141,8 +122,6 @@ export async function main(argv = process.argv.slice(2)) {
     return { column: header[column - 1], plate: value(line[header.indexOf('차량번호')]), company: value(line[header.indexOf('공급사')]) };
   };
   const rows = read();
-  const feeSnapshot=fixer.call(['sheets','spreadsheets','get'],{spreadsheetId:ID,ranges:["'수수료표'!A1:M1000"],includeGridData:true,fields:'sheets(data(rowData(values(userEnteredValue,effectiveValue,formattedValue,note))))'});
-  const feeRows=feeSnapshot.sheets[0].data[0].rowData;
   const h = rows[1].values.map(c => c.formattedValue || '');
   const names = ['차량번호', '접수일', '청구액', '지급액', '산출근거'];
   const ix = Object.fromEntries(names.map(n => {
@@ -158,7 +137,8 @@ export async function main(argv = process.argv.slice(2)) {
     if (HANDS_OFF_PLATES.has(v[ix.차량번호].formattedValue)) { held.push(i + 1); continue; }
     const claim = v[ix.청구액] || {}, pay = v[ix.지급액] || {}, old = v[ix.산출근거] || {};
     if (claim.userEnteredValue?.numberValue === undefined && pay.userEnteredValue?.numberValue === undefined) continue;
-    const text = sourceRowBasis(v,h,feeRows);
+    // 메모에 적힌 산식만 설명한다 — 수수료표 요율로 산식을 재구성하지 않는다(#187 정책: 수수료는 프리패스 데이터 저장값만, 요율 계산 없음)
+    const text = makeBasis(claim, pay);
     if (old.userEnteredValue?.stringValue === text) { same++; displayRows.push(i); continue; }
     // Never rewrite existing employee text, formula, or a previously generated snapshot.
     if (old.userEnteredValue) { held.push(i + 1); continue; }

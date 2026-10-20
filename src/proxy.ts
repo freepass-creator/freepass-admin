@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { AUTH_COOKIE, authEnforced, isPublicPath, looksLikeSession } from './server/auth';
-import { esignEnabled, isEsignRuntimePath } from './server/esign-scope';
+import { creditConsentPreviewEnabled, isCreditConsentPreviewPath, esignEnabled, isEsignRuntimePath } from './server/esign-scope';
 
 /**
  * **모든 요청 앞의 문** (Next 16 proxy · Node 에서 돈다).
@@ -10,6 +10,15 @@ import { esignEnabled, isEsignRuntimePath } from './server/esign-scope';
  */
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  // One data-free draft; no auth exception for customer links or APIs.
+  if (isCreditConsentPreviewPath(path)) {
+    if (!creditConsentPreviewEnabled()) return new NextResponse('Not Found', { status: 404 });
+    if (req.method !== 'GET' && req.method !== 'HEAD') return new NextResponse('Method Not Allowed', { status: 405 });
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  }
   /* 관리자 전자계약 목록(/esign)은 독립 페이지로 열되, 실제 고객 링크·발행/승인 API는
    * ESIGN_ENABLED=on 전까지 닫는다. 로그인 문이 먼저라 관리자 API는 비로그인 401, 로그인 404다. */
   const esignClosed = !esignEnabled() && isEsignRuntimePath(path);

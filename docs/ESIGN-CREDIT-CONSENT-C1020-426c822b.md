@@ -66,3 +66,5 @@
 - 화면 캡처: `C:/dev/ai-ops/state/캡처C1020-426c822b-vercel-1440.png`, `캡처C1020-426c822b-vercel-1280.png`, `캡처C1020-426c822b-vercel-390.png` (모두 같은 state 폴더).
 - 재현: `scripts/verify-credit-consent-preview.mts` (puppeteer-core·로컬 Chrome, Python pypdf/pymupdf). `PREVIEW_BASE_URL`, `PREVIEW_COOKIE_JAR`(공식 vercel curl 인증 cookie jar, 비공개), `PREVIEW_CAPTURE_PREFIX`로 대상 고정. 영수증 `C:/dev/ai-ops/state/캡처C1020-426c822b-vercel-qa.json`. 비밀값/고객자료는 PR에 포함하지 않음.
 - 상태: 초안 CODED / 관련 STATIC CHECKED·TESTED / PREVIEW VERIFIED. 전체 TESTED·운영 PERSISTENCE VERIFIED·PRODUCTION DEPLOYMENT VERIFIED·USER APPROVED는 주장하지 않음. 검토용 Draft PR, merge/실발송 승인 요청 아님.
+
+- 검토용 PR: https://github.com/freepass-creator/freepass-admin/pull/199 (DRAFT). 최초 구현 커밋 bb56c16561c7d618f1371af97e319ab7532f775c. main 병합 안 함. 최종 전달은 같은 건 C1020-426c822b의 대화채널로 한다.

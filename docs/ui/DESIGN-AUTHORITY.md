@@ -127,3 +127,7 @@ UI 변경은 위 actual route 계보 안에서만 수행한다.
 정산 상세의 기존 금액 영역에 산출근거 대조 disclosure를 둔다. 원장 기재액·원본 BT와 computed evidence는 구분하며, 요율 역산을 하지 않는다.
 
 정산표(`/settlement/table`)의 공급사 집계에는 가격행 검증 열과 상단 이유별 건수를 둔다. 같은 admin-catalog 소비자의 읽기 결과로 이어 붙음·확인 필요·일치·차이·근사를 표시한다. 근사(CALCULATED_APPROX)는 확정이 아니라 별도로 표기하고 일치로 세지 않는다. 청구·지급 각각 근사 합계·근사 건수를 두며, 근사로 판정된 쪽과 알 수 없는 수수료 상태는 확정 합계·우리 몫에서 제외한다. 접수 기록액은 수정하지 않는다. CSV도 같은 집계 열을 사용한다. 개별 상세 금액·줄 식별자는 추가하지 않는다. 데스크톱·모바일 실제 Visual QA는 별도 확인 전까지 PENDING이다.
+
+## C1020-426c822b — 신용조회 동의서 검토 전용
+
+`/preview/credit-consent`는 기존 고객 서명 `src/app/sign/sign.css`의 sg-shell/card/head/signbox/actions를 재사용한다. 계약서 본문·기존 ADMIN 구조·토큰은 바꾸지 않는다. 별도 한 장 문서이며 수집이용/조회/제공 선택은 구분하고 미선택·비활성으로 표시한다. 로컬 development와 Vercel preview의 GET/HEAD만 허용, production 404·POST 405. 실제 동의·서명·저장·발송 기능이 아니다. Visual QA는 동일 건 인계 문서에 기록한다.

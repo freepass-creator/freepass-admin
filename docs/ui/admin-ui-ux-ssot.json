@@ -1787,5 +1787,14 @@
       "rule": "Explain read-only mode before write controls; disable mutations and connect them to the reason with aria-describedby.",
       "navigation": "read/navigation links remain available"
     }
+  },
+  "creditConsentPreview": {
+    "task": "C1020-426c822b",
+    "route": "/preview/credit-consent",
+    "lineage": "src/app/sign/sign.css",
+    "mode": "REVIEW_ONLY",
+    "production": "404",
+    "submission": "DISABLED",
+    "evidence": "docs/ESIGN-CREDIT-CONSENT-C1020-426c822b.md"
   }
 }

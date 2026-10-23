@@ -3318,3 +3318,7 @@ Mobile:
 정산 화면은 게시 월 합계와 기존 청구·지급 업무를 유지한다. 월 PDF 생성 버튼과 생성 경로는 제거했으며, 정산서 생성·Drive 저장은 freepass-data가 소유한다. SearchBar/QuickFilter/패널 구조는 유지한다.
 
 정산 상세의 기존 금액 영역에 산출근거 대조 disclosure를 둔다. 원장 기재액·원본 BT와 computed evidence는 구분하며, 요율 역산을 하지 않는다.
+
+## C1020-426c822b — 신용조회 동의서 검토 전용
+
+`/preview/credit-consent`는 기존 고객 서명 `src/app/sign/sign.css`의 sg-shell/card/head/signbox/actions를 재사용한다. 계약서 본문·기존 ADMIN 구조·토큰은 바꾸지 않는다. 별도 한 장 문서이며 수집이용/조회/제공 선택은 구분하고 미선택·비활성으로 표시한다. 로컬 development와 Vercel preview의 GET/HEAD만 허용, production 404·POST 405. 실제 동의·서명·저장·발송 기능이 아니다. Visual QA는 동일 건 인계 문서에 기록한다.

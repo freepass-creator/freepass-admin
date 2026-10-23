@@ -1,6 +1,6 @@
 {
   "schema": "freepass-admin-active-work/v1",
-  "updated_at": "2026-10-07",
+  "updated_at": "2026-10-21",
   "authority": "docs/BRANCH-WORKFLOW.md",
   "main": {
     "branch": "main",
@@ -59,22 +59,15 @@
   },
   "active": [
     {
-      "work_order": "ledger-commission-read-20261003",
-      "objective": "대표 2026-10-07 ADMIN 분산 개발선의 단일 main 통합. 기존 PR171에서 PR179/180/181 변경과 의존성 패치를 함께 검증한다. 기존 월별 정산 버튼에 기록액 기반 공급사·채널 PDF 투영을 같은 Task로 확장한다.",
-      "branch": "work/freepass-admin/ledger-commission-read-20261003",
-      "writer": "ADMIN 지휘 Codex",
-      "active_owner": "ADMIN 지휘 Codex",
+      "work_order": "C1020-426c822b",
+      "objective": "전자계약 현황·독립 신용조회 동의서 초안·미리보기·PR만",
+      "branch": "work/freepass-admin/C1020-426c822b",
+      "writer": "PC1 Codex",
+      "active_owner": "PC1 Codex C1020-426c822b",
       "merge_owner": "GHD",
-      "reviewer": "Claude subscription FAILED 유지; 독립 Codex CLI read-only 코드 검토 PASS(exit 0, critical/high 0). 실제 로그인 UI/merge 별도.",
-      "phase": "PR_VERIFICATION_LOCAL_ENGINE_VERIFIED_UI_LOGIN_PENDING",
-      "integration_pr": 171,
-      "absorbed_pr_heads": {
-        "179": "203e6ef25eecb992d0441286623896951fc92b37",
-        "180": "c4963f330910638bdb0fc8870b1a88f2b173e303",
-        "181": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c"
-      },
+      "phase": "PREVIEW_REVIEW_ONLY",
       "production_cutover_authorized": false,
-      "next_start_here": "PR171 exact head CI → 기존 로그인 후 월별 버튼 확인 → GHD merge_owner 인계 확인 → 단독 main 병합/원격 readback. 신규 월은 승인된 기존 Drive 대상 매핑이 없으면 HOLD."
+      "next_start_here": "docs/ESIGN-CREDIT-CONSENT-C1020-426c822b.md"
     }
   ],
   "archived": [
@@ -134,6 +127,26 @@
       "production_cutover_authorized": false,
       "status": "MERGED_PR_167",
       "note": "PR167 merged 2026-10-03 verified before recovery; stale CODING registry corrected."
+    },
+    {
+      "work_order": "ledger-commission-read-20261003",
+      "objective": "대표 2026-10-07 ADMIN 분산 개발선의 단일 main 통합. 기존 PR171에서 PR179/180/181 변경과 의존성 패치를 함께 검증한다. 기존 월별 정산 버튼에 기록액 기반 공급사·채널 PDF 투영을 같은 Task로 확장한다.",
+      "branch": "work/freepass-admin/ledger-commission-read-20261003",
+      "writer": "ADMIN 지휘 Codex",
+      "active_owner": "ADMIN 지휘 Codex",
+      "merge_owner": "GHD",
+      "reviewer": "Claude subscription FAILED 유지; 독립 Codex CLI read-only 코드 검토 PASS(exit 0, critical/high 0). 실제 로그인 UI/merge 별도.",
+      "phase": "PR_VERIFICATION_LOCAL_ENGINE_VERIFIED_UI_LOGIN_PENDING",
+      "integration_pr": 171,
+      "absorbed_pr_heads": {
+        "179": "203e6ef25eecb992d0441286623896951fc92b37",
+        "180": "c4963f330910638bdb0fc8870b1a88f2b173e303",
+        "181": "790a47d9c3268a1c79d2f19aa2e534394dea5d2c"
+      },
+      "production_cutover_authorized": false,
+      "next_start_here": "PR171 exact head CI → 기존 로그인 후 월별 버튼 확인 → GHD merge_owner 인계 확인 → 단독 main 병합/원격 readback. 신규 월은 승인된 기존 Drive 대상 매핑이 없으면 HOLD.",
+      "status": "CLOSED_PR_171",
+      "note": "2026-10-21 gh pr view 171: CLOSED, mergeCommit=null. 원작업 보존, 최신 main 기준 별도 대표 오더 C1020-426c822b."
     }
   ],
   "branch_creation": {

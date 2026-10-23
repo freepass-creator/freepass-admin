@@ -633,3 +633,9 @@ Baseline 1a6da536. academy data READY/reuse COMPOSE_OR_EXTEND PASS. Existing fee
 - 남음: 현재 API에는 실제 근사 수신 경로가 없으므로 근사 미수신을 근사 없음으로 보증하지 않는다. 전체 시험·실서비스·실제 브라우저 Visual QA 미실행. Claude 독립 검토는 실행기 EPERM으로 UNAVAILABLE이며 PASS가 아니다.
 - 임시: 이번 작업에서 생성한 파일·컴파일 산출물·제품 자리표시 없음. 기존 confirmedFee 전용 판정은 단일 feeValue 판정으로 교체했다. 누더기 검사(새 중복·남은 옛것 0).
 - next_start_here: Data가 같은 API에 근사를 전달하는 계약을 확정하면 그 응답으로 연결 검증한다. 정상 tsx 환경에서 지정 시험/UI 검사 및 가상 데이터 데스크톱·모바일 화면을 재확인한다. 이 작업의 커밋·push는 하지 않는다.
+
+## 2026-10-23 관리 유지보수 점검 — 키 복사본 운영 기록
+
+- 점검: 열린 이슈 3건(#115·#5·#1)은 과거 통합·게이트 추적용이라 조치 없음. main 의 CI·백엔드 점검·의존성 점검은 성공. 실패한 CI 는 초안 PR #199(`C1020-426c822b`, 신용조회 동의서) 가지에만 있어 그 작업 담당 몫으로 남김.
+- 의존성: 안전한 패치만 올림(firebase-admin 14.5.0, tsx 4.23.15, @types/node 22.20.5). 주 버전 상승(next·react·typescript·zod·firebase 등)은 별도 검토 대상.
+- 운영 기록: `.env.local` 은 PC3 에도 복사본이 있다. **키를 바꾸면 PC3 의 `.env.local` 에도 반드시 같이 반영한다.** 키 값 자체는 이 저장소에 쓰지 않는다.

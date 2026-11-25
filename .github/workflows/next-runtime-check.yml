@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest 가 26.04 로 바뀐 뒤 Playwright chromium 설치 실패(2026-11-25) — 지원될 때까지 고정
     timeout-minutes: 12
     env:
       ERP5_WRITE: 'off'

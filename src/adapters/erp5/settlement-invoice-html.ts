@@ -717,7 +717,11 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
     <tr${l.minus ? ' class="neg"' : ''}>
       <td class="no">${no}</td>
       <th class="rl">${esc(l.plate)}</th>
-      <td class="day">${esc(S(l.receivedAt).replace(/^20/, '')) || '&nbsp;'}</td>
+      <td class="day">${esc(S(l.receivedAt).replace(/^20/, '')) || '&nbsp;'}</td>${
+    // ★영업자 칸 — 정산서(영업채널에 주는 종이)에만. 대표 2026-11-25 «영업담당자 누군지 확인 안 돼???»,
+    //   받는 쪽(카투 대표)도 «영업자 이름을 알려줘야 돼». 값 = 접수 탭 «영업담당자». 없으면 빈칸(지어내지 않음).
+    //   ⚠ 청구서(공급사에 가는 종이)에는 우리 영업자 이름을 싣지 않는다.
+    claim ? '' : `<td class="day">${esc(S(l.agent)) || '&nbsp;'}</td>`}
       <td class="l">${l.minus ? (S(l.model) ? esc(l.model) : '환수') : shown(l.model)}<span class="sub">${
     // 계약조건 — 누구에게·무슨 상품·몇 개월
     // ★★고객 이름은 «여기서» 가린다 — 「문세준」 → 「문*준」(대표 2026-08-27).
@@ -793,11 +797,11 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
       pages.length > 1 ? `${from}–${from + chunk.length - 1} / ${inv.lines.length}건` : `${plus.length}건`
     } · 단위 원</span></div>
     <table class="ctab">
-      <colgroup><col style="width:5%"><col style="width:11%"><col style="width:9%"><col><col style="width:13%"><col style="width:11%"><col style="width:13%"></colgroup>
-      <thead><tr><th class="no">No.</th><th class="rl">차량번호</th><th>접수일</th><th>차량 · 계약조건</th><th class="n">공급가액</th><th class="n">부가세</th><th class="n">합계</th></tr></thead>
+      <colgroup><col style="width:5%"><col style="width:11%"><col style="width:9%">${claim ? '' : '<col style="width:9%">'}<col><col style="width:13%"><col style="width:11%"><col style="width:13%"></colgroup>
+      <thead><tr><th class="no">No.</th><th class="rl">차량번호</th><th>접수일</th>${claim ? '' : '<th>영업자</th>'}<th>차량 · 계약조건</th><th class="n">공급가액</th><th class="n">부가세</th><th class="n">합계</th></tr></thead>
       <tbody>
         ${chunk.map((l, k) => row(l, from + k)).join('')}
-        ${last ? `<tr class="pay"><td class="no"></td><th class="rl">합계</th><td class="l" colspan="2">${plus.length}건</td><td class="n">${num(inv.supply)}</td><td class="n">${num(inv.vat)}</td><td class="n"><b>${num(inv.total)}</b></td></tr>` : ''}
+        ${last ? `<tr class="pay"><td class="no"></td><th class="rl">합계</th><td class="l" colspan="${claim ? 2 : 3}">${plus.length}건</td><td class="n">${num(inv.supply)}</td><td class="n">${num(inv.vat)}</td><td class="n"><b>${num(inv.total)}</b></td></tr>` : ''}
       </tbody>
     </table>
     ${last ? payLine : `

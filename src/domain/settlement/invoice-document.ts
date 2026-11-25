@@ -64,7 +64,17 @@ export function monthlyInvoiceHtml(invoice:MonthlyInvoice) {
 
 
 /** Published receipt documents are projections, never lifecycle issuance or money movements. */
-export type DocumentParty = { name:string; bizNo:string; ceo:string; address:string; phone:string; bank:string; account:string; holder:string };
+export type DocumentParty = { name:string; bizNo:string; ceo:string; address:string; phone:string; bank:string; account:string; holder:string; /** 받는 쪽 담당자 표시 이름(예 «신선호 대표님»). 비면 문서에 안 찍는다. */ contact?:string };
+/**
+ * 받는 쪽 «담당자» 표시 이름 — 대표 2026-11-25 «정산서에 담당자 이름 넣어»(카투 10월 정산서).
+ * 프리패스 데이터 partner 문서에서 고른다: 담당자(manager_name·manager_position) → 연락 담당(contact_name·contact_title) → 대표(ceo_name·ceo).
+ * 직함이 없으면 담당자는 «님», 대표는 «대표님». 아무 값도 없으면 빈 문자열(문서에 줄이 안 생긴다) — 이름을 지어내지 않는다.
+ */
+export function receiverContactOf(partner:Record<string,unknown>|undefined|null):string {
+  const t=(k:string)=>typeof partner?.[k]==='string'?String(partner[k]).replace(/\s+/g,' ').trim():'';
+  const named=(name:string,title:string)=>name?`${name}${title?` ${title}`:''}님`:'';
+  return named(t('manager_name'),t('manager_position'))||named(t('contact_name'),t('contact_title'))||named(t('ceo_name')||t('ceo'),'대표');
+}
 export type ReceiptDocumentLine = { receivedAt:string; plate:string; model:string; customer:string; product:string; term:number; base:string; calculationEvidence?:string; amount:number; vat:number; total:number; minus?:boolean; reason?:string };
 export type ReceiptDocument = { axis:'공급사'|'영업채널'; kind:'청구서'|'정산서'; month:string; party:string; issuer:DocumentParty; receiver:DocumentParty; lines:ReceiptDocumentLine[]; supply:number; vat:number; total:number; clawback:number; missing:string[]; heldCount:number };
 export type ReceiptDocumentConfig = {

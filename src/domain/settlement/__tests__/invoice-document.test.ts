@@ -104,3 +104,13 @@ test('held flags stay visible while held rows stay out of counterparty totals',(
   assert.ok(html.includes('공급사 확정 별도 확인'));assert.ok(html.includes('일정 확인 필요'));
   assert.ok(!html.includes('class="warn noprint"'));assert.ok(!html.includes('<script>bad</script>'));
 });
+
+test('받는 쪽 담당자 표시: 담당자 → 연락 담당 → 대표 순, 없으면 빈칸', async () => {
+  const { receiverContactOf } = await import('../invoice-document');
+  assert.equal(receiverContactOf({ manager_name:'홍길동', manager_position:'팀장', ceo_name:'김대표' }), '홍길동 팀장님');
+  assert.equal(receiverContactOf({ manager_name:'홍길동' }), '홍길동님');
+  assert.equal(receiverContactOf({ contact_name:'이연락', contact_title:'과장' }), '이연락 과장님');
+  assert.equal(receiverContactOf({ ceo_name:' 김대표 ' }), '김대표 대표님');
+  assert.equal(receiverContactOf({}), '');
+  assert.equal(receiverContactOf(undefined), '');
+});

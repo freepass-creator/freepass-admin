@@ -655,6 +655,9 @@ export function invoiceDocHtml(inv: Invoice, opts: { invoiceNo?: string; issuedA
                상호와 사업자등록번호면 어느 법인인지 어긋날 데가 없다.
                대표는 바뀌는데 종이는 안 바뀐다 — 틀린 이름이 남느니 없는 게 낫다.
                ⚠ 발행인(우리) 대표는 꼬리에 남는다. 내는 사람은 밝혀야 한다. -->
+          <!-- ★받는 쪽 «담당자» — 대표 2026-11-25 «정산서에 담당자 이름 넣어». 값(receiver.contact)이 있을 때만 한 줄.
+               08-27 «회원사 대표명은 빼자»는 상호 옆 대표 표기를 뺀 것이고, 이 줄은 «누구에게 보내는 종이인지»를 밝히는 받는 사람 줄이다. -->
+          ${inv.receiver.contact ? `<div class="id">담당 <b>${esc(inv.receiver.contact)}</b></div>` : ''}
           <div class="id">사업자등록번호 <b>${
     inv.receiver.bizNo ? esc(inv.receiver.bizNo) : miss
   }</b></div>

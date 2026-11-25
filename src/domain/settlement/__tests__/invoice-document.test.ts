@@ -104,3 +104,13 @@ test('held flags stay visible while held rows stay out of counterparty totals',(
   assert.ok(html.includes('공급사 확정 별도 확인'));assert.ok(html.includes('일정 확인 필요'));
   assert.ok(!html.includes('class="warn noprint"'));assert.ok(!html.includes('<script>bad</script>'));
 });
+test('정산서 내역 표에만 건별 영업자 칸이 생기고, 값이 없으면 빈칸이다(청구서에는 없다)',()=>{
+  const rows=[booked(100,80,{plate:'가1',agent:' 홍 길동 '}),booked(100,80,{plate:'가2'}),booked(100,80,{plate:'가3',agent:'<b>악</b>'})];
+  const [claimDoc,settleDoc]=buildReceiptDocuments({month:'2026-09',rows,summary:{count:3,claimAmount:300,payAmount:240},config:documentConfig});
+  assert.equal(settleDoc.kind,'정산서');assert.deepEqual(settleDoc.lines.map(l=>l.agent),['홍 길동','','<b>악</b>']);
+  const branding={name:'검증',markMain:'freepass',markSub:'mobility',erpMain:'freepass',erpSub:'erp',tagline:'검증'} as DocumentBranding;
+  const settleHtml=invoiceDocHtml(settleDoc,{branding,issuedAt:1}),claimHtml=invoiceDocHtml(claimDoc,{branding,issuedAt:1});
+  assert.ok(settleHtml.includes('<th>영업자</th>'));assert.ok(settleHtml.includes('홍 길동'));assert.ok(!settleHtml.includes('<b>악</b>'));
+  assert.ok(settleHtml.includes('colspan="3"'));
+  assert.ok(!claimHtml.includes('<th>영업자</th>'));assert.ok(!claimHtml.includes('홍 길동'));
+});

@@ -4,6 +4,11 @@
  */
 export const esignEnabled = () => process.env.ESIGN_ENABLED?.trim() === 'on';
 
+/** Non-customer draft only. Never expose on a production deployment. */
+export const creditConsentPreviewEnabled = (env: Record<string, string | undefined> = process.env) =>
+  env.VERCEL_ENV === 'preview' || (!env.VERCEL_ENV && env.NODE_ENV === 'development');
+export const isCreditConsentPreviewPath = (path: string) => path === '/preview/credit-consent';
+
 export function isEsignRuntimePath(path: string): boolean {
   return path.startsWith('/sign/')
     || path.startsWith('/api/esign/')

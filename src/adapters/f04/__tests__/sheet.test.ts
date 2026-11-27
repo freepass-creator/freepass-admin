@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, findHeader, picker, serialToDate,
-  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeOnlySnapshot, assertIntakeHeaders, reconcileF04Intake,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeOnlySnapshot, assertIntakeHeaders, reconcileF04Intake, f04SyncInput, planF04IntakeSync,
 } from '../sheet.js';
 
 /* 값은 F04 시트 실측(2026-09-17)에서 그대로 딴 것이다. */
@@ -44,6 +44,104 @@ describe('접수·서버 읽기 전용 대조', () => {
     assert.equal(result.lastRecordedF04Import, '2026-10-07T00:00:00Z');
     assert.equal(result.serverFutureReceipts, 1);
     assert.doesNotMatch(JSON.stringify(result), /CARX|LEGACY/);
+  });
+});
+
+describe('F04 한 방향 반영 계획', () => {
+  const headers = ['차량번호', '접수일', '공급사', '고객명', '영업채널', '모델명',
+    '비고', '청구액', '지급액', '청구', '공급사부가세', '청구금액'];
+  const make = (overrides: unknown[] = []) => f04SyncInput(picker(headers), [
+    'VEHICLE_A', '2026-11-05', '공급사 A', '시험 고객', '채널 A', '모델 A', '비고 A',
+    100, 90, false, 10, 110,
+  ].map((value, i) => overrides[i] ?? value), 42);
+  const plan = (sources: ReturnType<typeof make>[], server: Parameters<typeof planF04IntakeSync>[1] = []) =>
+    planF04IntakeSync(sources, server, '2026-11-27');
+  const asExisting = (proposal: ReturnType<typeof plan>) => ({
+    id: proposal.writes[0].id, updateTime: '2026-11-26T00:00:00.123456Z', data: proposal.writes[0].data,
+  });
+
+  it('서버에 없는 접수를 추가하고 대외 계획에는 행 번호와 사유만 남긴다', () => {
+    const result = plan([make()]);
+    assert.equal(result.writes[0].data.claimWritten, 100);
+    assert.equal(result.entries[0].action, '추가');
+    assert.doesNotMatch(JSON.stringify(result.entries), /VEHICLE_A|시험 고객|비고 A/);
+    assert.equal(plan([make()], [asExisting(result)]).writes.length, 0);
+  });
+  it('시트 관리값만 갱신하며 서버 직접 수정과 사용자 메모를 보존한다', () => {
+    const current = asExisting(plan([make()]));
+    current.data.note = '서버 메모';
+    const changed = make([,,,,, '모델 B', '시트 메모']);
+    const result = plan([changed], [current]);
+    assert.deepEqual(result.entries[0].fields, ['model']);
+    assert.equal(result.writes[0].data.note, undefined);
+    assert.equal(result.writes[0].data.model, '모델 B');
+    assert.notEqual(result.fingerprint, plan([make()], [current]).fingerprint);
+    current.data.model = '서버 수정 모델';
+    assert.equal(plan([changed], [current]).entries[0].action, '보류');
+  });
+  it('기청구·지급된 행의 금액을 바꾸지 않으며 신규 확정액이 불명확하면 보류한다', () => {
+    const frozen = asExisting(plan([make()]));
+    frozen.data.billed = true;
+    frozen.data.paid = true;
+    const next = make([,,,,, '모델 B',, 200, 190]);
+    assert.equal(plan([next], [frozen]).entries[0].action, '보류');
+    assert.equal(plan([make([,,,,,,,,, true, 90, 190])]).entries[0].action, '보류');
+    assert.equal(plan([make([,,,,,,,,, true])]).writes[0].data.claimWritten, 100);
+  });
+  it('같은 날 중복 키 둘은 보류하고 서로 다른 계약번호는 결정 ID로 구분한다', () => {
+    const source = make();
+    const duplicate = { ...source, sourceRow: 43 };
+    assert.deepEqual(plan([source, duplicate]).entries.map(row => row.action), ['보류', '보류']);
+    const one = { ...source, contractNo: 'BOOK1234' };
+    const two = { ...duplicate, contractNo: 'BOOK5678' };
+    const both = plan([one, two]);
+    assert.equal(both.writes.length, 2);
+    assert.notEqual(both.writes[0].id, both.writes[1].id);
+    assert.equal(both.writes[0].id, plan([{ ...one, sourceRow: 500 }]).writes[0].id);
+    assert.notEqual(both.writes[0].id, plan([{ ...one, createdMarker: 'another-source' }]).writes[0].id);
+    assert.equal(plan([one, two], both.writes.map(item => ({ id: item.id, updateTime: '', data: item.data }))).writes.length, 0);
+  });
+  it('서버에서 비슷한 날짜·영업자·공급사·금액을 찾아 새 키 복사를 보류한다', () => {
+    const row = { ...make(), agent: '영업자' };
+    const existing = asExisting(plan([row]));
+    assert.match(plan([{ ...row, plate: 'EDITED', receivedAt: '2026-11-08' }], [existing]).entries[0].reasons[0], /키 변경/);
+    assert.equal(plan([{ ...row, plate: 'NEW', receivedAt: '2026-11-09' }], [existing]).writes.length, 1);
+  });
+  it('취소 상태는 신규에만 복사하고 이미 확정된 서버 건에는 환수 표시만 남긴다', () => {
+    const row = make();
+    const canceled = { ...row, cancelled: true };
+    assert.equal(plan([canceled]).writes[0].data.cancelled, true);
+    const existing = asExisting(plan([row]));
+    existing.data.paid = true;
+    assert.deepEqual(plan([canceled], [existing]).entries[0].reasons, ['환수 확인 필요']);
+    assert.equal(plan([canceled], [existing]).writes.length, 0);
+  });
+  it('시트에서 사라진 행은 확인 목록에만 남기고 금액 셀 오류는 그대로 보류한다', () => {
+    const row = make();
+    const gone = plan([], [asExisting(plan([row]))]);
+    assert.equal(gone.serverOnlyReview[0].reason, '원천 없음');
+    assert.equal(gone.writes.length, 0);
+    for (const value of ['#REF!', '#VALUE!', '1,2,3', true]) {
+      assert.match(plan([make([,,,,,,, value])]).entries[0].reasons[0], /금액·수치 셀 오류/);
+    }
+    assert.equal(plan([make([,,,,,,, '₩1,200'])]).writes[0].data.claimWritten, 1200);
+    assert.equal(plan([make([,,,,,,, ''])]).writes[0].data.claimWritten, null);
+    const explicitZero = f04SyncInput(picker([...headers, '보증금']), [...Array(headers.length), '무보증'], 1);
+    assert.equal(explicitZero.deposit, 0);
+    assert.deepEqual(explicitZero.invalidAmounts, []);
+    const existing = asExisting(plan([row]));
+    const changed = { ...row, model: '모델 B', claimWritten: 200, payWritten: 180 };
+    assert.equal(plan([{ ...changed, billed: true }], [existing]).writes.length, 0);
+    const update = plan([changed], [existing]).writes[0].data;
+    for (const protectedKey of ['claimWritten', 'payWritten', 'paid', 'billed', 'collected', 'cancelled', 'stage']) {
+      assert.equal(protectedKey in update, false);
+    }
+  });
+
+  it('날짜 또는 차량번호가 없거나 동일 접수가 서버에 중복되면 쓰기 목록에서 제외한다', () => {
+    assert.equal(plan([make(['', '2026-11-31'])]).entries[0].action, '보류');
+    const cur = asExisting(plan([make()]));
+    assert.equal(plan([make()], [cur, { ...cur, id: 'duplicate' }]).entries[0].action, '보류');
   });
 });
 

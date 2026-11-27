@@ -10,7 +10,10 @@
  *   ② 「2026-08」 을 적으면 구글이 날짜로 바꿔 `46235` 로 돌려준다 (SHEET_MAP §3-1 경고)
  */
 
-import { intakeAuthorityForDate, settlementKey } from '../../domain/settlement/code';
+import { createHash } from 'node:crypto';
+import { isCalendarDay } from '../../domain/settlement/calendar';
+import { intakeRecord, settlementStartedOf } from '../../domain/settlement/intake';
+import { intakeAuthorityForDate, settlementKey, intakeEventDocId, intakeCode } from '../../domain/settlement/code';
 
 /** 구글 serial 0점 — 1899-12-30 */
 const SERIAL0 = Date.UTC(1899, 11, 30);
@@ -119,7 +122,7 @@ export function assertIntakeOnlySnapshot(snapshot: {
   }
 }
 
-export function intakeSourceRows(raw: unknown[][], headerIndex: number) {
+export function intakeSourceRows(raw: unknown[][], headerIndex: number, allowDuplicateKeys = false) {
   if (headerIndex < 0) throw new Error('접수 머리글 없음');
   const p = picker(raw[headerIndex].map(String));
   const facts = ['접수일', '차량번호', '공급사', '모델명', '영업채널', '영업담당자',
@@ -135,7 +138,7 @@ export function intakeSourceRows(raw: unknown[][], headerIndex: number) {
       const day = p.date(r.values, '접수일');
       if (plate && day) {
         const key = `${plate}|${day}`;
-        if (seen.has(key)) throw new Error(`접수 원장 중복: row ${r.sourceRow}`);
+        if (!allowDuplicateKeys && seen.has(key)) throw new Error(`접수 원장 중복: row ${r.sourceRow}`);
         seen.add(key);
       }
       return r;
@@ -211,4 +214,213 @@ export function picker(head: string[]) {
     check: (row: unknown[], name: string) => { const i = at(name); return i < 0 ? false : cellCheck(row[i]); },
     missing: (names: string[]) => names.filter((x) => !idx.has(x)),
   };
+}
+
+const F04_SYNC_FIELDS = ['model', 'supplier', 'product', 'rentKind', 'contractType', 'term', 'rent', 'deposit', 'price', 'payKind'] as const;
+export const F04_SYNC_SERVER_FIELDS = [
+  ...F04_SYNC_FIELDS, 'customer', 'channel', 'agent', 'note', 'claimWritten', 'payWritten',
+  'invoiceIssued', 'invoiceAt', 'invoiceNoS', 'invoiceNoP', 'billed', 'billedAt', 'collected', 'collectedAt',
+  'collectedAmt', 'paid', 'paidAt', 'paidAmt', 'billMonth', 'settledAlready', 'stage', 'claimStage', 'payStage',
+  'supplierOk', 'channelOk', 'supplierFix', 'channelFix', 'auditEventId', '_f04Sync', 'contractNo', 'f04SourceIdentity',
+];
+
+export function f04SyncInput(field: ReturnType<typeof picker>, row: unknown[], sourceRow: number) {
+  const text = (name: string) => field.text(row, name) ?? '';
+  const invalidAmounts: string[] = [];
+  const number = (name: string) => {
+    const value = field.raw(row, name);
+    if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (name === '보증금' && String(value).trim() === '무보증') return 0;
+    const match = /^([+-]?)\s*₩?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(?:원)?$/.exec(String(value).trim());
+    const parsed = match ? Number(match[1] + match[2].replace(/,/g, '')) : NaN;
+    if (Number.isFinite(parsed)) return parsed;
+    invalidAmounts.push(name);
+    return null;
+  };
+  const done = (name: string) => /^(?:청구|수금|지급)?\\s*완료$/.test(text(name));
+  return {
+    sourceRow,
+    contractNo: verifiedF04Contract(text('계약번호')),
+    createdMarker: text('행 생성 표식') || text('접수 ID'),
+    invalidAmounts,
+    plate: text('차량번호').replace(/\\s/g, ''), receivedAt: field.date(row, '접수일') ?? '',
+    supplier: text('공급사'), supplierCode: '', model: text('모델명'), customer: text('고객명'),
+    channel: text('영업채널'), channelCode: '', agent: text('영업담당자'), agentCode: '',
+    product: text('상품구분'), rentKind: text('렌트구분'), contractType: text('계약형태'),
+    term: number('계약기간'), rent: number('렌탈료'), deposit: number('보증금'), price: number('차량가액'),
+    payKind: text('분납여부'), paper: field.check(row, '계약서'), delivered: field.check(row, '인도완료'),
+    deliveredAt: field.date(row, '인도일') ?? '', note: text('비고'), cancelled: field.check(row, '취소'),
+    billed: field.check(row, '청구') || done('청구상태'),
+    collected: field.check(row, '수금'), paid: done('지급상태'),
+    claimWritten: number('청구액'), payWritten: number('지급액'),
+    billMonth: billMonthOf(field.raw(row, '청구년'), field.raw(row, '청구월')) ?? '',
+    billedAt: field.date(row, '청구 최종발송일') ?? '',
+    collectedAt: field.date(row, '최종 수금일') ?? '', paidAt: field.date(row, '최종 지급일') ?? '',
+    collectedAmt: number('수금 누계액'), paidAmt: number('지급 누계액'),
+    claimVat: number('공급사부가세'), payVat: number('에이전시부가세'),
+    claimTotal: number('청구금액'), payTotal: number('지급합계(부가세포함)'),
+  };
+}
+
+type F04SyncSource = ReturnType<typeof f04SyncInput>;
+type F04SyncServer = { id: string; updateTime: string; data: Record<string, unknown> };
+type F04SyncWrite = { action: '추가' | '갱신'; id: string; updateTime?: string; row: number; key: string; auditEventId: string; source: F04SyncSource; data: Record<string, unknown> };
+const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex');
+
+function verifiedF04Contract(value: unknown): string {
+  const text = cellText(value) ?? '';
+  return /^[\p{L}\d_-]{4,64}$/u.test(text) && /\d/.test(text) ? text : '';
+}
+
+export const f04DayKey = (r: { plate?: unknown; receivedAt?: unknown }) => settlementKey(r.plate, cellDate(r.receivedAt));
+export const f04ContractKey = (r: { plate?: unknown; receivedAt?: unknown; contractNo?: unknown }) =>
+  f04DayKey(r) + '|' + verifiedF04Contract(r.contractNo);
+
+export function possibleF04KeyChange(row: F04SyncSource, cur: Record<string, unknown>) {
+  const day = cellDate(cur.receivedAt);
+  const person = (value: unknown) => (cellText(value) ?? '').normalize('NFKC').replace(/\s/g, '');
+  if (!day || f04DayKey(row) === f04DayKey(cur) || !person(row.agent) || !person(row.supplier) ||
+      person(row.agent) !== person(cur.agent) || person(row.supplier) !== person(cur.supplier) ||
+      Math.abs(Date.parse(row.receivedAt) - Date.parse(day)) > 3 * 86_400_000) return false;
+  const amounts = (['claimWritten', 'payWritten', 'rent'] as const)
+    .filter(key => row[key] !== null && cur[key] !== null && cur[key] !== '' && Number.isFinite(Number(cur[key])));
+  return amounts.length > 0 && amounts.every(key => row[key] === Number(cur[key]));
+}
+
+export function planF04IntakeSync(source: F04SyncSource[], server: F04SyncServer[], today: string) {
+  const byKey = new Map<string, F04SyncServer[]>();
+  const serverIds = new Set(server.map(entry => entry.id));
+  for (const entry of server) {
+    const key = f04DayKey(entry.data);
+    const values = byKey.get(key) ?? [];
+    values.push(entry);
+    byKey.set(key, values);
+  }
+  const sourceKeys = new Map<string, F04SyncSource[]>();
+  for (const row of source) {
+    const key = f04DayKey(row);
+    sourceKeys.set(key, [...(sourceKeys.get(key) ?? []), row]);
+  }
+  const writes: F04SyncWrite[] = [];
+  const entries: { row: number; action: '추가' | '갱신' | '보류'; reasons: string[]; fields?: string[] }[] = [];
+  let unchanged = 0;
+  for (const row of source) {
+    const key = f04DayKey(row);
+    const contractKey = f04ContractKey(row);
+    const identity = digest([row.contractNo, row.receivedAt, row.plate, row.createdMarker || 'F04:접수']);
+    const auditEventId = row.contractNo
+      ? 'f04_event_' + identity.slice(0, 32) : intakeEventDocId(row.plate, undefined, row.receivedAt);
+    const report = (action: '추가' | '갱신' | '보류', reasons: string[], fields?: string[]) =>
+      entries.push({ row: row.sourceRow, action, reasons, ...(fields?.length ? { fields } : {}) });
+    if (!row.plate || !isCalendarDay(row.receivedAt) || row.receivedAt > today) {
+      report('보류', ['접수일 또는 차량번호 확인 필요']);
+      continue;
+    }
+    if (intakeAuthorityForDate(row.receivedAt) !== 'ADMIN') continue;
+    const sameDaySource = sourceKeys.get(key) ?? [];
+    if (sameDaySource.length > 1 &&
+        (sameDaySource.some(item => !item.contractNo) || sameDaySource.filter(item => f04ContractKey(item) === contractKey).length > 1)) {
+      report('보류', ['시트에 같은 차량·접수일·계약번호가 중복되거나 계약번호가 불명확']);
+      continue;
+    }
+    if (row.invalidAmounts.length) {
+      report('보류', ['금액·수치 셀 오류: ' + row.invalidAmounts.join(', ')]);
+      continue;
+    }
+    const sameDayServer = byKey.get(key) ?? [];
+    const exact = sameDayServer.filter(item => f04ContractKey(item.data) === contractKey);
+    const legacyMatch = sameDaySource.length === 1 && sameDayServer.length === 1 &&
+      (!row.contractNo || !verifiedF04Contract(sameDayServer[0].data.contractNo));
+    const matches = exact.length ? exact : legacyMatch ? sameDayServer : [];
+    if (matches.length > 1 || (!matches.length && sameDayServer.some(item => !verifiedF04Contract(item.data.contractNo)))) {
+      report('보류', ['서버에 같은 차량·접수일이 여러 건']);
+      continue;
+    }
+    const existing = matches[0];
+    if (existing) {
+      const cur = existing.data;
+      const managed = (cur._f04Sync ?? {}) as Record<string, string>;
+      const started = settlementStartedOf(cur) || row.billed || row.collected || row.paid;
+      const patch: Record<string, unknown> = {};
+      const next = { ...managed };
+      const blocked: string[] = [];
+      for (const key of F04_SYNC_FIELDS) {
+        const value = row[key];
+        if (value === '' || value === null || value === cur[key]) continue;
+        if (!started && managed[key] === digest(cur[key])) {
+          patch[key] = value;
+          next[key] = digest(value);
+        } else {
+          blocked.push(key);
+        }
+      }
+      const protectedFields = ['claimWritten', 'payWritten', 'customer', 'channel', 'agent', 'note',
+        'paper', 'delivered', 'deliveredAt', 'cancelled', 'billed', 'paid', 'collected'] as const;
+      for (const key of protectedFields) {
+        const value = row[key];
+        if (value !== '' && value !== null && value !== cur[key]) blocked.push(key);
+      }
+      const changed = Object.keys(patch);
+      if (changed.length) {
+        writes.push({ action: '갱신', id: existing.id, updateTime: existing.updateTime, row: row.sourceRow,
+          key, source: row, auditEventId: cellText(cur.auditEventId) ?? auditEventId, data: { ...patch, _f04Sync: next } });
+        report('갱신', blocked.length ? ['F04 관리값 갱신, 별도 소유 칸 보존: ' + blocked.join(', ')] : ['F04 관리값 변경'], changed);
+      } else if (blocked.length) {
+        report('보류', [started && row.cancelled && cur.cancelled !== true ? '환수 확인 필요' : '확정 증적 또는 서버 입력 보존: ' + blocked.join(', ')]);
+      } else unchanged++;
+      continue;
+    }
+
+    const id = intakeCode('', undefined, row.receivedAt, 'f04:' + identity, 'request');
+    if (serverIds.has(id)) {
+      report('보류', ['문서 열쇠가 다른 접수와 충돌']);
+      continue;
+    }
+    if (server.some(item => possibleF04KeyChange(row, item.data))) {
+      report('보류', ['키 변경 또는 Admin 중복 의심: 접수일 3일 이내·같은 영업자·공급사·금액']);
+      continue;
+    }
+    // 원본이 미확정이면 그대로 두고, 이미 확정된 금액의 공백은 사람이 확인한다.
+    const inconsistentVat = (amount: number | null, vat: number | null, total: number | null) =>
+      amount !== null && (vat !== null && vat !== Math.round(amount * 0.1) ||
+        total !== null && total !== amount + Math.round(amount * 0.1));
+    if ((row.billed || row.collected) && inconsistentVat(row.claimWritten, row.claimVat, row.claimTotal) ||
+        row.paid && inconsistentVat(row.payWritten, row.payVat, row.payTotal)) {
+      report('보류', ['기청구·지급액의 부가세 또는 원본 합계 검토 필요']);
+      continue;
+    }
+    if (!row.supplier || !row.customer || !row.channel ||
+        (row.delivered && (!isCalendarDay(row.deliveredAt) || row.deliveredAt < row.receivedAt || row.deliveredAt > today)) ||
+        ((row.billed || row.collected) && row.claimWritten === null) || (row.paid && row.payWritten === null)) {
+      report('보류', ['필수 접수 사실·인도일 또는 확정 금액 확인 필요']);
+      continue;
+    }
+    const financial = {
+      claimWritten: row.claimWritten, payWritten: row.payWritten,
+      billed: row.billed, billedAt: row.billedAt, paid: row.paid, paidAt: row.paidAt,
+      collected: row.collected, collectedAt: row.collectedAt, billMonth: row.billMonth,
+      collectedAmt: row.collectedAmt, paidAmt: row.paidAmt,
+      claimStage: row.collected ? '수금' : row.billed ? '청구' : '접수',
+      payStage: row.paid ? '지급' : '접수',
+    };
+    const data = {
+      ...intakeRecord(row, Date.parse(today + 'T00:00:00+09:00')), ...financial,
+      sourceTab: '접수', fromSheet: 'F04 연동', sourceRow: row.sourceRow,
+      _f04Sync: Object.fromEntries(F04_SYNC_FIELDS.map(key => [key, digest(row[key])])),
+    };
+    writes.push({ action: '추가', id, row: row.sourceRow, key, source: row, auditEventId,
+      data: { ...data, code: id, auditEventId, contractNo: row.contractNo,
+        f04SourceIdentity: identity, cancelled: row.cancelled, stage: row.cancelled ? '취소' : '접수' } });
+    serverIds.add(id);
+    report('추가', [row.cancelled ? '서버에 없음, 원본 취소 상태와 확인된 값을 복사' : '서버에 없음, 원본 접수·확정값을 복사']);
+  }
+  const serverOnlyReview = server.flatMap(({ id, data }) => {
+    if (!data.f04SourceIdentity && data.fromSheet !== 'F04 연동') return [];
+    const sourced = sourceKeys.get(f04DayKey(data)) ?? [];
+    const present = sourced.some(row => f04ContractKey(row) === f04ContractKey(data)) ||
+      (sourced.length === 1 && !verifiedF04Contract(data.contractNo));
+    return present ? [] : [{ reference: digest(id).slice(0, 12), sourceRow: data.sourceRow ?? null, reason: '원천 없음' }];
+  });
+  return { entries, writes, unchanged, serverOnlyReview, fingerprint: digest({ entries, writes, serverOnlyReview }) };
 }

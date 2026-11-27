@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { JWT } from 'google-auth-library';
 import {
   billMonthOf, cellDate, findHeader, picker, cellCheck, cellNumber, cellText,
-  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeHeaders,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeHeaders, reconcileF04Intake,
 } from '../src/adapters/f04/sheet.ts';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -34,13 +34,14 @@ const REPORT = arg('--report', 'docs/dev/evidence/F04-SSOT-READ.md');
  *   고르는 법: --auth sa|gws. 안 주면 키 파일이 있으면 sa, 없으면 gws.
  * 값은 두 길 모두 UNFORMATTED_VALUE — 날짜가 구글 serial 숫자로 오고 sheet.ts 가 되돌린다.
  */
-const AUTH = arg('--auth', existsSync(SA) ? 'sa' : 'gws');
+const RECONCILE = process.argv.includes('--reconcile');
+const AUTH = arg('--auth', !RECONCILE && existsSync(SA) ? 'sa' : 'gws');
 if (AUTH !== 'sa' && AUTH !== 'gws') throw new Error(`--auth 는 sa 또는 gws: ${AUTH}`);
 
 const a1 = (tab: string, cells = 'A1:CZ2000') => `'${tab.replace(/'/g, "''")}'!${cells}`;
 
 let readMeta: () => Promise<any>;
-let values: (tab: string) => Promise<unknown[][]>;
+let values: (tab: string, range?: string) => Promise<unknown[][]>;
 
 if (AUTH === 'sa') {
   const sa = JSON.parse(readFileSync(SA, 'utf8'));
@@ -55,8 +56,8 @@ if (AUTH === 'sa') {
     return r.json() as Promise<any>;
   };
   readMeta = () => api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}?fields=properties.title,sheets.properties.title`);
-  values = async (tab) =>
-    ((await api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}/values/${encodeURIComponent(a1(tab))}?valueRenderOption=UNFORMATTED_VALUE`)).values ?? []) as unknown[][];
+  values = async (tab, range) =>
+    ((await api(`https://sheets.googleapis.com/v4/spreadsheets/${LEDGER}/values/${encodeURIComponent(a1(tab, range))}?valueRenderOption=UNFORMATTED_VALUE`)).values ?? []) as unknown[][];
 } else {
   const bin = gwsBinary();
   const gws = (args: string[]) => {
@@ -69,8 +70,8 @@ if (AUTH === 'sa') {
   };
   readMeta = async () => gws(['sheets', 'spreadsheets', 'get', '--params',
     JSON.stringify({ spreadsheetId: LEDGER, fields: 'properties.title,sheets.properties.title' })]);
-  values = async (tab) => (gws(['sheets', 'spreadsheets', 'values', 'get', '--params',
-    JSON.stringify({ spreadsheetId: LEDGER, range: a1(tab), valueRenderOption: 'UNFORMATTED_VALUE' })]).values ?? []) as unknown[][];
+  values = async (tab, range) => (gws(['sheets', 'spreadsheets', 'values', 'get', '--params',
+    JSON.stringify({ spreadsheetId: LEDGER, range: a1(tab, range), valueRenderOption: 'UNFORMATTED_VALUE' })]).values ?? []) as unknown[][];
 }
 
 /**
@@ -89,6 +90,57 @@ function gwsBinary(): string {
 const log: string[] = [];
 const say = (s: string) => { console.error(s); log.push(s); };
 
+if (RECONCILE) {
+  const raw = await values('접수', 'A1:CZ');
+  const header = findHeader(raw);
+  if (header < 0) throw new Error('접수 머리글 없음');
+  const head = raw[header].map(String);
+  assertIntakeHeaders(head);
+  const field = picker(head);
+  const source = intakeSourceRows(raw, header).map(({ values: row, sourceRow }) => ({
+    plate: field.text(row, '차량번호'), receivedAt: field.date(row, '접수일'), sourceRow,
+  }));
+
+  const gcloud = process.platform === 'win32' ? 'powershell.exe' : 'gcloud';
+  const args = process.platform === 'win32'
+    ? ['-NoProfile', '-NonInteractive', '-Command', '& gcloud.cmd auth print-access-token --quiet']
+    : ['auth', 'print-access-token', '--quiet'];
+  const result = spawnSync(gcloud, args, { encoding: 'utf8', timeout: 30_000, windowsHide: true });
+  const token = result.stdout?.trim();
+  if (result.status !== 0 || !token) throw new Error('Firestore 읽기 계정 인증 실패');
+  const selected = ['plate', 'receivedAt', 'sourceTab', 'fromSheet', 'sourceRow', '_f04.at'];
+  const response = await fetch('https://firestore.googleapis.com/v1/projects/freepasserp5/databases/(default)/documents:runQuery', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: {
+      from: [{ collectionId: 'settlement_rows' }],
+      select: { fields: selected.map(fieldPath => ({ fieldPath })) },
+    } }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Firestore 정산원장 읽기 실패 (HTTP ${response.status})`);
+  const replies = await response.json() as {
+    readTime?: string;
+    document?: { fields?: Record<string, { stringValue?: string; integerValue?: string; timestampValue?: string;
+      mapValue?: { fields?: Record<string, { stringValue?: string }> } }> };
+  }[];
+  if (!Array.isArray(replies) || !replies.some(reply => reply.readTime)) throw new Error('Firestore 응답에 읽기 시각 없음');
+  const records = replies.flatMap(({ document }) => {
+    if (!document) return [];
+    const r = document.fields;
+    const sourceRow = Number(r?.sourceRow?.integerValue);
+    return [{ plate: r?.plate?.stringValue, receivedAt: r?.receivedAt?.stringValue ?? r?.receivedAt?.timestampValue,
+      sourceTab: r?.sourceTab?.stringValue, fromSheet: r?.fromSheet?.stringValue,
+      sourceRow: Number.isSafeInteger(sourceRow) && sourceRow > 0 ? sourceRow : undefined,
+      f04ImportedAt: r?._f04?.mapValue?.fields?.at?.stringValue }];
+  });
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
+  console.log(JSON.stringify({ readTime: replies.at(-1)?.readTime, ...reconcileF04Intake(source, records, today) }, null, 2));
+} else {
+  await writeSnapshot();
+}
+
+async function writeSnapshot() {
 const meta = await readMeta();
 const tabs: string[] = meta.sheets.map((s: any) => s.properties.title);
 say(`■ ${meta.properties.title}  (읽은 길: ${AUTH})`);
@@ -219,3 +271,4 @@ mkdirSync(dirname(REPORT), { recursive: true });
 writeFileSync(REPORT, `# F04 시트 전체 읽기\n\n\`\`\`\n${log.join('\n')}\n\`\`\`\n`, 'utf8');
 say(`\n■ 냈다 → ${OUT}`);
 if (!balanced) process.exitCode = 1;
+}

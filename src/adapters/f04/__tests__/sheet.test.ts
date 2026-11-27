@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, findHeader, picker, serialToDate,
-  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeOnlySnapshot, assertIntakeHeaders,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeOnlySnapshot, assertIntakeHeaders, reconcileF04Intake,
 } from '../sheet.js';
 
 /* 값은 F04 시트 실측(2026-09-17)에서 그대로 딴 것이다. */
@@ -20,6 +20,30 @@ describe('누적 접수 원장', () => {
   });
   it('같은 차량 재접수 날짜는 별도 이력이다', () => {
     assert.equal(intakeSourceRows([head, ['2026-09-01', 'PLATE_A'], ['2026-09-02', 'PLATE_A']], 0).length, 2);
+  });
+});
+
+describe('접수·서버 읽기 전용 대조', () => {
+  it('전환 뒤 같은 번호의 다른 접수만 누락으로 남기고 보관 탭 고아를 찾는다', () => {
+    const result = reconcileF04Intake([
+      { plate: 'OLD', receivedAt: '2026-09-30', sourceRow: 10 },
+      { plate: 'CAR X', receivedAt: '2026-10-01', sourceRow: 11 },
+      { plate: 'CAR X', receivedAt: '2026-11-12', sourceRow: 12 },
+      { plate: 'CAR INVALID', receivedAt: '2026-11-31', sourceRow: 13 },
+      { plate: '', receivedAt: '2026-11-10', sourceRow: 14 },
+    ], [
+      { plate: 'CARX', receivedAt: '2026-10-01', fromSheet: '분납실적', f04ImportedAt: '2026-10-07T00:00:00Z' },
+      { plate: 'LEGACY', receivedAt: '2026-12-12', fromSheet: '접수 + 완납실적 + 분납실적', sourceRow: 20 },
+      { plate: 'ADMIN', receivedAt: '2026-10-07', fromSheet: 'Admin', f04ImportedAt: '잘못된 시각' },
+    ], '2026-11-27');
+    assert.deepEqual(result.adminOnlyInSheet, [12]);
+    assert.deepEqual(result.sheetRowsMissingValidKey, [13, 14]);
+    assert.deepEqual(result.legacyOrphans, [{ tab: '옛 통합 원장', day: '2026-12-12', sourceRow: 20 }]);
+    assert.equal(result.latestSheetReceipt, '2026-11-12');
+    assert.equal(result.latestServerReceipt, '2026-10-07');
+    assert.equal(result.lastRecordedF04Import, '2026-10-07T00:00:00Z');
+    assert.equal(result.serverFutureReceipts, 1);
+    assert.doesNotMatch(JSON.stringify(result), /CARX|LEGACY/);
   });
 });
 

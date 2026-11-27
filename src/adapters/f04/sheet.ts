@@ -10,6 +10,8 @@
  *   ② 「2026-08」 을 적으면 구글이 날짜로 바꿔 `46235` 로 돌려준다 (SHEET_MAP §3-1 경고)
  */
 
+import { intakeAuthorityForDate, settlementKey } from '../../domain/settlement/code';
+
 /** 구글 serial 0점 — 1899-12-30 */
 const SERIAL0 = Date.UTC(1899, 11, 30);
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -138,6 +140,61 @@ export function intakeSourceRows(raw: unknown[][], headerIndex: number) {
       }
       return r;
     });
+}
+
+type IntakeAuditRow = {
+  plate?: unknown;
+  receivedAt?: unknown;
+  sourceRow?: number;
+  fromSheet?: unknown;
+  sourceTab?: unknown;
+  f04ImportedAt?: unknown;
+};
+
+export function reconcileF04Intake(source: IntakeAuditRow[], server: IntakeAuditRow[], today: string) {
+  const dayOf = (row: IntakeAuditRow) => {
+    const value = cellDate(row.receivedAt);
+    const time = value && Date.parse(value + 'T00:00:00Z');
+    return value && typeof time === 'number' && Number.isFinite(time)
+      && new Date(time).toISOString().slice(0, 10) === value ? value : null;
+  };
+  const keyOf = (row: IntakeAuditRow) => {
+    const day = dayOf(row);
+    const plate = cellText(row.plate);
+    return day && plate ? settlementKey(plate, day) : '';
+  };
+  const keys = (rows: IntakeAuditRow[]) => new Set(rows.map(keyOf).filter(Boolean));
+  const inSheet = keys(source);
+  const inServer = keys(server);
+  const gaps: number[] = [];
+  const missingKey: number[] = [];
+  for (const row of source) {
+    const key = keyOf(row);
+    const day = dayOf(row);
+    if (!key || !day || day > today) {
+      if (row.sourceRow !== undefined) missingKey.push(row.sourceRow);
+    } else if (intakeAuthorityForDate(day) === 'ADMIN' && !inServer.has(key) && row.sourceRow !== undefined) {
+      gaps.push(row.sourceRow);
+    }
+  }
+  const dates = server.map(dayOf).filter((day): day is string => !!day && day <= today).sort();
+  const legacyOrphans = server.flatMap((row) => {
+    const declared = [row.sourceTab, row.fromSheet].flatMap(value => cellText(value) ?? []);
+    const tab = declared.find(value => value === '분납실적' || value === '완납실적')
+      ?? (declared.some(value => value.includes('분납실적') && value.includes('완납실적')) ? '옛 통합 원장' : null);
+    const key = keyOf(row);
+    return tab && key && !inSheet.has(key) ? [{ tab, day: dayOf(row), sourceRow: row.sourceRow ?? null }] : [];
+  });
+  const imports = server.map(row => cellText(row.f04ImportedAt))
+    .filter((value): value is string => !!value && Number.isFinite(Date.parse(value))).sort();
+  return {
+    sourceRows: source.length, serverRows: server.length,
+    latestSheetReceipt: source.map(dayOf).filter((day): day is string => !!day && day <= today).sort().at(-1) ?? null,
+    latestServerReceipt: dates.at(-1) ?? null,
+    lastRecordedF04Import: imports.at(-1) ?? null,
+    serverFutureReceipts: server.filter(row => (dayOf(row) ?? '') > today).length,
+    adminOnlyInSheet: gaps, sheetRowsMissingValidKey: missingKey, legacyOrphans,
+  };
 }
 
 /** 이름으로 칸을 집는 손 — 없는 열은 «없다» 고 말한다 (★-1 로 조용히 0 을 내지 않는다) */

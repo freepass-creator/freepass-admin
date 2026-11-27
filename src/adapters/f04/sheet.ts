@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { isCalendarDay } from '../../domain/settlement/calendar';
+import { isCalendarDay, isCalendarMonth } from '../../domain/settlement/calendar';
 import { intakeRecord, settlementStartedOf } from '../../domain/settlement/intake';
 import { intakeAuthorityForDate, settlementKey, intakeEventDocId, intakeCode } from '../../domain/settlement/code';
 
@@ -224,6 +224,28 @@ export const F04_SYNC_SERVER_FIELDS = [
   'supplierOk', 'channelOk', 'supplierFix', 'channelFix', 'auditEventId', '_f04Sync', 'contractNo', 'f04SourceIdentity',
 ];
 
+function sentChargeDate(evidence: string, billMonth: string): string {
+  const dates = new Set<string>();
+  const sendDates = new Set<string>();
+  const normalized = evidence.normalize('NFKC');
+  const monthKnown = isCalendarMonth(billMonth);
+  const [billYear, billMonthNumber] = billMonth.split('-').map(Number);
+  const tokens = /(?<![\d./-])(?:(20\d{2})[./-])?(\d{1,2})[./-](\d{1,2})(?![\d./-])/g;
+  for (const match of normalized.matchAll(tokens)) {
+    const month = Number(match[2]);
+    const monthOffset = (month + 12 - billMonthNumber) % 12;
+    if (!match[1] && (!monthKnown || monthOffset > 1)) continue;
+    const year = match[1] || String(billYear + Number(month < billMonthNumber));
+    const date = year + '-' + p2(month) + '-' + p2(Number(match[3]));
+    if (!isCalendarDay(date)) continue;
+    dates.add(date);
+    const after = normalized.slice(match.index + match[0].length);
+    if (/^\s*(?:카카오톡|카톡|이메일|메일|발송|전송|보냄)/.test(after)) sendDates.add(date);
+  }
+  const candidates = sendDates.size ? sendDates : dates;
+  return candidates.size === 1 ? [...candidates][0] : '';
+}
+
 export function f04SyncInput(field: ReturnType<typeof picker>, row: unknown[], sourceRow: number) {
   const text = (name: string) => field.text(row, name) ?? '';
   const invalidAmounts: string[] = [];
@@ -239,6 +261,14 @@ export function f04SyncInput(field: ReturnType<typeof picker>, row: unknown[], s
     return null;
   };
   const done = (name: string) => /^(?:청구|수금|지급)?\\s*완료$/.test(text(name));
+  const billMonth = billMonthOf(field.raw(row, '청구년'), field.raw(row, '청구월')) ?? '';
+  const billState = text('청구상태').normalize('NFKC').replace(/\s/g, '');
+  const evidence = text('청구 발송증빙');
+  const sentCharge = billState === '청구발송증빙확인' ||
+    (!!evidence && /^(?:기청구|(?:청구서?)?발송(?:완료|증빙확인|증빙있음))$/.test(billState));
+  const explicitBilledAt = field.date(row, '청구 최종발송일') ?? '';
+  const billedAt = isCalendarDay(explicitBilledAt) ? explicitBilledAt : sentCharge ? sentChargeDate(evidence, billMonth) : '';
+  const delivered = field.check(row, '인도완료');
   return {
     sourceRow,
     contractNo: verifiedF04Contract(text('계약번호')),
@@ -249,13 +279,12 @@ export function f04SyncInput(field: ReturnType<typeof picker>, row: unknown[], s
     channel: text('영업채널'), channelCode: '', agent: text('영업담당자'), agentCode: '',
     product: text('상품구분'), rentKind: text('렌트구분'), contractType: text('계약형태'),
     term: number('계약기간'), rent: number('렌탈료'), deposit: number('보증금'), price: number('차량가액'),
-    payKind: text('분납여부'), paper: field.check(row, '계약서'), delivered: field.check(row, '인도완료'),
-    deliveredAt: field.date(row, '인도일') ?? '', note: text('비고'), cancelled: field.check(row, '취소'),
-    billed: field.check(row, '청구') || done('청구상태'),
+    payKind: text('분납여부'), paper: field.check(row, '계약서'), delivered,
+    deliveredAt: delivered ? (field.date(row, '인도일') ?? '') : '', note: text('비고'), cancelled: field.check(row, '취소'),
+    sentCharge, billed: sentCharge || field.check(row, '청구') || done('청구상태'),
     collected: field.check(row, '수금'), paid: done('지급상태'),
     claimWritten: number('청구액'), payWritten: number('지급액'),
-    billMonth: billMonthOf(field.raw(row, '청구년'), field.raw(row, '청구월')) ?? '',
-    billedAt: field.date(row, '청구 최종발송일') ?? '',
+    billMonth, billedAt,
     collectedAt: field.date(row, '최종 수금일') ?? '', paidAt: field.date(row, '최종 지급일') ?? '',
     collectedAmt: number('수금 누계액'), paidAmt: number('지급 누계액'),
     claimVat: number('공급사부가세'), payVat: number('에이전시부가세'),
@@ -326,6 +355,10 @@ export function planF04IntakeSync(source: F04SyncSource[], server: F04SyncServer
     }
     if (row.invalidAmounts.length) {
       report('보류', ['금액·수치 셀 오류: ' + row.invalidAmounts.join(', ')]);
+      continue;
+    }
+    if (row.sentCharge && (!isCalendarDay(row.billedAt) || row.billedAt < row.receivedAt || row.billedAt > today)) {
+      report('보류', ['기청구 발송일 확인 필요']);
       continue;
     }
     const sameDayServer = byKey.get(key) ?? [];
@@ -406,6 +439,7 @@ export function planF04IntakeSync(source: F04SyncSource[], server: F04SyncServer
     };
     const data = {
       ...intakeRecord(row, Date.parse(today + 'T00:00:00+09:00')), ...financial,
+      settleNote: '',
       sourceTab: '접수', fromSheet: 'F04 연동', sourceRow: row.sourceRow,
       _f04Sync: Object.fromEntries(F04_SYNC_FIELDS.map(key => [key, digest(row[key])])),
     };

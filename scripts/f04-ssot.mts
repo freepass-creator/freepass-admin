@@ -168,6 +168,12 @@ if (RECONCILE) {
       invalidKeyRows: audit.sheetRowsMissingValidKey,
       legacyReviewOnly: audit.legacyOrphans,
       serverOnlyReview: proposal.serverOnlyReview,
+      checks: {
+        chargedFromEvidence: proposal.writes.filter(op => op.action === '추가' && op.source.sentCharge)
+          .map(({ row, data }) => ({ row, billed: data.billed, billedAt: data.billedAt })),
+        blankSettlementNotes: proposal.writes.filter(op => op.action === '추가' && op.data.settleNote === '').length,
+        undeliveredWithDate: proposal.writes.filter(op => op.action === '추가' && op.data.delivered === false && op.data.deliveredAt !== '').length,
+      },
       entries: proposal.entries,
     };
     if (PLAN) {

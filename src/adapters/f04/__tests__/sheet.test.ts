@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { buildMonthlyInvoice } from '../../../domain/settlement/invoice-document.js';
 import {
   billMonthOf, cellCheck, cellDate, cellNumber, f04SettlementField, findHeader, picker, serialToDate,
   F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeOnlySnapshot, assertIntakeHeaders, reconcileF04Intake, f04SyncInput, planF04IntakeSync,
@@ -58,6 +59,75 @@ describe('F04 한 방향 반영 계획', () => {
     planF04IntakeSync(sources, server, '2026-11-27');
   const asExisting = (proposal: ReturnType<typeof plan>) => ({
     id: proposal.writes[0].id, updateTime: '2026-11-26T00:00:00.123456Z', data: proposal.writes[0].data,
+  });
+
+
+  const evidenceHeaders = [...headers, '청구상태', '청구 최종발송일', '청구 발송증빙',
+    '청구년', '청구월', '인도완료', '인도일'];
+  const withEvidence = (sourceRow: number, evidence: string, finalDay = '', status = '청구발송증빙확인',
+    delivered = true, deliveredAt = '2026-10-20') =>
+    f04SyncInput(picker(evidenceHeaders), [
+      'TEST_' + sourceRow, '2026-10-01', '시험 공급사', '시험 고객', '시험 채널', '시험 모델', '',
+      100, 90, false, 10, 110, status, finalDay, evidence, 2026, 10, delivered, deliveredAt,
+    ], sourceRow);
+
+  it('검증한 17개 행 모양을 모두 기청구 처리하고 새 청구서에서 제외한다', () => {
+    const cases = [
+      ...[493, 494, 498, 504, 508, 515, 531].map(row =>
+        ({ row, date: '2026-11-02', source: withEvidence(row, '11-02 카톡 발송, 11-09 재확인') })),
+      ...[496, 500, 503, 506, 514, 517, 518, 525].map(row =>
+        ({ row, date: '2026-11-09', source: withEvidence(row, '11-02 메일 발송', '2026-11-09') })),
+      ...[632, 633].map(row =>
+        ({ row, date: '2026-11-05', source: withEvidence(row, '2026-10 청구서 발송 확인(11-05)') })),
+    ];
+    const result = plan(cases.map(test => test.source));
+    assert.equal(result.writes.length, 17);
+    for (const [index, test] of cases.entries()) {
+      const write = result.writes[index];
+      assert.equal(write.row, test.row);
+      assert.equal(write.data.billed, true, String(test.row));
+      assert.equal(write.data.billedAt, test.date, String(test.row));
+      assert.equal(write.data.paid, false, String(test.row));
+    }
+    const rows = result.writes.map(write => ({
+      supplier: '시험 공급사', billMonth: '2026-10', plate: 'TEST_' + write.row,
+      receivedAt: '2026-10-01', delivered: true, claim: 100, billed: write.data.billed === true,
+    }));
+    const party = { name: '시험', bizNo: '' };
+    const invoice = buildMonthlyInvoice({
+      month: '2026-10', supplier: '시험 공급사',
+      issuer: { ...party, bank: '', account: '', holder: '', manager: '', phone: '', email: '' },
+      receiver: party,
+      rows: [...rows, { ...rows[0], plate: 'TEST_NEW', billed: false }],
+    });
+    assert.equal(invoice.claimLineCount, 1);
+    assert.equal(invoice.lines[0].plate, 'TEST_NEW');
+  });
+
+  it('발송 날짜가 없거나 여러 날짜가 모호하면 보류하고 미발행 상태의 메모로 기청구하지 않는다', () => {
+    for (const evidence of ['파일 참조', '11-02 검토 및 11-05 확인', '11-31 카톡']) {
+      const result = plan([withEvidence(1, evidence)]);
+      assert.equal(result.writes.length, 0);
+      assert.deepEqual(result.entries[0].reasons, ['기청구 발송일 확인 필요']);
+    }
+    const result = plan([withEvidence(2, '11-05 검토 메모', '', '청구대상·이력미확인')]);
+    assert.equal(result.writes[0].data.billed, false);
+    assert.equal(result.writes[0].data.billedAt, '');
+    const fullDate = plan([withEvidence(3, '2026-11-05 이메일', '', '청구서 발송 완료')]);
+    assert.equal(fullDate.writes[0].data.billedAt, '2026-11-05');
+  });
+
+  it('미인도 일곱 행의 예정일과 문자는 비우고 산정 조건은 공란으로 둔다', () => {
+    const examples = [576, 589, 594, 608, 610, 614, 617];
+    const result = plan(examples.map(row => withEvidence(row, '', '', '', false,
+      row === 576 ? '목요일입금' : '2026-11-25')));
+    assert.equal(result.writes.length, 7);
+    for (const op of result.writes) {
+      assert.equal(op.data.delivered, false);
+      assert.equal(op.data.deliveredAt, '');
+      assert.equal(op.data.settleNote, '');
+    }
+    assert.equal(plan([make()]).writes[0].data.settleNote, '');
   });
 
   it('서버에 없는 접수를 추가하고 대외 계획에는 행 번호와 사유만 남긴다', () => {

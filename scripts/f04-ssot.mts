@@ -12,16 +12,21 @@
  * 갈래와 까닭 : docs/dev/F04-SSOT.md
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { JWT } from 'google-auth-library';
+import { cert, initializeApp } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { assertErp5MaintenanceWrite } from '../src/shared/erp5-write-approval.ts';
 import {
   billMonthOf, cellDate, findHeader, picker, cellCheck, cellNumber, cellText,
-  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeHeaders, reconcileF04Intake,
+  F04_LEDGER_TABS, F04_LEDGER_MODE, intakeSourceRows, assertIntakeHeaders, reconcileF04Intake, f04SyncInput, planF04IntakeSync, F04_SYNC_SERVER_FIELDS, f04DayKey, f04ContractKey, possibleF04KeyChange,
 } from '../src/adapters/f04/sheet.ts';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const LEDGER = arg('--id', 'F04_SPREADSHEET_ID_REQUIRED');
+const configuredLedger = process.env.F04_SHEET_ID?.trim();
+const LEDGER = arg('--id', configuredLedger || 'F04_SPREADSHEET_ID_REQUIRED');
 const SA = arg('--sa', 'C:/dev/freepasserp4/tmp/firebase-auth/sa.json');
 const OUT = arg('--out', 'docs/ui/mockups/f04.ssot.js');
 const REPORT = arg('--report', 'docs/dev/evidence/F04-SSOT-READ.md');
@@ -34,7 +39,15 @@ const REPORT = arg('--report', 'docs/dev/evidence/F04-SSOT-READ.md');
  *   고르는 법: --auth sa|gws. 안 주면 키 파일이 있으면 sa, 없으면 gws.
  * 값은 두 길 모두 UNFORMATTED_VALUE — 날짜가 구글 serial 숫자로 오고 sheet.ts 가 되돌린다.
  */
-const RECONCILE = process.argv.includes('--reconcile');
+const PLAN = arg('--plan', '');
+const APPROVED = arg('--apply-plan', '');
+const RECONCILE = process.argv.includes('--reconcile') || !!PLAN || !!APPROVED;
+if ((PLAN || APPROVED) && !/^[A-Za-z0-9_-]{30,}$/.test(LEDGER)) throw new Error('F04 정본 문서 ID가 필요합니다');
+if (APPROVED && (!configuredLedger || LEDGER !== configuredLedger)) throw new Error('승인된 F04 원장 설정이 필요합니다');
+if (PLAN && APPROVED) throw new Error('반영 계획 생성과 승인 실행을 한 번에 할 수 없습니다');
+if (['--plan', '--apply-plan'].some(option => process.argv.includes(option) && !arg(option, ''))) {
+  throw new Error('계획 파일 경로가 필요합니다');
+}
 const AUTH = arg('--auth', !RECONCILE && existsSync(SA) ? 'sa' : 'gws');
 if (AUTH !== 'sa' && AUTH !== 'gws') throw new Error(`--auth 는 sa 또는 gws: ${AUTH}`);
 
@@ -97,7 +110,8 @@ if (RECONCILE) {
   const head = raw[header].map(String);
   assertIntakeHeaders(head);
   const field = picker(head);
-  const source = intakeSourceRows(raw, header).map(({ values: row, sourceRow }) => ({
+  const intake = intakeSourceRows(raw, header, !!PLAN || !!APPROVED);
+  const source = intake.map(({ values: row, sourceRow }) => ({
     plate: field.text(row, '차량번호'), receivedAt: field.date(row, '접수일'), sourceRow,
   }));
 
@@ -108,7 +122,8 @@ if (RECONCILE) {
   const result = spawnSync(gcloud, args, { encoding: 'utf8', timeout: 30_000, windowsHide: true });
   const token = result.stdout?.trim();
   if (result.status !== 0 || !token) throw new Error('Firestore 읽기 계정 인증 실패');
-  const selected = ['plate', 'receivedAt', 'sourceTab', 'fromSheet', 'sourceRow', '_f04.at'];
+  const selected = ['plate', 'receivedAt', 'sourceTab', 'fromSheet', 'sourceRow', '_f04.at',
+    ...((PLAN || APPROVED) ? F04_SYNC_SERVER_FIELDS : [])];
   const response = await fetch('https://firestore.googleapis.com/v1/projects/freepasserp5/databases/(default)/documents:runQuery', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -121,8 +136,7 @@ if (RECONCILE) {
   if (!response.ok) throw new Error(`Firestore 정산원장 읽기 실패 (HTTP ${response.status})`);
   const replies = await response.json() as {
     readTime?: string;
-    document?: { fields?: Record<string, { stringValue?: string; integerValue?: string; timestampValue?: string;
-      mapValue?: { fields?: Record<string, { stringValue?: string }> } }> };
+    document?: { name: string; updateTime?: string; fields?: Record<string, FirestoreValue> };
   }[];
   if (!Array.isArray(replies) || !replies.some(reply => reply.readTime)) throw new Error('Firestore 응답에 읽기 시각 없음');
   const records = replies.flatMap(({ document }) => {
@@ -135,9 +149,122 @@ if (RECONCILE) {
       f04ImportedAt: r?._f04?.mapValue?.fields?.at?.stringValue }];
   });
   const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
-  console.log(JSON.stringify({ readTime: replies.at(-1)?.readTime, ...reconcileF04Intake(source, records, today) }, null, 2));
+  const audit = reconcileF04Intake(source, records, today);
+  const readTime = replies.at(-1)?.readTime;
+  if (PLAN || APPROVED) {
+    const server = replies.flatMap(({ document }) => document ? [{
+      id: document.name.split('/').at(-1)!,
+      updateTime: document.updateTime ?? '',
+      data: Object.fromEntries(Object.entries(document.fields ?? {}).map(([key, value]) => [key, decode(value)])),
+    }] : []);
+    const proposal = planF04IntakeSync(intake.map(({ values, sourceRow }) => f04SyncInput(field, values, sourceRow)), server, today);
+    const summary = {
+      schema: 'f04-intake-sync/v1', today, readTime, fingerprint: proposal.fingerprint,
+      ledgerFingerprint: createHash('sha256').update(LEDGER).digest('hex'),
+      counts: Object.fromEntries(['추가', '갱신', '보류'].map(action => [action, proposal.entries.filter(r => r.action === action).length])),
+      unchanged: proposal.unchanged,
+      missingPostCutover: audit.adminOnlyInSheet.length,
+      sourceOnlyRows: audit.adminOnlyInSheet,
+      invalidKeyRows: audit.sheetRowsMissingValidKey,
+      legacyReviewOnly: audit.legacyOrphans,
+      serverOnlyReview: proposal.serverOnlyReview,
+      checks: {
+        chargedFromEvidence: proposal.writes.filter(op => op.action === '추가' && op.source.sentCharge)
+          .map(({ row, data }) => ({ row, billed: data.billed, billedAt: data.billedAt })),
+        blankSettlementNotes: proposal.writes.filter(op => op.action === '추가' && op.data.settleNote === '').length,
+        undeliveredWithDate: proposal.writes.filter(op => op.action === '추가' && op.data.delivered === false && op.data.deliveredAt !== '').length,
+      },
+      entries: proposal.entries,
+    };
+    if (PLAN) {
+      writeFileSync(PLAN, JSON.stringify(summary, null, 2) + '\n', { encoding: 'utf8', flag: 'wx' });
+      console.log(JSON.stringify({ ...summary, entries: undefined, sourceOnlyRows: undefined, invalidKeyRows: undefined }));
+    } else {
+      const approved = JSON.parse(readFileSync(APPROVED, 'utf8'));
+      if (approved.schema !== summary.schema || approved.today !== today || approved.fingerprint !== proposal.fingerprint ||
+          approved.ledgerFingerprint !== summary.ledgerFingerprint) {
+        throw new Error('승인 계획과 현재 원장이 다릅니다. 계획을 다시 생성하고 승인받으세요');
+      }
+      await applyApprovedPlan(proposal);
+    }
+  } else {
+    console.log(JSON.stringify({ readTime, ...audit }, null, 2));
+  }
 } else {
   await writeSnapshot();
+}
+
+type FirestoreValue = {
+  stringValue?: string; integerValue?: string; timestampValue?: string; booleanValue?: boolean; doubleValue?: number;
+  mapValue?: { fields?: Record<string, FirestoreValue> };
+};
+function decode(value: FirestoreValue): unknown {
+  if (value.mapValue) return Object.fromEntries(Object.entries(value.mapValue.fields ?? {}).map(([key, child]) => [key, decode(child)]));
+  if (value.integerValue !== undefined) return Number(value.integerValue);
+  return value.booleanValue ?? value.doubleValue ?? value.stringValue ?? value.timestampValue ?? null;
+}
+
+function exactTimestamp(value: string) {
+  const match = /^(.*?)(?:\.(\d{1,9}))?Z$/.exec(value);
+  if (!match || !Number.isFinite(Date.parse(match[1] + 'Z'))) throw new Error('서버 문서 갱신 시각을 확인할 수 없습니다');
+  return new Timestamp(Date.parse(match[1] + 'Z') / 1000, Number((match[2] ?? '').padEnd(9, '0')));
+}
+
+async function applyApprovedPlan(proposal: ReturnType<typeof planF04IntakeSync>) {
+  if (!proposal.writes.length) { console.log('승인 계획에서 쓸 행 0건'); return; }
+  if (proposal.writes.length > 200) throw new Error('단일 트랜잭션 200행 한도를 넘습니다. 적용 전에 관제탑에 확인하세요');
+  if (process.env.FIRESTORE_EMULATOR_HOST) throw new Error('운영 계획으로 에뮬레이터에 쓰지 않습니다');
+  const credentialPath = arg('--sa', process.env.ERP5_SERVICE_ACCOUNT_PATH ?? '');
+  if (!credentialPath) throw new Error('승인된 기존 ERP5 서비스 계정 설정이 필요합니다');
+  const account = JSON.parse(readFileSync(credentialPath, 'utf8'));
+  if (account.project_id !== 'freepasserp5' || !String(account.client_email ?? '').endsWith('@freepasserp5.iam.gserviceaccount.com')) {
+    throw new Error('승인된 ERP5 자격 증명이 아닙니다');
+  }
+  assertErp5MaintenanceWrite(process.env, true, 'F04 접수 반영', Date.now(), account.client_email);
+  const db = getFirestore(initializeApp({ credential: cert(account), projectId: 'freepasserp5' }, 'f04-intake-sync'));
+  const rows = db.collection('settlement_rows');
+  const events = db.collection('settlement_events');
+  const now = Date.now();
+  await db.runTransaction(async tx => {
+    const actual = (await tx.get(rows.select('plate', 'receivedAt', 'contractNo', 'agent', 'supplier', 'claimWritten', 'payWritten', 'rent'))).docs;
+    const keys = new Map<string, typeof actual>();
+    for (const doc of actual) {
+      const key = f04DayKey(doc.data());
+      keys.set(key, [...(keys.get(key) ?? []), doc]);
+    }
+    for (const op of proposal.writes) {
+      const sameDay = keys.get(op.key) ?? [];
+      const candidates = sameDay.filter(doc => !op.source.contractNo ||
+        !doc.get('contractNo') || f04ContractKey(doc.data()) === f04ContractKey(op.source));
+      if (op.action === '추가') {
+        if (candidates.length || actual.some(doc => possibleF04KeyChange(op.source, doc.data()))) {
+          throw new Error('승인 후 같은 접수 또는 키 변경 의심 건이 서버에 생겼습니다');
+        }
+      } else if (candidates.length !== 1 || candidates[0].id !== op.id ||
+          !candidates[0].updateTime?.isEqual(exactTimestamp(op.updateTime ?? ''))) {
+        throw new Error('승인 후 서버 행이 변경되었습니다');
+      }
+    }
+    for (const op of proposal.writes) {
+      const data = { ...op.data, updatedAt: now };
+      if (op.action === '추가') tx.create(rows.doc(op.id), { ...data, createdAt: now, stateAt: new Date(now).toISOString() });
+      else tx.update(rows.doc(op.id), data as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>);
+      const auditKey = 'f04_sync_' + proposal.fingerprint.slice(0, 24) + '_' + op.row;
+      tx.set(events.doc(op.auditEventId), {
+        [auditKey]: { at: now, by: 'f04-intake-sync', field: op.action, source: 'F04', row: op.row },
+      }, { merge: true });
+    }
+  });
+  const confirmed = await db.getAll(...proposal.writes.map(op => rows.doc(op.id)));
+  for (const [index, doc] of confirmed.entries()) {
+    const op = proposal.writes[index];
+    if (!doc.exists || Object.entries(op.data)
+      .filter(([key, value]) => key !== 'createdAt' && key !== 'updatedAt' && key !== 'stateAt' && typeof value !== 'object')
+      .some(([key, value]) => doc.get(key) !== value)) {
+      throw new Error('반영 후 재조회가 계획과 다릅니다. 재실행 전에 관제탑에 확인하세요');
+    }
+  }
+  console.log(`반영 및 재조회 완료 ${proposal.writes.length}행`);
 }
 
 async function writeSnapshot() {
